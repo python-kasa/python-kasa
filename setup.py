@@ -1,6 +1,6 @@
 from setuptools import setup
 
-setup(name='pyW215',
+setup(name='pyHS100',
             version='0.1.1',
             description='Interface for TPLink HS100 Smart Plugs.',
             url='https://github.com/GadgetReactor/pyHS100',
