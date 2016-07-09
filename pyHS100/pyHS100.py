@@ -1,10 +1,14 @@
-import logging, socket, codecs, json
+import logging
+import socket
+import codecs
+import json
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class SmartPlug(object):
     """Class to access TPLink Switch.
-    
+
     Usage example when used as library:
     p = SmartPlug("192.168.1.105")
     # change state of plug
@@ -48,9 +52,9 @@ class SmartPlug(object):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.ip, self.port))
             on_str = ('0000002ad0f281f88bff9af7d5'
-		      'ef94b6c5a0d48bf99cf091e8b7'
-		      'c4b0d1a5c0e2d8a381f286e793'
-		      'f6d4eedfa2dfa2')
+                      'ef94b6c5a0d48bf99cf091e8b7'
+                      'c4b0d1a5c0e2d8a381f286e793'
+                      'f6d4eedfa2dfa2')
             data = codecs.decode(on_str, 'hex_codec')
             s.send(data)
             s.close()
@@ -59,9 +63,9 @@ class SmartPlug(object):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.ip, self.port))
             off_str = ('0000002ad0f281f88bff9af7d5'
-                      'ef94b6c5a0d48bf99cf091e8b7'
-                      'c4b0d1a5c0e2d8a381f286e793'
-                      'f6d4eedea3dea3')
+                       'ef94b6c5a0d48bf99cf091e8b7'
+                       'c4b0d1a5c0e2d8a381f286e793'
+                       'f6d4eedea3dea3')
             data = codecs.decode(off_str, 'hex_codec')
             s.send(data)
             s.close()
@@ -77,8 +81,8 @@ class SmartPlug(object):
         code = 171
         response = ""
         query_str = ('00000023d0f0d2a1d8abdfbad7'
-                    'f5cfb494b6d1b4c09fec95e68f'
-                    'e187e8caf09eeb87ebcbb696eb')
+                     'f5cfb494b6d1b4c09fec95e68f'
+                     'e187e8caf09eeb87ebcbb696eb')
         data = codecs.decode(query_str, 'hex_codec')
         s.send(data)
         reply = s.recv(4096)
@@ -95,7 +99,6 @@ class SmartPlug(object):
 
         info = json.loads(response)
         # info is reserved for future expansion.
-        # The JSON response from the smartplug provide smartplug system information
         sys_info = info["system"]["get_sysinfo"]
         relay_state = sys_info["relay_state"]
         return relay_state
