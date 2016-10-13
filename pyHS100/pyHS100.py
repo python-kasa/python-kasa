@@ -54,28 +54,10 @@ class SmartPlug(object):
         :param value: Future state (either ON or OFF)
         """
         if value.upper() == 'ON':
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.ip, self.port))
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.ip, self.port))
-            on_str = ('0000002ad0f281f88bff9af7d5'
-                      'ef94b6c5a0d48bf99cf091e8b7'
-                      'c4b0d1a5c0e2d8a381f286e793'
-                      'f6d4eedfa2dfa2')
-            data = codecs.decode(on_str, 'hex_codec')
-            s.send(data)
-            s.close()
+          self.turn_on()
 
         elif value.upper() == 'OFF':
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((self.ip, self.port))
-            off_str = ('0000002ad0f281f88bff9af7d5'
-                       'ef94b6c5a0d48bf99cf091e8b7'
-                       'c4b0d1a5c0e2d8a381f286e793'
-                       'f6d4eedea3dea3')
-            data = codecs.decode(off_str, 'hex_codec')
-            s.send(data)
-            s.close()
+          self.turn_off()
 
         else:
             raise TypeError("State %s is not valid." % str(value))
