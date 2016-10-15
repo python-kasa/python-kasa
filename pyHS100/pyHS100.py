@@ -8,6 +8,7 @@ import socket
 import codecs
 import json
 import datetime
+import sys
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -228,16 +229,24 @@ class SmartPlug(object):
         a = key ^ ord(i)
         key = a
         result += chr(a)
+
+      if sys.version_info.major > 2:
+        return result.encode('latin-1')
+
       return result
 
     def _decrypt(self, string):
       """Decrypts a command."""
+      if sys.version_info.major > 2:
+        string = string.decode('latin-1')
+
       key = 171 
       result = ""
       for i in string: 
         a = key ^ ord(i)
         key = ord(i) 
         result += chr(a)
+
       return result
 
     def _send_command(self, command):
@@ -252,6 +261,7 @@ class SmartPlug(object):
       s.connect((self.ip, self.port))
       s.send(self._encrypt(command))
       response = self._decrypt(s.recv(4096)[4:])
+      s.shutdown(1)
       s.close()
 
       return json.loads(response)
