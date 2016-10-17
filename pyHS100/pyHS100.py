@@ -223,6 +223,11 @@ class SmartPlug(object):
 
     def _encrypt(self, string):
       """Encrypts a command."""
+
+      """
+      Taken from https://raw.githubusercontent.com/softScheck/tplink-smartplug/master/tplink-smartplug.py
+      Changes: the return value is encoded in latin-1 in Python 3 and later
+      """
       key = 171
       result = "\0\0\0\0"
       for i in string: 
@@ -237,6 +242,11 @@ class SmartPlug(object):
 
     def _decrypt(self, string):
       """Decrypts a command."""
+
+      """
+      Taken from https://raw.githubusercontent.com/softScheck/tplink-smartplug/master/tplink-smartplug.py
+      Changes: the string parameter is decoded from latin-1 in Python 3 and later
+      """
       if sys.version_info.major > 2:
         string = string.decode('latin-1')
 
