@@ -37,15 +37,17 @@ class SmartPlug(object):
     @property
     def state(self):
         """Get the device state (i.e. ON or OFF)."""
-        response = self.hs100_status()
-        if response is None:
+        response = self.get_info()
+        relay_state = response["system"]["get_sysinfo"]["relay_state"]
+
+        if relay_state is None:
             return 'unknown'
-        elif response == 0:
+        elif relay_state == 0:
             return "OFF"
-        elif response == 1:
+        elif relay_state == 1:
             return "ON"
         else:
-            _LOGGER.warning("Unknown state %s returned" % str(response))
+            _LOGGER.warning("Unknown state %s returned" % str(relay_state))
             return 'unknown'
 
     @state.setter
@@ -62,36 +64,6 @@ class SmartPlug(object):
 
         else:
             raise TypeError("State %s is not valid." % str(value))
-
-    def hs100_status(self):
-        """Query HS100 for relay status."""
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((self.ip, self.port))
-        skip = 4
-        code = 171
-        response = ""
-        query_str = ('00000023d0f0d2a1d8abdfbad7'
-                     'f5cfb494b6d1b4c09fec95e68f'
-                     'e187e8caf09eeb87ebcbb696eb')
-        data = codecs.decode(query_str, 'hex_codec')
-        s.send(data)
-        reply = s.recv(4096)
-        s.shutdown(1)
-        s.close()
-
-        for value in reply:
-            if skip > 0:
-                skip = skip - 1
-            else:
-                change = (value ^ code)
-                response = response + chr(change)
-                code = value
-
-        info = json.loads(response)
-        # info is reserved for future expansion.
-        sys_info = info["system"]["get_sysinfo"]
-        relay_state = sys_info["relay_state"]
-        return relay_state
 
     def get_info(self):
         """Interrogate the switch"""
