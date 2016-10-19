@@ -203,7 +203,6 @@ class SmartPlug(object):
             True: Success
             False: Failure or not supported by switch
         """
-
         if self.model == 100:
             return False
 
@@ -216,6 +215,8 @@ class SmartPlug(object):
 
     def current_consumption(self):
         """Get the current power consumption in Watt."""
+        if self.model == 100:
+            return False
 
         response = self.get_emeter_realtime()
 
