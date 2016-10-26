@@ -104,7 +104,7 @@ class SmartPlug(object):
             False if command is not successful or the switch doesn't support energy metering
             Dict with the current readings
         """
-        if self.model == 100:
+        if self.model != 110:
             return False
 
         response = self._send_command('{"emeter":{"get_realtime":{}}}')
@@ -126,7 +126,7 @@ class SmartPlug(object):
             False if command is not successful or the switch doesn't support energy metering
             Dict where the keys represent the days, and the values are the aggregated statistics
         """
-        if self.model == 100:
+        if self.model != 110:
             return False
 
         response = self._send_command('{"emeter":{"get_daystat":{"month":' + str(month) + ',"year":' + str(year) + '}}}')
@@ -152,7 +152,7 @@ class SmartPlug(object):
           False if command is not successful or the switch doesn't support energy metering
           Dict - the keys represent the months, the values are the aggregated statistics
         """
-        if self.model == 100:
+        if self.model != 110:
             return False
 
         response = self._send_command('{"emeter":{"get_monthstat":{"year":' + str(year) + '}}}')
@@ -175,7 +175,7 @@ class SmartPlug(object):
             True: Success
             False: Failure or not supported by switch
         """
-        if self.model == 100:
+        if self.model != 110:
             return False
 
         response = self._send_command('{"emeter":{"erase_emeter_stat":null}}')
@@ -187,7 +187,7 @@ class SmartPlug(object):
 
     def current_consumption(self):
         """Get the current power consumption in Watt."""
-        if self.model == 100:
+        if self.model != 110:
             return False
 
         response = self.get_emeter_realtime()
@@ -255,6 +255,8 @@ class SmartPlug(object):
 
         if sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS100':
             model = 100
+        elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS200':
+            model = 200
         elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS110':
             model = 110
 
