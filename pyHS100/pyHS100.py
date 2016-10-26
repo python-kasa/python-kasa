@@ -9,6 +9,7 @@ import codecs
 import json
 import datetime
 import sys
+import re
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -252,12 +253,12 @@ class SmartPlug(object):
     def _identify_model(self):
         """Query sysinfo and determine model"""
         sys_info = self.get_info()
-
-        if sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS100':
-            model = 100
-        elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS200':
-            model = 200
-        elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS110':
-            model = 110
-
+        model = re.sub('HS', '', sys_info["system"]["get_sysinfo"]["model"][:5])
+        #if sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS100':
+        #    model = 100
+        #elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS200':
+        #    model = 200
+        #elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS110':
+        #    model = 110
+        print model
         return model
