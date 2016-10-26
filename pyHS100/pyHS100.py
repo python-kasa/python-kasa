@@ -254,11 +254,4 @@ class SmartPlug(object):
         """Query sysinfo and determine model"""
         sys_info = self.get_info()
         model = re.sub('HS', '', sys_info["system"]["get_sysinfo"]["model"][:5])
-        #if sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS100':
-        #    model = 100
-        #elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS200':
-        #    model = 200
-        #elif sys_info["system"]["get_sysinfo"]["model"][:5] == 'HS110':
-        #    model = 110
-        print model
         return model
