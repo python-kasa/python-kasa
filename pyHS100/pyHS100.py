@@ -15,11 +15,16 @@
 import datetime
 import json
 import logging
-import re
 import socket
 import sys
 
 _LOGGER = logging.getLogger(__name__)
+
+# possible device features
+FEATURE_ENERGY_METER = 'ENE'
+FEATURE_TIMER = 'TIM'
+
+ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
 
 
 class SmartPlug(object):
@@ -27,6 +32,8 @@ class SmartPlug(object):
 
     Usage example when used as library:
     p = SmartPlug("192.168.1.105")
+    # print the devices alias
+    print(p.alias)
     # change state of plug
     p.state = "OFF"
     p.state = "ON"
@@ -39,15 +46,13 @@ class SmartPlug(object):
     def __init__(self, ip):
         """Create a new SmartPlug instance identified by the IP."""
         self.ip = ip
-        self.port = 9999
-        self._error_report = False
-        self.model = self._identify_model()
+        self.alias, self.model, self.features = self.identify()
 
     @property
     def state(self):
         """Get the device state (i.e. ON or OFF)."""
-        response = self.get_info()
-        relay_state = response["system"]["get_sysinfo"]["relay_state"]
+        response = self.get_sysinfo()
+        relay_state = response['relay_state']
 
         if relay_state is None:
             return 'unknown'
@@ -74,10 +79,11 @@ class SmartPlug(object):
         else:
             raise TypeError("State %s is not valid." % str(value))
 
-    def get_info(self):
+    def get_sysinfo(self):
         """Interrogate the switch"""
         return TPLinkSmartHomeProtocol.query(
-            host=self.ip, request='{"system":{"get_sysinfo":{}}}')
+            host=self.ip, request='{"system":{"get_sysinfo":{}}}'
+        )['system']['get_sysinfo']
 
     def turn_on(self):
         """Turns the switch on
@@ -109,6 +115,10 @@ class SmartPlug(object):
 
         return False
 
+    @property
+    def has_emeter(self):
+        return FEATURE_ENERGY_METER in self.features
+
     def get_emeter_realtime(self):
         """Gets the current energy readings from the switch
 
@@ -116,7 +126,7 @@ class SmartPlug(object):
             False if command is not successful or the switch doesn't support energy metering
             Dict with the current readings
         """
-        if self.model != 110:
+        if not self.has_emeter:
             return False
 
         response = TPLinkSmartHomeProtocol.query(
@@ -139,7 +149,7 @@ class SmartPlug(object):
             False if command is not successful or the switch doesn't support energy metering
             Dict where the keys represent the days, and the values are the aggregated statistics
         """
-        if self.model != 110:
+        if not self.has_emeter:
             return False
 
         response = TPLinkSmartHomeProtocol.query(
@@ -166,7 +176,7 @@ class SmartPlug(object):
           False if command is not successful or the switch doesn't support energy metering
           Dict - the keys represent the months, the values are the aggregated statistics
         """
-        if self.model != 110:
+        if not self.has_emeter:
             return False
 
         response = TPLinkSmartHomeProtocol.query(
@@ -190,7 +200,7 @@ class SmartPlug(object):
             True: Success
             False: Failure or not supported by switch
         """
-        if self.model != 110:
+        if not self.has_emeter:
             return False
 
         response = TPLinkSmartHomeProtocol.query(
@@ -203,18 +213,30 @@ class SmartPlug(object):
 
     def current_consumption(self):
         """Get the current power consumption in Watt."""
-        if self.model != 110:
+        if not self.has_emeter:
             return False
 
         response = self.get_emeter_realtime()
 
         return response["power"]
 
-    def _identify_model(self):
-        """Query sysinfo and determine model"""
-        sys_info = self.get_info()
-        model = re.sub('HS', '', sys_info["system"]["get_sysinfo"]["model"][:5])
-        return model
+    def identify(self):
+        """
+        Query device information to identify model and featureset
+
+        :return: str model, list of supported features
+        """
+        sys_info = self.get_sysinfo()
+
+        alias = sys_info['alias']
+        model = sys_info["model"]
+        features = sys_info['feature'].split(':')
+
+        for feature in features:
+            if feature not in ALL_FEATURES:
+                _LOGGER.warn('Unknown feature %s on device %s.', feature, model)
+
+        return alias, model, features
 
 
 class TPLinkSmartHomeProtocol:
