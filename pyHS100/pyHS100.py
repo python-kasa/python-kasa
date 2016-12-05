@@ -22,17 +22,6 @@ import sys
 
 _LOGGER = logging.getLogger(__name__)
 
-# switch states
-SWITCH_STATE_ON = 'on'
-SWITCH_STATE_OFF = 'off'
-SWITCH_STATE_UNKNOWN = 'unknown'
-
-# possible device features
-FEATURE_ENERGY_METER = 'ENE'
-FEATURE_TIMER = 'TIM'
-
-ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
-
 
 class SmartPlug:
     """Representation of a TP-Link Smart Switch.
@@ -50,6 +39,16 @@ class SmartPlug:
     Note:
     The library references the same structure as defined for the D-Link Switch
     """
+    # switch states
+    SWITCH_STATE_ON = 'ON'
+    SWITCH_STATE_OFF = 'OFF'
+    SWITCH_STATE_UNKNOWN = 'UNKNOWN'
+
+    # possible device features
+    FEATURE_ENERGY_METER = 'ENE'
+    FEATURE_TIMER = 'TIM'
+
+    ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
 
     def __init__(self, ip_address):
         """
@@ -76,12 +75,12 @@ class SmartPlug:
         relay_state = response['relay_state']
 
         if relay_state == 0:
-            return SWITCH_STATE_OFF
+            return SmartPlug.SWITCH_STATE_OFF
         elif relay_state == 1:
-            return SWITCH_STATE_ON
+            return SmartPlug.SWITCH_STATE_ON
         else:
             _LOGGER.warning("Unknown state %s returned.", relay_state)
-            return SWITCH_STATE_UNKNOWN
+            return SmartPlug.SWITCH_STATE_UNKNOWN
 
     @state.setter
     def state(self, value):
@@ -94,12 +93,11 @@ class SmartPlug:
         :return: True if new state was successfully set
                  False if an error occured
         """
-        if value.lower() == SWITCH_STATE_ON:
+        if value.upper() == SmartPlug.SWITCH_STATE_ON:
             self.turn_on()
-        elif value.lower() == SWITCH_STATE_OFF:
+        elif value.upper() == SmartPlug.SWITCH_STATE_OFF:
             self.turn_off()
         else:
-
             raise ValueError("State %s is not valid.", value)
 
     def get_sysinfo(self):
@@ -160,7 +158,7 @@ class SmartPlug:
         :return: True if energey meter is available
                  False if energymeter is missing
         """
-        return FEATURE_ENERGY_METER in self.features
+        return SmartPlug.FEATURE_ENERGY_METER in self.features
 
     def get_emeter_realtime(self):
         """
@@ -279,7 +277,7 @@ class SmartPlug:
         features = sys_info['feature'].split(':')
 
         for feature in features:
-            if feature not in ALL_FEATURES:
+            if feature not in SmartPlug.ALL_FEATURES:
                 _LOGGER.warning("Unknown feature %s on device %s.",
                                 feature, model)
 
