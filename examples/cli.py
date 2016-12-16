@@ -1,5 +1,6 @@
 import sys
 import logging
+from pprint import pformat as pf
 
 from pyHS100 import SmartPlug
 
@@ -11,8 +12,8 @@ if len(sys.argv) < 2:
 
 hs = SmartPlug(sys.argv[1])
 
-logging.info("Identify: %s", hs.identify)
-logging.info("Sysinfo: %s", hs.get_sysinfo())
+logging.info("Identify: %s", hs.identify())
+logging.info("Sysinfo: %s", pf(hs.get_sysinfo()))
 has_emeter = hs.has_emeter
 if has_emeter:
     logging.info("== Emeter ==")

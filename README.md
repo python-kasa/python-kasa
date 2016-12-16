@@ -49,7 +49,7 @@ print("Per month: %s" % plug.get_emeter_monthly(year=2016))
 ## Switching the led
 ```python
 print("Current LED state: %s" % plug.led)
-plug.led = 0 # turn off led
+plug.led = False # turn off led
 print("New LED state: %s" % plug.led)
 
 ```

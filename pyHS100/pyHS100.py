@@ -14,11 +14,14 @@ You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
 
+from __future__ import absolute_import
+from __future__ import unicode_literals
+
 import datetime
-import json
 import logging
 import socket
-import sys
+
+from pyHS100.protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,7 +63,7 @@ class SmartPlug:
 
     ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
 
-    def __init__(self, ip_address):
+    def __init__(self, ip_address, protocol=TPLinkSmartHomeProtocol):
         """
         Create a new SmartPlug instance, identified through its IP address.
 
@@ -69,20 +72,18 @@ class SmartPlug:
         """
         socket.inet_pton(socket.AF_INET, ip_address)
         self.ip_address = ip_address
+        self.protocol = protocol
+        self._sys_info = None
 
-        self.initialize()
-
-    def initialize(self):
+    def _fetch_sysinfo(self):
         """
-        (Re-)Initializes the state.
+        Fetches the system information from the device.
 
-        This should be called when the state of the plug is changed anyway.
+        This should be called when the state of the plug is changed.
 
         :raises: SmartPlugException: on error
         """
-        self.sys_info = self.get_sysinfo()
-
-        self._alias, self.model, self.features = self.identify()
+        self._sys_info = self.get_sysinfo()
 
     def _query_helper(self, target, cmd, arg={}):
         """
@@ -95,18 +96,30 @@ class SmartPlug:
         :rtype: dict
         :raises SmartPlugException: if command was not executed correctly
         """
-        response = TPLinkSmartHomeProtocol.query(
-            host=self.ip_address,
-            request={target: {cmd: arg}}
-        )
 
-        result = response[target][cmd]
-        if result["err_code"] != 0:
+        try:
+            response = self.protocol.query(
+                host=self.ip_address,
+                request={target: {cmd: arg}}
+            )
+        except Exception as ex:
+            raise SmartPlugException(ex)
+
+        result = response[target]
+        if "err_code" in result and result["err_code"] != 0:
             raise SmartPlugException("Error on {}.{}: {}".format(target, cmd, result))
 
+        result = result[cmd]
         del result["err_code"]
 
         return result
+
+    @property
+    def sys_info(self):
+        if not self._sys_info:
+            self._fetch_sysinfo()
+
+        return self._sys_info
 
     @property
     def state(self):
@@ -141,14 +154,16 @@ class SmartPlug:
         :raises SmartPlugException: on error
 
         """
-        if value.upper() == SmartPlug.SWITCH_STATE_ON:
+        if not isinstance(value, str):
+            raise ValueError("State must be str, not of %s.", type(value))
+        elif value.upper() == SmartPlug.SWITCH_STATE_ON:
             self.turn_on()
         elif value.upper() == SmartPlug.SWITCH_STATE_OFF:
             self.turn_off()
         else:
             raise ValueError("State %s is not valid.", value)
 
-        self.initialize()
+        self._fetch_sysinfo()
 
     def get_sysinfo(self):
         """
@@ -187,7 +202,7 @@ class SmartPlug:
         """
         self._query_helper("system", "set_relay_state", {"state": 1})
 
-        self.initialize()
+        self._fetch_sysinfo()
 
     def turn_off(self):
         """
@@ -197,7 +212,7 @@ class SmartPlug:
         """
         self._query_helper("system", "set_relay_state", {"state": 0})
 
-        self.initialize()
+        self._fetch_sysinfo()
 
     @property
     def has_emeter(self):
@@ -282,7 +297,7 @@ class SmartPlug:
 
         self._query_helper("emeter", "erase_emeter_stat", None)
 
-        self.initialize()
+        self._fetch_sysinfo()
 
         # As query_helper raises exception in case of failure, we have succeeded when we are this far.
         return True
@@ -309,16 +324,35 @@ class SmartPlug:
         :return: (alias, model, list of supported features)
         :rtype: tuple
         """
-        alias = self.sys_info['alias']
-        model = self.sys_info['model']
+        return self.alias, self.model, self.features
+
+    @property
+    def model(self):
+        """
+        Get model of the device
+
+        :return: device model
+        :rtype: str
+        :raises SmartPlugException: on error
+        """
+        return self.sys_info['model']
+
+    @property
+    def features(self):
+        """
+        Returns features of the devices
+
+        :return: list of features
+        :rtype: list
+        """
         features = self.sys_info['feature'].split(':')
 
         for feature in features:
             if feature not in SmartPlug.ALL_FEATURES:
                 _LOGGER.warning("Unknown feature %s on device %s.",
-                                feature, model)
+                                feature, self.model)
 
-        return alias, model, features
+        return features
 
     @property
     def alias(self):
@@ -328,7 +362,7 @@ class SmartPlug:
         :return: Device name aka alias.
         :rtype: str
         """
-        return self._alias
+        return self.sys_info['alias']
 
     @alias.setter
     def alias(self, alias):
@@ -340,7 +374,7 @@ class SmartPlug:
         """
         self._query_helper("system", "set_dev_alias", {"alias": alias})
 
-        self.initialize()
+        self._fetch_sysinfo()
 
     @property
     def led(self):
@@ -362,7 +396,7 @@ class SmartPlug:
         """
         self._query_helper("system", "set_led_off", {"off": int(not state)})
 
-        self.initialize()
+        self._fetch_sysinfo()
 
     @property
     def icon(self):
@@ -510,102 +544,7 @@ class SmartPlug:
         """
         self._query_helper("system", "set_mac_addr", {"mac": mac})
 
-        self.initialize()
+        self._fetch_sysinfo()
 
 
 
-class TPLinkSmartHomeProtocol:
-    """
-    Implementation of the TP-Link Smart Home Protocol
-
-    Encryption/Decryption methods based on the works of
-    Lubomir Stroetmann and Tobias Esser
-
-    https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/
-    https://github.com/softScheck/tplink-smartplug/
-
-    which are licensed under the Apache License, Version 2.0
-    http://www.apache.org/licenses/LICENSE-2.0
-    """
-    initialization_vector = 171
-
-    @staticmethod
-    def query(host, request, port=9999):
-        """
-        Request information from a TP-Link SmartHome Device and return the
-        response.
-
-        :param str host: ip address of the device
-        :param int port: port on the device (default: 9999)
-        :param request: command to send to the device (can be either dict or
-        json string)
-        :return:
-        """
-        if isinstance(request, dict):
-            request = json.dumps(request)
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((host, port))
-
-        _LOGGER.debug("> (%i) %s", len(request), request)
-        sock.send(TPLinkSmartHomeProtocol.encrypt(request))
-
-        buffer = bytes()
-        while True:
-            chunk = sock.recv(4096)
-            buffer += chunk
-            if not chunk:
-                break
-
-        sock.shutdown(socket.SHUT_RDWR)
-        sock.close()
-
-        response = TPLinkSmartHomeProtocol.decrypt(buffer[4:])
-        _LOGGER.debug("< (%i) %s", len(response), response)
-
-        return json.loads(response)
-
-    @staticmethod
-    def encrypt(request):
-        """
-        Encrypt a request for a TP-Link Smart Home Device.
-
-        :param request: plaintext request data
-        :return: ciphertext request
-        """
-        key = TPLinkSmartHomeProtocol.initialization_vector
-        buffer = ['\0\0\0\0']
-
-        for char in request:
-            cipher = key ^ ord(char)
-            key = cipher
-            buffer.append(chr(cipher))
-
-        ciphertext = ''.join(buffer)
-        if sys.version_info.major > 2:
-            ciphertext = ciphertext.encode('latin-1')
-
-        return ciphertext
-
-    @staticmethod
-    def decrypt(ciphertext):
-        """
-        Decrypt a response of a TP-Link Smart Home Device.
-
-        :param ciphertext: encrypted response data
-        :return: plaintext response
-        """
-        key = TPLinkSmartHomeProtocol.initialization_vector
-        buffer = []
-
-        if sys.version_info.major > 2:
-            ciphertext = ciphertext.decode('latin-1')
-
-        for char in ciphertext:
-            plain = key ^ ord(char)
-            key = ord(char)
-            buffer.append(chr(plain))
-
-        plaintext = ''.join(buffer)
-
-        return plaintext
