@@ -59,3 +59,9 @@ There is also a simple tool for testing connectivity in examples, to use:
 ```python
 python -m examples.cli <ip>
 ```
+
+# Discovering devices
+```python
+python3 -m examples.discover
+```
+
