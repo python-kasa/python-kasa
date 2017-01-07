@@ -14,8 +14,13 @@ You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
 
+# python2 compatibility
 from __future__ import absolute_import
 from __future__ import unicode_literals
+try:
+    basestring
+except NameError:
+    basestring = str
 
 import datetime
 import logging
@@ -33,7 +38,7 @@ class SmartPlugException(Exception):
     pass
 
 
-class SmartPlug:
+class SmartPlug(object):
     """Representation of a TP-Link Smart Switch.
 
     Usage example when used as library:
@@ -63,7 +68,7 @@ class SmartPlug:
 
     ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
 
-    def __init__(self, ip_address, protocol=TPLinkSmartHomeProtocol):
+    def __init__(self, ip_address, protocol=None):
         """
         Create a new SmartPlug instance, identified through its IP address.
 
@@ -72,6 +77,8 @@ class SmartPlug:
         """
         socket.inet_pton(socket.AF_INET, ip_address)
         self.ip_address = ip_address
+        if not protocol:
+            protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
         self._sys_info = None
 
@@ -104,6 +111,9 @@ class SmartPlug:
             )
         except Exception as ex:
             raise SmartPlugException(ex) from ex
+
+        if target not in response:
+            raise SmartPlugException("No required {} in response: {}".format(target, response))
 
         result = response[target]
         if "err_code" in result and result["err_code"] != 0:
@@ -154,7 +164,7 @@ class SmartPlug:
         :raises SmartPlugException: on error
 
         """
-        if not isinstance(value, str):
+        if not isinstance(value, basestring):
             raise ValueError("State must be str, not of %s.", type(value))
         elif value.upper() == SmartPlug.SWITCH_STATE_ON:
             self.turn_on()

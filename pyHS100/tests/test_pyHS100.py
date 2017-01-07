@@ -8,9 +8,10 @@ import datetime
 import re
 
 from pyHS100 import SmartPlug, SmartPlugException
+from pyHS100.tests.fakes import FakeTransportProtocol
 
 PLUG_IP = '192.168.250.186'
-SKIP_STATE_TESTS = True
+SKIP_STATE_TESTS = False
 
 # python2 compatibility
 try:
@@ -39,6 +40,9 @@ def check_mode(x):
 
 
 class TestSmartPlug(TestCase):
+    # these schemas should go to the mainlib as
+    # they can be useful when adding support for new features/devices
+    # as well as to check that faked devices are operating properly.
     sysinfo_schema = Schema({
         'active_mode': check_mode,
         'alias': basestring,
@@ -78,7 +82,7 @@ class TestSmartPlug(TestCase):
     })
 
     def setUp(self):
-        self.plug = SmartPlug(PLUG_IP)
+        self.plug = SmartPlug(PLUG_IP, protocol=FakeTransportProtocol())
 
     def tearDown(self):
         self.plug = None
@@ -88,7 +92,7 @@ class TestSmartPlug(TestCase):
         self.sysinfo_schema(self.plug.sys_info)
 
     def test_initialize_invalid_connection(self):
-        plug = SmartPlug('127.0.0.1')
+        plug = SmartPlug('127.0.0.1', protocol=FakeTransportProtocol(invalid=True))
         with self.assertRaises(SmartPlugException):
             plug.sys_info['model']
 
