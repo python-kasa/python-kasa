@@ -103,7 +103,7 @@ class SmartPlug:
                 request={target: {cmd: arg}}
             )
         except Exception as ex:
-            raise SmartPlugException(ex)
+            raise SmartPlugException(ex) from ex
 
         result = response[target]
         if "err_code" in result and result["err_code"] != 0:

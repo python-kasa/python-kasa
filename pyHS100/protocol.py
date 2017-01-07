@@ -39,20 +39,23 @@ class TPLinkSmartHomeProtocol:
             request = json.dumps(request)
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((host, port))
+        sock.settimeout(5.0)
+        try:
+            sock.connect((host, port))
 
-        _LOGGER.debug("> (%i) %s", len(request), request)
-        sock.send(TPLinkSmartHomeProtocol.encrypt(request))
+            _LOGGER.debug("> (%i) %s", len(request), request)
+            sock.send(TPLinkSmartHomeProtocol.encrypt(request))
 
-        buffer = bytes()
-        while True:
-            chunk = sock.recv(4096)
-            buffer += chunk
-            if not chunk:
-                break
+            buffer = bytes()
+            while True:
+                chunk = sock.recv(4096)
+                buffer += chunk
+                if not chunk:
+                    break
 
-        sock.shutdown(socket.SHUT_RDWR)
-        sock.close()
+        finally:
+            sock.shutdown(socket.SHUT_RDWR)
+            sock.close()
 
         response = TPLinkSmartHomeProtocol.decrypt(buffer[4:])
         _LOGGER.debug("< (%i) %s", len(response), response)
