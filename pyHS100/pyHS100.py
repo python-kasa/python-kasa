@@ -80,17 +80,6 @@ class SmartPlug(object):
         if not protocol:
             protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
-        self._sys_info = None
-
-    def _fetch_sysinfo(self):
-        """
-        Fetches the system information from the device.
-
-        This should be called when the state of the plug is changed.
-
-        :raises: SmartPlugException: on error
-        """
-        self._sys_info = self.get_sysinfo()
 
     def _query_helper(self, target, cmd, arg={}):
         """
@@ -126,10 +115,8 @@ class SmartPlug(object):
 
     @property
     def sys_info(self):
-        if not self._sys_info:
-            self._fetch_sysinfo()
-
-        return self._sys_info
+        #  TODO use volyptuous
+        return self.get_sysinfo()
 
     @property
     def state(self):
@@ -173,8 +160,6 @@ class SmartPlug(object):
         else:
             raise ValueError("State %s is not valid.", value)
 
-        self._fetch_sysinfo()
-
     def get_sysinfo(self):
         """
         Retrieve system information.
@@ -212,8 +197,6 @@ class SmartPlug(object):
         """
         self._query_helper("system", "set_relay_state", {"state": 1})
 
-        self._fetch_sysinfo()
-
     def turn_off(self):
         """
         Turn the switch off.
@@ -221,8 +204,6 @@ class SmartPlug(object):
         :raises SmartPlugException: on error
         """
         self._query_helper("system", "set_relay_state", {"state": 0})
-
-        self._fetch_sysinfo()
 
     @property
     def has_emeter(self):
@@ -307,8 +288,6 @@ class SmartPlug(object):
 
         self._query_helper("emeter", "erase_emeter_stat", None)
 
-        self._fetch_sysinfo()
-
         # As query_helper raises exception in case of failure, we have succeeded when we are this far.
         return True
 
@@ -334,7 +313,12 @@ class SmartPlug(object):
         :return: (alias, model, list of supported features)
         :rtype: tuple
         """
-        return self.alias, self.model, self.features
+
+        info = self.sys_info
+
+        #  TODO sysinfo parsing should happen in sys_info
+        #  to avoid calling fetch here twice..
+        return info["alias"], info["model"], self.features
 
     @property
     def model(self):
@@ -384,8 +368,6 @@ class SmartPlug(object):
         """
         self._query_helper("system", "set_dev_alias", {"alias": alias})
 
-        self._fetch_sysinfo()
-
     @property
     def led(self):
         """
@@ -405,8 +387,6 @@ class SmartPlug(object):
         :raises SmartPlugException: on error
         """
         self._query_helper("system", "set_led_off", {"off": int(not state)})
-
-        self._fetch_sysinfo()
 
     @property
     def icon(self):
@@ -499,7 +479,8 @@ class SmartPlug(object):
         :rtype: dict
         """
         keys = ["sw_ver", "hw_ver", "mac", "hwId", "fwId", "oemId", "dev_name"]
-        return {key: self.sys_info[key] for key in keys}
+        info = self.sys_info
+        return {key: info[key] for key in keys}
 
     @property
     def on_since(self):
@@ -520,9 +501,9 @@ class SmartPlug(object):
         :return: latitude and longitude
         :rtype: dict
         """
-
-        return {"latitude": self.sys_info["latitude"],
-                "longitude": self.sys_info["longitude"]}
+        info = self.sys_info
+        return {"latitude": info["latitude"],
+                "longitude": info["longitude"]}
 
     @property
     def rssi(self):
@@ -553,8 +534,3 @@ class SmartPlug(object):
         :raises SmartPlugException: on error
         """
         self._query_helper("system", "set_mac_addr", {"mac": mac})
-
-        self._fetch_sysinfo()
-
-
-
