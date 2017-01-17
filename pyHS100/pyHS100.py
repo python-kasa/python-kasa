@@ -17,6 +17,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 # python2 compatibility
 from __future__ import absolute_import
 from __future__ import unicode_literals
+from future.utils import raise_from
 try:
     basestring
 except NameError:
@@ -70,7 +71,7 @@ class SmartDevice(object):
                 request={target: {cmd: arg}}
             )
         except Exception as ex:
-            raise SmartPlugException(ex) from ex
+            raise_from(SmartPlugException(), ex)
 
         if target not in response:
             raise SmartPlugException("No required {} in response: {}".format(target, response))
