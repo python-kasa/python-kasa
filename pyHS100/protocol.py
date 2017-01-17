@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import json
 import socket
+import struct
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,10 +50,16 @@ class TPLinkSmartHomeProtocol:
             sock.send(TPLinkSmartHomeProtocol.encrypt(request))
 
             buffer = bytes()
+            # Some devices send responses with a length header of 0 and
+            # terminate with a zero size chunk. Others send the length and
+            # will hang if we attempt to read more data.
+            length = -1
             while True:
                 chunk = sock.recv(4096)
+                if length == -1:
+                    length = struct.unpack(">I", chunk[0:4])[0]
                 buffer += chunk
-                if not chunk:
+                if (length > 0 and len(buffer) >= length + 4) or not chunk:
                     break
 
         finally:
@@ -115,7 +122,7 @@ class TPLinkSmartHomeProtocol:
         :return: ciphertext request
         """
         key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        buffer = bytearray(4)  # 4 nullbytes
+        buffer = bytearray(struct.pack(">I", len(request)))
 
         for char in request:
             cipher = key ^ ord(char)

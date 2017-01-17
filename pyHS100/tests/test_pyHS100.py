@@ -8,7 +8,7 @@ import datetime
 import re
 
 from pyHS100 import SmartPlug, SmartPlugException
-from pyHS100.tests.fakes import FakeTransportProtocol
+from pyHS100.tests.fakes import FakeTransportProtocol, sysinfo_hs110
 
 PLUG_IP = '192.168.250.186'
 SKIP_STATE_TESTS = False
@@ -82,7 +82,8 @@ class TestSmartPlug(TestCase):
     })
 
     def setUp(self):
-        self.plug = SmartPlug(PLUG_IP, protocol=FakeTransportProtocol())
+        self.plug = SmartPlug(PLUG_IP,
+                              protocol=FakeTransportProtocol(sysinfo_hs110))
 
     def tearDown(self):
         self.plug = None
@@ -92,7 +93,9 @@ class TestSmartPlug(TestCase):
         self.sysinfo_schema(self.plug.sys_info)
 
     def test_initialize_invalid_connection(self):
-        plug = SmartPlug('127.0.0.1', protocol=FakeTransportProtocol(invalid=True))
+        plug = SmartPlug('127.0.0.1',
+                         protocol=FakeTransportProtocol(sysinfo_hs110,
+                                                        invalid=True))
         with self.assertRaises(SmartPlugException):
             plug.sys_info['model']
 
