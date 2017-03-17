@@ -1,0 +1,228 @@
+Changelog
+=========
+
+0.2.3 (2017-01-11)
+------------------
+
+- Add .gitchnagelog.rc for changelog generation. to generate, simply
+  install and run gitchangelog. [Teemu Rytilahti]
+
+- Version bump. [GadgetReactor]
+
+- Initial steps to remove caching (#26) [Teemu R]
+
+  This commit removes caching of sysinfo to avoid
+  inconsistent states as described in issue #14.
+
+  Each an every access for properties will cause a request
+  to be made to the device. To avoid this, user of the library
+  may want to access sys_info() directly instead of using the helpers.
+
+  Currently sys_info() returns raw json object where-as helpers do
+  parse information for easier consumption; current state is just to
+  provide a PoC how it looks compared to having an active update()
+  for fetching the info.
+
+- Make tests runnable without device (#24) [Teemu R]
+
+  * Make tests runnable without device
+
+  Adds preliminary support for fake devices, thanks to
+  hoveeman's sysinfos from issue #14,
+  making running tests possible without a device.
+
+  At the moment we have only HS110 and HS200 infos available, and tests
+  are currently run only against HS110 data.
+
+  * Make tests py27 compatible
+
+- Add device discovery (#25) [Teemu R]
+
+  * add (untested) discover mode
+
+  * Keep discovery and normal communication separate, uppercase magic consts
+
+  This sepearates the earlier test code for discovering devices,
+  and adds 5 sec timeout for gathering responses from potential devices.
+
+  This commit also uppercases magic constants.
+
+  Discovery & communication tested with HS110.
+
+  * update readme with example how to discover devices, pep8ify
+
+- Add timeout to query (#19) [Austin]
+
+- Refactor & add unittests for almost all functionality, add tox for
+  running tests on py27 and py35 (#17) [Teemu R]
+
+  * Refactor & add unittests for almost all functionality, add tox for running tests on py27 and py35
+
+  This commit adds unit tests for current api functionality.
+  - currently no mocking, all tests are run on the device.
+  - the library is now compatible with python 2.7 and python 3.5, use tox for tests
+  - schema checks are done with voluptuous
+
+  refactoring:
+  - protocol is separated into its own file, smartplug adapted to receive protocol worker as parameter.
+  - cleaned up the initialization routine, initialization is done on use, not on creation of smartplug
+  - added model and features properties, identity kept for backwards compatibility
+  - no more storing of local variables outside _sys_info, paves a way to handle state changes sanely (without complete reinitialization)
+
+  * Fix CI warnings, remove unused leftover code
+
+  * Rename _initialize to _fetch_sysinfo, as that's what it does.
+
+  * examples.cli: fix identify call, prettyprint sysinfo, update readme which had false format for led setting
+
+  * Add tox-travis for automated testing.
+
+0.2.2 (2016-12-13)
+------------------
+
+- Version bump (#16) [Georgi Kirichkov]
+
+- Read all data from the device, disable double-encoding, implement more
+  APIs, refactor querying, update README (#11) [Teemu R]
+
+  * Read from socket until no data available, disable double string encoding
+
+  HS110 sends sometimes datagrams in chunks especially for get_daystat,
+  this patch makes it to read until there is no more data to be read.
+
+  As json.dumps() does JSON encoding already, there's no need to str()
+  the year or month either.
+
+  * Add cli.py, a simple script to query devices for debugging purposes.
+
+  * allow easier importing with from pyHS100 import SmartPlug
+
+  * move cli.py to examples, add short usage into README.md
+
+  * Implement more available APIs, refactor querying code.
+
+  This commit adds access to new properties, both read & write,  while keeping the old one (mostly) intact.
+  Querying is refactored to be done inside _query_helper() method,
+  which unwraps results automatically and rises SmartPlugException() in case of errors.
+  Errors are to be handled by clients.
+
+  New features:
+  * Setting device alias (plug.alias = "name")
+  * led read & write
+  * icon read (doesn't seem to return anything without cloud support at least), write API is not known, throws an exception currently
+  * time read (returns datetime), time write implemented, but not working even when no error is returned from the device
+  * timezone read
+  * mac read & write, writing is untested for now.
+
+  Properties for easier access:
+  * hw_info: return hw-specific elements from sysinfo
+  * on_since: pretty-printed from sysinfo
+  * location: latitude and longitued from sysinfo
+  * rssi: rssi from sysinfo
+
+  * Update README.md with examples of available features.
+
+  * Handle comments from mweinelt
+
+  * Refactor state handling, use booleans instead of strings
+
+  * Fix issues raised during the review.
+
+  Following issues are addressed by this commit:
+  * All API is more or less commented (including return types, exceptions, ..)
+  * Converted state to use
+  * Added properties is_on, is_off for those who don't want to check against strings.
+  * Handled most issues reported by pylint.
+  * Adjusted _query_helper() to strip off err_code from the result object.
+  * Fixed broken format() syntax for string formattings.
+
+  * Fix ci woes plus one typo.
+
+  * Do initialization after changing device properties, fix nits.
+
+- Constants will be static members of SmartPlug. [Martin Weinelt]
+
+- Set up hound-ci. [Martin Weinelt]
+
+- Normalize docstrings, address flake8 & pylint recommendations. [Martin
+  Weinelt]
+
+- Properly detect advertised features, expose alias. [Martin Weinelt]
+
+- Externalize the TP-Link Smart Home Protocol. [Martin Weinelt]
+
+- HS200 support. [GadgetReactor]
+
+  Update version to reflect latest changes
+
+- Adding in support for the HS200 Wall switch referencing issues (#4),
+  simplifying model determination. [Stephen Maggard]
+
+- Adding in support for the HS200 Wall switch referencing issues (#4),
+  simplifying model determination. [Stephen Maggard]
+
+- Adding in support for the HS200 Wall switch referencing issues (#4)
+  [Stephen Maggard]
+
+- Refactors state property to use get_info() and removes hs100_status()
+  [Georgi Kirichkov]
+
+- Adds model check to current_consumption() and removes whitespace.
+  [Georgi Kirichkov]
+
+- Fixes indentation and removes extra whitespaces. [Georgi Kirichkov]
+
+- Update setup.py. [GadgetReactor]
+
+- Update LICENSE. [GadgetReactor]
+
+  Updated to GPLv3 (instead of just copy and pasting)
+
+0.2.0 (2016-10-17)
+------------------
+
+- Bumps the module version to 0.2.0. [Georgi Kirichkov]
+
+- Adds additional comments, for better compliance with the Apache
+  license. [Georgi Kirichkov]
+
+- Makes the socket sending code compatible with both Python 2 and python
+  3. [Georgi Kirichkov]
+
+  Adds a shutdown to the socket used to send commands
+
+- Refactors state() to use turn_on() and turn_off() [Georgi Kirichkov]
+
+- Adds Energy Meter commands available on the TP-Link HS110. [Georgi
+  Kirichkov]
+
+  Also adds turn_on() and turn_off() commands to supplement the state
+
+- Update pyHS100.py. [GadgetReactor]
+
+- Update __init__.py. [GadgetReactor]
+
+- Update __init__.py. [GadgetReactor]
+
+0.1.2 (2016-07-09)
+------------------
+
+- 0.1.2. [GadgetReactor]
+
+- Update setup.py. [GadgetReactor]
+
+- Update setup.py. [GadgetReactor]
+
+- Delete pyHS100.py. [GadgetReactor]
+
+- Create pyHS100.py. [GadgetReactor]
+
+- Create __init__.py. [GadgetReactor]
+
+- Create setup.py. [GadgetReactor]
+
+- Create pyHS100.py. [GadgetReactor]
+
+- Initial commit. [GadgetReactor]
+
+
