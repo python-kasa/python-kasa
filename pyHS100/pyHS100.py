@@ -507,6 +507,7 @@ class SmartBulb(SmartDevice):
             "hue": state[0],
             "saturation": state[1],
             "brightness": int(state[2] * 100 / 255),
+            "color_temp": 0
             }
         return self.set_light_state(light_state)
 
