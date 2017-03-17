@@ -108,6 +108,8 @@ class TPLinkSmartHomeProtocol:
                 info = json.loads(TPLinkSmartHomeProtocol.decrypt(data))
 
                 devices.append({"ip": ip, "port": port, "sys_info": info})
+        except socket.timeout:
+            _LOGGER.debug("Got socket timeout, which is okay.")
         except Exception as ex:
             _LOGGER.error("Got exception %s", ex, exc_info=True)
 
