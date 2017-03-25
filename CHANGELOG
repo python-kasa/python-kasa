@@ -1,6 +1,77 @@
 Changelog
 =========
 
+0.2.4 (2017-03-20)
+------------------
+
+- Add new client tool (#42) [Teemu R]
+
+  * Add new client tool
+
+  After installing the package pyhs100 command-line tool can be used
+  to control the plug.
+
+  See --help for its usage, most of the features for plugs are implemented,
+  some of the shared functionality works for bulbs too.
+
+  * Add discover command
+
+  * Delete old examples, the cli works as an example well enough
+
+- Ignore OSError on socket.shutdown() [Teemu Rytilahti]
+
+  This fixes #22 and obsoletes PR #23.
+- Set color temp to 0 when trying to change color (#36) [pete1450]
+
+  * set color temp to 0 when trying to change color
+
+  * changed tabs to spaces
+
+- Add changelog & add .gitchangelog.rc (#28) [Teemu R]
+
+  This commits adds .gitchangelog.rc for changelog generation.
+  To generate, simply run gitchangelog.
+
+- Discover: Catch socket.timeout and debug log it (#34) [Teemu R]
+
+  Fixes #33
+
+- Add flake8 to tox, disable qa on pyHS100/__init__.py, fix py27
+  compatibility (#31) [Teemu R]
+
+- Add support for TP-Link smartbulbs (#30) [Matthew Garrett]
+
+  * Add support for new-style protocol
+
+  Newer devices (including my LB130) seem to include the request length in
+  the previously empty message header, and ignore requests that lack it. They
+  also don't send an empty packet as the final part of a response, which can
+  lead to hangs. Add support for this, with luck not breaking existing devices
+  in the process.
+
+  * Fix tests
+
+  We now include the request length in the encrypted packet header, so strip
+  the header rather than assuming that it's just zeroes.
+
+  * Create a SmartDevice parent class
+
+  Add a generic SmartDevice class that SmartPlug can inherit from, in
+  preparation for adding support for other device types.
+
+  * Add support for TP-Link smartbulbs
+
+  These bulbs use the same protocol as the smart plugs, but have additional
+  commands for controlling bulb-specific features. In addition, the bulbs
+  have their emeter under a different target and return responses that
+  include the energy unit in the key names.
+
+  * Add tests for bulbs
+
+  Not entirely comprehensive, but has pretty much the same level of testing
+  as plugs
+
+
 0.2.3 (2017-01-11)
 ------------------
 

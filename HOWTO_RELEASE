@@ -1,0 +1,22 @@
+# Preparing the changelog
+
+Looks like gitchangelog is not as nice as thought before,
+however, you can generate the changelog by doing this:
+
+$ gitchangelog 0.x.y..HEAD
+
+and manually placing the output to CHANGELOG and fixing
+the newlines between commit messages, and cleaning up the
+unnecessary entries,  and finally commiting the file.
+
+After that prepare a pull request containing the changed,
+release-related files (CHANGELOG, setup.py, README, ..).
+
+# After release merge is done
+
+$ git tag -a v0.x.y -m "0.x.y"
+$ git push --tags
+
+# Pushing to pypi
+
+$ python setup.py sdist bdist_wheel upload
