@@ -1,3 +1,4 @@
+import sys
 import click
 import logging
 from click_datetime import Datetime
@@ -21,6 +22,10 @@ def cli(ctx, ip, debug):
 
     if ctx.invoked_subcommand == "discover":
         return
+
+    if ip is None:
+        click.echo("You must specify the IP either by --ip or setting PYHS100_IP environment variable!")
+        sys.exit(-1)
 
     plug = SmartPlug(ip)
     ctx.obj = plug
