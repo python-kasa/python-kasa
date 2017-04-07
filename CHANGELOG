@@ -1,8 +1,12 @@
 Changelog
 =========
 
+0.2.4.2 (2017-04-08)
+--------------------
+- Add installation requirement for future package. [Teemu Rytilahti]
+
 0.2.4.1 (2017-03-26)
-------------
+--------------------
 - Cli: display an error if no ip is given. [Teemu Rytilahti]
 
 
