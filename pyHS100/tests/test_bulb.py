@@ -1,21 +1,12 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 from unittest import TestCase, skip, skipIf
 from voluptuous import Schema, Invalid, All, Range
 from functools import partial
 
-from pyHS100 import SmartBulb, SmartPlugException
-from pyHS100.tests.fakes import FakeTransportProtocol, sysinfo_lb130
+from .. import SmartBulb, SmartPlugException
+from .fakes import FakeTransportProtocol, sysinfo_lb130
 
 BULB_IP = '192.168.250.186'
 SKIP_STATE_TESTS = False
-
-# python2 compatibility
-try:
-    basestring
-except NameError:
-    basestring = str
 
 
 def check_int_bool(x):
@@ -37,18 +28,18 @@ class TestSmartBulb(TestCase):
     # as well as to check that faked devices are operating properly.
     sysinfo_schema = Schema({
         'active_mode': check_mode,
-        'alias': basestring,
+        'alias': str,
         'ctrl_protocols': {
-            'name': basestring,
-            'version': basestring,
+            'name': str,
+            'version': str,
         },
-        'description': basestring,
-        'dev_state': basestring,
-        'deviceId': basestring,
-        'disco_ver': basestring,
+        'description': str,
+        'dev_state': str,
+        'deviceId': str,
+        'disco_ver': str,
         'heapsize': int,
-        'hwId': basestring,
-        'hw_ver': basestring,
+        'hwId': str,
+        'hw_ver': str,
         'is_color': check_int_bool,
         'is_dimmable': check_int_bool,
         'is_factory': bool,
@@ -57,14 +48,14 @@ class TestSmartBulb(TestCase):
             'brightness': All(int, Range(min=0, max=100)),
             'color_temp': int,
             'hue': All(int, Range(min=0, max=255)),
-            'mode': basestring,
+            'mode': str,
             'on_off': check_int_bool,
             'saturation': All(int, Range(min=0, max=255)),
         },
-        'mic_mac': basestring,
-        'mic_type': basestring,
-        'model': basestring,
-        'oemId': basestring,
+        'mic_mac': str,
+        'mic_type': str,
+        'model': str,
+        'oemId': str,
         'preferred_state': [{
             'brightness': All(int, Range(min=0, max=100)),
             'color_temp': int,
@@ -73,7 +64,7 @@ class TestSmartBulb(TestCase):
             'saturation': All(int, Range(min=0, max=255)),
         }],
         'rssi': All(int, Range(max=0)),
-        'sw_ver': basestring,
+        'sw_ver': str,
     })
 
     current_consumption_schema = Schema({
@@ -81,10 +72,10 @@ class TestSmartBulb(TestCase):
     })
 
     tz_schema = Schema({
-        'zone_str': basestring,
+        'zone_str': str,
         'dst_offset': int,
         'index': All(int, Range(min=0)),
-        'tz_str': basestring,
+        'tz_str': str,
     })
 
     def setUp(self):
@@ -185,7 +176,7 @@ class TestSmartBulb(TestCase):
     def test_alias(self):
         test_alias = "TEST1234"
         original = self.bulb.alias
-        self.assertTrue(isinstance(original, basestring))
+        self.assertTrue(isinstance(original, str))
         self.bulb.alias = test_alias
         self.assertEqual(self.bulb.alias, test_alias)
         self.bulb.alias = original

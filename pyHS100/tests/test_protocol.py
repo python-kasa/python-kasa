@@ -1,8 +1,5 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 from unittest import TestCase
-from pyHS100.protocol import TPLinkSmartHomeProtocol
+from ..protocol import TPLinkSmartHomeProtocol
 import json
 
 

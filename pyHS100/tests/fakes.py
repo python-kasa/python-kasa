@@ -1,5 +1,5 @@
-from pyHS100.protocol import TPLinkSmartHomeProtocol
-from pyHS100 import SmartPlugException
+from ..protocol import TPLinkSmartHomeProtocol
+from .. import SmartPlugException
 import logging
 
 

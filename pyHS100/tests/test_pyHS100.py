@@ -1,23 +1,14 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 from unittest import TestCase, skip, skipIf
 from voluptuous import Schema, Invalid, All, Range
 from functools import partial
 import datetime
 import re
 
-from pyHS100 import SmartPlug, SmartPlugException
-from pyHS100.tests.fakes import FakeTransportProtocol, sysinfo_hs110
+from .. import SmartPlug, SmartPlugException
+from .fakes import FakeTransportProtocol, sysinfo_hs110
 
 PLUG_IP = '192.168.250.186'
 SKIP_STATE_TESTS = False
-
-# python2 compatibility
-try:
-    basestring
-except NameError:
-    basestring = str
 
 
 def check_int_bool(x):
@@ -45,25 +36,25 @@ class TestSmartPlug(TestCase):
     # as well as to check that faked devices are operating properly.
     sysinfo_schema = Schema({
         'active_mode': check_mode,
-        'alias': basestring,
-        'dev_name': basestring,
-        'deviceId': basestring,
-        'feature': basestring,
-        'fwId': basestring,
-        'hwId': basestring,
-        'hw_ver': basestring,
-        'icon_hash': basestring,
+        'alias': str,
+        'dev_name': str,
+        'deviceId': str,
+        'feature': str,
+        'fwId': str,
+        'hwId': str,
+        'hw_ver': str,
+        'icon_hash': str,
         'latitude': All(float, Range(min=-90, max=90)),
         'led_off': check_int_bool,
         'longitude': All(float, Range(min=-180, max=180)),
         'mac': check_mac,
-        'model': basestring,
-        'oemId': basestring,
+        'model': str,
+        'oemId': str,
         'on_time': int,
         'relay_state': int,
         'rssi': All(int, Range(max=0)),
-        'sw_ver': basestring,
-        'type': basestring,
+        'sw_ver': str,
+        'type': str,
         'updating': check_int_bool,
     })
 
@@ -75,10 +66,10 @@ class TestSmartPlug(TestCase):
     })
 
     tz_schema = Schema({
-        'zone_str': basestring,
+        'zone_str': str,
         'dst_offset': int,
         'index': All(int, Range(min=0)),
-        'tz_str': basestring,
+        'tz_str': str,
     })
 
     def setUp(self):
@@ -195,7 +186,7 @@ class TestSmartPlug(TestCase):
     def test_alias(self):
         test_alias = "TEST1234"
         original = self.plug.alias
-        self.assertTrue(isinstance(original, basestring))
+        self.assertTrue(isinstance(original, str))
         self.plug.alias = test_alias
         self.assertEqual(self.plug.alias, test_alias)
         self.plug.alias = original

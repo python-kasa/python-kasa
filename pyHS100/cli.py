@@ -4,7 +4,12 @@ import logging
 from click_datetime import Datetime
 from pprint import pformat
 
-from pyHS100 import SmartPlug, TPLinkSmartHomeProtocol
+if sys.version_info < (3, 4):
+    print("To use this script you need python 3.4 or newer! got %s" %
+          sys.version_info)
+    sys.exit(1)
+
+from pyHS100 import SmartPlug, TPLinkSmartHomeProtocol  # noqa: E402
 
 pass_dev = click.make_pass_decorator(SmartPlug)
 
@@ -24,7 +29,7 @@ def cli(ctx, ip, debug):
         return
 
     if ip is None:
-        click.echo("You must specify the IP either by --ip or setting PYHS100_IP environment variable!")
+        click.echo("You must specify the IP!")
         sys.exit(-1)
 
     plug = SmartPlug(ip)
