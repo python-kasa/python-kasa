@@ -30,12 +30,6 @@ class SmartPlug(SmartDevice):
     SWITCH_STATE_OFF = 'OFF'
     SWITCH_STATE_UNKNOWN = 'UNKNOWN'
 
-    # possible device features
-    FEATURE_ENERGY_METER = 'ENE'
-    FEATURE_TIMER = 'TIM'
-
-    ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
-
     def __init__(self, ip_address, protocol=None):
         SmartDevice.__init__(self, ip_address, protocol)
         self.emeter_type = "emeter"
@@ -109,33 +103,6 @@ class SmartPlug(SmartDevice):
         self._query_helper("system", "set_relay_state", {"state": 0})
 
     @property
-    def has_emeter(self):
-        """
-        Checks feature list for energey meter support.
-
-        :return: True if energey meter is available
-                 False if energymeter is missing
-        """
-        return SmartPlug.FEATURE_ENERGY_METER in self.features
-
-    @property
-    def features(self):
-        """
-        Returns features of the devices
-
-        :return: list of features
-        :rtype: list
-        """
-        features = self.sys_info['feature'].split(':')
-
-        for feature in features:
-            if feature not in SmartPlug.ALL_FEATURES:
-                _LOGGER.warning("Unknown feature %s on device %s.",
-                                feature, self.model)
-
-        return features
-
-    @property
     def led(self):
         """
         Returns the state of the led.
@@ -144,6 +111,13 @@ class SmartPlug(SmartDevice):
         :rtype: bool
         """
         return bool(1 - self.sys_info["led_off"])
+
+    @property
+    def state_information(self):
+        return {
+            'LED state': self.led,
+            'On since': self.on_since
+        }
 
     @led.setter
     def led(self, state):

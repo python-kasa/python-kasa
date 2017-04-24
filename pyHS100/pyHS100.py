@@ -16,6 +16,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 import datetime
 import logging
 import socket
+import enum
 
 from .protocol import TPLinkSmartHomeProtocol
 
@@ -29,7 +30,20 @@ class SmartPlugException(Exception):
     pass
 
 
+class DeviceType(enum.Enum):
+    Unknown = -1,
+    Plug = 0,
+    Switch = 1
+    Bulb = 2
+
+
 class SmartDevice(object):
+    # possible device features
+    FEATURE_ENERGY_METER = 'ENE'
+    FEATURE_TIMER = 'TIM'
+
+    ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
+
     def __init__(self, ip_address, protocol=None):
         """
         Create a new SmartDevice instance, identified through its IP address.
@@ -79,30 +93,41 @@ class SmartDevice(object):
         return result
 
     @property
+    def features(self):
+        """
+        Returns features of the devices
+
+        :return: list of features
+        :rtype: list
+        """
+        features = self.sys_info['feature'].split(':')
+
+        for feature in features:
+            if feature not in SmartDevice.ALL_FEATURES:
+                _LOGGER.warning("Unknown feature %s on device %s.",
+                                feature, self.model)
+
+        return features
+
+    @property
+    def has_emeter(self):
+        """
+        Checks feature list for energey meter support.
+
+        :return: True if energey meter is available
+                 False if energymeter is missing
+        """
+        return SmartDevice.FEATURE_ENERGY_METER in self.features
+
+    @property
     def sys_info(self):
-        #  TODO use volyptuous
+        """
+        Returns the complete system information from the device.
+
+        :return: System information dict.
+        :rtype: dict
+        """
         return self.get_sysinfo()
-
-    @property
-    def is_off(self):
-        """
-        Returns whether device is off.
-
-        :return: True if device is off, False otherwise.
-        :rtype: bool
-        """
-        return not self.is_on
-
-    @property
-    def is_on(self):
-        """
-        Returns whether the device is on.
-
-        :return: True if the device is on, False otherwise.
-        :rtype: bool
-        :return:
-        """
-        raise NotImplementedError("Your subclass needs to implement this.")
 
     def get_sysinfo(self):
         """
@@ -402,3 +427,45 @@ class SmartDevice(object):
             return response['power_mw']
         else:
             return response['power']
+
+    def turn_off(self):
+        """
+        Turns the device off.
+        """
+        raise NotImplementedError("Device subclass needs to implement this.")
+
+    @property
+    def is_off(self):
+        """
+        Returns whether device is off.
+
+        :return: True if device is off, False otherwise.
+        :rtype: bool
+        """
+        return not self.is_on
+
+    def turn_on(self):
+        """
+        Turns the device on.
+        """
+        raise NotImplementedError("Device subclass needs to implement this.")
+
+    @property
+    def is_on(self):
+        """
+        Returns whether the device is on.
+
+        :return: True if the device is on, False otherwise.
+        :rtype: bool
+        :return:
+        """
+        raise NotImplementedError("Device subclass needs to implement this.")
+
+    @property
+    def state_information(self):
+        """
+        Returns device-type specific, end-user friendly state information.
+        :return: dict with state information.
+        :rtype: dict
+        """
+        raise NotImplementedError("Device subclass needs to implement this.")

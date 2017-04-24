@@ -106,7 +106,7 @@ class SmartBulb(SmartDevice):
             saturation = light_state['saturation']
             value = int(light_state['brightness'] * 255 / 100)
 
-        return(hue, saturation, value)
+        return hue, saturation, value
 
     @hsv.setter
     def hsv(self, state):
@@ -139,9 +139,9 @@ class SmartBulb(SmartDevice):
 
         light_state = self.get_light_state()
         if not self.is_on:
-            return(light_state['dft_on_state']['color_temp'])
+            return light_state['dft_on_state']['color_temp']
         else:
-            return(light_state['color_temp'])
+            return light_state['color_temp']
 
     @color_temp.setter
     def color_temp(self, temp):
@@ -171,9 +171,9 @@ class SmartBulb(SmartDevice):
 
         light_state = self.get_light_state()
         if not self.is_on:
-            return(light_state['dft_on_state']['brightness'])
+            return light_state['dft_on_state']['brightness']
         else:
-            return(light_state['brightness'])
+            return light_state['brightness']
 
     @brightness.setter
     def brightness(self, brightness):
@@ -206,8 +206,38 @@ class SmartBulb(SmartDevice):
         return self.BULB_STATE_OFF
 
     @property
+    def state_information(self):
+        """
+        Return bulb-specific state information.
+        :return: Bulb information dict, keys in user-presentable form.
+        :rtype: dict
+        """
+        info = {
+            'Brightness': self.brightness,
+            'Is dimmable': self.is_dimmable,
+        }
+        if self.is_variable_color_temp:
+            info["Color temperature"] = self.color_temp
+        if self.is_color:
+            info["HSV"] = self.hsv
+
+        return info
+
+    @property
     def is_on(self):
         return self.state == self.BULB_STATE_ON
+
+    def turn_off(self):
+        """
+        Turn the bulb off.
+        """
+        self.state = self.BULB_STATE_OFF
+
+    def turn_on(self):
+        """
+        Turn the bulb on.
+        """
+        self.state = self.BULB_STATE_ON
 
     @state.setter
     def state(self, bulb_state):
@@ -218,9 +248,6 @@ class SmartBulb(SmartDevice):
                            BULB_STATE_ON
                            BULB_STATE_OFF
         """
-        print(bulb_state)
-        print(self.BULB_STATE_ON)
-        print(self.BULB_STATE_OFF)
         if bulb_state == self.BULB_STATE_ON:
             bulb_state = 1
         elif bulb_state == self.BULB_STATE_OFF:
