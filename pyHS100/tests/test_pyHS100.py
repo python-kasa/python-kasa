@@ -5,7 +5,7 @@ import datetime
 import re
 
 from .. import SmartPlug, SmartPlugException
-from .fakes import FakeTransportProtocol, sysinfo_hs110
+from .fakes import FakeTransportProtocol, sysinfo_hs110, sysinfo_hs105
 
 PLUG_IP = '192.168.250.186'
 SKIP_STATE_TESTS = False
@@ -220,6 +220,11 @@ class TestSmartPlug(TestCase):
 
     def test_location(self):
         self.sysinfo_schema(self.plug.location)
+
+    def test_location_i(self):
+        plug_i = SmartPlug(PLUG_IP,
+                           protocol=FakeTransportProtocol(sysinfo_hs105))
+        self.sysinfo_schema(plug_i.location)
 
     def test_rssi(self):
         self.sysinfo_schema({'rssi': self.plug.rssi})  # wrapping for vol

@@ -291,8 +291,19 @@ class SmartDevice(object):
         :rtype: dict
         """
         info = self.sys_info
-        return {"latitude": info["latitude"],
-                "longitude": info["longitude"]}
+        loc = {"latitude": None,
+               "longitude": None}
+
+        if "latitude" in info and "longitude" in info:
+            loc["latitude"] = info["latitude"]
+            loc["longitude"] = info["longitude"]
+        elif "latitude_i" in info and "longitude_i" in info:
+            loc["latitude"] = info["latitude_i"]
+            loc["longitude"] = info["longitude_i"]
+        else:
+            _LOGGER.warning("Unsupported device location.")
+
+        return loc
 
     @property
     def rssi(self):

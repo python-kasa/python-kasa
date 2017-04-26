@@ -45,6 +45,28 @@ emeter_units_support = {"get_realtime": get_realtime_units,
                         "get_monthstat": get_monthstat_units,
                         "get_daystat": get_daystat_units,}
 
+sysinfo_hs105 = {'system': {'get_sysinfo':
+                            {'sw_ver': '1.0.6 Build 160722 Rel.081616',
+                             'hw_ver': '1.0', 'type': 'IOT.SMARTPLUGSWITCH',
+                             'model': 'HS105(US)',
+                             'mac': '50:C7:BF:xx:xx:xx',
+                             'dev_name': 'Smart Wi-Fi Plug Mini',
+                             'alias': 'TP-LINK_Smart Plug_CF0B',
+                             'relay_state': 0,
+                             'on_time': 0,
+                             'active_mode': 'none',
+                             'feature': 'TIM',
+                             'updating': 0,
+                             'icon_hash': '',
+                             'rssi': 33,
+                             'led_off': 0,
+                             'longitude_i': -12.2,
+                             'latitude_i': 12.2,
+                             'hwId': '60FF6B258734EA6880E186F8C96DDC61',
+                             'fwId': '00000000000000000000000000000000',
+                             'deviceId': '800654F32938FCBA8F7327887A38647617',
+                             'oemId': 'FFF22CFF774A0B89F7624BFC6F50D5DE'}}}
+
 sysinfo_hs110 = {'system': {'get_sysinfo':
                     {'active_mode': 'schedule',
                     'alias': 'Mobile Plug',
