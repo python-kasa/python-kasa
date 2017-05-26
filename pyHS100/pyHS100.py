@@ -16,25 +16,11 @@ http://www.apache.org/licenses/LICENSE-2.0
 import datetime
 import logging
 import socket
-import enum
 
+from .types import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class SmartPlugException(Exception):
-    """
-    SmartPlugException gets raised for errors reported by the plug.
-    """
-    pass
-
-
-class DeviceType(enum.Enum):
-    Unknown = -1,
-    Plug = 0,
-    Switch = 1
-    Bulb = 2
 
 
 class SmartDevice(object):
@@ -76,16 +62,16 @@ class SmartDevice(object):
                 request={target: {cmd: arg}}
             )
         except Exception as ex:
-            raise SmartPlugException('Communication error') from ex
+            raise SmartDeviceException('Communication error') from ex
 
         if target not in response:
-            raise SmartPlugException("No required {} in response: {}"
-                                     .format(target, response))
+            raise SmartDeviceException("No required {} in response: {}"
+                                       .format(target, response))
 
         result = response[target]
         if "err_code" in result and result["err_code"] != 0:
-            raise SmartPlugException("Error on {}.{}: {}"
-                                     .format(target, cmd, result))
+            raise SmartDeviceException("Error on {}.{}: {}"
+                                       .format(target, cmd, result))
 
         result = result[cmd]
         del result["err_code"]
