@@ -4,7 +4,7 @@ from functools import partial
 import datetime
 import re
 
-from .. import SmartPlug, SmartPlugException
+from .. import SmartPlug, SmartDeviceException
 from .fakes import FakeTransportProtocol, sysinfo_hs110, sysinfo_hs105
 
 PLUG_IP = '192.168.250.186'
@@ -87,11 +87,11 @@ class TestSmartPlug(TestCase):
         plug = SmartPlug('127.0.0.1',
                          protocol=FakeTransportProtocol(sysinfo_hs110,
                                                         invalid=True))
-        with self.assertRaises(SmartPlugException):
+        with self.assertRaises(SmartDeviceException):
             plug.sys_info['model']
 
     def test_query_helper(self):
-        with self.assertRaises(SmartPlugException):
+        with self.assertRaises(SmartDeviceException):
             self.plug._query_helper("test", "testcmd", {})
         # TODO check for unwrapping?
 

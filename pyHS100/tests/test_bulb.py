@@ -2,7 +2,7 @@ from unittest import TestCase, skip, skipIf
 from voluptuous import Schema, Invalid, All, Range
 from functools import partial
 
-from .. import SmartBulb, SmartPlugException
+from .. import SmartBulb, SmartDeviceException
 from .fakes import FakeTransportProtocol, sysinfo_lb130
 
 BULB_IP = '192.168.250.186'
@@ -93,11 +93,11 @@ class TestSmartBulb(TestCase):
         bulb = SmartBulb('127.0.0.1',
                          protocol=FakeTransportProtocol(sysinfo_lb130,
                                                         invalid=True))
-        with self.assertRaises(SmartPlugException):
+        with self.assertRaises(SmartDeviceException):
             bulb.sys_info['model']
 
     def test_query_helper(self):
-        with self.assertRaises(SmartPlugException):
+        with self.assertRaises(SmartDeviceException):
             self.bulb._query_helper("test", "testcmd", {})
         # TODO check for unwrapping?
 

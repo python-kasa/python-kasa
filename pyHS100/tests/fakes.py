@@ -1,5 +1,5 @@
 from ..protocol import TPLinkSmartHomeProtocol
-from .. import SmartPlugException
+from .. import SmartDeviceException
 import logging
 
 
@@ -250,7 +250,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
 
     def query(self, host, request, port=9999):
         if self.invalid:
-            raise SmartPlugException("Invalid connection, can't query!")
+            raise SmartDeviceException("Invalid connection, can't query!")
 
         proto = self.proto
 
