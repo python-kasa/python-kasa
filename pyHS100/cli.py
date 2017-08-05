@@ -9,8 +9,10 @@ if sys.version_info < (3, 4):
           sys.version_info)
     sys.exit(1)
 
-from pyHS100 import (SmartDevice, SmartPlug, SmartBulb,
-                     TPLinkSmartHomeProtocol, Discover)  # noqa: E402
+from pyHS100 import (SmartDevice,
+                     SmartPlug,
+                     SmartBulb,
+                     Discover)  # noqa: E402
 
 pass_dev = click.make_pass_decorator(SmartDevice)
 
