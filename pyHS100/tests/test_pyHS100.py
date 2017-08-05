@@ -6,8 +6,9 @@ import re
 
 from .. import SmartPlug, SmartDeviceException
 from .fakes import (FakeTransportProtocol,
-                    sysinfo_hs110,
+                    sysinfo_hs100,
                     sysinfo_hs105,
+                    sysinfo_hs110,
                     sysinfo_hs200)
 
 PLUG_IP = '192.168.250.186'
@@ -248,6 +249,10 @@ class TestSmartPlugHS110(TestCase):
     def test_mac(self):
         self.sysinfo_schema({'mac': self.plug.mac})  # wrapping for val
         # TODO check setting?
+
+
+class TestSmartPlugHS100(TestSmartPlugHS110):
+    SYSINFO = sysinfo_hs100
 
 
 class TestSmartPlugHS200(TestSmartPlugHS110):

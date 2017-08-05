@@ -58,7 +58,7 @@ sysinfo_hs100 = {'system': {'get_sysinfo':
                                  'latitude': 12.2,
                                  'led_off': 0,
                                  'longitude': 12.2,
-                                 'mac': '50:C7:BF:xx:xx:xx',
+                                 'mac': '50:C7:BF:11:22:33',
                                  'model': 'HS100(EU)',
                                  'oemId': '812A90EB2FCF306A993FAD8748024B07',
                                  'on_time': 255419,
