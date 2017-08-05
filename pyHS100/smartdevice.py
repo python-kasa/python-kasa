@@ -338,12 +338,12 @@ class SmartDevice(object):
         Retrive current energy readings from device.
 
         :returns: current readings or False
-        :rtype: dict, False
-                  False if device has no energy meter or error occured
+        :rtype: dict, None
+                  None if device has no energy meter or error occured
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
-            return False
+            return None
 
         return self._query_helper(self.emeter_type, "get_realtime")
 
@@ -355,12 +355,12 @@ class SmartDevice(object):
         :param month: month for which to retrieve statistcs (default: this
                       month)
         :return: mapping of day of month to value
-                 False if device has no energy meter or error occured
+                 None if device has no energy meter or error occured
         :rtype: dict
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
-            return False
+            return None
 
         if year is None:
             year = datetime.datetime.now().year
@@ -384,12 +384,12 @@ class SmartDevice(object):
 
         :param year: year for which to retrieve statistics (default: this year)
         :return: dict: mapping of month to value
-                 False if device has no energy meter
+                 None if device has no energy meter
         :rtype: dict
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
-            return False
+            return None
 
         response = self._query_helper(self.emeter_type, "get_monthstat",
                                       {'year': year})
@@ -412,7 +412,7 @@ class SmartDevice(object):
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
-            return False
+            return None
 
         self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
@@ -425,11 +425,11 @@ class SmartDevice(object):
         Get the current power consumption in Watt.
 
         :return: the current power consumption in Watt.
-                 False if device has no energy meter.
+                 None if device has no energy meter.
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
-            return False
+            return None
 
         response = self.get_emeter_realtime()
         if self.emeter_units:
