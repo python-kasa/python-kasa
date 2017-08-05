@@ -16,6 +16,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 import datetime
 import logging
 import socket
+from collections import defaultdict
 
 from .types import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
@@ -112,7 +113,7 @@ class SmartDevice(object):
         :return: System information dict.
         :rtype: dict
         """
-        return self.get_sysinfo()
+        return defaultdict(lambda: None, self.get_sysinfo())
 
     def get_sysinfo(self):
         """
