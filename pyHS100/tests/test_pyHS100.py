@@ -59,7 +59,7 @@ class TestSmartPlugHS110(TestCase):
         'oemId': str,
         'on_time': int,
         'relay_state': int,
-        'rssi': int,  # apparently rssi can also be positive, see #54
+        'rssi': Any(int, None),  # rssi can also be positive, see #54
         'sw_ver': str,
         'type': str,
         'mic_type': str,

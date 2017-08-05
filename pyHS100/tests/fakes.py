@@ -265,6 +265,7 @@ sysinfo_lb110 = {'system': {
          }
 }}
 
+
 def error(cls, target, cmd="no-command", msg="default msg"):
     return {target: {cmd: {"err_code": -1323, "msg": msg}}}
 
