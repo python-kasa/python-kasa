@@ -45,6 +45,28 @@ emeter_units_support = {"get_realtime": get_realtime_units,
                         "get_monthstat": get_monthstat_units,
                         "get_daystat": get_daystat_units,}
 
+sysinfo_hs100 = {'system': {'get_sysinfo':
+                                {'active_mode': 'schedule',
+                                 'alias': 'My Smart Plug',
+                                 'dev_name': 'Wi-Fi Smart Plug',
+                                 'deviceId': '80061E93E28EEBA9FA1929D15C4678C7172A8AF2',
+                                 'feature': 'TIM',
+                                 'fwId': 'BFF24826FBC561803E49379DBE74FD71',
+                                 'hwId': '22603EA5E716DEAEA6642A30BE87AFCA',
+                                 'hw_ver': '1.0',
+                                 'icon_hash': '',
+                                 'latitude': 12.2,
+                                 'led_off': 0,
+                                 'longitude': 12.2,
+                                 'mac': '50:C7:BF:xx:xx:xx',
+                                 'model': 'HS100(EU)',
+                                 'oemId': '812A90EB2FCF306A993FAD8748024B07',
+                                 'on_time': 255419,
+                                 'relay_state': 1,
+                                 'sw_ver': '1.0.8 Build 151101 Rel.24452',
+                                 'type': 'smartplug',
+                                 'updating': 0}}}
+
 sysinfo_hs105 = {'system': {'get_sysinfo':
                             {'sw_ver': '1.0.6 Build 160722 Rel.081616',
                              'hw_ver': '1.0', 'type': 'IOT.SMARTPLUGSWITCH',
