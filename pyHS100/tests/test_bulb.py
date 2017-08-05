@@ -3,7 +3,7 @@ from voluptuous import Schema, Invalid, All, Range
 from functools import partial
 
 from .. import SmartBulb, SmartDeviceException
-from .fakes import FakeTransportProtocol, sysinfo_lb130
+from .fakes import FakeTransportProtocol, sysinfo_lb130, sysinfo_lb110
 
 BULB_IP = '192.168.250.186'
 SKIP_STATE_TESTS = False
@@ -23,6 +23,7 @@ def check_mode(x):
 
 
 class TestSmartBulb(TestCase):
+    SYSINFO = sysinfo_lb130
     # these schemas should go to the mainlib as
     # they can be useful when adding support for new features/devices
     # as well as to check that faked devices are operating properly.
@@ -80,7 +81,7 @@ class TestSmartBulb(TestCase):
 
     def setUp(self):
         self.bulb = SmartBulb(BULB_IP,
-                              protocol=FakeTransportProtocol(sysinfo_lb130))
+                              protocol=FakeTransportProtocol(self.SYSINFO))
 
     def tearDown(self):
         self.bulb = None
@@ -91,7 +92,7 @@ class TestSmartBulb(TestCase):
 
     def test_initialize_invalid_connection(self):
         bulb = SmartBulb('127.0.0.1',
-                         protocol=FakeTransportProtocol(sysinfo_lb130,
+                         protocol=FakeTransportProtocol(self.SYSINFO,
                                                         invalid=True))
         with self.assertRaises(SmartDeviceException):
             bulb.sys_info['model']
@@ -187,3 +188,7 @@ class TestSmartBulb(TestCase):
 
     def test_rssi(self):
         self.sysinfo_schema({'rssi': self.bulb.rssi})  # wrapping for vol
+
+
+class TestSmartBulbLB110(TestSmartBulb):
+    SYSINFO = sysinfo_lb110
