@@ -3,7 +3,7 @@ import enum
 
 class SmartDeviceException(Exception):
     """
-    SmartPlugException gets raised for errors reported by the plug.
+    SmartDeviceException gets raised for errors reported by the plug.
     """
     pass
 

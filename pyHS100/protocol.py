@@ -39,7 +39,7 @@ class TPLinkSmartHomeProtocol:
             request = json.dumps(request)
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5.0)
+        sock.settimeout(TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT)
         try:
             sock.connect((host, port))
 
@@ -73,50 +73,6 @@ class TPLinkSmartHomeProtocol:
         _LOGGER.debug("< (%i) %s", len(response), response)
 
         return json.loads(response)
-
-    @staticmethod
-    def discover(timeout=DEFAULT_TIMEOUT, port=DEFAULT_PORT):
-        """
-        Sends discovery message to 255.255.255.255:9999 in order
-        to detect available supported devices in the local network,
-        and waits for given timeout for answers from devices.
-
-        :param timeout: How long to wait for responses, defaults to 5
-        :param port: port to send broadcast messages, defaults to 9999.
-        :rtype: list[dict]
-        :return: Array of json objects {"ip", "port", "sys_info"}
-        """
-        discovery_query = {"system": {"get_sysinfo": None},
-                           "emeter": {"get_realtime": None}}
-        target = "255.255.255.255"
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.settimeout(timeout)
-
-        req = json.dumps(discovery_query)
-        _LOGGER.debug("Sending discovery to %s:%s", target, port)
-
-        encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
-        sock.sendto(encrypted_req[4:], (target, port))
-
-        devices = []
-        _LOGGER.debug("Waiting %s seconds for responses...", timeout)
-
-        try:
-            while True:
-                data, addr = sock.recvfrom(4096)
-                ip, port = addr
-                info = json.loads(TPLinkSmartHomeProtocol.decrypt(data))
-
-                devices.append({"ip": ip, "port": port, "sys_info": info})
-        except socket.timeout:
-            _LOGGER.debug("Got socket timeout, which is okay.")
-        except Exception as ex:
-            _LOGGER.error("Got exception %s", ex, exc_info=True)
-
-        return devices
 
     @staticmethod
     def encrypt(request):

@@ -1,7 +1,7 @@
 import datetime
 import logging
 
-from .pyHS100 import SmartDevice
+from pyHS100 import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class SmartPlug(SmartDevice):
     # query and print current state of plug
     print(p.state)
 
-    Errors reported by the device are raised as SmartPlugExceptions,
+    Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
 
     Note:
@@ -65,7 +65,7 @@ class SmartPlug(SmartDevice):
                     SWITCH_STATE_ON
                     SWITCH_STATE_OFF
         :raises ValueError: on invalid state
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
 
         """
         if not isinstance(value, str):
@@ -90,7 +90,7 @@ class SmartPlug(SmartDevice):
         """
         Turn the switch on.
 
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         self._query_helper("system", "set_relay_state", {"state": 1})
 
@@ -98,7 +98,7 @@ class SmartPlug(SmartDevice):
         """
         Turn the switch off.
 
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         self._query_helper("system", "set_relay_state", {"state": 0})
 
@@ -125,7 +125,7 @@ class SmartPlug(SmartDevice):
         Sets the state of the led (night mode)
 
         :param bool state: True to set led on, False to set led off
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         self._query_helper("system", "set_led_off", {"off": int(not state)})
 

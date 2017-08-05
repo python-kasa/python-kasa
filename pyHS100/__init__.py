@@ -13,8 +13,9 @@ Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
 # flake8: noqa
+from .smartdevice import SmartDevice
 from .smartplug import SmartPlug
-from .pyHS100 import SmartDevice
 from .types import SmartDeviceException
 from .smartbulb import SmartBulb
 from .protocol import TPLinkSmartHomeProtocol
+from .discover import Discover

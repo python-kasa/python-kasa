@@ -35,7 +35,6 @@ class SmartDevice(object):
         Create a new SmartDevice instance, identified through its IP address.
 
         :param str ip_address: ip address on which the device listens
-        :raises SmartPlugException: when unable to communicate with the device
         """
         socket.inet_pton(socket.AF_INET, ip_address)
         self.ip_address = ip_address
@@ -52,7 +51,7 @@ class SmartDevice(object):
         :param arg: JSON object passed as parameter to the command
         :return: Unwrapped result for the call.
         :rtype: dict
-        :raises SmartPlugException: if command was not executed correctly
+        :raises SmartDeviceException: if command was not executed correctly
         """
         if arg is None:
             arg = {}
@@ -121,7 +120,7 @@ class SmartDevice(object):
 
         :return: sysinfo
         :rtype dict
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         return self._query_helper("system", "get_sysinfo")
 
@@ -146,7 +145,7 @@ class SmartDevice(object):
 
         :return: device model
         :rtype: str
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         return self.sys_info['model']
 
@@ -166,7 +165,7 @@ class SmartDevice(object):
         Sets the device name aka alias.
 
         :param alias: New alias (name)
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         self._query_helper("system", "set_dev_alias", {"alias": alias})
 
@@ -179,7 +178,7 @@ class SmartDevice(object):
 
         :return: icon and its hash
         :rtype: dict
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         return self._query_helper("system", "get_dev_icon")
 
@@ -204,12 +203,15 @@ class SmartDevice(object):
         Returns current time from the device.
 
         :return: datetime for device's time
-        :rtype: datetime.datetime
-        :raises SmartPlugException: on error
+        :rtype: datetime.datetime or None when not available
+        :raises SmartDeviceException: on error
         """
-        res = self._query_helper("time", "get_time")
-        return datetime.datetime(res["year"], res["month"], res["mday"],
-                                 res["hour"], res["min"], res["sec"])
+        try:
+            res = self._query_helper("time", "get_time")
+            return datetime.datetime(res["year"], res["month"], res["mday"],
+                                     res["hour"], res["min"], res["sec"])
+        except SmartDeviceException:
+            return None
 
     @time.setter
     def time(self, ts):
@@ -221,7 +223,7 @@ class SmartDevice(object):
         :return: result
         :type: dict
         :raises NotImplemented: when not implemented.
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         raise NotImplementedError("Fails with err_code == 0 with HS110.")
         """
@@ -252,7 +254,7 @@ class SmartDevice(object):
 
         :return: Timezone information
         :rtype: dict
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         return self._query_helper("time", "get_timezone")
 
@@ -264,9 +266,10 @@ class SmartDevice(object):
         :return: Information about hardware
         :rtype: dict
         """
-        keys = ["sw_ver", "hw_ver", "mac", "hwId", "fwId", "oemId", "dev_name"]
+        keys = ["sw_ver", "hw_ver", "mac", "mic_mac", "type",
+                "mic_type", "hwId", "fwId", "oemId", "dev_name"]
         info = self.sys_info
-        return {key: info[key] for key in keys}
+        return {key: info[key] for key in keys if key in info}
 
     @property
     def location(self):
@@ -309,7 +312,15 @@ class SmartDevice(object):
         :return: mac address in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         :rtype: str
         """
-        return self.sys_info["mac"]
+        info = self.sys_info
+
+        if 'mac' in info:
+            return info["mac"]
+        elif 'mic_mac' in info:
+            return info['mic_mac']
+        else:
+            raise SmartDeviceException("Unknown mac, please submit a bug"
+                                       "with sysinfo output.")
 
     @mac.setter
     def mac(self, mac):
@@ -317,7 +328,7 @@ class SmartDevice(object):
         Sets new mac address
 
         :param str mac: mac in hexadecimal with colons, e.g. 01:23:45:67:89:ab
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         self._query_helper("system", "set_mac_addr", {"mac": mac})
 
@@ -328,7 +339,7 @@ class SmartDevice(object):
         :returns: current readings or False
         :rtype: dict, False
                   False if device has no energy meter or error occured
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
             return False
@@ -345,7 +356,7 @@ class SmartDevice(object):
         :return: mapping of day of month to value
                  False if device has no energy meter or error occured
         :rtype: dict
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
             return False
@@ -374,7 +385,7 @@ class SmartDevice(object):
         :return: dict: mapping of month to value
                  False if device has no energy meter
         :rtype: dict
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
             return False
@@ -397,7 +408,7 @@ class SmartDevice(object):
         :return: True if statistics were deleted
                  False if device has no energy meter.
         :rtype: bool
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
             return False
@@ -414,7 +425,7 @@ class SmartDevice(object):
 
         :return: the current power consumption in Watt.
                  False if device has no energy meter.
-        :raises SmartPlugException: on error
+        :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
             return False
@@ -466,3 +477,7 @@ class SmartDevice(object):
         :rtype: dict
         """
         raise NotImplementedError("Device subclass needs to implement this.")
+
+    def __repr__(self):
+        return "<%s at %s: %s>" % (self.__class__.__name__,
+                                   self.ip_address, self.identify())
