@@ -86,6 +86,9 @@ class SmartDevice(object):
         :return: list of features
         :rtype: list
         """
+        if "feature" not in self.sys_info:
+            return None
+
         features = self.sys_info['feature'].split(':')
 
         for feature in features:
