@@ -58,7 +58,7 @@ sysinfo_hs100 = {'system': {'get_sysinfo':
                                  'latitude': 12.2,
                                  'led_off': 0,
                                  'longitude': 12.2,
-                                 'mac': '50:C7:BF:xx:xx:xx',
+                                 'mac': '50:C7:BF:11:22:33',
                                  'model': 'HS100(EU)',
                                  'oemId': '812A90EB2FCF306A993FAD8748024B07',
                                  'on_time': 255419,
@@ -71,7 +71,7 @@ sysinfo_hs105 = {'system': {'get_sysinfo':
                             {'sw_ver': '1.0.6 Build 160722 Rel.081616',
                              'hw_ver': '1.0', 'type': 'IOT.SMARTPLUGSWITCH',
                              'model': 'HS105(US)',
-                             'mac': '50:C7:BF:xx:xx:xx',
+                             'mac': '50:C7:BF:11:22:33',
                              'dev_name': 'Smart Wi-Fi Plug Mini',
                              'alias': 'TP-LINK_Smart Plug_CF0B',
                              'relay_state': 0,
@@ -198,70 +198,73 @@ sysinfo_lb130 = {'system': {'get_sysinfo':
                  'smartlife.iot.common.emeter': emeter_units_support,
 }
 
-sysinfo_lb110 = {'sys_info': {'emeter':
-                              {'err_code': -2001,
-                               'err_msg': 'Module not support'},
-                              'system':
-                              {'get_sysinfo':
-                               {'active_mode': 'schedule',
-                                'alias': 'Downstairs Light',
-                                'ctrl_protocols':
-                                {'name': 'Linkie',
-                                 'version': '1.0'},
-                                'description': 'Smart Wi-Fi LED Bulb '
-                                               'with Dimmable Light',
-                                'dev_state': 'normal',
-                                'deviceId':
-                                    '80120B3D03E0B639CDF33E3CB1466490187FEF32',
-                                'disco_ver': '1.0',
-                                'err_code': 0,
-                                'heapsize': 309908,
-                                'hwId': '111E35908497A05512E259BB76801E10',
-                                'hw_ver': '1.0',
-                                'is_color': 0,
-                                'is_dimmable': 1,
-                                'is_factory': False,
-                                'is_variable_color_temp': 0,
-                                'light_state':
-                                {'dft_on_state':
-                                 {'brightness': 92,
-                                  'color_temp': 2700,
-                                  'hue': 0,
-                                  'mode': 'normal',
-                                  'saturation': 0},
-                                 'on_off': 0},
-                                'mic_mac': '50C7BF7BE306',
-                                'mic_type': 'IOT.SMARTBULB',
-                                'model': 'LB110(EU)',
-                                'oemId':
-                                    'A68E15472071CB761E5CCFB388A1D8AE',
-                                'preferred_state': [{'brightness': 100,
-                                                     'color_temp': 2700,
-                                                     'hue': 0,
-                                                     'index': 0,
-                                                     'saturation': 0},
-                                                    {'brightness': 58,
-                                                     'color_temp': 2700,
-                                                     'hue': 0,
-                                                     'index': 1,
-                                                     'saturation': 0},
-                                                    {'brightness': 25,
-                                                     'color_temp': 2700,
-                                                     'hue': 0,
-                                                     'index': 2,
-                                                     'saturation': 0},
-                                                    {'brightness': 1,
-                                                     'color_temp': 2700,
-                                                     'hue': 0,
-                                                     'index': 3,
-                                                     'saturation': 0}],
-                                'rssi': -61,
-                                'sw_ver': '1.5.5 Build 170623 '
-                                          'Rel.090105'
-                               }
-                              }
-                             }
-                }
+sysinfo_lb110 = {'system': {
+    'sys_info':
+        {'emeter':
+             {'err_code': -2001,
+              'err_msg': 'Module not support'},
+         'system':
+             {'get_sysinfo':
+                  {'active_mode': 'schedule',
+                   'alias': 'Downstairs Light',
+                   'ctrl_protocols':
+                       {'name': 'Linkie',
+                        'version': '1.0'},
+                   'description': 'Smart Wi-Fi LED Bulb '
+                                  'with Dimmable Light',
+                   'dev_state': 'normal',
+                   'deviceId':
+                       '80120B3D03E0B639CDF33E3CB1466490187FEF32',
+                   'disco_ver': '1.0',
+                   'err_code': 0,
+                   'heapsize': 309908,
+                   'hwId': '111E35908497A05512E259BB76801E10',
+                   'hw_ver': '1.0',
+                   'is_color': 0,
+                   'is_dimmable': 1,
+                   'is_factory': False,
+                   'is_variable_color_temp': 0,
+                   'light_state':
+                       {'dft_on_state':
+                            {'brightness': 92,
+                             'color_temp': 2700,
+                             'hue': 0,
+                             'mode': 'normal',
+                             'saturation': 0},
+                        'on_off': 0},
+                   'mic_mac': '50C7BF7BE306',
+                   'mic_type': 'IOT.SMARTBULB',
+                   'model': 'LB110(EU)',
+                   'oemId':
+                       'A68E15472071CB761E5CCFB388A1D8AE',
+                   'preferred_state': [{'brightness': 100,
+                                        'color_temp': 2700,
+                                        'hue': 0,
+                                        'index': 0,
+                                        'saturation': 0},
+                                       {'brightness': 58,
+                                        'color_temp': 2700,
+                                        'hue': 0,
+                                        'index': 1,
+                                        'saturation': 0},
+                                       {'brightness': 25,
+                                        'color_temp': 2700,
+                                        'hue': 0,
+                                        'index': 2,
+                                        'saturation': 0},
+                                       {'brightness': 1,
+                                        'color_temp': 2700,
+                                        'hue': 0,
+                                        'index': 3,
+                                        'saturation': 0}],
+                   'rssi': -61,
+                   'sw_ver': '1.5.5 Build 170623 '
+                             'Rel.090105'
+                   }
+              }
+         }
+}}
+
 
 def error(cls, target, cmd="no-command", msg="default msg"):
     return {target: {cmd: {"err_code": -1323, "msg": msg}}}
