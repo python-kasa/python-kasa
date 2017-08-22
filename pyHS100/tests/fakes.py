@@ -198,6 +198,83 @@ sysinfo_lb130 = {'system': {'get_sysinfo':
                  'smartlife.iot.common.emeter': emeter_units_support,
 }
 
+sysinfo_lb100 = {'system': {
+    'sys_info': {
+        'emeter': {
+            'err_code': -2001,
+            'err_msg': 'Module not support'
+        },
+        'system': {
+            'get_sysinfo': {
+                'active_mode': 'none',
+                'alias': 'New Light',
+                'ctrl_protocols': {
+                    'name': 'Linkie',
+                    'version': '1.0'
+                },
+                'description': 'Smart Wi-Fi LED Bulb with Dimmable Light',
+                'dev_state': 'normal',
+                'deviceId': '8012996ED1F8DA43EFFD58B62BEC5ADE18192F88',
+                'disco_ver': '1.0',
+                'err_code': 0,
+                'heapsize': 340808,
+                'hwId': '111E35908497A05512E259BB76801E10',
+                'hw_ver': '1.0',
+                'is_color': 0,
+                'is_dimmable': 1,
+                'is_factory': False,
+                'is_variable_color_temp': 0,
+                'light_state': {
+                    'dft_on_state': {
+                        'brightness': 50,
+                        'color_temp': 2700,
+                        'hue': 0,
+                        'mode': 'normal',
+                        'saturation': 0
+                    },
+                    'on_off': 0
+                },
+                'mic_mac': '50C7BF3393F1',
+                'mic_type': 'IOT.SMARTBULB',
+                'model': 'LB100(US)',
+                'oemId': '264E4E97B2D2B086F289AC1F00B90679',
+                'preferred_state': [
+                    {
+                        'brightness': 100,
+                        'color_temp': 2700,
+                        'hue': 0,
+                        'index': 0,
+                        'saturation': 0
+                    },
+                    {
+                        'brightness': 75,
+                        'color_temp': 2700,
+                        'hue': 0,
+                        'index': 1,
+                        'saturation': 0
+                    },
+                    {
+                        'brightness': 25,
+                        'color_temp': 2700,
+                        'hue': 0,
+                        'index': 2,
+                        'saturation': 0
+                    },
+                    {
+                        'brightness': 1,
+                        'color_temp': 2700,
+                        'hue': 0,
+                        'index': 3,
+                        'saturation': 0
+                    }
+                ],
+                'rssi': -54,
+                'sw_ver': '1.2.3 Build 170123 Rel.100146'
+            }
+        }
+    }
+}}
+
 sysinfo_lb110 = {'system': {
     'sys_info':
         {'emeter':

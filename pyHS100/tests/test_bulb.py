@@ -3,8 +3,8 @@ from voluptuous import Schema, Invalid, All, Range
 from functools import partial
 
 from .. import SmartBulb, SmartDeviceException
-from .fakes import FakeTransportProtocol, sysinfo_lb130, sysinfo_lb110
-
+from .fakes import (FakeTransportProtocol,
+                    sysinfo_lb100, sysinfo_lb110, sysinfo_lb130)
 BULB_IP = '192.168.250.186'
 SKIP_STATE_TESTS = False
 
@@ -188,6 +188,10 @@ class TestSmartBulb(TestCase):
 
     def test_rssi(self):
         self.sysinfo_schema({'rssi': self.bulb.rssi})  # wrapping for vol
+
+
+class TestSmartBulbLB100(TestSmartBulb):
+    SYSINFO = sysinfo_lb100
 
 
 class TestSmartBulbLB110(TestSmartBulb):
