@@ -342,6 +342,61 @@ sysinfo_lb110 = {'system': {
          }
 }}
 
+sysinfo_lb120 = {'system':
+                     {'sys_info':
+                          {'system':
+                               {'get_sysinfo':
+                                    {'active_mode': 'none',
+                                     'alias': 'LB1202',
+                                     'ctrl_protocols': {'name': 'Linkie', 'version': '1.0'},
+                                     'description': 'Smart Wi-Fi LED Bulb with Tunable White Light',
+                                     'dev_state': 'normal',
+                                     'deviceId': 'foo',
+                                     'disco_ver': '1.0',
+                                     'heapsize': 329032,
+                                     'hwId': 'foo',
+                                     'hw_ver': '1.0',
+                                     'is_color': 0,
+                                     'is_dimmable': 1,
+                                     'is_factory': False,
+                                     'is_variable_color_temp': 1,
+                                     'light_state': {'dft_on_state': {'brightness': 31,
+                                                                      'color_temp': 4100,
+                                                                      'hue': 0,
+                                                                      'mode': 'normal',
+                                                                      'saturation': 0},
+                                                     'on_off': 0},
+                                     'mic_mac': '50C7BF33937C',
+                                     'mic_type': 'IOT.SMARTBULB',
+                                     'model': 'LB120(US)',
+                                     'oemId': 'foo',
+                                     'preferred_state': [{'brightness': 100,
+                                                          'color_temp': 3500,
+                                                          'hue': 0,
+                                                          'index': 0,
+                                                          'saturation': 0},
+                                                         {'brightness': 50,
+                                                          'color_temp': 6500,
+                                                          'hue': 0,
+                                                          'index': 1,
+                                                          'saturation': 0},
+                                                         {'brightness': 50,
+                                                          'color_temp': 2700,
+                                                          'hue': 0,
+                                                          'index': 2,
+                                                          'saturation': 0},
+                                                         {'brightness': 1,
+                                                          'color_temp': 2700,
+                                                          'hue': 0,
+                                                          'index': 3,
+                                                          'saturation': 0}],
+                                     'rssi': -47,
+                                     'sw_ver': '1.4.3 Build 170504 Rel.144921'}
+                                }
+                           }
+                      }
+                 }
+
 
 def error(cls, target, cmd="no-command", msg="default msg"):
     return {target: {cmd: {"err_code": -1323, "msg": msg}}}

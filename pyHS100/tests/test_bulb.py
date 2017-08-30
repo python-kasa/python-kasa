@@ -4,7 +4,8 @@ from functools import partial
 
 from .. import SmartBulb, SmartDeviceException
 from .fakes import (FakeTransportProtocol,
-                    sysinfo_lb100, sysinfo_lb110, sysinfo_lb130)
+                    sysinfo_lb100, sysinfo_lb110,
+                    sysinfo_lb120, sysinfo_lb130)
 BULB_IP = '192.168.250.186'
 SKIP_STATE_TESTS = False
 
@@ -196,3 +197,7 @@ class TestSmartBulbLB100(TestSmartBulb):
 
 class TestSmartBulbLB110(TestSmartBulb):
     SYSINFO = sysinfo_lb110
+
+
+class TestSmartBulbLB120(TestSmartBulb):
+    SYSINFO = sysinfo_lb120
