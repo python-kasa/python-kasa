@@ -16,7 +16,7 @@ class SmartBulb(SmartDevice):
     # check whether the bulb supports color changes
     if p.is_color:
     # set the color to an HSV tuple
-    p.hsv = (100, 0, 255)
+    p.hsv = (180, 100, 100)
     # get the current HSV value
     print(p.hsv)
     # check whether the bulb supports setting color temperature
@@ -89,7 +89,7 @@ class SmartBulb(SmartDevice):
         """
         Returns the current HSV state of the bulb, if supported
 
-        :return: tuple containing current hue, saturation and value (0-255)
+        :return: tuple containing current hue, saturation and value (degrees, %, %))
         :rtype: tuple
         """
 
@@ -113,7 +113,7 @@ class SmartBulb(SmartDevice):
         """
         Sets new HSV, if supported
 
-        :param tuple state: hue, saturation and value (0-255 each)
+        :param tuple state: hue, saturation and value (degrees, %, %)
         """
         if not self.is_color:
             return None
