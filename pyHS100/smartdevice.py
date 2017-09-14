@@ -16,6 +16,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 import datetime
 import logging
 import socket
+import warnings
 from collections import defaultdict
 
 from .types import SmartDeviceException
@@ -86,6 +87,13 @@ class SmartDevice(object):
         :return: list of features
         :rtype: list
         """
+        warnings.simplefilter('always', DeprecationWarning)
+        warnings.warn(
+            "features works only on plugs and its use is discouraged, "
+            "and it will likely to be removed at some point",
+            DeprecationWarning
+        )
+        warnings.simplefilter('default', DeprecationWarning)
         if "feature" not in self.sys_info:
             return None
 
@@ -135,6 +143,12 @@ class SmartDevice(object):
         :return: (alias, model, list of supported features)
         :rtype: tuple
         """
+        warnings.simplefilter('always', DeprecationWarning)
+        warnings.warn(
+            "please use alias and model properties directly instead of idenfity()",
+            DeprecationWarning
+        )
+        warnings.simplefilter('default', DeprecationWarning)
 
         info = self.sys_info
 
@@ -483,5 +497,8 @@ class SmartDevice(object):
         raise NotImplementedError("Device subclass needs to implement this.")
 
     def __repr__(self):
-        return "<%s at %s: %s>" % (self.__class__.__name__,
-                                   self.ip_address, self.identify())
+        return "<%s at %s (%s), is_on: %s - dev specific: %s>" % (self.__class__.__name__,
+                                                       self.ip_address,
+                                                       self.alias,
+                                                       self.is_on,
+                                                       self.state_information)
