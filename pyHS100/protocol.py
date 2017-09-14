@@ -62,12 +62,13 @@ class TPLinkSmartHomeProtocol:
         finally:
             try:
                 sock.shutdown(socket.SHUT_RDWR)
-                sock.close()
             except OSError:
                 # OSX raises OSError when shutdown() gets called on a closed
                 # socket. We ignore it here as the data has already been read
                 # into the buffer at this point.
                 pass
+            finally:
+                sock.close()
 
         response = TPLinkSmartHomeProtocol.decrypt(buffer[4:])
         _LOGGER.debug("< (%i) %s", len(response), response)
