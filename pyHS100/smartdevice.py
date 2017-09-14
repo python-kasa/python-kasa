@@ -497,8 +497,9 @@ class SmartDevice(object):
         raise NotImplementedError("Device subclass needs to implement this.")
 
     def __repr__(self):
-        return "<%s at %s (%s), is_on: %s - dev specific: %s>" % (self.__class__.__name__,
-                                                       self.ip_address,
-                                                       self.alias,
-                                                       self.is_on,
-                                                       self.state_information)
+        return "<%s at %s (%s), is_on: %s - dev specific: %s>" % (
+            self.__class__.__name__,
+            self.ip_address,
+            self.alias,
+            self.is_on,
+            self.state_information)
