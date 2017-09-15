@@ -136,27 +136,29 @@ def emeter(dev, year, month, erase):
 
 
 @cli.command()
-@click.argument("brightness", type=click.IntRange(0, 100), default=None)
+@click.argument("brightness", type=click.IntRange(0, 100), default=None,
+                required=False)
 @pass_dev
-def brightness(dev, value):
+def brightness(dev, brightness):
     """Get or set brightness. (Bulb Only)"""
-    if value is None:
+    if brightness is None:
         click.echo("Brightness: %s" % dev.brightness)
     else:
-        click.echo("Setting brightness to %s" % value)
-        dev.brightness = value
+        click.echo("Setting brightness to %s" % brightness)
+        dev.brightness = brightness
 
 
 @cli.command()
-@click.argument("temperature", type=click.IntRange(2700, 6500), default=None)
+@click.argument("temperature", type=click.IntRange(2700, 6500), default=None,
+                required=False)
 @pass_dev
-def temperature(dev, value):
+def temperature(dev, temperature):
     """Get or set color temperature. (Bulb only)"""
-    if value is None:
+    if temperature is None:
         click.echo("Color temperature: %s" % dev.color_temp)
     else:
-        click.echo("Setting color temperature to %s" % value)
-        dev.color_temp = value
+        click.echo("Setting color temperature to %s" % temperature)
+        dev.color_temp = temperature
 
 
 @cli.command()
