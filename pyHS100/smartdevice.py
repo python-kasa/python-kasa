@@ -145,7 +145,7 @@ class SmartDevice(object):
         """
         warnings.simplefilter('always', DeprecationWarning)
         warnings.warn(
-            "please use alias and model properties directly instead of idenfity()",
+            "use alias and model instead of idenfity()",
             DeprecationWarning
         )
         warnings.simplefilter('default', DeprecationWarning)

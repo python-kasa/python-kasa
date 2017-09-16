@@ -89,7 +89,7 @@ class SmartBulb(SmartDevice):
         """
         Returns the current HSV state of the bulb, if supported
 
-        :return: tuple containing current hue, saturation and value (degrees, %, %))
+        :return: hue, saturation and value (degrees, %, %)
         :rtype: tuple
         """
 
