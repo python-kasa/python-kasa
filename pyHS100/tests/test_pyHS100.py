@@ -3,6 +3,7 @@ from voluptuous import Schema, Invalid, All, Any, Range
 from functools import partial
 import datetime
 import re
+from typing import Dict  # noqa: F401
 
 from .. import SmartPlug, SmartDeviceException
 from .fakes import (FakeTransportProtocol,
@@ -35,7 +36,7 @@ def check_mode(x):
 
 
 class TestSmartPlugHS110(TestCase):
-    SYSINFO = sysinfo_hs110
+    SYSINFO = sysinfo_hs110  # type: Dict
     # these schemas should go to the mainlib as
     # they can be useful when adding support for new features/devices
     # as well as to check that faked devices are operating properly.

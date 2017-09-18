@@ -1,20 +1,24 @@
 import socket
 import logging
 import json
+from typing import Dict
 
-from pyHS100 import TPLinkSmartHomeProtocol, SmartPlug, SmartBulb
+from pyHS100 import TPLinkSmartHomeProtocol, SmartDevice, SmartPlug, SmartBulb
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Discover:
     @staticmethod
-    def discover(protocol=None, port=9999, timeout=3):
+    def discover(protocol: TPLinkSmartHomeProtocol = None,
+                 port: int = 9999,
+                 timeout: int = 3) -> Dict[str, SmartDevice]:
         """
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.
 
+        :param protocol: Protocol implementation to use
         :param timeout: How long to wait for responses, defaults to 5
         :param port: port to send broadcast messages, defaults to 9999.
         :rtype: dict

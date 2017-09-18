@@ -1,4 +1,5 @@
 from pyHS100 import SmartDevice
+from typing import Any, Dict, Optional, Tuple
 
 
 class SmartBulb(SmartDevice):
@@ -40,13 +41,15 @@ class SmartBulb(SmartDevice):
     BULB_STATE_ON = 'ON'
     BULB_STATE_OFF = 'OFF'
 
-    def __init__(self, ip_address, protocol=None):
+    def __init__(self,
+                 ip_address: str,
+                 protocol: 'TPLinkSmartHomeProtocol' = None) -> None:
         SmartDevice.__init__(self, ip_address, protocol)
         self.emeter_type = "smartlife.iot.common.emeter"
         self.emeter_units = True
 
     @property
-    def is_color(self):
+    def is_color(self) -> bool:
         """
         Whether the bulb supports color changes
 
@@ -56,7 +59,7 @@ class SmartBulb(SmartDevice):
         return bool(self.sys_info['is_color'])
 
     @property
-    def is_dimmable(self):
+    def is_dimmable(self) -> bool:
         """
         Whether the bulb supports brightness changes
 
@@ -66,7 +69,7 @@ class SmartBulb(SmartDevice):
         return bool(self.sys_info['is_dimmable'])
 
     @property
-    def is_variable_color_temp(self):
+    def is_variable_color_temp(self) -> bool:
         """
         Whether the bulb supports color temperature changes
 
@@ -76,16 +79,16 @@ class SmartBulb(SmartDevice):
         """
         return bool(self.sys_info['is_variable_color_temp'])
 
-    def get_light_state(self):
+    def get_light_state(self) -> Dict:
         return self._query_helper("smartlife.iot.smartbulb.lightingservice",
                                   "get_light_state")
 
-    def set_light_state(self, state):
+    def set_light_state(self, state: Dict) -> Dict:
         return self._query_helper("smartlife.iot.smartbulb.lightingservice",
                                   "transition_light_state", state)
 
     @property
-    def hsv(self):
+    def hsv(self) -> Optional[Tuple[int, int, int]]:
         """
         Returns the current HSV state of the bulb, if supported
 
@@ -109,7 +112,7 @@ class SmartBulb(SmartDevice):
         return hue, saturation, value
 
     @hsv.setter
-    def hsv(self, state):
+    def hsv(self, state: Tuple[int, int, int]):
         """
         Sets new HSV, if supported
 
@@ -124,10 +127,10 @@ class SmartBulb(SmartDevice):
             "brightness": int(state[2] * 100 / 255),
             "color_temp": 0
             }
-        return self.set_light_state(light_state)
+        self.set_light_state(light_state)
 
     @property
-    def color_temp(self):
+    def color_temp(self) -> Optional[int]:
         """
         Color temperature of the device, if supported
 
@@ -139,12 +142,12 @@ class SmartBulb(SmartDevice):
 
         light_state = self.get_light_state()
         if not self.is_on:
-            return light_state['dft_on_state']['color_temp']
+            return int(light_state['dft_on_state']['color_temp'])
         else:
-            return light_state['color_temp']
+            return int(light_state['color_temp'])
 
     @color_temp.setter
-    def color_temp(self, temp):
+    def color_temp(self, temp: int) -> None:
         """
         Set the color temperature of the device, if supported
 
@@ -156,10 +159,10 @@ class SmartBulb(SmartDevice):
         light_state = {
             "color_temp": temp,
         }
-        return self.set_light_state(light_state)
+        self.set_light_state(light_state)
 
     @property
-    def brightness(self):
+    def brightness(self) -> Optional[int]:
         """
         Current brightness of the device, if supported
 
@@ -171,12 +174,12 @@ class SmartBulb(SmartDevice):
 
         light_state = self.get_light_state()
         if not self.is_on:
-            return light_state['dft_on_state']['brightness']
+            return int(light_state['dft_on_state']['brightness'])
         else:
-            return light_state['brightness']
+            return int(light_state['brightness'])
 
     @brightness.setter
-    def brightness(self, brightness):
+    def brightness(self, brightness: int) -> None:
         """
         Set the current brightness of the device, if supported
 
@@ -188,10 +191,10 @@ class SmartBulb(SmartDevice):
         light_state = {
             "brightness": brightness,
         }
-        return self.set_light_state(light_state)
+        self.set_light_state(light_state)
 
     @property
-    def state(self):
+    def state(self) -> str:
         """
         Retrieve the bulb state
 
@@ -205,42 +208,8 @@ class SmartBulb(SmartDevice):
             return self.BULB_STATE_ON
         return self.BULB_STATE_OFF
 
-    @property
-    def state_information(self):
-        """
-        Return bulb-specific state information.
-        :return: Bulb information dict, keys in user-presentable form.
-        :rtype: dict
-        """
-        info = {
-            'Brightness': self.brightness,
-            'Is dimmable': self.is_dimmable,
-        }
-        if self.is_variable_color_temp:
-            info["Color temperature"] = self.color_temp
-        if self.is_color:
-            info["HSV"] = self.hsv
-
-        return info
-
-    @property
-    def is_on(self):
-        return self.state == self.BULB_STATE_ON
-
-    def turn_off(self):
-        """
-        Turn the bulb off.
-        """
-        self.state = self.BULB_STATE_OFF
-
-    def turn_on(self):
-        """
-        Turn the bulb on.
-        """
-        self.state = self.BULB_STATE_ON
-
     @state.setter
-    def state(self, bulb_state):
+    def state(self, bulb_state: str) -> None:
         """
         Set the new bulb state
 
@@ -249,17 +218,51 @@ class SmartBulb(SmartDevice):
                            BULB_STATE_OFF
         """
         if bulb_state == self.BULB_STATE_ON:
-            bulb_state = 1
+            new_state = 1
         elif bulb_state == self.BULB_STATE_OFF:
-            bulb_state = 0
+            new_state = 0
         else:
             raise ValueError
 
         light_state = {
-            "on_off": bulb_state,
+            "on_off": new_state,
         }
-        return self.set_light_state(light_state)
+        self.set_light_state(light_state)
 
     @property
-    def has_emeter(self):
+    def state_information(self) -> Dict[str, Any]:
+        """
+        Return bulb-specific state information.
+        :return: Bulb information dict, keys in user-presentable form.
+        :rtype: dict
+        """
+        info = {
+            'Brightness': self.brightness,
+            'Is dimmable': self.is_dimmable,
+        }  # type: Dict[str, Any]
+        if self.is_variable_color_temp:
+            info["Color temperature"] = self.color_temp
+        if self.is_color:
+            info["HSV"] = self.hsv
+
+        return info
+
+    @property
+    def is_on(self) -> bool:
+        return bool(self.state == self.BULB_STATE_ON)
+
+    def turn_off(self) -> None:
+        """
+        Turn the bulb off.
+        """
+        self.state = self.BULB_STATE_OFF
+
+    def turn_on(self) -> None:
+        """
+        Turn the bulb on.
+        """
+        self.state = self.BULB_STATE_ON
+
+    @property
+    def has_emeter(self) -> bool:
         return True
