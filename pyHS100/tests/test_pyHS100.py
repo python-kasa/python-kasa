@@ -1,5 +1,5 @@
 from unittest import TestCase, skip, skipIf
-from voluptuous import Schema, Invalid, All, Any, Range
+from voluptuous import Schema, Invalid, All, Any, Range, Coerce
 from functools import partial
 import datetime
 import re
@@ -12,8 +12,8 @@ from .fakes import (FakeTransportProtocol,
                     sysinfo_hs110,
                     sysinfo_hs200)
 
-PLUG_IP = '192.168.250.186'
-SKIP_STATE_TESTS = False
+# Set IP instead of None if you want to run tests on a device.
+PLUG_IP = None
 
 
 def check_int_bool(x):
@@ -69,8 +69,8 @@ class TestSmartPlugHS110(TestCase):
 
     current_consumption_schema = Schema(Any({
         'voltage': All(float, Range(min=0, max=300)),
-        'power': All(float, Range(min=0)),
-        'total': All(float, Range(min=0)),
+        'power': Coerce(float, Range(min=0)),
+        'total': Coerce(float, Range(min=0)),
         'current': All(float, Range(min=0)),
     }, None))
 
@@ -82,8 +82,11 @@ class TestSmartPlugHS110(TestCase):
     })
 
     def setUp(self):
-        self.plug = SmartPlug(PLUG_IP,
-                              protocol=FakeTransportProtocol(self.SYSINFO))
+        if PLUG_IP is not None:
+            self.plug = SmartPlug(PLUG_IP)
+        else:
+            self.plug = SmartPlug("127.0.0.1",
+                                  protocol=FakeTransportProtocol(self.SYSINFO))
 
     def tearDown(self):
         self.plug = None
@@ -104,7 +107,6 @@ class TestSmartPlugHS110(TestCase):
             self.plug._query_helper("test", "testcmd", {})
         # TODO check for unwrapping?
 
-    @skipIf(SKIP_STATE_TESTS, "SKIP_STATE_TESTS is True, skipping")
     def test_state(self):
         def set_invalid(x):
             self.plug.state = x
@@ -136,7 +138,6 @@ class TestSmartPlugHS110(TestCase):
         # initialize checks for this already, but just to be sure
         self.sysinfo_schema(self.plug.get_sysinfo())
 
-    @skipIf(SKIP_STATE_TESTS, "SKIP_STATE_TESTS is True, skipping")
     def test_turns_and_isses(self):
         orig_state = self.plug.is_on
 
@@ -162,7 +163,8 @@ class TestSmartPlugHS110(TestCase):
 
     def test_get_emeter_realtime(self):
         if self.plug.has_emeter:
-            self.current_consumption_schema((self.plug.get_emeter_realtime()))
+            current_emeter = self.plug.get_emeter_realtime()
+            self.current_consumption_schema(current_emeter)
         else:
             self.assertEqual(self.plug.get_emeter_realtime(), None)
 
@@ -171,7 +173,11 @@ class TestSmartPlugHS110(TestCase):
             self.assertEqual(self.plug.get_emeter_daily(year=1900, month=1),
                              {})
 
-            k, v = self.plug.get_emeter_daily().popitem()
+            d = self.plug.get_emeter_daily()
+            if len(d) < 1:
+                print("no emeter daily information, skipping..")
+                return
+            k, v = d.popitem()
             self.assertTrue(isinstance(k, int))
             self.assertTrue(isinstance(v, float))
         else:
@@ -183,6 +189,9 @@ class TestSmartPlugHS110(TestCase):
             self.assertEqual(self.plug.get_emeter_monthly(year=1900), {})
 
             d = self.plug.get_emeter_monthly()
+            if len(d) < 1:
+                print("no emeter monthly information, skipping..")
+                return
             k, v = d.popitem()
             self.assertTrue(isinstance(k, int))
             self.assertTrue(isinstance(v, float))
@@ -264,6 +273,10 @@ class TestSmartPlugHS105(TestSmartPlugHS110):
     SYSINFO = sysinfo_hs105
 
     def test_location_i(self):
-        plug_i = SmartPlug(PLUG_IP,
-                           protocol=FakeTransportProtocol(self.SYSINFO))
+        if PLUG_IP is not None:
+            plug_i = SmartPlug(PLUG_IP)
+        else:
+            plug_i = SmartPlug("127.0.0.1",
+                               protocol=FakeTransportProtocol(self.SYSINFO))
+
         self.sysinfo_schema(plug_i.location)

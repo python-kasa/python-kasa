@@ -81,6 +81,16 @@ class SmartPlug(SmartDevice):
             raise ValueError("State %s is not valid.", value)
 
     @property
+    def has_emeter(self):
+        """
+        Returns whether device has an energy meter.
+        :return: True if energy meter is available
+                 False otherwise
+        """
+        features = self.sys_info['feature'].split(':')
+        return SmartDevice.FEATURE_ENERGY_METER in features
+
+    @property
     def is_on(self) -> bool:
         """
         Returns whether device is on.

@@ -99,7 +99,8 @@ class SmartDevice(object):
         warnings.warn(
             "features works only on plugs and its use is discouraged, "
             "and it will likely to be removed at some point",
-            DeprecationWarning
+            DeprecationWarning,
+            stacklevel=2
         )
         warnings.simplefilter('default', DeprecationWarning)
         if "feature" not in self.sys_info:
@@ -117,12 +118,13 @@ class SmartDevice(object):
     @property
     def has_emeter(self) -> bool:
         """
-        Checks feature list for energey meter support.
+        Checks feature list for energy meter support.
+        Note: this has to be implemented on a device specific class.
 
         :return: True if energey meter is available
                  False if energymeter is missing
         """
-        return SmartDevice.FEATURE_ENERGY_METER in self.features
+        raise NotImplementedError()
 
     @property
     def sys_info(self) -> Dict[str, Any]:
@@ -154,7 +156,8 @@ class SmartDevice(object):
         warnings.simplefilter('always', DeprecationWarning)
         warnings.warn(
             "use alias and model instead of idenfity()",
-            DeprecationWarning
+            DeprecationWarning,
+            stacklevel=2
         )
         warnings.simplefilter('default', DeprecationWarning)
 
