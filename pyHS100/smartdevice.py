@@ -20,10 +20,16 @@ import warnings
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Optional
 
-from .types import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class SmartDeviceException(Exception):
+    """
+    SmartDeviceException gets raised for errors reported by device.
+    """
+    pass
 
 
 class SmartDevice(object):

@@ -1,4 +1,4 @@
-from unittest import TestCase, skip, skipIf
+from unittest import TestCase, skip
 from voluptuous import Schema, Invalid, All, Any, Range, Coerce
 from functools import partial
 import datetime
