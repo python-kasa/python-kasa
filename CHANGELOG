@@ -1,6 +1,156 @@
 Changelog
 =========
 
+0.3.0 (2017-09-14)
+------------------
+
+This is the first release after a while and aims to improve the robustness all-around.
+To make this happen we have decided to break the API and drop the support for Python 2.
+
+API break:
+    * Python2 support has been dropped.
+    * pyHS100/pyHS100.py has been splitted to smartdevice.py, smartplug.py and smartbulb.py, no one should have ever accessed these directly though.
+    * SmartPlugException is no more, SmartDeviceException is used by both SmartPlug and SmartBulb
+    * Discovery has been moved from TPLinkSmartHomeProtocol into its own class for easier 3rd party use.
+    * SmartDevice's identify() and `features` will emit a warning when used. These will likely be dropped or revised in the future and their use should be avoided.
+
+Other changes:
+
+    * CLI tool supports device discovery and is usable without specifying device type or IP for testing
+    * CLI tool supports changing bulb-specific settings
+    * Library support & unit tests are extended to cover more devices.
+       - Supported plugs: HS100, HS105, HS110
+       - Supported switches: HS200
+       - Supported bulbs: LB100, LB110, LB120, LB130
+
+- Bump the version. [Teemu Rytilahti]
+
+- Revise README, fixes #86. [Teemu Rytilahti]
+
+- Update the changelog. [Teemu Rytilahti]
+
+- Local test clean (#96) [Sean Gollschewsky]
+
+  * Add ignores for working coverage/tox/IDE files.
+
+  * Allow tox not to fail if python version is not available.
+
+- Move SmartDeviceException to SmartDevice, and remove types.py complet…
+  (#95) [Teemu R]
+
+  * move SmartDeviceException to SmartDevice, and remove types.py completely. fixes #94
+
+  * do not import skipIf anymore
+
+- Move has_emeter implementation from SmartDevice to SmartPlug, avoid
+  using features() internally (#93) [Teemu R]
+
+  * move has_emeter implementation from SmartDevice to SmartPlug, avoid using features() internally
+
+  * add stacklevel to deprecation warnings to see where they are really called
+
+  * make tests pass on a real device. if PLUG_IP is not None, the tests will be run on a device at the defined IP address
+
+- Add typing hints to make it easier for 3rd party developers to use the
+  library (#90) [Teemu R]
+
+  * add typing hints to make it easier for 3rd party developers to use the library
+
+  * remove unused devicetype enum to support python3.3
+
+  * add python 3.3 to travis and tox, install typing module in setup.py
+- Execute coveralls only on travis, fixes #84 (#91) [Teemu R]
+
+- Make flake8 pass by some rewording. [Teemu Rytilahti]
+
+- Make hound a bit more happier. [Teemu Rytilahti]
+
+- Deprecate features and identify, use state_information in __repr__ instead of identify. [Teemu Rytilahti]
+
+- Fix smartbulb hsv documentation, values are degrees and percentages instead of 0-255. [Teemu Rytilahti]
+
+- Another try, just with module name. [Teemu Rytilahti]
+
+- Make tox run pytest-cov, add coveralls. [Teemu Rytilahti]
+
+- Prevent failure if device's sysinfo does not have a "feature" attribute. (#77) [Sean Gollschewsky]
+
+- Allow None for rssi, add a missing newline to fakes.py. [Teemu Rytilahti]
+
+- Add hs100 tests. [Teemu Rytilahti]
+
+- Make tests to test against all known device variants. [Teemu Rytilahti]
+
+- Remove unused tplinksmarthomeprotocol import. [Teemu Rytilahti]
+
+- Fix hs105 mac to pass the test, wrap sysinfo_lb110 properly inside 'system' [Teemu Rytilahti]
+
+- Return None instead of False for emeter related actions. [Teemu Rytilahti]
+
+- Wrap sysinfo to defaultdict to return None for keys which do not exist, makes unsupported keys not to fail hard (#72) [Teemu R]
+
+- Add hs100 example to fakes.py, thanks to Semant1ka on #67 (#74) [Teemu R]
+
+- Discover refactoring, enhancements to the cli tool (#71) [Teemu R]
+
+  * Discover refactoring, enhancements to the cli tool
+
+  * Discover tries to detect the type of the device from sysinfo response
+  * Discover.discover() returns an IP address keyed dictionary,
+    values are initialized instances of the automatically detected device type.
+
+  * When no IP is given, autodetect all supported devices and print out their states
+  * When only IP but no type is given, autodetect type and make a call based on that information.
+    * One can define --bulb or --plug to skip the detection.
+
+  * renamed pyHS100.py -> smartdevice.py
+
+  * SmartPlugException -> SmartDeviceException in comments
+
+  * fix mic_type check
+
+  * make time() return None on failure as we don't know which devices support getting the time and it's used in the cli tool
+
+  * hw_info: check if key exists before accessing it, add mic_mac and mic_type
+
+  * Check for mic_mac on mac, based on work by kdschloesser on issue #59
+
+  * make hound happy, __init__ on SmartDevice cannot error out so removing 'raises' documentation
+  
+- Add LB110 sysinfo (#75) [Sean Gollschewsky]
+
+  * Add LB110 sysinfo
+
+  * Linting.
+  
+- Add @pass_dev to hsv, adjust ranges (#70) [Teemu R]
+
+  * add @pass_dev to hsv command, it was always broken
+
+  * Hue goes up to 360, saturation and value are up to 100(%)
+  
+- Extract shared types (exceptions, enums), add module level doc, rename exception to be generic. [Teemu Rytilahti]
+  
+- Add check to ensure devices with lat/lon with `_i` suffix are supported (#54) (#56) [Matt LeBrun]
+
+  * Add check to ensure devices with lat/lon with `_i` suffix are supported (#54)
+
+  * Add .gitignore for posterity
+  
+- Generalize smartdevice class and add bulb support for the cli tool (#50) [Teemu R]
+
+  Fixes #48 and #51. The basic functionality should work on all types of supported devices, for bulb specific commands it is currently necessary to specify ```--bulb```.
+  
+- Refactor and drop py2 support (#49) [Teemu R]
+
+  * move is_off property to SmartDevice, implement is_on for bulb and use it
+
+  * refactor by moving smartbulb and smartplug to their own classes
+
+  * drop python2 compatibility, make flake8 happy
+
+  * travis: remove 2.7, add 3.6
+
 0.2.4.2 (2017-04-08)
 --------------------
 - Add installation requirement for future package. [Teemu Rytilahti]
