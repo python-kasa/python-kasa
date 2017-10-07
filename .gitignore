@@ -1,5 +1,6 @@
 # Compiled python modules.
 __pycache__/
+*.pyc
 
 # Setuptools distribution folder.
 /dist/
@@ -8,4 +9,20 @@ __pycache__/
 /*.egg-info
 /*.egg
 
+# Coverage
+.coverage
+
+# Tox
+.tox
+.cache
+
+# IntelliJ
+.idea
+
+# VirtualEnvs
+venv
+.venv
+
 /build
+
+
