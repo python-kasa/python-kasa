@@ -211,3 +211,15 @@ print(bulb.hsv)
 if bulb.is_color:
    bulb.hsv = (180, 100, 100) # set to cyan
 ```
+
+## Development Setup
+
+### Docker
+
+The following assumes you have a working installation of Docker.
+
+Set up the environment and run the tests on demand.
+
+```shell
+docker build . -t pyhs100 && docker run -v $(PWD)/pyHS100/tests:/opt/pyHS100/pyHS100/tests  pyhs100 pytest
+```
