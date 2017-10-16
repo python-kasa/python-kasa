@@ -189,6 +189,13 @@ def led(dev, state):
 
 @cli.command()
 @pass_dev
+def time(dev):
+    """Get the device time."""
+    click.echo(dev.time)
+
+
+@cli.command()
+@pass_dev
 def on(plug):
     """Turn the device on."""
     click.echo("Turning on..")
