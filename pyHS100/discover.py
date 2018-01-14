@@ -1,7 +1,7 @@
 import socket
 import logging
 import json
-from typing import Dict
+from typing import Dict, Type
 
 from pyHS100 import TPLinkSmartHomeProtocol, SmartDevice, SmartPlug, SmartBulb
 
@@ -9,6 +9,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Discover:
+    DISCOVERY_QUERY = {"system": {"get_sysinfo": None},
+                       "emeter": {"get_realtime": None}}
+
     @staticmethod
     def discover(protocol: TPLinkSmartHomeProtocol = None,
                  port: int = 9999,
@@ -27,8 +30,6 @@ class Discover:
         if protocol is None:
             protocol = TPLinkSmartHomeProtocol()
 
-        discovery_query = {"system": {"get_sysinfo": None},
-                           "emeter": {"get_realtime": None}}
         target = "255.255.255.255"
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -36,7 +37,7 @@ class Discover:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.settimeout(timeout)
 
-        req = json.dumps(discovery_query)
+        req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("Sending discovery to %s:%s", target, port)
 
         encrypted_req = protocol.encrypt(req)
@@ -50,23 +51,56 @@ class Discover:
                 data, addr = sock.recvfrom(4096)
                 ip, port = addr
                 info = json.loads(protocol.decrypt(data))
-                if "system" in info and "get_sysinfo" in info["system"]:
-                    sysinfo = info["system"]["get_sysinfo"]
-                    if "type" in sysinfo:
-                        type = sysinfo["type"]
-                    elif "mic_type" in sysinfo:
-                        type = sysinfo["mic_type"]
-                    else:
-                        _LOGGER.error("Unable to find the device type field!")
-                        type = "UNKNOWN"
-                else:
-                    _LOGGER.error("No 'system' nor 'get_sysinfo' in response")
-                if "smartplug" in type.lower():
-                    devices[ip] = SmartPlug(ip)
-                elif "smartbulb" in type.lower():
-                    devices[ip] = SmartBulb(ip)
+                device_class = Discover._get_device_class(info)
+                if device_class is not None:
+                    devices[ip] = device_class(ip)
         except socket.timeout:
             _LOGGER.debug("Got socket timeout, which is okay.")
         except Exception as ex:
             _LOGGER.error("Got exception %s", ex, exc_info=True)
         return devices
+
+    @staticmethod
+    def discover_single(ip_address: str,
+                        protocol: TPLinkSmartHomeProtocol = None
+                        ) -> SmartDevice:
+        """
+        Similar to discover(), except only return device object for single
+        passed device given by IP address.
+
+        :param ip_address: IP address of device to query
+        :param protocol: Protocol implementation to use
+        :rtype: SmartDevice
+        :return: Object for querying/controlling found device.
+        """
+        if protocol is None:
+            protocol = TPLinkSmartHomeProtocol()
+
+        info = protocol.query(ip_address, Discover.DISCOVERY_QUERY)
+
+        device_class = Discover._get_device_class(info)
+        if device_class is not None:
+            return device_class(ip_address)
+        else:
+            return None
+
+    @staticmethod
+    def _get_device_class(info: dict) -> Type[SmartDevice]:
+        """Find SmartDevice subclass for device described by passed data."""
+        if "system" in info and "get_sysinfo" in info["system"]:
+            sysinfo = info["system"]["get_sysinfo"]
+            if "type" in sysinfo:
+                type = sysinfo["type"]
+            elif "mic_type" in sysinfo:
+                type = sysinfo["mic_type"]
+            else:
+                _LOGGER.error("Unable to find the device type field!")
+                type = "UNKNOWN"
+        else:
+            _LOGGER.error("No 'system' nor 'get_sysinfo' in response")
+        if "smartplug" in type.lower():
+            return SmartPlug
+        elif "smartbulb" in type.lower():
+            return SmartBulb
+
+        return None

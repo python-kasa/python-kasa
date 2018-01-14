@@ -41,11 +41,7 @@ def cli(ctx, ip, debug, bulb, plug):
     elif ip is not None:
         if not bulb and not plug:
             click.echo("No --bulb nor --plug given, discovering..")
-            devs = ctx.invoke(discover, discover_only=True)
-            for discovered_ip, discovered_dev in devs:
-                if discovered_ip == ip:
-                    dev = discovered_dev
-                    break
+            dev = Discover.discover_single(ip)
         elif bulb:
             dev = SmartBulb(ip)
         elif plug:
