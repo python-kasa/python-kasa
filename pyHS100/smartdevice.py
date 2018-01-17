@@ -40,15 +40,14 @@ class SmartDevice(object):
     ALL_FEATURES = (FEATURE_ENERGY_METER, FEATURE_TIMER)
 
     def __init__(self,
-                 ip_address: str,
+                 host: str,
                  protocol: Optional[TPLinkSmartHomeProtocol] = None) -> None:
         """
-        Create a new SmartDevice instance, identified through its IP address.
+        Create a new SmartDevice instance.
 
-        :param str ip_address: ip address on which the device listens
+        :param str host: host name or ip address on which the device listens
         """
-        socket.inet_pton(socket.AF_INET, ip_address)
-        self.ip_address = ip_address
+        self.host = host
         if not protocol:
             protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
@@ -73,7 +72,7 @@ class SmartDevice(object):
             arg = {}
         try:
             response = self.protocol.query(
-                host=self.ip_address,
+                host=self.host,
                 request={target: {cmd: arg}}
             )
         except Exception as ex:
@@ -523,7 +522,7 @@ class SmartDevice(object):
     def __repr__(self):
         return "<%s at %s (%s), is_on: %s - dev specific: %s>" % (
             self.__class__.__name__,
-            self.ip_address,
+            self.host,
             self.alias,
             self.is_on,
             self.state_information)

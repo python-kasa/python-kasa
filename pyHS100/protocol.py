@@ -32,7 +32,7 @@ class TPLinkSmartHomeProtocol:
         Request information from a TP-Link SmartHome Device and return the
         response.
 
-        :param str host: ip address of the device
+        :param str host: host name or ip address of the device
         :param int port: port on the device (default: 9999)
         :param request: command to send to the device (can be either dict or
         json string)
@@ -41,10 +41,9 @@ class TPLinkSmartHomeProtocol:
         if isinstance(request, dict):
             request = json.dumps(request)
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT)
+        timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
         try:
-            sock.connect((host, port))
+            sock = socket.create_connection((host, port), timeout)
 
             _LOGGER.debug("> (%i) %s", len(request), request)
             sock.send(TPLinkSmartHomeProtocol.encrypt(request))

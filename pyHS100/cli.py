@@ -18,12 +18,17 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 
 
 @click.group(invoke_without_command=True)
-@click.option('--ip', envvar="PYHS100_IP", required=False)
+@click.option('--ip', envvar="PYHS100_IP", required=False,
+              help='The IP address of the device to connect to. This option '
+              'is deprecated and will be removed in the future; use --host '
+              'instead.')
+@click.option('--host', envvar="PYHS100_HOST", required=False,
+              help='The host name or IP address of the device to connect to.')
 @click.option('--debug/--normal', default=False)
 @click.option('--bulb', default=False, is_flag=True)
 @click.option('--plug', default=False, is_flag=True)
 @click.pass_context
-def cli(ctx, ip, debug, bulb, plug):
+def cli(ctx, ip, host, debug, bulb, plug):
     """A cli tool for controlling TP-Link smart home plugs."""
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -33,19 +38,22 @@ def cli(ctx, ip, debug, bulb, plug):
     if ctx.invoked_subcommand == "discover":
         return
 
-    if ip is None:
-        click.echo("No IP given, trying discovery..")
+    if ip is not None and host is None:
+        host = ip
+
+    if host is None:
+        click.echo("No host name given, trying discovery..")
         ctx.invoke(discover)
         return
 
-    elif ip is not None:
+    else:
         if not bulb and not plug:
             click.echo("No --bulb nor --plug given, discovering..")
-            dev = Discover.discover_single(ip)
+            dev = Discover.discover_single(host)
         elif bulb:
-            dev = SmartBulb(ip)
+            dev = SmartBulb(host)
         elif plug:
-            dev = SmartPlug(ip)
+            dev = SmartPlug(host)
         else:
             click.echo("Unable to detect type, use --bulb or --plug!")
             return
@@ -90,7 +98,7 @@ def state(ctx, dev):
 
     click.echo(click.style("Device state: %s" % "ON" if dev.is_on else "OFF",
                            fg="green" if dev.is_on else "red"))
-    click.echo("IP address: %s" % dev.ip_address)
+    click.echo("Host/IP: %s" % dev.host)
     for k, v in dev.state_information.items():
         click.echo("%s: %s" % (k, v))
     click.echo(click.style("== Generic information ==", bold=True))

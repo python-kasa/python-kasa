@@ -42,9 +42,9 @@ class SmartBulb(SmartDevice):
     BULB_STATE_OFF = 'OFF'
 
     def __init__(self,
-                 ip_address: str,
+                 host: str,
                  protocol: 'TPLinkSmartHomeProtocol' = None) -> None:
-        SmartDevice.__init__(self, ip_address, protocol)
+        SmartDevice.__init__(self, host, protocol)
         self.emeter_type = "smartlife.iot.common.emeter"
         self.emeter_units = True
 

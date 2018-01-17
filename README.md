@@ -23,7 +23,7 @@ Python Library to control TPLink smart plugs/switches and smart bulbs.
 # Usage
 
 The package is shipped with a console tool named pyhs100, please refer to ```pyhs100 --help``` for detailed usage.
-The device to which the commands are sent is chosen by `PYHS100_IP` environment variable or passing `--ip <address>` as an option.
+The device to which the commands are sent is chosen by `PYHS100_HOST` environment variable or passing `--host <address>` as an option.
 To see what is being sent to and received from the device, specify option `--debug`.
 
 To avoid discovering the devices when executing commands its type can be passed by specifying either `--plug` or `--bulb`,

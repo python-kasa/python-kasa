@@ -32,9 +32,9 @@ class SmartPlug(SmartDevice):
     SWITCH_STATE_UNKNOWN = 'UNKNOWN'
 
     def __init__(self,
-                 ip_address: str,
+                 host: str,
                  protocol: 'TPLinkSmartHomeProtocol' = None) -> None:
-        SmartDevice.__init__(self, ip_address, protocol)
+        SmartDevice.__init__(self, host, protocol)
         self.emeter_type = "emeter"
         self.emeter_units = False
 

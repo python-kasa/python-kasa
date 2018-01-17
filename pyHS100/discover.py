@@ -61,14 +61,14 @@ class Discover:
         return devices
 
     @staticmethod
-    def discover_single(ip_address: str,
+    def discover_single(host: str,
                         protocol: TPLinkSmartHomeProtocol = None
                         ) -> SmartDevice:
         """
-        Similar to discover(), except only return device object for single
-        passed device given by IP address.
+        Similar to discover(), except only return device object for a single
+        host.
 
-        :param ip_address: IP address of device to query
+        :param host: Hostname of device to query
         :param protocol: Protocol implementation to use
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
@@ -76,11 +76,11 @@ class Discover:
         if protocol is None:
             protocol = TPLinkSmartHomeProtocol()
 
-        info = protocol.query(ip_address, Discover.DISCOVERY_QUERY)
+        info = protocol.query(host, Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:
-            return device_class(ip_address)
+            return device_class(host)
         else:
             return None
 
