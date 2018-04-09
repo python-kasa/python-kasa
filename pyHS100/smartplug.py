@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from pyHS100 import SmartDevice
 
@@ -79,6 +79,60 @@ class SmartPlug(SmartDevice):
             self.turn_off()
         else:
             raise ValueError("State %s is not valid.", value)
+
+    @property
+    def brightness(self) -> Optional[int]:
+        """
+        Current brightness of the device, if supported.
+        Will return a a range between 0 - 100.
+
+        :returns: integer
+        :rtype: int
+
+        """
+        if not self.is_dimmable:
+            return None
+
+        return int(self.sys_info['brightness'])
+        
+    @brightness.setter
+    def brightness(self, value: int):
+        """
+        Set the new switch brightness level.
+
+        Note:
+        When setting brightness, if the light is not
+        already on, it will be turned on automatically.
+
+        :param value: integer between 1 and 100
+
+        """
+        if not self.is_dimmable:
+            return None
+
+        if not isinstance(value, int):
+            raise ValueError("Brightness must be integer, " 
+                             "not of %s.", type(value))
+        elif value > 0 and value <= 100:
+            self.turn_on()
+            self._query_helper("smartlife.iot.dimmer", "set_brightness",
+                               {"brightness": value})
+        else:
+            raise ValueError("Brightness value %s is not valid.", value)
+
+    @property
+    def is_dimmable(self):
+        """
+        Whether the switch supports brightness changes
+
+        :return: True if switch supports brightness changes, False otherwise
+        :rtype: bool
+
+        """
+        dimmable = False
+        if "brightness" in self.sys_info:
+            dimmable = True
+        return dimmable
 
     @property
     def has_emeter(self):
