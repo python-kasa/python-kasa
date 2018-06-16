@@ -1,6 +1,90 @@
 Changelog
 =========
 
+0.3.1 (2018-06-16)
+------------------
+
+This release adds a few improvements, most importantly:
+
+* emeter support for new HS110 hardware/firmware revision.
+
+* HS220 supports now dimming.
+
+Breaking changes:
+
+* get_emeter_daily & get_emeter_monthly will report back in kwh on bulbs, making the API consistent with the smart plugs.
+
+- Fix emeter support for newer HS110 firmwares (#107) [Teemu R]
+
+  * Add support for new-style emeter
+
+  This commit adds a straightforward dict-extending container,
+  which converts between the old and new keys of the get_emeter_realtime()
+  Furthermore the unit tests are converted to base on HS100
+  instead of HS110.
+
+  This is the first step to fix #103, other emeter-using functionality
+  has not yet been converted, only getting the current consumption.
+
+  * fix a couple of linting issues
+
+  * Convert new-style emeter values also for get_emeter_daily() and get_emeter_monthly()
+
+  * Adds a new 'kwh' parameter for those calls, which defaults to True
+  * This changes the behavior of bulbs emeter reporting, use False if you prefer the preciser values
+  
+- Update pypi description (#102) [Teemu R]
+
+  * update pypi description
+
+  * add wall switches
+  
+- Update smartplug.py to support dimming in HS220 (#115) [JsChiSurf]
+
+  * Update smartplug.py to support dimming in HS220
+
+  Switch functions essentially as a "plug" with the addition to support for dimming, for which can be test for by verifying existence of 
+'brightness' array value.
+
+  * Attempt at updates to pass validator
+
+  * Maybe this time?  :-)
+
+  * Add more detail to comment blocks
+
+  Make clear in requests for current brightness level the expected return values, and note that light will turn on when setting a brightness 
+level, if not already on.  This makes clear that a state change request (turn_on) does NOT have to be made first when setting brightness.
+
+  * Update smartplug.py
+
+  * Update smartplug.py
+
+  Fixes #114
+  
+- Add python_requires for >= 3.4. [Teemu Rytilahti]
+
+- Add hs210. [Teemu R]
+
+  Based on user report: https://community.home-assistant.io/t/tp-link-hs210-3-way-kit/39762/6
+  
+- Add support for DNS host names (#104) [K Henriksson]
+
+- Use direct device type discovery for devices (#106) [K Henriksson]
+
+  This is more efficient than enumerating all devices and checking the IP.
+  
+- Cli: add 'time' command to get the current time from the device.
+  [Teemu Rytilahti]
+  
+- Created a docker file to aid dev setup (#99) [TheSmokingGnu]
+
+  * created a docker file to aid dev setup
+
+  * fixed review comments in README and Dockerfile
+
+  * review comments to simplify the docker run command
+
+
 0.3.0 (2017-09-14)
 ------------------
 
