@@ -46,7 +46,6 @@ class SmartBulb(SmartDevice):
                  protocol: 'TPLinkSmartHomeProtocol' = None) -> None:
         SmartDevice.__init__(self, host, protocol)
         self.emeter_type = "smartlife.iot.common.emeter"
-        self.emeter_units = True
 
     @property
     def is_color(self) -> bool:

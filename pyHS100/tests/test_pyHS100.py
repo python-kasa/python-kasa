@@ -10,6 +10,7 @@ from .fakes import (FakeTransportProtocol,
                     sysinfo_hs100,
                     sysinfo_hs105,
                     sysinfo_hs110,
+                    sysinfo_hs110_au_v2,
                     sysinfo_hs200)
 
 # Set IP instead of None if you want to run tests on a device.
@@ -35,8 +36,8 @@ def check_mode(x):
     raise Invalid("invalid mode {}".format(x))
 
 
-class TestSmartPlugHS110(TestCase):
-    SYSINFO = sysinfo_hs110  # type: Dict
+class TestSmartPlugHS100(TestCase):
+    SYSINFO = sysinfo_hs100  # type: Dict
     # these schemas should go to the mainlib as
     # they can be useful when adding support for new features/devices
     # as well as to check that faked devices are operating properly.
@@ -68,10 +69,15 @@ class TestSmartPlugHS110(TestCase):
     })
 
     current_consumption_schema = Schema(Any({
-        'voltage': All(float, Range(min=0, max=300)),
-        'power': Coerce(float, Range(min=0)),
-        'total': Coerce(float, Range(min=0)),
-        'current': All(float, Range(min=0)),
+        'voltage': Any(All(float, Range(min=0, max=300)), None),
+        'power': Any(Coerce(float, Range(min=0)), None),
+        'total': Any(Coerce(float, Range(min=0)), None),
+        'current': Any(All(float, Range(min=0)), None),
+
+        'voltage_mw': Any(All(float, Range(min=0, max=300000)), None),
+        'power_mw': Any(Coerce(float, Range(min=0)), None),
+        'total_wh': Any(Coerce(float, Range(min=0)), None),
+        'current_ma': Any(All(float, Range(min=0)), None),
     }, None))
 
     tz_schema = Schema({
@@ -210,11 +216,6 @@ class TestSmartPlugHS110(TestCase):
         else:
             self.assertEqual(self.plug.current_consumption(), None)
 
-    def test_identify(self):
-        ident = self.plug.identify()
-        self.assertTrue(isinstance(ident, tuple))
-        self.assertTrue(len(ident) == 3)
-
     def test_alias(self):
         test_alias = "TEST1234"
         original = self.plug.alias
@@ -261,15 +262,69 @@ class TestSmartPlugHS110(TestCase):
         # TODO check setting?
 
 
-class TestSmartPlugHS100(TestSmartPlugHS110):
-    SYSINFO = sysinfo_hs100
+class TestSmartPlugHS110(TestSmartPlugHS100):
+    SYSINFO = sysinfo_hs110
+
+    def test_emeter_upcast(self):
+        emeter = self.plug.get_emeter_realtime()
+        self.assertAlmostEqual(emeter["power"] * 10**3, emeter["power_mw"])
+        self.assertAlmostEqual(emeter["voltage"] * 10**3, emeter["voltage_mv"])
+        self.assertAlmostEqual(emeter["current"] * 10**3, emeter["current_ma"])
+        self.assertAlmostEqual(emeter["total"] * 10**3, emeter["total_wh"])
+
+    def test_emeter_daily_upcast(self):
+        emeter = self.plug.get_emeter_daily()
+        _, v = emeter.popitem()
+
+        emeter = self.plug.get_emeter_daily(kwh=False)
+        _, v2 = emeter.popitem()
+
+        self.assertAlmostEqual(v * 10**3, v2)
+
+    def test_get_emeter_monthly_upcast(self):
+        emeter = self.plug.get_emeter_monthly()
+        _, v = emeter.popitem()
+
+        emeter = self.plug.get_emeter_monthly(kwh=False)
+        _, v2 = emeter.popitem()
+
+        self.assertAlmostEqual(v * 10**3, v2)
 
 
-class TestSmartPlugHS200(TestSmartPlugHS110):
+class TestSmartPlugHS110_HW2(TestSmartPlugHS100):
+    SYSINFO = sysinfo_hs110_au_v2
+
+    def test_emeter_downcast(self):
+        emeter = self.plug.get_emeter_realtime()
+        self.assertAlmostEqual(emeter["power"], emeter["power_mw"] / 10**3)
+        self.assertAlmostEqual(emeter["voltage"], emeter["voltage_mv"] / 10**3)
+        self.assertAlmostEqual(emeter["current"], emeter["current_ma"] / 10**3)
+        self.assertAlmostEqual(emeter["total"], emeter["total_wh"] / 10**3)
+
+    def test_emeter_daily_downcast(self):
+        emeter = self.plug.get_emeter_daily()
+        _, v = emeter.popitem()
+
+        emeter = self.plug.get_emeter_daily(kwh=False)
+        _, v2 = emeter.popitem()
+
+        self.assertAlmostEqual(v * 10**3, v2)
+
+    def test_get_emeter_monthly_downcast(self):
+        emeter = self.plug.get_emeter_monthly()
+        _, v = emeter.popitem()
+
+        emeter = self.plug.get_emeter_monthly(kwh=False)
+        _, v2 = emeter.popitem()
+
+        self.assertAlmostEqual(v * 10**3, v2)
+
+
+class TestSmartPlugHS200(TestSmartPlugHS100):
     SYSINFO = sysinfo_hs200
 
 
-class TestSmartPlugHS105(TestSmartPlugHS110):
+class TestSmartPlugHS105(TestSmartPlugHS100):
     SYSINFO = sysinfo_hs105
 
     def test_location_i(self):

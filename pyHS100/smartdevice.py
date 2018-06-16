@@ -15,7 +15,6 @@ http://www.apache.org/licenses/LICENSE-2.0
 """
 import datetime
 import logging
-import socket
 import warnings
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Optional
@@ -30,6 +29,40 @@ class SmartDeviceException(Exception):
     SmartDeviceException gets raised for errors reported by device.
     """
     pass
+
+
+class EmeterStatus(dict):
+    """Container for converting different representations of emeter data.
+
+    Newer FW/HW versions postfix the variable names with the used units,
+    where-as the olders do not have this feature.
+
+    This class automatically converts between these two to allow
+    backwards and forwards compatibility.
+    """
+
+    def __getitem__(self, item):
+        valid_keys = ['voltage_mv', 'power_mw', 'current_ma',
+                      'energy_wh', 'total_wh',
+                      'voltage', 'power', 'current', 'total',
+                      'energy']
+
+        # 1. if requested data is available, return it
+        if item in super().keys():
+            return super().__getitem__(item)
+        # otherwise decide how to convert it
+        else:
+            if item not in valid_keys:
+                raise KeyError(item)
+            if '_' in item:  # upscale
+                return super().__getitem__(item[:item.find('_')]) * 10**3
+            else:  # downscale
+                for i in super().keys():
+                    if i.startswith(item):
+                        return self.__getitem__(i) / 10**3
+
+                raise SmartDeviceException("Unable to find a value for '%s'" %
+                                           item)
 
 
 class SmartDevice(object):
@@ -52,7 +85,6 @@ class SmartDevice(object):
             protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
         self.emeter_type = "emeter"  # type: str
-        self.emeter_units = False
 
     def _query_helper(self,
                       target: str,
@@ -380,17 +412,20 @@ class SmartDevice(object):
         if not self.has_emeter:
             return None
 
-        return self._query_helper(self.emeter_type, "get_realtime")
+        return EmeterStatus(self._query_helper(self.emeter_type,
+                                               "get_realtime"))
 
     def get_emeter_daily(self,
                          year: int = None,
-                         month: int = None) -> Optional[Dict]:
+                         month: int = None,
+                         kwh: bool = True) -> Optional[Dict]:
         """
         Retrieve daily statistics for a given month
 
         :param year: year for which to retrieve statistics (default: this year)
         :param month: month for which to retrieve statistcs (default: this
                       month)
+        :param kwh: return usage in kWh (default: True)
         :return: mapping of day of month to value
                  None if device has no energy meter or error occured
         :rtype: dict
@@ -406,20 +441,24 @@ class SmartDevice(object):
 
         response = self._query_helper(self.emeter_type, "get_daystat",
                                       {'month': month, 'year': year})
+        response = [EmeterStatus(**x) for x in response["day_list"]]
 
-        if self.emeter_units:
-            key = 'energy_wh'
-        else:
+        key = 'energy_wh'
+        if kwh:
             key = 'energy'
 
-        return {entry['day']: entry[key]
-                for entry in response['day_list']}
+        data = {entry['day']: entry[key]
+                for entry in response}
 
-    def get_emeter_monthly(self, year=None) -> Optional[Dict]:
+        return data
+
+    def get_emeter_monthly(self, year: int = None,
+                           kwh: bool = True) -> Optional[Dict]:
         """
         Retrieve monthly statistics for a given year.
 
         :param year: year for which to retrieve statistics (default: this year)
+        :param kwh: return usage in kWh (default: True)
         :return: dict: mapping of month to value
                  None if device has no energy meter
         :rtype: dict
@@ -433,14 +472,14 @@ class SmartDevice(object):
 
         response = self._query_helper(self.emeter_type, "get_monthstat",
                                       {'year': year})
+        response = [EmeterStatus(**x) for x in response["month_list"]]
 
-        if self.emeter_units:
-            key = 'energy_wh'
-        else:
+        key = 'energy_wh'
+        if kwh:
             key = 'energy'
 
         return {entry['month']: entry[key]
-                for entry in response['month_list']}
+                for entry in response}
 
     def erase_emeter_stats(self) -> bool:
         """
@@ -471,11 +510,8 @@ class SmartDevice(object):
         if not self.has_emeter:
             return None
 
-        response = self.get_emeter_realtime()
-        if self.emeter_units:
-            return float(response['power_mw'])
-        else:
-            return float(response['power'])
+        response = EmeterStatus(self.get_emeter_realtime())
+        return response['power']
 
     def turn_off(self) -> None:
         """

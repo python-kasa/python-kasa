@@ -113,8 +113,33 @@ sysinfo_hs110 = {'system': {'get_sysinfo':
                     'type': 'IOT.SMARTPLUGSWITCH',
                     'updating': 0}
                       },
-                 "emeter": emeter_support,
+                 'emeter': emeter_support,
 }
+
+sysinfo_hs110_au_v2 = {'system': {'get_sysinfo':
+                                       {'active_mode': 'none',
+                                        'alias': 'Tplink Test',
+                                        'dev_name': 'Smart Wi-Fi Plug With Energy Monitoring',
+                                        'deviceId': '80062952E2F3D9461CFB91FF21B7868F194F627A',
+                                        'feature': 'TIM:ENE',
+                                        'fwId': '00000000000000000000000000000000',
+                                        'hwId': 'A28C8BB92AFCB6CAFB83A8C00145F7E2',
+                                        'hw_ver': '2.0',
+                                        'icon_hash': '',
+                                        'latitude_i': -1.1,
+                                        'led_off': 0,
+                                        'longitude_i': 2.2,
+                                        'mac': '70:4F:57:12:12:12',
+                                        'model': 'HS110(AU)',
+                                        'oemId': '6480C2101948463DC65D7009CAECDECC',
+                                        'on_time': 0,
+                                        'relay_state': 0,
+                                        'rssi': -70,
+                                        'sw_ver': '1.5.2 Build 171201 Rel.084625',
+                                        'type': 'IOT.SMARTPLUGSWITCH',
+                                        'updating': 0}
+                                   },
+                        'emeter': {'voltage_mv': 246520, 'power_mw': 258401, 'current_ma': 3104, 'total_wh': 387}}
 
 sysinfo_hs200 = {'system': {'get_sysinfo': {'active_mode': 'schedule',
                             'alias': 'Christmas Tree Switch',
