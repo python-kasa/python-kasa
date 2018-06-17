@@ -153,13 +153,15 @@ def brightness(dev, brightness):
 
 
 @cli.command()
-@click.argument("temperature", type=click.IntRange(2700, 6500), default=None,
+@click.argument("temperature", type=click.IntRange(2500, 9000), default=None,
                 required=False)
 @pass_dev
 def temperature(dev, temperature):
     """Get or set color temperature. (Bulb only)"""
     if temperature is None:
         click.echo("Color temperature: %s" % dev.color_temp)
+        if dev.valid_temperature_range != (0, 0):
+            click.echo("(min: %s, max: %s)" % dev.valid_temperature_range)
     else:
         click.echo("Setting color temperature to %s" % temperature)
         dev.color_temp = temperature

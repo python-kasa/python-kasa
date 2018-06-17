@@ -201,6 +201,13 @@ class TestSmartBulb(TestCase):
     def test_rssi(self):
         self.sysinfo_schema({'rssi': self.bulb.rssi})  # wrapping for vol
 
+    def test_temperature_range(self):
+        self.assertEqual(self.bulb.valid_temperature_range, (2500, 9000))
+        with self.assertRaises(ValueError):
+            self.bulb.color_temp = 1000
+        with self.assertRaises(ValueError):
+            self.bulb.color_temp = 10000
+
 
 class TestSmartBulbLB100(TestSmartBulb):
     SYSINFO = sysinfo_lb100

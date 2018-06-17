@@ -1,5 +1,11 @@
 from pyHS100 import SmartDevice
+import re
 from typing import Any, Dict, Optional, Tuple
+
+TPLINK_KELVIN = {'LB130': (2500, 9000),
+                 'LB120': (2700, 6500),
+                 'LB230': (2500, 9000),
+                 'KB130': (2500, 9000)}
 
 
 class SmartBulb(SmartDevice):
@@ -78,6 +84,22 @@ class SmartBulb(SmartDevice):
         """
         return bool(self.sys_info['is_variable_color_temp'])
 
+    @property
+    def valid_temperature_range(self) -> Tuple[int, int]:
+        """
+        Returns the white temperature range (in Kelvin)
+        depending on the bulb model
+
+        :return: White temperature range in Kelvin (minimun, maximum)
+        :rtype: tuple
+        """
+        if not self.is_variable_color_temp:
+            return (0, 0)
+        for model, temp_range in TPLINK_KELVIN.items():
+            if re.match(model, self.sys_info['model']):
+                return temp_range
+        return (0, 0)
+
     def get_light_state(self) -> Dict:
         return self._query_helper("smartlife.iot.smartbulb.lightingservice",
                                   "get_light_state")
@@ -154,6 +176,11 @@ class SmartBulb(SmartDevice):
         """
         if not self.is_variable_color_temp:
             return None
+
+        if temp < self.valid_temperature_range[0] or \
+                temp > self.valid_temperature_range[1]:
+            raise ValueError("Temperature should be between {} "
+                             "and {}".format(*self.valid_temperature_range))
 
         light_state = {
             "color_temp": temp,
