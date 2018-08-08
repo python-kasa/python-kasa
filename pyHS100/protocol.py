@@ -86,14 +86,16 @@ class TPLinkSmartHomeProtocol:
         :return: ciphertext request
         """
         key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        buffer = bytearray(struct.pack(">I", len(request)))
 
-        for char in request:
-            cipher = key ^ ord(char)
-            key = cipher
-            buffer.append(cipher)
+        plainbytes = request.encode()
+        buffer = bytearray(struct.pack(">I", len(plainbytes)))
 
-        return buffer
+        for plainbyte in plainbytes:
+            cipherbyte = key ^ plainbyte
+            key = cipherbyte
+            buffer.append(cipherbyte)
+
+        return bytes(buffer)
 
     @staticmethod
     def decrypt(ciphertext: bytes) -> str:
@@ -106,13 +108,11 @@ class TPLinkSmartHomeProtocol:
         key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
         buffer = []
 
-        ciphertext_str = ciphertext.decode('latin-1')
+        for cipherbyte in ciphertext:
+            plainbyte = key ^ cipherbyte
+            key = cipherbyte
+            buffer.append(plainbyte)
 
-        for char in ciphertext_str:
-            plain = key ^ ord(char)
-            key = ord(char)
-            buffer.append(chr(plain))
+        plaintext = bytes(buffer)
 
-        plaintext = ''.join(buffer)
-
-        return plaintext
+        return plaintext.decode()
