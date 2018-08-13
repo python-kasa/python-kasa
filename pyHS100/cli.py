@@ -113,6 +113,18 @@ def state(ctx, dev):
 
 @cli.command()
 @pass_dev
+@click.argument('new_alias', required=False, default=None)
+def alias(dev, new_alias):
+    """Get or set the device alias."""
+    if new_alias is not None:
+        click.echo("Setting alias to %s" % new_alias)
+        dev.alias = new_alias
+
+    click.echo("Alias: %s" % dev.alias)
+
+
+@cli.command()
+@pass_dev
 @click.option('--year', type=Datetime(format='%Y'),
               default=None, required=False)
 @click.option('--month', type=Datetime(format='%Y-%m'),
