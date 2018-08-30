@@ -24,11 +24,14 @@ pass_dev = click.make_pass_decorator(SmartDevice)
               'instead.')
 @click.option('--host', envvar="PYHS100_HOST", required=False,
               help='The host name or IP address of the device to connect to.')
+@click.option('--alias', envvar="PYHS100_NAME", required=False,
+              help='The device name, or alias, of the device to connect to.')
+
 @click.option('--debug/--normal', default=False)
 @click.option('--bulb', default=False, is_flag=True)
 @click.option('--plug', default=False, is_flag=True)
 @click.pass_context
-def cli(ctx, ip, host, debug, bulb, plug):
+def cli(ctx, ip, host, alias, debug, bulb, plug):
     """A cli tool for controlling TP-Link smart home plugs."""
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -41,11 +44,20 @@ def cli(ctx, ip, host, debug, bulb, plug):
     if ip is not None and host is None:
         host = ip
 
+    if alias is not None and host is None:
+        click.echo("Alias is given, using discovery to find host %s" %
+                   alias)
+        host = find_host_from_alias(alias=alias)
+        if host:
+            click.echo("Found hostname is {}".format(host))
+        else:
+            click.echo("No device with name {} found".format(alias))
+            return
+
     if host is None:
         click.echo("No host name given, trying discovery..")
         ctx.invoke(discover)
         return
-
     else:
         if not bulb and not plug:
             click.echo("No --bulb nor --plug given, discovering..")
@@ -78,6 +90,21 @@ def discover(ctx, timeout, discover_only):
             print()
 
     return found_devs
+
+
+def find_host_from_alias(alias, timeout=1, attempts=3):
+    """Discover a device identified by its alias"""
+    host = None
+    click.echo("Trying to discover %s using %s attempts of %s seconds" %
+               (alias, attempts, timeout))
+    for attempt in range(1, attempts):
+        click.echo("Attempt %s of %s" % (attempt, attempts))
+        found_devs = Discover.discover(timeout=timeout).items()
+        for ip, dev in found_devs:
+            if dev.alias.lower() == alias.lower():
+                host = dev.host
+                return host
+    return None
 
 
 @cli.command()
