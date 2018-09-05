@@ -1,4 +1,4 @@
-from pyHS100 import SmartDevice
+from pyHS100 import SmartDevice, SmartDeviceException
 import re
 from typing import Any, Dict, Optional, Tuple
 
@@ -124,11 +124,11 @@ class SmartBulb(SmartDevice):
         if not self.is_on:
             hue = light_state['dft_on_state']['hue']
             saturation = light_state['dft_on_state']['saturation']
-            value = int(light_state['dft_on_state']['brightness'] * 255 / 100)
+            value = light_state['dft_on_state']['brightness']
         else:
             hue = light_state['hue']
             saturation = light_state['saturation']
-            value = int(light_state['brightness'] * 255 / 100)
+            value = light_state['brightness']
 
         return hue, saturation, value
 
@@ -142,10 +142,25 @@ class SmartBulb(SmartDevice):
         if not self.is_color:
             return None
 
+        if not isinstance(state[0], int) or not (0 <= state[0] <= 255):
+            raise SmartDeviceException(
+                    'Invalid hue value: {} '
+                    '(valid range: 0-255)'.format(state[0]))
+
+        if not isinstance(state[1], int) or not (0 <= state[1] <= 100):
+            raise SmartDeviceException(
+                    'Invalid saturation value: {} '
+                    '(valid range: 0-100%)'.format(state[1]))
+
+        if not isinstance(state[2], int) or not (0 <= state[2] <= 100):
+            raise SmartDeviceException(
+                    'Invalid brightness value: {} '
+                    '(valid range: 0-100%)'.format(state[2]))
+
         light_state = {
             "hue": state[0],
             "saturation": state[1],
-            "brightness": int(state[2] * 100 / 255),
+            "brightness": state[2],
             "color_temp": 0
             }
         self.set_light_state(light_state)

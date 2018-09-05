@@ -208,6 +208,23 @@ class TestSmartBulb(TestCase):
         with self.assertRaises(ValueError):
             self.bulb.color_temp = 10000
 
+    def test_hsv(self):
+        hue, saturation, brightness = self.bulb.hsv
+        self.assertTrue(0 <= hue <= 255)
+        self.assertTrue(0 <= saturation <= 100)
+        self.assertTrue(0 <= brightness <= 100)
+        for invalid_hue in [-1, 256, 0.5]:
+            with self.assertRaises(SmartDeviceException):
+                self.bulb.hsv = (invalid_hue, 0, 0)
+
+        for invalid_saturation in [-1, 101, 0.5]:
+            with self.assertRaises(SmartDeviceException):
+                self.bulb.hsv = (0, invalid_saturation, 0)
+
+        for invalid_brightness in [-1, 101, 0.5]:
+            with self.assertRaises(SmartDeviceException):
+                self.bulb.hsv = (0, 0, invalid_brightness)
+
 
 class TestSmartBulbLB100(TestSmartBulb):
     SYSINFO = sysinfo_lb100
