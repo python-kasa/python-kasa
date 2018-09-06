@@ -1,6 +1,69 @@
 Changelog
 =========
 
+0.3.3 (2018-09-06)
+------------------
+
+This release contains a breaking change for hsv setter, which is changed to accept 
+the new brightness value in percentage instead of an integer between 1 and 255.
+
+The alias support has been extended to allow changing the alias, as well as accessing
+the device using it (without specifying an IP address or a hostname), which can be 
+useful in some setups. Furthermore utf8-encoded aliases are now handled correctly.
+
+- Fix bug that changed brightness at each HSV update (#124) [Sebastian Templ]
+
+  * Fix bug that changed brightness at each hsv update
+
+  The HSV setter should accept a percentage for the brightness
+  value but actually assumed the brightness to be in absolute values
+  between 1 and 255.
+  This resulted in brightness reductions at each HSV update, in
+  steps of 100% -> 100/255=39% -> 39/255=15% -> ... (see also
+  https://github.com/home-assistant/home-assistant/issues/15582,
+  where I originally reported this bug).
+
+  * Modify HSV property to return brightness in percent
+
+  Switch from reported brightness values of 1..255 to percentage
+  values, for consistency with the apidoc and 8761dd8.
+
+  * Add checks and tests for the hsv setter
+
+  - make sure that new (hue, saturation, brightness) values are
+    within their valid ranges (0..255, 0..100, 0..100) and raise
+    SmartDeviceException if they are not
+  - add test function for the hsv setter
+  
+- Allow using alias instead of IP address or hostname (#127) [kwazel]
+
+  * Added option to control devices by device name
+
+  * set unused ip address to dont-care
+
+  * spend less time discovering by devicename, removed command
+
+  * consistent use of alias instead of device name
+
+  * processed review comments
+
+  * Return when no device with alias has been found
+  
+- Add 'alias' command for querying and setting the alias (#126) [Teemu R]
+
+  * add 'alias' command for querying and setting the alias
+
+  * calculate coverage only on library files, e.g., ignoring cli and test files
+
+  * remove py34 and add py37
+
+  * readd py33, remove it from travis as it seems to be a travis limitation only
+
+  * use xenial dist for travis, regular does not support py37..
+  
+- Support Unicode strings in encrypt/decrypt (#125) [Anders Melchiorsen]
+
+
 0.3.2 (2018-06-17)
 ------------------
 
