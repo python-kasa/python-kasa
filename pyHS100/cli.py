@@ -255,5 +255,13 @@ def off(plug):
     plug.turn_off()
 
 
+@cli.command()
+@click.option("--delay", default=1)
+@pass_dev
+def reboot(plug, delay):
+    """Reboot the device."""
+    click.echo("Rebooting the device..")
+    plug.reboot(delay)
+
 if __name__ == "__main__":
     cli()

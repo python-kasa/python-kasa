@@ -513,6 +513,17 @@ class SmartDevice(object):
         response = EmeterStatus(self.get_emeter_realtime())
         return response['power']
 
+    def reboot(self, delay=1) -> None:
+        """
+        Reboot the device.
+
+        :param delay: Delay the reboot for `delay` seconds.
+        :return: None
+
+        Note that giving a delay of zero causes this to block.
+        """
+        self._query_helper("system", "reboot", {"delay": delay})
+
     def turn_off(self) -> None:
         """
         Turns the device off.
