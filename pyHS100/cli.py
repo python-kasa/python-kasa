@@ -26,7 +26,6 @@ pass_dev = click.make_pass_decorator(SmartDevice)
               help='The host name or IP address of the device to connect to.')
 @click.option('--alias', envvar="PYHS100_NAME", required=False,
               help='The device name, or alias, of the device to connect to.')
-
 @click.option('--debug/--normal', default=False)
 @click.option('--bulb', default=False, is_flag=True)
 @click.option('--plug', default=False, is_flag=True)
@@ -183,7 +182,10 @@ def emeter(dev, year, month, erase):
                 required=False)
 @pass_dev
 def brightness(dev, brightness):
-    """Get or set brightness. (Bulb Only)"""
+    """Get or set brightness."""
+    if not dev.is_dimmable:
+        click.echo("This device does not support brightness.")
+        return
     if brightness is None:
         click.echo("Brightness: %s" % dev.brightness)
     else:
@@ -262,6 +264,7 @@ def reboot(plug, delay):
     """Reboot the device."""
     click.echo("Rebooting the device..")
     plug.reboot(delay)
+
 
 if __name__ == "__main__":
     cli()
