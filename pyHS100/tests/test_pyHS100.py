@@ -362,3 +362,9 @@ class TestSmartPlugHS220(TestSmartPlugHS105):
 
         with self.assertRaises(ValueError):
             self.plug.brightness = -1
+
+        with self.assertRaises(ValueError):
+            self.plug.brightness = "foo"
+
+        with self.assertRaises(ValueError):
+            self.plug.brightness = 11.1
