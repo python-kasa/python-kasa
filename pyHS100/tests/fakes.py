@@ -165,6 +165,44 @@ sysinfo_hs200 = {'system': {'get_sysinfo': {'active_mode': 'schedule',
                             'updating': 0}}
 }
 
+sysinfo_hs220 = {
+    "system": {
+        "get_sysinfo": {
+            "sw_ver": "1.4.8 Build 180109 Rel.171240",
+            "hw_ver": "1.0",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS220(US)",
+            "mac": "B0:4E:26:11:22:33",
+            "dev_name": "Smart Wi-Fi Dimmer",
+            "alias": "Chandelier",
+            "relay_state": 0,
+            "brightness": 25,
+            "on_time": 0,
+            "active_mode": "none",
+            "feature": "TIM",
+            "updating": 0,
+            "icon_hash": "",
+            "rssi": -53,
+            "led_off": 0,
+            "longitude_i": -12.2,
+            "latitude_i": 12.2,
+            "hwId": "84DCCF37225C9E55319617F7D5C095BD",
+            "fwId": "00000000000000000000000000000000",
+            "deviceId": "800695154E6B882428E30F850473F34019A9E999",
+            "oemId": "3B13224B2807E0D48A9DD06EBD344CD6",
+            "preferred_state":
+                [
+                    {"index": 0, "brightness": 100},
+                    {"index": 1, "brightness": 75},
+                    {"index": 2, "brightness": 50},
+                    {"index": 3, "brightness": 25}
+                ],
+            "next_action": {"type": -1},
+            "err_code": 0
+        }
+    }
+}
+
 sysinfo_lb130 = {'system': {'get_sysinfo':
                     {'active_mode': 'none',
                      'alias': 'Living Room Side Table',
@@ -423,7 +461,7 @@ sysinfo_lb120 = {'system':
                  }
 
 
-def error(cls, target, cmd="no-command", msg="default msg"):
+def error(target, cmd="no-command", msg="default msg"):
     return {target: {cmd: {"err_code": -1323, "msg": msg}}}
 
 
@@ -460,7 +498,11 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
 
     def set_mac(self, x):
         _LOGGER.debug("Setting mac to %s", x)
-        self.proto["system"]["get_sysinfo"][""]
+        self.proto["system"]["get_sysinfo"]["mac"] = x
+
+    def set_hs220_brightness(self, x):
+        _LOGGER.debug("Setting brightness to %s", x)
+        self.proto["system"]["get_sysinfo"]["brightness"] = x["brightness"]
 
     def transition_light_state(self, x):
         _LOGGER.debug("Setting light state to %s", x)
@@ -491,8 +533,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         "time": { "get_time": { "year": 2017, "month": 1, "mday": 2, "hour": 3, "min": 4, "sec": 5 },
                   "get_timezone": {'zone_str': "test", 'dst_offset': -1, 'index': 12, 'tz_str': "test2" },
                   "set_timezone": None,
-
-        }
+        },
+        # HS220 brightness, different setter and getter
+        "smartlife.iot.dimmer": { "set_brightness": set_hs220_brightness,
+        },
     }
 
     def query(self, host, request, port=9999):

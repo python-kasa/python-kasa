@@ -11,7 +11,9 @@ from .fakes import (FakeTransportProtocol,
                     sysinfo_hs105,
                     sysinfo_hs110,
                     sysinfo_hs110_au_v2,
-                    sysinfo_hs200)
+                    sysinfo_hs200,
+                    sysinfo_hs220,
+                    )
 
 # Set IP instead of None if you want to run tests on a device.
 PLUG_IP = None
@@ -66,6 +68,14 @@ class TestSmartPlugHS100(TestCase):
         'type': str,
         'mic_type': str,
         'updating': check_int_bool,
+        # these are available on hs220
+        'brightness': int,
+        'preferred_state': [{
+            'brightness': All(int, Range(min=0, max=100)),
+            'index': int,
+        }],
+        "next_action": {"type": int},
+
     })
 
     current_consumption_schema = Schema(Any({
@@ -335,3 +345,26 @@ class TestSmartPlugHS105(TestSmartPlugHS100):
                                protocol=FakeTransportProtocol(self.SYSINFO))
 
         self.sysinfo_schema(plug_i.location)
+
+
+class TestSmartPlugHS220(TestSmartPlugHS105):
+    """HS220 with dimming functionality. Sysinfo looks similar to HS105."""
+    SYSINFO = sysinfo_hs220
+
+    def test_dimmable(self):
+        assert self.plug.is_dimmable
+        assert self.plug.brightness == 25
+        self.plug.brightness = 100
+        assert self.plug.brightness == 100
+
+        with self.assertRaises(ValueError):
+            self.plug.brightness = 110
+
+        with self.assertRaises(ValueError):
+            self.plug.brightness = -1
+
+        with self.assertRaises(ValueError):
+            self.plug.brightness = "foo"
+
+        with self.assertRaises(ValueError):
+            self.plug.brightness = 11.1

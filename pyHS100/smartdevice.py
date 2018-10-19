@@ -119,6 +119,9 @@ class SmartDevice(object):
             raise SmartDeviceException("Error on {}.{}: {}"
                                        .format(target, cmd, result))
 
+        if cmd not in result:
+            raise SmartDeviceException("No command in response: {}"
+                                       .format(response))
         result = result[cmd]
         del result["err_code"]
 

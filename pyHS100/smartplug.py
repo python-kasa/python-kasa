@@ -107,7 +107,7 @@ class SmartPlug(SmartDevice):
 
         """
         if not self.is_dimmable:
-            return None
+            return
 
         if not isinstance(value, int):
             raise ValueError("Brightness must be integer, "
@@ -128,10 +128,7 @@ class SmartPlug(SmartDevice):
         :rtype: bool
 
         """
-        dimmable = False
-        if "brightness" in self.sys_info:
-            dimmable = True
-        return dimmable
+        return "brightness" in self.sys_info
 
     @property
     def has_emeter(self):
@@ -201,7 +198,16 @@ class SmartPlug(SmartDevice):
 
     @property
     def state_information(self) -> Dict[str, Any]:
-        return {
+        """
+        Return switch-specific state information.
+
+        :return: Switch information dict, keys in user-presentable form.
+        :rtype: dict
+        """
+        info = {
             'LED state': self.led,
             'On since': self.on_since
         }
+        if self.is_dimmable:
+            info["Brightness"] = self.brightness
+        return info
