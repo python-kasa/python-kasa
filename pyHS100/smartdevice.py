@@ -186,27 +186,6 @@ class SmartDevice(object):
         """
         return self._query_helper("system", "get_sysinfo")
 
-    def identify(self) -> Tuple[str, str, Any]:
-        """
-        Query device information to identify model and featureset
-
-        :return: (alias, model, list of supported features)
-        :rtype: tuple
-        """
-        warnings.simplefilter('always', DeprecationWarning)
-        warnings.warn(
-            "use alias and model instead of idenfity()",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        warnings.simplefilter('default', DeprecationWarning)
-
-        info = self.sys_info
-
-        #  TODO sysinfo parsing should happen in sys_info
-        #  to avoid calling fetch here twice..
-        return info["alias"], info["model"], self.features
-
     @property
     def model(self) -> str:
         """
