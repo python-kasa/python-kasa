@@ -51,7 +51,7 @@ class TestSmartBulb(TestCase):
         'light_state': {
             'brightness': All(int, Range(min=0, max=100)),
             'color_temp': int,
-            'hue': All(int, Range(min=0, max=255)),
+            'hue': All(int, Range(min=0, max=359)),
             'mode': str,
             'on_off': check_int_bool,
             'saturation': All(int, Range(min=0, max=255)),
@@ -63,7 +63,7 @@ class TestSmartBulb(TestCase):
         'preferred_state': [{
             'brightness': All(int, Range(min=0, max=100)),
             'color_temp': int,
-            'hue': All(int, Range(min=0, max=255)),
+            'hue': All(int, Range(min=0, max=359)),
             'index': int,
             'saturation': All(int, Range(min=0, max=255)),
         }],
@@ -210,10 +210,10 @@ class TestSmartBulb(TestCase):
 
     def test_hsv(self):
         hue, saturation, brightness = self.bulb.hsv
-        self.assertTrue(0 <= hue <= 255)
+        self.assertTrue(0 <= hue <= 359)
         self.assertTrue(0 <= saturation <= 100)
         self.assertTrue(0 <= brightness <= 100)
-        for invalid_hue in [-1, 256, 0.5]:
+        for invalid_hue in [-1, 360, 0.5]:
             with self.assertRaises(SmartDeviceException):
                 self.bulb.hsv = (invalid_hue, 0, 0)
 

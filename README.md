@@ -206,7 +206,7 @@ if bulb.is_variable_color_temp:
 
 ### Setting the color
 
-Hue is given in degrees (0-360) and saturation and value in percentage.
+Hue is given in degrees (0-359) and saturation and value in percentage.
 
 ```python
 print(bulb.hsv)

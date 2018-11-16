@@ -142,10 +142,10 @@ class SmartBulb(SmartDevice):
         if not self.is_color:
             return None
 
-        if not isinstance(state[0], int) or not (0 <= state[0] <= 255):
+        if not isinstance(state[0], int) or not (0 <= state[0] <= 359):
             raise SmartDeviceException(
                     'Invalid hue value: {} '
-                    '(valid range: 0-255)'.format(state[0]))
+                    '(valid range: 0-359)'.format(state[0]))
 
         if not isinstance(state[1], int) or not (0 <= state[1] <= 100):
             raise SmartDeviceException(
