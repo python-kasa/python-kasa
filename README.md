@@ -3,6 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/pyHS100.svg)](https://badge.fury.io/py/pyHS100)
 [![Build Status](https://travis-ci.org/GadgetReactor/pyHS100.svg?branch=master)](https://travis-ci.org/GadgetReactor/pyHS100)
 [![Coverage Status](https://coveralls.io/repos/github/GadgetReactor/pyHS100/badge.svg?branch=master)](https://coveralls.io/github/GadgetReactor/pyHS100?branch=master)
+[![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
 
 Python Library to control TPLink smart plugs/switches and smart bulbs.
 
