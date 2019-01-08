@@ -74,17 +74,20 @@ class SmartDevice(object):
 
     def __init__(self,
                  host: str,
-                 protocol: Optional[TPLinkSmartHomeProtocol] = None) -> None:
+                 protocol: Optional[TPLinkSmartHomeProtocol] = None,
+                 context: str = None) -> None:
         """
         Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
+        :param context: optional child ID for context in a parent device
         """
         self.host = host
         if not protocol:
             protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
         self.emeter_type = "emeter"  # type: str
+        self.context = context
 
     def _query_helper(self,
                       target: str,
@@ -100,12 +103,17 @@ class SmartDevice(object):
         :rtype: dict
         :raises SmartDeviceException: if command was not executed correctly
         """
+        if self.context is None:
+            request = {target: {cmd: arg}}
+        else:
+            request = {"context": {"child_ids": [self.context]},
+                       target: {cmd: arg}}
         if arg is None:
             arg = {}
         try:
             response = self.protocol.query(
                 host=self.host,
-                request={target: {cmd: arg}}
+                request=request,
             )
         except Exception as ex:
             raise SmartDeviceException('Communication error') from ex
@@ -384,11 +392,11 @@ class SmartDevice(object):
 
     def get_emeter_realtime(self) -> Optional[Dict]:
         """
-        Retrive current energy readings from device.
+        Retrieve current energy readings from device.
 
         :returns: current readings or False
         :rtype: dict, None
-                  None if device has no energy meter or error occured
+                  None if device has no energy meter or error occurred
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
@@ -405,11 +413,11 @@ class SmartDevice(object):
         Retrieve daily statistics for a given month
 
         :param year: year for which to retrieve statistics (default: this year)
-        :param month: month for which to retrieve statistcs (default: this
+        :param month: month for which to retrieve statistics (default: this
                       month)
         :param kwh: return usage in kWh (default: True)
         :return: mapping of day of month to value
-                 None if device has no energy meter or error occured
+                 None if device has no energy meter or error occurred
         :rtype: dict
         :raises SmartDeviceException: on error
         """
@@ -483,9 +491,9 @@ class SmartDevice(object):
 
     def current_consumption(self) -> Optional[float]:
         """
-        Get the current power consumption in Watt.
+        Get the current power consumption in Watts.
 
-        :return: the current power consumption in Watt.
+        :return: the current power consumption in Watts.
                  None if device has no energy meter.
         :raises SmartDeviceException: on error
         """

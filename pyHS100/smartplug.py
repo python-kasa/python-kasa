@@ -33,9 +33,10 @@ class SmartPlug(SmartDevice):
 
     def __init__(self,
                  host: str,
-                 protocol: 'TPLinkSmartHomeProtocol' = None) -> None:
-        SmartDevice.__init__(self, host, protocol)
-        self.emeter_type = "emeter"
+                 protocol: 'TPLinkSmartHomeProtocol' = None,
+                 context: str = None) -> None:
+        SmartDevice.__init__(self, host, protocol, context)
+        self._type = "emeter"
 
     @property
     def state(self) -> str:
@@ -126,7 +127,6 @@ class SmartPlug(SmartDevice):
 
         :return: True if switch supports brightness changes, False otherwise
         :rtype: bool
-
         """
         return "brightness" in self.sys_info
 
@@ -193,8 +193,15 @@ class SmartPlug(SmartDevice):
         :return: datetime for on since
         :rtype: datetime
         """
-        return datetime.datetime.now() - \
-            datetime.timedelta(seconds=self.sys_info["on_time"])
+        if self.context:
+            for plug in self.sys_info["children"]:
+                if plug["id"] == self.context:
+                    on_time = plug["on_time"]
+                    break
+        else:
+            on_time = self.sys_info["on_time"]
+
+        return datetime.datetime.now() - datetime.timedelta(seconds=on_time)
 
     @property
     def state_information(self) -> Dict[str, Any]:

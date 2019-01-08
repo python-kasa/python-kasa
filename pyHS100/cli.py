@@ -12,6 +12,7 @@ if sys.version_info < (3, 4):
 from pyHS100 import (SmartDevice,
                      SmartPlug,
                      SmartBulb,
+                     SmartStrip,
                      Discover)  # noqa: E402
 
 pass_dev = click.make_pass_decorator(SmartDevice)
@@ -29,8 +30,9 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option('--debug/--normal', default=False)
 @click.option('--bulb', default=False, is_flag=True)
 @click.option('--plug', default=False, is_flag=True)
+@click.option('--strip', default=False, is_flag=True)
 @click.pass_context
-def cli(ctx, ip, host, alias, debug, bulb, plug):
+def cli(ctx, ip, host, alias, debug, bulb, plug, strip):
     """A cli tool for controlling TP-Link smart home plugs."""
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -58,15 +60,18 @@ def cli(ctx, ip, host, alias, debug, bulb, plug):
         ctx.invoke(discover)
         return
     else:
-        if not bulb and not plug:
-            click.echo("No --bulb nor --plug given, discovering..")
+        if not bulb and not plug and not strip:
+            click.echo("No --strip nor --bulb nor --plug given, discovering..")
             dev = Discover.discover_single(host)
         elif bulb:
             dev = SmartBulb(host)
         elif plug:
             dev = SmartPlug(host)
+        elif strip:
+            dev = SmartStrip(host)
         else:
-            click.echo("Unable to detect type, use --bulb or --plug!")
+            click.echo(
+                "Unable to detect type, use --strip or --bulb or --plug!")
             return
         ctx.obj = dev
 
@@ -168,13 +173,22 @@ def emeter(dev, year, month, erase):
         dev.erase_emeter_stats()
         return
 
-    click.echo("Current state: %s" % dev.get_emeter_realtime())
     if year:
         click.echo("== For year %s ==" % year.year)
-        click.echo(dev.get_emeter_monthly(year.year))
+        emeter_status = dev.get_emeter_monthly(year.year)
     elif month:
         click.echo("== For month %s of %s ==" % (month.month, month.year))
-        dev.get_emeter_daily(year=month.year, month=month.month)
+        emeter_status = dev.get_emeter_daily(year=month.year,
+                                             month=month.month)
+    else:
+        emeter_status = dev.get_emeter_realtime()
+        click.echo("== Current State ==")
+
+    if isinstance(emeter_status, list):
+        for plug in emeter_status:
+            click.echo("Plug %d: %s" % (emeter_status.index(plug) + 1, plug))
+    else:
+        click.echo("%s" % emeter_status)
 
 
 @cli.command()
@@ -245,19 +259,27 @@ def time(dev):
 
 
 @cli.command()
+@click.argument('index', type=int, required=False)
 @pass_dev
-def on(plug):
+def on(plug, index):
     """Turn the device on."""
     click.echo("Turning on..")
-    plug.turn_on()
+    if index is None:
+        plug.turn_on()
+    else:
+        plug.turn_on(index=(index - 1))
 
 
 @cli.command()
+@click.argument('index', type=int, required=False)
 @pass_dev
-def off(plug):
+def off(plug, index):
     """Turn the device off."""
     click.echo("Turning off..")
-    plug.turn_off()
+    if index is None:
+        plug.turn_off()
+    else:
+        plug.turn_off(index=(index - 1))
 
 
 @cli.command()

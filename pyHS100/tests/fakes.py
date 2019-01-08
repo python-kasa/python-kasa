@@ -5,34 +5,41 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-def get_realtime(obj, x):
+
+def get_realtime(obj, x, child_ids=[]):
     return {"current":0.268587,"voltage":125.836131,"power":33.495623,"total":0.199000}
 
-def get_monthstat(obj, x):
+
+def get_monthstat(obj, x, child_ids=[]):
     if x["year"] < 2016:
         return {"month_list":[]}
 
     return {"month_list": [{"year": 2016, "month": 11, "energy": 1.089000}, {"year": 2016, "month": 12, "energy": 1.582000}]}
 
-def get_daystat(obj, x):
+
+def get_daystat(obj, x, child_ids=[]):
     if x["year"] < 2016:
         return {"day_list":[]}
 
     return {"day_list": [{"year": 2016, "month": 11, "day": 24, "energy": 0.026000},
                   {"year": 2016, "month": 11, "day": 25, "energy": 0.109000}]}
 
+
 emeter_support = {"get_realtime": get_realtime,
                   "get_monthstat": get_monthstat,
                   "get_daystat": get_daystat,}
 
+
 def get_realtime_units(obj, x):
     return {"power_mw": 10800}
+
 
 def get_monthstat_units(obj, x):
     if x["year"] < 2016:
         return {"month_list":[]}
 
     return {"month_list": [{"year": 2016, "month": 11, "energy_wh": 32}, {"year": 2016, "month": 12, "energy_wh": 16}]}
+
 
 def get_daystat_units(obj, x):
     if x["year"] < 2016:
@@ -41,9 +48,90 @@ def get_daystat_units(obj, x):
     return {"day_list": [{"year": 2016, "month": 11, "day": 24, "energy_wh": 20},
                   {"year": 2016, "month": 11, "day": 25, "energy_wh": 32}]}
 
+
 emeter_units_support = {"get_realtime": get_realtime_units,
                         "get_monthstat": get_monthstat_units,
                         "get_daystat": get_daystat_units,}
+
+sysinfo_hs300 = {
+    'system': {
+        'get_sysinfo': {
+            'sw_ver': '1.0.6 Build 180627 Rel.081000',
+            'hw_ver': '1.0',
+            'model': 'HS300(US)',
+            'deviceId': '7003ADE7030B7EFADE747104261A7A70931DADF4',
+            'oemId': 'FFF22CFF774A0B89F7624BFC6F50D5DE',
+            'hwId': '22603EA5E716DEAEA6642A30BE87AFCB',
+            'rssi': -53,
+            'longitude_i': -1198698,
+            'latitude_i': 352737,
+            'alias': 'TP-LINK_Power Strip_2233',
+            'mic_type': 'IOT.SMARTPLUGSWITCH',
+            'feature': 'TIM:ENE',
+            'mac': '50:C7:BF:11:22:33',
+            'updating': 0,
+            'led_off': 0,
+            'children': [
+                {
+                    'id': '7003ADE7030B7EFADE747104261A7A70931DADF400',
+                    'state': 1,
+                    'alias': 'my plug 1 device',
+                    'on_time': 5423,
+                    'next_action': {
+                        'type': -1
+                    }
+                },
+                {
+                    'id': '7003ADE7030B7EFADE747104261A7A70931DADF401',
+                    'state': 1,
+                    'alias': 'my plug 2 device',
+                    'on_time': 4750,
+                    'next_action': {
+                        'type': -1
+                    }
+                },
+                {
+                    'id': '7003ADE7030B7EFADE747104261A7A70931DADF402',
+                    'state': 1,
+                    'alias': 'my plug 3 device',
+                    'on_time': 4748,
+                    'next_action': {
+                        'type': -1
+                    }
+                },
+                {
+                    'id': '7003ADE7030B7EFADE747104261A7A70931DADF403',
+                    'state': 1,
+                    'alias': 'my plug 4 device',
+                    'on_time': 4742,
+                    'next_action': {
+                        'type': -1
+                    }
+                },
+                {
+                    'id': '7003ADE7030B7EFADE747104261A7A70931DADF404',
+                    'state': 1,
+                    'alias': 'my plug 5 device',
+                    'on_time': 4745,
+                    'next_action': {
+                        'type': -1
+                    }
+                },
+                {
+                    'id': '7003ADE7030B7EFADE747104261A7A70931DADF405',
+                    'state': 1,
+                    'alias': 'my plug 6 device',
+                    'on_time': 5028,
+                    'next_action': {
+                        'type': -1
+                    }
+                }
+            ],
+            'child_num': 6,
+            'err_code': 0
+        }
+    }
+}
 
 sysinfo_hs100 = {'system': {'get_sysinfo':
                                 {'active_mode': 'schedule',
@@ -484,13 +572,28 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         self.proto = proto
         self.invalid = invalid
 
-    def set_alias(self, x):
+    def set_alias(self, x, child_ids=[]):
         _LOGGER.debug("Setting alias to %s", x["alias"])
-        self.proto["system"]["get_sysinfo"]["alias"] = x["alias"]
+        if child_ids:
+            for child in self.proto["system"]["get_sysinfo"]["children"]:
+                if child["id"] in child_ids:
+                    child["alias"] = x["alias"]
+        else:
+            self.proto["system"]["get_sysinfo"]["alias"] = x["alias"]
 
-    def set_relay_state(self, x):
-        _LOGGER.debug("Setting relay state to %s", x)
-        self.proto["system"]["get_sysinfo"]["relay_state"] = x["state"]
+    def set_relay_state(self, x, child_ids=[]):
+        _LOGGER.debug("Setting relay state to %s", x["state"])
+
+        if not child_ids and "children" in self.proto["system"]["get_sysinfo"]:
+            for child in self.proto["system"]["get_sysinfo"]["children"]:
+                child_ids.append(child["id"])
+
+        if child_ids:
+            for child in self.proto["system"]["get_sysinfo"]["children"]:
+                if child["id"] in child_ids:
+                    child["state"] = x["state"]
+        else:
+            self.proto["system"]["get_sysinfo"]["relay_state"] = x["state"]
 
     def set_led_off(self, x):
         _LOGGER.debug("Setting led off to %s", x)
@@ -516,6 +619,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
                     "get_dev_icon": {"icon": None, "hash": None},
                     "set_mac_addr": set_mac,
                     "get_sysinfo": None,
+                    "context": None,
         },
         "emeter": { "get_realtime": None,
                     "get_daystat": None,
@@ -537,13 +641,23 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         # HS220 brightness, different setter and getter
         "smartlife.iot.dimmer": { "set_brightness": set_hs220_brightness,
         },
+        "context": {"child_ids": None},
     }
 
     def query(self, host, request, port=9999):
         if self.invalid:
             raise SmartDeviceException("Invalid connection, can't query!")
 
+        _LOGGER.debug("Requesting {} from {}:{}".format(request, host, port))
+
         proto = self.proto
+
+        # collect child ids from context
+        try:
+            child_ids = request["context"]["child_ids"]
+            request.pop("context", None)
+        except KeyError:
+            child_ids = []
 
         target = next(iter(request))
         if target not in proto.keys():
@@ -557,7 +671,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         _LOGGER.debug("Going to execute {}.{} (params: {}).. ".format(target, cmd, params))
 
         if callable(proto[target][cmd]):
-            res = proto[target][cmd](self, params)
+            if child_ids:
+                res = proto[target][cmd](self, params, child_ids)
+            else:
+                res = proto[target][cmd](self, params)
             # verify that change didn't break schema, requires refactoring..
             #TestSmartPlug.sysinfo_schema(self.proto["system"]["get_sysinfo"])
             return success(target, cmd, res)

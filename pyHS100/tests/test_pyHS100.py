@@ -84,7 +84,7 @@ class TestSmartPlugHS100(TestCase):
         'total': Any(Coerce(float, Range(min=0)), None),
         'current': Any(All(float, Range(min=0)), None),
 
-        'voltage_mw': Any(All(float, Range(min=0, max=300000)), None),
+        'voltage_mv': Any(All(float, Range(min=0, max=300000)), None),
         'power_mw': Any(Coerce(float, Range(min=0)), None),
         'total_wh': Any(Coerce(float, Range(min=0)), None),
         'current_ma': Any(All(float, Range(min=0)), None),
