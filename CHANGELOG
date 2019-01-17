@@ -1,6 +1,54 @@
 Changelog
 =========
 
+0.3.4 (2019-01-16)
+------------
+
+There are two notable changes (and other small fixes) in this minor release thanks to our contributors:
+
+* Support for HS300 smartstrip (thanks to jimboca!)
+* The hue range for light bulbs is fixed (thanks to nkonopinski, Annika Jacobs and Joe Zach!)
+
+
+- Updated valid range to 360 (with passing tests) (#153) [Annika Jacobs, Zac Koch]
+
+  * Updated valid range to 360
+
+  with it set to 359 it will not show the color red. Just tested this with a buddies bulb - same model/fw
+  https://imgur.com/a/kSNZIuL
+
+- Add support for HS300 power strip (#137) [jimboca]
+
+- Add HS103 to readme. [Teemu R]
+
+- Avoid 'referenced before assignment' exception (#150) [Kevron Rees]
+
+- Cli: show an error for incorrect hsv values (#142) [Annika Jacobs]
+
+  Raising an exception if an incomplete HSV colour is provided.
+
+- Add a "Reviewed by Hound" badge (#139) [Scott Albertson]
+
+- Change valid hue range to 0-359 (fixes #130), update README.md & test
+  (#140) [Annika Jacobs, nkonopinski]
+
+  Tested on LB130(EU) hardware 1.0, firmware 1.8.6 Build 180809 Rel.091659
+
+- Remove deprecated identify, this has been deprecated for long enough.
+  (#136) [Teemu R]
+
+  * Remove deprecated identify, this has been deprecated for long enough.
+
+- Add missed test for invalid types. [Teemu R]
+
+- Update README to include mention about hs220. [Teemu R]
+
+- Add tests and pretty output for HS220, fix minor issues in tests.
+  [Teemu R]
+
+- Add reboot command to restart the device (#129) [Teemu R]
+
+
 0.3.3 (2018-09-06)
 ------------------
 
