@@ -5,7 +5,9 @@ from typing import Any, Dict, Optional, Tuple
 TPLINK_KELVIN = {'LB130': (2500, 9000),
                  'LB120': (2700, 6500),
                  'LB230': (2500, 9000),
-                 'KB130': (2500, 9000)}
+                 'KB130': (2500, 9000),
+                 'KL130': (2500, 9000),
+                 'KL120': (2700, 6500)}
 
 
 class SmartBulb(SmartDevice):
