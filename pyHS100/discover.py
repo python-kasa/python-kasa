@@ -23,7 +23,7 @@ class Discover:
         and waits for given timeout for answers from devices.
 
         :param protocol: Protocol implementation to use
-        :param timeout: How long to wait for responses, defaults to 5
+        :param timeout: How long to wait for responses, defaults to 3
         :param port: port to send broadcast messages, defaults to 9999.
         :rtype: dict
         :return: Array of json objects {"ip", "port", "sys_info"}
