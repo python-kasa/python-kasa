@@ -285,6 +285,7 @@ class SmartBulb(SmartDevice):
         }  # type: Dict[str, Any]
         if self.is_variable_color_temp:
             info["Color temperature"] = self.color_temp
+            info["Valid temperature range"] = self.valid_temperature_range
         if self.is_color:
             info["HSV"] = self.hsv
 

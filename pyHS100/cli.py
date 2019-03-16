@@ -217,6 +217,9 @@ def temperature(dev, temperature):
         click.echo("Color temperature: %s" % dev.color_temp)
         if dev.valid_temperature_range != (0, 0):
             click.echo("(min: %s, max: %s)" % dev.valid_temperature_range)
+        else:
+            click.echo("Temperature range unknown, please open a github issue"
+                       " or a pull request for model '%s'" % dev.model)
     else:
         click.echo("Setting color temperature to %s" % temperature)
         dev.color_temp = temperature
