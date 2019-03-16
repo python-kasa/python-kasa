@@ -129,6 +129,15 @@ def state(ctx, dev):
 
     click.echo(click.style("Device state: %s" % "ON" if dev.is_on else "OFF",
                            fg="green" if dev.is_on else "red"))
+    if dev.num_children > 0:
+        is_on = dev.is_on()
+        aliases = dev.get_alias()
+        for child in range(dev.num_children):
+            click.echo(
+                click.style("  * %s state: %s" %
+                            (aliases[child],
+                             "ON" if is_on[child] else "OFF"),
+                            fg="green" if is_on[child] else "red"))
     click.echo("Host/IP: %s" % dev.host)
     for k, v in dev.state_information.items():
         click.echo("%s: %s" % (k, v))

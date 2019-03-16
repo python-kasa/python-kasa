@@ -88,6 +88,7 @@ class SmartDevice(object):
         self.protocol = protocol
         self.emeter_type = "emeter"  # type: str
         self.context = context
+        self.num_children = 0
 
     def _query_helper(self,
                       target: str,
