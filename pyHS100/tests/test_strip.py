@@ -436,3 +436,6 @@ class TestSmartStripHS300(TestCase):
 
     def test_mac(self):
         self.sysinfo_schema({'mac': self.strip.mac})  # wrapping for vol
+
+    def test_repr(self):
+        repr(self.strip)

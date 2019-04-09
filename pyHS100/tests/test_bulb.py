@@ -225,6 +225,9 @@ class TestSmartBulb(TestCase):
             with self.assertRaises(SmartDeviceException):
                 self.bulb.hsv = (0, 0, invalid_brightness)
 
+    def test_repr(self):
+        repr(self.bulb)
+
 
 class TestSmartBulbLB100(TestSmartBulb):
     SYSINFO = sysinfo_lb100

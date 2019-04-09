@@ -271,6 +271,9 @@ class TestSmartPlugHS100(TestCase):
         self.sysinfo_schema({'mac': self.plug.mac})  # wrapping for val
         # TODO check setting?
 
+    def test_repr(self):
+        repr(self.plug)
+
 
 class TestSmartPlugHS110(TestSmartPlugHS100):
     SYSINFO = sysinfo_hs110
