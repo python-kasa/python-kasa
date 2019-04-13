@@ -1,6 +1,50 @@
 Changelog
 =========
 
+0.3.5 (2019-04-13)
+------------
+
+- Fix for SmartStrip repr (#169) [Alex]
+
+  * Added unit tests for repr.
+
+  * Fix repr for SmartStrip.
+
+  Fixes #165
+
+- Smartstrip: return on_since state information only when the socket is on (#161) [Teemu R]
+
+  * Smartstrip: return on_since state information only when the socket is on
+
+  Fixes #160
+
+  * add proper cli printout for hs300 child sockets
+
+  * iterate over range, not an integer
+
+- Bulb: add the temperature range to state_information, inform the user if the info is missing when calling temperature (#163) [Teemu R]
+
+- Fix Discover#discover incorrect documentation (#159) [Georgi Kirichkov]
+
+  The documentation states the timeout defaults to 5 seconds, but in the definition of the method timeout is set to 3
+
+- Add kelvin range for KL130 (#156) [dieselrabbit]
+
+  * Add kelvin range for KL130 (new color bulb)
+
+  * Add kelvin range for KL120
+
+  Unable to test this personally as I don't have this bulb.
+
+- Add LB230. [Teemu R]
+
+  Works according to https://github.com/home-assistant/home-assistant.io/pull/8090
+
+- Add KL series of bulbs. [Teemu R]
+
+  works according to https://github.com/home-assistant/home-assistant.io/pull/8134
+
+
 0.3.4 (2019-01-16)
 ------------
 
