@@ -16,7 +16,8 @@ class Discover:
     @staticmethod
     def discover(protocol: TPLinkSmartHomeProtocol = None,
                  port: int = 9999,
-                 timeout: int = 3) -> Dict[str, SmartDevice]:
+                 timeout: int = 3,
+                 discovery_packets = 3) -> Dict[str, SmartDevice]:
         """
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
@@ -42,7 +43,8 @@ class Discover:
         _LOGGER.debug("Sending discovery to %s:%s", target, port)
 
         encrypted_req = protocol.encrypt(req)
-        sock.sendto(encrypted_req[4:], (target, port))
+        for i in range(discovery_packets):
+            sock.sendto(encrypted_req[4:], (target, port))
 
         devices = {}
         _LOGGER.debug("Waiting %s seconds for responses...", timeout)
