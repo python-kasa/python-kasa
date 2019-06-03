@@ -125,13 +125,18 @@ class SmartDevice(object):
 
         result = response[target]
         if "err_code" in result and result["err_code"] != 0:
-            raise SmartDeviceException("Error on {}.{}: {}"
+            raise SmartDeviceException("Error on {} {}: {}"
                                        .format(target, cmd, result))
 
         if cmd not in result:
             raise SmartDeviceException("No command in response: {}"
                                        .format(response))
+
         result = result[cmd]
+        if "err_code" in result and result["err_code"] != 0:
+            raise SmartDeviceException("Error on {} {}: {}"
+                                       .format(target, cmd, result))
+
         del result["err_code"]
 
         return result
