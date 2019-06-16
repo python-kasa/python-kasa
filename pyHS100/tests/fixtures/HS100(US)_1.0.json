@@ -1,0 +1,47 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "err_code": -1,
+            "err_msg": "module not support"
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "Mock hs100",
+            "dev_name": "Wi-Fi Smart Plug",
+            "deviceId": "048F069965D3230FD1382F0B78EAE68D42CAA2DE",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "92688D028799C60F926049D1C9EFD9E8",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude": 63.5442,
+            "latitude_i": 63.5442,
+            "led_off": 0,
+            "longitude": -148.2817,
+            "longitude_i": -148.2817,
+            "mac": "50:c7:bf:a3:71:c0",
+            "model": "HS100(US)",
+            "oemId": "149C8A24AA3A1445DE84F00DFB210D60",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -65,
+            "sw_ver": "1.2.5 Build 171129 Rel.174814",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}

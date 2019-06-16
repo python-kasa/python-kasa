@@ -1,0 +1,49 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current": 0.015342,
+            "err_code": 0,
+            "power": 0.983971,
+            "total": 32.448,
+            "voltage": 235.595234
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "Kitchen",
+            "dev_name": "Wi-Fi Smart Plug With Energy Monitoring",
+            "deviceId": "8006588E50AD389303FF31AB6302907A17442F16",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "fwId": "00000000000000000000000000000000",
+            "hwId": "45E29DA8382494D2E82688B52A0B2EB5",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude": 51.476938,
+            "led_off": 1,
+            "longitude": 7.216849,
+            "mac": "50:C7:BF:01:F8:CD",
+            "model": "HS110(EU)",
+            "oemId": "3D341ECE302C0642C99E31CE2430544B",
+            "on_time": 512874,
+            "relay_state": 1,
+            "rssi": -71,
+            "sw_ver": "1.2.5 Build 171213 Rel.101523",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}

@@ -1,23 +1,54 @@
 import socket
 import logging
 import json
-from typing import Dict, Type
+from typing import Dict, Type, Optional
 
-from pyHS100 import (TPLinkSmartHomeProtocol, SmartDevice, SmartPlug,
-                     SmartBulb, SmartStrip)
+from pyHS100 import (
+    TPLinkSmartHomeProtocol,
+    SmartDevice,
+    SmartPlug,
+    SmartBulb,
+    SmartStrip,
+    SmartDeviceException,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class Discover:
-    DISCOVERY_QUERY = {"system": {"get_sysinfo": None},
-                       "emeter": {"get_realtime": None}}
+    """Discover TPLink Smart Home devices.
+
+    The main entry point for this library is Discover.discover(),
+    which returns a dictionary of the found devices. The key is the IP address
+    of the device and the value contains ready-to-use, SmartDevice-derived
+    device object.
+
+    discover_single() can be used to initialize a single device given its
+    IP address. If the type of the device and its IP address is already known,
+    you can initialize the corresponding device class directly without this.
+
+    The protocol uses UDP broadcast datagrams on port 9999 for discovery.
+
+
+    """
+
+    DISCOVERY_QUERY = {
+        "system": {"get_sysinfo": None},
+        "emeter": {"get_realtime": None},
+        "smartlife.iot.dimmer": {"get_dimmer_parameters": None},
+        "smartlife.iot.common.emeter": {"get_realtime": None},
+        "smartlife.iot.smartbulb.lightingservice": {"get_light_state": None},
+    }
 
     @staticmethod
-    def discover(protocol: TPLinkSmartHomeProtocol = None,
-                 port: int = 9999,
-                 timeout: int = 3,
-                 discovery_packets = 3) -> Dict[str, SmartDevice]:
+    def discover(
+        protocol: TPLinkSmartHomeProtocol = None,
+        port: int = 9999,
+        timeout: int = 3,
+        discovery_packets=3,
+        return_raw=False,
+    ) -> Dict[str, SmartDevice]:
+
         """
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
@@ -55,21 +86,22 @@ class Discover:
                 ip, port = addr
                 info = json.loads(protocol.decrypt(data))
                 device_class = Discover._get_device_class(info)
-                if device_class is not None:
+                if return_raw:
+                    devices[ip] = info
+                elif device_class is not None:
                     devices[ip] = device_class(ip)
         except socket.timeout:
             _LOGGER.debug("Got socket timeout, which is okay.")
         except Exception as ex:
             _LOGGER.error("Got exception %s", ex, exc_info=True)
+        _LOGGER.debug("Found %s devices: %s", len(devices), devices)
         return devices
 
     @staticmethod
-    def discover_single(host: str,
-                        protocol: TPLinkSmartHomeProtocol = None
-                        ) -> SmartDevice:
-        """
-        Similar to discover(), except only return device object for a single
-        host.
+    def discover_single(
+        host: str, protocol: TPLinkSmartHomeProtocol = None
+    ) -> Optional[SmartDevice]:
+        """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
         :param protocol: Protocol implementation to use
@@ -84,29 +116,28 @@ class Discover:
         device_class = Discover._get_device_class(info)
         if device_class is not None:
             return device_class(host)
-        else:
-            return None
+
+        return None
 
     @staticmethod
-    def _get_device_class(info: dict) -> Type[SmartDevice]:
+    def _get_device_class(info: dict) -> Optional[Type[SmartDevice]]:
         """Find SmartDevice subclass for device described by passed data."""
         if "system" in info and "get_sysinfo" in info["system"]:
             sysinfo = info["system"]["get_sysinfo"]
             if "type" in sysinfo:
-                type = sysinfo["type"]
+                type_ = sysinfo["type"]
             elif "mic_type" in sysinfo:
-                type = sysinfo["mic_type"]
+                type_ = sysinfo["mic_type"]
             else:
-                _LOGGER.error("Unable to find the device type field!")
-                type = "UNKNOWN"
+                raise SmartDeviceException("Unable to find the device type field!")
         else:
-            _LOGGER.error("No 'system' nor 'get_sysinfo' in response")
+            raise SmartDeviceException("No 'system' nor 'get_sysinfo' in response")
 
-        if "smartplug" in type.lower() and "children" in sysinfo:
+        if "smartplug" in type_.lower() and "children" in sysinfo:
             return SmartStrip
-        elif "smartplug" in type.lower():
+        elif "smartplug" in type_.lower():
             return SmartPlug
-        elif "smartbulb" in type.lower():
+        elif "smartbulb" in type_.lower():
             return SmartBulb
 
         return None

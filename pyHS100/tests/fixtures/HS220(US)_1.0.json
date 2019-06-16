@@ -1,0 +1,75 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "err_code": -1,
+            "err_msg": "module not support"
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "get_dimmer_parameters": {
+            "bulb_type": 1,
+            "err_code": 0,
+            "fadeOffTime": 3000,
+            "fadeOnTime": 3000,
+            "gentleOffTime": 510000,
+            "gentleOnTime": 3000,
+            "minThreshold": 0,
+            "rampRate": 30
+        }
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "count_down",
+            "alias": "Mock hs220",
+            "brightness": 50,
+            "dev_name": "Smart Wi-Fi Dimmer",
+            "deviceId": "98E16F2D5ED204F3094CF472260237133DC0D547",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "231004CCCDB6C0B8FC7A3260C3470257",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "INVALIDlatitude": 11.6210,
+            "latitude_i": 11.6210,
+            "led_off": 0,
+            "INVALIDlongitude": 42.2074,
+            "longitude_i": 42.2074,
+            "mac": "50:c7:bf:af:75:5d",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS220(US)",
+            "oemId": "8FBD0F3CCF7E82836DC7996C524EF772",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "index": 0
+                },
+                {
+                    "brightness": 75,
+                    "index": 1
+                },
+                {
+                    "brightness": 50,
+                    "index": 2
+                },
+                {
+                    "brightness": 25,
+                    "index": 3
+                }
+            ],
+            "relay_state": 0,
+            "rssi": -65,
+            "sw_ver": "1.5.7 Build 180912 Rel.104837",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}

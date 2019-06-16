@@ -1,0 +1,103 @@
+{
+    "emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 10800
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_light_state": {
+            "dft_on_state": {
+                "brightness": 100,
+                "color_temp": 2700,
+                "hue": 0,
+                "mode": "normal",
+                "saturation": 0
+            },
+            "err_code": 0,
+            "on_off": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Mock lb100",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Smart Wi-Fi LED Bulb with Dimmable Light",
+            "dev_state": "normal",
+            "deviceId": "15BD5A6C4B729A7C0D4D46ADDFA7E2600793C56A",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "heapsize": 302452,
+            "hwId": "1B0DF0A2EFE6251DBE726D1D2167C78F",
+            "hw_ver": "1.0",
+            "is_color": 0,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 0,
+            "latitude": -51.8361,
+            "latitude_i": -51.8361,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "mode": "normal",
+                    "saturation": 0
+                },
+                "err_code": 0,
+                "on_off": 0
+            },
+            "longitude": -34.0697,
+            "longitude_i": -34.0697,
+            "mac": "50:c7:bf:51:10:65",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "LB100(US)",
+            "oemId": "C9CF655C9A5AA101E66EBA5B382E40CC",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 75,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 25,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 2,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 1,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 3,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -65,
+            "sw_ver": "1.4.3 Build 170504 Rel.144921"
+        }
+    }
+}

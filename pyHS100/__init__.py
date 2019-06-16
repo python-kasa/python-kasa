@@ -14,6 +14,7 @@ to be handled by the user of the library.
 """
 # flake8: noqa
 from .smartdevice import SmartDevice, SmartDeviceException, EmeterStatus
+from .smartdevice import SmartDevice, SmartDeviceException, EmeterStatus, DeviceType
 from .smartplug import SmartPlug
 from .smartbulb import SmartBulb
 from .smartstrip import SmartStrip, SmartStripException

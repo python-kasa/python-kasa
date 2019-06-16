@@ -1,0 +1,47 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "err_code": -1,
+            "err_msg": "module not support"
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "Mock hs200",
+            "dev_name": "Wi-Fi Smart Light Switch",
+            "deviceId": "EC565185337CF59A4C9A73442AAD5F11C6E91716",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "4B5DB5E42F13728107D075EF5C3ECFA1",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude": 58.7882,
+            "latitude_i": 58.7882,
+            "led_off": 0,
+            "longitude": 107.7225,
+            "longitude_i": 107.7225,
+            "mac": "50:c7:bf:95:4b:45",
+            "model": "HS200(US)",
+            "oemId": "D2A5D690B25980755216FD684AF8CD88",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -65,
+            "sw_ver": "1.1.0 Build 160521 Rel.085826",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}

@@ -1,0 +1,103 @@
+{
+    "emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 10800
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_light_state": {
+            "dft_on_state": {
+                "brightness": 100,
+                "color_temp": 2700,
+                "hue": 0,
+                "mode": "normal",
+                "saturation": 0
+            },
+            "err_code": 0,
+            "on_off": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Mock lb120",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Smart Wi-Fi LED Bulb with Tunable White Light",
+            "dev_state": "normal",
+            "deviceId": "62FD818E5B66A509D571D07D0F00FA4DD6468494",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "heapsize": 302452,
+            "hwId": "CC0588817E251DF996F1848ED331F543",
+            "hw_ver": "1.0",
+            "is_color": 0,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude": -76.9197,
+            "latitude_i": -76.9197,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "mode": "normal",
+                    "saturation": 0
+                },
+                "err_code": 0,
+                "on_off": 0
+            },
+            "longitude": 164.7293,
+            "longitude_i": 164.7293,
+            "mac": "50:c7:bf:dc:62:13",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "LB120(US)",
+            "oemId": "05D0D97951F565579A7F5A70A57AED0B",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 75,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 25,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 2,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 1,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 3,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -65,
+            "sw_ver": "1.1.0 Build 160630 Rel.085319"
+        }
+    }
+}

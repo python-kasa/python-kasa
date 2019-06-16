@@ -1,0 +1,102 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 125,
+            "err_code": 0,
+            "power_mw": 3140,
+            "total_wh": 51493,
+            "voltage_mv": 122049
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "Mock hs300",
+            "child_num": 6,
+            "children": [
+                {
+                    "alias": "Mock One",
+                    "id": "00",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 123,
+                    "state": 1
+                },
+                {
+                    "alias": "Mock Two",
+                    "id": "01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 333,
+                    "state": 1
+                },
+                {
+                    "alias": "Mock Three",
+                    "id": "02",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Mock Four",
+                    "id": "03",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Mock Five",
+                    "id": "04",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Mock Six",
+                    "id": "05",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                }
+            ],
+            "deviceId": "4BFC2F2C8678FE623700FD3737EC4E245196F3CF",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "1B63E5DF21B5AFB52F364DE66BFAAF8A",
+            "hw_ver": "1.0",
+            "latitude": -68.9980,
+            "latitude_i": -68.9980,
+            "led_off": 0,
+            "longitude": -109.4400,
+            "longitude_i": -109.4400,
+            "mac": "50:c7:bf:c2:75:88",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS300(US)",
+            "oemId": "FC71DAAB004326F9369EDEF4353E4FE1",
+            "rssi": -68,
+            "sw_ver": "1.0.6 Build 180627 Rel.081000",
+            "updating": 0
+        }
+    }
+}

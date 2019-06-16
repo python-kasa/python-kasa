@@ -1,0 +1,47 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "err_code": -1,
+            "err_msg": "module not support"
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "Mock hs105",
+            "dev_name": "Smart Wi-Fi Plug Mini",
+            "deviceId": "F0723FAFC1FA27FC755B9F228A2297D921FEBCD1",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "51E17031929D5FEF9147091AD67B954A",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "INVALIDlatitude": 79.7779,
+            "latitude_i": 79.7779,
+            "led_off": 0,
+            "INVALIDlongitude": 90.8844,
+            "longitude_i": 90.8844,
+            "mac": "50:c7:bf:ac:c0:6a",
+            "model": "HS105(US)",
+            "oemId": "990ADB7AEDE871C41D1B7613D1FE7A76",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -65,
+            "sw_ver": "1.2.9 Build 170808 Rel.145916",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}

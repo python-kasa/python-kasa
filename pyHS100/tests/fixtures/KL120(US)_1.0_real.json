@@ -1,0 +1,93 @@
+{
+    "emeter": {
+        "err_code": -2001,
+        "err_msg": "Module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 1800
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -2001,
+        "err_msg": "Module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_light_state": {
+            "brightness": 10,
+            "color_temp": 2700,
+            "err_code": 0,
+            "hue": 0,
+            "mode": "normal",
+            "on_off": 1,
+            "saturation": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Smart Wi-Fi LED Bulb with Tunable White Light",
+            "dev_state": "normal",
+            "deviceId": "801200814AD69370AC59DE5501319C051AF409C3",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "heapsize": 290784,
+            "hwId": "111E35908497A05512E259BB76801E10",
+            "hw_ver": "1.0",
+            "is_color": 0,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "light_state": {
+                "brightness": 10,
+                "color_temp": 2700,
+                "hue": 0,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "mic_mac": "D80D17150474",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL120(US)",
+            "oemId": "1210657CD7FBDC72895644388EEFAE8B",
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 3500,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 50,
+                    "color_temp": 5000,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 50,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 2,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 1,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 3,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -52,
+            "sw_ver": "1.8.6 Build 180809 Rel.091659"
+        }
+    }
+}

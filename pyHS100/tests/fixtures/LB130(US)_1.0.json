@@ -1,0 +1,104 @@
+{
+    "emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 10800
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_light_state": {
+            "dft_on_state": {
+                "brightness": 100,
+                "color_temp": 2700,
+                "hue": 0,
+                "mode": "normal",
+                "saturation": 0
+            },
+            "err_code": 0,
+            "on_off": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Mock lb130",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Smart Wi-Fi LED Bulb with Color Changing",
+            "dev_state": "normal",
+            "deviceId": "50BE9E7B6F26CA75D495C13EAA459C491768F143",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "heapsize": 302452,
+            "hwId": "C8AD962B53417C2845CC10CE25C00BB1",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude": 76.8649,
+            "latitude_i": 76.8649,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "mode": "normal",
+                    "saturation": 0
+                },
+                "err_code": 0,
+                "on_off": 0
+            },
+            "longitude": -40.7284,
+            "longitude_i": -40.7284,
+            "INVALIDmac": "50:c7:bf:ac:f6:19",
+            "mic_mac": "50C7BFACF619",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "LB130(US)",
+            "oemId": "CF78964560AAB75A43F15D2E468B63EF",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 75,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 25,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 2,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 1,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 3,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -65,
+            "sw_ver": "1.6.0 Build 170703 Rel.141938"
+        }
+    }
+}

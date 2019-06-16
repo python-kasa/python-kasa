@@ -1,8 +1,11 @@
 import datetime
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from pyHS100 import SmartDevice
+from deprecation import deprecated
+
+from pyHS100 import SmartDevice, DeviceType, SmartDeviceException
+from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,90 +18,82 @@ class SmartPlug(SmartDevice):
     # print the devices alias
     print(p.alias)
     # change state of plug
-    p.state = "ON"
-    p.state = "OFF"
+    p.turn_on()
+    p.turn_off()
     # query and print current state of plug
     print(p.state)
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
-
-    Note:
-    The library references the same structure as defined for the D-Link Switch
     """
-    # switch states
-    SWITCH_STATE_ON = 'ON'
-    SWITCH_STATE_OFF = 'OFF'
-    SWITCH_STATE_UNKNOWN = 'UNKNOWN'
 
-    def __init__(self,
-                 host: str,
-                 protocol: 'TPLinkSmartHomeProtocol' = None,
-                 context: str = None) -> None:
-        SmartDevice.__init__(self, host, protocol, context)
-        self._type = "emeter"
+    def __init__(
+        self,
+        host: str,
+        protocol: "TPLinkSmartHomeProtocol" = None,
+        context: str = None,
+        cache_ttl: int = 3,
+    ) -> None:
+        SmartDevice.__init__(self, host, protocol, context, cache_ttl)
+        self.emeter_type = "emeter"
+        self._device_type = DeviceType.Plug
 
-    @property
+    @property  # type: ignore
+    @deprecated(details="use is_on()")
     def state(self) -> str:
-        """
-        Retrieve the switch state
+        """Retrieve the switch state.
 
         :returns: one of
-                  SWITCH_STATE_ON
-                  SWITCH_STATE_OFF
-                  SWITCH_STATE_UNKNOWN
+                  STATE_ON
+                  STATE_OFF
         :rtype: str
         """
-        relay_state = self.sys_info['relay_state']
+        if self.is_on:
+            return self.STATE_ON
+        return self.STATE_OFF
 
-        if relay_state == 0:
-            return SmartPlug.SWITCH_STATE_OFF
-        elif relay_state == 1:
-            return SmartPlug.SWITCH_STATE_ON
-        else:
-            _LOGGER.warning("Unknown state %s returned.", relay_state)
-            return SmartPlug.SWITCH_STATE_UNKNOWN
-
-    @state.setter
+    @state.setter  # type: ignore
+    @deprecated(details="use turn_on() and turn_off()")
     def state(self, value: str):
-        """
-        Set the new switch state
+        """Set the new switch state.
 
         :param value: one of
-                    SWITCH_STATE_ON
-                    SWITCH_STATE_OFF
+                    STATE_ON
+                    STATE_OFF
         :raises ValueError: on invalid state
         :raises SmartDeviceException: on error
-
         """
         if not isinstance(value, str):
-            raise ValueError("State must be str, not of %s.", type(value))
-        elif value.upper() == SmartPlug.SWITCH_STATE_ON:
-            self.turn_on()
-        elif value.upper() == SmartPlug.SWITCH_STATE_OFF:
-            self.turn_off()
-        else:
-            raise ValueError("State %s is not valid.", value)
+            raise ValueError("State must be str, not of %s." % type(value))
+
+        if value.upper() == self.STATE_ON:
+            return self.turn_on()
+        elif value.upper() == self.STATE_OFF:
+            return self.turn_off()
+
+        raise ValueError("State %s is not valid." % value)
 
     @property
-    def brightness(self) -> Optional[int]:
-        """
-        Current brightness of the device, if supported.
-        Will return a a range between 0 - 100.
+    def brightness(self) -> int:
+        """Return current brightness on dimmers.
+
+        Will return a range between 0 - 100.
 
         :returns: integer
         :rtype: int
-
         """
         if not self.is_dimmable:
-            return None
+            raise SmartDeviceException("Device is not dimmable.")
 
-        return int(self.sys_info['brightness'])
+        return int(self.sys_info["brightness"])
 
-    @brightness.setter
+    @brightness.setter  # type: ignore
+    @deprecated(details="use set_brightness()")
     def brightness(self, value: int):
-        """
-        Set the new switch brightness level.
+        self.set_brightness(value)
+
+    def set_brightness(self, value: int):
+        """Set the new dimmer brightness level.
 
         Note:
         When setting brightness, if the light is not
@@ -108,22 +103,21 @@ class SmartPlug(SmartDevice):
 
         """
         if not self.is_dimmable:
-            return
+            raise SmartDeviceException("Device is not dimmable.")
 
         if not isinstance(value, int):
-            raise ValueError("Brightness must be integer, "
-                             "not of %s.", type(value))
-        elif value > 0 and value <= 100:
+            raise ValueError("Brightness must be integer, " "not of %s.", type(value))
+        elif 0 < value <= 100:
             self.turn_on()
-            self._query_helper("smartlife.iot.dimmer", "set_brightness",
-                               {"brightness": value})
+            self._query_helper(
+                "smartlife.iot.dimmer", "set_brightness", {"brightness": value}
+            )
         else:
-            raise ValueError("Brightness value %s is not valid.", value)
+            raise ValueError("Brightness value %s is not valid." % value)
 
     @property
     def is_dimmable(self):
-        """
-        Whether the switch supports brightness changes
+        """Whether the switch supports brightness changes.
 
         :return: True if switch supports brightness changes, False otherwise
         :rtype: bool
@@ -132,34 +126,31 @@ class SmartPlug(SmartDevice):
 
     @property
     def has_emeter(self):
-        """
-        Returns whether device has an energy meter.
+        """Return whether device has an energy meter.
+
         :return: True if energy meter is available
                  False otherwise
         """
-        features = self.sys_info['feature'].split(':')
-        return SmartDevice.FEATURE_ENERGY_METER in features
+        features = self.sys_info["feature"].split(":")
+        return "ENE" in features
 
     @property
     def is_on(self) -> bool:
-        """
-        Returns whether device is on.
+        """Return whether device is on.
 
         :return: True if device is on, False otherwise
         """
-        return bool(self.sys_info['relay_state'])
+        return bool(self.sys_info["relay_state"])
 
     def turn_on(self):
-        """
-        Turn the switch on.
+        """Turn the switch on.
 
         :raises SmartDeviceException: on error
         """
         self._query_helper("system", "set_relay_state", {"state": 1})
 
     def turn_off(self):
-        """
-        Turn the switch off.
+        """Turn the switch off.
 
         :raises SmartDeviceException: on error
         """
@@ -167,18 +158,20 @@ class SmartPlug(SmartDevice):
 
     @property
     def led(self) -> bool:
-        """
-        Returns the state of the led.
+        """Return the state of the led.
 
         :return: True if led is on, False otherwise
         :rtype: bool
         """
         return bool(1 - self.sys_info["led_off"])
 
-    @led.setter
+    @led.setter  # type: ignore
+    @deprecated(details="use set_led")
     def led(self, state: bool):
-        """
-        Sets the state of the led (night mode)
+        self.set_led(state)
+
+    def set_led(self, state: bool):
+        """Set the state of the led (night mode).
 
         :param bool state: True to set led on, False to set led off
         :raises SmartDeviceException: on error
@@ -187,8 +180,7 @@ class SmartPlug(SmartDevice):
 
     @property
     def on_since(self) -> datetime.datetime:
-        """
-        Returns pretty-printed on-time
+        """Return pretty-printed on-time.
 
         :return: datetime for on since
         :rtype: datetime
@@ -205,16 +197,12 @@ class SmartPlug(SmartDevice):
 
     @property
     def state_information(self) -> Dict[str, Any]:
-        """
-        Return switch-specific state information.
+        """Return switch-specific state information.
 
         :return: Switch information dict, keys in user-presentable form.
         :rtype: dict
         """
-        info = {
-            'LED state': self.led,
-            'On since': self.on_since
-        }
+        info = {"LED state": self.led, "On since": self.on_since}
         if self.is_dimmable:
             info["Brightness"] = self.brightness
         return info

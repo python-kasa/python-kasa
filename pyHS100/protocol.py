@@ -8,8 +8,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TPLinkSmartHomeProtocol:
-    """
-    Implementation of the TP-Link Smart Home Protocol
+    """Implementation of the TP-Link Smart Home Protocol.
 
     Encryption/Decryption methods based on the works of
     Lubomir Stroetmann and Tobias Esser
@@ -20,23 +19,20 @@ class TPLinkSmartHomeProtocol:
     which are licensed under the Apache License, Version 2.0
     http://www.apache.org/licenses/LICENSE-2.0
     """
+
     INITIALIZATION_VECTOR = 171
     DEFAULT_PORT = 9999
     DEFAULT_TIMEOUT = 5
 
     @staticmethod
-    def query(host: str,
-              request: Union[str, Dict],
-              port: int = DEFAULT_PORT) -> Any:
-        """
-        Request information from a TP-Link SmartHome Device and return the
-        response.
+    def query(host: str, request: Union[str, Dict], port: int = DEFAULT_PORT) -> Any:
+        """Request information from a TP-Link SmartHome Device.
 
         :param str host: host name or ip address of the device
         :param int port: port on the device (default: 9999)
         :param request: command to send to the device (can be either dict or
         json string)
-        :return:
+        :return: response dict
         """
         if isinstance(request, dict):
             request = json.dumps(request)
