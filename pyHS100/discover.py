@@ -43,6 +43,7 @@ class Discover:
     @staticmethod
     def discover(
         protocol: TPLinkSmartHomeProtocol = None,
+        target: str = "255.255.255.255",
         port: int = 9999,
         timeout: int = 3,
         discovery_packets=3,
@@ -55,6 +56,7 @@ class Discover:
         and waits for given timeout for answers from devices.
 
         :param protocol: Protocol implementation to use
+        :param target: The target broadcast address (e.g. 192.168.xxx.255).
         :param timeout: How long to wait for responses, defaults to 3
         :param port: port to send broadcast messages, defaults to 9999.
         :rtype: dict
@@ -62,8 +64,6 @@ class Discover:
         """
         if protocol is None:
             protocol = TPLinkSmartHomeProtocol()
-
-        target = "255.255.255.255"
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

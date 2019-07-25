@@ -40,12 +40,17 @@ pass_dev = click.make_pass_decorator(SmartDevice)
     required=False,
     help="The device name, or alias, of the device to connect to.",
 )
+@click.option(
+    "--target",
+    default="255.255.255.255", required=False,
+    help="The broadcast address to be used for discovery.",
+)
 @click.option("--debug/--normal", default=False)
 @click.option("--bulb", default=False, is_flag=True)
 @click.option("--plug", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
 @click.pass_context
-def cli(ctx, ip, host, alias, debug, bulb, plug, strip):
+def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
     """A cli tool for controlling TP-Link smart home plugs."""
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -60,7 +65,7 @@ def cli(ctx, ip, host, alias, debug, bulb, plug, strip):
 
     if alias is not None and host is None:
         click.echo("Alias is given, using discovery to find host %s" % alias)
-        host = find_host_from_alias(alias=alias)
+        host = find_host_from_alias(alias=alias, target=target)
         if host:
             click.echo("Found hostname is {}".format(host))
         else:
@@ -92,8 +97,10 @@ def cli(ctx, ip, host, alias, debug, bulb, plug, strip):
 
 @cli.command()
 @click.option("--save")
-def dump_discover(save):
-    for dev in Discover.discover(return_raw=True).values():
+@click.pass_context
+def dump_discover(ctx, save):
+    target = ctx.parent.params['target']
+    for dev in Discover.discover(target=target, return_raw=True).values():
         model = dev["system"]["get_sysinfo"]["model"]
         hw_version = dev["system"]["get_sysinfo"]["hw_ver"]
         save_to = "%s_%s.json" % (model, hw_version)
@@ -111,8 +118,9 @@ def dump_discover(save):
 @click.pass_context
 def discover(ctx, timeout, discover_only, dump_raw):
     """Discover devices in the network."""
+    target = ctx.parent.params['target']
     click.echo("Discovering devices for %s seconds" % timeout)
-    found_devs = Discover.discover(timeout=timeout, return_raw=dump_raw).items()
+    found_devs = Discover.discover(target=target, timeout=timeout, return_raw=dump_raw).items()
     if not discover_only:
         for ip, dev in found_devs:
             if dump_raw:
@@ -125,7 +133,7 @@ def discover(ctx, timeout, discover_only, dump_raw):
     return found_devs
 
 
-def find_host_from_alias(alias, timeout=1, attempts=3):
+def find_host_from_alias(alias, target='255.255.255.255', timeout=1, attempts=3):
     """Discover a device identified by its alias."""
     host = None
     click.echo(
@@ -134,7 +142,7 @@ def find_host_from_alias(alias, timeout=1, attempts=3):
     )
     for attempt in range(1, attempts):
         click.echo("Attempt %s of %s" % (attempt, attempts))
-        found_devs = Discover.discover(timeout=timeout).items()
+        found_devs = Discover.discover(target=target, timeout=timeout).items()
         for ip, dev in found_devs:
             if dev.alias.lower() == alias.lower():
                 host = dev.host
