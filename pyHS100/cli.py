@@ -164,7 +164,7 @@ def state(ctx, dev):
         )
     )
     if dev.num_children > 0:
-        is_on = dev.is_on()
+        is_on = dev.get_is_on()
         aliases = dev.get_alias()
         for child in range(dev.num_children):
             click.echo(
