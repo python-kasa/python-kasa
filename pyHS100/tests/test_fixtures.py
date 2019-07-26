@@ -654,3 +654,10 @@ def test_cache_invalidates(dev):
         dev.get_sysinfo()
         assert query_mock.call_count == 2
         # assert query_mock.called_once()
+
+
+def test_representation(dev):
+    import re
+    pattern = re.compile("<.* model .* at .* (.*), is_on: .* - dev specific: .*>")
+    assert pattern.match(str(dev))
+

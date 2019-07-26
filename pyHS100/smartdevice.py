@@ -616,7 +616,7 @@ class SmartDevice:
         is_on = self.is_on
         if callable(is_on):
             is_on = is_on()
-        return "<%s at %s (%s), is_on: %s - dev specific: %s>" % (
+        return "<%s model %s at %s (%s), is_on: %s - dev specific: %s>" % (
             self.__class__.__name__,
             self.model,
             self.host,
