@@ -8,7 +8,7 @@ setup(name='pyHS100',
       author_email='sean@gadgetreactor.com',
       license='GPLv3',
       packages=['pyHS100'],
-      install_requires=['click', 'typing', 'deprecation'],
+      install_requires=['click', 'deprecation'],
       python_requires='>=3.5',
       entry_points={
             'console_scripts': [
