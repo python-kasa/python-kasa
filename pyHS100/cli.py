@@ -42,7 +42,8 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 )
 @click.option(
     "--target",
-    default="255.255.255.255", required=False,
+    default="255.255.255.255",
+    required=False,
     help="The broadcast address to be used for discovery.",
 )
 @click.option("--debug/--normal", default=False)
@@ -99,7 +100,7 @@ def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
 @click.option("--save")
 @click.pass_context
 def dump_discover(ctx, save):
-    target = ctx.parent.params['target']
+    target = ctx.parent.params["target"]
     for dev in Discover.discover(target=target, return_raw=True).values():
         model = dev["system"]["get_sysinfo"]["model"]
         hw_version = dev["system"]["get_sysinfo"]["hw_ver"]
@@ -118,9 +119,11 @@ def dump_discover(ctx, save):
 @click.pass_context
 def discover(ctx, timeout, discover_only, dump_raw):
     """Discover devices in the network."""
-    target = ctx.parent.params['target']
+    target = ctx.parent.params["target"]
     click.echo("Discovering devices for %s seconds" % timeout)
-    found_devs = Discover.discover(target=target, timeout=timeout, return_raw=dump_raw).items()
+    found_devs = Discover.discover(
+        target=target, timeout=timeout, return_raw=dump_raw
+    ).items()
     if not discover_only:
         for ip, dev in found_devs:
             if dump_raw:
@@ -133,7 +136,7 @@ def discover(ctx, timeout, discover_only, dump_raw):
     return found_devs
 
 
-def find_host_from_alias(alias, target='255.255.255.255', timeout=1, attempts=3):
+def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
     """Discover a device identified by its alias."""
     host = None
     click.echo(
@@ -167,7 +170,7 @@ def state(ctx, dev):
 
     click.echo(
         click.style(
-            "Device state: %s" % "ON" if dev.is_on else "OFF",
+            "Device state: %s" % ("ON" if dev.is_on else "OFF"),
             fg="green" if dev.is_on else "red",
         )
     )
@@ -178,7 +181,7 @@ def state(ctx, dev):
             click.echo(
                 click.style(
                     "  * %s state: %s"
-                    % (aliases[child], "ON" if is_on[child] else "OFF"),
+                    % (aliases[child], ("ON" if is_on[child] else "OFF")),
                     fg="green" if is_on[child] else "red",
                 )
             )
