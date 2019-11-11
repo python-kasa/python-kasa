@@ -6,8 +6,8 @@ from pprint import pformat as pf
 
 import click
 
-if sys.version_info < (3, 4):
-    print("To use this script you need python 3.4 or newer! got %s" % sys.version_info)
+if sys.version_info < (3, 5):
+    print("To use this script you need Python 3.5 or newer! got %s" % sys.version_info)
     sys.exit(1)
 
 from pyHS100 import SmartPlug  # noqa: E402
