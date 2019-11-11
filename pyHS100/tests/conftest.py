@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import glob
 import json
@@ -76,7 +77,7 @@ def dev(request):
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = Discover.discover_single(ip)
+        d = asyncio.run(Discover.discover_single(ip))
         print(d.model)
         if d.model in file:
             return d

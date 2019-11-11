@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 
 from unittest.mock import patch
@@ -63,7 +64,7 @@ def test_invalid_connection(dev):
 
 def test_query_helper(dev):
     with pytest.raises(SmartDeviceException):
-        dev._query_helper("test", "testcmd", {})
+        asyncio.run(dev._query_helper("test", "testcmd", {}))
     # TODO check for unwrapping?
 
 
