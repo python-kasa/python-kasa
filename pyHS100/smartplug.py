@@ -2,8 +2,12 @@ import datetime
 import logging
 from typing import Any, Dict
 
-from pyHS100 import SmartDevice, DeviceType, SmartDeviceException
-from .protocol import TPLinkSmartHomeProtocol
+from pyHS100.protocol import TPLinkSmartHomeProtocol
+from pyHS100.smartdevice import (
+    DeviceType,
+    SmartDevice,
+    SmartDeviceException,
+)
 
 _LOGGER = logging.getLogger(__name__)
 

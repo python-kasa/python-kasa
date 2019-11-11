@@ -1,7 +1,7 @@
 import asyncio
 import json
-import struct
 import logging
+import struct
 from typing import Any, Dict, Union
 
 _LOGGER = logging.getLogger(__name__)

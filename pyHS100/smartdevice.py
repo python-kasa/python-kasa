@@ -14,13 +14,15 @@ You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
+import inspect
+import functools
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from .protocol import TPLinkSmartHomeProtocol
+from pyHS100.protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -116,6 +118,7 @@ class SmartDevice:
         self.cache = defaultdict(lambda: defaultdict(lambda: None))
         self._device_type = DeviceType.Unknown
         self.ioloop = ioloop or asyncio.get_event_loop()
+        self.sync = SyncSmartDevice(self)
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
         """Return query result from cache if still fresh.
@@ -604,3 +607,29 @@ class SmartDevice:
             asyncio.run(self.is_on()),
             asyncio.run(self.get_state_information()),
         )
+
+
+class SyncSmartDevice:
+    """A synchronous SmartDevice speaker class.
+    This has the same methods as `SyncSmartDevice`, however, it wraps all async
+    methods and call them in a blocking way.
+
+    Taken from https://github.com/basnijholt/media_player.kef/
+    """
+
+    def __init__(self, async_device):
+        self.async_device = async_device
+
+    def __getattr__(self, attr):
+        method = getattr(self.async_device, attr)
+        if method is None:
+            raise AttributeError(f"'SyncSmartDevice' object has no attribute '{attr}.'")
+        if inspect.iscoroutinefunction(method):
+
+            @functools.wraps(method)
+            def wrapped(*args, **kwargs):
+                return asyncio.run(method(*args, **kwargs))
+
+            return wrapped
+        else:
+            return method

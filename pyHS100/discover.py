@@ -1,16 +1,13 @@
-import socket
-import logging
 import json
-from typing import Dict, Type, Optional
+import logging
+import socket
+from typing import Dict, Optional, Type
 
-from pyHS100 import (
-    TPLinkSmartHomeProtocol,
-    SmartDevice,
-    SmartPlug,
-    SmartBulb,
-    SmartStrip,
-    SmartDeviceException,
-)
+from pyHS100.protocol import TPLinkSmartHomeProtocol
+from pyHS100.smartbulb import SmartBulb
+from pyHS100.smartdevice import SmartDevice, SmartDeviceException
+from pyHS100.smartplug import SmartPlug
+from pyHS100.smartstrip import SmartStrip
 
 _LOGGER = logging.getLogger(__name__)
 

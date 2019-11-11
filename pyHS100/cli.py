@@ -1,21 +1,18 @@
 """pyHS100 cli tool."""
 import asyncio
-import sys
-import click
 import logging
+import sys
 from pprint import pformat as pf
+
+import click
 
 if sys.version_info < (3, 4):
     print("To use this script you need python 3.4 or newer! got %s" % sys.version_info)
     sys.exit(1)
 
-from pyHS100 import (
-    SmartDevice,
-    SmartPlug,
-    SmartBulb,
-    SmartStrip,
-    Discover,
-)  # noqa: E402
+from pyHS100 import SmartPlug  # noqa: E402
+from pyHS100 import Discover, SmartBulb, SmartDevice, SmartStrip
+
 
 pass_dev = click.make_pass_decorator(SmartDevice)
 

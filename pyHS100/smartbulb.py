@@ -1,8 +1,8 @@
-from pyHS100 import DeviceType, SmartDevice, SmartDeviceException
-from .protocol import TPLinkSmartHomeProtocol
 import re
 from typing import Any, Dict, Tuple
 
+from pyHS100.protocol import TPLinkSmartHomeProtocol
+from pyHS100.smartdevice import DeviceType, SmartDevice, SmartDeviceException
 
 TPLINK_KELVIN = {
     "LB130": (2500, 9000),

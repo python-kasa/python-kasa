@@ -3,9 +3,9 @@ import datetime
 import logging
 from typing import Any, Dict, Optional, Union
 
-from pyHS100 import DeviceType, EmeterStatus, SmartDeviceException, SmartPlug
-
-from .protocol import TPLinkSmartHomeProtocol
+from pyHS100.protocol import TPLinkSmartHomeProtocol
+from pyHS100.smartdevice import DeviceType, EmeterStatus, SmartDeviceException
+from pyHS100.smartplug import SmartPlug
 
 _LOGGER = logging.getLogger(__name__)
 
