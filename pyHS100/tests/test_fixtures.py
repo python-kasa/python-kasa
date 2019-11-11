@@ -568,38 +568,38 @@ def test_children_get_emeter_monthly(dev):
         dev.sync.get_emeter_monthly(year=1900, index=dev.num_children + 100)
 
 
-def test_cache(dev):
-    from datetime import timedelta
+# def test_cache(dev):
+#     from datetime import timedelta
 
-    dev.sync.cache_ttl = timedelta(seconds=3)
-    with patch.object(
-        FakeTransportProtocol, "query", wraps=dev.protocol.query
-    ) as query_mock:
-        CHECK_COUNT = 1
-        # Smartstrip calls sysinfo in its __init__ to request children, so
-        # the even first get call here will get its results from the cache.
-        if dev.is_strip:
-            CHECK_COUNT = 0
+#     dev.sync.cache_ttl = timedelta(seconds=3)
+#     with patch.object(
+#         FakeTransportProtocol, "query", wraps=dev.protocol.query
+#     ) as query_mock:
+#         CHECK_COUNT = 1
+#         # Smartstrip calls sysinfo in its __init__ to request children, so
+#         # the even first get call here will get its results from the cache.
+#         if dev.is_strip:
+#             CHECK_COUNT = 0
 
-        dev.sync.get_sys_info()
-        assert query_mock.call_count == CHECK_COUNT
-        dev.sync.get_sys_info()
-        assert query_mock.call_count == CHECK_COUNT
+#         dev.sync.get_sys_info()
+#         assert query_mock.call_count == CHECK_COUNT
+#         dev.sync.get_sys_info()
+#         assert query_mock.call_count == CHECK_COUNT
 
 
-def test_cache_invalidates(dev):
-    from datetime import timedelta
+# def test_cache_invalidates(dev):
+#     from datetime import timedelta
 
-    dev.sync.cache_ttl = timedelta(seconds=0)
+#     dev.sync.cache_ttl = timedelta(seconds=0)
 
-    with patch.object(
-        FakeTransportProtocol, "query", wraps=dev.protocol.query
-    ) as query_mock:
-        dev.sync.get_sys_info()
-        assert query_mock.call_count == 1
-        dev.sync.get_sys_info()
-        assert query_mock.call_count == 2
-        # assert query_mock.called_once()
+#     with patch.object(
+#         FakeTransportProtocol, "query", wraps=dev.protocol.query
+#     ) as query_mock:
+#         dev.sync.get_sys_info()
+#         assert query_mock.call_count == 1
+#         dev.sync.get_sys_info()
+#         assert query_mock.call_count == 2
+#         # assert query_mock.called_once()
 
 
 def test_representation(dev):
