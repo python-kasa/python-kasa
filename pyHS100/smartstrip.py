@@ -56,7 +56,11 @@ class SmartStrip(SmartPlug):
         self.num_children = len(children)
         for plug in range(self.num_children):
             self.plugs[plug] = SmartPlug(
-                host, protocol, context=children[plug]["id"], cache_ttl=cache_ttl
+                host,
+                protocol,
+                context=children[plug]["id"],
+                cache_ttl=cache_ttl,
+                ioloop=ioloop,
             )
 
     def raise_for_index(self, index: int):
@@ -165,12 +169,12 @@ class SmartStrip(SmartPlug):
             self.raise_for_index(index)
             await self.plugs[index].turn_off()
 
-    async def get_on_since(self) -> datetime:
+    async def get_max_on_since(self) -> datetime:
         """Returns the maximum on-time of all outlets."""
-        on_since = await self._get_on_since()
-        return max(v for v in await on_since.values())
+        on_since = await self.get_on_since(index=-1)
+        return max(v for v in on_since.values())
 
-    async def _get_on_since(self, *, index: int = -1) -> Any:
+    async def get_on_since(self, *, index: Optional[int] = None) -> Any:
         """
         Returns pretty-printed on-time
 
@@ -180,6 +184,9 @@ class SmartStrip(SmartPlug):
                 Dict[int, str] without index
         :raises SmartStripException: index out of bounds
         """
+        if index is None:
+            return await self.get_max_on_since()
+
         if index < 0:
             on_since = {}
             sys_info = await self.get_sys_info()
@@ -204,7 +211,7 @@ class SmartStrip(SmartPlug):
         """
         state = {"LED state": await self.get_led()}  # XXX: from where?
         is_on = await self.get_is_on()
-        on_since = await self._get_on_since()
+        on_since = await self.get_on_since(index=-1)
         for plug_index in range(self.num_children):
             plug_number = plug_index + 1
             if is_on[plug_index]:
@@ -266,14 +273,13 @@ class SmartStrip(SmartPlug):
             response = EmeterStatus(await self.get_emeter_realtime(index=index))
             return response["power"]
 
-    @property
-    def icon(self):
+    async def get_icon(self):
         """Override for base class icon property, SmartStrip and children do not
         have icons so we return dummy strings.
         """
         return {"icon": "SMARTSTRIP-DUMMY", "hash": "SMARTSTRIP-DUMMY"}
 
-    async def get_alias(self, *, index: int = -1) -> Union[str, Dict[int, str]]:
+    async def get_alias(self, *, index: Optional[int] = None) -> Union[str, Dict[int, str]]:
         """Gets the alias for a plug.
 
         :param index: plug index (-1 for all)
@@ -283,6 +289,9 @@ class SmartStrip(SmartPlug):
                 Dict[int, str] if no index provided
         :raises SmartStripException: index out of bounds
         """
+        if index is None:
+            return await super().get_alias()
+
         sys_info = await self.get_sys_info()
         children = sys_info["children"]
 
@@ -295,7 +304,7 @@ class SmartStrip(SmartPlug):
             self.raise_for_index(index)
             return children[index]["alias"]
 
-    async def set_alias(self, alias: str, *, index: int = -1):
+    async def set_alias(self, alias: str, *, index: Optional[int] = None):
         """Sets the alias for a plug
 
         :param index: plug index
@@ -304,8 +313,8 @@ class SmartStrip(SmartPlug):
         :raises SmartStripException: index out of bounds
         """
         # Renaming the whole strip
-        if index < 0:
-            return super().set_alias(alias)
+        if index is None:
+            return await super().set_alias(alias)
 
         self.raise_for_index(index)
         await self.plugs[index].set_alias(alias)

@@ -290,14 +290,6 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         else:
             self.proto["system"]["get_sysinfo"]["relay_state"] = x["state"]
 
-    def set_alias_old(self, x):
-        _LOGGER.debug("Setting alias to %s", x["alias"])
-        self.proto["system"]["get_sysinfo"]["alias"] = x["alias"]
-
-    def set_relay_state_old(self, x):
-        _LOGGER.debug("Setting relay state to %s", x)
-        self.proto["system"]["get_sysinfo"]["relay_state"] = x["state"]
-
     def set_led_off(self, x, *args):
         _LOGGER.debug("Setting led off to %s", x)
         self.proto["system"]["get_sysinfo"]["led_off"] = x["off"]
@@ -398,7 +390,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         "smartlife.iot.dimmer": {"set_brightness": set_hs220_brightness},
     }
 
-    def query(self, host, request, port=9999):
+    async def query(self, host, request, port=9999):
         proto = self.proto
 
         # collect child ids from context

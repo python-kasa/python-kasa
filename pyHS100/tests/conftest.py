@@ -36,6 +36,12 @@ def filter_model(filter):
     return filtered
 
 
+def get_ioloop():
+    ioloop = asyncio.new_event_loop()
+    asyncio.set_event_loop(ioloop)
+    return ioloop
+
+
 has_emeter = pytest.mark.parametrize("dev", filter_model(EMETER), indirect=True)
 no_emeter = pytest.mark.parametrize(
     "dev", filter_model(ALL_DEVICES - EMETER), indirect=True
@@ -69,18 +75,19 @@ turn_on = pytest.mark.parametrize("turn_on", [True, False])
 
 def handle_turn_on(dev, turn_on):
     if turn_on:
-        dev.turn_on()
+        dev.sync.turn_on()
     else:
-        dev.turn_off()
+        dev.sync.turn_off()
 
 
 @pytest.fixture(params=SUPPORTED_DEVICES)
 def dev(request):
+    ioloop = get_ioloop()
     file = request.param
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = asyncio.run(Discover.discover_single(ip))
+        d = ioloop.run_until_complete(Discover.discover_single(ip))
         print(d.model)
         if d.model in file:
             return d
@@ -95,11 +102,11 @@ def dev(request):
             "cache_ttl": 0,
         }
         if "LB" in model or "KL" in model:
-            p = SmartBulb(**params)
+            p = SmartBulb(**params, ioloop=ioloop)
         elif "HS300" in model:
-            p = SmartStrip(**params)
+            p = SmartStrip(**params, ioloop=ioloop)
         elif "HS" in model:
-            p = SmartPlug(**params)
+            p = SmartPlug(**params, ioloop=ioloop)
         else:
             raise Exception("No tests for %s" % model)
         yield p

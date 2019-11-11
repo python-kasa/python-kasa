@@ -516,7 +516,7 @@ class SmartDevice:
         if not await self.get_has_emeter():
             raise SmartDeviceException("Device has no emeter")
 
-        response = EmeterStatus(self.get_emeter_realtime())
+        response = EmeterStatus(await self.get_emeter_realtime())
         return response["power"]
 
     async def reboot(self, delay=1) -> None:
@@ -580,8 +580,7 @@ class SmartDevice:
     def is_strip(self) -> bool:
         return self._device_type == DeviceType.Strip
 
-    @property
-    def is_dimmable(self):
+    async def is_dimmable(self):
         return False
 
     @property
