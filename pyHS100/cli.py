@@ -1,4 +1,5 @@
 """pyHS100 cli tool."""
+import asyncio
 import sys
 import click
 import logging
@@ -80,7 +81,7 @@ def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
     else:
         if not bulb and not plug and not strip:
             click.echo("No --strip nor --bulb nor --plug given, discovering..")
-            dev = Discover.discover_single(host)
+            dev = asyncio.run(Discover.discover_single(host))
         elif bulb:
             dev = SmartBulb(host)
         elif plug:
@@ -222,7 +223,7 @@ def raw_command(dev: SmartDevice, module, command, parameters):
 
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
-    res = dev._query_helper(module, command, parameters)
+    res = asyncio.run(dev._query_helper(module, command, parameters))
     click.echo(res)
 
 
