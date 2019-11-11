@@ -1,6 +1,4 @@
-"""
-pyHS100
-Python library supporting TP-Link Smart Plugs/Switches (HS100/HS110/Hs200).
+"""Python library supporting TP-Link Smart Home devices.
 
 The communication protocol was reverse engineered by Lubomir Stroetmann and
 Tobias Esser in 'Reverse Engineering the TP-Link HS110':
@@ -13,11 +11,11 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
-from datetime import datetime, timedelta
 import logging
 from collections import defaultdict
-from typing import Any, Dict, Optional
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Dict, Optional
 
 from deprecation import deprecated
 
@@ -102,7 +100,7 @@ class SmartDevice:
         if protocol is None:  # pragma: no cover
             protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
-        self.emeter_type = "emeter"  # type: str
+        self.emeter_type = "emeter"
         self.context = context
         self.num_children = 0
         self.cache_ttl = timedelta(seconds=cache_ttl)
@@ -112,11 +110,12 @@ class SmartDevice:
             self.context,
             self.cache_ttl,
         )
-        self.cache = defaultdict(lambda: defaultdict(lambda: None))
+        self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
         self._device_type = DeviceType.Unknown
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
         """Return query result from cache if still fresh.
+
         Only results from commands starting with `get_` are considered cacheable.
 
         :param target: Target system
@@ -141,7 +140,7 @@ class SmartDevice:
         return None
 
     def _insert_to_cache(self, target: str, cmd: str, response: Dict) -> None:
-        """Internal function to add response to cache.
+        """Add response for a given command to the cache.
 
         :param target: Target system
         :param cmd: Command
@@ -160,9 +159,8 @@ class SmartDevice:
         :rtype: dict
         :raises SmartDeviceException: if command was not executed correctly
         """
-        if self.context is None:
-            request = {target: {cmd: arg}}
-        else:
+        request: Dict[str, Any] = {target: {cmd: arg}}
+        if self.context is not None:
             request = {"context": {"child_ids": [self.context]}, target: {cmd: arg}}
 
         try:
@@ -212,7 +210,6 @@ class SmartDevice:
         :return: System information dict.
         :rtype: dict
         """
-
         return self.get_sysinfo()
 
     def get_sysinfo(self) -> Dict:
@@ -244,11 +241,13 @@ class SmartDevice:
         return str(self.sys_info["alias"])
 
     def get_alias(self) -> str:
+        """Return the alias."""
         return self.alias
 
     @alias.setter  # type: ignore
     @deprecated(details="use set_alias")
     def alias(self, alias: str) -> None:
+        """Set the device name, deprecated."""
         self.set_alias(alias)
 
     def set_alias(self, alias: str) -> None:
@@ -424,7 +423,7 @@ class SmartDevice:
             "Unknown mac, please submit a bug " "with sysinfo output."
         )
 
-    @mac.setter
+    @mac.setter  # type: ignore
     @deprecated(details="use set_mac")
     def mac(self, mac: str) -> None:
         self.set_mac(mac)
@@ -438,11 +437,10 @@ class SmartDevice:
         self._query_helper("system", "set_mac_addr", {"mac": mac})
 
     def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrive current energy readings.
+        """Retrieve current energy readings.
 
         :returns: current readings or False
         :rtype: dict, None
-                  None if device has no energy meter or error occurred
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
@@ -460,7 +458,6 @@ class SmartDevice:
                       month)
         :param kwh: return usage in kWh (default: True)
         :return: mapping of day of month to value
-                 None if device has no energy meter or error occurred
         :rtype: dict
         :raises SmartDeviceException: on error
         """
@@ -491,7 +488,6 @@ class SmartDevice:
         :param year: year for which to retrieve statistics (default: this year)
         :param kwh: return usage in kWh (default: True)
         :return: dict: mapping of month to value
-                 None if device has no energy meter
         :rtype: dict
         :raises SmartDeviceException: on error
         """
@@ -510,12 +506,10 @@ class SmartDevice:
 
         return {entry["month"]: entry[key] for entry in response}
 
-    def erase_emeter_stats(self) -> bool:
+    def erase_emeter_stats(self):
         """Erase energy meter statistics.
 
         :return: True if statistics were deleted
-                 False if device has no energy meter.
-        :rtype: bool
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
@@ -523,15 +517,10 @@ class SmartDevice:
 
         self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
-        # As query_helper raises exception in case of failure, we have
-        # succeeded when we are this far.
-        return True
-
-    def current_consumption(self) -> Optional[float]:
+    def current_consumption(self) -> float:
         """Get the current power consumption in Watt.
 
         :return: the current power consumption in Watts.
-                 None if device has no energy meter.
         :raises SmartDeviceException: on error
         """
         if not self.has_emeter:
@@ -594,22 +583,27 @@ class SmartDevice:
 
     @property
     def is_bulb(self) -> bool:
+        """Return True if the device is a bulb."""
         return self._device_type == DeviceType.Bulb
 
     @property
     def is_plug(self) -> bool:
+        """Return True if the device is a plug."""
         return self._device_type == DeviceType.Plug
 
     @property
     def is_strip(self) -> bool:
+        """Return True if the device is a strip."""
         return self._device_type == DeviceType.Strip
 
     @property
     def is_dimmable(self):
+        """Return  True if the device is dimmable."""
         return False
 
     @property
     def is_variable_color_temp(self) -> bool:
+        """Return True if the device supports color temperature."""
         return False
 
     def __repr__(self):

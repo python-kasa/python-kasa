@@ -1,24 +1,25 @@
+"""Implementation of the TP-Link Smart Home Protocol.
+
+Encryption/Decryption methods based on the works of
+Lubomir Stroetmann and Tobias Esser
+
+https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/
+https://github.com/softScheck/tplink-smartplug/
+
+which are licensed under the Apache License, Version 2.0
+http://www.apache.org/licenses/LICENSE-2.0
+"""
 import json
+import logging
 import socket
 import struct
-import logging
 from typing import Any, Dict, Union
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class TPLinkSmartHomeProtocol:
-    """Implementation of the TP-Link Smart Home Protocol.
-
-    Encryption/Decryption methods based on the works of
-    Lubomir Stroetmann and Tobias Esser
-
-    https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/
-    https://github.com/softScheck/tplink-smartplug/
-
-    which are licensed under the Apache License, Version 2.0
-    http://www.apache.org/licenses/LICENSE-2.0
-    """
+    """Implementation of the TP-Link Smart Home protocol."""
 
     INITIALIZATION_VECTOR = 171
     DEFAULT_PORT = 9999
@@ -78,7 +79,7 @@ class TPLinkSmartHomeProtocol:
         return json.loads(response)
 
     @staticmethod
-    def encrypt(request: str) -> bytearray:
+    def encrypt(request: str) -> bytes:
         """
         Encrypt a request for a TP-Link Smart Home Device.
 

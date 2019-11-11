@@ -1,20 +1,17 @@
 """pyHS100 cli tool."""
-import sys
-import click
 import logging
+import sys
 from pprint import pformat as pf
 
-if sys.version_info < (3, 4):
-    print("To use this script you need python 3.4 or newer! got %s" % sys.version_info)
+import click
+
+from pyHS100 import SmartPlug  # noqa: E402
+from pyHS100 import Discover, SmartBulb, SmartDevice, SmartStrip
+
+if sys.version_info < (3, 6):
+    print("To use this script you need python 3.6 or newer! got %s" % sys.version_info)
     sys.exit(1)
 
-from pyHS100 import (
-    SmartDevice,
-    SmartPlug,
-    SmartBulb,
-    SmartStrip,
-    Discover,
-)  # noqa: E402
 
 pass_dev = click.make_pass_decorator(SmartDevice)
 
@@ -50,9 +47,10 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option("--bulb", default=False, is_flag=True)
 @click.option("--plug", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
+@click.version_option()
 @click.pass_context
 def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
-    """A cli tool for controlling TP-Link smart home plugs."""
+    """A cli tool for controlling TP-Link smart home plugs."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
@@ -100,6 +98,10 @@ def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
 @click.option("--save")
 @click.pass_context
 def dump_discover(ctx, save):
+    """Dump discovery information.
+
+    Useful for dumping into a file with `--save` to be added to the test suite.
+    """
     target = ctx.parent.params["target"]
     for dev in Discover.discover(target=target, return_raw=True).values():
         model = dev["system"]["get_sysinfo"]["model"]
@@ -164,7 +166,7 @@ def sysinfo(dev):
 @cli.command()
 @pass_dev
 @click.pass_context
-def state(ctx, dev):
+def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
     click.echo(click.style("== %s - %s ==" % (dev.alias, dev.model), bold=True))
 
@@ -174,15 +176,12 @@ def state(ctx, dev):
             fg="green" if dev.is_on else "red",
         )
     )
-    if dev.num_children > 0:
-        is_on = dev.get_is_on()
-        aliases = dev.get_alias()
-        for child in range(dev.num_children):
+    if dev.is_strip:
+        for plug in dev.plugs:  # type: ignore
             click.echo(
                 click.style(
-                    "  * %s state: %s"
-                    % (aliases[child], ("ON" if is_on[child] else "OFF")),
-                    fg="green" if is_on[child] else "red",
+                    "  * %s state: %s" % (plug.alias, ("ON" if plug.is_on else "OFF")),
+                    fg="green" if plug.is_on else "red",
                 )
             )
 
@@ -303,7 +302,7 @@ def temperature(dev: SmartBulb, temperature):
 @click.pass_context
 @pass_dev
 def hsv(dev, ctx, h, s, v):
-    """Get or set color in HSV. (Bulb only)"""
+    """Get or set color in HSV. (Bulb only)."""
     if h is None or s is None or v is None:
         click.echo("Current HSV: %s %s %s" % dev.hsv)
     elif s is None or v is None:

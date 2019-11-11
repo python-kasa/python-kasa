@@ -1,11 +1,12 @@
+"""Module for plugs."""
 import datetime
 import logging
 from typing import Any, Dict
 
 from deprecation import deprecated
 
-from pyHS100 import SmartDevice, DeviceType, SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
+from .smartdevice import DeviceType, SmartDevice, SmartDeviceException
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -1,16 +1,14 @@
-import socket
-import logging
+"""Discovery module for TP-Link Smart Home devices."""
 import json
-from typing import Dict, Type, Optional
+import logging
+import socket
+from typing import Dict, Optional, Type
 
-from pyHS100 import (
-    TPLinkSmartHomeProtocol,
-    SmartDevice,
-    SmartPlug,
-    SmartBulb,
-    SmartStrip,
-    SmartDeviceException,
-)
+from .protocol import TPLinkSmartHomeProtocol
+from .smartbulb import SmartBulb
+from .smartdevice import SmartDevice, SmartDeviceException
+from .smartplug import SmartPlug
+from .smartstrip import SmartStrip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,8 +26,6 @@ class Discover:
     you can initialize the corresponding device class directly without this.
 
     The protocol uses UDP broadcast datagrams on port 9999 for discovery.
-
-
     """
 
     DISCOVERY_QUERY = {
@@ -49,8 +45,8 @@ class Discover:
         discovery_packets=3,
         return_raw=False,
     ) -> Dict[str, SmartDevice]:
+        """Discover devices.
 
-        """
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.

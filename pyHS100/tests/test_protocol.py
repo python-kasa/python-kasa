@@ -1,6 +1,7 @@
-from unittest import TestCase
-from ..protocol import TPLinkSmartHomeProtocol
 import json
+from unittest import TestCase
+
+from ..protocol import TPLinkSmartHomeProtocol
 
 
 class TestTPLinkSmartHomeProtocol(TestCase):
