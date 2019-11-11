@@ -1,7 +1,9 @@
-from ..protocol import TPLinkSmartHomeProtocol
 import logging
 import re
-from voluptuous import Schema, Range, All, Any, Coerce, Invalid, Optional, REMOVE_EXTRA
+
+from voluptuous import REMOVE_EXTRA, All, Any, Coerce, Invalid, Optional, Range, Schema
+
+from ..protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 

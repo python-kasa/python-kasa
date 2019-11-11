@@ -1,11 +1,14 @@
 import asyncio
-import pytest
 import glob
 import json
 import os
-from .newfakes import FakeTransportProtocol
 from os.path import basename
-from pyHS100 import SmartPlug, SmartBulb, SmartStrip, Discover
+
+import pytest
+
+from pyHS100 import Discover, SmartBulb, SmartPlug, SmartStrip
+
+from .newfakes import FakeTransportProtocol
 
 SUPPORTED_DEVICES = glob.glob(
     os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"

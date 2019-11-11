@@ -1,32 +1,32 @@
 import asyncio
 import datetime
-
 from unittest.mock import patch
 
 import pytest
 
-from pyHS100 import DeviceType, SmartStripException, SmartDeviceException
-from .newfakes import (
-    BULB_SCHEMA,
-    PLUG_SCHEMA,
-    FakeTransportProtocol,
-    CURRENT_CONSUMPTION_SCHEMA,
-    TZ_SCHEMA,
-)
+from pyHS100 import DeviceType, SmartDeviceException, SmartStripException
+
 from .conftest import (
-    turn_on,
-    handle_turn_on,
-    plug,
-    strip,
     bulb,
     color_bulb,
-    non_color_bulb,
+    dimmable,
+    handle_turn_on,
     has_emeter,
     no_emeter,
-    dimmable,
+    non_color_bulb,
     non_dimmable,
-    variable_temp,
     non_variable_temp,
+    plug,
+    strip,
+    turn_on,
+    variable_temp,
+)
+from .newfakes import (
+    BULB_SCHEMA,
+    CURRENT_CONSUMPTION_SCHEMA,
+    PLUG_SCHEMA,
+    TZ_SCHEMA,
+    FakeTransportProtocol,
 )
 
 
@@ -659,6 +659,6 @@ def test_cache_invalidates(dev):
 
 def test_representation(dev):
     import re
+
     pattern = re.compile("<.* model .* at .* (.*), is_on: .* - dev specific: .*>")
     assert pattern.match(str(dev))
-
