@@ -13,11 +13,12 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
-from datetime import datetime, timedelta
+import asyncio
 import logging
 from collections import defaultdict
-from typing import Any, Dict, Optional
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Dict, Optional
 
 from deprecation import deprecated
 
@@ -150,7 +151,9 @@ class SmartDevice:
         self.cache[target][cmd] = response.copy()
         self.cache[target][cmd]["last_updated"] = datetime.utcnow()
 
-    async def _query_helper(self, target: str, cmd: str, arg: Optional[Dict] = None) -> Any:
+    async def _query_helper(
+        self, target: str, cmd: str, arg: Optional[Dict] = None
+    ) -> Any:
         """Handle result unwrapping and error handling.
 
         :param target: Target system {system, time, emeter, ..}
@@ -196,8 +199,7 @@ class SmartDevice:
 
         return result
 
-    @property
-    def has_emeter(self) -> bool:
+    async def get_has_emeter(self) -> bool:
         """Return if device has an energy meter.
 
         :return: True if energey meter is available
@@ -213,54 +215,45 @@ class SmartDevice:
         :rtype: dict
         """
 
-        return self.get_sysinfo()
+        return asyncio.run(self.get_sys_info())
 
-    def get_sysinfo(self) -> Dict:
+    async def get_sys_info(self) -> Dict:
         """Retrieve system information.
 
         :return: sysinfo
         :rtype dict
         :raises SmartDeviceException: on error
         """
-        return self._query_helper("system", "get_sysinfo")
+        return await self._query_helper("system", "get_sysinfo")
 
-    @property
-    def model(self) -> str:
+    async def get_model(self) -> str:
         """Return device model.
 
         :return: device model
         :rtype: str
         :raises SmartDeviceException: on error
         """
-        return str(self.sys_info["model"])
+        sys_info = await self.get_sys_info()
+        return str(sys_info["model"])
 
-    @property
-    def alias(self) -> str:
+    async def get_alias(self) -> str:
         """Return device name (alias).
 
         :return: Device name aka alias.
         :rtype: str
         """
-        return str(self.sys_info["alias"])
+        sys_info = await self.get_sys_info()
+        return str(sys_info["alias"])
 
-    def get_alias(self) -> str:
-        return self.alias
-
-    @alias.setter  # type: ignore
-    @deprecated(details="use set_alias")
-    def alias(self, alias: str) -> None:
-        self.set_alias(alias)
-
-    def set_alias(self, alias: str) -> None:
+    async def set_alias(self, alias: str) -> None:
         """Set the device name (alias).
 
         :param alias: New alias (name)
         :raises SmartDeviceException: on error
         """
-        self._query_helper("system", "set_dev_alias", {"alias": alias})
+        await self._query_helper("system", "set_dev_alias", {"alias": alias})
 
-    @property
-    def icon(self) -> Dict:
+    async def get_icon(self) -> Dict:
         """Return device icon.
 
         Note: not working on HS110, but is always empty.
@@ -269,10 +262,9 @@ class SmartDevice:
         :rtype: dict
         :raises SmartDeviceException: on error
         """
-        return self._query_helper("system", "get_dev_icon")
+        return await self._query_helper("system", "get_dev_icon")
 
-    @icon.setter
-    def icon(self, icon: str) -> None:
+    def set_icon(self, icon: str) -> None:
         """Set device icon.
 
         Content for hash and icon are unknown.
@@ -283,12 +275,11 @@ class SmartDevice:
         """
         raise NotImplementedError()
         # here just for the sake of completeness
-        # self._query_helper("system",
+        # await self._query_helper("system",
         #                    "set_dev_icon", {"icon": "", "hash": ""})
         # self.initialize()
 
-    @property
-    def time(self) -> Optional[datetime]:
+    async def get_time(self) -> Optional[datetime]:
         """Return current time from the device.
 
         :return: datetime for device's time
@@ -296,7 +287,7 @@ class SmartDevice:
         :raises SmartDeviceException: on error
         """
         try:
-            res = self._query_helper("time", "get_time")
+            res = await self._query_helper("time", "get_time")
             return datetime(
                 res["year"],
                 res["month"],
@@ -308,8 +299,7 @@ class SmartDevice:
         except SmartDeviceException:
             return None
 
-    @time.setter
-    def time(self, ts: datetime) -> None:
+    async def set_time(self, ts: datetime) -> None:
         """Set the device time.
 
         Note: this calls set_timezone() for setting.
@@ -336,24 +326,22 @@ class SmartDevice:
         }
 
 
-        response = self._query_helper("time", "set_timezone", ts_obj)
+        response = await self._query_helper("time", "set_timezone", ts_obj)
         self.initialize()
 
         return response
         """
 
-    @property
-    def timezone(self) -> Dict:
+    async def get_timezone(self) -> Dict:
         """Return timezone information.
 
         :return: Timezone information
         :rtype: dict
         :raises SmartDeviceException: on error
         """
-        return self._query_helper("time", "get_timezone")
+        return await self._query_helper("time", "get_timezone")
 
-    @property
-    def hw_info(self) -> Dict:
+    async def get_hw_info(self) -> Dict:
         """Return hardware information.
 
         :return: Information about hardware
@@ -371,17 +359,16 @@ class SmartDevice:
             "oemId",
             "dev_name",
         ]
-        info = self.sys_info
-        return {key: info[key] for key in keys if key in info}
+        sys_info = await self.get_sys_info()
+        return {key: sys_info[key] for key in keys if key in sys_info}
 
-    @property
-    def location(self) -> Dict:
+    async def get_location(self) -> Dict:
         """Return geographical location.
 
         :return: latitude and longitude
         :rtype: dict
         """
-        info = self.sys_info
+        info = await self.get_sys_info()
         loc = {"latitude": None, "longitude": None}
 
         if "latitude" in info and "longitude" in info:
@@ -395,49 +382,43 @@ class SmartDevice:
 
         return loc
 
-    @property
-    def rssi(self) -> Optional[int]:
+    async def get_rssi(self) -> Optional[int]:
         """Return WiFi signal strenth (rssi).
 
         :return: rssi
         :rtype: int
         """
-        if "rssi" in self.sys_info:
-            return int(self.sys_info["rssi"])
+        sys_info = await self.get_sys_info()
+        if "rssi" in sys_info:
+            return int(sys_info["rssi"])
         return None
 
-    @property
-    def mac(self) -> str:
+    async def get_mac(self) -> str:
         """Return mac address.
 
         :return: mac address in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         :rtype: str
         """
-        info = self.sys_info
+        sys_info = await self.get_sys_info()
 
-        if "mac" in info:
-            return str(info["mac"])
-        elif "mic_mac" in info:
-            return ":".join(format(s, "02x") for s in bytes.fromhex(info["mic_mac"]))
+        if "mac" in sys_info:
+            return str(sys_info["mac"])
+        elif "mic_mac" in sys_info:
+            return ":".join(format(s, "02x") for s in bytes.fromhex(sys_info["mic_mac"]))
 
         raise SmartDeviceException(
-            "Unknown mac, please submit a bug " "with sysinfo output."
+            "Unknown mac, please submit a bug report with sys_info output."
         )
 
-    @mac.setter
-    @deprecated(details="use set_mac")
-    def mac(self, mac: str) -> None:
-        self.set_mac(mac)
-
-    def set_mac(self, mac):
+    async def set_mac(self, mac):
         """Set the mac address.
 
         :param str mac: mac in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         :raises SmartDeviceException: on error
         """
-        self._query_helper("system", "set_mac_addr", {"mac": mac})
+        await self._query_helper("system", "set_mac_addr", {"mac": mac})
 
-    def get_emeter_realtime(self) -> EmeterStatus:
+    async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrive current energy readings.
 
         :returns: current readings or False
@@ -445,12 +426,12 @@ class SmartDevice:
                   None if device has no energy meter or error occurred
         :raises SmartDeviceException: on error
         """
-        if not self.has_emeter:
+        if not await self.get_has_emeter():
             raise SmartDeviceException("Device has no emeter")
 
-        return EmeterStatus(self._query_helper(self.emeter_type, "get_realtime"))
+        return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
 
-    def get_emeter_daily(
+    async def get_emeter_daily(
         self, year: int = None, month: int = None, kwh: bool = True
     ) -> Dict:
         """Retrieve daily statistics for a given month.
@@ -464,7 +445,7 @@ class SmartDevice:
         :rtype: dict
         :raises SmartDeviceException: on error
         """
-        if not self.has_emeter:
+        if not await self.get_has_emeter():
             raise SmartDeviceException("Device has no emeter")
 
         if year is None:
@@ -472,7 +453,7 @@ class SmartDevice:
         if month is None:
             month = datetime.now().month
 
-        response = self._query_helper(
+        response = await self._query_helper(
             self.emeter_type, "get_daystat", {"month": month, "year": year}
         )
         response = [EmeterStatus(**x) for x in response["day_list"]]
@@ -485,7 +466,7 @@ class SmartDevice:
 
         return data
 
-    def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
+    async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
         """Retrieve monthly statistics for a given year.
 
         :param year: year for which to retrieve statistics (default: this year)
@@ -495,13 +476,15 @@ class SmartDevice:
         :rtype: dict
         :raises SmartDeviceException: on error
         """
-        if not self.has_emeter:
+        if not await self.get_has_emeter():
             raise SmartDeviceException("Device has no emeter")
 
         if year is None:
             year = datetime.now().year
 
-        response = self._query_helper(self.emeter_type, "get_monthstat", {"year": year})
+        response = await self._query_helper(
+            self.emeter_type, "get_monthstat", {"year": year}
+        )
         response = [EmeterStatus(**x) for x in response["month_list"]]
 
         key = "energy_wh"
@@ -510,7 +493,7 @@ class SmartDevice:
 
         return {entry["month"]: entry[key] for entry in response}
 
-    def erase_emeter_stats(self) -> bool:
+    async def erase_emeter_stats(self) -> bool:
         """Erase energy meter statistics.
 
         :return: True if statistics were deleted
@@ -518,29 +501,29 @@ class SmartDevice:
         :rtype: bool
         :raises SmartDeviceException: on error
         """
-        if not self.has_emeter:
+        if not await self.get_has_emeter():
             raise SmartDeviceException("Device has no emeter")
 
-        self._query_helper(self.emeter_type, "erase_emeter_stat", None)
+        await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
         # As query_helper raises exception in case of failure, we have
         # succeeded when we are this far.
         return True
 
-    def current_consumption(self) -> Optional[float]:
+    async def current_consumption(self) -> Optional[float]:
         """Get the current power consumption in Watt.
 
         :return: the current power consumption in Watts.
                  None if device has no energy meter.
         :raises SmartDeviceException: on error
         """
-        if not self.has_emeter:
+        if not await self.get_has_emeter():
             raise SmartDeviceException("Device has no emeter")
 
         response = EmeterStatus(self.get_emeter_realtime())
         return response["power"]
 
-    def reboot(self, delay=1) -> None:
+    async def reboot(self, delay=1) -> None:
         """Reboot the device.
 
         Note that giving a delay of zero causes this to block,
@@ -549,27 +532,25 @@ class SmartDevice:
         :param delay: Delay the reboot for `delay` seconds.
         :return: None
         """
-        self._query_helper("system", "reboot", {"delay": delay})
+        await self._query_helper("system", "reboot", {"delay": delay})
 
-    def turn_off(self) -> None:
+    async def turn_off(self) -> None:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    @property
-    def is_off(self) -> bool:
+    async def is_off(self) -> bool:
         """Return True if device is off.
 
         :return: True if device is off, False otherwise.
         :rtype: bool
         """
-        return not self.is_on
+        return not await self.is_on()
 
-    def turn_on(self) -> None:
+    async def turn_on(self) -> None:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    @property
-    def is_on(self) -> bool:
+    async def is_on(self) -> bool:
         """Return if the device is on.
 
         :return: True if the device is on, False otherwise.
@@ -578,8 +559,7 @@ class SmartDevice:
         """
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    @property
-    def state_information(self) -> Dict[str, Any]:
+    async def get_state_information(self) -> Dict[str, Any]:
         """Return device-type specific, end-user friendly state information.
 
         :return: dict with state information.
@@ -613,14 +593,11 @@ class SmartDevice:
         return False
 
     def __repr__(self):
-        is_on = self.is_on
-        if callable(is_on):
-            is_on = is_on()
         return "<%s model %s at %s (%s), is_on: %s - dev specific: %s>" % (
             self.__class__.__name__,
-            self.model,
+            asyncio.run(self.get_model()),
             self.host,
-            self.alias,
-            is_on,
-            self.state_information,
+            asyncio.run(self.get_alias()),
+            asyncio.run(self.is_on()),
+            asyncio.run(self.get_state_information()),
         )
