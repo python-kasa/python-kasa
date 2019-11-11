@@ -14,8 +14,8 @@ You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
-import inspect
 import functools
+import inspect
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
