@@ -1,3 +1,4 @@
+import asyncio
 import json
 import socket
 import struct
@@ -25,7 +26,9 @@ class TPLinkSmartHomeProtocol:
     DEFAULT_TIMEOUT = 5
 
     @staticmethod
-    def query(host: str, request: Union[str, Dict], port: int = DEFAULT_PORT) -> Any:
+    async def query(
+        host: str, request: Union[str, Dict], port: int = DEFAULT_PORT
+    ) -> Any:
         """Request information from a TP-Link SmartHome Device.
 
         :param str host: host name or ip address of the device
@@ -38,12 +41,13 @@ class TPLinkSmartHomeProtocol:
             request = json.dumps(request)
 
         timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
-        sock = None
+        writer = None
         try:
-            sock = socket.create_connection((host, port), timeout)
-
+            task = asyncio.open_connection(host, port)
+            reader, writer = await asyncio.wait_for(task, timeout=timeout)
             _LOGGER.debug("> (%i) %s", len(request), request)
-            sock.send(TPLinkSmartHomeProtocol.encrypt(request))
+            writer.write(TPLinkSmartHomeProtocol.encrypt(request))
+            await writer.drain()
 
             buffer = bytes()
             # Some devices send responses with a length header of 0 and
@@ -51,26 +55,16 @@ class TPLinkSmartHomeProtocol:
             # will hang if we attempt to read more data.
             length = -1
             while True:
-                chunk = sock.recv(4096)
+                chunk = await reader.read(4096)
                 if length == -1:
                     length = struct.unpack(">I", chunk[0:4])[0]
                 buffer += chunk
                 if (length > 0 and len(buffer) >= length + 4) or not chunk:
                     break
-
         finally:
-            try:
-                if sock:
-                    sock.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                # OSX raises OSError when shutdown() gets called on a closed
-                # socket. We ignore it here as the data has already been read
-                # into the buffer at this point.
-                pass
-
-            finally:
-                if sock:
-                    sock.close()
+            if writer:
+                writer.close()
+                await writer.wait_closed()
 
         response = TPLinkSmartHomeProtocol.decrypt(buffer[4:])
         _LOGGER.debug("< (%i) %s", len(response), response)
