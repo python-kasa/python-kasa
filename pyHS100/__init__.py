@@ -22,3 +22,4 @@ from .smartdevice import (  # noqa
 )
 from .smartplug import SmartPlug  # noqa
 from .smartstrip import SmartStrip  # noqa
+from .version import __version__  # noqa
