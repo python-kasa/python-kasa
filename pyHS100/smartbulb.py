@@ -74,69 +74,68 @@ class SmartBulb(SmartDevice):
         self.emeter_type = "smartlife.iot.common.emeter"
         self._device_type = DeviceType.Bulb
 
-    @property
-    def is_color(self) -> bool:
+    async def is_color(self) -> bool:
         """Whether the bulb supports color changes.
 
         :return: True if the bulb supports color changes, False otherwise
         :rtype: bool
         """
-        return bool(self.sys_info["is_color"])
+        sys_info = await self.get_sys_info()
+        return bool(sys_info["is_color"])
 
-    @property
-    def is_dimmable(self) -> bool:
+    async def is_dimmable(self) -> bool:
         """Whether the bulb supports brightness changes.
 
         :return: True if the bulb supports brightness changes, False otherwise
         :rtype: bool
         """
-        return bool(self.sys_info["is_dimmable"])
+        sys_info = await self.get_sys_info()
+        return bool(sys_info["is_dimmable"])
 
-    @property
-    def is_variable_color_temp(self) -> bool:
+    async def is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes.
 
         :return: True if the bulb supports color temperature changes, False
         otherwise
         :rtype: bool
         """
-        return bool(self.sys_info["is_variable_color_temp"])
+        sys_info = await self.get_sys_info()
+        return bool(sys_info["is_variable_color_temp"])
 
-    @property
-    def valid_temperature_range(self) -> Tuple[int, int]:
+    async def get_valid_temperature_range(self) -> Tuple[int, int]:
         """Return the device-specific white temperature range (in Kelvin).
 
         :return: White temperature range in Kelvin (minimun, maximum)
         :rtype: tuple
         """
-        if not self.is_variable_color_temp:
+        if not await self.is_variable_color_temp():
             return (0, 0)
         for model, temp_range in TPLINK_KELVIN.items():
-            if re.match(model, self.sys_info["model"]):
+            sys_info = await self.get_sys_info()
+            if re.match(model, sys_info["model"]):
                 return temp_range
         return (0, 0)
 
-    def get_light_state(self) -> Dict:
+    async def get_light_state(self) -> Dict:
         """Query the light state."""
-        return self._query_helper(self.LIGHT_SERVICE, "get_light_state")
+        return await self._query_helper(self.LIGHT_SERVICE, "get_light_state")
 
-    def set_light_state(self, state: Dict) -> Dict:
+    async def set_light_state(self, state: Dict) -> Dict:
         """Set the light state."""
-        return self._query_helper(self.LIGHT_SERVICE, "transition_light_state", state)
+        return await self._query_helper(self.LIGHT_SERVICE, "transition_light_state", state)
 
-    @property
-    def hsv(self) -> Tuple[int, int, int]:
+    async def get_hsv(self) -> Tuple[int, int, int]:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
         :rtype: tuple
         """
 
-        if not self.is_color:
+        if not await self.is_color():
             raise SmartDeviceException("Bulb does not support color.")
 
-        light_state = self.get_light_state()
-        if not self.is_on:
+        light_state = await self.get_light_state()
+        if not await self.is_on():
             hue = light_state["dft_on_state"]["hue"]
             saturation = light_state["dft_on_state"]["saturation"]
             value = light_state["dft_on_state"]["brightness"]
@@ -147,23 +146,18 @@ class SmartBulb(SmartDevice):
 
         return hue, saturation, value
 
-    @hsv.setter  # type: ignore
-    @deprecated(details="Use set_hsv()")
-    def hsv(self, state: Tuple[int, int, int]):
-        return self.set_hsv(state[0], state[1], state[2])
-
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int) or not (0 <= value <= 100):
             raise ValueError(
                 "Invalid brightness value: {} " "(valid range: 0-100%)".format(value)
             )
 
-    def set_hsv(self, hue: int, saturation: int, value: int):
+    async def set_hsv(self, hue: int, saturation: int, value: int):
         """Set new HSV.
 
         :param tuple state: hue, saturation and value (degrees, %, %)
         """
-        if not self.is_color:
+        if not await self.is_color():
             raise SmartDeviceException("Bulb does not support color.")
 
         if not isinstance(hue, int) or not (0 <= hue <= 360):
@@ -185,150 +179,102 @@ class SmartBulb(SmartDevice):
             "brightness": value,
             "color_temp": 0,
         }
-        self.set_light_state(light_state)
+        await self.set_light_state(light_state)
 
-    @property
-    def color_temp(self) -> int:
+    async def get_color_temp(self) -> int:
         """Return color temperature of the device.
 
         :return: Color temperature in Kelvin
         :rtype: int
         """
-        if not self.is_variable_color_temp:
+        if not await self.is_variable_color_temp():
             raise SmartDeviceException("Bulb does not support colortemp.")
 
-        light_state = self.get_light_state()
-        if not self.is_on:
+        light_state = await self.get_light_state()
+        if not await self.is_on():
             return int(light_state["dft_on_state"]["color_temp"])
         else:
             return int(light_state["color_temp"])
 
-    @color_temp.setter  # type: ignore
-    @deprecated(details="use set_color_temp")
-    def color_temp(self, temp: int) -> None:
-        self.set_color_temp(temp)
-
-    def set_color_temp(self, temp: int) -> None:
+    async def set_color_temp(self, temp: int) -> None:
         """Set the color temperature of the device.
 
         :param int temp: The new color temperature, in Kelvin
         """
-        if not self.is_variable_color_temp:
+        if not await self.is_variable_color_temp():
             raise SmartDeviceException("Bulb does not support colortemp.")
 
+        valid_temperature_range = await self.get_valid_temperature_range()
         if (
-            temp < self.valid_temperature_range[0]
-            or temp > self.valid_temperature_range[1]
+            temp < valid_temperature_range[0]
+            or temp > valid_temperature_range[1]
         ):
             raise ValueError(
                 "Temperature should be between {} "
-                "and {}".format(*self.valid_temperature_range)
+                "and {}".format(*valid_temperature_range)
             )
 
         light_state = {"color_temp": temp}
-        self.set_light_state(light_state)
+        await self.set_light_state(light_state)
 
-    @property
-    def brightness(self) -> int:
+    async def get_brightness(self) -> int:
         """Current brightness of the device.
 
         :return: brightness in percent
         :rtype: int
         """
-        if not self.is_dimmable:  # pragma: no cover
+        if not await self.is_dimmable():  # pragma: no cover
             raise SmartDeviceException("Bulb is not dimmable.")
 
-        light_state = self.get_light_state()
-        if not self.is_on:
+        light_state = await self.get_light_state()
+        if not await self.is_on():
             return int(light_state["dft_on_state"]["brightness"])
         else:
             return int(light_state["brightness"])
 
-    @brightness.setter  # type: ignore
-    @deprecated(details="use set_brightness")
-    def brightness(self, brightness: int) -> None:
-        self.set_brightness(brightness)
-
-    def set_brightness(self, brightness: int) -> None:
+    async def set_brightness(self, brightness: int) -> None:
         """Set the current brightness of the device.
 
         :param int brightness: brightness in percent
         """
-        if not self.is_dimmable:  # pragma: no cover
+        if not await self.is_dimmable():  # pragma: no cover
             raise SmartDeviceException("Bulb is not dimmable.")
 
         self._raise_for_invalid_brightness(brightness)
 
         light_state = {"brightness": brightness}
-        self.set_light_state(light_state)
+        await self.set_light_state(light_state)
 
-    @property  # type: ignore
-    @deprecated(details="use is_on() and is_off()")
-    def state(self) -> str:
-        """Retrieve the bulb state.
-
-        :returns: one of
-                  STATE_ON
-                  STATE_OFF
-        :rtype: str
-        """
-        if self.is_on:
-            return self.STATE_ON
-
-        return self.STATE_OFF
-
-    @state.setter  # type: ignore
-    @deprecated(details="use turn_on() and turn_off()")
-    def state(self, bulb_state: str) -> None:
-        """Set the new bulb state.
-
-        :param bulb_state: one of
-                           STATE_ON
-                           STATE_OFF
-        """
-        if bulb_state == self.STATE_ON:
-            new_state = 1
-        elif bulb_state == self.STATE_OFF:
-            new_state = 0
-        else:
-            raise ValueError
-
-        light_state = {"on_off": new_state}
-        self.set_light_state(light_state)
-
-    @property
-    def state_information(self) -> Dict[str, Any]:
+    async def get_state_information(self) -> Dict[str, Any]:
         """Return bulb-specific state information.
 
         :return: Bulb information dict, keys in user-presentable form.
         :rtype: dict
         """
         info = {
-            "Brightness": self.brightness,
-            "Is dimmable": self.is_dimmable,
+            "Brightness": await self.get_brightness(),
+            "Is dimmable": await self.is_dimmable(),
         }  # type: Dict[str, Any]
-        if self.is_variable_color_temp:
-            info["Color temperature"] = self.color_temp
-            info["Valid temperature range"] = self.valid_temperature_range
-        if self.is_color:
-            info["HSV"] = self.hsv
+        if await self.is_variable_color_temp():
+            info["Color temperature"] = await self.get_color_temp()
+            info["Valid temperature range"] = await self.get_valid_temperature_range()
+        if await self.is_color():
+            info["HSV"] = await self.get_hsv()
 
         return info
 
-    @property
-    def is_on(self) -> bool:
+    async def is_on(self) -> bool:
         """Return whether the device is on."""
-        light_state = self.get_light_state()
+        light_state = await self.get_light_state()
         return bool(light_state["on_off"])
 
-    def turn_off(self) -> None:
+    async def turn_off(self) -> None:
         """Turn the bulb off."""
-        self.set_light_state({"on_off": 0})
+        await self.set_light_state({"on_off": 0})
 
-    def turn_on(self) -> None:
+    async def turn_on(self) -> None:
         """Turn the bulb on."""
-        self.set_light_state({"on_off": 1})
+        await self.set_light_state({"on_off": 1})
 
-    @property
-    def has_emeter(self) -> bool:
+    async def get_has_emeter(self) -> bool:
         return True
