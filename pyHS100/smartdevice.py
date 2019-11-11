@@ -118,7 +118,7 @@ class SmartDevice:
         self.cache = defaultdict(lambda: defaultdict(lambda: None))
         self._device_type = DeviceType.Unknown
         self.ioloop = ioloop or asyncio.get_event_loop()
-        self.sync = SyncSmartDevice(self)
+        self.sync = SyncSmartDevice(self, ioloop=self.ioloop)
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
         """Return query result from cache if still fresh.
@@ -606,8 +606,9 @@ class SyncSmartDevice:
     Taken from https://github.com/basnijholt/media_player.kef/
     """
 
-    def __init__(self, async_device):
+    def __init__(self, async_device, ioloop):
         self.async_device = async_device
+        self.ioloop = ioloop
 
     def __getattr__(self, attr):
         method = getattr(self.async_device, attr)
@@ -617,7 +618,7 @@ class SyncSmartDevice:
 
             @functools.wraps(method)
             def wrapped(*args, **kwargs):
-                return asyncio.run(method(*args, **kwargs))
+                return self.ioloop.run_until_complete(method(*args, **kwargs))
 
             return wrapped
         else:

@@ -10,7 +10,7 @@ setup(
     license="GPLv3",
     packages=["pyHS100"],
     install_requires=["click", "deprecation"],
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     entry_points={"console_scripts": ["pyhs100=pyHS100.cli:cli",],},
     zip_safe=False,
 )

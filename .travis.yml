@@ -2,7 +2,6 @@ sudo: false
 language: python
 dist: xenial
 python:
-  - "3.5"
   - "3.6"
   - "3.7"
 install: pip install tox-travis coveralls
