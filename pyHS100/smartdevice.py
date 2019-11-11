@@ -211,16 +211,6 @@ class SmartDevice:
         """
         raise NotImplementedError()
 
-    @property
-    def sys_info(self) -> Dict[str, Any]:
-        """Return the complete system information.
-
-        :return: System information dict.
-        :rtype: dict
-        """
-
-        return asyncio.run(self.get_sys_info())
-
     async def get_sys_info(self) -> Dict:
         """Retrieve system information.
 
@@ -601,11 +591,11 @@ class SmartDevice:
     def __repr__(self):
         return "<%s model %s at %s (%s), is_on: %s - dev specific: %s>" % (
             self.__class__.__name__,
-            asyncio.run(self.get_model()),
+            self.sync.get_model(),
             self.host,
-            asyncio.run(self.get_alias()),
-            asyncio.run(self.is_on()),
-            asyncio.run(self.get_state_information()),
+            self.sync.get_alias(),
+            self.sync.is_on(),
+            self.sync.get_state_information(),
         )
 
 

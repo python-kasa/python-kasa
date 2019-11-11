@@ -51,7 +51,7 @@ class SmartStrip(SmartPlug):
         self._device_type = DeviceType.Strip
         self.plugs = {}
 
-        sys_info = asyncio.run(self.get_sys_info())
+        sys_info = self.sync.get_sys_info()
         children = sys_info["children"]
         self.num_children = len(children)
         for plug in range(self.num_children):
