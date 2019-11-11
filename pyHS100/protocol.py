@@ -1,6 +1,5 @@
 import asyncio
 import json
-import socket
 import struct
 import logging
 from typing import Any, Dict, Union

@@ -20,8 +20,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from deprecation import deprecated
-
 from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)

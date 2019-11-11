@@ -1,8 +1,6 @@
 from pyHS100 import DeviceType, SmartDevice, SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
-from deprecation import deprecated
 import re
-from datetime import datetime
 from typing import Any, Dict, Tuple
 
 

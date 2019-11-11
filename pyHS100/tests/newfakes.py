@@ -1,5 +1,4 @@
 from ..protocol import TPLinkSmartHomeProtocol
-from .. import SmartDeviceException
 import logging
 import re
 from voluptuous import Schema, Range, All, Any, Coerce, Invalid, Optional, REMOVE_EXTRA

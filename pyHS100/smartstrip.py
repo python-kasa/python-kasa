@@ -3,7 +3,6 @@ import datetime
 import logging
 from typing import Any, Dict, Optional, Union
 
-from deprecation import deprecated
 from pyHS100 import DeviceType, EmeterStatus, SmartDeviceException, SmartPlug
 
 from .protocol import TPLinkSmartHomeProtocol
