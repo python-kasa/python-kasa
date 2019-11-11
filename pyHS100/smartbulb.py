@@ -65,9 +65,16 @@ class SmartBulb(SmartDevice):
         protocol: TPLinkSmartHomeProtocol = None,
         context: str = None,
         cache_ttl: int = 3,
+        *,
+        ioloop=None,
     ) -> None:
         SmartDevice.__init__(
-            self, host=host, protocol=protocol, context=context, cache_ttl=cache_ttl
+            self,
+            host=host,
+            protocol=protocol,
+            context=context,
+            cache_ttl=cache_ttl,
+            ioloop=ioloop,
         )
         self.emeter_type = "smartlife.iot.common.emeter"
         self._device_type = DeviceType.Bulb
@@ -120,7 +127,9 @@ class SmartBulb(SmartDevice):
 
     async def set_light_state(self, state: Dict) -> Dict:
         """Set the light state."""
-        return await self._query_helper(self.LIGHT_SERVICE, "transition_light_state", state)
+        return await self._query_helper(
+            self.LIGHT_SERVICE, "transition_light_state", state
+        )
 
     async def get_hsv(self) -> Tuple[int, int, int]:
         """Return the current HSV state of the bulb.
@@ -203,10 +212,7 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Bulb does not support colortemp.")
 
         valid_temperature_range = await self.get_valid_temperature_range()
-        if (
-            temp < valid_temperature_range[0]
-            or temp > valid_temperature_range[1]
-        ):
+        if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
                 "Temperature should be between {} "
                 "and {}".format(*valid_temperature_range)

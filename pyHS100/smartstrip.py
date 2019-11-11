@@ -37,9 +37,16 @@ class SmartStrip(SmartPlug):
     """
 
     def __init__(
-        self, host: str, protocol: TPLinkSmartHomeProtocol = None, cache_ttl: int = 3
+        self,
+        host: str,
+        protocol: TPLinkSmartHomeProtocol = None,
+        cache_ttl: int = 3,
+        *,
+        ioloop=None
     ) -> None:
-        SmartPlug.__init__(self, host=host, protocol=protocol, cache_ttl=cache_ttl)
+        SmartPlug.__init__(
+            self, host=host, protocol=protocol, cache_ttl=cache_ttl, ioloop=ioloop
+        )
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
         self.plugs = {}

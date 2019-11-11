@@ -91,6 +91,8 @@ class SmartDevice:
         protocol: Optional[TPLinkSmartHomeProtocol] = None,
         context: str = None,
         cache_ttl: int = 3,
+        *,
+        ioloop=None,
     ) -> None:
         """Create a new SmartDevice instance.
 
@@ -113,6 +115,7 @@ class SmartDevice:
         )
         self.cache = defaultdict(lambda: defaultdict(lambda: None))
         self._device_type = DeviceType.Unknown
+        self.ioloop = ioloop or asyncio.get_event_loop()
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
         """Return query result from cache if still fresh.
@@ -402,7 +405,9 @@ class SmartDevice:
         if "mac" in sys_info:
             return str(sys_info["mac"])
         elif "mic_mac" in sys_info:
-            return ":".join(format(s, "02x") for s in bytes.fromhex(sys_info["mic_mac"]))
+            return ":".join(
+                format(s, "02x") for s in bytes.fromhex(sys_info["mic_mac"])
+            )
 
         raise SmartDeviceException(
             "Unknown mac, please submit a bug report with sys_info output."

@@ -31,8 +31,10 @@ class SmartPlug(SmartDevice):
         protocol: "TPLinkSmartHomeProtocol" = None,
         context: str = None,
         cache_ttl: int = 3,
+        *,
+        ioloop=None,
     ) -> None:
-        SmartDevice.__init__(self, host, protocol, context, cache_ttl)
+        SmartDevice.__init__(self, host, protocol, context, cache_ttl, ioloop=ioloop)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
 
