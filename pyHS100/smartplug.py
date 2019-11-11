@@ -38,43 +38,7 @@ class SmartPlug(SmartDevice):
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
 
-    @property  # type: ignore
-    @deprecated(details="use is_on()")
-    def state(self) -> str:
-        """Retrieve the switch state.
-
-        :returns: one of
-                  STATE_ON
-                  STATE_OFF
-        :rtype: str
-        """
-        if self.is_on:
-            return self.STATE_ON
-        return self.STATE_OFF
-
-    @state.setter  # type: ignore
-    @deprecated(details="use turn_on() and turn_off()")
-    def state(self, value: str):
-        """Set the new switch state.
-
-        :param value: one of
-                    STATE_ON
-                    STATE_OFF
-        :raises ValueError: on invalid state
-        :raises SmartDeviceException: on error
-        """
-        if not isinstance(value, str):
-            raise ValueError("State must be str, not of %s." % type(value))
-
-        if value.upper() == self.STATE_ON:
-            return self.turn_on()
-        elif value.upper() == self.STATE_OFF:
-            return self.turn_off()
-
-        raise ValueError("State %s is not valid." % value)
-
-    @property
-    def brightness(self) -> int:
+    async def get_brightness(self) -> int:
         """Return current brightness on dimmers.
 
         Will return a range between 0 - 100.
@@ -82,17 +46,13 @@ class SmartPlug(SmartDevice):
         :returns: integer
         :rtype: int
         """
-        if not self.is_dimmable:
+        if not await self.is_dimmable():
             raise SmartDeviceException("Device is not dimmable.")
 
-        return int(self.sys_info["brightness"])
+        sys_info = await self.get_sys_info()
+        return int(sys_info["brightness"])
 
-    @brightness.setter  # type: ignore
-    @deprecated(details="use set_brightness()")
-    def brightness(self, value: int):
-        self.set_brightness(value)
-
-    def set_brightness(self, value: int):
+    async def set_brightness(self, value: int):
         """Set the new dimmer brightness level.
 
         Note:
@@ -102,107 +62,104 @@ class SmartPlug(SmartDevice):
         :param value: integer between 1 and 100
 
         """
-        if not self.is_dimmable:
+        if not await self.is_dimmable():
             raise SmartDeviceException("Device is not dimmable.")
 
         if not isinstance(value, int):
             raise ValueError("Brightness must be integer, " "not of %s.", type(value))
         elif 0 < value <= 100:
             self.turn_on()
-            self._query_helper(
+            await self._query_helper(
                 "smartlife.iot.dimmer", "set_brightness", {"brightness": value}
             )
         else:
             raise ValueError("Brightness value %s is not valid." % value)
 
-    @property
-    def is_dimmable(self):
+    async def is_dimmable(self):
         """Whether the switch supports brightness changes.
 
         :return: True if switch supports brightness changes, False otherwise
         :rtype: bool
         """
-        return "brightness" in self.sys_info
+        sys_info = await self.get_sys_info()
+        return "brightness" in sys_info
 
-    @property
-    def has_emeter(self):
+    async def get_has_emeter(self):
         """Return whether device has an energy meter.
 
         :return: True if energy meter is available
                  False otherwise
         """
-        features = self.sys_info["feature"].split(":")
+        sys_info = await self.get_sys_info()
+        features = sys_info["feature"].split(":")
         return "ENE" in features
 
-    @property
-    def is_on(self) -> bool:
+    async def is_on(self) -> bool:
         """Return whether device is on.
 
         :return: True if device is on, False otherwise
         """
-        return bool(self.sys_info["relay_state"])
+        sys_info = await self.get_sys_info()
+        return bool(sys_info["relay_state"])
 
-    def turn_on(self):
+    async def turn_on(self):
         """Turn the switch on.
 
         :raises SmartDeviceException: on error
         """
-        self._query_helper("system", "set_relay_state", {"state": 1})
+        await self._query_helper("system", "set_relay_state", {"state": 1})
 
-    def turn_off(self):
+    async def turn_off(self):
         """Turn the switch off.
 
         :raises SmartDeviceException: on error
         """
-        self._query_helper("system", "set_relay_state", {"state": 0})
+        await self._query_helper("system", "set_relay_state", {"state": 0})
 
-    @property
-    def led(self) -> bool:
+    async def get_led(self) -> bool:
         """Return the state of the led.
 
         :return: True if led is on, False otherwise
         :rtype: bool
         """
-        return bool(1 - self.sys_info["led_off"])
+        sys_info = await self.get_sys_info()
+        return bool(1 - sys_info["led_off"])
 
-    @led.setter  # type: ignore
-    @deprecated(details="use set_led")
-    def led(self, state: bool):
-        self.set_led(state)
-
-    def set_led(self, state: bool):
+    async def set_led(self, state: bool):
         """Set the state of the led (night mode).
 
         :param bool state: True to set led on, False to set led off
         :raises SmartDeviceException: on error
         """
-        self._query_helper("system", "set_led_off", {"off": int(not state)})
+        await self._query_helper("system", "set_led_off", {"off": int(not state)})
 
-    @property
-    def on_since(self) -> datetime.datetime:
+    async def get_on_since(self) -> datetime.datetime:
         """Return pretty-printed on-time.
 
         :return: datetime for on since
         :rtype: datetime
         """
+        sys_info = await self.get_sys_info()
         if self.context:
-            for plug in self.sys_info["children"]:
+            for plug in sys_info["children"]:
                 if plug["id"] == self.context:
                     on_time = plug["on_time"]
                     break
         else:
-            on_time = self.sys_info["on_time"]
+            on_time = sys_info["on_time"]
 
         return datetime.datetime.now() - datetime.timedelta(seconds=on_time)
 
-    @property
-    def state_information(self) -> Dict[str, Any]:
+    async def get_state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information.
 
         :return: Switch information dict, keys in user-presentable form.
         :rtype: dict
         """
-        info = {"LED state": self.led, "On since": self.on_since}
-        if self.is_dimmable:
-            info["Brightness"] = self.brightness
+        info = {
+            "LED state": await self.get_led(),
+            "On since": await self.get_on_since(),
+        }
+        if await self.is_dimmable():
+            info["Brightness"] = await self.get_brightness()
         return info
