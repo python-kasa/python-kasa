@@ -98,7 +98,7 @@ class Discover:
         return devices
 
     @staticmethod
-    def discover_single(
+    async def discover_single(
         host: str, protocol: TPLinkSmartHomeProtocol = None
     ) -> Optional[SmartDevice]:
         """Discover a single device by the given IP address.
@@ -111,7 +111,7 @@ class Discover:
         if protocol is None:
             protocol = TPLinkSmartHomeProtocol()
 
-        info = protocol.query(host, Discover.DISCOVERY_QUERY)
+        info = await protocol.query(host, Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:

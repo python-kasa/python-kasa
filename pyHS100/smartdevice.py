@@ -150,7 +150,7 @@ class SmartDevice:
         self.cache[target][cmd] = response.copy()
         self.cache[target][cmd]["last_updated"] = datetime.utcnow()
 
-    def _query_helper(self, target: str, cmd: str, arg: Optional[Dict] = None) -> Any:
+    async def _query_helper(self, target: str, cmd: str, arg: Optional[Dict] = None) -> Any:
         """Handle result unwrapping and error handling.
 
         :param target: Target system {system, time, emeter, ..}
@@ -169,7 +169,7 @@ class SmartDevice:
             response = self._result_from_cache(target, cmd)
             if response is None:
                 _LOGGER.debug("Got no result from cache, querying the device.")
-                response = self.protocol.query(host=self.host, request=request)
+                response = await self.protocol.query(host=self.host, request=request)
                 self._insert_to_cache(target, cmd, response)
         except Exception as ex:
             raise SmartDeviceException(
