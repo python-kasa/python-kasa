@@ -571,8 +571,7 @@ class SmartDevice:
         """Return  True if the device is dimmable."""
         return False
 
-    @property
-    def is_variable_color_temp(self) -> bool:
+    async def is_variable_color_temp(self) -> bool:
         """Return True if the device supports color temperature."""
         return False
 

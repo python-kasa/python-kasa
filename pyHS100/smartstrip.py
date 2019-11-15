@@ -18,6 +18,7 @@ class SmartStrip(SmartPlug):
     """Representation of a TP-Link Smart Power Strip.
 
     Usage example when used as library:
+    ```python
     p = SmartStrip("192.168.1.105")
 
     # query the state of the strip
@@ -33,6 +34,9 @@ class SmartStrip(SmartPlug):
 
     # change state of a single outlet
     p.plugs[0].sync.turn_on()
+    ```
+
+    Omit the `sync` attribute to get coroutines.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.

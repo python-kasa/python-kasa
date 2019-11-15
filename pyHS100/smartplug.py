@@ -12,15 +12,22 @@ _LOGGER = logging.getLogger(__name__)
 class SmartPlug(SmartDevice):
     """Representation of a TP-Link Smart Switch.
 
-    Usage example when used as library:
+    Usage example when used a a synchronous library:
+    ```python
     p = SmartPlug("192.168.1.105")
+
     # print the devices alias
-    print(p.alias)
+    print(p.sync.get_alias())
+
     # change state of plug
-    p.turn_on()
-    p.turn_off()
+    p.sync.turn_on()
+    p.sync.turn_off()
+
     # query and print current state of plug
-    print(p.state)
+    print(p.sync.get_state_information())
+    ```
+
+    Omit the `sync` attribute to get coroutines.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.

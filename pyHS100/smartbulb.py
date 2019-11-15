@@ -20,39 +20,47 @@ class SmartBulb(SmartDevice):
     """Representation of a TP-Link Smart Bulb.
 
     Usage example when used as library:
+    ```python
     p = SmartBulb("192.168.1.105")
 
     # print the devices alias
-    print(p.alias)
+    print(p.sync.get_alias())
 
     # change state of bulb
-    p.turn_on()
-    p.turn_off()
+    p.sync.turn_on()
+    p.sync.turn_off()
 
     # query and print current state of plug
-    print(p.state)
+    print(p.sync.get_state_information())
 
     # check whether the bulb supports color changes
-    if p.is_color:
+    if p.sync.is_color():
 
     # set the color to an HSV tuple
-    p.set_hsv(180, 100, 100)
+    p.sync.set_hsv(180, 100, 100)
+
     # get the current HSV value
-    print(p.hsv)
+    print(p.sync.get_hsv())
 
     # check whether the bulb supports setting color temperature
-    if p.is_variable_color_temp:
-    # set the color temperature in Kelvin
-    p.set_color_temp(3000)
-    # get the current color temperature
-    print(p.color_temp)
+    if p.sync.is_variable_color_temp():
+        # set the color temperature in Kelvin
+        p.sync.set_color_temp(3000)
+        
+        # get the current color temperature
+        print(p.sync.get_color_temp())
 
     # check whether the bulb is dimmable
-    if p.is_dimmable:
+    if p.sync.is_dimmable():
+  
     # set the bulb to 50% brightness
-    p.set_brightness(50)
+    p.sync.set_brightness(50)
+  
     # check the current brightness
-    print(p.brightness)
+    print(p.sync.get_brightness())
+    ```
+
+    Omit the `sync` attribute to get coroutines.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
