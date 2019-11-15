@@ -6,12 +6,13 @@ from pprint import pformat as pf
 
 import click
 
+from pyHS100 import Discover, SmartBulb, SmartDevice, SmartStrip
+
+from pyHS100 import SmartPlug  # noqa: E402; noqa: E402
+
 if sys.version_info < (3, 6):
     print("To use this script you need Python 3.6 or newer! got %s" % sys.version_info)
     sys.exit(1)
-
-from pyHS100 import SmartPlug  # noqa: E402
-from pyHS100 import Discover, SmartBulb, SmartDevice, SmartStrip
 
 
 pass_dev = click.make_pass_decorator(SmartDevice)
@@ -183,7 +184,7 @@ def state(ctx, dev: SmartDevice):
         )
     )
     if dev.is_strip:
-        for plug in range(dev.plugs):
+        for plug in dev.plugs:  # type: ignore
             is_on = plug.sync.get_is_on()
             alias = plug.sync.get_alias()
             click.echo(

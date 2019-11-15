@@ -480,7 +480,7 @@ class SmartDevice:
 
         return {entry["month"]: entry[key] for entry in response}
 
-    async def erase_emeter_stats(self) -> bool:
+    async def erase_emeter_stats(self):
         """Erase energy meter statistics.
 
         :return: True if statistics were deleted
@@ -491,7 +491,7 @@ class SmartDevice:
 
         await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
-    async def current_consumption(self) -> Optional[float]:
+    async def current_consumption(self) -> float:
         """Get the current power consumption in Watt.
 
         :return: the current power consumption in Watts.
@@ -588,6 +588,7 @@ class SmartDevice:
 
 class SyncSmartDevice:
     """A synchronous SmartDevice speaker class.
+
     This has the same methods as `SyncSmartDevice`, however, it wraps all async
     methods and call them in a blocking way.
 

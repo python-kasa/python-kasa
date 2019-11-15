@@ -46,16 +46,16 @@ class SmartBulb(SmartDevice):
     if p.sync.is_variable_color_temp():
         # set the color temperature in Kelvin
         p.sync.set_color_temp(3000)
-        
+
         # get the current color temperature
         print(p.sync.get_color_temp())
 
     # check whether the bulb is dimmable
     if p.sync.is_dimmable():
-  
+
     # set the bulb to 50% brightness
     p.sync.set_brightness(50)
-  
+
     # check the current brightness
     print(p.sync.get_brightness())
     ```
@@ -146,7 +146,6 @@ class SmartBulb(SmartDevice):
         :return: hue, saturation and value (degrees, %, %)
         :rtype: tuple
         """
-
         if not await self.is_color():
             raise SmartDeviceException("Bulb does not support color.")
 
@@ -269,7 +268,7 @@ class SmartBulb(SmartDevice):
         info: Dict[str, Any] = {
             "Brightness": await self.get_brightness(),
             "Is dimmable": await self.is_dimmable(),
-        }  # type: Dict[str, Any]
+        }
         if await self.is_variable_color_temp():
             info["Color temperature"] = await self.get_color_temp()
             info["Valid temperature range"] = await self.get_valid_temperature_range()

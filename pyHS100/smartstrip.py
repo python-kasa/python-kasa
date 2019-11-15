@@ -98,7 +98,7 @@ class SmartStrip(SmartPlug):
         :return: Strip information dict, keys in user-presentable form.
         :rtype: dict
         """
-        state: Dict[str, Any] = {"LED state": self.led}
+        state: Dict[str, Any] = {"LED state": await self.get_led()}
         for plug in self.plugs:
             if await plug.is_on():
                 state["Plug %s on since" % str(plug)] = await plug.get_on_since()
