@@ -55,12 +55,12 @@ class SmartStrip(SmartPlug):
         self.plugs: List[SmartPlug] = []
         children = self.sync.get_sys_info()["children"]
         self.num_children = len(children)
-        for plug in range(self.num_children):
+        for child in children:
             self.plugs.append(
                 SmartPlug(
                     host,
                     protocol,
-                    context=children[plug]["id"],
+                    context=child["id"],
                     cache_ttl=cache_ttl,
                     ioloop=ioloop,
                 )
