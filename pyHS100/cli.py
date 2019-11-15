@@ -182,15 +182,13 @@ def state(ctx, dev: SmartDevice):
             fg="green" if dev.sync.is_on() else "red",
         )
     )
-    if dev.num_children > 0:
-        is_on = dev.sync.get_is_on()
+    if dev.is_strip:
         for plug in range(dev.plugs):
+            is_on = plug.sync.get_is_on()
             alias = plug.sync.get_alias()
             click.echo(
                 click.style(
-                    "  * {} state: {}".format(
-                        alias, ("ON" if is_on else "OFF")
-                    ),
+                    "  * {} state: {}".format(alias, ("ON" if is_on else "OFF")),
                     fg="green" if is_on else "red",
                 )
             )
