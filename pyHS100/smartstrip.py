@@ -8,7 +8,7 @@ from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List
 
 from pyHS100.protocol import TPLinkSmartHomeProtocol
-from pyHS100.smartdevice import DeviceType
+from pyHS100.smartdevice import DeviceType, requires_update
 from pyHS100.smartplug import SmartPlug
 
 _LOGGER = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class SmartStrip(SmartPlug):
     p = SmartStrip("192.168.1.105")
 
     # query the state of the strip
-    print(p.sync.is_on())
+    print(p.is_on)
 
     # change state of all outlets
     p.sync.turn_on()
@@ -30,7 +30,7 @@ class SmartStrip(SmartPlug):
 
     # individual outlets are accessible through plugs variable
     for plug in p.plugs:
-        print(f"{p}: {p.sync.is_on()}")
+        print(f"{p}: {p.is_on}")
 
     # change state of a single outlet
     p.plugs[0].sync.turn_on()
@@ -66,13 +66,24 @@ class SmartStrip(SmartPlug):
                 )
             )
 
-    async def is_on(self) -> bool:
+    @property
+    @requires_update
+    def is_on(self) -> bool:
         """Return if any of the outlets are on."""
         for plug in self.plugs:
-            is_on = await plug.is_on()
+            is_on = plug.is_on
             if is_on:
                 return True
         return False
+
+    async def update(self):
+        """Update some of the attributes.
+
+        Needed for methods that are decorated with `requires_update`.
+        """
+        await super().update()
+        for plug in self.plugs:
+            await plug.update()
 
     async def turn_on(self):
         """Turn the strip on.
@@ -80,6 +91,7 @@ class SmartStrip(SmartPlug):
         :raises SmartDeviceException: on error
         """
         await self._query_helper("system", "set_relay_state", {"state": 1})
+        await self.update()
 
     async def turn_off(self):
         """Turn the strip off.
@@ -87,21 +99,26 @@ class SmartStrip(SmartPlug):
         :raises SmartDeviceException: on error
         """
         await self._query_helper("system", "set_relay_state", {"state": 0})
+        await self.update()
 
-    async def get_on_since(self) -> datetime.datetime:
+    @property
+    @requires_update
+    def on_since(self) -> datetime.datetime:
         """Return the maximum on-time of all outlets."""
-        return max([await plug.get_on_since() for plug in self.plugs])
+        return max(plug.on_since for plug in self.plugs)
 
-    async def state_information(self) -> Dict[str, Any]:
+    @property
+    @requires_update
+    def state_information(self) -> Dict[str, Any]:
         """Return strip-specific state information.
 
         :return: Strip information dict, keys in user-presentable form.
         :rtype: dict
         """
-        state: Dict[str, Any] = {"LED state": await self.get_led()}
+        state: Dict[str, Any] = {"LED state": self.led}
         for plug in self.plugs:
-            if await plug.is_on():
-                state["Plug %s on since" % str(plug)] = await plug.get_on_since()
+            if plug.is_on:
+                state["Plug %s on since" % str(plug)] = self.on_since
 
         return state
 
@@ -116,7 +133,7 @@ class SmartStrip(SmartPlug):
 
         return consumption
 
-    async def icon(self) -> Dict:
+    async def get_icon(self) -> Dict:
         """Icon for the device.
 
         Overriden to keep the API, as the SmartStrip and children do not
@@ -132,6 +149,7 @@ class SmartStrip(SmartPlug):
         """
         return await super().set_alias(alias)
 
+    @requires_update
     async def get_emeter_daily(
         self, year: int = None, month: int = None, kwh: bool = True
     ) -> Dict:
@@ -154,6 +172,7 @@ class SmartStrip(SmartPlug):
                 emeter_daily[day] += value
         return emeter_daily
 
+    @requires_update
     async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
         """Retrieve monthly statistics for a given year.
 
@@ -170,6 +189,7 @@ class SmartStrip(SmartPlug):
                 emeter_monthly[month] += value
         return emeter_monthly
 
+    @requires_update
     async def erase_emeter_stats(self):
         """Erase energy meter statistics for all plugs.
 

@@ -151,7 +151,7 @@ def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3)
         click.echo(f"Attempt {attempt} of {attempts}")
         found_devs = Discover.discover(target=target, timeout=timeout).items()
         for ip, dev in found_devs:
-            if dev.sync.get_alias().lower() == alias.lower():
+            if dev.alias.lower() == alias.lower():
                 host = dev.host
                 return host
     return None
@@ -161,8 +161,9 @@ def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3)
 @pass_dev
 def sysinfo(dev):
     """Print out full system information."""
+    dev.sync.update()
     click.echo(click.style("== System info ==", bold=True))
-    click.echo(pf(dev.sync.get_sys_info()))
+    click.echo(pf(dev.sys_info))
 
 
 @cli.command()
@@ -170,23 +171,20 @@ def sysinfo(dev):
 @click.pass_context
 def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
-    click.echo(
-        click.style(
-            "== {} - {} ==".format(dev.sync.get_alias(), dev.sync.get_model()),
-            bold=True,
-        )
-    )
+    dev.sync.update()
+    click.echo(click.style("== {} - {} ==".format(dev.alias, dev.model), bold=True))
 
     click.echo(
         click.style(
-            "Device state: {}".format("ON" if dev.sync.is_on() else "OFF"),
-            fg="green" if dev.sync.is_on() else "red",
+            "Device state: {}".format("ON" if dev.is_on else "OFF"),
+            fg="green" if dev.is_on else "red",
         )
     )
     if dev.is_strip:
         for plug in dev.plugs:  # type: ignore
-            is_on = plug.sync.get_is_on()
-            alias = plug.sync.get_alias()
+            plug.sync.update()
+            is_on = plug.is_on
+            alias = plug.alias
             click.echo(
                 click.style(
                     "  * {} state: {}".format(alias, ("ON" if is_on else "OFF")),
@@ -195,15 +193,14 @@ def state(ctx, dev: SmartDevice):
             )
 
     click.echo(f"Host/IP: {dev.host}")
-    for k, v in dev.sync.get_state_information().items():
+    for k, v in dev.state_information.items():
         click.echo(f"{k}: {v}")
-    hw_info = dev.sync.get_hw_info()
     click.echo(click.style("== Generic information ==", bold=True))
     click.echo("Time:         {}".format(dev.sync.get_time()))
-    click.echo("Hardware:     {}".format(hw_info["hw_ver"]))
-    click.echo("Software:     {}".format(hw_info["sw_ver"]))
-    click.echo("MAC (rssi):   {} ({})".format(dev.sync.get_mac(), dev.sync.get_rssi()))
-    click.echo("Location:     {}".format(dev.sync.get_location()))
+    click.echo("Hardware:     {}".format(dev.hw_info["hw_ver"]))
+    click.echo("Software:     {}".format(dev.hw_info["sw_ver"]))
+    click.echo("MAC (rssi):   {} ({})".format(dev.mac, dev.rssi))
+    click.echo("Location:     {}".format(dev.location))
 
     ctx.invoke(emeter)
 
@@ -217,7 +214,7 @@ def alias(dev, new_alias):
         click.echo(f"Setting alias to {new_alias}")
         dev.sync.set_alias(new_alias)
 
-    click.echo(f"Alias: {dev.sync.get_alias()}")
+    click.echo(f"Alias: {dev.alias}")
 
 
 @cli.command()
@@ -232,6 +229,7 @@ def raw_command(dev: SmartDevice, module, command, parameters):
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
     res = dev.sync._query_helper(module, command, parameters)
+    dev.sync.update()
     click.echo(res)
 
 
@@ -243,7 +241,8 @@ def raw_command(dev: SmartDevice, module, command, parameters):
 def emeter(dev, year, month, erase):
     """Query emeter for historical consumption."""
     click.echo(click.style("== Emeter ==", bold=True))
-    if not dev.sync.get_has_emeter():
+    dev.sync.update()
+    if not dev.has_emeter:
         click.echo("Device has no emeter")
         return
 
@@ -274,11 +273,12 @@ def emeter(dev, year, month, erase):
 @pass_dev
 def brightness(dev, brightness):
     """Get or set brightness."""
-    if not dev.sync.is_dimmable():
+    dev.sync.update()
+    if not dev.is_dimmable:
         click.echo("This device does not support brightness.")
         return
     if brightness is None:
-        click.echo("Brightness: %s" % dev.sync.get_brightness())
+        click.echo("Brightness: %s" % dev.brightness)
     else:
         click.echo("Setting brightness to %s" % brightness)
         dev.sync.set_brightness(brightness)
@@ -292,14 +292,14 @@ def brightness(dev, brightness):
 def temperature(dev: SmartBulb, temperature):
     """Get or set color temperature."""
     if temperature is None:
-        click.echo(f"Color temperature: {dev.sync.get_color_temp()}")
-        valid_temperature_range = dev.sync.get_valid_temperature_range()
+        click.echo(f"Color temperature: {dev.color_temp}")
+        valid_temperature_range = dev.valid_temperature_range
         if valid_temperature_range != (0, 0):
             click.echo("(min: {}, max: {})".format(*valid_temperature_range))
         else:
             click.echo(
                 "Temperature range unknown, please open a github issue"
-                f" or a pull request for model '{dev.sync.get_model()}'"
+                f" or a pull request for model '{dev.model}'"
             )
     else:
         click.echo(f"Setting color temperature to {temperature}")
@@ -315,7 +315,7 @@ def temperature(dev: SmartBulb, temperature):
 def hsv(dev, ctx, h, s, v):
     """Get or set color in HSV. (Bulb only)."""
     if h is None or s is None or v is None:
-        click.echo("Current HSV: %s %s %s" % dev.sync.get_hsv())
+        click.echo("Current HSV: %s %s %s" % dev.hsv)
     elif s is None or v is None:
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
@@ -332,7 +332,7 @@ def led(dev, state):
         click.echo("Turning led to %s" % state)
         dev.sync.set_led(state)
     else:
-        click.echo("LED state: %s" % dev.sync.get_led())
+        click.echo("LED state: %s" % dev.led)
 
 
 @cli.command()

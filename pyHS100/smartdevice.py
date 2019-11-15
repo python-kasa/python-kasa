@@ -79,6 +79,26 @@ class EmeterStatus(dict):
                 raise SmartDeviceException("Unable to find a value for '%s'" % item)
 
 
+def requires_update(f):
+    """Indicate that `update` should be called before accessing this method."""  # noqa: D202
+    if inspect.iscoroutinefunction(f):
+        @functools.wraps(f)
+        async def wrapped(*args, **kwargs):
+            self = args[0]
+            assert self._sys_info is not None
+            return await f(*args, **kwargs)
+
+    else:
+        @functools.wraps(f)
+        def wrapped(*args, **kwargs):
+            self = args[0]
+            assert self._sys_info is not None
+            return f(*args, **kwargs)
+
+    f.requires_update = True
+    return wrapped
+
+
 class SmartDevice:
     """Base class for all supported device types."""
 
@@ -117,6 +137,7 @@ class SmartDevice:
         self._device_type = DeviceType.Unknown
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.sync = SyncSmartDevice(self, ioloop=self.ioloop)
+        self._sys_info = None
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
         """Return query result from cache if still fresh.
@@ -197,7 +218,7 @@ class SmartDevice:
 
         return result
 
-    async def get_has_emeter(self) -> bool:
+    def has_emeter(self) -> bool:
         """Return if device has an energy meter.
 
         :return: True if energey meter is available
@@ -214,23 +235,45 @@ class SmartDevice:
         """
         return await self._query_helper("system", "get_sysinfo")
 
-    async def get_model(self) -> str:
+    async def update(self):
+        """Update some of the attributes.
+
+        Needed for methods that are decorated with `requires_update`.
+        """
+        self._sys_info = await self.get_sys_info()
+
+    @property
+    @requires_update
+    def sys_info(self) -> Dict[str, Any]:
+        """Retrieve system information.
+
+        :return: sysinfo
+        :rtype dict
+        :raises SmartDeviceException: on error
+        """
+        return self._sys_info
+
+    @property
+    @requires_update
+    def model(self) -> str:
         """Return device model.
 
         :return: device model
         :rtype: str
         :raises SmartDeviceException: on error
         """
-        sys_info = await self.get_sys_info()
+        sys_info = self.sys_info
         return str(sys_info["model"])
 
-    async def get_alias(self) -> str:
+    @property
+    @requires_update
+    def alias(self) -> str:
         """Return device name (alias).
 
         :return: Device name aka alias.
         :rtype: str
         """
-        sys_info = await self.get_sys_info()
+        sys_info = self.sys_info
         return str(sys_info["alias"])
 
     async def set_alias(self, alias: str) -> None:
@@ -240,6 +283,7 @@ class SmartDevice:
         :raises SmartDeviceException: on error
         """
         await self._query_helper("system", "set_dev_alias", {"alias": alias})
+        await self.update()
 
     async def get_icon(self) -> Dict:
         """Return device icon.
@@ -329,7 +373,9 @@ class SmartDevice:
         """
         return await self._query_helper("time", "get_timezone")
 
-    async def get_hw_info(self) -> Dict:
+    @property
+    @requires_update
+    def hw_info(self) -> Dict:
         """Return hardware information.
 
         :return: Information about hardware
@@ -347,47 +393,53 @@ class SmartDevice:
             "oemId",
             "dev_name",
         ]
-        sys_info = await self.get_sys_info()
+        sys_info = self.sys_info
         return {key: sys_info[key] for key in keys if key in sys_info}
 
-    async def get_location(self) -> Dict:
+    @property
+    @requires_update
+    def location(self) -> Dict:
         """Return geographical location.
 
         :return: latitude and longitude
         :rtype: dict
         """
-        info = await self.get_sys_info()
+        sys_info = self.sys_info
         loc = {"latitude": None, "longitude": None}
 
-        if "latitude" in info and "longitude" in info:
-            loc["latitude"] = info["latitude"]
-            loc["longitude"] = info["longitude"]
-        elif "latitude_i" in info and "longitude_i" in info:
-            loc["latitude"] = info["latitude_i"]
-            loc["longitude"] = info["longitude_i"]
+        if "latitude" in sys_info and "longitude" in sys_info:
+            loc["latitude"] = sys_info["latitude"]
+            loc["longitude"] = sys_info["longitude"]
+        elif "latitude_i" in sys_info and "longitude_i" in sys_info:
+            loc["latitude"] = sys_info["latitude_i"]
+            loc["longitude"] = sys_info["longitude_i"]
         else:
             _LOGGER.warning("Unsupported device location.")
 
         return loc
 
-    async def get_rssi(self) -> Optional[int]:
+    @property
+    @requires_update
+    def rssi(self) -> Optional[int]:
         """Return WiFi signal strenth (rssi).
 
         :return: rssi
         :rtype: int
         """
-        sys_info = await self.get_sys_info()
+        sys_info = self.sys_info
         if "rssi" in sys_info:
             return int(sys_info["rssi"])
         return None
 
-    async def get_mac(self) -> str:
+    @property
+    @requires_update
+    def mac(self) -> str:
         """Return mac address.
 
         :return: mac address in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         :rtype: str
         """
-        sys_info = await self.get_sys_info()
+        sys_info = self.sys_info
 
         if "mac" in sys_info:
             return str(sys_info["mac"])
@@ -407,7 +459,9 @@ class SmartDevice:
         :raises SmartDeviceException: on error
         """
         await self._query_helper("system", "set_mac_addr", {"mac": mac})
+        await self.update()
 
+    @requires_update
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings.
 
@@ -415,11 +469,12 @@ class SmartDevice:
         :rtype: dict, None
         :raises SmartDeviceException: on error
         """
-        if not await self.get_has_emeter():
+        if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
         return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
 
+    @requires_update
     async def get_emeter_daily(
         self, year: int = None, month: int = None, kwh: bool = True
     ) -> Dict:
@@ -433,7 +488,7 @@ class SmartDevice:
         :rtype: dict
         :raises SmartDeviceException: on error
         """
-        if not await self.get_has_emeter():
+        if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
         if year is None:
@@ -454,6 +509,7 @@ class SmartDevice:
 
         return data
 
+    @requires_update
     async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
         """Retrieve monthly statistics for a given year.
 
@@ -463,7 +519,7 @@ class SmartDevice:
         :rtype: dict
         :raises SmartDeviceException: on error
         """
-        if not await self.get_has_emeter():
+        if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
         if year is None:
@@ -480,24 +536,27 @@ class SmartDevice:
 
         return {entry["month"]: entry[key] for entry in response}
 
+    @requires_update
     async def erase_emeter_stats(self):
         """Erase energy meter statistics.
 
         :return: True if statistics were deleted
         :raises SmartDeviceException: on error
         """
-        if not await self.get_has_emeter():
+        if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
         await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
+        await self.update()
 
+    @requires_update
     async def current_consumption(self) -> float:
         """Get the current power consumption in Watt.
 
         :return: the current power consumption in Watts.
         :raises SmartDeviceException: on error
         """
-        if not await self.get_has_emeter():
+        if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
         response = EmeterStatus(await self.get_emeter_realtime())
@@ -518,19 +577,23 @@ class SmartDevice:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def is_off(self) -> bool:
+    @property
+    @requires_update
+    def is_off(self) -> bool:
         """Return True if device is off.
 
         :return: True if device is off, False otherwise.
         :rtype: bool
         """
-        return not await self.is_on()
+        return not self.is_on
 
     async def turn_on(self) -> None:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def is_on(self) -> bool:
+    @property
+    @requires_update
+    def is_on(self) -> bool:
         """Return if the device is on.
 
         :return: True if the device is on, False otherwise.
@@ -539,7 +602,9 @@ class SmartDevice:
         """
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def get_state_information(self) -> Dict[str, Any]:
+    @property
+    @requires_update
+    def state_information(self) -> Dict[str, Any]:
         """Return device-type specific, end-user friendly state information.
 
         :return: dict with state information.
@@ -567,22 +632,25 @@ class SmartDevice:
         """Return True if the device is a strip."""
         return self._device_type == DeviceType.Strip
 
-    async def is_dimmable(self):
+    @property
+    def is_dimmable(self):
         """Return  True if the device is dimmable."""
         return False
 
-    async def is_variable_color_temp(self) -> bool:
+    @property
+    def is_variable_color_temp(self) -> bool:
         """Return True if the device supports color temperature."""
         return False
 
     def __repr__(self):
+        self.sync.update()
         return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
             self.__class__.__name__,
-            self.sync.get_model(),
+            self.model,
             self.host,
-            self.sync.get_alias(),
-            self.sync.is_on(),
-            self.sync.get_state_information(),
+            self.alias,
+            self.is_on,
+            self.sync.state_information,
         )
 
 
