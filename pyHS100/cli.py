@@ -179,7 +179,7 @@ def state(ctx, dev: SmartDevice):
 
     click.echo(
         click.style(
-            "Device state: %s" % ("ON" if dev.sync.is_on() else "OFF"),
+            "Device state: {}".format("ON" if dev.sync.is_on() else "OFF"),
             fg="green" if dev.sync.is_on() else "red",
         )
     )
@@ -194,15 +194,16 @@ def state(ctx, dev: SmartDevice):
                 )
             )
 
-    click.echo("Host/IP: %s" % dev.host)
+    click.echo(f"Host/IP: {dev.host}")
     for k, v in dev.sync.get_state_information().items():
         click.echo(f"{k}: {v}")
+    hw_info = dev.sync.get_hw_info()
     click.echo(click.style("== Generic information ==", bold=True))
-    click.echo("Time:         %s" % dev.sync.get_time())
-    click.echo("Hardware:     %s" % dev.sync.get_hw_info()["hw_ver"])
-    click.echo("Software:     %s" % dev.sync.get_hw_info()["sw_ver"])
+    click.echo("Time:         {}".format(dev.sync.get_time()))
+    click.echo("Hardware:     {}".format(hw_info["hw_ver"]))
+    click.echo("Software:     {}".format(hw_info["sw_ver"]))
     click.echo("MAC (rssi):   {} ({})".format(dev.sync.get_mac(), dev.sync.get_rssi()))
-    click.echo("Location:     %s" % dev.sync.get_location())
+    click.echo("Location:     {}".format(dev.sync.get_location()))
 
     ctx.invoke(emeter)
 
@@ -213,10 +214,10 @@ def state(ctx, dev: SmartDevice):
 def alias(dev, new_alias):
     """Get or set the device alias."""
     if new_alias is not None:
-        click.echo("Setting alias to %s" % new_alias)
+        click.echo(f"Setting alias to {new_alias}")
         dev.sync.set_alias(new_alias)
 
-    click.echo("Alias: %s" % dev.sync.get_alias())
+    click.echo(f"Alias: {dev.sync.get_alias()}")
 
 
 @cli.command()
@@ -252,7 +253,7 @@ def emeter(dev, year, month, erase):
         return
 
     if year:
-        click.echo("== For year %s ==" % year.year)
+        click.echo(f"== For year {year.year} ==")
         emeter_status = dev.sync.get_emeter_monthly(year.year)
     elif month:
         click.echo(f"== For month {month.month} of {month.year} ==")
@@ -265,7 +266,7 @@ def emeter(dev, year, month, erase):
         for plug in emeter_status:
             click.echo("Plug %d: %s" % (emeter_status.index(plug) + 1, plug))
     else:
-        click.echo("%s" % emeter_status)
+        click.echo(str(emeter_status))
 
 
 @cli.command()
@@ -291,17 +292,17 @@ def brightness(dev, brightness):
 def temperature(dev: SmartBulb, temperature):
     """Get or set color temperature."""
     if temperature is None:
-        click.echo("Color temperature: %s" % dev.sync.get_color_temp())
+        click.echo(f"Color temperature: {dev.sync.get_color_temp()}")
         valid_temperature_range = dev.sync.get_valid_temperature_range()
         if valid_temperature_range != (0, 0):
-            click.echo("(min: %s, max: %s)" % valid_temperature_range)
+            click.echo("(min: {}, max: {})".format(*valid_temperature_range))
         else:
             click.echo(
                 "Temperature range unknown, please open a github issue"
-                " or a pull request for model '%s'" % dev.sync.get_model()
+                f" or a pull request for model '{dev.sync.get_model()}'"
             )
     else:
-        click.echo("Setting color temperature to %s" % temperature)
+        click.echo(f"Setting color temperature to {temperature}")
         dev.sync.set_color_temp(temperature)
 
 
