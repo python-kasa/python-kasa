@@ -1,3 +1,4 @@
+"""Module for bulbs."""
 import re
 from typing import Any, Dict, Tuple
 
@@ -10,8 +11,8 @@ TPLINK_KELVIN = {
     "LB230": (2500, 9000),
     "KB130": (2500, 9000),
     "KL130": (2500, 9000),
-    "KL120\(EU\)": (2700, 6500),
-    "KL120\(US\)": (2700, 5000),
+    r"KL120\(EU\)": (2700, 6500),
+    r"KL120\(US\)": (2700, 5000),
 }
 
 
@@ -162,7 +163,9 @@ class SmartBulb(SmartDevice):
     async def set_hsv(self, hue: int, saturation: int, value: int):
         """Set new HSV.
 
-        :param tuple state: hue, saturation and value (degrees, %, %)
+        :param int hue: hue in degrees
+        :param int saturation: saturation in percentage [0,100]
+        :param int value: value in percentage [0, 100]
         """
         if not await self.is_color():
             raise SmartDeviceException("Bulb does not support color.")
@@ -222,7 +225,7 @@ class SmartBulb(SmartDevice):
         await self.set_light_state(light_state)
 
     async def get_brightness(self) -> int:
-        """Current brightness of the device.
+        """Return the current brightness.
 
         :return: brightness in percent
         :rtype: int
@@ -237,7 +240,7 @@ class SmartBulb(SmartDevice):
             return int(light_state["brightness"])
 
     async def set_brightness(self, brightness: int) -> None:
-        """Set the current brightness of the device.
+        """Set the brightness.
 
         :param int brightness: brightness in percent
         """
@@ -255,7 +258,7 @@ class SmartBulb(SmartDevice):
         :return: Bulb information dict, keys in user-presentable form.
         :rtype: dict
         """
-        info = {
+        info: Dict[str, Any] = {
             "Brightness": await self.get_brightness(),
             "Is dimmable": await self.is_dimmable(),
         }  # type: Dict[str, Any]
@@ -281,4 +284,5 @@ class SmartBulb(SmartDevice):
         await self.set_light_state({"on_off": 1})
 
     async def get_has_emeter(self) -> bool:
+        """Return that the bulb has an emeter."""
         return True

@@ -1,3 +1,4 @@
+"""Discovery module for TP-Link Smart Home devices."""
 import json
 import logging
 import socket
@@ -25,8 +26,6 @@ class Discover:
     you can initialize the corresponding device class directly without this.
 
     The protocol uses UDP broadcast datagrams on port 9999 for discovery.
-
-
     """
 
     DISCOVERY_QUERY = {
@@ -46,8 +45,8 @@ class Discover:
         discovery_packets=3,
         return_raw=False,
     ) -> Dict[str, SmartDevice]:
+        """Discover devices.
 
-        """
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.

@@ -24,14 +24,14 @@ def check_mode(x):
     if x in ["schedule", "none", "count_down"]:
         return x
 
-    raise Invalid("invalid mode {}".format(x))
+    raise Invalid(f"invalid mode {x}")
 
 
 def lb_dev_state(x):
     if x in ["normal"]:
         return x
 
-    raise Invalid("Invalid dev_state {}".format(x))
+    raise Invalid(f"Invalid dev_state {x}")
 
 
 TZ_SCHEMA = Schema(
@@ -409,9 +409,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             return error(target, cmd, msg="command not found")
 
         params = request[target][cmd]
-        _LOGGER.debug(
-            "Going to execute {}.{} (params: {}).. ".format(target, cmd, params)
-        )
+        _LOGGER.debug(f"Going to execute {target}.{cmd} (params: {params}).. ")
 
         if callable(proto[target][cmd]):
             res = proto[target][cmd](self, params, child_ids)
@@ -424,4 +422,4 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             _LOGGER.debug("[static] %s.%s: %s", target, cmd, res)
             return success(target, cmd, res)
         else:
-            raise NotImplementedError("target {} cmd {}".format(target, cmd))
+            raise NotImplementedError(f"target {target} cmd {cmd}")

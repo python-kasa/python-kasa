@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pyHS100 import DeviceType, SmartDeviceException, SmartStripException, SmartStrip
+from pyHS100 import DeviceType, SmartDeviceException, SmartStrip
 
 from .conftest import (
     bulb,
@@ -381,66 +381,43 @@ def test_non_variable_temp(dev):
 
 
 @strip
-def test_children_is_on(dev):
-    is_on = dev.sync.get_is_on()
-    for i in range(dev.num_children):
-        assert is_on[i] == dev.sync.get_is_on(index=i)
-
-
-@strip
 @turn_on
 def test_children_change_state(dev, turn_on):
     handle_turn_on(dev, turn_on)
-    for i in range(dev.num_children):
-        orig_state = dev.sync.get_is_on(index=i)
+    for plug in dev.plugs:
+        orig_state = plug.sync.is_on()
         if orig_state:
-            dev.sync.turn_off(index=i)
-            assert not dev.sync.get_is_on(index=i)
-            assert dev.sync.get_is_off(index=i)
+            plug.turn_off()
+            assert not plug.sync.is_on()
+            assert plug.sync.is_off()
 
-            dev.sync.turn_on(index=i)
-            assert dev.sync.get_is_on(index=i)
-            assert not dev.sync.get_is_off(index=i)
+            plug.sync.turn_on()
+            assert plug.sync.is_on()
+            assert not plug.sync.is_off()
         else:
-            dev.sync.turn_on(index=i)
-            assert dev.sync.get_is_on(index=i)
-            assert not dev.sync.get_is_off(index=i)
-            dev.sync.turn_off(index=i)
-            assert not dev.sync.get_is_on(index=i)
-            assert dev.sync.get_is_off(index=i)
-
-
-@strip
-def test_children_bounds(dev):
-    out_of_bounds = dev.num_children + 100
-
-    with pytest.raises(SmartDeviceException):
-        dev.sync.turn_off(index=out_of_bounds)
-    with pytest.raises(SmartDeviceException):
-        dev.sync.turn_on(index=out_of_bounds)
-    with pytest.raises(SmartDeviceException):
-        dev.sync.get_is_on(index=out_of_bounds)
-    with pytest.raises(SmartDeviceException):
-        dev.sync.get_alias(index=out_of_bounds)
-    with pytest.raises(SmartDeviceException):
-        dev.sync.get_on_since(index=out_of_bounds)
+            plug.sync.turn_on()
+            assert plug.sync.is_on()
+            assert not plug.sync.is_off()
+            plug.sync.turn_off()
+            assert not plug.sync.is_on()
+            assert plug.sync.is_off()
 
 
 @strip
 def test_children_alias(dev):
-    original = dev.sync.get_alias()
     test_alias = "TEST1234"
-    for idx in range(dev.num_children):
-        dev.sync.set_alias(alias=test_alias, index=idx)
-        assert dev.sync.get_alias(index=idx) == test_alias
-        dev.sync.set_alias(alias=original[idx], index=idx)
-        assert dev.sync.get_alias(index=idx) == original[idx]
+    for plug in dev.plugs:
+        original = plug.sync.get_alias()
+        plug.sync.set_alias(alias=test_alias)
+        assert plug.sync.get_alias() == test_alias
+        plug.sync.set_alias(alias=original)
+        assert plug.sync.get_alias() == original
 
 
 @strip
 def test_children_on_since(dev):
-    for idx in range(dev.num_children):
-        assert dev.sync.get_on_since(index=idx)
+    for plug in dev.plugs:
+        assert plug.sync.get_on_since()
 
 
 @pytest.mark.skip("this test will wear out your relays")
@@ -492,80 +469,61 @@ def test_all_binary_states(dev):
 def test_children_get_emeter_realtime(dev):
     assert dev.sync.get_has_emeter()
     # test with index
-    for plug_index in range(dev.num_children):
-        emeter = dev.sync.get_emeter_realtime(index=plug_index)
+    for plug in dev.plugs:
+        emeter = plug.sync.get_emeter_realtime()
         CURRENT_CONSUMPTION_SCHEMA(emeter)
 
     # test without index
-    for index, emeter in dev.sync.get_emeter_realtime().items():
-        CURRENT_CONSUMPTION_SCHEMA(emeter)
+    # TODO test that sum matches the sum of individiaul plugs.
 
-    # out of bounds
-    with pytest.raises(SmartStripException):
-        dev.sync.get_emeter_realtime(index=dev.num_children + 100)
+    # for index, emeter in dev.sync.get_emeter_realtime().items():
+    #    CURRENT_CONSUMPTION_SCHEMA(emeter)
 
 
 @strip
 def test_children_get_emeter_daily(dev):
     assert dev.sync.get_has_emeter()
-    # test with index
-    for plug_index in range(dev.num_children):
-        emeter = dev.sync.get_emeter_daily(year=1900, month=1, index=plug_index)
+    # test individual emeters
+    for plug in dev.plugs:
+        emeter = plug.sync.get_emeter_daily(year=1900, month=1)
         assert emeter == {}
 
-        emeter = dev.sync.get_emeter_daily(index=plug_index)
+        emeter = plug.sync.get_emeter_daily()
         assert len(emeter) > 0
 
         k, v = emeter.popitem()
         assert isinstance(k, int)
         assert isinstance(v, float)
 
-    # test without index
-    all_emeters = dev.sync.get_emeter_daily(year=1900, month=1)
-    for plug_index, emeter in all_emeters.items():
-        assert emeter == {}
+    # test sum of emeters
+    all_emeter = dev.sync.get_emeter_daily(year=1900, month=1)
 
-        emeter = dev.sync.get_emeter_daily()
-
-        k, v = emeter.popitem()
-        assert isinstance(k, int)
-        assert isinstance(v, float)
-
-    # out of bounds
-    with pytest.raises(SmartStripException):
-        dev.sync.get_emeter_daily(year=1900, month=1, index=dev.num_children + 100)
+    k, v = all_emeter.popitem()
+    assert isinstance(k, int)
+    assert isinstance(v, float)
 
 
 @strip
 def test_children_get_emeter_monthly(dev):
     assert dev.sync.get_has_emeter()
-    # test with index
-    for plug_index in range(dev.num_children):
-        emeter = dev.sync.get_emeter_monthly(year=1900, index=plug_index)
+    # test individual emeters
+    for plug in dev.plugs:
+        emeter = plug.sync.get_emeter_monthly(year=1900)
         assert emeter == {}
 
-        emeter = dev.sync.get_emeter_monthly(index=plug_index)
+        emeter = plug.sync.get_emeter_monthly()
         assert len(emeter) > 0
 
         k, v = emeter.popitem()
         assert isinstance(k, int)
         assert isinstance(v, float)
 
-    # test without index
-    all_emeters = dev.sync.get_emeter_monthly(year=1900)
-    for index, emeter in all_emeters.items():
-        assert emeter == {}
+    # test sum of emeters
+    all_emeter = dev.sync.get_emeter_monthly(year=1900)
 
-        emeter = dev.sync.get_emeter_daily()
-        assert len(emeter) > 0
-
-        k, v = emeter.popitem()
-        assert isinstance(k, int)
-        assert isinstance(v, float)
-
-    # out of bounds
-    with pytest.raises(SmartStripException):
-        dev.sync.get_emeter_monthly(year=1900, index=dev.num_children + 100)
+    k, v = all_emeter.popitem()
+    assert isinstance(k, int)
+    assert isinstance(v, float)
 
 
 # def test_cache(dev):

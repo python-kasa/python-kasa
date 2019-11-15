@@ -1,6 +1,4 @@
-"""
-pyHS100
-Python library supporting TP-Link Smart Plugs/Switches (HS100/HS110/Hs200).
+"""Python library supporting TP-Link Smart Home devices.
 
 The communication protocol was reverse engineered by Lubomir Stroetmann and
 Tobias Esser in 'Reverse Engineering the TP-Link HS110':
@@ -105,7 +103,7 @@ class SmartDevice:
         if protocol is None:  # pragma: no cover
             protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
-        self.emeter_type = "emeter"  # type: str
+        self.emeter_type = "emeter"
         self.context = context
         self.num_children = 0
         self.cache_ttl = timedelta(seconds=cache_ttl)
@@ -115,13 +113,14 @@ class SmartDevice:
             self.context,
             self.cache_ttl,
         )
-        self.cache = defaultdict(lambda: defaultdict(lambda: None))
+        self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
         self._device_type = DeviceType.Unknown
         self.ioloop = ioloop or asyncio.get_event_loop()
         self.sync = SyncSmartDevice(self, ioloop=self.ioloop)
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
         """Return query result from cache if still fresh.
+
         Only results from commands starting with `get_` are considered cacheable.
 
         :param target: Target system
@@ -146,7 +145,7 @@ class SmartDevice:
         return None
 
     def _insert_to_cache(self, target: str, cmd: str, response: Dict) -> None:
-        """Internal function to add response to cache.
+        """Add response for a given command to the cache.
 
         :param target: Target system
         :param cmd: Command
@@ -167,9 +166,8 @@ class SmartDevice:
         :rtype: dict
         :raises SmartDeviceException: if command was not executed correctly
         """
-        if self.context is None:
-            request = {target: {cmd: arg}}
-        else:
+        request: Dict[str, Any] = {target: {cmd: arg}}
+        if self.context is not None:
             request = {"context": {"child_ids": [self.context]}, target: {cmd: arg}}
 
         try:
@@ -179,24 +177,20 @@ class SmartDevice:
                 response = await self.protocol.query(host=self.host, request=request)
                 self._insert_to_cache(target, cmd, response)
         except Exception as ex:
-            raise SmartDeviceException(
-                "Communication error on %s:%s" % (target, cmd)
-            ) from ex
+            raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
         if target not in response:
-            raise SmartDeviceException(
-                "No required {} in response: {}".format(target, response)
-            )
+            raise SmartDeviceException(f"No required {target} in response: {response}")
 
         result = response[target]
         if "err_code" in result and result["err_code"] != 0:
-            raise SmartDeviceException("Error on {}.{}: {}".format(target, cmd, result))
+            raise SmartDeviceException(f"Error on {target}.{cmd}: {result}")
 
         if cmd not in result:
-            raise SmartDeviceException("No command in response: {}".format(response))
+            raise SmartDeviceException(f"No command in response: {response}")
         result = result[cmd]
         if "err_code" in result and result["err_code"] != 0:
-            raise SmartDeviceException("Error on {} {}: {}".format(target, cmd, result))
+            raise SmartDeviceException(f"Error on {target} {cmd}: {result}")
 
         if "err_code" in result:
             del result["err_code"]
@@ -211,7 +205,7 @@ class SmartDevice:
         """
         raise NotImplementedError()
 
-    async def get_sys_info(self) -> Dict:
+    async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information.
 
         :return: sysinfo
@@ -415,11 +409,10 @@ class SmartDevice:
         await self._query_helper("system", "set_mac_addr", {"mac": mac})
 
     async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrive current energy readings.
+        """Retrieve current energy readings.
 
         :returns: current readings or False
         :rtype: dict, None
-                  None if device has no energy meter or error occurred
         :raises SmartDeviceException: on error
         """
         if not await self.get_has_emeter():
@@ -437,7 +430,6 @@ class SmartDevice:
                       month)
         :param kwh: return usage in kWh (default: True)
         :return: mapping of day of month to value
-                 None if device has no energy meter or error occurred
         :rtype: dict
         :raises SmartDeviceException: on error
         """
@@ -468,7 +460,6 @@ class SmartDevice:
         :param year: year for which to retrieve statistics (default: this year)
         :param kwh: return usage in kWh (default: True)
         :return: dict: mapping of month to value
-                 None if device has no energy meter
         :rtype: dict
         :raises SmartDeviceException: on error
         """
@@ -493,8 +484,6 @@ class SmartDevice:
         """Erase energy meter statistics.
 
         :return: True if statistics were deleted
-                 False if device has no energy meter.
-        :rtype: bool
         :raises SmartDeviceException: on error
         """
         if not await self.get_has_emeter():
@@ -502,15 +491,10 @@ class SmartDevice:
 
         await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
-        # As query_helper raises exception in case of failure, we have
-        # succeeded when we are this far.
-        return True
-
     async def current_consumption(self) -> Optional[float]:
         """Get the current power consumption in Watt.
 
         :return: the current power consumption in Watts.
-                 None if device has no energy meter.
         :raises SmartDeviceException: on error
         """
         if not await self.get_has_emeter():
@@ -570,25 +554,30 @@ class SmartDevice:
 
     @property
     def is_bulb(self) -> bool:
+        """Return True if the device is a bulb."""
         return self._device_type == DeviceType.Bulb
 
     @property
     def is_plug(self) -> bool:
+        """Return True if the device is a plug."""
         return self._device_type == DeviceType.Plug
 
     @property
     def is_strip(self) -> bool:
+        """Return True if the device is a strip."""
         return self._device_type == DeviceType.Strip
 
     async def is_dimmable(self):
+        """Return  True if the device is dimmable."""
         return False
 
     @property
     def is_variable_color_temp(self) -> bool:
+        """Return True if the device supports color temperature."""
         return False
 
     def __repr__(self):
-        return "<%s model %s at %s (%s), is_on: %s - dev specific: %s>" % (
+        return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
             self.__class__.__name__,
             self.sync.get_model(),
             self.host,

@@ -1,3 +1,4 @@
+"""Module for plugs."""
 import datetime
 import logging
 from typing import Any, Dict

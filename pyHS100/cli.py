@@ -48,9 +48,10 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option("--bulb", default=False, is_flag=True)
 @click.option("--plug", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
+@click.version_option()
 @click.pass_context
 def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
-    """A cli tool for controlling TP-Link smart home plugs."""
+    """A cli tool for controlling TP-Link smart home plugs."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
@@ -66,9 +67,9 @@ def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
         click.echo("Alias is given, using discovery to find host %s" % alias)
         host = find_host_from_alias(alias=alias, target=target)
         if host:
-            click.echo("Found hostname is {}".format(host))
+            click.echo(f"Found hostname is {host}")
         else:
-            click.echo("No device with name {} found".format(alias))
+            click.echo(f"No device with name {alias} found")
             return
 
     if host is None:
@@ -98,11 +99,15 @@ def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
 @click.option("--save")
 @click.pass_context
 def dump_discover(ctx, save):
+    """Dump discovery information.
+
+    Useful for dumping into a file with `--save` to be added to the test suite.
+    """
     target = ctx.parent.params["target"]
     for dev in Discover.discover(target=target, return_raw=True).values():
         model = dev["system"]["get_sysinfo"]["model"]
         hw_version = dev["system"]["get_sysinfo"]["hw_ver"]
-        save_to = "%s_%s.json" % (model, hw_version)
+        save_to = f"{model}_{hw_version}.json"
         click.echo("Saving info to %s" % save_to)
         with open(save_to, "w") as f:
             import json
@@ -142,7 +147,7 @@ def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3)
         % (alias, attempts, timeout)
     )
     for attempt in range(1, attempts):
-        click.echo("Attempt %s of %s" % (attempt, attempts))
+        click.echo(f"Attempt {attempt} of {attempts}")
         found_devs = Discover.discover(target=target, timeout=timeout).items()
         for ip, dev in found_devs:
             if dev.sync.get_alias().lower() == alias.lower():
@@ -162,11 +167,12 @@ def sysinfo(dev):
 @cli.command()
 @pass_dev
 @click.pass_context
-def state(ctx, dev):
+def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
     click.echo(
         click.style(
-            "== %s - %s ==" % (dev.sync.get_alias(), dev.sync.get_model()), bold=True
+            "== {} - {} ==".format(dev.sync.get_alias(), dev.sync.get_model()),
+            bold=True,
         )
     )
 
@@ -178,24 +184,25 @@ def state(ctx, dev):
     )
     if dev.num_children > 0:
         is_on = dev.sync.get_is_on()
-        aliases = dev.sync.get_alias()
-        for child in range(dev.num_children):
+        for plug in range(dev.plugs):
+            alias = plug.sync.get_alias()
             click.echo(
                 click.style(
-                    "  * %s state: %s"
-                    % (aliases[child], ("ON" if is_on[child] else "OFF")),
-                    fg="green" if is_on[child] else "red",
+                    "  * {} state: {}".format(
+                        alias, ("ON" if is_on else "OFF")
+                    ),
+                    fg="green" if is_on else "red",
                 )
             )
 
     click.echo("Host/IP: %s" % dev.host)
     for k, v in dev.sync.get_state_information().items():
-        click.echo("%s: %s" % (k, v))
+        click.echo(f"{k}: {v}")
     click.echo(click.style("== Generic information ==", bold=True))
     click.echo("Time:         %s" % dev.sync.get_time())
     click.echo("Hardware:     %s" % dev.sync.get_hw_info()["hw_ver"])
     click.echo("Software:     %s" % dev.sync.get_hw_info()["sw_ver"])
-    click.echo("MAC (rssi):   %s (%s)" % (dev.sync.get_mac(), dev.sync.get_rssi()))
+    click.echo("MAC (rssi):   {} ({})".format(dev.sync.get_mac(), dev.sync.get_rssi()))
     click.echo("Location:     %s" % dev.sync.get_location())
 
     ctx.invoke(emeter)
@@ -249,7 +256,7 @@ def emeter(dev, year, month, erase):
         click.echo("== For year %s ==" % year.year)
         emeter_status = dev.sync.get_emeter_monthly(year.year)
     elif month:
-        click.echo("== For month %s of %s ==" % (month.month, month.year))
+        click.echo(f"== For month {month.month} of {month.year} ==")
         emeter_status = dev.sync.get_emeter_daily(year=month.year, month=month.month)
     else:
         emeter_status = dev.sync.get_emeter_realtime()
@@ -306,13 +313,13 @@ def temperature(dev: SmartBulb, temperature):
 @click.pass_context
 @pass_dev
 def hsv(dev, ctx, h, s, v):
-    """Get or set color in HSV. (Bulb only)"""
+    """Get or set color in HSV. (Bulb only)."""
     if h is None or s is None or v is None:
         click.echo("Current HSV: %s %s %s" % dev.sync.get_hsv())
     elif s is None or v is None:
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
-        click.echo("Setting HSV: %s %s %s" % (h, s, v))
+        click.echo(f"Setting HSV: {h} {s} {v}")
         dev.sync.set_hsv(h, s, v)
 
 
