@@ -604,5 +604,6 @@ def test_children_get_emeter_monthly(dev):
 
 def test_representation(dev):
     import re
+
     pattern = re.compile("<.* model .* at .* (.*), is_on: .* - dev specific: .*>")
     assert pattern.match(str(dev))

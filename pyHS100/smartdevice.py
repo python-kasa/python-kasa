@@ -82,6 +82,7 @@ class EmeterStatus(dict):
 def requires_update(f):
     """Indicate that `update` should be called before accessing this method."""  # noqa: D202
     if inspect.iscoroutinefunction(f):
+
         @functools.wraps(f)
         async def wrapped(*args, **kwargs):
             self = args[0]
@@ -89,6 +90,7 @@ def requires_update(f):
             return await f(*args, **kwargs)
 
     else:
+
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             self = args[0]

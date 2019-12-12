@@ -96,11 +96,11 @@ There are two notable changes (and other small fixes) in this minor release than
 0.3.3 (2018-09-06)
 ------------------
 
-This release contains a breaking change for hsv setter, which is changed to accept 
+This release contains a breaking change for hsv setter, which is changed to accept
 the new brightness value in percentage instead of an integer between 1 and 255.
 
 The alias support has been extended to allow changing the alias, as well as accessing
-the device using it (without specifying an IP address or a hostname), which can be 
+the device using it (without specifying an IP address or a hostname), which can be
 useful in some setups. Furthermore utf8-encoded aliases are now handled correctly.
 
 - Fix bug that changed brightness at each HSV update (#124) [Sebastian Templ]
@@ -126,7 +126,7 @@ useful in some setups. Furthermore utf8-encoded aliases are now handled correctl
     within their valid ranges (0..255, 0..100, 0..100) and raise
     SmartDeviceException if they are not
   - add test function for the hsv setter
-  
+
 - Allow using alias instead of IP address or hostname (#127) [kwazel]
 
   * Added option to control devices by device name
@@ -140,7 +140,7 @@ useful in some setups. Furthermore utf8-encoded aliases are now handled correctl
   * processed review comments
 
   * Return when no device with alias has been found
-  
+
 - Add 'alias' command for querying and setting the alias (#126) [Teemu R]
 
   * add 'alias' command for querying and setting the alias
@@ -152,7 +152,7 @@ useful in some setups. Furthermore utf8-encoded aliases are now handled correctl
   * readd py33, remove it from travis as it seems to be a travis limitation only
 
   * use xenial dist for travis, regular does not support py37..
-  
+
 - Support Unicode strings in encrypt/decrypt (#125) [Anders Melchiorsen]
 
 
@@ -193,18 +193,18 @@ Breaking changes:
 
   * Adds a new 'kwh' parameter for those calls, which defaults to True
   * This changes the behavior of bulbs emeter reporting, use False if you prefer the preciser values
-  
+
 - Update pypi description (#102) [Teemu R]
 
   * update pypi description
 
   * add wall switches
-  
+
 - Update smartplug.py to support dimming in HS220 (#115) [JsChiSurf]
 
   * Update smartplug.py to support dimming in HS220
 
-  Switch functions essentially as a "plug" with the addition to support for dimming, for which can be test for by verifying existence of 
+  Switch functions essentially as a "plug" with the addition to support for dimming, for which can be test for by verifying existence of
 'brightness' array value.
 
   * Attempt at updates to pass validator
@@ -213,7 +213,7 @@ Breaking changes:
 
   * Add more detail to comment blocks
 
-  Make clear in requests for current brightness level the expected return values, and note that light will turn on when setting a brightness 
+  Make clear in requests for current brightness level the expected return values, and note that light will turn on when setting a brightness
 level, if not already on.  This makes clear that a state change request (turn_on) does NOT have to be made first when setting brightness.
 
   * Update smartplug.py
@@ -221,22 +221,22 @@ level, if not already on.  This makes clear that a state change request (turn_on
   * Update smartplug.py
 
   Fixes #114
-  
+
 - Add python_requires for >= 3.4. [Teemu Rytilahti]
 
 - Add hs210. [Teemu R]
 
   Based on user report: https://community.home-assistant.io/t/tp-link-hs210-3-way-kit/39762/6
-  
+
 - Add support for DNS host names (#104) [K Henriksson]
 
 - Use direct device type discovery for devices (#106) [K Henriksson]
 
   This is more efficient than enumerating all devices and checking the IP.
-  
+
 - Cli: add 'time' command to get the current time from the device.
   [Teemu Rytilahti]
-  
+
 - Created a docker file to aid dev setup (#99) [TheSmokingGnu]
 
   * created a docker file to aid dev setup
@@ -361,31 +361,31 @@ Other changes:
   * Check for mic_mac on mac, based on work by kdschloesser on issue #59
 
   * make hound happy, __init__ on SmartDevice cannot error out so removing 'raises' documentation
-  
+
 - Add LB110 sysinfo (#75) [Sean Gollschewsky]
 
   * Add LB110 sysinfo
 
   * Linting.
-  
+
 - Add @pass_dev to hsv, adjust ranges (#70) [Teemu R]
 
   * add @pass_dev to hsv command, it was always broken
 
   * Hue goes up to 360, saturation and value are up to 100(%)
-  
+
 - Extract shared types (exceptions, enums), add module level doc, rename exception to be generic. [Teemu Rytilahti]
-  
+
 - Add check to ensure devices with lat/lon with `_i` suffix are supported (#54) (#56) [Matt LeBrun]
 
   * Add check to ensure devices with lat/lon with `_i` suffix are supported (#54)
 
   * Add .gitignore for posterity
-  
+
 - Generalize smartdevice class and add bulb support for the cli tool (#50) [Teemu R]
 
   Fixes #48 and #51. The basic functionality should work on all types of supported devices, for bulb specific commands it is currently necessary to specify ```--bulb```.
-  
+
 - Refactor and drop py2 support (#49) [Teemu R]
 
   * move is_off property to SmartDevice, implement is_on for bulb and use it
@@ -699,5 +699,3 @@ Other changes:
 - Create pyHS100.py. [GadgetReactor]
 
 - Initial commit. [GadgetReactor]
-
-

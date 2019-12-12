@@ -172,7 +172,7 @@ def sysinfo(dev):
 def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
     dev.sync.update()
-    click.echo(click.style("== {} - {} ==".format(dev.alias, dev.model), bold=True))
+    click.echo(click.style(f"== {dev.alias} - {dev.model} ==", bold=True))
 
     click.echo(
         click.style(
@@ -199,8 +199,8 @@ def state(ctx, dev: SmartDevice):
     click.echo("Time:         {}".format(dev.sync.get_time()))
     click.echo("Hardware:     {}".format(dev.hw_info["hw_ver"]))
     click.echo("Software:     {}".format(dev.hw_info["sw_ver"]))
-    click.echo("MAC (rssi):   {} ({})".format(dev.mac, dev.rssi))
-    click.echo("Location:     {}".format(dev.location))
+    click.echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
+    click.echo(f"Location:     {dev.location}")
 
     ctx.invoke(emeter)
 
