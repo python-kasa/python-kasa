@@ -51,7 +51,7 @@ class SmartPlug(SmartDevice):
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
 
-    @property
+    @property  # type: ignore
     @requires_update
     def brightness(self) -> int:
         """Return current brightness on dimmers.
@@ -92,7 +92,7 @@ class SmartPlug(SmartDevice):
         else:
             raise ValueError("Brightness value %s is not valid." % value)
 
-    @property
+    @property  # type: ignore
     @requires_update
     def is_dimmable(self):
         """Whether the switch supports brightness changes.
@@ -103,7 +103,7 @@ class SmartPlug(SmartDevice):
         sys_info = self.sys_info
         return "brightness" in sys_info
 
-    @property
+    @property  # type: ignore
     @requires_update
     def has_emeter(self):
         """Return whether device has an energy meter.
@@ -115,7 +115,7 @@ class SmartPlug(SmartDevice):
         features = sys_info["feature"].split(":")
         return "ENE" in features
 
-    @property
+    @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
         """Return whether device is on.
@@ -141,7 +141,7 @@ class SmartPlug(SmartDevice):
         await self._query_helper("system", "set_relay_state", {"state": 0})
         await self.update()
 
-    @property
+    @property  # type: ignore
     @requires_update
     def led(self) -> bool:
         """Return the state of the led.
@@ -161,7 +161,7 @@ class SmartPlug(SmartDevice):
         await self._query_helper("system", "set_led_off", {"off": int(not state)})
         await self.update()
 
-    @property
+    @property  # type: ignore
     @requires_update
     def on_since(self) -> datetime.datetime:
         """Return pretty-printed on-time.
@@ -180,7 +180,7 @@ class SmartPlug(SmartDevice):
 
         return datetime.datetime.now() - datetime.timedelta(seconds=on_time)
 
-    @property
+    @property  # type: ignore
     @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information.

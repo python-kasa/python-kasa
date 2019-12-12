@@ -66,7 +66,7 @@ class SmartStrip(SmartPlug):
                 )
             )
 
-    @property
+    @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
         """Return if any of the outlets are on."""
@@ -101,13 +101,13 @@ class SmartStrip(SmartPlug):
         await self._query_helper("system", "set_relay_state", {"state": 0})
         await self.update()
 
-    @property
+    @property  # type: ignore
     @requires_update
     def on_since(self) -> datetime.datetime:
         """Return the maximum on-time of all outlets."""
         return max(plug.on_since for plug in self.plugs)
 
-    @property
+    @property  # type: ignore
     @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return strip-specific state information.

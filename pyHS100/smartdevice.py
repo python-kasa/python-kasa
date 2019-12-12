@@ -244,7 +244,7 @@ class SmartDevice:
         """
         self._sys_info = await self.get_sys_info()
 
-    @property
+    @property  # type: ignore
     @requires_update
     def sys_info(self) -> Dict[str, Any]:
         """Retrieve system information.
@@ -253,9 +253,10 @@ class SmartDevice:
         :rtype dict
         :raises SmartDeviceException: on error
         """
+        assert self._sys_info is not None
         return self._sys_info
 
-    @property
+    @property  # type: ignore
     @requires_update
     def model(self) -> str:
         """Return device model.
@@ -267,7 +268,7 @@ class SmartDevice:
         sys_info = self.sys_info
         return str(sys_info["model"])
 
-    @property
+    @property  # type: ignore
     @requires_update
     def alias(self) -> str:
         """Return device name (alias).
@@ -375,7 +376,7 @@ class SmartDevice:
         """
         return await self._query_helper("time", "get_timezone")
 
-    @property
+    @property  # type: ignore
     @requires_update
     def hw_info(self) -> Dict:
         """Return hardware information.
@@ -398,7 +399,7 @@ class SmartDevice:
         sys_info = self.sys_info
         return {key: sys_info[key] for key in keys if key in sys_info}
 
-    @property
+    @property  # type: ignore
     @requires_update
     def location(self) -> Dict:
         """Return geographical location.
@@ -420,7 +421,7 @@ class SmartDevice:
 
         return loc
 
-    @property
+    @property  # type: ignore
     @requires_update
     def rssi(self) -> Optional[int]:
         """Return WiFi signal strenth (rssi).
@@ -433,7 +434,7 @@ class SmartDevice:
             return int(sys_info["rssi"])
         return None
 
-    @property
+    @property  # type: ignore
     @requires_update
     def mac(self) -> str:
         """Return mac address.
@@ -579,7 +580,7 @@ class SmartDevice:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    @property
+    @property  # type: ignore
     @requires_update
     def is_off(self) -> bool:
         """Return True if device is off.
@@ -593,7 +594,7 @@ class SmartDevice:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    @property
+    @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
         """Return if the device is on.
@@ -604,7 +605,7 @@ class SmartDevice:
         """
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    @property
+    @property  # type: ignore
     @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return device-type specific, end-user friendly state information.
