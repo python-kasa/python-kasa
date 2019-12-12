@@ -70,11 +70,11 @@ class EmeterStatus(dict):
             if item not in valid_keys:
                 raise KeyError(item)
             if "_" in item:  # upscale
-                return super().__getitem__(item[: item.find("_")]) * 10 ** 3
+                return super().__getitem__(item[: item.find("_")]) * 1000
             else:  # downscale
                 for i in super().keys():
                     if i.startswith(item):
-                        return self.__getitem__(i) / 10 ** 3
+                        return self.__getitem__(i) / 1000
 
                 raise SmartDeviceException("Unable to find a value for '%s'" % item)
 
