@@ -7,12 +7,12 @@ pool:
   vmImage: 'ubuntu-latest'
 strategy:
   matrix:
-    Python36:
-      python.version: '3.6'
+    # Python36:
+    #   python.version: '3.6'
     Python37:
       python.version: '3.7'
-#    Python38:
-#      python.version: '3.8'
+   # Python38:
+   #   python.version: '3.8'
 
 steps:
 - task: UsePythonVersion@0
@@ -37,6 +37,34 @@ steps:
 - script: |
     pre-commit run mypy --all-files
   displayName: 'Typing checks (mypy)'
+
+- script: |
+    pre-commit run isort --all-files
+  displayName: 'Order of imports (isort)'
+
+- script: |
+    pre-commit run trailing-whitespace --all-files
+  displayName: 'Run trailing-whitespace'
+
+- script: |
+    pre-commit run end-of-file-fixer --all-files
+  displayName: 'Run end-of-file-fixer'
+
+- script: |
+    pre-commit run check-docstring-first --all-files
+  displayName: 'Run check-docstring-first'
+
+- script: |
+    pre-commit run check-yaml --all-files
+  displayName: 'Run check-yaml'
+
+- script: |
+    pre-commit run debug-statements --all-files
+  displayName: 'Run debug-statements'
+
+- script: |
+    pre-commit run check-ast --all-files
+  displayName: 'Run check-ast'
 
 - script: |
     pre-commit run isort --all-files
