@@ -1,19 +1,19 @@
 from setuptools import setup
 
-with open("pyHS100/version.py") as f:
+with open("kasa/version.py") as f:
     exec(f.read())
 
 setup(
-    name="pyHS100",
+    name="python-kasa",
     version=__version__,  # type: ignore # noqa: F821
-    description="Python interface for TPLink KASA-enabled smart home devices",
-    url="https://github.com/GadgetReactor/pyHS100",
-    author="Sean Seah (GadgetReactor)",
-    author_email="sean@gadgetreactor.com",
+    description="Python API for TP-Link Kasa Smarthome products",
+    url="https://github.com/python-kasa/python-kasa",
+    author="",
+    author_email="",
     license="GPLv3",
-    packages=["pyHS100"],
-    install_requires=["click", "deprecation"],
+    packages=["kasa"],
+    install_requires=["click"],
     python_requires=">=3.6",
-    entry_points={"console_scripts": ["pyhs100=pyHS100.cli:cli"]},
+    entry_points={"console_scripts": ["kasa=kasa.cli:cli"]},
     zip_safe=False,
 )

@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from pyHS100.protocol import TPLinkSmartHomeProtocol
+from kasa.protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 

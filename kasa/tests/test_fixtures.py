@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pyHS100 import DeviceType, SmartDeviceException, SmartStrip
+from kasa import DeviceType, SmartDeviceException, SmartStrip
 
 from .conftest import (
     bulb,

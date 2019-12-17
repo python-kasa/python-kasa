@@ -4,11 +4,11 @@ import logging
 import socket
 from typing import Dict, Optional, Type
 
-from pyHS100.protocol import TPLinkSmartHomeProtocol
-from pyHS100.smartbulb import SmartBulb
-from pyHS100.smartdevice import SmartDevice, SmartDeviceException
-from pyHS100.smartplug import SmartPlug
-from pyHS100.smartstrip import SmartStrip
+from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.smartbulb import SmartBulb
+from kasa.smartdevice import SmartDevice, SmartDeviceException
+from kasa.smartplug import SmartPlug
+from kasa.smartstrip import SmartStrip
 
 _LOGGER = logging.getLogger(__name__)
 

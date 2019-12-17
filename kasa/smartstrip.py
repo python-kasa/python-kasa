@@ -7,9 +7,9 @@ import logging
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List
 
-from pyHS100.protocol import TPLinkSmartHomeProtocol
-from pyHS100.smartdevice import DeviceType, requires_update
-from pyHS100.smartplug import SmartPlug
+from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.smartdevice import DeviceType, requires_update
+from kasa.smartplug import SmartPlug
 
 _LOGGER = logging.getLogger(__name__)
 

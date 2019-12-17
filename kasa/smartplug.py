@@ -3,8 +3,8 @@ import datetime
 import logging
 from typing import Any, Dict
 
-from pyHS100.protocol import TPLinkSmartHomeProtocol
-from pyHS100.smartdevice import (
+from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.smartdevice import (
     DeviceType,
     SmartDevice,
     SmartDeviceException,

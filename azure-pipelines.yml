@@ -71,5 +71,5 @@ steps:
   displayName: 'Order of imports (isort)'
 
 - script: |
-    pytest --cov pyHS100 --cov-report html
+    pytest --cov kasa --cov-report html
   displayName: 'Tests'

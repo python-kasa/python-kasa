@@ -11,17 +11,12 @@ For device type specific actions `SmartBulb`, `SmartPlug`, or `SmartStrip`
 Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
-from pyHS100.discover import Discover
-from pyHS100.protocol import TPLinkSmartHomeProtocol
-from pyHS100.smartbulb import SmartBulb
-from pyHS100.smartdevice import (
-    DeviceType,
-    EmeterStatus,
-    SmartDevice,
-    SmartDeviceException,
-)
-from pyHS100.smartplug import SmartPlug
-from pyHS100.smartstrip import SmartStrip
+from kasa.discover import Discover
+from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.smartbulb import SmartBulb
+from kasa.smartdevice import DeviceType, EmeterStatus, SmartDevice, SmartDeviceException
+from kasa.smartplug import SmartPlug
+from kasa.smartstrip import SmartStrip
 
 __all__ = [
     "Discover",

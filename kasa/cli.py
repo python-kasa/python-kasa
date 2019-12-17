@@ -1,4 +1,4 @@
-"""pyHS100 cli tool."""
+"""python-kasa cli tool."""
 import asyncio
 import logging
 import sys
@@ -6,9 +6,9 @@ from pprint import pformat as pf
 
 import click
 
-from pyHS100 import Discover, SmartBulb, SmartDevice, SmartStrip
+from kasa import Discover, SmartBulb, SmartDevice, SmartStrip
 
-from pyHS100 import SmartPlug  # noqa: E402; noqa: E402
+from kasa import SmartPlug  # noqa: E402; noqa: E402
 
 if sys.version_info < (3, 6):
     print("To use this script you need Python 3.6 or newer! got %s" % sys.version_info)
@@ -21,7 +21,7 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.group(invoke_without_command=True)
 @click.option(
     "--ip",
-    envvar="PYHS100_IP",
+    envvar="KASA_IP",
     required=False,
     help="The IP address of the device to connect to. This option "
     "is deprecated and will be removed in the future; use --host "
@@ -29,13 +29,13 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 )
 @click.option(
     "--host",
-    envvar="PYHS100_HOST",
+    envvar="KASA_HOST",
     required=False,
     help="The host name or IP address of the device to connect to.",
 )
 @click.option(
     "--alias",
-    envvar="PYHS100_NAME",
+    envvar="KASA_NAME",
     required=False,
     help="The device name, or alias, of the device to connect to.",
 )
