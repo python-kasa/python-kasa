@@ -6,7 +6,7 @@ from os.path import basename
 
 import pytest
 
-from pyHS100 import Discover, SmartBulb, SmartPlug, SmartStrip
+from kasa import Discover, SmartBulb, SmartPlug, SmartStrip
 
 from .newfakes import FakeTransportProtocol
 

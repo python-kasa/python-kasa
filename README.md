@@ -1,8 +1,8 @@
-# pyHS100
+# python-kasa
 
-[![PyPI version](https://badge.fury.io/py/pyHS100.svg)](https://badge.fury.io/py/pyHS100)
+[![PyPI version](https://badge.fury.io/py/python-kasa.svg)](https://badge.fury.io/py/python-kasa)
 [![Build Status](https://dev.azure.com/python-tplink-kasa/python-kasa/_apis/build/status/python-tplink-kasa.python-kasa?branchName=master)](https://dev.azure.com/python-tplink-kasa/python-kasa/_build/latest?definitionId=1&branchName=master)
-[![Coverage Status](https://coveralls.io/repos/github/GadgetReactor/pyHS100/badge.svg?branch=master)](https://coveralls.io/github/GadgetReactor/pyHS100?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/python-kasa/python-kasa/badge.svg?branch=master)](https://coveralls.io/github/python-kasa/python-kasa?branch=master)
 [![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
 
 Python Library to control TPLink smart plugs/switches and smart bulbs.
@@ -32,25 +32,25 @@ Python Library to control TPLink smart plugs/switches and smart bulbs.
 
 # Usage
 
-The package is shipped with a console tool named pyhs100, please refer to ```pyhs100 --help``` for detailed usage.
-The device to which the commands are sent is chosen by `PYHS100_HOST` environment variable or passing `--host <address>` as an option.
+The package is shipped with a console tool named kasa, please refer to ```kasa --help``` for detailed usage.
+The device to which the commands are sent is chosen by `KASA_HOST` environment variable or passing `--host <address>` as an option.
 To see what is being sent to and received from the device, specify option `--debug`.
 
 To avoid discovering the devices when executing commands its type can be passed by specifying either `--plug` or `--bulb`,
 if no type is given its type will be discovered automatically with a small delay.
 Some commands (such as reading energy meter values and setting color of bulbs) additional parameters are required,
-which you can find by adding `--help` after the command, e.g. `pyhs100 emeter --help` or `pyhs100 hsv --help`.
+which you can find by adding `--help` after the command, e.g. `kasa emeter --help` or `kasa hsv --help`.
 
 If no command is given, the `state` command will be executed to query the device state.
 
 
 ## Discovering devices
 
-The devices can be discovered either by using `pyhs100 discover` or by calling `pyhs100` without any parameters.
+The devices can be discovered either by using `kasa discover` or by calling `kasa` without any parameters.
 In both cases supported devices are discovered from the same broadcast domain, and their current state will be queried and printed out.
 
 ```
-$ pyhs100
+$ kasa
 No --bulb nor --plug given, discovering..
 Discovering devices for 3 seconds
 == My Smart Plug - HS110(EU) ==
@@ -83,7 +83,7 @@ Possible options include `--year` and `--month` for retrieving historical state,
 and reseting the counters is done with `--erase`.
 
 ```
-$ pyhs100 emeter
+$ kasa emeter
 == Emeter ==
 Current state: {'total': 133.105, 'power': 108.223577, 'current': 0.54463, 'voltage': 225.296283}
 ```
@@ -97,9 +97,9 @@ At the moment only switching the state of the LED is implemented.
 `led` command can be used to control whether the LED light on front of the plug is on or off.
 
 ```
-$ pyhs100 --plug led
+$ kasa --plug led
 LED state: False
-$ pyhs100 --plug led 1
+$ kasa --plug led 1
 Turning led to True
 ```
 
@@ -122,7 +122,7 @@ which returns a dictionary keyed with the IP address whose value hold a ready-to
 
 Example:
 ```python
-from pyHS100 import Discover
+from kasa import Discover
 
 for dev in Discover.discover().values():
     print(dev)
@@ -138,7 +138,7 @@ $ python3 example.py
 If you want to avoid unnecessary communication with the device please use `get_sysinfo` and handle parsing of information by yourself.*
 
 ```python
-from pyHS100 import SmartPlug, SmartBulb
+from kasa import SmartPlug, SmartBulb
 from pprint import pformat as pf
 
 plug = SmartPlug("192.168.XXX.XXX")
@@ -231,5 +231,5 @@ The following assumes you have a working installation of Docker.
 Set up the environment and run the tests on demand.
 
 ```shell
-docker build . -t pyhs100 && docker run -v $(PWD)/pyHS100/tests:/opt/pyHS100/pyHS100/tests  pyhs100 pytest
+docker build . -t kasa && docker run -v $(PWD)/kasa/tests:/opt/python-kasa/kasa/tests kasa pytest
 ```

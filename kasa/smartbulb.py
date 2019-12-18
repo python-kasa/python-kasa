@@ -2,8 +2,8 @@
 import re
 from typing import Any, Dict, Optional, Tuple
 
-from pyHS100.protocol import TPLinkSmartHomeProtocol
-from pyHS100.smartdevice import (
+from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.smartdevice import (
     DeviceType,
     SmartDevice,
     SmartDeviceException,

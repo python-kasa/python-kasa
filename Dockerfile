@@ -20,8 +20,8 @@ RUN apk update && \
 ###################################################
 # Create somewhere to put the files               #
 ###################################################
-RUN mkdir -p /opt/pyHS100
-WORKDIR /opt/pyHS100
+RUN mkdir -p /opt/python-kasa
+WORKDIR /opt/python-kasa
 
 ###################################################
 # Requirements file first to help cache           #
