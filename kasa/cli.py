@@ -1,7 +1,6 @@
 """python-kasa cli tool."""
 import asyncio
 import logging
-import sys
 from pprint import pformat as pf
 
 import click
@@ -9,11 +8,6 @@ import click
 from kasa import Discover, SmartBulb, SmartDevice, SmartStrip
 
 from kasa import SmartPlug  # noqa: E402; noqa: E402
-
-if sys.version_info < (3, 6):
-    print("To use this script you need Python 3.6 or newer! got %s" % sys.version_info)
-    sys.exit(1)
-
 
 pass_dev = click.make_pass_decorator(SmartDevice)
 
