@@ -72,7 +72,7 @@ class SmartStrip(SmartPlug):
 
         # Initialize the child devices during the first update.
         if not self.plugs:
-            children = self.get_sys_info()["children"]
+            children = self.sys_info["children"]
             self.num_children = len(children)
             for child in children:
                 self.plugs.append(
@@ -80,7 +80,7 @@ class SmartStrip(SmartPlug):
                         self.host,
                         self.protocol,
                         context=child["id"],
-                        cache_ttl=self.cache_ttl,
+                        cache_ttl=self.cache_ttl.total_seconds(),
                         ioloop=self.ioloop,
                     )
                 )

@@ -27,45 +27,44 @@ class SmartBulb(SmartDevice):
     Usage example when used as library:
     ```python
     p = SmartBulb("192.168.1.105")
+    await p.update()
 
     # print the devices alias
-    print(p.sync.alias)
+    print(p.alias)
 
     # change state of bulb
-    p.sync.turn_on()
-    p.sync.turn_off()
+    await p.turn_on()
+    await p.turn_off()
 
     # query and print current state of plug
-    print(p.sync.state_information())
+    print(p.state_information)
 
     # check whether the bulb supports color changes
-    if p.sync.is_color():
+    if p.is_color:
 
     # set the color to an HSV tuple
-    p.sync.set_hsv(180, 100, 100)
+    await p.set_hsv(180, 100, 100)
 
     # get the current HSV value
-    print(p.sync.hsv())
+    print(p.hsv)
 
     # check whether the bulb supports setting color temperature
-    if p.sync.is_variable_color_temp():
+    if p.is_variable_color_temp:
         # set the color temperature in Kelvin
-        p.sync.set_color_temp(3000)
+        await p.set_color_temp(3000)
 
         # get the current color temperature
-        print(p.sync.color_temp)
+        print(p.color_temp)
 
     # check whether the bulb is dimmable
     if p.is_dimmable:
 
     # set the bulb to 50% brightness
-    p.sync.set_brightness(50)
+    await p.set_brightness(50)
 
     # check the current brightness
     print(p.brightness)
     ```
-
-    Omit the `sync` attribute to get coroutines.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
