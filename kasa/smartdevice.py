@@ -111,7 +111,7 @@ class SmartDevice:
         self,
         host: str,
         protocol: Optional[TPLinkSmartHomeProtocol] = None,
-        context: str = None,
+        child_id: str = None,
         cache_ttl: int = 3,
         *,
         ioloop=None,
@@ -119,20 +119,19 @@ class SmartDevice:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
-        :param context: optional child ID for context in a parent device
+        :param child_id: optional child ID for context in a parent device
         """
         self.host = host
         if protocol is None:  # pragma: no cover
             protocol = TPLinkSmartHomeProtocol()
         self.protocol = protocol
         self.emeter_type = "emeter"
-        self.context = context
-        self.num_children = 0
+        self.child_id = child_id
         self.cache_ttl = timedelta(seconds=cache_ttl)
         _LOGGER.debug(
-            "Initializing %s using context %s and cache ttl %s",
+            "Initializing %s using child_id %s and cache ttl %s",
             self.host,
-            self.context,
+            self.child_id,
             self.cache_ttl,
         )
         self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
@@ -189,8 +188,8 @@ class SmartDevice:
         :raises SmartDeviceException: if command was not executed correctly
         """
         request: Dict[str, Any] = {target: {cmd: arg}}
-        if self.context is not None:
-            request = {"context": {"child_ids": [self.context]}, target: {cmd: arg}}
+        if self.child_id is not None:
+            request = {"context": {"child_ids": [self.child_id]}, target: {cmd: arg}}
 
         try:
             response = self._result_from_cache(target, cmd)
@@ -218,6 +217,16 @@ class SmartDevice:
             del result["err_code"]
 
         return result
+
+    def _get_child_info(self) -> Dict:
+        """Return the child information dict, if available.
+
+        :raises SmartDeviceException: if there is no child or it cannot be found.
+        """
+        for plug in self.sys_info["children"]:
+            if plug["id"] == self.child_id:
+                return plug
+        raise SmartDeviceException("Unable to find children %s")
 
     def has_emeter(self) -> bool:
         """Return if device has an energy meter.
@@ -614,6 +623,18 @@ class SmartDevice:
         """
         raise NotImplementedError("Device subclass needs to implement this.")
 
+    @property  # type: ignore
+    @requires_update
+    def device_id(self) -> str:
+        """Return unique ID for the device.
+
+        For regular devices this is the MAC address of the device,
+        for child devices a combination of MAC and child's ID.
+        """
+        if self.is_child_device:
+            return f"{self.mac}_{self.child_id}"
+        return self.mac
+
     @property
     def device_type(self) -> DeviceType:
         """Return the device type."""
@@ -635,7 +656,7 @@ class SmartDevice:
         return self._device_type == DeviceType.Strip
 
     @property
-    def is_dimmable(self):
+    def is_dimmable(self) -> bool:
         """Return  True if the device is dimmable."""
         return False
 
@@ -643,6 +664,11 @@ class SmartDevice:
     def is_variable_color_temp(self) -> bool:
         """Return True if the device supports color temperature."""
         return False
+
+    @property
+    def is_child_device(self) -> bool:
+        """Return True if the device is a child device of another device."""
+        return self.child_id is not None
 
     def __repr__(self):
         return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
@@ -653,31 +679,3 @@ class SmartDevice:
             self.is_on,
             self.state_information,
         )
-
-
-class SyncSmartDevice:
-    """A synchronous SmartDevice speaker class.
-
-    This has the same methods as `SyncSmartDevice`, however, it wraps all async
-    methods and call them in a blocking way.
-
-    Taken from https://github.com/basnijholt/media_player.kef/
-    """
-
-    def __init__(self, async_device, ioloop):
-        self.async_device = async_device
-        self.ioloop = ioloop
-
-    def __getattr__(self, attr):
-        method = getattr(self.async_device, attr)
-        if method is None:
-            raise AttributeError(f"'SyncSmartDevice' object has no attribute '{attr}.'")
-        if inspect.iscoroutinefunction(method):
-
-            @functools.wraps(method)
-            def wrapped(*args, **kwargs):
-                return self.ioloop.run_until_complete(method(*args, **kwargs))
-
-            return wrapped
-        else:
-            return method
