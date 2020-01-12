@@ -138,7 +138,6 @@ class SmartDevice:
         self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
         self._device_type = DeviceType.Unknown
         self.ioloop = ioloop or asyncio.get_event_loop()
-        self.sync = SyncSmartDevice(self, ioloop=self.ioloop)
         self._sys_info = None
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
@@ -646,14 +645,13 @@ class SmartDevice:
         return False
 
     def __repr__(self):
-        self.sync.update()
         return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
             self.__class__.__name__,
             self.model,
             self.host,
             self.alias,
             self.is_on,
-            self.sync.state_information,
+            self.state_information,
         )
 
 

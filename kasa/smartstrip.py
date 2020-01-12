@@ -22,21 +22,20 @@ class SmartStrip(SmartPlug):
     p = SmartStrip("192.168.1.105")
 
     # query the state of the strip
+    await p.update()
     print(p.is_on)
 
     # change state of all outlets
-    p.sync.turn_on()
-    p.sync.turn_off()
+    await p.turn_on()
+    await p.turn_off()
 
     # individual outlets are accessible through plugs variable
     for plug in p.plugs:
         print(f"{p}: {p.is_on}")
 
     # change state of a single outlet
-    p.plugs[0].sync.turn_on()
+    await p.plugs[0].turn_on()
     ```
-
-    Omit the `sync` attribute to get coroutines.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
@@ -53,18 +52,6 @@ class SmartStrip(SmartPlug):
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
         self.plugs: List[SmartPlug] = []
-        children = self.sync.get_sys_info()["children"]
-        self.num_children = len(children)
-        for child in children:
-            self.plugs.append(
-                SmartPlug(
-                    host,
-                    protocol,
-                    context=child["id"],
-                    cache_ttl=cache_ttl,
-                    ioloop=ioloop,
-                )
-            )
 
     @property  # type: ignore
     @requires_update
@@ -82,6 +69,22 @@ class SmartStrip(SmartPlug):
         Needed for methods that are decorated with `requires_update`.
         """
         await super().update()
+
+        # Initialize the child devices during the first update.
+        if not self.plugs:
+            children = self.sys_info["children"]
+            self.num_children = len(children)
+            for child in children:
+                self.plugs.append(
+                    SmartPlug(
+                        self.host,
+                        self.protocol,
+                        context=child["id"],
+                        cache_ttl=self.cache_ttl.total_seconds(),
+                        ioloop=self.ioloop,
+                    )
+                )
+
         for plug in self.plugs:
             await plug.update()
 

@@ -73,21 +73,27 @@ non_color_bulb = pytest.mark.parametrize(
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
 
 
-def handle_turn_on(dev, turn_on):
+async def handle_turn_on(dev, turn_on):
     if turn_on:
-        dev.sync.turn_on()
+        await dev.turn_on()
     else:
-        dev.sync.turn_off()
+        await dev.turn_off()
 
 
 @pytest.fixture(params=SUPPORTED_DEVICES)
 def dev(request):
+    """Device fixture.
+
+    Provides a device (given --ip) or parametrized fixture for the supported devices.
+    The initial update is called automatically before returning the device.
+    """
     ioloop = get_ioloop()
     file = request.param
 
     ip = request.config.getoption("--ip")
     if ip:
         d = ioloop.run_until_complete(Discover.discover_single(ip))
+        ioloop.run_until_complete(d.update())
         print(d.model)
         if d.model in file:
             return d
@@ -109,6 +115,7 @@ def dev(request):
             p = SmartPlug(**params, ioloop=ioloop)
         else:
             raise Exception("No tests for %s" % model)
+        ioloop.run_until_complete(p.update())
         yield p
 
 
