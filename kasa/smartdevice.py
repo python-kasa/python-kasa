@@ -646,14 +646,13 @@ class SmartDevice:
         return False
 
     def __repr__(self):
-        self.sync.update()
         return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
             self.__class__.__name__,
             self.model,
             self.host,
             self.alias,
             self.is_on,
-            self.sync.state_information,
+            self.state_information,
         )
 
 
