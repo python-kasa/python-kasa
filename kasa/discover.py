@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import socket
-from typing import Dict, Mapping, Optional, Type, Union, cast
+from typing import Dict, Mapping, Type, Union, cast
 
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
@@ -159,7 +159,7 @@ class Discover:
         return protocol.discovered_devices
 
     @staticmethod
-    async def discover_single(host: str) -> Optional[SmartDevice]:
+    async def discover_single(host: str) -> SmartDevice:
         """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
