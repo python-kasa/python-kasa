@@ -13,7 +13,7 @@ setup(
     license="GPLv3",
     packages=["kasa"],
     install_requires=["click"],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     entry_points={"console_scripts": ["kasa=kasa.cli:cli"]},
     zip_safe=False,
 )
