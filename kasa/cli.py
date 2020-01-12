@@ -352,9 +352,9 @@ def on(plug, index):
     """Turn the device on."""
     click.echo("Turning on..")
     if index is None:
-        plug.turn_on()
+        asyncio.run(plug.turn_on())
     else:
-        plug.turn_on(index=(index - 1))
+        asyncio.run(plug.turn_on(index=(index - 1)))
 
 
 @cli.command()
@@ -364,9 +364,9 @@ def off(plug, index):
     """Turn the device off."""
     click.echo("Turning off..")
     if index is None:
-        plug.turn_off()
+        asyncio.run(plug.turn_off())
     else:
-        plug.turn_off(index=(index - 1))
+        asyncio.run(plug.turn_off(index=(index - 1)))
 
 
 @cli.command()
