@@ -14,14 +14,6 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 
 @click.group(invoke_without_command=True)
 @click.option(
-    "--ip",
-    envvar="KASA_IP",
-    required=False,
-    help="The IP address of the device to connect to. This option "
-    "is deprecated and will be removed in the future; use --host "
-    "instead.",
-)
-@click.option(
     "--host",
     envvar="KASA_HOST",
     required=False,
@@ -45,7 +37,7 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option("--strip", default=False, is_flag=True)
 @click.version_option()
 @click.pass_context
-def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
+def cli(ctx, host, alias, target, debug, bulb, plug, strip):
     """A cli tool for controlling TP-Link smart home plugs."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -54,9 +46,6 @@ def cli(ctx, ip, host, alias, target, debug, bulb, plug, strip):
 
     if ctx.invoked_subcommand == "discover":
         return
-
-    if ip is not None and host is None:
-        host = ip
 
     if alias is not None and host is None:
         click.echo("Alias is given, using discovery to find host %s" % alias)
