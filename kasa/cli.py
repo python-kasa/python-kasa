@@ -125,11 +125,12 @@ def discover(ctx, timeout, discover_only, dump_raw):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
     click.echo("Discovering devices for %s seconds" % timeout)
-    found_devs = Discover.discover(
-        target=target, timeout=timeout, return_raw=dump_raw
-    ).items()
+    found_devs = asyncio.run(
+        Discover.discover(target=target, timeout=timeout, return_raw=dump_raw)
+    )
     if not discover_only:
-        for ip, dev in found_devs:
+        for ip, dev in found_devs.items():
+            asyncio.run(dev.update())
             if dump_raw:
                 click.echo(dev)
                 continue
@@ -161,7 +162,7 @@ def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3)
 @pass_dev
 def sysinfo(dev):
     """Print out full system information."""
-    dev.sync.update()
+    asyncio.run(dev.update())
     click.echo(click.style("== System info ==", bold=True))
     click.echo(pf(dev.sys_info))
 
@@ -171,7 +172,7 @@ def sysinfo(dev):
 @click.pass_context
 def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
-    dev.sync.update()
+    asyncio.run(dev.update())
     click.echo(click.style(f"== {dev.alias} - {dev.model} ==", bold=True))
 
     click.echo(
@@ -182,7 +183,7 @@ def state(ctx, dev: SmartDevice):
     )
     if dev.is_strip:
         for plug in dev.plugs:  # type: ignore
-            plug.sync.update()
+            asyncio.run(plug.update())
             is_on = plug.is_on
             alias = plug.alias
             click.echo(
@@ -196,7 +197,7 @@ def state(ctx, dev: SmartDevice):
     for k, v in dev.state_information.items():
         click.echo(f"{k}: {v}")
     click.echo(click.style("== Generic information ==", bold=True))
-    click.echo("Time:         {}".format(dev.sync.get_time()))
+    click.echo("Time:         {}".format(asyncio.run(dev.get_time())))
     click.echo("Hardware:     {}".format(dev.hw_info["hw_ver"]))
     click.echo("Software:     {}".format(dev.hw_info["sw_ver"]))
     click.echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
@@ -212,7 +213,7 @@ def alias(dev, new_alias):
     """Get or set the device alias."""
     if new_alias is not None:
         click.echo(f"Setting alias to {new_alias}")
-        dev.sync.set_alias(new_alias)
+        asyncio.run(dev.set_alias(new_alias))
 
     click.echo(f"Alias: {dev.alias}")
 
@@ -228,8 +229,8 @@ def raw_command(dev: SmartDevice, module, command, parameters):
 
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
-    res = dev.sync._query_helper(module, command, parameters)
-    dev.sync.update()
+    res = asyncio.run(dev._query_helper(module, command, parameters))
+    asyncio.run(dev.update())
     click.echo(res)
 
 
@@ -241,24 +242,26 @@ def raw_command(dev: SmartDevice, module, command, parameters):
 def emeter(dev, year, month, erase):
     """Query emeter for historical consumption."""
     click.echo(click.style("== Emeter ==", bold=True))
-    dev.sync.update()
+    asyncio.run(dev.update())
     if not dev.has_emeter:
         click.echo("Device has no emeter")
         return
 
     if erase:
         click.echo("Erasing emeter statistics..")
-        dev.sync.erase_emeter_stats()
+        asyncio.run(dev.erase_emeter_stats())
         return
 
     if year:
         click.echo(f"== For year {year.year} ==")
-        emeter_status = dev.sync.get_emeter_monthly(year.year)
+        emeter_status = asyncio.run(dev.get_emeter_monthly(year.year))
     elif month:
         click.echo(f"== For month {month.month} of {month.year} ==")
-        emeter_status = dev.sync.get_emeter_daily(year=month.year, month=month.month)
+        emeter_status = asyncio.run(
+            dev.get_emeter_daily(year=month.year, month=month.month)
+        )
     else:
-        emeter_status = dev.sync.get_emeter_realtime()
+        emeter_status = asyncio.run(dev.get_emeter_realtime())
         click.echo("== Current State ==")
 
     if isinstance(emeter_status, list):
@@ -273,7 +276,7 @@ def emeter(dev, year, month, erase):
 @pass_dev
 def brightness(dev, brightness):
     """Get or set brightness."""
-    dev.sync.update()
+    asyncio.run(dev.update())
     if not dev.is_dimmable:
         click.echo("This device does not support brightness.")
         return
@@ -281,7 +284,7 @@ def brightness(dev, brightness):
         click.echo("Brightness: %s" % dev.brightness)
     else:
         click.echo("Setting brightness to %s" % brightness)
-        dev.sync.set_brightness(brightness)
+        asyncio.run(dev.set_brightness(brightness))
 
 
 @cli.command()
@@ -303,7 +306,7 @@ def temperature(dev: SmartBulb, temperature):
             )
     else:
         click.echo(f"Setting color temperature to {temperature}")
-        dev.sync.set_color_temp(temperature)
+        asyncio.run(dev.set_color_temp(temperature))
 
 
 @cli.command()
@@ -320,7 +323,7 @@ def hsv(dev, ctx, h, s, v):
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
         click.echo(f"Setting HSV: {h} {s} {v}")
-        dev.sync.set_hsv(h, s, v)
+        asyncio.run(dev.set_hsv(h, s, v))
 
 
 @cli.command()
@@ -330,7 +333,7 @@ def led(dev, state):
     """Get or set (Plug's) led state."""
     if state is not None:
         click.echo("Turning led to %s" % state)
-        dev.sync.set_led(state)
+        asyncio.run(dev.set_led(state))
     else:
         click.echo("LED state: %s" % dev.led)
 
@@ -339,7 +342,7 @@ def led(dev, state):
 @pass_dev
 def time(dev):
     """Get the device time."""
-    click.echo(dev.sync.get_time())
+    click.echo(asyncio.run(dev.get_time()))
 
 
 @cli.command()
@@ -372,7 +375,7 @@ def off(plug, index):
 def reboot(plug, delay):
     """Reboot the device."""
     click.echo("Rebooting the device..")
-    plug.reboot(delay)
+    asyncio.run(plug.reboot(delay))
 
 
 if __name__ == "__main__":

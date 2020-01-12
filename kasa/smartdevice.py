@@ -138,7 +138,6 @@ class SmartDevice:
         self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
         self._device_type = DeviceType.Unknown
         self.ioloop = ioloop or asyncio.get_event_loop()
-        self.sync = SyncSmartDevice(self, ioloop=self.ioloop)
         self._sys_info = None
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
