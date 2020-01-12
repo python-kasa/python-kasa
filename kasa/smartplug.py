@@ -40,12 +40,12 @@ class SmartPlug(SmartDevice):
         self,
         host: str,
         protocol: "TPLinkSmartHomeProtocol" = None,
-        context: str = None,
+        child_id: str = None,
         cache_ttl: int = 3,
         *,
         ioloop=None,
     ) -> None:
-        SmartDevice.__init__(self, host, protocol, context, cache_ttl, ioloop=ioloop)
+        SmartDevice.__init__(self, host, protocol, child_id, cache_ttl, ioloop=ioloop)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
 
@@ -90,12 +90,6 @@ class SmartPlug(SmartDevice):
         else:
             raise ValueError("Brightness value %s is not valid." % value)
 
-    def _get_child_info(self):
-        for plug in self.sys_info["children"]:
-            if plug["id"] == self.context:
-                return plug
-        raise SmartDeviceException("Unable to find children %s")
-
     @property  # type: ignore
     @requires_update
     def alias(self) -> str:
@@ -104,7 +98,7 @@ class SmartPlug(SmartDevice):
         :return: Device name aka alias.
         :rtype: str
         """
-        if self.context:
+        if self.is_child_device:
             info = self._get_child_info()
             return info["alias"]
         else:
@@ -140,7 +134,7 @@ class SmartPlug(SmartDevice):
 
         :return: True if device is on, False otherwise
         """
-        if self.context:
+        if self.is_child_device:
             info = self._get_child_info()
             return info["state"]
 
@@ -192,7 +186,7 @@ class SmartPlug(SmartDevice):
         :rtype: datetime
         """
         sys_info = self.sys_info
-        if self.context:
+        if self.is_child_device:
             info = self._get_child_info()
             on_time = info["on_time"]
         else:

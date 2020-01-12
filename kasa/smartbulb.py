@@ -76,7 +76,7 @@ class SmartBulb(SmartDevice):
         self,
         host: str,
         protocol: TPLinkSmartHomeProtocol = None,
-        context: str = None,
+        child_id: str = None,
         cache_ttl: int = 3,
         *,
         ioloop=None,
@@ -85,7 +85,7 @@ class SmartBulb(SmartDevice):
             self,
             host=host,
             protocol=protocol,
-            context=context,
+            child_id=child_id,
             cache_ttl=cache_ttl,
             ioloop=ioloop,
         )

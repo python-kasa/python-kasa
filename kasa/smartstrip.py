@@ -79,7 +79,7 @@ class SmartStrip(SmartPlug):
                     SmartPlug(
                         self.host,
                         self.protocol,
-                        context=child["id"],
+                        child_id=child["id"],
                         cache_ttl=self.cache_ttl.total_seconds(),
                         ioloop=self.ioloop,
                     )
