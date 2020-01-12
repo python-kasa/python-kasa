@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import socket
-from typing import Dict, Mapping, Type, Union, cast
+from typing import Awaitable, Callable, Dict, Mapping, Type, Union, cast
 
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
@@ -12,6 +12,9 @@ from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
 
 _LOGGER = logging.getLogger(__name__)
+
+
+OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -26,10 +29,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     def __init__(
         self,
         *,
-        on_discovered=None,
-        target="255.255.255.255",
-        timeout=5,
-        discovery_packets=3,
+        on_discovered: OnDiscoveredCallable = None,
+        target: str = "255.255.255.255",
+        timeout: int = 5,
+        discovery_packets: int = 3,
     ):
         self.transport = None
         self.tries = discovery_packets
@@ -40,7 +43,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovered_devices = {}
         self.discovered_devices_raw = {}
 
-    def connection_made(self, transport):
+    def connection_made(self, transport) -> None:
+        """Set socket options for broadcasting."""
         self.transport = transport
         sock = transport.get_extra_info("socket")
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -48,14 +52,15 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         self.do_discover()
 
-    def do_discover(self):
+    def do_discover(self) -> None:
+        """Send number of discovery datagrams."""
         req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = self.protocol.encrypt(req)
         for i in range(self.tries):
-            self.transport.sendto(encrypted_req[4:], self.target)
+            self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
 
-    def datagram_received(self, data, addr):
+    def datagram_received(self, data, addr) -> None:
         ip, port = addr
         if ip in self.discovered_devices:
             return
