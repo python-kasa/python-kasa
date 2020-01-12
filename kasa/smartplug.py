@@ -22,17 +22,15 @@ class SmartPlug(SmartDevice):
     p = SmartPlug("192.168.1.105")
 
     # print the devices alias
-    print(p.sync.alias)
+    print(p.alias)
 
     # change state of plug
-    p.sync.turn_on()
-    p.sync.turn_off()
+    await p.turn_on()
+    await p.turn_off()
 
     # query and print current state of plug
-    print(p.sync.state_information)
+    print(p.state_information)
     ```
-
-    Omit the `sync` attribute to get coroutines.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
@@ -92,6 +90,26 @@ class SmartPlug(SmartDevice):
         else:
             raise ValueError("Brightness value %s is not valid." % value)
 
+    def _get_child_info(self):
+        for plug in self.sys_info["children"]:
+            if plug["id"] == self.context:
+                return plug
+        raise SmartDeviceException("Unable to find children %s")
+
+    @property  # type: ignore
+    @requires_update
+    def alias(self) -> str:
+        """Return device name (alias).
+
+        :return: Device name aka alias.
+        :rtype: str
+        """
+        if self.context:
+            info = self._get_child_info()
+            return info["alias"]
+        else:
+            return super().alias
+
     @property  # type: ignore
     @requires_update
     def is_dimmable(self):
@@ -122,6 +140,10 @@ class SmartPlug(SmartDevice):
 
         :return: True if device is on, False otherwise
         """
+        if self.context:
+            info = self._get_child_info()
+            return info["state"]
+
         sys_info = self.sys_info
         return bool(sys_info["relay_state"])
 
@@ -171,10 +193,8 @@ class SmartPlug(SmartDevice):
         """
         sys_info = self.sys_info
         if self.context:
-            for plug in sys_info["children"]:
-                if plug["id"] == self.context:
-                    on_time = plug["on_time"]
-                    break
+            info = self._get_child_info()
+            on_time = info["on_time"]
         else:
             on_time = sys_info["on_time"]
 
