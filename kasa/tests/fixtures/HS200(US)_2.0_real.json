@@ -1,0 +1,49 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "err_code": -1,
+            "err_msg": "module not support"
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Master Bedroom Fan",
+            "dev_name": "Smart Wi-Fi Light Switch",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "fwId": "00000000000000000000000000000000",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS200(US)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -33,
+            "sw_ver": "1.5.7 Build 191118 Rel.140152",
+            "updating": 0
+        }
+    }
+}
