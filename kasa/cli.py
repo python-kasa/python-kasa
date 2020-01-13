@@ -1,5 +1,6 @@
 """python-kasa cli tool."""
 import asyncio
+import json
 import logging
 from pprint import pformat as pf
 
@@ -88,14 +89,13 @@ def dump_discover(ctx, save):
     Useful for dumping into a file with `--save` to be added to the test suite.
     """
     target = ctx.parent.params["target"]
-    for dev in Discover.discover(target=target, return_raw=True).values():
+    devs = asyncio.run(Discover.discover(target=target, return_raw=True))
+    for dev in devs.values():
         model = dev["system"]["get_sysinfo"]["model"]
         hw_version = dev["system"]["get_sysinfo"]["hw_ver"]
         save_to = f"{model}_{hw_version}.json"
         click.echo("Saving info to %s" % save_to)
         with open(save_to, "w") as f:
-            import json
-
             json.dump(dev, f, sort_keys=True, indent=4)
 
 
