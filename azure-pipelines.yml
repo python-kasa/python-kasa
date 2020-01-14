@@ -71,5 +71,15 @@ steps:
   displayName: 'Order of imports (isort)'
 
 - script: |
-    pytest --cov kasa --cov-report html
+    pytest --cov kasa --cov-report xml
   displayName: 'Tests'
+
+- script: |
+    codecov -t $(codecov.token)
+  displayName: Report Coverage
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: 'report.xml'
+    testRunTitle: '$(Agent.OS) - $(Build.DefinitionName) - Python $(python.version)'
+  condition: succeededOrFailed()

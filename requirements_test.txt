@@ -5,3 +5,4 @@ pytest-asyncio
 pytest-mock
 click  # needed for test_cli
 voluptuous
+codecov
