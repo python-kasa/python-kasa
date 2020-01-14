@@ -76,10 +76,4 @@ steps:
 
 - script: |
     codecov -t $(codecov.token)
-  displayName: Report Coverage
-
-- task: PublishTestResults@2
-  inputs:
-    testResultsFiles: 'coverage.xml'
-    testRunTitle: '$(Agent.OS) - $(Build.DefinitionName) - Python $(python.version)'
-  condition: succeededOrFailed()
+  displayName: Report Coverage to codecov
