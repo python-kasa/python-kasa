@@ -82,7 +82,7 @@ def cli(ctx, host, alias, target, debug, bulb, plug, strip):
 
 
 @cli.command()
-@click.option("--scrub", is_flag=True)
+@click.option("--scrub/--no-scrub", default=True)
 @click.pass_context
 def dump_discover(ctx, scrub):
     """Dump discovery information.
@@ -100,6 +100,8 @@ def dump_discover(ctx, scrub):
         "longitude_i",
     ]
     devs = asyncio.run(Discover.discover(target=target, return_raw=True))
+    if scrub:
+        click.echo("Scrubbing personal data before writing")
     for dev in devs.values():
         if scrub:
             for key in keys_to_scrub:
