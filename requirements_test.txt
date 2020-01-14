@@ -2,3 +2,4 @@ pytest
 pytest-azurepipelines
 pytest-cov
 pytest-asyncio
+click  # needed for test_cli
