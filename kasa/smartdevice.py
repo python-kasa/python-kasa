@@ -11,7 +11,6 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
-import asyncio
 import functools
 import inspect
 import logging
@@ -104,27 +103,15 @@ def requires_update(f):
 class SmartDevice:
     """Base class for all supported device types."""
 
-    STATE_ON = "ON"
-    STATE_OFF = "OFF"
-
-    def __init__(
-        self,
-        host: str,
-        protocol: Optional[TPLinkSmartHomeProtocol] = None,
-        child_id: str = None,
-        cache_ttl: int = 3,
-        *,
-        ioloop=None,
-    ) -> None:
+    def __init__(self, host: str, *, child_id: str = None, cache_ttl: int = 3) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
         :param child_id: optional child ID for context in a parent device
         """
         self.host = host
-        if protocol is None:  # pragma: no cover
-            protocol = TPLinkSmartHomeProtocol()
-        self.protocol = protocol
+
+        self.protocol = TPLinkSmartHomeProtocol()
         self.emeter_type = "emeter"
         self.child_id = child_id
         self.cache_ttl = timedelta(seconds=cache_ttl)
@@ -136,7 +123,6 @@ class SmartDevice:
         )
         self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
         self._device_type = DeviceType.Unknown
-        self.ioloop = ioloop or asyncio.get_event_loop()
         self._sys_info = None
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:

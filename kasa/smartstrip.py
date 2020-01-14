@@ -7,7 +7,6 @@ import logging
 from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List
 
-from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartdevice import DeviceType, requires_update
 from kasa.smartplug import SmartPlug
 
@@ -41,14 +40,8 @@ class SmartStrip(SmartPlug):
     and should be handled by the user of the library.
     """
 
-    def __init__(
-        self,
-        host: str,
-        protocol: TPLinkSmartHomeProtocol = None,
-        cache_ttl: int = 3,
-        ioloop=None,
-    ) -> None:
-        SmartPlug.__init__(self, host=host, protocol=protocol, cache_ttl=cache_ttl)
+    def __init__(self, host: str, cache_ttl: int = 3) -> None:
+        SmartPlug.__init__(self, host=host, cache_ttl=cache_ttl)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
         self.plugs: List[SmartPlug] = []
@@ -78,15 +71,10 @@ class SmartStrip(SmartPlug):
                 self.plugs.append(
                     SmartPlug(
                         self.host,
-                        self.protocol,
                         child_id=child["id"],
                         cache_ttl=self.cache_ttl.total_seconds(),
-                        ioloop=self.ioloop,
                     )
                 )
-
-        for plug in self.plugs:
-            await plug.update()
 
     async def turn_on(self):
         """Turn the strip on.

@@ -2,7 +2,6 @@
 import re
 from typing import Any, Dict, Optional, Tuple
 
-from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartdevice import (
     DeviceType,
     SmartDevice,
@@ -72,23 +71,8 @@ class SmartBulb(SmartDevice):
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"
 
-    def __init__(
-        self,
-        host: str,
-        protocol: TPLinkSmartHomeProtocol = None,
-        child_id: str = None,
-        cache_ttl: int = 3,
-        *,
-        ioloop=None,
-    ) -> None:
-        SmartDevice.__init__(
-            self,
-            host=host,
-            protocol=protocol,
-            child_id=child_id,
-            cache_ttl=cache_ttl,
-            ioloop=ioloop,
-        )
+    def __init__(self, host: str, *, child_id: str = None, cache_ttl: int = 3) -> None:
+        SmartDevice.__init__(self, host=host, child_id=child_id, cache_ttl=cache_ttl)
         self.emeter_type = "smartlife.iot.common.emeter"
         self._device_type = DeviceType.Bulb
         self._light_state = None
