@@ -1,0 +1,59 @@
+{
+    "emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "TP-LINK_Smart Plug_D310",
+            "child_num": 2,
+            "children": [
+                {
+                    "alias": "Garage Charger 1",
+                    "id": "00",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Garage Charger 2",
+                    "id": "01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": -0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS107(US)",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -51,
+            "sw_ver": "1.0.8 Build 190103 Rel.163436",
+            "updating": 0
+        }
+    }
+}

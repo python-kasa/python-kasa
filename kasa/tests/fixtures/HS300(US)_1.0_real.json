@@ -1,0 +1,100 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 4,
+            "err_code": 0,
+            "power_mw": 17,
+            "total_wh": 1279,
+            "voltage_mv": 122414
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "TP-LINK_Power Strip_DAE1",
+            "child_num": 6,
+            "children": [
+                {
+                    "alias": "Office Monitor 1",
+                    "id": "00",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Office Monitor 2",
+                    "id": "01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Office Monitor 3",
+                    "id": "02",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Office Laptop Dock",
+                    "id": "03",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Office Desk Light",
+                    "id": "04",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Laptop",
+                    "id": "05",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": -32407,
+                    "state": 1
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": -0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS300(US)",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -62,
+            "sw_ver": "1.0.10 Build 190103 Rel.163517",
+            "updating": 0
+        }
+    }
+}
