@@ -16,8 +16,8 @@ SUPPORTED_DEVICES = glob.glob(
 
 BULBS = {"LB100", "LB120", "LB130", "KL120"}
 VARIABLE_TEMP = {"LB120", "LB130", "KL120"}
-PLUGS = {"HS100", "HS105", "HS110", "HS200", "HS220", "HS300"}
-STRIPS = {"HS300"}
+PLUGS = {"HS100", "HS105", "HS110", "HS200", "HS210", "HS220", "HS300"}
+STRIPS = {"HS107", "HS300"}
 COLOR_BULBS = {"LB130"}
 DIMMABLE = {*BULBS, "HS220"}
 EMETER = {"HS110", "HS300", *BULBS}
@@ -25,14 +25,15 @@ EMETER = {"HS110", "HS300", *BULBS}
 ALL_DEVICES = BULBS.union(PLUGS)
 
 
-def filter_model(filter):
-    print(filter)
+def filter_model(desc, filter):
     filtered = list()
     for dev in SUPPORTED_DEVICES:
         for filt in filter:
             if filt in basename(dev):
                 filtered.append(dev)
 
+    filtered_basenames = [basename(f) for f in filtered]
+    print(f"{desc}: {filtered_basenames}")
     return filtered
 
 
@@ -42,30 +43,36 @@ def get_ioloop():
     return ioloop
 
 
-has_emeter = pytest.mark.parametrize("dev", filter_model(EMETER), indirect=True)
+has_emeter = pytest.mark.parametrize(
+    "dev", filter_model("has emeter", EMETER), indirect=True
+)
 no_emeter = pytest.mark.parametrize(
-    "dev", filter_model(ALL_DEVICES - EMETER), indirect=True
+    "dev", filter_model("no emeter", ALL_DEVICES - EMETER), indirect=True
 )
 
-bulb = pytest.mark.parametrize("dev", filter_model(BULBS), indirect=True)
-plug = pytest.mark.parametrize("dev", filter_model(PLUGS), indirect=True)
-strip = pytest.mark.parametrize("dev", filter_model(STRIPS), indirect=True)
+bulb = pytest.mark.parametrize("dev", filter_model("bulbs", BULBS), indirect=True)
+plug = pytest.mark.parametrize("dev", filter_model("plugs", PLUGS), indirect=True)
+strip = pytest.mark.parametrize("dev", filter_model("strips", STRIPS), indirect=True)
 
-dimmable = pytest.mark.parametrize("dev", filter_model(DIMMABLE), indirect=True)
+dimmable = pytest.mark.parametrize(
+    "dev", filter_model("dimmable", DIMMABLE), indirect=True
+)
 non_dimmable = pytest.mark.parametrize(
-    "dev", filter_model(ALL_DEVICES - DIMMABLE), indirect=True
+    "dev", filter_model("non-dimmable", ALL_DEVICES - DIMMABLE), indirect=True
 )
 
 variable_temp = pytest.mark.parametrize(
-    "dev", filter_model(VARIABLE_TEMP), indirect=True
+    "dev", filter_model("variable color temp", VARIABLE_TEMP), indirect=True
 )
 non_variable_temp = pytest.mark.parametrize(
-    "dev", filter_model(BULBS - VARIABLE_TEMP), indirect=True
+    "dev", filter_model("non-variable color temp", BULBS - VARIABLE_TEMP), indirect=True
 )
 
-color_bulb = pytest.mark.parametrize("dev", filter_model(COLOR_BULBS), indirect=True)
+color_bulb = pytest.mark.parametrize(
+    "dev", filter_model("color bulbs", COLOR_BULBS), indirect=True
+)
 non_color_bulb = pytest.mark.parametrize(
-    "dev", filter_model(BULBS - COLOR_BULBS), indirect=True
+    "dev", filter_model("non-color bulbs", BULBS - COLOR_BULBS), indirect=True
 )
 
 
@@ -99,6 +106,19 @@ def dev(request):
             return d
         return
 
+    def device_for_file(model):
+        for d in STRIPS:
+            if d in model:
+                return SmartStrip
+        for d in PLUGS:
+            if d in model:
+                return SmartPlug
+        for d in BULBS:
+            if d in model:
+                return SmartBulb
+
+        raise Exception("Unable to find type for %s", model)
+
     with open(file) as f:
         sysinfo = json.load(f)
         model = basename(file)
@@ -107,14 +127,7 @@ def dev(request):
             "protocol": FakeTransportProtocol(sysinfo),
             "cache_ttl": 0,
         }
-        if "LB" in model or "KL" in model:
-            p = SmartBulb(**params, ioloop=ioloop)
-        elif "HS300" in model:
-            p = SmartStrip(**params, ioloop=ioloop)
-        elif "HS" in model:
-            p = SmartPlug(**params, ioloop=ioloop)
-        else:
-            raise Exception("No tests for %s" % model)
+        p = device_for_file(model)(**params, ioloop=ioloop)
         ioloop.run_until_complete(p.update())
         yield p
 

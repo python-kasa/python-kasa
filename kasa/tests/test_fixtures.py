@@ -116,7 +116,7 @@ async def test_no_emeter(dev):
 @has_emeter
 async def test_get_emeter_realtime(dev):
     if dev.is_strip:
-        pytest.skip("Disabled for HS300 temporarily")
+        pytest.skip("Disabled for strips temporarily")
 
     assert dev.has_emeter
 
@@ -128,7 +128,7 @@ async def test_get_emeter_realtime(dev):
 @has_emeter
 async def test_get_emeter_daily(dev):
     if dev.is_strip:
-        pytest.skip("Disabled for HS300 temporarily")
+        pytest.skip("Disabled for strips temporarily")
 
     assert dev.has_emeter
 
@@ -151,7 +151,7 @@ async def test_get_emeter_daily(dev):
 @has_emeter
 async def test_get_emeter_monthly(dev):
     if dev.is_strip:
-        pytest.skip("Disabled for HS300 temporarily")
+        pytest.skip("Disabled for strips temporarily")
 
     assert dev.has_emeter
 
@@ -174,7 +174,7 @@ async def test_get_emeter_monthly(dev):
 @has_emeter
 async def test_emeter_status(dev):
     if dev.is_strip:
-        pytest.skip("Disabled for HS300 temporarily")
+        pytest.skip("Disabled for strips temporarily")
 
     assert dev.has_emeter
 
@@ -205,7 +205,7 @@ async def test_erase_emeter_stats(dev):
 @has_emeter
 async def test_current_consumption(dev):
     if dev.is_strip:
-        pytest.skip("Disabled for HS300 temporarily")
+        pytest.skip("Disabled for strips temporarily")
 
     if dev.has_emeter:
         x = await dev.current_consumption()
