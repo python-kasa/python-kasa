@@ -3,7 +3,6 @@ import datetime
 import logging
 from typing import Any, Dict
 
-from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartdevice import (
     DeviceType,
     SmartDevice,
@@ -36,16 +35,8 @@ class SmartPlug(SmartDevice):
     and should be handled by the user of the library.
     """
 
-    def __init__(
-        self,
-        host: str,
-        protocol: "TPLinkSmartHomeProtocol" = None,
-        child_id: str = None,
-        cache_ttl: int = 3,
-        *,
-        ioloop=None,
-    ) -> None:
-        SmartDevice.__init__(self, host, protocol, child_id, cache_ttl, ioloop=ioloop)
+    def __init__(self, host: str, *, child_id: str = None, cache_ttl: int = 3) -> None:
+        SmartDevice.__init__(self, host, child_id=child_id, cache_ttl=cache_ttl)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
 

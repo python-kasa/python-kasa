@@ -37,12 +37,6 @@ def filter_model(desc, filter):
     return filtered
 
 
-def get_ioloop():
-    ioloop = asyncio.new_event_loop()
-    asyncio.set_event_loop(ioloop)
-    return ioloop
-
-
 has_emeter = pytest.mark.parametrize(
     "dev", filter_model("has emeter", EMETER), indirect=True
 )
@@ -94,13 +88,13 @@ def dev(request):
     Provides a device (given --ip) or parametrized fixture for the supported devices.
     The initial update is called automatically before returning the device.
     """
-    ioloop = get_ioloop()
+    loop = asyncio.get_event_loop()
     file = request.param
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = ioloop.run_until_complete(Discover.discover_single(ip))
-        ioloop.run_until_complete(d.update())
+        d = loop.run_until_complete(Discover.discover_single(ip))
+        loop.run_until_complete(d.update())
         print(d.model)
         if d.model in file:
             return d
@@ -122,13 +116,10 @@ def dev(request):
     with open(file) as f:
         sysinfo = json.load(f)
         model = basename(file)
-        params = {
-            "host": "123.123.123.123",
-            "protocol": FakeTransportProtocol(sysinfo),
-            "cache_ttl": 0,
-        }
-        p = device_for_file(model)(**params, ioloop=ioloop)
-        ioloop.run_until_complete(p.update())
+        params = {"host": "123.123.123.123", "cache_ttl": 0}
+        p = device_for_file(model)(**params)
+        p.protocol = FakeTransportProtocol(sysinfo)
+        loop.run_until_complete(p.update())
         yield p
 
 
