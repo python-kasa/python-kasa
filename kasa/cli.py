@@ -98,6 +98,8 @@ def dump_discover(ctx, scrub):
         "mac",
         "latitude_i",
         "longitude_i",
+        "latitude",
+        "longitude",
     ]
     devs = asyncio.run(Discover.discover(target=target, return_raw=True))
     if scrub:
