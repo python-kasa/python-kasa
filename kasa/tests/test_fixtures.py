@@ -29,8 +29,10 @@ from .newfakes import (
     FakeTransportProtocol,
 )
 
+# to avoid adding this for each async function separately
+pytestmark = pytest.mark.asyncio
 
-@pytest.mark.asyncio
+
 @plug
 async def test_plug_sysinfo(dev):
     assert dev.sys_info is not None
@@ -42,7 +44,6 @@ async def test_plug_sysinfo(dev):
     assert dev.is_plug or dev.is_strip
 
 
-@pytest.mark.asyncio
 @bulb
 async def test_bulb_sysinfo(dev):
     assert dev.sys_info is not None
@@ -54,12 +55,10 @@ async def test_bulb_sysinfo(dev):
     assert dev.is_bulb
 
 
-@pytest.mark.asyncio
 async def test_state_info(dev):
     assert isinstance(dev.state_information, dict)
 
 
-@pytest.mark.asyncio
 async def test_invalid_connection(dev):
     with patch.object(FakeTransportProtocol, "query", side_effect=SmartDeviceException):
         with pytest.raises(SmartDeviceException):
@@ -67,14 +66,12 @@ async def test_invalid_connection(dev):
             dev.is_on
 
 
-@pytest.mark.asyncio
 async def test_query_helper(dev):
     with pytest.raises(SmartDeviceException):
         await dev._query_helper("test", "testcmd", {})
     # TODO check for unwrapping?
 
 
-@pytest.mark.asyncio
 @turn_on
 async def test_state(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -97,7 +94,6 @@ async def test_state(dev, turn_on):
         assert dev.is_off
 
 
-@pytest.mark.asyncio
 @no_emeter
 async def test_no_emeter(dev):
     assert not dev.has_emeter
@@ -112,7 +108,6 @@ async def test_no_emeter(dev):
         await dev.erase_emeter_stats()
 
 
-@pytest.mark.asyncio
 @has_emeter
 async def test_get_emeter_realtime(dev):
     if dev.is_strip:
@@ -124,7 +119,6 @@ async def test_get_emeter_realtime(dev):
     CURRENT_CONSUMPTION_SCHEMA(current_emeter)
 
 
-@pytest.mark.asyncio
 @has_emeter
 async def test_get_emeter_daily(dev):
     if dev.is_strip:
@@ -147,7 +141,6 @@ async def test_get_emeter_daily(dev):
     assert v * 1000 == v2
 
 
-@pytest.mark.asyncio
 @has_emeter
 async def test_get_emeter_monthly(dev):
     if dev.is_strip:
@@ -170,7 +163,6 @@ async def test_get_emeter_monthly(dev):
     assert v * 1000 == v2
 
 
-@pytest.mark.asyncio
 @has_emeter
 async def test_emeter_status(dev):
     if dev.is_strip:
@@ -192,7 +184,6 @@ async def test_emeter_status(dev):
         assert d["total_wh"] == d["total"] * 1000
 
 
-@pytest.mark.asyncio
 @pytest.mark.skip("not clearing your stats..")
 @has_emeter
 async def test_erase_emeter_stats(dev):
@@ -201,7 +192,6 @@ async def test_erase_emeter_stats(dev):
     await dev.erase_emeter()
 
 
-@pytest.mark.asyncio
 @has_emeter
 async def test_current_consumption(dev):
     if dev.is_strip:
@@ -215,7 +205,6 @@ async def test_current_consumption(dev):
         assert await dev.current_consumption() is None
 
 
-@pytest.mark.asyncio
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
@@ -228,7 +217,6 @@ async def test_alias(dev):
     assert dev.alias == original
 
 
-@pytest.mark.asyncio
 @plug
 async def test_led(dev):
     original = dev.led
@@ -242,50 +230,41 @@ async def test_led(dev):
     await dev.set_led(original)
 
 
-@pytest.mark.asyncio
 @plug
 async def test_on_since(dev):
     assert isinstance(dev.on_since, datetime.datetime)
 
 
-@pytest.mark.asyncio
 async def test_icon(dev):
     assert set((await dev.get_icon()).keys()), {"icon", "hash"}
 
 
-@pytest.mark.asyncio
 async def test_time(dev):
     assert isinstance(await dev.get_time(), datetime.datetime)
     # TODO check setting?
 
 
-@pytest.mark.asyncio
 async def test_timezone(dev):
     TZ_SCHEMA(await dev.get_timezone())
 
 
-@pytest.mark.asyncio
 async def test_hw_info(dev):
     PLUG_SCHEMA(dev.hw_info)
 
 
-@pytest.mark.asyncio
 async def test_location(dev):
     PLUG_SCHEMA(dev.location)
 
 
-@pytest.mark.asyncio
 async def test_rssi(dev):
     PLUG_SCHEMA({"rssi": dev.rssi})  # wrapping for vol
 
 
-@pytest.mark.asyncio
 async def test_mac(dev):
     PLUG_SCHEMA({"mac": dev.mac})  # wrapping for val
     # TODO check setting?
 
 
-@pytest.mark.asyncio
 @non_variable_temp
 async def test_temperature_on_nonsupporting(dev):
     assert dev.valid_temperature_range == (0, 0)
@@ -297,7 +276,6 @@ async def test_temperature_on_nonsupporting(dev):
         print(dev.color_temp)
 
 
-@pytest.mark.asyncio
 @variable_temp
 async def test_out_of_range_temperature(dev):
     with pytest.raises(ValueError):
@@ -306,7 +284,6 @@ async def test_out_of_range_temperature(dev):
         await dev.set_color_temp(10000)
 
 
-@pytest.mark.asyncio
 @non_dimmable
 async def test_non_dimmable(dev):
     assert not dev.is_dimmable
@@ -317,7 +294,6 @@ async def test_non_dimmable(dev):
         await dev.set_brightness(100)
 
 
-@pytest.mark.asyncio
 @dimmable
 @turn_on
 async def test_dimmable_brightness(dev, turn_on):
@@ -334,7 +310,6 @@ async def test_dimmable_brightness(dev, turn_on):
         await dev.set_brightness("foo")
 
 
-@pytest.mark.asyncio
 @dimmable
 async def test_invalid_brightness(dev):
     assert dev.is_dimmable
@@ -346,7 +321,6 @@ async def test_invalid_brightness(dev):
         await dev.set_brightness(-100)
 
 
-@pytest.mark.asyncio
 @color_bulb
 @turn_on
 async def test_hsv(dev, turn_on):
@@ -366,7 +340,6 @@ async def test_hsv(dev, turn_on):
     assert brightness == 1
 
 
-@pytest.mark.asyncio
 @color_bulb
 @turn_on
 async def test_invalid_hsv(dev, turn_on):
@@ -386,7 +359,6 @@ async def test_invalid_hsv(dev, turn_on):
             await dev.set_hsv(0, 0, invalid_brightness)
 
 
-@pytest.mark.asyncio
 @non_color_bulb
 async def test_hsv_on_non_color(dev):
     assert not dev.is_color
@@ -397,7 +369,6 @@ async def test_hsv_on_non_color(dev):
         print(dev.hsv)
 
 
-@pytest.mark.asyncio
 @variable_temp
 @turn_on
 async def test_try_set_colortemp(dev, turn_on):
@@ -406,14 +377,12 @@ async def test_try_set_colortemp(dev, turn_on):
     assert dev.color_temp == 2700
 
 
-@pytest.mark.asyncio
 @non_variable_temp
 async def test_non_variable_temp(dev):
     with pytest.raises(SmartDeviceException):
         await dev.set_color_temp(2700)
 
 
-@pytest.mark.asyncio
 @strip
 @turn_on
 async def test_children_change_state(dev, turn_on):
@@ -438,7 +407,6 @@ async def test_children_change_state(dev, turn_on):
             assert plug.is_off
 
 
-@pytest.mark.asyncio
 @strip
 async def test_children_alias(dev):
     test_alias = "TEST1234"
@@ -451,21 +419,20 @@ async def test_children_alias(dev):
         assert plug.alias == original
 
 
-@pytest.mark.asyncio
 @strip
 async def test_children_on_since(dev):
     for plug in dev.plugs:
         assert plug.on_since
 
 
-@pytest.mark.asyncio
 @pytest.mark.skip("this test will wear out your relays")
 async def test_all_binary_states(dev):
     # test every binary state
-    for state in range(2 ** dev.num_children):
+    # TODO: this needs to be fixed, dev.plugs is not available for each device..
+    for state in range(2 ** len(dev.plugs)):
         # create binary state map
         state_map = {}
-        for plug_index in range(dev.num_children):
+        for plug_index in range(len(dev.plugs)):
             state_map[plug_index] = bool((state >> plug_index) & 1)
 
             if state_map[plug_index]:
@@ -478,7 +445,7 @@ async def test_all_binary_states(dev):
             assert state_map[index] == state
 
         # toggle each outlet with state map applied
-        for plug_index in range(dev.num_children):
+        for plug_index in range(len(dev.plugs)):
 
             # toggle state
             if state_map[plug_index]:
@@ -538,7 +505,7 @@ async def test_all_binary_states(dev):
 #         # assert query_mock.called_once()
 
 
-def test_representation(dev):
+async def test_representation(dev):
     import re
 
     pattern = re.compile("<.* model .* at .* (.*), is_on: .* - dev specific: .*>")
