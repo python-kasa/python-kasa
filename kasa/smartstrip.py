@@ -2,18 +2,23 @@
 
 .. todo:: describe how this interfaces with single plugs.
 """
+from collections import defaultdict
 import datetime
 import logging
-from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List, Optional
 
-from kasa.smartdevice import DeviceType, requires_update
+from kasa.smartdevice import (
+    DeviceType,
+    SmartDevice,
+    SmartDeviceException,
+    requires_update,
+)
 from kasa.smartplug import SmartPlug
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SmartStrip(SmartPlug):
+class SmartStrip(SmartDevice):
     """Representation of a TP-Link Smart Power Strip.
 
     Usage example when used as library:
@@ -40,11 +45,15 @@ class SmartStrip(SmartPlug):
     and should be handled by the user of the library.
     """
 
+    def has_emeter(self) -> bool:
+        """Return True as strips has always an emeter."""
+        return True
+
     def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
-        SmartPlug.__init__(self, host=host, cache_ttl=cache_ttl)
+        SmartDevice.__init__(self, host=host, cache_ttl=cache_ttl)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
-        self.plugs: List[SmartPlug] = []
+        self.plugs: List[SmartStripPlug] = []
 
     @property  # type: ignore
     @requires_update
@@ -66,11 +75,12 @@ class SmartStrip(SmartPlug):
         # Initialize the child devices during the first update.
         if not self.plugs:
             children = self.sys_info["children"]
-            self.num_children = len(children)
+            _LOGGER.debug("Initializing %s child sockets", len(children))
             for child in children:
                 self.plugs.append(
-                    SmartPlug(
+                    SmartStripPlug(
                         self.host,
+                        parent=self,
                         child_id=child["id"],
                         cache_ttl=self.cache_ttl.total_seconds(),
                     )
@@ -97,6 +107,30 @@ class SmartStrip(SmartPlug):
     def on_since(self) -> datetime.datetime:
         """Return the maximum on-time of all outlets."""
         return max(plug.on_since for plug in self.plugs)
+
+    @property  # type: ignore
+    @requires_update
+    def led(self) -> bool:
+        """Return the state of the led.
+
+        :return: True if led is on, False otherwise
+        :rtype: bool
+        """
+        # TODO this is a copypaste from smartplug,
+        # check if led value is per socket or per device..
+        sys_info = self.sys_info
+        return bool(1 - sys_info["led_off"])
+
+    async def set_led(self, state: bool):
+        """Set the state of the led (night mode).
+
+        :param bool state: True to set led on, False to set led off
+        :raises SmartDeviceException: on error
+        """
+        # TODO this is a copypaste from smartplug,
+        # check if led value is per socket or per device..
+        await self._query_helper("system", "set_led_off", {"off": int(not state)})
+        await self.update()
 
     @property  # type: ignore
     @requires_update
@@ -188,3 +222,120 @@ class SmartStrip(SmartPlug):
         """
         for plug in self.plugs:
             await plug.erase_emeter_stats()
+
+
+class SmartStripPlug(SmartPlug):
+    """Representation of a single socket in a power strip.
+
+    This allows you to use the sockets as they were SmartPlug objects.
+    Instead of calling an update on any of these, you should call an update
+    on the parent device before accessing the properties.
+    """
+
+    def __init__(
+        self, host: str, parent: "SmartStrip", child_id: str, *, cache_ttl: int = 3
+    ) -> None:
+        super().__init__(host, cache_ttl=cache_ttl)
+
+        self.parent = parent
+        self.child_id = child_id
+        self._sys_info = self._get_child_info()
+
+    async def update(self):
+        """Override the update to no-op and inform the user."""
+        _LOGGER.warning(
+            "You called update() on a child device, which has no effect."
+            "Call update() on the parent device instead."
+        )
+        return
+
+    async def _query_helper(
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    ) -> Any:
+        """Override query helper to include the child_ids."""
+        return await self.parent._query_helper(
+            target, cmd, arg, child_ids=[self.child_id]
+        )
+
+    @property  # type: ignore
+    @requires_update
+    def is_on(self) -> bool:
+        """Return whether device is on.
+
+        :return: True if device is on, False otherwise
+        """
+        info = self._get_child_info()
+        return info["state"]
+
+    @property  # type: ignore
+    @requires_update
+    def led(self) -> bool:
+        """Return the state of the led.
+
+        This is always false for subdevices.
+
+        :return: True if led is on, False otherwise
+        :rtype: bool
+        """
+        return False
+
+    @property  # type: ignore
+    @requires_update
+    def device_id(self) -> str:
+        """Return unique ID for the socket.
+
+        This is a combination of MAC and child's ID.
+        """
+        return f"{self.mac}_{self.child_id}"
+
+    @property  # type: ignore
+    @requires_update
+    def has_emeter(self):
+        """Single sockets have always an emeter."""
+        return True
+
+    @property  # type: ignore
+    @requires_update
+    def alias(self) -> str:
+        """Return device name (alias).
+
+        :return: Device name aka alias.
+        :rtype: str
+        """
+        info = self._get_child_info()
+        return info["alias"]
+
+    @property  # type: ignore
+    @requires_update
+    def on_since(self) -> datetime.datetime:
+        """Return pretty-printed on-time.
+
+        :return: datetime for on since
+        :rtype: datetime
+        """
+        info = self._get_child_info()
+        on_time = info["on_time"]
+
+        return datetime.datetime.now() - datetime.timedelta(seconds=on_time)
+
+    @property  # type: ignore
+    @requires_update
+    def model(self) -> str:
+        """Return device model for a child socket.
+
+        :return: device model
+        :rtype: str
+        :raises SmartDeviceException: on error
+        """
+        sys_info = self.parent.sys_info
+        return f"Socket for {sys_info['model']}"
+
+    def _get_child_info(self) -> Dict:
+        """Return the subdevice information for this device.
+
+        :raises SmartDeviceException: if the information is not found.
+        """
+        for plug in self.parent.sys_info["children"]:
+            if plug["id"] == self.child_id:
+                return plug
+        raise SmartDeviceException(f"Unable to find children {self.child_id}")

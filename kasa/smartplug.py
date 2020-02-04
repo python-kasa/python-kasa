@@ -35,8 +35,8 @@ class SmartPlug(SmartDevice):
     and should be handled by the user of the library.
     """
 
-    def __init__(self, host: str, *, child_id: str = None, cache_ttl: int = 3) -> None:
-        SmartDevice.__init__(self, host, child_id=child_id, cache_ttl=cache_ttl)
+    def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
+        SmartDevice.__init__(self, host, cache_ttl=cache_ttl)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
 
@@ -83,20 +83,6 @@ class SmartPlug(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def alias(self) -> str:
-        """Return device name (alias).
-
-        :return: Device name aka alias.
-        :rtype: str
-        """
-        if self.is_child_device:
-            info = self._get_child_info()
-            return info["alias"]
-        else:
-            return super().alias
-
-    @property  # type: ignore
-    @requires_update
     def is_dimmable(self):
         """Whether the switch supports brightness changes.
 
@@ -125,10 +111,6 @@ class SmartPlug(SmartDevice):
 
         :return: True if device is on, False otherwise
         """
-        if self.is_child_device:
-            info = self._get_child_info()
-            return info["state"]
-
         sys_info = self.sys_info
         return bool(sys_info["relay_state"])
 
@@ -176,12 +158,7 @@ class SmartPlug(SmartDevice):
         :return: datetime for on since
         :rtype: datetime
         """
-        sys_info = self.sys_info
-        if self.is_child_device:
-            info = self._get_child_info()
-            on_time = info["on_time"]
-        else:
-            on_time = sys_info["on_time"]
+        on_time = self.sys_info["on_time"]
 
         return datetime.datetime.now() - datetime.timedelta(seconds=on_time)
 

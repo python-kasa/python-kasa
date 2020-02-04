@@ -11,12 +11,12 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
-import functools
-import inspect
-import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
+import functools
+import inspect
+import logging
 from typing import Any, Dict, Optional
 
 from kasa.protocol import TPLinkSmartHomeProtocol
@@ -103,7 +103,7 @@ def requires_update(f):
 class SmartDevice:
     """Base class for all supported device types."""
 
-    def __init__(self, host: str, *, child_id: str = None, cache_ttl: int = 3) -> None:
+    def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
@@ -113,17 +113,11 @@ class SmartDevice:
 
         self.protocol = TPLinkSmartHomeProtocol()
         self.emeter_type = "emeter"
-        self.child_id = child_id
         self.cache_ttl = timedelta(seconds=cache_ttl)
-        _LOGGER.debug(
-            "Initializing %s using child_id %s and cache ttl %s",
-            self.host,
-            self.child_id,
-            self.cache_ttl,
-        )
+        _LOGGER.debug("Initializing %s with cache ttl %s", self.host, self.cache_ttl)
         self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
         self._device_type = DeviceType.Unknown
-        self._sys_info = None
+        self._sys_info: Optional[Dict] = None
 
     def _result_from_cache(self, target, cmd) -> Optional[Dict]:
         """Return query result from cache if still fresh.
@@ -162,7 +156,7 @@ class SmartDevice:
         self.cache[target][cmd]["last_updated"] = datetime.utcnow()
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
     ) -> Any:
         """Handle result unwrapping and error handling.
 
@@ -174,8 +168,8 @@ class SmartDevice:
         :raises SmartDeviceException: if command was not executed correctly
         """
         request: Dict[str, Any] = {target: {cmd: arg}}
-        if self.child_id is not None:
-            request = {"context": {"child_ids": [self.child_id]}, target: {cmd: arg}}
+        if child_ids is not None:
+            request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}
 
         try:
             response = self._result_from_cache(target, cmd)
@@ -203,16 +197,6 @@ class SmartDevice:
             del result["err_code"]
 
         return result
-
-    def _get_child_info(self) -> Dict:
-        """Return the child information dict, if available.
-
-        :raises SmartDeviceException: if there is no child or it cannot be found.
-        """
-        for plug in self.sys_info["children"]:
-            if plug["id"] == self.child_id:
-                return plug
-        raise SmartDeviceException("Unable to find children %s")
 
     def has_emeter(self) -> bool:
         """Return if device has an energy meter.
@@ -614,11 +598,8 @@ class SmartDevice:
     def device_id(self) -> str:
         """Return unique ID for the device.
 
-        For regular devices this is the MAC address of the device,
-        for child devices a combination of MAC and child's ID.
+        This is the MAC address of the device.
         """
-        if self.is_child_device:
-            return f"{self.mac}_{self.child_id}"
         return self.mac
 
     @property
@@ -650,11 +631,6 @@ class SmartDevice:
     def is_variable_color_temp(self) -> bool:
         """Return True if the device supports color temperature."""
         return False
-
-    @property
-    def is_child_device(self) -> bool:
-        """Return True if the device is a child device of another device."""
-        return self.child_id is not None
 
     def __repr__(self):
         return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(

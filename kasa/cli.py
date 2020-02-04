@@ -2,8 +2,8 @@
 import asyncio
 import json
 import logging
-import re
 from pprint import pformat as pf
+import re
 
 import click
 
@@ -112,7 +112,7 @@ def dump_discover(ctx, scrub):
                     if key in ["latitude_i", "longitude_i"]:
                         val = 0
                     else:
-                        val = re.sub("\w", "0", val)
+                        val = re.sub(r"\w", "0", val)
                     dev["system"]["get_sysinfo"][key] = val
 
         model = dev["system"]["get_sysinfo"]["model"]

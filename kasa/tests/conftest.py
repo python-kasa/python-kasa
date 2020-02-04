@@ -52,7 +52,7 @@ dimmable = pytest.mark.parametrize(
     "dev", filter_model("dimmable", DIMMABLE), indirect=True
 )
 non_dimmable = pytest.mark.parametrize(
-    "dev", filter_model("non-dimmable", ALL_DEVICES - DIMMABLE), indirect=True
+    "dev", filter_model("non-dimmable", ALL_DEVICES - DIMMABLE - STRIPS), indirect=True
 )
 
 variable_temp = pytest.mark.parametrize(
