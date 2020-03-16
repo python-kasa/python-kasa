@@ -1,7 +1,7 @@
 # python-kasa
 
 [![PyPI version](https://badge.fury.io/py/python-kasa.svg)](https://badge.fury.io/py/python-kasa)
-[![Build Status](https://dev.azure.com/python-tplink-kasa/python-kasa/_apis/build/status/python-tplink-kasa.python-kasa?branchName=master)](https://dev.azure.com/python-tplink-kasa/python-kasa/_build/latest?definitionId=2&branchName=master)
+[![Build Status](https://dev.azure.com/python-kasa/python-kasa/_apis/build/status/python-kasa.python-kasa?branchName=master)](https://dev.azure.com/python-kasa/python-kasa/_build/latest?definitionId=2&branchName=master)
 [![Coverage Status](https://coveralls.io/repos/github/python-kasa/python-kasa/badge.svg?branch=master)](https://coveralls.io/github/python-kasa/python-kasa?branch=master)
 [![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
 
