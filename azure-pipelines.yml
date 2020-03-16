@@ -8,14 +8,23 @@ strategy:
     Python 3.7 Ubuntu:
       python.version: '3.7'
       vmImage: 'ubuntu-latest'
+    Python 3.8 Ubuntu:
+      python.version: '3.8'
+      vmImage: 'ubuntu-latest'
 #    PyPy Ubuntu:
 #      python.version: pypy3
 #      vmImage: 'ubuntu-latest'
     Python 3.7 Windows:
       python.version: '3.7'
       vmImage: 'windows-latest'
+    Python 3.8 Windows:
+      python.version: '3.8'
+      vmImage: 'windows-latest'
     Python 3.7 OSX:
       python.version: '3.7'
+      vmImage: 'macOS-latest'
+    Python 3.8 OSX:
+      python.version: '3.8'
       vmImage: 'macOS-latest'
 
 pool:
