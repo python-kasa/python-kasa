@@ -71,8 +71,8 @@ class SmartBulb(SmartDevice):
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"
 
-    def __init__(self, host: str, *, child_id: str = None, cache_ttl: int = 3) -> None:
-        SmartDevice.__init__(self, host=host, child_id=child_id, cache_ttl=cache_ttl)
+    def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
+        SmartDevice.__init__(self, host=host, cache_ttl=cache_ttl)
         self.emeter_type = "smartlife.iot.common.emeter"
         self._device_type = DeviceType.Bulb
         self._light_state = None
