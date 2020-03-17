@@ -2,9 +2,9 @@
 
 .. todo:: describe how this interfaces with single plugs.
 """
-from collections import defaultdict
 import datetime
 import logging
+from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List, Optional
 
 from kasa.smartdevice import (

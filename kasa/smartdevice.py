@@ -11,12 +11,12 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
-from collections import defaultdict
-from datetime import datetime, timedelta
-from enum import Enum
 import functools
 import inspect
 import logging
+from collections import defaultdict
+from datetime import datetime, timedelta
+from enum import Enum
 from typing import Any, Dict, Optional
 
 from kasa.protocol import TPLinkSmartHomeProtocol

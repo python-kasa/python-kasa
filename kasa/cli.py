@@ -2,8 +2,8 @@
 import asyncio
 import json
 import logging
-from pprint import pformat as pf
 import re
+from pprint import pformat as pf
 
 import click
 
