@@ -6,7 +6,7 @@ from os.path import basename
 
 import pytest
 
-from kasa import Discover, SmartBulb, SmartPlug, SmartStrip
+from kasa import Discover, SmartBulb, SmartPlug, SmartStrip, SmartDimmer
 
 from .newfakes import FakeTransportProtocol
 
@@ -14,15 +14,17 @@ SUPPORTED_DEVICES = glob.glob(
     os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
 )
 
+
 BULBS = {"LB100", "LB120", "LB130", "KL120", "KL130"}
 VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL130"}
 PLUGS = {"HS100", "HS103", "HS105", "HS110", "HS200", "HS210", "HS220", "HS300"}
 STRIPS = {"HS107", "HS300", "KP303", "KP400"}
+DIMMERS = {"HS220"}
 COLOR_BULBS = {"LB130", "KL130"}
 DIMMABLE = {*BULBS, "HS220"}
-EMETER = {"HS110", "HS300", *BULBS}
+EMETER = {"HS110", "HS300", *BULBS, *STRIPS}
 
-ALL_DEVICES = BULBS.union(PLUGS)
+ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
 
 def filter_model(desc, filter):
@@ -52,7 +54,7 @@ dimmable = pytest.mark.parametrize(
     "dev", filter_model("dimmable", DIMMABLE), indirect=True
 )
 non_dimmable = pytest.mark.parametrize(
-    "dev", filter_model("non-dimmable", ALL_DEVICES - DIMMABLE - STRIPS), indirect=True
+    "dev", filter_model("non-dimmable", ALL_DEVICES - DIMMABLE - STRIPS - PLUGS), indirect=True
 )
 
 variable_temp = pytest.mark.parametrize(
@@ -110,6 +112,9 @@ def dev(request):
         for d in BULBS:
             if d in model:
                 return SmartBulb
+        for d in DIMMERS:
+            if d in model:
+                return SmartDimmer
 
         raise Exception("Unable to find type for %s", model)
 

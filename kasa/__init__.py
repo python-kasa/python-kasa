@@ -17,6 +17,7 @@ from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import DeviceType, EmeterStatus, SmartDevice, SmartDeviceException
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
+from kasa.smartdimmer import SmartDimmer
 
 __all__ = [
     "Discover",
@@ -28,4 +29,5 @@ __all__ = [
     "SmartDeviceException",
     "SmartPlug",
     "SmartStrip",
+    "SmartDimmer",
 ]

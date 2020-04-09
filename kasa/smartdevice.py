@@ -29,6 +29,7 @@ class DeviceType(Enum):
     Plug = 1
     Bulb = 2
     Strip = 3
+    Dimmer = 4
     Unknown = -1
 
 
@@ -582,6 +583,11 @@ class SmartDevice:
     def is_strip(self) -> bool:
         """Return True if the device is a strip."""
         return self._device_type == DeviceType.Strip
+
+    @property
+    def is_dimmer(self) -> bool:
+        """Return True if the device is a dimmer."""
+        return self._device_type == DeviceType.Dimmer
 
     @property
     def is_dimmable(self) -> bool:
