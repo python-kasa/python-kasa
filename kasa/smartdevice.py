@@ -133,7 +133,7 @@ class SmartDevice:
             self.cache_ttl,
             self._CACHE_TTLS,
         )
-        self._cache = {}
+        self._cache: Dict = {}
         self._device_type = DeviceType.Unknown
         self._sys_info: Optional[Dict] = None
 
@@ -201,13 +201,13 @@ class SmartDevice:
         if child_ids is not None:
             request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}
 
+        response = None
         cache_hit = False
         if self._is_cacheable(cmd):
             response = self._result_from_cache(target, cmd)
-            if response is not None:
-                cache_hit = True
+            cache_hit = True
 
-        if not cache_hit:
+        if response is None:
             try:
                 _LOGGER.debug("Got no result from cache, querying the device.")
                 response = await self.protocol.query(host=self.host, request=request)
