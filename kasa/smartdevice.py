@@ -14,7 +14,6 @@ http://www.apache.org/licenses/LICENSE-2.0
 import functools
 import inspect
 import logging
-from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, Optional
