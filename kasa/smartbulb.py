@@ -1,6 +1,7 @@
 """Module for bulbs."""
 import re
 from typing import Any, Dict, Optional, Tuple
+from datetime import timedelta
 
 from kasa.smartdevice import (
     DeviceType,
@@ -70,6 +71,13 @@ class SmartBulb(SmartDevice):
     """
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"
+
+    CACHE_TTLS = {
+        "get_sysinfo": timedelta(seconds=86400),
+        "get_realtime": timedelta(seconds=60),
+        "get_daystat": timedelta(seconds=21600),
+        "get_monthstat": timedelta(seconds=86400),
+    }
 
     def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
         SmartDevice.__init__(self, host=host, cache_ttl=cache_ttl)

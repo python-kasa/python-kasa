@@ -19,6 +19,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 
 from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.smartcache import SmartCache
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -99,17 +100,15 @@ def requires_update(f):
     return wrapped
 
 
-class SmartDevice:
+class SmartDevice(SmartCache):
     """Base class for all supported device types."""
 
-    _CACHE_TTLS = {
-        "get_sysinfo": timedelta(seconds=86400),
-        "get_realtime": timedelta(seconds=60),
+    CACHE_TTLS = {
         "get_daystat": timedelta(seconds=21600),
         "get_monthstat": timedelta(seconds=86400),
     }
 
-    _INVALIDATE_ON_SET = [
+    CACHE_INVALIDATE_ON_SET = [
         ["smartlife.iot.common.emeter", "get_realtime"],
         ["smartlife.iot.smartbulb.lightingservice", "get_light_state"],
     ]
@@ -124,66 +123,9 @@ class SmartDevice:
 
         self.protocol = TPLinkSmartHomeProtocol()
         self.emeter_type = "emeter"
-        self.cache_ttl = timedelta(seconds=cache_ttl)
-        if cache_ttl == 0:
-            self._CACHE_TTLS = {}
-        _LOGGER.debug(
-            "Initializing %s with cache ttl %s and smart cache: %s",
-            self.host,
-            self.cache_ttl,
-            self._CACHE_TTLS,
-        )
-        self._cache: Dict = {}
+        super().__init__(cache_ttl)
         self._device_type = DeviceType.Unknown
         self._sys_info: Optional[Dict] = None
-
-    def _result_from_cache(self, target, cmd) -> Optional[Dict]:
-        """Return query result from cache if still fresh.
-
-        Only results from commands starting with `get_` are considered cacheable.
-
-        :param target: Target system
-        :param cmd: Command
-        :rtype: query result or None if expired.
-        """
-        _LOGGER.debug("Checking cache for %s %s", target, cmd)
-
-        if target not in self._cache or cmd not in self._cache[target]:
-            return None
-
-        if not self._is_cacheable(cmd):
-            return None
-
-        cache_ttl = self._CACHE_TTLS.get(cmd, self.cache_ttl)
-
-        if self._cache[target][cmd]["last_updated"] + cache_ttl > datetime.utcnow():
-            _LOGGER.debug("Got cache %s %s", target, cmd)
-            return self._cache[target][cmd]
-        else:
-            _LOGGER.debug("Cleaning expired cache for %s cmd %s", target, cmd)
-            del self._cache[target][cmd]
-
-        return None
-
-    def _insert_to_cache(self, target: str, cmd: str, response: Dict) -> None:
-        """Add response for a given command to the cache.
-
-        :param target: Target system
-        :param cmd: Command
-        :param response: Response to be cached
-        """
-        self._cache.setdefault(target, {})
-        response_copy = response.copy()
-        response_copy["last_updated"] = datetime.utcnow()
-        self._cache[target][cmd] = response_copy
-
-    def _is_cacheable(self, cmd: str) -> bool:
-        """Determine if a cmd is cacheable."""
-        return cmd.startswith("get_")
-
-    def _is_setter(self, cmd: str) -> bool:
-        """Determine if a cmd will change state."""
-        return cmd.startswith("set_") or cmd.startswith("transition_")
 
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
@@ -241,18 +183,6 @@ class SmartDevice:
             self._invalidate_caches_on_set()
 
         return result
-
-    def _invalidate_caches_on_set(self) -> None:
-        """Invalidate cache on state change."""
-        for target, cmd in self._INVALIDATE_ON_SET:
-            if target not in self._cache:
-                continue
-            if cmd not in self._cache[target]:
-                continue
-            _LOGGER.debug(
-                "Invalidating the cache for %s cmd %s due to state change", target, cmd,
-            )
-            del self._cache[target][cmd]
 
     def has_emeter(self) -> bool:
         """Return if device has an energy meter.
