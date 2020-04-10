@@ -103,16 +103,6 @@ def requires_update(f):
 class SmartDevice(SmartCache):
     """Base class for all supported device types."""
 
-    CACHE_TTLS = {
-        "get_daystat": timedelta(seconds=21600),
-        "get_monthstat": timedelta(seconds=86400),
-    }
-
-    CACHE_INVALIDATE_ON_SET = [
-        ["smartlife.iot.common.emeter", "get_realtime"],
-        ["smartlife.iot.smartbulb.lightingservice", "get_light_state"],
-    ]
-
     def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
         """Create a new SmartDevice instance.
 
