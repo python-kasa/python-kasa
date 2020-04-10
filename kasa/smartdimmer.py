@@ -1,8 +1,9 @@
-from kasa.smartplug import SmartPlug
-from kasa.smartdevice import requires_update
-from kasa import SmartDeviceException, DeviceType
+"""Module for dimmers (currently only HS220)."""
+from typing import Any, Dict
 
-from typing import Dict, Any
+from kasa import DeviceType, SmartDeviceException
+from kasa.smartdevice import requires_update
+from kasa.smartplug import SmartPlug
 
 
 class SmartDimmer(SmartPlug):
@@ -12,7 +13,6 @@ class SmartDimmer(SmartPlug):
     adjusting the brightness. This class extends SmartPlug interface.
 
     Example:
-
     ```
     dimmer = SmartDimmer("192.168.1.105")
     await dimmer.turn_on()

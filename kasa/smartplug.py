@@ -3,11 +3,7 @@ import datetime
 import logging
 from typing import Any, Dict
 
-from kasa.smartdevice import (
-    DeviceType,
-    SmartDevice,
-    requires_update,
-)
+from kasa.smartdevice import DeviceType, SmartDevice, requires_update
 
 _LOGGER = logging.getLogger(__name__)
 

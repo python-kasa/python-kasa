@@ -6,7 +6,7 @@ from os.path import basename
 
 import pytest
 
-from kasa import Discover, SmartBulb, SmartPlug, SmartStrip, SmartDimmer
+from kasa import Discover, SmartBulb, SmartDimmer, SmartPlug, SmartStrip
 
 from .newfakes import FakeTransportProtocol
 
@@ -54,7 +54,9 @@ dimmable = pytest.mark.parametrize(
     "dev", filter_model("dimmable", DIMMABLE), indirect=True
 )
 non_dimmable = pytest.mark.parametrize(
-    "dev", filter_model("non-dimmable", ALL_DEVICES - DIMMABLE - STRIPS - PLUGS), indirect=True
+    "dev",
+    filter_model("non-dimmable", ALL_DEVICES - DIMMABLE - STRIPS - PLUGS),
+    indirect=True,
 )
 
 variable_temp = pytest.mark.parametrize(
