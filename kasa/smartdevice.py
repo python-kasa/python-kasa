@@ -124,9 +124,14 @@ class SmartDevice:
 
         self.protocol = TPLinkSmartHomeProtocol()
         self.emeter_type = "emeter"
-        self._CACHE_TTLS["DEFAULT"] = timedelta(seconds=cache_ttl)
+        self.cache_ttl = timedelta(seconds=cache_ttl)
+        if cache_ttl == 0:
+            self._CACHE_TTLS = {}
         _LOGGER.debug(
-            "Initializing %s with cache ttl %s", self.host, self._CACHE_TTLS["DEFAULT"]
+            "Initializing %s with cache ttl %s and smart cache: %s",
+            self.host,
+            self.cache_ttl,
+            self._CACHE_TTLS,
         )
         self._cache = {}
         self._device_type = DeviceType.Unknown
@@ -149,7 +154,7 @@ class SmartDevice:
         if not self._is_cacheable(cmd):
             return None
 
-        cache_ttl = self._CACHE_TTLS.get(cmd, self._CACHE_TTLS["DEFAULT"])
+        cache_ttl = self._CACHE_TTLS.get(cmd, self.cache_ttl)
 
         if self._cache[target][cmd]["last_updated"] + cache_ttl > datetime.utcnow():
             _LOGGER.debug("Got cache %s %s", target, cmd)
