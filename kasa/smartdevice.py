@@ -205,7 +205,6 @@ class SmartDevice:
         cache_hit = False
         if self._is_cacheable(cmd):
             response = self._result_from_cache(target, cmd)
-            cache_hit = True
 
         if response is None:
             try:
@@ -215,6 +214,8 @@ class SmartDevice:
                 raise SmartDeviceException(
                     f"Communication error on {target}:{cmd}"
                 ) from ex
+        else:
+            cache_hit = True
 
         if target not in response:
             raise SmartDeviceException(f"No required {target} in response: {response}")
