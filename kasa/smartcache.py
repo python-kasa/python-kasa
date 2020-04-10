@@ -64,6 +64,7 @@ class SmartCache:
             return None
 
         cache_ttl = self.CACHE_TTLS.get(cmd, self.cache_ttl)
+        _LOGGER.debug("Cache ttl for target:%s cmd:%s is %s", target, cmd, cache_ttl)
 
         if self._cache[target][cmd]["last_updated"] + cache_ttl > datetime.utcnow():
             _LOGGER.debug("Got cache %s %s", target, cmd)
