@@ -14,11 +14,11 @@ SUPPORTED_DEVICES = glob.glob(
     os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
 )
 
-BULBS = {"LB100", "LB120", "LB130", "KL120"}
-VARIABLE_TEMP = {"LB120", "LB130", "KL120"}
+BULBS = {"LB100", "LB120", "LB130", "KL120", "KL130"}
+VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL130"}
 PLUGS = {"HS100", "HS105", "HS110", "HS200", "HS210", "HS220", "HS300"}
 STRIPS = {"HS107", "HS300", "KP303"}
-COLOR_BULBS = {"LB130"}
+COLOR_BULBS = {"LB130", "KL130"}
 DIMMABLE = {*BULBS, "HS220"}
 EMETER = {"HS110", "HS300", *BULBS}
 
