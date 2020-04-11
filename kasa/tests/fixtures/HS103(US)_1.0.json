@@ -1,0 +1,52 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "err_code": -1,
+            "err_msg": "module not support"
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "Night lite",
+            "dev_name": "Smart Wi-Fi Plug Lite",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "fwId": "00000000000000000000000000000000",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "model": "HS103(US)",
+            "next_action": {
+                "action": 1,
+                "id": "F98589DFF09AEA1D5AC2BDB4A8867305",
+                "schd_sec": 75600,
+                "type": 1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -43,
+            "sw_ver": "1.5.7 Build 191114 Rel.105922",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}
