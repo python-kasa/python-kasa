@@ -23,7 +23,7 @@ TPLINK_KELVIN = {
 class SmartBulb(SmartDevice):
     """Representation of a TP-Link Smart Bulb.
 
-    Usage example when used as library:
+    Usage example:
     ```python
     p = SmartBulb("192.168.1.105")
     await p.update()
@@ -33,6 +33,7 @@ class SmartBulb(SmartDevice):
 
     # change state of bulb
     await p.turn_on()
+    assert p.is_on
     await p.turn_off()
 
     # query and print current state of plug
@@ -40,12 +41,11 @@ class SmartBulb(SmartDevice):
 
     # check whether the bulb supports color changes
     if p.is_color:
-
-    # set the color to an HSV tuple
-    await p.set_hsv(180, 100, 100)
-
-    # get the current HSV value
-    print(p.hsv)
+        print("we got color!")
+        # set the color to an HSV tuple
+        await p.set_hsv(180, 100, 100)
+        # get the current HSV value
+        print(p.hsv)
 
     # check whether the bulb supports setting color temperature
     if p.is_variable_color_temp:
@@ -57,12 +57,11 @@ class SmartBulb(SmartDevice):
 
     # check whether the bulb is dimmable
     if p.is_dimmable:
+        # set the bulb to 50% brightness
+        await p.set_brightness(50)
 
-    # set the bulb to 50% brightness
-    await p.set_brightness(50)
-
-    # check the current brightness
-    print(p.brightness)
+        # check the current brightness
+        print(p.brightness)
     ```
 
     Errors reported by the device are raised as SmartDeviceExceptions,

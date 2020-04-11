@@ -37,9 +37,8 @@ steps:
   displayName: 'Use Python $(python.version)'
 
 - script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-    pip install -r requirements_test.txt
+    python -m pip install --upgrade pip poetry
+    poetry install && poetry develop
   displayName: 'Install dependencies'
 
 - script: |

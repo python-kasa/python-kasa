@@ -1,0 +1,8 @@
+[flake8]
+exclude = .git,.tox,__pycache__,kasa/tests/newfakes.py,kasa/tests/test_fixtures.py
+max-line-length = 88
+per-file-ignores =
+  kasa/tests/*.py:D100,D101,D102,D103,D104
+  setup.py:D100
+ignore = D105, D107, E203, E501, W503
+max-complexity = 18

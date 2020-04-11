@@ -4,7 +4,7 @@ import json
 import os
 from os.path import basename
 
-import pytest
+import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import Discover, SmartBulb, SmartDimmer, SmartPlug, SmartStrip
 

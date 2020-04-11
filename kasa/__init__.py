@@ -11,6 +11,7 @@ For device type specific actions `SmartBulb`, `SmartPlug`, or `SmartStrip`
 Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
+from importlib_metadata import version  # type: ignore
 from kasa.discover import Discover
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
@@ -18,6 +19,9 @@ from kasa.smartdevice import DeviceType, EmeterStatus, SmartDevice, SmartDeviceE
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
+
+__version__ = version("python-kasa")
+
 
 __all__ = [
     "Discover",
