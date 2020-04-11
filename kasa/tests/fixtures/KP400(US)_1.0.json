@@ -1,0 +1,63 @@
+{
+    "emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "TP-LINK_Smart Plug_2ECE",
+            "child_num": 2,
+            "children": [
+                {
+                    "alias": "Rope",
+                    "id": "00",
+                    "next_action": {
+                        "action": 1,
+                        "schd_sec": 69240,
+                        "type": 1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Plug 2",
+                    "id": "01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP400(US)",
+            "ntc_state": 0,
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -78,
+            "status": "new",
+            "sw_ver": "1.0.10 Build 190716 Rel.095026",
+            "updating": 0
+        }
+    }
+}
