@@ -198,13 +198,17 @@ class SmartDevice:
 
         return result
 
+    @property  # type: ignore
+    @requires_update
     def has_emeter(self) -> bool:
-        """Return if device has an energy meter.
+        """Return whether device has an energy meter.
 
-        :return: True if energey meter is available
-                 False if energymeter is missing
+        :return: True if energy meter is available
+                 False otherwise
         """
-        raise NotImplementedError()
+        sys_info = self.sys_info
+        features = sys_info["feature"].split(":")
+        return "ENE" in features
 
     async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information.
