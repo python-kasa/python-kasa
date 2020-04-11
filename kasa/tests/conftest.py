@@ -116,8 +116,7 @@ def dev(request):
     with open(file) as f:
         sysinfo = json.load(f)
         model = basename(file)
-        params = {"host": "123.123.123.123", "cache_ttl": 0}
-        p = device_for_file(model)(**params)
+        p = device_for_file(model)(host="123.123.123.123")
         p.protocol = FakeTransportProtocol(sysinfo)
         loop.run_until_complete(p.update())
         yield p

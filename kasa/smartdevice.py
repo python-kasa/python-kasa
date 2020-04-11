@@ -14,8 +14,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 import functools
 import inspect
 import logging
-from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -103,7 +102,7 @@ def requires_update(f):
 class SmartDevice:
     """Base class for all supported device types."""
 
-    def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
+    def __init__(self, host: str) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
@@ -113,47 +112,9 @@ class SmartDevice:
 
         self.protocol = TPLinkSmartHomeProtocol()
         self.emeter_type = "emeter"
-        self.cache_ttl = timedelta(seconds=cache_ttl)
-        _LOGGER.debug("Initializing %s with cache ttl %s", self.host, self.cache_ttl)
-        self.cache = defaultdict(lambda: defaultdict(lambda: None))  # type: ignore
+        _LOGGER.debug("Initializing %s", self.host)
         self._device_type = DeviceType.Unknown
         self._sys_info: Optional[Dict] = None
-
-    def _result_from_cache(self, target, cmd) -> Optional[Dict]:
-        """Return query result from cache if still fresh.
-
-        Only results from commands starting with `get_` are considered cacheable.
-
-        :param target: Target system
-        :param cmd: Command
-        :rtype: query result or None if expired.
-        """
-        _LOGGER.debug("Checking cache for %s %s", target, cmd)
-        if cmd not in self.cache[target]:
-            return None
-
-        cached = self.cache[target][cmd]
-        if cached and cached["last_updated"] is not None:
-            if cached[
-                "last_updated"
-            ] + self.cache_ttl > datetime.utcnow() and cmd.startswith("get_"):
-                _LOGGER.debug("Got cached %s %s", target, cmd)
-                return self.cache[target][cmd]
-            else:
-                _LOGGER.debug("Invalidating the cache for %s cmd %s", target, cmd)
-                for cache_entry in self.cache[target].values():
-                    cache_entry["last_updated"] = datetime.utcfromtimestamp(0)
-        return None
-
-    def _insert_to_cache(self, target: str, cmd: str, response: Dict) -> None:
-        """Add response for a given command to the cache.
-
-        :param target: Target system
-        :param cmd: Command
-        :param response: Response to be cached
-        """
-        self.cache[target][cmd] = response.copy()
-        self.cache[target][cmd]["last_updated"] = datetime.utcnow()
 
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
@@ -172,11 +133,7 @@ class SmartDevice:
             request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}
 
         try:
-            response = self._result_from_cache(target, cmd)
-            if response is None:
-                _LOGGER.debug("Got no result from cache, querying the device.")
-                response = await self.protocol.query(host=self.host, request=request)
-                self._insert_to_cache(target, cmd, response)
+            response = await self.protocol.query(host=self.host, request=request)
         except Exception as ex:
             raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
