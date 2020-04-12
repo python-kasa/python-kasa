@@ -471,40 +471,6 @@ async def test_all_binary_states(dev):
                 assert state == state_map[index]
 
 
-# def test_cache(dev):
-#     from datetime import timedelta
-
-#     dev.cache_ttl = timedelta(seconds=3)
-#     with patch.object(
-#         FakeTransportProtocol, "query", wraps=dev.protocol.query
-#     ) as query_mock:
-#         CHECK_COUNT = 1
-#         # Smartstrip calls sysinfo in its __init__ to request children, so
-#         # the even first get call here will get its results from the cache.
-#         if dev.is_strip:
-#             CHECK_COUNT = 0
-
-#         dev.sys_info
-#         assert query_mock.call_count == CHECK_COUNT
-#         dev.sys_info
-#         assert query_mock.call_count == CHECK_COUNT
-
-
-# def test_cache_invalidates(dev):
-#     from datetime import timedelta
-
-#     dev.cache_ttl = timedelta(seconds=0)
-
-#     with patch.object(
-#         FakeTransportProtocol, "query", wraps=dev.protocol.query
-#     ) as query_mock:
-#         dev.sys_info
-#         assert query_mock.call_count == 1
-#         dev.sys_info
-#         assert query_mock.call_count == 2
-#         # assert query_mock.called_once()
-
-
 async def test_representation(dev):
     import re
 

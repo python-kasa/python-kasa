@@ -35,8 +35,8 @@ class SmartPlug(SmartDevice):
     and should be handled by the user of the library.
     """
 
-    def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
-        SmartDevice.__init__(self, host, cache_ttl=cache_ttl)
+    def __init__(self, host: str) -> None:
+        super().__init__(host)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
 

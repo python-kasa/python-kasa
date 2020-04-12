@@ -50,7 +50,7 @@ class SmartStrip(SmartDevice):
         return True
 
     def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
-        SmartDevice.__init__(self, host=host, cache_ttl=cache_ttl)
+        super().__init__(host=host)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
         self.plugs: List[SmartStripPlug] = []
@@ -78,12 +78,7 @@ class SmartStrip(SmartDevice):
             _LOGGER.debug("Initializing %s child sockets", len(children))
             for child in children:
                 self.plugs.append(
-                    SmartStripPlug(
-                        self.host,
-                        parent=self,
-                        child_id=child["id"],
-                        cache_ttl=self.cache_ttl.total_seconds(),
-                    )
+                    SmartStripPlug(self.host, parent=self, child_id=child["id"])
                 )
 
     async def turn_on(self):
@@ -232,10 +227,8 @@ class SmartStripPlug(SmartPlug):
     on the parent device before accessing the properties.
     """
 
-    def __init__(
-        self, host: str, parent: "SmartStrip", child_id: str, *, cache_ttl: int = 3
-    ) -> None:
-        super().__init__(host, cache_ttl=cache_ttl)
+    def __init__(self, host: str, parent: "SmartStrip", child_id: str) -> None:
+        super().__init__(host)
 
         self.parent = parent
         self.child_id = child_id
