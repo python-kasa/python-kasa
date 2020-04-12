@@ -45,10 +45,6 @@ class SmartStrip(SmartDevice):
     and should be handled by the user of the library.
     """
 
-    def has_emeter(self) -> bool:
-        """Return True as strips has always an emeter."""
-        return True
-
     def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
         super().__init__(host=host)
         self.emeter_type = "emeter"
@@ -280,12 +276,6 @@ class SmartStripPlug(SmartPlug):
         This is a combination of MAC and child's ID.
         """
         return f"{self.mac}_{self.child_id}"
-
-    @property  # type: ignore
-    @requires_update
-    def has_emeter(self):
-        """Single sockets have always an emeter."""
-        return True
 
     @property  # type: ignore
     @requires_update
