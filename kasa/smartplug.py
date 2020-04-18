@@ -3,12 +3,7 @@ import datetime
 import logging
 from typing import Any, Dict
 
-from kasa.smartdevice import (
-    DeviceType,
-    SmartDevice,
-    SmartDeviceException,
-    requires_update,
-)
+from kasa.smartdevice import DeviceType, SmartDevice, requires_update
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,58 +34,6 @@ class SmartPlug(SmartDevice):
         super().__init__(host)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
-
-    @property  # type: ignore
-    @requires_update
-    def brightness(self) -> int:
-        """Return current brightness on dimmers.
-
-        Will return a range between 0 - 100.
-
-        :returns: integer
-        :rtype: int
-        """
-        if not self.is_dimmable:
-            raise SmartDeviceException("Device is not dimmable.")
-
-        sys_info = self.sys_info
-        return int(sys_info["brightness"])
-
-    @requires_update
-    async def set_brightness(self, value: int):
-        """Set the new dimmer brightness level.
-
-        Note:
-        When setting brightness, if the light is not
-        already on, it will be turned on automatically.
-
-        :param value: integer between 1 and 100
-
-        """
-        if not self.is_dimmable:
-            raise SmartDeviceException("Device is not dimmable.")
-
-        if not isinstance(value, int):
-            raise ValueError("Brightness must be integer, " "not of %s.", type(value))
-        elif 0 < value <= 100:
-            await self.turn_on()
-            await self._query_helper(
-                "smartlife.iot.dimmer", "set_brightness", {"brightness": value}
-            )
-            await self.update()
-        else:
-            raise ValueError("Brightness value %s is not valid." % value)
-
-    @property  # type: ignore
-    @requires_update
-    def is_dimmable(self):
-        """Whether the switch supports brightness changes.
-
-        :return: True if switch supports brightness changes, False otherwise
-        :rtype: bool
-        """
-        sys_info = self.sys_info
-        return "brightness" in sys_info
 
     @property  # type: ignore
     @requires_update
@@ -159,6 +102,4 @@ class SmartPlug(SmartDevice):
         :rtype: dict
         """
         info = {"LED state": self.led, "On since": self.on_since}
-        if self.is_dimmable:
-            info["Brightness"] = self.brightness
         return info
