@@ -24,8 +24,8 @@ class SmartDimmer(SmartPlug):
     Refer to SmartPlug for the full API.
     """
 
-    def __init__(self, host: str, *, cache_ttl: int = 3) -> None:
-        super().__init__(host, cache_ttl=cache_ttl)
+    def __init__(self, host: str) -> None:
+        super().__init__(host)
         self._device_type = DeviceType.Dimmer
 
     @property  # type: ignore
