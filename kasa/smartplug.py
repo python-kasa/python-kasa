@@ -37,18 +37,6 @@ class SmartPlug(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def has_emeter(self):
-        """Return whether device has an energy meter.
-
-        :return: True if energy meter is available
-                 False otherwise
-        """
-        sys_info = self.sys_info
-        features = sys_info["feature"].split(":")
-        return "ENE" in features
-
-    @property  # type: ignore
-    @requires_update
     def is_on(self) -> bool:
         """Return whether device is on.
 
