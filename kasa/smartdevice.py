@@ -14,9 +14,10 @@ http://www.apache.org/licenses/LICENSE-2.0
 import functools
 import inspect
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from kasa.protocol import TPLinkSmartHomeProtocol
 
@@ -31,6 +32,14 @@ class DeviceType(Enum):
     Strip = 3
     Dimmer = 4
     Unknown = -1
+
+
+@dataclass
+class WifiNetwork:
+    """Wifi network container."""
+
+    ssid: str
+    key_type: int
 
 
 class SmartDeviceException(Exception):
@@ -563,6 +572,22 @@ class SmartDevice:
         This is the MAC address of the device.
         """
         return self.mac
+
+    async def wifi_scan(self) -> List[WifiNetwork]:
+        """Scan for available wifi networks."""
+        info = await self._query_helper("netif", "get_scaninfo", {"refresh": 1})
+        if "ap_list" not in info:
+            raise SmartDeviceException("Invalid response for wifi scan: %s" % info)
+
+        return [WifiNetwork(**x) for x in info["ap_list"]]
+
+    async def wifi_join(self, ssid, password, keytype=3):
+        """Join the given wifi network.
+
+        If joining the network fails, the device will return to AP mode after a while.
+        """
+        payload = {"ssid": ssid, "password": password, "key_type": keytype}
+        return await self._query_helper("netif", "set_stainfo", payload)
 
     @property
     def device_type(self) -> DeviceType:

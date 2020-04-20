@@ -44,7 +44,13 @@ which you can find by adding `--help` after the command, e.g. `kasa emeter --hel
 
 If no command is given, the `state` command will be executed to query the device state.
 
+## Initial Setup
 
+You can provision your device without any extra apps by using the `kasa wifi` command:
+1. If the device is unprovisioned, connect to its open network
+2. Use `kasa discover` (or check the routes) to locate the IP address of the device (likely 192.168.0.1)
+3. Scan for available networks using `kasa wifi scan`
+4. Join/change the network using `kasa wifi join` command, see `--help` for details.
 ## Discovering devices
 
 The devices can be discovered either by using `kasa discover` or by calling `kasa` without any parameters.
