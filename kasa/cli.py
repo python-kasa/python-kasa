@@ -81,6 +81,36 @@ def cli(ctx, host, alias, target, debug, bulb, plug, strip):
         ctx.invoke(state)
 
 
+@cli.group()
+@pass_dev
+def wifi(dev):
+    """Commands to control wifi settings."""
+    pass
+
+
+@wifi.command()
+@pass_dev
+def scan(dev):
+    """Scan for available wifi networks."""
+    click.echo("Scanning for wifi networks, wait a second..")
+    devs = asyncio.run(dev.wifi_scan())
+    click.echo("Found %s wifi networks!" % len(devs))
+    for dev in devs:
+        click.echo("\t %s" % dev)
+
+
+@wifi.command()
+@click.argument("ssid")
+@click.option("--password", prompt=True, hide_input=True)
+@click.option("--keytype", default=3)
+@pass_dev
+def join(dev: SmartDevice, ssid, password, keytype):
+    """Join the given wifi network."""
+    click.echo("Let's see if the device wants to connect to %s" % (ssid))
+    res = asyncio.run(dev.wifi_join(ssid, password, keytype=keytype))
+    click.echo("Device said: %s" % res)
+
+
 @cli.command()
 @click.option("--scrub/--no-scrub", default=True)
 @click.pass_context
