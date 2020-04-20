@@ -87,5 +87,9 @@ steps:
   displayName: 'Order of imports (isort)'
 
 - script: |
-    pytest --cov kasa --cov-report html
+    pytest --cov kasa --cov-report xml
   displayName: 'Tests'
+
+- script: |
+    codecov -t $(codecov.token)
+  displayName: Report Coverage to codecov
