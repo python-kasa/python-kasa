@@ -93,6 +93,38 @@ class SmartStrip(SmartDevice):
         await self._query_helper("system", "set_relay_state", {"state": 0})
         await self.update()
 
+    async def turn_on_by_name(self, name):
+        """Turn on the child plug with the given name."""
+        for p in self.plugs:
+            if p.alias == name:
+                return await p.turn_on()
+
+        raise SmartDeviceException(f"Unable to find child with name {name}")
+
+    async def turn_on_by_index(self, index: int):
+        """Turn on the child plug with the given index."""
+        if index + 1 > len(self.plugs):
+            raise SmartDeviceException(f"This device has only {len(self.plugs)} plugs")
+
+        plug = list(self.plugs)[index]
+        await plug.turn_on()
+
+    async def turn_off_by_name(self, name: str):
+        """Turn off the child plug with the given name."""
+        for p in self.plugs:
+            if p.alias == name:
+                return await p.turn_off()
+
+        raise SmartDeviceException(f"Unable to find child with name {name}")
+
+    async def turn_off_by_index(self, index: int):
+        """Turn off the child plug with the given index."""
+        if index + 1 > len(self.plugs):
+            raise SmartDeviceException(f"This device has only {len(self.plugs)} plugs")
+
+        plug = list(self.plugs)[index]
+        await plug.turn_off()
+
     @property  # type: ignore
     @requires_update
     def on_since(self) -> datetime.datetime:

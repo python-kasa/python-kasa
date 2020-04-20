@@ -13,6 +13,7 @@ import asyncio
 import json
 import logging
 import struct
+from pprint import pformat as pf
 from typing import Any, Dict, Union
 
 _LOGGER = logging.getLogger(__name__)
@@ -67,9 +68,10 @@ class TPLinkSmartHomeProtocol:
                 await writer.wait_closed()
 
         response = TPLinkSmartHomeProtocol.decrypt(buffer[4:])
-        _LOGGER.debug("< (%i) %s", len(response), response)
+        json_payload = json.loads(response)
+        _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
 
-        return json.loads(response)
+        return json_payload
 
     @staticmethod
     def encrypt(request: str) -> bytes:

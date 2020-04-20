@@ -1,25 +1,26 @@
-import asyncio
+import pytest
 
-from click.testing import CliRunner
-
+from asyncclick.testing import CliRunner
 from kasa import SmartDevice
 from kasa.cli import alias, brightness, emeter, raw_command, state, sysinfo
 
 from .conftest import handle_turn_on, turn_on
 
+pytestmark = pytest.mark.asyncio
 
-def test_sysinfo(dev):
+
+async def test_sysinfo(dev):
     runner = CliRunner()
-    res = runner.invoke(sysinfo, obj=dev)
+    res = await runner.invoke(sysinfo, obj=dev)
     assert "System info" in res.output
     assert dev.alias in res.output
 
 
 @turn_on
-def test_state(dev, turn_on):
-    asyncio.run(handle_turn_on(dev, turn_on))
+async def test_state(dev, turn_on):
+    await handle_turn_on(dev, turn_on)
     runner = CliRunner()
-    res = runner.invoke(state, obj=dev)
+    res = await runner.invoke(state, obj=dev)
     print(res.output)
 
     if dev.is_on:
@@ -31,36 +32,36 @@ def test_state(dev, turn_on):
         assert "Device has no emeter" in res.output
 
 
-def test_alias(dev):
+async def test_alias(dev):
     runner = CliRunner()
 
-    res = runner.invoke(alias, obj=dev)
+    res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {dev.alias}" in res.output
 
     new_alias = "new alias"
-    res = runner.invoke(alias, [new_alias], obj=dev)
+    res = await runner.invoke(alias, [new_alias], obj=dev)
     assert f"Setting alias to {new_alias}" in res.output
 
-    res = runner.invoke(alias, obj=dev)
+    res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
 
 
-def test_raw_command(dev):
+async def test_raw_command(dev):
     runner = CliRunner()
-    res = runner.invoke(raw_command, ["system", "get_sysinfo"], obj=dev)
+    res = await runner.invoke(raw_command, ["system", "get_sysinfo"], obj=dev)
 
     assert res.exit_code == 0
     assert dev.alias in res.output
 
-    res = runner.invoke(raw_command, obj=dev)
+    res = await runner.invoke(raw_command, obj=dev)
     assert res.exit_code != 0
     assert "Usage" in res.output
 
 
-def test_emeter(dev: SmartDevice, mocker):
+async def test_emeter(dev: SmartDevice, mocker):
     runner = CliRunner()
 
-    res = runner.invoke(emeter, obj=dev)
+    res = await runner.invoke(emeter, obj=dev)
     if not dev.has_emeter:
         assert "Device has no emeter" in res.output
         return
@@ -68,52 +69,52 @@ def test_emeter(dev: SmartDevice, mocker):
     assert "Current State" in res.output
 
     monthly = mocker.patch.object(dev, "get_emeter_monthly")
-    res = runner.invoke(emeter, ["--year", "1900"], obj=dev)
+    res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
     assert "For year" in res.output
     monthly.assert_called()
 
     daily = mocker.patch.object(dev, "get_emeter_daily")
-    res = runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
+    res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
     assert "For month" in res.output
     daily.assert_called()
 
 
-def test_brightness(dev):
+async def test_brightness(dev):
     runner = CliRunner()
-    res = runner.invoke(brightness, obj=dev)
+    res = await runner.invoke(brightness, obj=dev)
     if not dev.is_dimmable:
         assert "This device does not support brightness." in res.output
         return
 
-    res = runner.invoke(brightness, obj=dev)
+    res = await runner.invoke(brightness, obj=dev)
     assert f"Brightness: {dev.brightness}" in res.output
 
-    res = runner.invoke(brightness, ["12"], obj=dev)
+    res = await runner.invoke(brightness, ["12"], obj=dev)
     assert "Setting brightness" in res.output
 
-    res = runner.invoke(brightness, obj=dev)
+    res = await runner.invoke(brightness, obj=dev)
     assert f"Brightness: 12" in res.output
 
 
-def test_temperature(dev):
+async def test_temperature(dev):
     pass
 
 
-def test_hsv(dev):
+async def test_hsv(dev):
     pass
 
 
-def test_led(dev):
+async def test_led(dev):
     pass
 
 
-def test_on(dev):
+async def test_on(dev):
     pass
 
 
-def test_off(dev):
+async def test_off(dev):
     pass
 
 
-def test_reboot(dev):
+async def test_reboot(dev):
     pass

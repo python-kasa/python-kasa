@@ -92,13 +92,12 @@ def dev(request):
     Provides a device (given --ip) or parametrized fixture for the supported devices.
     The initial update is called automatically before returning the device.
     """
-    loop = asyncio.get_event_loop()
     file = request.param
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = loop.run_until_complete(Discover.discover_single(ip))
-        loop.run_until_complete(d.update())
+        d = asyncio.run(Discover.discover_single(ip))
+        asyncio.run(d.update())
         print(d.model)
         if d.model in file:
             return d
@@ -125,7 +124,7 @@ def dev(request):
         model = basename(file)
         p = device_for_file(model)(host="123.123.123.123")
         p.protocol = FakeTransportProtocol(sysinfo)
-        loop.run_until_complete(p.update())
+        asyncio.run(p.update())
         yield p
 
 
