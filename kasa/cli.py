@@ -50,7 +50,7 @@ def cli(ctx, host, alias, target, debug, bulb, plug, strip):
         return
 
     if alias is not None and host is None:
-        click.echo("Alias is given, using discovery to find host %s" % alias)
+        click.echo(f"Alias is given, using discovery to find host {alias}")
         host = find_host_from_alias(alias=alias, target=target)
         if host:
             click.echo(f"Found hostname is {host}")
@@ -85,7 +85,6 @@ def cli(ctx, host, alias, target, debug, bulb, plug, strip):
 @pass_dev
 def wifi(dev):
     """Commands to control wifi settings."""
-    pass
 
 
 @wifi.command()
@@ -94,9 +93,9 @@ def scan(dev):
     """Scan for available wifi networks."""
     click.echo("Scanning for wifi networks, wait a second..")
     devs = asyncio.run(dev.wifi_scan())
-    click.echo("Found %s wifi networks!" % len(devs))
+    click.echo(f"Found {len(devs)} wifi networks!")
     for dev in devs:
-        click.echo("\t %s" % dev)
+        click.echo(f"\t {dev}")
 
 
 @wifi.command()
@@ -106,9 +105,11 @@ def scan(dev):
 @pass_dev
 def join(dev: SmartDevice, ssid, password, keytype):
     """Join the given wifi network."""
-    click.echo("Let's see if the device wants to connect to %s" % (ssid))
+    click.echo("Asking the device to connect to {ssid}.." % (ssid))
     res = asyncio.run(dev.wifi_join(ssid, password, keytype=keytype))
-    click.echo("Device said: %s" % res)
+    click.echo(
+        f"Response: {res} - if the device is not able to join the network, it will revert back to its previous state."
+    )
 
 
 @cli.command()
@@ -148,7 +149,7 @@ def dump_discover(ctx, scrub):
         model = dev["system"]["get_sysinfo"]["model"]
         hw_version = dev["system"]["get_sysinfo"]["hw_ver"]
         save_to = f"{model}_{hw_version}.json"
-        click.echo("Saving info to %s" % save_to)
+        click.echo(f"Saving info to {save_to}")
         with open(save_to, "w") as f:
             json.dump(dev, f, sort_keys=True, indent=4)
             f.write("\n")
@@ -162,7 +163,7 @@ def dump_discover(ctx, scrub):
 def discover(ctx, timeout, discover_only, dump_raw):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
-    click.echo("Discovering devices for %s seconds" % timeout)
+    click.echo(f"Discovering devices for {timeout} seconds")
     found_devs = asyncio.run(
         Discover.discover(target=target, timeout=timeout, return_raw=dump_raw)
     )
@@ -183,8 +184,7 @@ def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3)
     """Discover a device identified by its alias."""
     host = None
     click.echo(
-        "Trying to discover %s using %s attempts of %s seconds"
-        % (alias, attempts, timeout)
+        f"Trying to discover {alias} using {attempts} attempts of {timeout} seconds"
     )
     for attempt in range(1, attempts):
         click.echo(f"Attempt {attempt} of {attempts}")
@@ -235,9 +235,9 @@ def state(ctx, dev: SmartDevice):
     for k, v in dev.state_information.items():
         click.echo(f"{k}: {v}")
     click.echo(click.style("== Generic information ==", bold=True))
-    click.echo("Time:         {}".format(asyncio.run(dev.get_time())))
-    click.echo("Hardware:     {}".format(dev.hw_info["hw_ver"]))
-    click.echo("Software:     {}".format(dev.hw_info["sw_ver"]))
+    click.echo(f"Time:         {asyncio.run(dev.get_time())}")
+    click.echo(f"Hardware:     {dev.hw_info['hw_ver']}")
+    click.echo(f"Software:     {dev.hw_info['sw_ver']}")
     click.echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
     click.echo(f"Location:     {dev.location}")
 
@@ -319,9 +319,9 @@ def brightness(dev, brightness):
         click.echo("This device does not support brightness.")
         return
     if brightness is None:
-        click.echo("Brightness: %s" % dev.brightness)
+        click.echo(f"Brightness: {dev.brightness}")
     else:
-        click.echo("Setting brightness to %s" % brightness)
+        click.echo(f"Setting brightness to {brightness}")
         asyncio.run(dev.set_brightness(brightness))
 
 
@@ -356,7 +356,7 @@ def temperature(dev: SmartBulb, temperature):
 def hsv(dev, ctx, h, s, v):
     """Get or set color in HSV. (Bulb only)."""
     if h is None or s is None or v is None:
-        click.echo("Current HSV: %s %s %s" % dev.hsv)
+        click.echo(f"Current HSV: {dev.hsv}")
     elif s is None or v is None:
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
@@ -370,10 +370,10 @@ def hsv(dev, ctx, h, s, v):
 def led(dev, state):
     """Get or set (Plug's) led state."""
     if state is not None:
-        click.echo("Turning led to %s" % state)
+        click.echo(f"Turning led to {state}")
         asyncio.run(dev.set_led(state))
     else:
-        click.echo("LED state: %s" % dev.led)
+        click.echo(f"LED state: {dev.led}")
 
 
 @cli.command()
