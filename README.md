@@ -206,6 +206,11 @@ if bulb.is_color:
 
 Contributions are very welcome! To simplify the process, we are leveraging automated checks and tests for contributions.
 
+### Resources
+
+* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+* [https://github.com/plasticrake/tplink-smarthome-simulator](tplink-smarthome-simulator)
+
 ### Setting up development environment
 
 ```bash
