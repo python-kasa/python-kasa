@@ -34,7 +34,7 @@ pass_dev = click.make_pass_decorator(SmartDevice)
     required=False,
     help="The broadcast address to be used for discovery.",
 )
-@click.option("-d", "--debug", default=False)
+@click.option("-d", "--debug", default=False, is_flag=True)
 @click.option("--bulb", default=False, is_flag=True)
 @click.option("--plug", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
