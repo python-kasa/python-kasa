@@ -12,7 +12,7 @@ setup(
     author_email="",
     license="GPLv3",
     packages=["kasa"],
-    install_requires=["click"],
+    install_requires=["asyncclick"],
     python_requires=">=3.7",
     entry_points={"console_scripts": ["kasa=kasa.cli:cli"]},
     zip_safe=False,

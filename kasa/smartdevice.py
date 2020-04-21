@@ -122,7 +122,7 @@ class SmartDevice:
 
         self.protocol = TPLinkSmartHomeProtocol()
         self.emeter_type = "emeter"
-        _LOGGER.debug("Initializing %s", self.host)
+        _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
         self._sys_info: Optional[Dict] = None
 

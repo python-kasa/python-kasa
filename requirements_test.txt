@@ -3,6 +3,6 @@ pytest-azurepipelines
 pytest-cov
 pytest-asyncio
 pytest-mock
-click  # needed for test_cli
+asyncclick
 voluptuous
 codecov

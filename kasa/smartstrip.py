@@ -93,6 +93,22 @@ class SmartStrip(SmartDevice):
         await self._query_helper("system", "set_relay_state", {"state": 0})
         await self.update()
 
+    def get_plug_by_name(self, name: str) -> "SmartStripPlug":
+        """Return child plug for given name."""
+        for p in self.plugs:
+            if p.alias == name:
+                return p
+
+        raise SmartDeviceException(f"Device has no child with {name}")
+
+    def get_plug_by_index(self, index: int) -> "SmartStripPlug":
+        """Return child plug for given index."""
+        if index + 1 > len(self.plugs) or index < 0:
+            raise SmartDeviceException(
+                f"Invalid index {index}, device has {len(self.plugs)} plugs"
+            )
+        return self.plugs[index]
+
     @property  # type: ignore
     @requires_update
     def on_since(self) -> datetime.datetime:
@@ -107,8 +123,6 @@ class SmartStrip(SmartDevice):
         :return: True if led is on, False otherwise
         :rtype: bool
         """
-        # TODO this is a copypaste from smartplug,
-        # check if led value is per socket or per device..
         sys_info = self.sys_info
         return bool(1 - sys_info["led_off"])
 
@@ -118,8 +132,6 @@ class SmartStrip(SmartDevice):
         :param bool state: True to set led on, False to set led off
         :raises SmartDeviceException: on error
         """
-        # TODO this is a copypaste from smartplug,
-        # check if led value is per socket or per device..
         await self._query_helper("system", "set_led_off", {"off": int(not state)})
         await self.update()
 
@@ -221,6 +233,8 @@ class SmartStripPlug(SmartPlug):
     This allows you to use the sockets as they were SmartPlug objects.
     Instead of calling an update on any of these, you should call an update
     on the parent device before accessing the properties.
+
+    The plug inherits (most of) the system information from the parent.
     """
 
     def __init__(self, host: str, parent: "SmartStrip", child_id: str) -> None:
@@ -228,7 +242,7 @@ class SmartStripPlug(SmartPlug):
 
         self.parent = parent
         self.child_id = child_id
-        self._sys_info = self._get_child_info()
+        self._sys_info = {**self.parent.sys_info, **self._get_child_info()}
 
     async def update(self):
         """Override the update to no-op and inform the user."""
@@ -270,6 +284,12 @@ class SmartStripPlug(SmartPlug):
 
     @property  # type: ignore
     @requires_update
+    def has_emeter(self) -> bool:
+        """Children have no emeter to my knowledge."""
+        return False
+
+    @property  # type: ignore
+    @requires_update
     def device_id(self) -> str:
         """Return unique ID for the socket.
 
@@ -287,6 +307,13 @@ class SmartStripPlug(SmartPlug):
         """
         info = self._get_child_info()
         return info["alias"]
+
+    @property  # type: ignore
+    @requires_update
+    def next_action(self) -> Dict:
+        """Return next scheduled(?) action."""
+        info = self._get_child_info()
+        return info["next_action"]
 
     @property  # type: ignore
     @requires_update
