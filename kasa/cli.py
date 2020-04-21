@@ -399,12 +399,12 @@ async def on(dev: SmartDevice, index, name):
             click.echo("Index and name are only for power strips!")
             return
         dev = cast(SmartStrip, dev)
-        if index:
+        if index is not None:
             await dev.turn_on_by_index(index)
         elif name:
             await dev.turn_on_by_name(name)
     else:
-        click.echo("Turning on %s" % dev)
+        click.echo("Turning on %s" % dev.alias)
         await dev.turn_on()
 
 
@@ -420,12 +420,12 @@ async def off(dev, index, name):
             click.echo("Index and name are only for power strips!")
             return
         dev = cast(SmartStrip, dev)
-        if index:
+        if index is not None:
             await dev.turn_off_by_index(index)
         elif name:
             await dev.turn_off_by_name(name)
     else:
-        click.echo("Turning on %s" % dev)
+        click.echo("Turning off %s" % dev.alias)
         await dev.turn_off()
 
 

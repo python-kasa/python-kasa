@@ -101,10 +101,16 @@ class SmartStrip(SmartDevice):
 
         raise SmartDeviceException(f"Unable to find child with name {name}")
 
+    def _verify_index(self, index: int):
+        """Check the bounds for index and raise on error."""
+        if index + 1 > len(self.plugs) or index < 0:
+            raise SmartDeviceException(
+                f"Invalid index {index}, device has {len(self.plugs)} plugs"
+            )
+
     async def turn_on_by_index(self, index: int):
         """Turn on the child plug with the given index."""
-        if index + 1 > len(self.plugs):
-            raise SmartDeviceException(f"This device has only {len(self.plugs)} plugs")
+        self._verify_index(index)
 
         plug = list(self.plugs)[index]
         await plug.turn_on()
@@ -119,8 +125,7 @@ class SmartStrip(SmartDevice):
 
     async def turn_off_by_index(self, index: int):
         """Turn off the child plug with the given index."""
-        if index + 1 > len(self.plugs):
-            raise SmartDeviceException(f"This device has only {len(self.plugs)} plugs")
+        self._verify_index(index)
 
         plug = list(self.plugs)[index]
         await plug.turn_off()
@@ -327,6 +332,13 @@ class SmartStripPlug(SmartPlug):
         """
         info = self._get_child_info()
         return info["alias"]
+
+    @property  # type: ignore
+    @requires_update
+    def next_action(self) -> Dict:
+        """Return next scheduled(?) action."""
+        info = self._get_child_info()
+        return info["next_action"]
 
     @property  # type: ignore
     @requires_update
