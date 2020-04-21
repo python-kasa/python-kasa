@@ -425,6 +425,26 @@ async def test_children_on_since(dev):
         assert plug.on_since
 
 
+@strip
+async def test_get_plug_by_name(dev: SmartStrip):
+    name = dev.plugs[0].alias
+    assert dev.get_plug_by_name(name) == dev.plugs[0]
+
+    with pytest.raises(SmartDeviceException):
+        dev.get_plug_by_name("NONEXISTING NAME")
+
+
+@strip
+async def test_get_plug_by_index(dev: SmartStrip):
+    assert dev.get_plug_by_index(0) == dev.plugs[0]
+
+    with pytest.raises(SmartDeviceException):
+        dev.get_plug_by_index(-1)
+
+    with pytest.raises(SmartDeviceException):
+        dev.get_plug_by_index(len(dev.plugs))
+
+
 @pytest.mark.skip("this test will wear out your relays")
 async def test_all_binary_states(dev):
     # test every binary state
