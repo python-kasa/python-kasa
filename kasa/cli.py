@@ -317,7 +317,8 @@ async def emeter(dev, year, month, erase):
 
     if isinstance(emeter_status, list):
         for plug in emeter_status:
-            click.echo("Plug %d: %s" % (emeter_status.index(plug) + 1, plug))
+            index = emeter_status.index(plug) + 1
+            click.echo(f"Plug {index}: {plug}")
     else:
         click.echo(str(emeter_status))
 
@@ -416,7 +417,7 @@ async def on(dev: SmartDevice, index, name):
         elif name:
             dev = dev.get_plug_by_name(name)
 
-    click.echo("Turning on %s" % dev.alias)
+    click.echo(f"Turning on {dev.alias}")
     await dev.turn_on()
 
 
@@ -437,7 +438,7 @@ async def off(dev, index, name):
         elif name:
             dev = dev.get_plug_by_name(name)
 
-    click.echo("Turning off %s" % dev.alias)
+    click.echo(f"Turning off {dev.alias}")
     await dev.turn_off()
 
 
