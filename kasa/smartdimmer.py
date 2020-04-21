@@ -52,7 +52,7 @@ class SmartDimmer(SmartPlug):
         When setting brightness, if the light is not
         already on, it will be turned on automatically.
 
-        :param value: integer between 1 and 100
+        :param value: integer between 0 and 100
 
         """
         if not self.is_dimmable:
@@ -60,7 +60,7 @@ class SmartDimmer(SmartPlug):
 
         if not isinstance(value, int):
             raise ValueError("Brightness must be integer, " "not of %s.", type(value))
-        elif 0 < value <= 100:
+        elif 0 <= value <= 100:
             await self.turn_on()
             await self._query_helper(
                 "smartlife.iot.dimmer", "set_brightness", {"brightness": value}
