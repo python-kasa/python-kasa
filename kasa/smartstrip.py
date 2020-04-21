@@ -93,42 +93,21 @@ class SmartStrip(SmartDevice):
         await self._query_helper("system", "set_relay_state", {"state": 0})
         await self.update()
 
-    async def turn_on_by_name(self, name):
-        """Turn on the child plug with the given name."""
+    def get_plug_by_name(self, name: str) -> "SmartStripPlug":
+        """Return child plug for given name."""
         for p in self.plugs:
             if p.alias == name:
-                return await p.turn_on()
+                return p
 
-        raise SmartDeviceException(f"Unable to find child with name {name}")
+        raise SmartDeviceException(f"Device has no child with {name}")
 
-    def _verify_index(self, index: int):
-        """Check the bounds for index and raise on error."""
+    def get_plug_by_index(self, index: int) -> "SmartStripPlug":
+        """Return child plug for given index."""
         if index + 1 > len(self.plugs) or index < 0:
             raise SmartDeviceException(
                 f"Invalid index {index}, device has {len(self.plugs)} plugs"
             )
-
-    async def turn_on_by_index(self, index: int):
-        """Turn on the child plug with the given index."""
-        self._verify_index(index)
-
-        plug = list(self.plugs)[index]
-        await plug.turn_on()
-
-    async def turn_off_by_name(self, name: str):
-        """Turn off the child plug with the given name."""
-        for p in self.plugs:
-            if p.alias == name:
-                return await p.turn_off()
-
-        raise SmartDeviceException(f"Unable to find child with name {name}")
-
-    async def turn_off_by_index(self, index: int):
-        """Turn off the child plug with the given index."""
-        self._verify_index(index)
-
-        plug = list(self.plugs)[index]
-        await plug.turn_off()
+        return self.plugs[index]
 
     @property  # type: ignore
     @requires_update
@@ -144,8 +123,6 @@ class SmartStrip(SmartDevice):
         :return: True if led is on, False otherwise
         :rtype: bool
         """
-        # TODO this is a copypaste from smartplug,
-        # check if led value is per socket or per device..
         sys_info = self.sys_info
         return bool(1 - sys_info["led_off"])
 
@@ -155,8 +132,6 @@ class SmartStrip(SmartDevice):
         :param bool state: True to set led on, False to set led off
         :raises SmartDeviceException: on error
         """
-        # TODO this is a copypaste from smartplug,
-        # check if led value is per socket or per device..
         await self._query_helper("system", "set_led_off", {"off": int(not state)})
         await self.update()
 

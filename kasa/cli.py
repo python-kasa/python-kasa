@@ -249,13 +249,25 @@ async def state(ctx, dev: SmartDevice):
 @cli.command()
 @pass_dev
 @click.argument("new_alias", required=False, default=None)
-async def alias(dev, new_alias):
-    """Get or set the device alias."""
+@click.option("--index", type=int)
+async def alias(dev, new_alias, index):
+    """Get or set the device (or plug) alias."""
+    await dev.update()
+    if index is not None:
+        if not dev.is_strip:
+            click.echo("Index can only used for power strips!")
+            return
+        dev = cast(SmartStrip, dev)
+        dev = dev.get_plug_by_index(index)
+
     if new_alias is not None:
         click.echo(f"Setting alias to {new_alias}")
         click.echo(await dev.set_alias(new_alias))
 
     click.echo(f"Alias: {dev.alias}")
+    if dev.is_strip:
+        for plug in dev.plugs:
+            click.echo(f"  * {plug.alias}")
 
 
 @cli.command()
@@ -400,12 +412,12 @@ async def on(dev: SmartDevice, index, name):
             return
         dev = cast(SmartStrip, dev)
         if index is not None:
-            await dev.turn_on_by_index(index)
+            dev = dev.get_plug_by_index(index)
         elif name:
-            await dev.turn_on_by_name(name)
-    else:
-        click.echo("Turning on %s" % dev.alias)
-        await dev.turn_on()
+            dev = dev.get_plug_by_name(name)
+
+    click.echo("Turning on %s" % dev.alias)
+    await dev.turn_on()
 
 
 @cli.command()
@@ -421,12 +433,12 @@ async def off(dev, index, name):
             return
         dev = cast(SmartStrip, dev)
         if index is not None:
-            await dev.turn_off_by_index(index)
+            dev = dev.get_plug_by_index(index)
         elif name:
-            await dev.turn_off_by_name(name)
-    else:
-        click.echo("Turning off %s" % dev.alias)
-        await dev.turn_off()
+            dev = dev.get_plug_by_name(name)
+
+    click.echo("Turning off %s" % dev.alias)
+    await dev.turn_off()
 
 
 @cli.command()
