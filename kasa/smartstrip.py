@@ -253,6 +253,8 @@ class SmartStripPlug(SmartPlug):
     This allows you to use the sockets as they were SmartPlug objects.
     Instead of calling an update on any of these, you should call an update
     on the parent device before accessing the properties.
+
+    The plug inherits (most of) the system information from the parent.
     """
 
     def __init__(self, host: str, parent: "SmartStrip", child_id: str) -> None:
@@ -260,7 +262,7 @@ class SmartStripPlug(SmartPlug):
 
         self.parent = parent
         self.child_id = child_id
-        self._sys_info = self._get_child_info()
+        self._sys_info = {**self.parent.sys_info, **self._get_child_info()}
 
     async def update(self):
         """Override the update to no-op and inform the user."""
@@ -298,6 +300,12 @@ class SmartStripPlug(SmartPlug):
         :return: True if led is on, False otherwise
         :rtype: bool
         """
+        return False
+
+    @property  # type: ignore
+    @requires_update
+    def has_emeter(self) -> bool:
+        """Children have no emeter to my knowledge."""
         return False
 
     @property  # type: ignore
