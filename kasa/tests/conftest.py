@@ -98,7 +98,6 @@ def dev(request):
     if ip:
         d = asyncio.run(Discover.discover_single(ip))
         asyncio.run(d.update())
-        print(d.model)
         if d.model in file:
             return d
         return
