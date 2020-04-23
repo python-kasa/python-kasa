@@ -40,6 +40,11 @@ class WifiNetwork:
 
     ssid: str
     key_type: int
+    # These are available only on softaponboarding
+    cipher_type: Optional[int] = None
+    bssid: Optional[str] = None
+    channel: Optional[int] = None
+    rssi: Optional[int] = None
 
 
 class SmartDeviceException(Exception):
@@ -575,7 +580,18 @@ class SmartDevice:
 
     async def wifi_scan(self) -> List[WifiNetwork]:
         """Scan for available wifi networks."""
-        info = await self._query_helper("netif", "get_scaninfo", {"refresh": 1})
+
+        async def _scan(target):
+            return await self._query_helper(target, "get_scaninfo", {"refresh": 1})
+
+        try:
+            info = await _scan("netif")
+        except SmartDeviceException as ex:
+            _LOGGER.debug(
+                "Unable to scan using 'netif', retrying with 'softaponboarding': %s", ex
+            )
+            info = await _scan("smartlife.iot.common.softaponboarding")
+
         if "ap_list" not in info:
             raise SmartDeviceException("Invalid response for wifi scan: %s" % info)
 
@@ -586,8 +602,18 @@ class SmartDevice:
 
         If joining the network fails, the device will return to AP mode after a while.
         """
+
+        async def _join(target, payload):
+            return await self._query_helper(target, "set_stainfo", payload)
+
         payload = {"ssid": ssid, "password": password, "key_type": keytype}
-        return await self._query_helper("netif", "set_stainfo", payload)
+        try:
+            return await _join("netif", payload)
+        except SmartDeviceException as ex:
+            _LOGGER.debug(
+                "Unable to join using 'netif', retrying with 'softaponboarding': %s", ex
+            )
+            return await _join("smartlife.iot.common.softaponboarding", payload)
 
     @property
     def device_type(self) -> DeviceType:

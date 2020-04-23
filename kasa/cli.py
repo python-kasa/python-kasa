@@ -106,7 +106,7 @@ async def scan(dev):
 @pass_dev
 async def join(dev: SmartDevice, ssid, password, keytype):
     """Join the given wifi network."""
-    click.echo("Asking the device to connect to {ssid}.." % (ssid))
+    click.echo(f"Asking the device to connect to {ssid}..")
     res = await dev.wifi_join(ssid, password, keytype=keytype)
     click.echo(
         f"Response: {res} - if the device is not able to join the network, it will revert back to its previous state."
