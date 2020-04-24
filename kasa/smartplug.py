@@ -1,5 +1,4 @@
 """Module for plugs."""
-import datetime
 import logging
 from typing import Any, Dict
 
@@ -80,18 +79,6 @@ class SmartPlug(SmartDevice):
         """
         await self._query_helper("system", "set_led_off", {"off": int(not state)})
         await self.update()
-
-    @property  # type: ignore
-    @requires_update
-    def on_since(self) -> datetime.datetime:
-        """Return pretty-printed on-time.
-
-        :return: datetime for on since
-        :rtype: datetime
-        """
-        on_time = self.sys_info["on_time"]
-
-        return datetime.datetime.now() - datetime.timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update

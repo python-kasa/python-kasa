@@ -15,7 +15,7 @@ import functools
 import inspect
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -553,6 +553,23 @@ class SmartDevice:
         :return:
         """
         raise NotImplementedError("Device subclass needs to implement this.")
+
+    @property  # type: ignore
+    @requires_update
+    def on_since(self) -> Optional[datetime]:
+        """Return pretty-printed on-time, if available.
+
+        Returns None if the device is turned off or does not report it.
+        """
+        if "on_time" not in self.sys_info:
+            return None
+
+        if self.is_off:
+            return None
+
+        on_time = self.sys_info["on_time"]
+
+        return datetime.now() - timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update

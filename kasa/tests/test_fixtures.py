@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -230,9 +230,16 @@ async def test_led(dev):
     await dev.set_led(original)
 
 
-@plug
-async def test_on_since(dev):
-    assert isinstance(dev.on_since, datetime.datetime)
+@turn_on
+async def test_on_since(dev, turn_on):
+    await handle_turn_on(dev, turn_on)
+    orig_state = dev.is_on
+    if "on_time" not in dev.sys_info and not dev.is_strip:
+        assert dev.on_since is None
+    elif orig_state:
+        assert isinstance(dev.on_since, datetime)
+    else:
+        assert dev.on_since is None
 
 
 async def test_icon(dev):
@@ -240,7 +247,7 @@ async def test_icon(dev):
 
 
 async def test_time(dev):
-    assert isinstance(await dev.get_time(), datetime.datetime)
+    assert isinstance(await dev.get_time(), datetime)
     # TODO check setting?
 
 
@@ -421,8 +428,20 @@ async def test_children_alias(dev):
 
 @strip
 async def test_children_on_since(dev):
+    on_sinces = []
     for plug in dev.plugs:
-        assert plug.on_since
+        if plug.is_on:
+            on_sinces.append(plug.on_since)
+            assert isinstance(plug.on_since, datetime)
+        else:
+            assert plug.on_since is None
+
+    if dev.is_off:
+        assert dev.on_since is None
+    # TODO: testing this would require some mocking utcnow which is not
+    # very straightforward.
+    # else:
+    #    assert dev.on_since == max(on_sinces)
 
 
 @strip

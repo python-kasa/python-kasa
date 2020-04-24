@@ -2,9 +2,9 @@
 
 .. todo:: describe how this interfaces with single plugs.
 """
-import datetime
 import logging
 from collections import defaultdict
+from datetime import datetime, timedelta
 from typing import Any, DefaultDict, Dict, List, Optional
 
 from kasa.smartdevice import (
@@ -111,9 +111,12 @@ class SmartStrip(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def on_since(self) -> datetime.datetime:
+    def on_since(self) -> Optional[datetime]:
         """Return the maximum on-time of all outlets."""
-        return max(plug.on_since for plug in self.plugs)
+        if self.is_off:
+            return None
+
+        return max(plug.on_since for plug in self.plugs if plug.on_since is not None)
 
     @property  # type: ignore
     @requires_update
@@ -317,16 +320,19 @@ class SmartStripPlug(SmartPlug):
 
     @property  # type: ignore
     @requires_update
-    def on_since(self) -> datetime.datetime:
+    def on_since(self) -> Optional[datetime]:
         """Return pretty-printed on-time.
 
         :return: datetime for on since
         :rtype: datetime
         """
+        if self.is_off:
+            return None
+
         info = self._get_child_info()
         on_time = info["on_time"]
 
-        return datetime.datetime.now() - datetime.timedelta(seconds=on_time)
+        return datetime.now() - timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update
