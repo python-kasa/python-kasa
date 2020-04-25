@@ -595,7 +595,7 @@ class SmartDevice:
         """
         return self.mac
 
-    async def wifi_scan(self) -> List[WifiNetwork]:
+    async def wifi_scan(self) -> List[WifiNetwork]:  # noqa: D202
         """Scan for available wifi networks."""
 
         async def _scan(target):
@@ -614,7 +614,7 @@ class SmartDevice:
 
         return [WifiNetwork(**x) for x in info["ap_list"]]
 
-    async def wifi_join(self, ssid, password, keytype=3):
+    async def wifi_join(self, ssid, password, keytype=3):  # noqa: D202
         """Join the given wifi network.
 
         If joining the network fails, the device will return to AP mode after a while.
