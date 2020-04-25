@@ -626,5 +626,6 @@ class SmartDevice:
         return False
 
     def __repr__(self):
-        return f"<{self._device_type} at {self.host} - update() needed>"
+        if self._sys_info is None:
+            return f"<{self._device_type} at {self.host} - update() needed>"
         return f"<{self._device_type} model {self.model} at {self.host} ({self.alias}), is_on: {self.is_on} - dev specific: {self.state_information}>"
