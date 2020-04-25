@@ -626,11 +626,5 @@ class SmartDevice:
         return False
 
     def __repr__(self):
-        return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
-            self.__class__.__name__,
-            self.model,
-            self.host,
-            self.alias,
-            self.is_on,
-            self.state_information,
-        )
+        return f"<{self._device_type} at {self.host} - update() needed>"
+        return f"<{self._device_type} model {self.model} at {self.host} ({self.alias}), is_on: {self.is_on} - dev specific: {self.state_information}>"
