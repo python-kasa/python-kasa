@@ -274,13 +274,19 @@ async def test_mac(dev):
 
 @non_variable_temp
 async def test_temperature_on_nonsupporting(dev):
-    assert dev.valid_temperature_range == (0, 0)
-
-    # TODO test when device does not support temperature range
+    with pytest.raises(SmartDeviceException):
+        _ = dev.valid_temperature_range
     with pytest.raises(SmartDeviceException):
         await dev.set_color_temp(2700)
     with pytest.raises(SmartDeviceException):
         print(dev.color_temp)
+
+
+@variable_temp
+async def test_missing_temperature_info(dev):
+    dev.sys_info["model"] = "MODEL_WITH_UNAVAILABLE_TEMP"
+    with pytest.raises(SmartDeviceException):
+        _ = dev.valid_temperature_range
 
 
 @variable_temp

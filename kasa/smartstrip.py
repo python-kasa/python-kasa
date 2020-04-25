@@ -7,12 +7,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, DefaultDict, Dict, List, Optional
 
-from kasa.smartdevice import (
-    DeviceType,
-    SmartDevice,
-    SmartDeviceException,
-    requires_update,
-)
+from kasa.smartdevice import DeviceType, SmartDevice, SmartDeviceException
 from kasa.smartplug import SmartPlug
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,7 +47,6 @@ class SmartStrip(SmartDevice):
         self.plugs: List[SmartStripPlug] = []
 
     @property  # type: ignore
-    @requires_update
     def is_on(self) -> bool:
         """Return if any of the outlets are on."""
         for plug in self.plugs:
@@ -62,10 +56,7 @@ class SmartStrip(SmartDevice):
         return False
 
     async def update(self):
-        """Update some of the attributes.
-
-        Needed for methods that are decorated with `requires_update`.
-        """
+        """Update some of the attributes."""
         await super().update()
 
         # Initialize the child devices during the first update.
@@ -110,7 +101,6 @@ class SmartStrip(SmartDevice):
         return self.plugs[index]
 
     @property  # type: ignore
-    @requires_update
     def on_since(self) -> Optional[datetime]:
         """Return the maximum on-time of all outlets."""
         if self.is_off:
@@ -119,7 +109,6 @@ class SmartStrip(SmartDevice):
         return max(plug.on_since for plug in self.plugs if plug.on_since is not None)
 
     @property  # type: ignore
-    @requires_update
     def led(self) -> bool:
         """Return the state of the led.
 
@@ -139,7 +128,6 @@ class SmartStrip(SmartDevice):
         await self.update()
 
     @property  # type: ignore
-    @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return strip-specific state information.
 
@@ -180,7 +168,6 @@ class SmartStrip(SmartDevice):
         """
         return await super().set_alias(alias)
 
-    @requires_update
     async def get_emeter_daily(
         self, year: int = None, month: int = None, kwh: bool = True
     ) -> Dict:
@@ -203,7 +190,6 @@ class SmartStrip(SmartDevice):
                 emeter_daily[day] += value
         return emeter_daily
 
-    @requires_update
     async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
         """Retrieve monthly statistics for a given year.
 
@@ -220,7 +206,6 @@ class SmartStrip(SmartDevice):
                 emeter_monthly[month] += value
         return emeter_monthly
 
-    @requires_update
     async def erase_emeter_stats(self):
         """Erase energy meter statistics for all plugs.
 
@@ -264,7 +249,6 @@ class SmartStripPlug(SmartPlug):
         )
 
     @property  # type: ignore
-    @requires_update
     def is_on(self) -> bool:
         """Return whether device is on.
 
@@ -274,7 +258,6 @@ class SmartStripPlug(SmartPlug):
         return info["state"]
 
     @property  # type: ignore
-    @requires_update
     def led(self) -> bool:
         """Return the state of the led.
 
@@ -286,13 +269,11 @@ class SmartStripPlug(SmartPlug):
         return False
 
     @property  # type: ignore
-    @requires_update
     def has_emeter(self) -> bool:
         """Children have no emeter to my knowledge."""
         return False
 
     @property  # type: ignore
-    @requires_update
     def device_id(self) -> str:
         """Return unique ID for the socket.
 
@@ -301,7 +282,6 @@ class SmartStripPlug(SmartPlug):
         return f"{self.mac}_{self.child_id}"
 
     @property  # type: ignore
-    @requires_update
     def alias(self) -> str:
         """Return device name (alias).
 
@@ -312,14 +292,12 @@ class SmartStripPlug(SmartPlug):
         return info["alias"]
 
     @property  # type: ignore
-    @requires_update
     def next_action(self) -> Dict:
         """Return next scheduled(?) action."""
         info = self._get_child_info()
         return info["next_action"]
 
     @property  # type: ignore
-    @requires_update
     def on_since(self) -> Optional[datetime]:
         """Return pretty-printed on-time.
 
@@ -335,7 +313,6 @@ class SmartStripPlug(SmartPlug):
         return datetime.now() - timedelta(seconds=on_time)
 
     @property  # type: ignore
-    @requires_update
     def model(self) -> str:
         """Return device model for a child socket.
 

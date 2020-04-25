@@ -11,8 +11,6 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
-import functools
-import inspect
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -92,28 +90,6 @@ class EmeterStatus(dict):
                 raise SmartDeviceException("Unable to find a value for '%s'" % item)
 
 
-def requires_update(f):
-    """Indicate that `update` should be called before accessing this method."""  # noqa: D202
-    if inspect.iscoroutinefunction(f):
-
-        @functools.wraps(f)
-        async def wrapped(*args, **kwargs):
-            self = args[0]
-            assert self._sys_info is not None
-            return await f(*args, **kwargs)
-
-    else:
-
-        @functools.wraps(f)
-        def wrapped(*args, **kwargs):
-            self = args[0]
-            assert self._sys_info is not None
-            return f(*args, **kwargs)
-
-    f.requires_update = True
-    return wrapped
-
-
 class SmartDevice:
     """Base class for all supported device types."""
 
@@ -171,7 +147,6 @@ class SmartDevice:
         return result
 
     @property  # type: ignore
-    @requires_update
     def has_emeter(self) -> bool:
         """Return whether device has an energy meter.
 
@@ -199,7 +174,6 @@ class SmartDevice:
         self._sys_info = await self.get_sys_info()
 
     @property  # type: ignore
-    @requires_update
     def sys_info(self) -> Dict[str, Any]:
         """Retrieve system information.
 
@@ -211,7 +185,6 @@ class SmartDevice:
         return self._sys_info
 
     @property  # type: ignore
-    @requires_update
     def model(self) -> str:
         """Return device model.
 
@@ -223,7 +196,6 @@ class SmartDevice:
         return str(sys_info["model"])
 
     @property  # type: ignore
-    @requires_update
     def alias(self) -> str:
         """Return device name (alias).
 
@@ -331,7 +303,6 @@ class SmartDevice:
         return await self._query_helper("time", "get_timezone")
 
     @property  # type: ignore
-    @requires_update
     def hw_info(self) -> Dict:
         """Return hardware information.
 
@@ -354,7 +325,6 @@ class SmartDevice:
         return {key: sys_info[key] for key in keys if key in sys_info}
 
     @property  # type: ignore
-    @requires_update
     def location(self) -> Dict:
         """Return geographical location.
 
@@ -376,7 +346,6 @@ class SmartDevice:
         return loc
 
     @property  # type: ignore
-    @requires_update
     def rssi(self) -> Optional[int]:
         """Return WiFi signal strenth (rssi).
 
@@ -389,7 +358,6 @@ class SmartDevice:
         return None
 
     @property  # type: ignore
-    @requires_update
     def mac(self) -> str:
         """Return mac address.
 
@@ -418,7 +386,6 @@ class SmartDevice:
         await self._query_helper("system", "set_mac_addr", {"mac": mac})
         await self.update()
 
-    @requires_update
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings.
 
@@ -431,7 +398,6 @@ class SmartDevice:
 
         return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
 
-    @requires_update
     async def get_emeter_daily(
         self, year: int = None, month: int = None, kwh: bool = True
     ) -> Dict:
@@ -466,7 +432,6 @@ class SmartDevice:
 
         return data
 
-    @requires_update
     async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
         """Retrieve monthly statistics for a given year.
 
@@ -493,7 +458,6 @@ class SmartDevice:
 
         return {entry["month"]: entry[key] for entry in response}
 
-    @requires_update
     async def erase_emeter_stats(self):
         """Erase energy meter statistics.
 
@@ -506,7 +470,6 @@ class SmartDevice:
         await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
         await self.update()
 
-    @requires_update
     async def current_consumption(self) -> float:
         """Get the current power consumption in Watt.
 
@@ -535,7 +498,6 @@ class SmartDevice:
         raise NotImplementedError("Device subclass needs to implement this.")
 
     @property  # type: ignore
-    @requires_update
     def is_off(self) -> bool:
         """Return True if device is off.
 
@@ -549,7 +511,6 @@ class SmartDevice:
         raise NotImplementedError("Device subclass needs to implement this.")
 
     @property  # type: ignore
-    @requires_update
     def is_on(self) -> bool:
         """Return if the device is on.
 
@@ -560,7 +521,6 @@ class SmartDevice:
         raise NotImplementedError("Device subclass needs to implement this.")
 
     @property  # type: ignore
-    @requires_update
     def on_since(self) -> Optional[datetime]:
         """Return pretty-printed on-time, if available.
 
@@ -577,7 +537,6 @@ class SmartDevice:
         return datetime.now() - timedelta(seconds=on_time)
 
     @property  # type: ignore
-    @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return device-type specific, end-user friendly state information.
 
@@ -587,7 +546,6 @@ class SmartDevice:
         raise NotImplementedError("Device subclass needs to implement this.")
 
     @property  # type: ignore
-    @requires_update
     def device_id(self) -> str:
         """Return unique ID for the device.
 
@@ -595,7 +553,7 @@ class SmartDevice:
         """
         return self.mac
 
-    async def wifi_scan(self) -> List[WifiNetwork]:
+    async def wifi_scan(self) -> List[WifiNetwork]:  # noqa: D202
         """Scan for available wifi networks."""
 
         async def _scan(target):
@@ -614,7 +572,7 @@ class SmartDevice:
 
         return [WifiNetwork(**x) for x in info["ap_list"]]
 
-    async def wifi_join(self, ssid, password, keytype=3):
+    async def wifi_join(self, ssid, password, keytype=3):  # noqa: D202
         """Join the given wifi network.
 
         If joining the network fails, the device will return to AP mode after a while.

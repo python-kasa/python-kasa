@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from kasa.smartdevice import DeviceType, SmartDevice, requires_update
+from kasa.smartdevice import DeviceType, SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +35,6 @@ class SmartPlug(SmartDevice):
         self._device_type = DeviceType.Plug
 
     @property  # type: ignore
-    @requires_update
     def is_on(self) -> bool:
         """Return whether device is on.
 
@@ -61,7 +60,6 @@ class SmartPlug(SmartDevice):
         await self.update()
 
     @property  # type: ignore
-    @requires_update
     def led(self) -> bool:
         """Return the state of the led.
 
@@ -81,7 +79,6 @@ class SmartPlug(SmartDevice):
         await self.update()
 
     @property  # type: ignore
-    @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information.
 

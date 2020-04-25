@@ -2,7 +2,6 @@
 from typing import Any, Dict
 
 from kasa import DeviceType, SmartDeviceException
-from kasa.smartdevice import requires_update
 from kasa.smartplug import SmartPlug
 
 
@@ -29,7 +28,6 @@ class SmartDimmer(SmartPlug):
         self._device_type = DeviceType.Dimmer
 
     @property  # type: ignore
-    @requires_update
     def brightness(self) -> int:
         """Return current brightness on dimmers.
 
@@ -44,7 +42,6 @@ class SmartDimmer(SmartPlug):
         sys_info = self.sys_info
         return int(sys_info["brightness"])
 
-    @requires_update
     async def set_brightness(self, value: int):
         """Set the new dimmer brightness level.
 
@@ -70,7 +67,6 @@ class SmartDimmer(SmartPlug):
             raise ValueError("Brightness value %s is not valid." % value)
 
     @property  # type: ignore
-    @requires_update
     def is_dimmable(self):
         """Whether the switch supports brightness changes.
 
@@ -81,7 +77,6 @@ class SmartDimmer(SmartPlug):
         return "brightness" in sys_info
 
     @property  # type: ignore
-    @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information.
 

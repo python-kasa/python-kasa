@@ -1,13 +1,8 @@
 """Module for bulbs."""
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple, cast
 
-from kasa.smartdevice import (
-    DeviceType,
-    SmartDevice,
-    SmartDeviceException,
-    requires_update,
-)
+from kasa.smartdevice import DeviceType, SmartDevice, SmartDeviceException
 
 TPLINK_KELVIN = {
     "LB130": (2500, 9000),
@@ -78,7 +73,6 @@ class SmartBulb(SmartDevice):
         self._light_state = None
 
     @property  # type: ignore
-    @requires_update
     def is_color(self) -> bool:
         """Whether the bulb supports color changes.
 
@@ -89,7 +83,6 @@ class SmartBulb(SmartDevice):
         return bool(sys_info["is_color"])
 
     @property  # type: ignore
-    @requires_update
     def is_dimmable(self) -> bool:
         """Whether the bulb supports brightness changes.
 
@@ -100,7 +93,6 @@ class SmartBulb(SmartDevice):
         return bool(sys_info["is_dimmable"])
 
     @property  # type: ignore
-    @requires_update
     def is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes.
 
@@ -112,20 +104,25 @@ class SmartBulb(SmartDevice):
         return bool(sys_info["is_variable_color_temp"])
 
     @property  # type: ignore
-    @requires_update
     def valid_temperature_range(self) -> Tuple[int, int]:
         """Return the device-specific white temperature range (in Kelvin).
 
-        :return: White temperature range in Kelvin (minimun, maximum)
+        :return: White temperature range in Kelvin (minimum, maximum)
         :rtype: tuple
         """
         if not self.is_variable_color_temp:
-            return (0, 0)
+            raise SmartDeviceException(
+                "Bulb does not support variable color temperature."
+            )
+
+        sys_info = self.sys_info
         for model, temp_range in TPLINK_KELVIN.items():
-            sys_info = self.sys_info
             if re.match(model, sys_info["model"]):
                 return temp_range
-        return (0, 0)
+
+        raise SmartDeviceException(
+            "Unknown temperature range for %s" % sys_info["model"]
+        )
 
     async def update(self):
         """Update `sys_info and `light_state`."""
@@ -133,9 +130,20 @@ class SmartBulb(SmartDevice):
         self._light_state = await self.get_light_state()
 
     @property  # type: ignore
-    @requires_update
-    def light_state(self) -> Optional[Dict[str, Dict]]:
+    def light_state(self) -> Dict[str, int]:
         """Query the light state."""
+        if self._light_state is None:
+            raise SmartDeviceException(
+                "The device has no light_state or you have not called update()"
+            )
+
+        # if the bulb is off, its state is stored under a different key
+        # as is_on property depends on on_off itself, we check it here manually
+        is_on = self._light_state["on_off"]
+        if not is_on:
+            off_state = {**self._light_state["dft_on_state"], "on_off": is_on}
+            return cast(dict, off_state)
+
         return self._light_state
 
     async def get_light_state(self) -> Dict[str, Dict]:
@@ -151,7 +159,6 @@ class SmartBulb(SmartDevice):
         return light_state
 
     @property  # type: ignore
-    @requires_update
     def hsv(self) -> Tuple[int, int, int]:
         """Return the current HSV state of the bulb.
 
@@ -161,15 +168,11 @@ class SmartBulb(SmartDevice):
         if not self.is_color:
             raise SmartDeviceException("Bulb does not support color.")
 
-        light_state = self.light_state
-        if not self.is_on:
-            hue = light_state["dft_on_state"]["hue"]
-            saturation = light_state["dft_on_state"]["saturation"]
-            value = light_state["dft_on_state"]["brightness"]
-        else:
-            hue = light_state["hue"]
-            saturation = light_state["saturation"]
-            value = light_state["brightness"]
+        light_state = cast(dict, self.light_state)
+
+        hue = light_state["hue"]
+        saturation = light_state["saturation"]
+        value = light_state["brightness"]
 
         return hue, saturation, value
 
@@ -179,7 +182,6 @@ class SmartBulb(SmartDevice):
                 "Invalid brightness value: {} " "(valid range: 0-100%)".format(value)
             )
 
-    @requires_update
     async def set_hsv(self, hue: int, saturation: int, value: int):
         """Set new HSV.
 
@@ -212,7 +214,6 @@ class SmartBulb(SmartDevice):
         await self.set_light_state(light_state)
 
     @property  # type: ignore
-    @requires_update
     def color_temp(self) -> int:
         """Return color temperature of the device.
 
@@ -223,12 +224,8 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Bulb does not support colortemp.")
 
         light_state = self.light_state
-        if not self.is_on:
-            return int(light_state["dft_on_state"]["color_temp"])
-        else:
-            return int(light_state["color_temp"])
+        return int(light_state["color_temp"])
 
-    @requires_update
     async def set_color_temp(self, temp: int) -> None:
         """Set the color temperature of the device.
 
@@ -248,7 +245,6 @@ class SmartBulb(SmartDevice):
         await self.set_light_state(light_state)
 
     @property  # type: ignore
-    @requires_update
     def brightness(self) -> int:
         """Return the current brightness.
 
@@ -259,12 +255,8 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Bulb is not dimmable.")
 
         light_state = self.light_state
-        if not self.is_on:
-            return int(light_state["dft_on_state"]["brightness"])
-        else:
-            return int(light_state["brightness"])
+        return int(light_state["brightness"])
 
-    @requires_update
     async def set_brightness(self, brightness: int) -> None:
         """Set the brightness.
 
@@ -279,7 +271,6 @@ class SmartBulb(SmartDevice):
         await self.set_light_state(light_state)
 
     @property  # type: ignore
-    @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return bulb-specific state information.
 
@@ -299,7 +290,6 @@ class SmartBulb(SmartDevice):
         return info
 
     @property  # type: ignore
-    @requires_update
     def is_on(self) -> bool:
         """Return whether the device is on."""
         light_state = self.light_state
@@ -314,7 +304,6 @@ class SmartBulb(SmartDevice):
         await self.set_light_state({"on_off": 1})
 
     @property  # type: ignore
-    @requires_update
     def has_emeter(self) -> bool:
         """Return that the bulb has an emeter."""
         return True
