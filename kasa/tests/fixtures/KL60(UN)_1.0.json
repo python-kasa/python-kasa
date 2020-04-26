@@ -1,0 +1,102 @@
+{
+    "emeter": {
+        "err_code": -2001,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "current_ma": 0,
+            "err_code": 0,
+            "power_mw": 0,
+            "total_wh": 0,
+            "voltage_mv": 0
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -2001,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_light_state": {
+            "dft_on_state": {
+                "brightness": 95,
+                "color_temp": 2000,
+                "hue": 0,
+                "mode": "normal",
+                "saturation": 0
+            },
+            "err_code": 0,
+            "on_off": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "TP-LINK_Smart Bulb_9179",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Edison Bulb, Dimmable",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 0,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 0,
+            "latitude_i": 0,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 95,
+                    "color_temp": 2000,
+                    "hue": 0,
+                    "mode": "normal",
+                    "saturation": 0
+                },
+                "on_off": 0
+            },
+            "longitude_i": 0,
+            "mic_mac": "74DA88C89179",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL60(UN)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 2000,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 75,
+                    "color_temp": 2000,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 25,
+                    "color_temp": 2000,
+                    "hue": 0,
+                    "index": 2,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 1,
+                    "color_temp": 2000,
+                    "hue": 0,
+                    "index": 3,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -60,
+            "status": "new",
+            "sw_ver": "1.1.4 Build 190618 Rel.085624"
+        }
+    }
+}
