@@ -3,92 +3,116 @@ trigger:
 pr:
 - master
 
-strategy:
-  matrix:
-    Python 3.7 Ubuntu:
-      python.version: '3.7'
-      vmImage: 'ubuntu-latest'
-    Python 3.8 Ubuntu:
-      python.version: '3.8'
-      vmImage: 'ubuntu-latest'
-#    PyPy Ubuntu:
-#      python.version: pypy3
-#      vmImage: 'ubuntu-latest'
-    Python 3.7 Windows:
-      python.version: '3.7'
-      vmImage: 'windows-latest'
-    Python 3.8 Windows:
-      python.version: '3.8'
-      vmImage: 'windows-latest'
-    Python 3.7 OSX:
-      python.version: '3.7'
-      vmImage: 'macOS-latest'
-    Python 3.8 OSX:
-      python.version: '3.8'
-      vmImage: 'macOS-latest'
 
-pool:
+stages:
+- stage: "Linting"
+  jobs:
+  - job: "LintChecks"
+    pool:
+      vmImage: "ubuntu-latest"
+    strategy:
+      matrix:
+        Python 3.8:
+          python.version: '3.8'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(python.version)'
+      displayName: 'Use Python $(python.version)'
+
+    - script: |
+        python -m pip install --upgrade pip poetry
+        poetry install
+      displayName: 'Install dependencies'
+
+    - script: |
+        poetry run pre-commit run black --all-files
+      displayName: 'Code formating (black)'
+
+    - script: |
+        poetry run pre-commit run flake8 --all-files
+      displayName: 'Code formating (flake8)'
+
+    - script: |
+        poetry run pre-commit run mypy --all-files
+      displayName: 'Typing checks (mypy)'
+
+    - script: |
+        poetry run pre-commit run isort --all-files
+      displayName: 'Order of imports (isort)'
+
+    - script: |
+        poetry run pre-commit run trailing-whitespace --all-files
+      displayName: 'Run trailing-whitespace'
+
+    - script: |
+        poetry run pre-commit run end-of-file-fixer --all-files
+      displayName: 'Run end-of-file-fixer'
+
+    - script: |
+        poetry run pre-commit run check-docstring-first --all-files
+      displayName: 'Run check-docstring-first'
+
+    - script: |
+        poetry run pre-commit run check-yaml --all-files
+      displayName: 'Run check-yaml'
+
+    - script: |
+        poetry run pre-commit run debug-statements --all-files
+      displayName: 'Run debug-statements'
+
+    - script: |
+        poetry run pre-commit run check-ast --all-files
+      displayName: 'Run check-ast'
+
+
+- stage: "Tests"
+  jobs:
+  - job: "Tests"
+    strategy:
+      matrix:
+        Python 3.7 Ubuntu:
+          python.version: '3.7'
+          vmImage: 'ubuntu-latest'
+
+        Python 3.8 Ubuntu:
+          python.version: '3.8'
+          vmImage: 'ubuntu-latest'
+
+        Python 3.7 Windows:
+          python.version: '3.7'
+          vmImage: 'windows-latest'
+
+        Python 3.8 Windows:
+          python.version: '3.8'
+          vmImage: 'windows-latest'
+
+        Python 3.7 OSX:
+          python.version: '3.7'
+          vmImage: 'macOS-latest'
+
+        Python 3.8 OSX:
+          python.version: '3.8'
+          vmImage: 'macOS-latest'
+
+    pool:
       vmImage: $(vmImage)
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(python.version)'
+      displayName: 'Use Python $(python.version)'
 
-- script: |
-    python -m pip install --upgrade pip poetry
-    poetry install && poetry develop
-  displayName: 'Install dependencies'
+    - script: |
+        python -m pip install --upgrade pip poetry
+        poetry install
+      displayName: 'Install dependencies'
 
-- script: |
-    pre-commit run black --all-files
-  displayName: 'Code formating (black)'
+    - script: |
+        poetry run pytest --cov kasa --cov-report xml
+      displayName: 'Tests'
 
-- script: |
-    pre-commit run flake8 --all-files
-  displayName: 'Code formating (flake8)'
-
-- script: |
-    pre-commit run mypy --all-files
-  displayName: 'Typing checks (mypy)'
-
-- script: |
-    pre-commit run isort --all-files
-  displayName: 'Order of imports (isort)'
-
-- script: |
-    pre-commit run trailing-whitespace --all-files
-  displayName: 'Run trailing-whitespace'
-
-- script: |
-    pre-commit run end-of-file-fixer --all-files
-  displayName: 'Run end-of-file-fixer'
-
-- script: |
-    pre-commit run check-docstring-first --all-files
-  displayName: 'Run check-docstring-first'
-
-- script: |
-    pre-commit run check-yaml --all-files
-  displayName: 'Run check-yaml'
-
-- script: |
-    pre-commit run debug-statements --all-files
-  displayName: 'Run debug-statements'
-
-- script: |
-    pre-commit run check-ast --all-files
-  displayName: 'Run check-ast'
-
-- script: |
-    pre-commit run isort --all-files
-  displayName: 'Order of imports (isort)'
-
-- script: |
-    pytest --cov kasa --cov-report xml
-  displayName: 'Tests'
-
-- script: |
-    codecov -t $(codecov.token)
-  displayName: Report Coverage to codecov
+    - script: |
+        poetry run codecov -t $(codecov.token)
+      displayName: Report Coverage to codecov
