@@ -111,5 +111,8 @@ stages:
 
     - script: |
         poetry run pytest --cov kasa --cov-report=xml --cov-report=html
+      displayName: 'Run tests'
+
+    - script: |
         poetry run codecov -t $(codecov.token)
-      displayName: 'Run tests and report to codecov'
+      displayName: 'Report code coverage'
