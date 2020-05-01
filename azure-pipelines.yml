@@ -110,6 +110,6 @@ stages:
       displayName: 'Install dependencies'
 
     - script: |
-        poetry run pytest --cov kasa
+        poetry run pytest --cov kasa --cov-report=xml --cov-report=html
         poetry run codecov -t $(codecov.token)
       displayName: 'Run tests and report to codecov'
