@@ -1,6 +1,6 @@
 import pytest
-
 from asyncclick.testing import CliRunner
+
 from kasa import SmartDevice
 from kasa.cli import alias, brightness, emeter, raw_command, state, sysinfo
 

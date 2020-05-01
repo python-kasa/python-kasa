@@ -15,14 +15,14 @@ kasa = "kasa.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-click = "^7"
 importlib-metadata = "*"
+asyncclick = "^7"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.3"
-pytest-azurepipelines = "^0.8.0"
-pytest-cov = "^2.8.1"
-pytest-asyncio = "^0.10.0"
+pytest = "^5"
+pytest-azurepipelines = "^0.8"
+pytest-cov = "^2.8"
+pytest-asyncio = "^0.11"
 pytest-sugar = "*"
 pre-commit = "*"
 voluptuous = "*"
@@ -36,7 +36,7 @@ force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
 known_first_party = "kasa"
-known_third_party = ["click", "pytest", "setuptools", "voluptuous"]
+known_third_party = ["asyncclick", "pytest", "setuptools", "voluptuous"]
 
 [tool.coverage.run]
 source = ["kasa"]

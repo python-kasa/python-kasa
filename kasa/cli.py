@@ -7,6 +7,7 @@ from pprint import pformat as pf
 from typing import cast
 
 import asyncclick as click
+
 from kasa import Discover, SmartBulb, SmartDevice, SmartPlug, SmartStrip
 
 click.anyio_backend = "asyncio"
