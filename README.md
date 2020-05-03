@@ -239,5 +239,5 @@ The following assumes you have a working installation of Docker.
 Set up the environment and run the tests on demand.
 
 ```shell
-docker build . -t kasa && docker run -v $(PWD)/kasa/tests:/opt/python-kasa/kasa/tests kasa pytest
+docker build . -t kasa && docker run -v $(pwd)/kasa/tests:/opt/python-kasa/kasa/tests kasa pytest
 ```
