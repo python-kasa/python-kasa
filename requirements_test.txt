@@ -6,3 +6,5 @@ pytest-mock
 asyncclick
 voluptuous
 codecov
+wheel
+setuptools
