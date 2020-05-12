@@ -3,9 +3,10 @@
 [![PyPI version](https://badge.fury.io/py/python-kasa.svg)](https://badge.fury.io/py/python-kasa)
 [![Build Status](https://dev.azure.com/python-kasa/python-kasa/_apis/build/status/python-kasa.python-kasa?branchName=master)](https://dev.azure.com/python-kasa/python-kasa/_build/latest?definitionId=2&branchName=master)
 [![Coverage Status](https://coveralls.io/repos/github/python-kasa/python-kasa/badge.svg?branch=master)](https://coveralls.io/github/python-kasa/python-kasa?branch=master)
-[![Reviewed by Hound](https://img.shields.io/badge/Reviewed_by-Hound-8E64B0.svg)](https://houndci.com)
 
-Python Library to control TPLink smart plugs/switches and smart bulbs.
+python-kasa is a Python library to control TPLink smart home devices (plugs, wall switches, power strips, and bulbs) using asyncio.
+This project is a maintainer-made fork of [pyHS100](https://github.com/GadgetReactor/pyHS100) project.
+
 
 **Supported devices**
 
@@ -13,6 +14,7 @@ Python Library to control TPLink smart plugs/switches and smart bulbs.
   * HS100
   * HS103
   * HS105
+  * HS107
   * HS110
 * Power Strips
   * HS300
@@ -31,6 +33,9 @@ Python Library to control TPLink smart plugs/switches and smart bulbs.
   * KL110
   * KL120
   * KL130
+
+**Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests! See below for instructions for setting up a development environment.**
+
 
 # Usage
 
@@ -82,7 +87,7 @@ All devices support a variety of common commands, including:
  * `state` which returns state information
  * `on` and `off` for turning the device on or off
  * `emeter` (where applicable) to return energy consumption information
- * `sysinfo` to return raw system information which is used by e.g. `state`, useful for debugging and when adding support for new device types
+ * `sysinfo` to return raw system information
 
 ## Energy meter
 
@@ -96,128 +101,95 @@ $ kasa emeter
 Current state: {'total': 133.105, 'power': 108.223577, 'current': 0.54463, 'voltage': 225.296283}
 ```
 
-## Plug-specific commands
-
-At the moment only switching the state of the LED is implemented.
-**Feel free to submit patches as pull requests for further features!**
-### Controlling the LED
-
-`led` command can be used to control whether the LED light on front of the plug is on or off.
-
-```
-$ kasa --plug led
-LED state: False
-$ kasa --plug led 1
-Turning led to True
-```
-
 ## Bulb-specific commands
 
-At the moment setting brightness, color temperature and color (in HSV) is supported.
+At the moment setting brightness, color temperature and color (in HSV) are supported depending on the device.
 The commands are straightforward, so feel free to check `--help` for instructions how to use them.
-
-**Feel free to submit patches as pull requests to add more functionality (e.g. scenes)!**
 
 # Library usage
 
-The public API is well documented, but here are some examples to get you started.
-For all available API functions run ```help(SmartPlug)``` or ```help(SmartBulb)```.
+The property accesses use the data obtained before by awaiting `update()`.
+The values are cached until the next update call.
+Each method changing the state of the device will automatically update the cached state.
+
+Errors are raised as `SmartDeviceException` instances for the user to handle.
 
 ## Discovering devices
 
-`Discover` class' `discover()` can be used to discover supported devices,
-which returns a dictionary keyed with the IP address whose value hold a ready-to-use instance of the detected device type.
+`Discover.discover()` can be used to discover supported devices in the local network.
+The return value is a dictionary keyed with the IP address and the value holds a ready-to-use instance of the detected device type.
 
 Example:
 ```python
+import asyncio
 from kasa import Discover
 
-for dev in Discover.discover().values():
-    print(dev)
+devices = asyncio.run(Discover.discover())
+for addr, dev in devices.items():
+    asyncio.run(dev.update())
+    print(f"{addr} >> {dev}")
 ```
 ```
-$ python3 example.py
+$ python example.py
 <SmartPlug at 192.168.XXX.XXX (My Smart Plug), is_on: True - dev specific: {'LED state': True, 'On since': datetime.datetime(2017, 3, 26, 18, 29, 17, 52073)}>
 ```
 
 ## Querying basic information
 
-*Please note that most property getters do I/O (e.g. fetching the system information) on each call.
-If you want to avoid unnecessary communication with the device please use `get_sysinfo` and handle parsing of information by yourself.*
-
 ```python
-from kasa import SmartPlug, SmartBulb
+import asyncio
+from kasa import SmartPlug
 from pprint import pformat as pf
 
 plug = SmartPlug("192.168.XXX.XXX")
+asyncio.run(plug.update())
 print("Hardware: %s" % pf(plug.hw_info))
-print("Full sysinfo: %s" % pf(plug.get_sysinfo())) # this prints lots of information about the device
+print("Full sysinfo: %s" % pf(plug.sys_info))
 ```
+
+The rest of the examples assume that you have initialized an instance.
 
 ## State & switching
 
-Devices can be turned on and off by either calling appropriate methods on the device object,
-or by assigning a new state to `state` property.
+Devices can be turned on and off by either calling appropriate methods on the device object.
 
 ```python
-print("Current state: %s" % plug.state)
-plug.turn_off()
-plug.turn_on()
-```
-
-```python
-plug.state = "ON"
-plug.state = "OFF"
-```
-
-## Time information
-```python
-print("Current time: %s" % plug.time)
-print("Timezone: %s" % plug.timezone)
-```
-
-## Getting and setting the name
-```python
-print("Alias: %s" % plug.alias)
-plug.alias = "My New Smartplug"
+print("Current state: %s" % plug.is_on)
+await plug.turn_off()
+await plug.turn_on()
 ```
 
 ## Getting emeter status (if applicable)
 ```python
-print("Current consumption: %s" % plug.get_emeter_realtime())
-print("Per day: %s" % plug.get_emeter_daily(year=2016, month=12))
-print("Per month: %s" % plug.get_emeter_monthly(year=2016))
+print("Current consumption: %s" % await plug.get_emeter_realtime())
+print("Per day: %s" % await plug.get_emeter_daily(year=2016, month=12))
+print("Per month: %s" % await plug.get_emeter_monthly(year=2016))
 ```
 
-## Plug-specific
-
-### Switching the led (plugs only)
-```python
-print("Current LED state: %s" % plug.led)
-plug.led = False # turn off led
-print("New LED state: %s" % plug.led)
-```
-
-## Bulb-specific API
+## Bulb and dimmer-specific APIs
 
 The bulb API is likewise straightforward, so please refer to its API documentation.
 Information about supported features can be queried by using properties prefixed with `is_`, e.g. `is_dimmable`.
 
 ### Setting the brightness
 
-The `brightness` property works in percentages.
-
 ```python
-print(bulb.brightness)
+import asyncio
+from kasa import SmartBulb
+
+bulb = SmartBulb("192.168.1.123")
+asyncio.run(bulb.update())
+
 if bulb.is_dimmable:
-    bulb.brightness = 100
+    asyncio.run(bulb.set_brightness(100))
+    print(bulb.brightness)
 ```
 
 ### Setting the color temperature
 ```python
-print(bulb.color_temp)
 if bulb.is_variable_color_temp:
-    bulb.color_temp = 3000
+    await bulb.set_color_temp(3000)
+    print(bulb.color_temp)
 ```
 
 ### Setting the color
@@ -225,19 +197,29 @@ if bulb.is_variable_color_temp:
 Hue is given in degrees (0-360) and saturation and value in percentage.
 
 ```python
-print(bulb.hsv)
 if bulb.is_color:
-   bulb.hsv = (180, 100, 100) # set to cyan
+    await bulb.set_hsv(180, 100, 100) # set to cyan
+    print(bulb.hsv)
 ```
 
-## Development Setup
+## Contributing
 
-### Docker
+Contributions are very welcome! To simplify the process, we are leveraging automated checks and tests for contributions.
 
-The following assumes you have a working installation of Docker.
+### Resources
 
-Set up the environment and run the tests on demand.
+* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+* [https://github.com/plasticrake/tplink-smarthome-simulator](tplink-smarthome-simulator)
 
-```shell
-docker build . -t kasa && docker run -v $(PWD)/kasa/tests:/opt/python-kasa/kasa/tests kasa pytest
+### Setting up development environment
+
+```bash
+poetry install
+pre-commit install
 ```
+
+### Code-style checks
+
+We use several tools to automatically check all contributions, which are run automatically when you commit your code.
+
+If you want to manually execute the checks, you can run `tox -e lint` to do the linting checks or `tox` to also execute the tests.

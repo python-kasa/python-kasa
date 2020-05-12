@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 from unittest.mock import patch
 
-import pytest
+import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import DeviceType, SmartDeviceException, SmartStrip
 

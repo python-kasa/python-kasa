@@ -1,8 +1,0 @@
-pytest
-pytest-azurepipelines
-pytest-cov
-pytest-asyncio
-pytest-mock
-asyncclick
-voluptuous
-codecov

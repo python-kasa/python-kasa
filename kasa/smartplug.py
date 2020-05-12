@@ -10,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 class SmartPlug(SmartDevice):
     """Representation of a TP-Link Smart Switch.
 
-    Usage example when used a a synchronous library:
+    Usage example:
     ```python
     p = SmartPlug("192.168.1.105")
 
@@ -19,9 +19,10 @@ class SmartPlug(SmartDevice):
 
     # change state of plug
     await p.turn_on()
+    assert p.is_on is True
     await p.turn_off()
 
-    # query and print current state of plug
+    # print current state of plug
     print(p.state_information)
     ```
 

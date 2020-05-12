@@ -1,7 +1,16 @@
 import logging
 import re
 
-from voluptuous import REMOVE_EXTRA, All, Any, Coerce, Invalid, Optional, Range, Schema
+from voluptuous import (  # type: ignore
+    REMOVE_EXTRA,
+    All,
+    Any,
+    Coerce,
+    Invalid,
+    Optional,
+    Range,
+    Schema,
+)
 
 from ..protocol import TPLinkSmartHomeProtocol
 
