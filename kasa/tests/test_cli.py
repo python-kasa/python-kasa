@@ -93,7 +93,7 @@ async def test_brightness(dev):
     assert "Setting brightness" in res.output
 
     res = await runner.invoke(brightness, obj=dev)
-    assert f"Brightness: 12" in res.output
+    assert "Brightness: 12" in res.output
 
 
 async def test_temperature(dev):
