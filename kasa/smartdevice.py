@@ -99,7 +99,10 @@ def requires_update(f):
         @functools.wraps(f)
         async def wrapped(*args, **kwargs):
             self = args[0]
-            assert self._sys_info is not None
+            if self._last_update is None:
+                raise SmartDeviceException(
+                    "You need to await update() to access the data"
+                )
             return await f(*args, **kwargs)
 
     else:
@@ -107,7 +110,10 @@ def requires_update(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             self = args[0]
-            assert self._sys_info is not None
+            if self._last_update is None:
+                raise SmartDeviceException(
+                    "You need to await update() to access the data"
+                )
             return f(*args, **kwargs)
 
     f.requires_update = True
@@ -129,7 +135,20 @@ class SmartDevice:
         self.emeter_type = "emeter"
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
-        self._sys_info: Optional[Dict] = None
+        # TODO: typing Any is just as using Optional[Dict] would require separate checks in
+        #       accessors. the @updated_required decorator does not ensure mypy that these
+        #       are not accessed incorrectly.
+        self._last_update: Any = None
+        self._sys_info: Any = None  # TODO: this is here to avoid changing tests
+
+    def _create_request(
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    ):
+        request: Dict[str, Any] = {target: {cmd: arg}}
+        if child_ids is not None:
+            request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}
+
+        return request
 
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
@@ -139,13 +158,12 @@ class SmartDevice:
         :param target: Target system {system, time, emeter, ..}
         :param cmd: Command to execute
         :param arg: JSON object passed as parameter to the command
+        :param child_ids: ids of child devices
         :return: Unwrapped result for the call.
         :rtype: dict
         :raises SmartDeviceException: if command was not executed correctly
         """
-        request: Dict[str, Any] = {target: {cmd: arg}}
-        if child_ids is not None:
-            request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}
+        request = self._create_request(target, cmd, arg, child_ids)
 
         try:
             response = await self.protocol.query(host=self.host, request=request)
@@ -196,7 +214,15 @@ class SmartDevice:
 
         Needed for methods that are decorated with `requires_update`.
         """
-        self._sys_info = await self.get_sys_info()
+        req = {}
+        req.update(self._create_request("system", "get_sysinfo"))
+
+        # Check for emeter if we were never updated, or if the device has emeter
+        if self._last_update is None or self.has_emeter:
+            req.update(self._create_emeter_request())
+        self._last_update = await self.protocol.query(self.host, req)
+        # TODO: keep accessible for tests
+        self._sys_info = self._last_update["system"]["get_sysinfo"]
 
     @property  # type: ignore
     @requires_update
@@ -207,8 +233,7 @@ class SmartDevice:
         :rtype dict
         :raises SmartDeviceException: on error
         """
-        assert self._sys_info is not None
-        return self._sys_info
+        return self._sys_info  # type: ignore
 
     @property  # type: ignore
     @requires_update
@@ -418,7 +443,15 @@ class SmartDevice:
         await self._query_helper("system", "set_mac_addr", {"mac": mac})
         await self.update()
 
+    @property  # type: ignore
     @requires_update
+    def emeter_realtime(self) -> EmeterStatus:
+        """Return current emeter status."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+
+        return EmeterStatus(self._last_update[self.emeter_type]["get_realtime"])
+
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings.
 
@@ -431,7 +464,83 @@ class SmartDevice:
 
         return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
 
+    def _create_emeter_request(self, year: int = None, month: int = None):
+        """Create a Internal method for building a request for all emeter statistics at once."""
+        if year is None:
+            year = datetime.now().year
+        if month is None:
+            month = datetime.now().month
+
+        import collections.abc
+
+        def update(d, u):
+            """Update dict recursively."""
+            for k, v in u.items():
+                if isinstance(v, collections.abc.Mapping):
+                    d[k] = update(d.get(k, {}), v)
+                else:
+                    d[k] = v
+            return d
+
+        req: Dict[str, Any] = {}
+        update(req, self._create_request(self.emeter_type, "get_realtime"))
+        update(
+            req, self._create_request(self.emeter_type, "get_monthstat", {"year": year})
+        )
+        update(
+            req,
+            self._create_request(
+                self.emeter_type, "get_daystat", {"month": month, "year": year}
+            ),
+        )
+
+        return req
+
+    @property  # type: ignore
     @requires_update
+    def emeter_today(self) -> Optional[float]:
+        """Return today's energy consumption in kWh."""
+        raw_data = self._last_update[self.emeter_type]["get_daystat"]["day_list"]
+        data = self._emeter_convert_emeter_data(raw_data)
+        today = datetime.now().day
+
+        if today in data:
+            return data[today]
+
+        return None
+
+    @property  # type: ignore
+    @requires_update
+    def emeter_this_month(self) -> Optional[float]:
+        """Return this month's energy consumption in kWh."""
+        raw_data = self._last_update[self.emeter_type]["get_monthstat"]["month_list"]
+        data = self._emeter_convert_emeter_data(raw_data)
+        current_month = datetime.now().month
+
+        if current_month in data:
+            return data[current_month]
+
+        return None
+
+    def _emeter_convert_emeter_data(self, data, kwh=True) -> Dict:
+        """Return emeter information keyed with the day/month.."""
+        response = [EmeterStatus(**x) for x in data]
+
+        if not response:
+            return {}
+
+        energy_key = "energy_wh"
+        if kwh:
+            energy_key = "energy"
+
+        entry_key = "month"
+        if "day" in response[0]:
+            entry_key = "day"
+
+        data = {entry[entry_key]: entry[energy_key] for entry in response}
+
+        return data
+
     async def get_emeter_daily(
         self, year: int = None, month: int = None, kwh: bool = True
     ) -> Dict:
@@ -456,15 +565,8 @@ class SmartDevice:
         response = await self._query_helper(
             self.emeter_type, "get_daystat", {"month": month, "year": year}
         )
-        response = [EmeterStatus(**x) for x in response["day_list"]]
 
-        key = "energy_wh"
-        if kwh:
-            key = "energy"
-
-        data = {entry["day"]: entry[key] for entry in response}
-
-        return data
+        return self._emeter_convert_emeter_data(response["day_list"], kwh)
 
     @requires_update
     async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
@@ -485,13 +587,8 @@ class SmartDevice:
         response = await self._query_helper(
             self.emeter_type, "get_monthstat", {"year": year}
         )
-        response = [EmeterStatus(**x) for x in response["month_list"]]
 
-        key = "energy_wh"
-        if kwh:
-            key = "energy"
-
-        return {entry["month"]: entry[key] for entry in response}
+        return self._emeter_convert_emeter_data(response["month_list"], kwh)
 
     @requires_update
     async def erase_emeter_stats(self):
@@ -673,11 +770,6 @@ class SmartDevice:
         return False
 
     def __repr__(self):
-        return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
-            self.__class__.__name__,
-            self.model,
-            self.host,
-            self.alias,
-            self.is_on,
-            self.state_information,
-        )
+        if self._last_update is None:
+            return f"<{self._device_type} at {self.host} - update() needed>"
+        return f"<{self._device_type} model {self.model} at {self.host} ({self.alias}), is_on: {self.is_on} - dev specific: {self.state_information}>"

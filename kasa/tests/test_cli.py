@@ -66,7 +66,7 @@ async def test_emeter(dev: SmartDevice, mocker):
         assert "Device has no emeter" in res.output
         return
 
-    assert "Current State" in res.output
+    assert "== Emeter ==" in res.output
 
     monthly = mocker.patch.object(dev, "get_emeter_monthly")
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
