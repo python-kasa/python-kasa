@@ -60,7 +60,6 @@ class SmartDimmer(SmartPlug):
         if not isinstance(value, int):
             raise ValueError("Brightness must be integer, " "not of %s.", type(value))
         elif 0 <= value <= 100:
-            await self.turn_on()
             await self._query_helper(
                 "smartlife.iot.dimmer", "set_brightness", {"brightness": value}
             )
