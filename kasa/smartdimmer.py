@@ -1,8 +1,7 @@
 """Module for dimmers (currently only HS220)."""
 from typing import Any, Dict
 
-from kasa import DeviceType, SmartDeviceException
-from kasa.smartdevice import requires_update
+from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
 from kasa.smartplug import SmartPlug
 
 
