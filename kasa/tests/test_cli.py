@@ -28,9 +28,6 @@ async def test_state(dev, turn_on):
     else:
         assert "Device state: OFF" in res.output
 
-    if not dev.has_emeter:
-        assert "Device has no emeter" in res.output
-
 
 async def test_alias(dev):
     runner = CliRunner()

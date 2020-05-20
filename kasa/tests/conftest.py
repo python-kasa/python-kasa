@@ -97,6 +97,10 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
+# to avoid adding this for each async function separately
+pytestmark = pytest.mark.asyncio
+
+
 @pytest.fixture(params=SUPPORTED_DEVICES)
 def dev(request):
     """Device fixture.
