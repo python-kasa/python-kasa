@@ -196,7 +196,10 @@ class Discover:
         else:
             raise SmartDeviceException("No 'system' nor 'get_sysinfo' in response")
 
-        if "get_dimmer_parameters" in info["smartlife.iot.dimmer"]:
+        if (
+            "smartlife.iot.dimmer" in info
+            and "get_dimmer_parameters" in info["smartlife.iot.dimmer"]
+        ):
             return SmartDimmer
         elif "smartplug" in type_.lower() and "children" in sysinfo:
             return SmartStrip
