@@ -264,8 +264,7 @@ class SmartDevice:
         :param alias: New alias (name)
         :raises SmartDeviceException: on error
         """
-        await self._query_helper("system", "set_dev_alias", {"alias": alias})
-        await self.update()
+        return await self._query_helper("system", "set_dev_alias", {"alias": alias})
 
     async def get_icon(self) -> Dict:
         """Return device icon.
@@ -440,8 +439,7 @@ class SmartDevice:
         :param str mac: mac in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         :raises SmartDeviceException: on error
         """
-        await self._query_helper("system", "set_mac_addr", {"mac": mac})
-        await self.update()
+        return await self._query_helper("system", "set_mac_addr", {"mac": mac})
 
     @property  # type: ignore
     @requires_update
@@ -600,8 +598,7 @@ class SmartDevice:
         if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
-        await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
-        await self.update()
+        return await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
     @requires_update
     async def current_consumption(self) -> float:

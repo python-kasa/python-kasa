@@ -33,6 +33,7 @@ class SmartBulb(SmartDevice):
 
     # change state of bulb
     await p.turn_on()
+    await p.update()
     assert p.is_on
     await p.turn_off()
 
@@ -44,6 +45,7 @@ class SmartBulb(SmartDevice):
         print("we got color!")
         # set the color to an HSV tuple
         await p.set_hsv(180, 100, 100)
+        await p.update()
         # get the current HSV value
         print(p.hsv)
 
@@ -51,6 +53,7 @@ class SmartBulb(SmartDevice):
     if p.is_variable_color_temp:
         # set the color temperature in Kelvin
         await p.set_color_temp(3000)
+        await p.update()
 
         # get the current color temperature
         print(p.color_temp)
@@ -59,6 +62,7 @@ class SmartBulb(SmartDevice):
     if p.is_dimmable:
         # set the bulb to 50% brightness
         await p.set_brightness(50)
+        await p.update()
 
         # check the current brightness
         print(p.brightness)
@@ -154,7 +158,6 @@ class SmartBulb(SmartDevice):
         light_state = await self._query_helper(
             self.LIGHT_SERVICE, "transition_light_state", state
         )
-        await self.update()
         return light_state
 
     @property  # type: ignore
