@@ -667,6 +667,11 @@ class SmartDevice:
         """Return True if the device supports color temperature."""
         return False
 
+    @property
+    def is_color(self) -> bool:
+        """Return True if the device supports color changes."""
+        return False
+
     def __repr__(self):
         return "<{} model {} at {} ({}), is_on: {} - dev specific: {}>".format(
             self.__class__.__name__,

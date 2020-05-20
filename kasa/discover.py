@@ -8,6 +8,7 @@ from typing import Awaitable, Callable, Dict, Mapping, Type, Union, cast
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
+from kasa.smartdimmer import SmartDimmer
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
 
@@ -195,7 +196,12 @@ class Discover:
         else:
             raise SmartDeviceException("No 'system' nor 'get_sysinfo' in response")
 
-        if "smartplug" in type_.lower() and "children" in sysinfo:
+        if (
+            "smartlife.iot.dimmer" in info
+            and "get_dimmer_parameters" in info["smartlife.iot.dimmer"]
+        ):
+            return SmartDimmer
+        elif "smartplug" in type_.lower() and "children" in sysinfo:
             return SmartStrip
         elif "smartplug" in type_.lower():
             return SmartPlug

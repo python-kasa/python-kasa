@@ -1,8 +1,7 @@
 """Module for dimmers (currently only HS220)."""
 from typing import Any, Dict
 
-from kasa import DeviceType, SmartDeviceException
-from kasa.smartdevice import requires_update
+from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
 from kasa.smartplug import SmartPlug
 
 
@@ -61,7 +60,6 @@ class SmartDimmer(SmartPlug):
         if not isinstance(value, int):
             raise ValueError("Brightness must be integer, " "not of %s.", type(value))
         elif 0 <= value <= 100:
-            await self.turn_on()
             await self._query_helper(
                 "smartlife.iot.dimmer", "set_brightness", {"brightness": value}
             )

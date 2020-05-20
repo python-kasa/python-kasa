@@ -17,7 +17,7 @@ SUPPORTED_DEVICES = glob.glob(
 
 BULBS = {"KL60", "LB100", "LB120", "LB130", "KL120", "KL130"}
 VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL130"}
-PLUGS = {"HS100", "HS103", "HS105", "HS110", "HS200", "HS210", "HS300"}
+PLUGS = {"HS100", "HS103", "HS105", "HS110", "HS200", "HS210"}
 STRIPS = {"HS107", "HS300", "KP303", "KP400"}
 DIMMERS = {"HS220"}
 COLOR_BULBS = {"LB130", "KL130"}
@@ -49,6 +49,18 @@ no_emeter = pytest.mark.parametrize(
 bulb = pytest.mark.parametrize("dev", filter_model("bulbs", BULBS), indirect=True)
 plug = pytest.mark.parametrize("dev", filter_model("plugs", PLUGS), indirect=True)
 strip = pytest.mark.parametrize("dev", filter_model("strips", STRIPS), indirect=True)
+dimmer = pytest.mark.parametrize("dev", filter_model("dimmers", DIMMERS), indirect=True)
+
+# This ensures that every single file inside fixtures/ is being placed in some category
+categorized_fixtures = set(dimmer.args[1] + strip.args[1] + plug.args[1] + bulb.args[1])
+diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
+if diff:
+    for file in diff:
+        print(
+            "No category for file %s, add to the corresponding set (BULBS, PLUGS, ..)"
+            % file
+        )
+    raise Exception("Missing category for %s" % diff)
 
 dimmable = pytest.mark.parametrize(
     "dev", filter_model("dimmable", DIMMABLE), indirect=True

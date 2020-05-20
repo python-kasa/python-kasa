@@ -249,8 +249,8 @@ def success(target, cmd, res):
 
 
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
-    def __init__(self, info, invalid=False):
-        # TODO remove invalid when removing the old tests.
+    def __init__(self, info):
+        self.discovery_data = info
         proto = FakeTransportProtocol.baseproto
         for target in info:
             # print("target %s" % target)
