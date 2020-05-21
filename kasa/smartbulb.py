@@ -1,4 +1,4 @@
-"""Module for bulbs."""
+"""Module for bulbs (LB*, KL*, KB*)."""
 import re
 from typing import Any, Dict, Tuple, cast
 
@@ -82,34 +82,21 @@ class SmartBulb(SmartDevice):
     @property  # type: ignore
     @requires_update
     def is_color(self) -> bool:
-        """Whether the bulb supports color changes.
-
-        :return: True if the bulb supports color changes, False otherwise
-        :rtype: bool
-        """
+        """Whether the bulb supports color changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_color"])
 
     @property  # type: ignore
     @requires_update
     def is_dimmable(self) -> bool:
-        """Whether the bulb supports brightness changes.
-
-        :return: True if the bulb supports brightness changes, False otherwise
-        :rtype: bool
-        """
+        """Whether the bulb supports brightness changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_dimmable"])
 
     @property  # type: ignore
     @requires_update
     def is_variable_color_temp(self) -> bool:
-        """Whether the bulb supports color temperature changes.
-
-        :return: True if the bulb supports color temperature changes, False
-        otherwise
-        :rtype: bool
-        """
+        """Whether the bulb supports color temperature changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_variable_color_temp"])
 
@@ -118,8 +105,7 @@ class SmartBulb(SmartDevice):
     def valid_temperature_range(self) -> Tuple[int, int]:
         """Return the device-specific white temperature range (in Kelvin).
 
-        :return: White temperature range in Kelvin (minimun, maximum)
-        :rtype: tuple
+        :return: White temperature range in Kelvin (minimum, maximum)
         """
         if not self.is_variable_color_temp:
             return (0, 0)
@@ -166,7 +152,6 @@ class SmartBulb(SmartDevice):
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
-        :rtype: tuple
         """
         if not self.is_color:
             raise SmartDeviceException("Bulb does not support color.")
@@ -220,11 +205,7 @@ class SmartBulb(SmartDevice):
     @property  # type: ignore
     @requires_update
     def color_temp(self) -> int:
-        """Return color temperature of the device.
-
-        :return: Color temperature in Kelvin
-        :rtype: int
-        """
+        """Return color temperature of the device in kelvin."""
         if not self.is_variable_color_temp:
             raise SmartDeviceException("Bulb does not support colortemp.")
 
@@ -233,10 +214,7 @@ class SmartBulb(SmartDevice):
 
     @requires_update
     async def set_color_temp(self, temp: int) -> None:
-        """Set the color temperature of the device.
-
-        :param int temp: The new color temperature, in Kelvin
-        """
+        """Set the color temperature of the device in kelvin."""
         if not self.is_variable_color_temp:
             raise SmartDeviceException("Bulb does not support colortemp.")
 
@@ -253,11 +231,7 @@ class SmartBulb(SmartDevice):
     @property  # type: ignore
     @requires_update
     def brightness(self) -> int:
-        """Return the current brightness.
-
-        :return: brightness in percent
-        :rtype: int
-        """
+        """Return the current brightness in percentage."""
         if not self.is_dimmable:  # pragma: no cover
             raise SmartDeviceException("Bulb is not dimmable.")
 
@@ -266,10 +240,7 @@ class SmartBulb(SmartDevice):
 
     @requires_update
     async def set_brightness(self, brightness: int) -> None:
-        """Set the brightness.
-
-        :param int brightness: brightness in percent
-        """
+        """Set the brightness in percentage."""
         if not self.is_dimmable:  # pragma: no cover
             raise SmartDeviceException("Bulb is not dimmable.")
 
@@ -281,11 +252,7 @@ class SmartBulb(SmartDevice):
     @property  # type: ignore
     @requires_update
     def state_information(self) -> Dict[str, Any]:
-        """Return bulb-specific state information.
-
-        :return: Bulb information dict, keys in user-presentable form.
-        :rtype: dict
-        """
+        """Return bulb-specific state information."""
         info: Dict[str, Any] = {
             "Brightness": self.brightness,
             "Is dimmable": self.is_dimmable,

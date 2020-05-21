@@ -62,6 +62,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
 
     def datagram_received(self, data, addr) -> None:
+        """Handle discovery responses."""
         ip, port = addr
         if ip in self.discovered_devices:
             return
@@ -82,10 +83,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             _LOGGER.error("Received invalid response: %s", info)
 
     def error_received(self, ex):
+        """Handle asyncio.Protocol errors."""
         _LOGGER.error("Got error: %s", ex)
 
     def connection_lost(self, ex):
-        pass
+        """NOP implementation of connection lost."""
 
 
 class Discover:

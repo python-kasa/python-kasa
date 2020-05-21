@@ -1,7 +1,4 @@
-"""Module for multi-socket devices (HS300, HS107).
-
-.. todo:: describe how this interfaces with single plugs.
-"""
+"""Module for multi-socket devices (HS300, HS107, KP303, ..)."""
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -78,18 +75,12 @@ class SmartStrip(SmartDevice):
                 )
 
     async def turn_on(self):
-        """Turn the strip on.
-
-        :raises SmartDeviceException: on error
-        """
+        """Turn the strip on."""
         await self._query_helper("system", "set_relay_state", {"state": 1})
         await self.update()
 
     async def turn_off(self):
-        """Turn the strip off.
-
-        :raises SmartDeviceException: on error
-        """
+        """Turn the strip off."""
         await self._query_helper("system", "set_relay_state", {"state": 0})
         await self.update()
 
@@ -121,20 +112,12 @@ class SmartStrip(SmartDevice):
     @property  # type: ignore
     @requires_update
     def led(self) -> bool:
-        """Return the state of the led.
-
-        :return: True if led is on, False otherwise
-        :rtype: bool
-        """
+        """Return the state of the led."""
         sys_info = self.sys_info
         return bool(1 - sys_info["led_off"])
 
     async def set_led(self, state: bool):
-        """Set the state of the led (night mode).
-
-        :param bool state: True to set led on, False to set led off
-        :raises SmartDeviceException: on error
-        """
+        """Set the state of the led (night mode)."""
         await self._query_helper("system", "set_led_off", {"off": int(not state)})
         await self.update()
 
@@ -144,7 +127,6 @@ class SmartStrip(SmartDevice):
         """Return strip-specific state information.
 
         :return: Strip information dict, keys in user-presentable form.
-        :rtype: dict
         """
         return {
             "LED state": self.led,
@@ -153,29 +135,15 @@ class SmartStrip(SmartDevice):
         }
 
     async def current_consumption(self) -> float:
-        """Get the current power consumption in watts.
-
-        :return: the current power consumption in watts.
-        :rtype: float
-        :raises SmartDeviceException: on error
-        """
+        """Get the current power consumption in watts."""
         consumption = sum([await plug.current_consumption() for plug in self.plugs])
 
         return consumption
-
-    async def get_icon(self) -> Dict:
-        """Icon for the device.
-
-        Overriden to keep the API, as the SmartStrip and children do not
-        have icons, we just return dummy strings.
-        """
-        return {"icon": "SMARTSTRIP-DUMMY", "hash": "SMARTSTRIP-DUMMY"}
 
     async def set_alias(self, alias: str) -> None:
         """Set the alias for the strip.
 
         :param alias: new alias
-        :raises SmartDeviceException: on error
         """
         return await super().set_alias(alias)
 
@@ -190,8 +158,6 @@ class SmartStrip(SmartDevice):
                       month)
         :param kwh: return usage in kWh (default: True)
         :return: mapping of day of month to value
-        :rtype: dict
-        :raises SmartDeviceException: on error
         """
         emeter_daily: DefaultDict[int, float] = defaultdict(lambda: 0.0)
         for plug in self.plugs:
@@ -208,9 +174,6 @@ class SmartStrip(SmartDevice):
 
         :param year: year for which to retrieve statistics (default: this year)
         :param kwh: return usage in kWh (default: True)
-        :return: dict: mapping of month to value
-        :rtype: dict
-        :raises SmartDeviceException: on error
         """
         emeter_monthly: DefaultDict[int, float] = defaultdict(lambda: 0.0)
         for plug in self.plugs:
@@ -222,10 +185,7 @@ class SmartStrip(SmartDevice):
 
     @requires_update
     async def erase_emeter_stats(self):
-        """Erase energy meter statistics for all plugs.
-
-        :raises SmartDeviceException: on error
-        """
+        """Erase energy meter statistics for all plugs."""
         for plug in self.plugs:
             await plug.erase_emeter_stats()
 
@@ -267,10 +227,7 @@ class SmartStripPlug(SmartPlug):
     @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
-        """Return whether device is on.
-
-        :return: True if device is on, False otherwise
-        """
+        """Return whether device is on."""
         info = self._get_child_info()
         return info["state"]
 
@@ -280,9 +237,6 @@ class SmartStripPlug(SmartPlug):
         """Return the state of the led.
 
         This is always false for subdevices.
-
-        :return: True if led is on, False otherwise
-        :rtype: bool
         """
         return False
 
@@ -304,11 +258,7 @@ class SmartStripPlug(SmartPlug):
     @property  # type: ignore
     @requires_update
     def alias(self) -> str:
-        """Return device name (alias).
-
-        :return: Device name aka alias.
-        :rtype: str
-        """
+        """Return device name (alias)."""
         info = self._get_child_info()
         return info["alias"]
 
@@ -322,11 +272,7 @@ class SmartStripPlug(SmartPlug):
     @property  # type: ignore
     @requires_update
     def on_since(self) -> Optional[datetime]:
-        """Return pretty-printed on-time.
-
-        :return: datetime for on since
-        :rtype: datetime
-        """
+        """Return on-time, if available."""
         if self.is_off:
             return None
 
@@ -338,21 +284,14 @@ class SmartStripPlug(SmartPlug):
     @property  # type: ignore
     @requires_update
     def model(self) -> str:
-        """Return device model for a child socket.
-
-        :return: device model
-        :rtype: str
-        :raises SmartDeviceException: on error
-        """
+        """Return device model for a child socket."""
         sys_info = self.parent.sys_info
         return f"Socket for {sys_info['model']}"
 
     def _get_child_info(self) -> Dict:
-        """Return the subdevice information for this device.
-
-        :raises SmartDeviceException: if the information is not found.
-        """
+        """Return the subdevice information for this device."""
         for plug in self.parent.sys_info["children"]:
             if plug["id"] == self.child_id:
                 return plug
+
         raise SmartDeviceException(f"Unable to find children {self.child_id}")

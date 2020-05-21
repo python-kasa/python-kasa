@@ -33,9 +33,6 @@ class SmartDimmer(SmartPlug):
         """Return current brightness on dimmers.
 
         Will return a range between 0 - 100.
-
-        :returns: integer
-        :rtype: int
         """
         if not self.is_dimmable:
             raise SmartDeviceException("Device is not dimmable.")
@@ -45,15 +42,7 @@ class SmartDimmer(SmartPlug):
 
     @requires_update
     async def set_brightness(self, value: int):
-        """Set the new dimmer brightness level.
-
-        Note:
-        When setting brightness, if the light is not
-        already on, it will be turned on automatically.
-
-        :param value: integer between 0 and 100
-
-        """
+        """Set the new dimmer brightness level in percentage."""
         if not self.is_dimmable:
             raise SmartDeviceException("Device is not dimmable.")
 
@@ -68,23 +57,15 @@ class SmartDimmer(SmartPlug):
 
     @property  # type: ignore
     @requires_update
-    def is_dimmable(self):
-        """Whether the switch supports brightness changes.
-
-        :return: True if switch supports brightness changes, False otherwise
-        :rtype: bool
-        """
+    def is_dimmable(self) -> bool:
+        """Whether the switch supports brightness changes."""
         sys_info = self.sys_info
         return "brightness" in sys_info
 
     @property  # type: ignore
     @requires_update
     def state_information(self) -> Dict[str, Any]:
-        """Return switch-specific state information.
-
-        :return: Switch information dict, keys in user-presentable form.
-        :rtype: dict
-        """
+        """Return switch-specific state information."""
         info = super().state_information
         info["Brightness"] = self.brightness
 
