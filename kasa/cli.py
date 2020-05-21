@@ -42,7 +42,7 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.version_option()
 @click.pass_context
 async def cli(ctx, host, alias, target, debug, bulb, plug, strip):
-    """A cli tool for controlling TP-Link smart home plugs."""  # noqa
+    """A tool for controlling TP-Link smart home devices."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
@@ -214,37 +214,44 @@ async def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
     await dev.update()
     click.echo(click.style(f"== {dev.alias} - {dev.model} ==", bold=True))
-
+    click.echo(f"\tHost: {dev.host}")
     click.echo(
         click.style(
-            "Device state: {}".format("ON" if dev.is_on else "OFF"),
+            "\tDevice state: {}\n".format("ON" if dev.is_on else "OFF"),
             fg="green" if dev.is_on else "red",
         )
     )
     if dev.is_strip:
+        click.echo(click.style("\t== Plugs ==", bold=True))
         for plug in dev.plugs:  # type: ignore
             is_on = plug.is_on
             alias = plug.alias
             click.echo(
                 click.style(
-                    "  * Socket '{}' state: {} on_since: {}".format(
+                    "\t* Socket '{}' state: {} on_since: {}".format(
                         alias, ("ON" if is_on else "OFF"), plug.on_since
                     ),
                     fg="green" if is_on else "red",
                 )
             )
+        click.echo()
 
-    click.echo(f"Host/IP: {dev.host}")
+    click.echo(click.style("\t== Generic information ==", bold=True))
+    click.echo(f"\tTime:         {await dev.get_time()}")
+    click.echo(f"\tHardware:     {dev.hw_info['hw_ver']}")
+    click.echo(f"\tSoftware:     {dev.hw_info['sw_ver']}")
+    click.echo(f"\tMAC (rssi):   {dev.mac} ({dev.rssi})")
+    click.echo(f"\tLocation:     {dev.location}")
+
+    click.echo(click.style("\n\t== Device specific information ==", bold=True))
     for k, v in dev.state_information.items():
-        click.echo(f"{k}: {v}")
-    click.echo(click.style("== Generic information ==", bold=True))
-    click.echo(f"Time:         {await dev.get_time()}")
-    click.echo(f"Hardware:     {dev.hw_info['hw_ver']}")
-    click.echo(f"Software:     {dev.hw_info['sw_ver']}")
-    click.echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
-    click.echo(f"Location:     {dev.location}")
+        click.echo(f"\t{k}: {v}")
+    click.echo()
 
-    await ctx.invoke(emeter)
+    if dev.has_emeter:
+        click.echo(click.style("\n\t== Current State ==", bold=True))
+        emeter_status = dev.emeter_realtime
+        click.echo(f"\t{emeter_status}")
 
 
 @cli.command()
