@@ -223,7 +223,7 @@ async def state(ctx, dev: SmartDevice):
     )
     if dev.is_strip:
         click.echo(click.style("\t== Plugs ==", bold=True))
-        for plug in dev.plugs:  # type: ignore
+        for plug in dev.children:  # type: ignore
             is_on = plug.is_on
             alias = plug.alias
             click.echo(
@@ -274,7 +274,7 @@ async def alias(dev, new_alias, index):
 
     click.echo(f"Alias: {dev.alias}")
     if dev.is_strip:
-        for plug in dev.plugs:
+        for plug in dev.children:
             click.echo(f"  * {plug.alias}")
 
 

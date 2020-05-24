@@ -74,7 +74,6 @@ async def test_on_since(dev, turn_on):
 
 async def test_time(dev):
     assert isinstance(await dev.get_time(), datetime)
-    # TODO check setting?
 
 
 async def test_timezone(dev):
@@ -95,7 +94,6 @@ async def test_rssi(dev):
 
 async def test_mac(dev):
     PLUG_SCHEMA({"mac": dev.mac})  # wrapping for val
-    # TODO check setting?
 
 
 async def test_representation(dev):
@@ -103,3 +101,11 @@ async def test_representation(dev):
 
     pattern = re.compile("<.* model .* at .* (.*), is_on: .* - dev specific: .*>")
     assert pattern.match(str(dev))
+
+
+async def test_childrens(dev):
+    """Make sure that children property is exposed by every device."""
+    if dev.is_strip:
+        assert len(dev.children) > 0
+    else:
+        assert len(dev.children) == 0

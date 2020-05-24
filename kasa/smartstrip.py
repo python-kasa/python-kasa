@@ -2,7 +2,7 @@
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, DefaultDict, Dict, List, Optional
+from typing import Any, DefaultDict, Dict, Optional
 
 from kasa.smartdevice import (
     DeviceType,
@@ -46,13 +46,12 @@ class SmartStrip(SmartDevice):
         super().__init__(host=host)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
-        self.plugs: List[SmartStripPlug] = []
 
     @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
         """Return if any of the outlets are on."""
-        for plug in self.plugs:
+        for plug in self.children:
             is_on = plug.is_on
             if is_on:
                 return True
@@ -66,11 +65,11 @@ class SmartStrip(SmartDevice):
         await super().update()
 
         # Initialize the child devices during the first update.
-        if not self.plugs:
+        if not self.children:
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
             for child in children:
-                self.plugs.append(
+                self.children.append(
                     SmartStripPlug(self.host, parent=self, child_id=child["id"])
                 )
 
@@ -84,22 +83,6 @@ class SmartStrip(SmartDevice):
         await self._query_helper("system", "set_relay_state", {"state": 0})
         await self.update()
 
-    def get_plug_by_name(self, name: str) -> "SmartStripPlug":
-        """Return child plug for given name."""
-        for p in self.plugs:
-            if p.alias == name:
-                return p
-
-        raise SmartDeviceException(f"Device has no child with {name}")
-
-    def get_plug_by_index(self, index: int) -> "SmartStripPlug":
-        """Return child plug for given index."""
-        if index + 1 > len(self.plugs) or index < 0:
-            raise SmartDeviceException(
-                f"Invalid index {index}, device has {len(self.plugs)} plugs"
-            )
-        return self.plugs[index]
-
     @property  # type: ignore
     @requires_update
     def on_since(self) -> Optional[datetime]:
@@ -107,7 +90,7 @@ class SmartStrip(SmartDevice):
         if self.is_off:
             return None
 
-        return max(plug.on_since for plug in self.plugs if plug.on_since is not None)
+        return max(plug.on_since for plug in self.children if plug.on_since is not None)
 
     @property  # type: ignore
     @requires_update
@@ -130,13 +113,13 @@ class SmartStrip(SmartDevice):
         """
         return {
             "LED state": self.led,
-            "Childs count": len(self.plugs),
+            "Childs count": len(self.children),
             "On since": self.on_since,
         }
 
     async def current_consumption(self) -> float:
         """Get the current power consumption in watts."""
-        consumption = sum([await plug.current_consumption() for plug in self.plugs])
+        consumption = sum([await plug.current_consumption() for plug in self.children])
 
         return consumption
 
@@ -160,7 +143,7 @@ class SmartStrip(SmartDevice):
         :return: mapping of day of month to value
         """
         emeter_daily: DefaultDict[int, float] = defaultdict(lambda: 0.0)
-        for plug in self.plugs:
+        for plug in self.children:
             plug_emeter_daily = await plug.get_emeter_daily(
                 year=year, month=month, kwh=kwh
             )
@@ -176,7 +159,7 @@ class SmartStrip(SmartDevice):
         :param kwh: return usage in kWh (default: True)
         """
         emeter_monthly: DefaultDict[int, float] = defaultdict(lambda: 0.0)
-        for plug in self.plugs:
+        for plug in self.children:
             plug_emeter_monthly = await plug.get_emeter_monthly(year=year, kwh=kwh)
             for month, value in plug_emeter_monthly:
                 emeter_monthly[month] += value
@@ -186,7 +169,7 @@ class SmartStrip(SmartDevice):
     @requires_update
     async def erase_emeter_stats(self):
         """Erase energy meter statistics for all plugs."""
-        for plug in self.plugs:
+        for plug in self.children:
             await plug.erase_emeter_stats()
 
 

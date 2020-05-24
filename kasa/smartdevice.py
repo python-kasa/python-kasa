@@ -140,6 +140,8 @@ class SmartDevice:
         self._last_update: Any = None
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
 
+        self.children: List["SmartDevice"] = []
+
     def _create_request(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
     ):
@@ -579,6 +581,22 @@ class SmartDevice:
                 "Unable to join using 'netif', retrying with 'softaponboarding': %s", ex
             )
             return await _join("smartlife.iot.common.softaponboarding", payload)
+
+    def get_plug_by_name(self, name: str) -> "SmartDevice":
+        """Return child device for the given name."""
+        for p in self.children:
+            if p.alias == name:
+                return p
+
+        raise SmartDeviceException(f"Device has no child with {name}")
+
+    def get_plug_by_index(self, index: int) -> "SmartDevice":
+        """Return child device for the given index."""
+        if index + 1 > len(self.children) or index < 0:
+            raise SmartDeviceException(
+                f"Invalid index {index}, device has {len(self.children)} plugs"
+            )
+        return self.children[index]
 
     @property
     def device_type(self) -> DeviceType:
