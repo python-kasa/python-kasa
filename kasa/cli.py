@@ -292,7 +292,7 @@ async def raw_command(dev: SmartDevice, module, command, parameters):
 @click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
-async def emeter(dev, year, month, erase):
+async def emeter(dev: SmartDevice, year, month, erase):
     """Query emeter for historical consumption."""
     click.echo(click.style("== Emeter ==", bold=True))
     await dev.update()
@@ -311,17 +311,21 @@ async def emeter(dev, year, month, erase):
     elif month:
         click.echo(f"== For month {month.month} of {month.year} ==")
         emeter_status = await dev.get_emeter_daily(year=month.year, month=month.month)
-
     else:
-        emeter_status = await dev.get_emeter_realtime()
-        click.echo("== Current State ==")
+        emeter_status = dev.emeter_realtime
 
     if isinstance(emeter_status, list):
         for plug in emeter_status:
             index = emeter_status.index(plug) + 1
             click.echo(f"Plug {index}: {plug}")
     else:
-        click.echo(str(emeter_status))
+        click.echo("Current: %s A" % emeter_status["current"])
+        click.echo("Voltage: %s V" % emeter_status["voltage"])
+        click.echo("Power: %s W" % emeter_status["power"])
+        click.echo("Total consumption: %s kWh" % emeter_status["total"])
+
+        click.echo("Today: %s kWh" % dev.emeter_today)
+        click.echo("This month: %s kWh" % dev.emeter_this_month)
 
 
 @cli.command()

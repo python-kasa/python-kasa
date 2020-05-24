@@ -109,10 +109,13 @@ The commands are straightforward, so feel free to check `--help` for instruction
 # Library usage
 
 The property accesses use the data obtained before by awaiting `update()`.
-The values are cached until the next update call.
-Each method changing the state of the device will automatically update the cached state.
+The values are cached until the next update call. In practice this means that property accesses do no I/O and are dependent, while I/O producing methods need to be awaited.
 
-Errors are raised as `SmartDeviceException` instances for the user to handle.
+Methods changing the state of the device do not invalidate the cache (i.e., there is no implicit `update()`).
+You can assume that the operation has succeeded if no exception is raised.
+These methods will return the device response, which can be useful for some use cases.
+
+Errors are raised as `SmartDeviceException` instances for the library user to handle.
 
 ## Discovering devices
 
@@ -160,6 +163,13 @@ await plug.turn_on()
 ```
 
 ## Getting emeter status (if applicable)
+The `update()` call will automatically fetch the following emeter information:
+* Current consumption (accessed through `emeter_realtime` property)
+* Today's consumption (`emeter_today`)
+* This month's consumption (`emeter_this_month`)
+
+You can also request this information separately:
+
 ```python
 print("Current consumption: %s" % await plug.get_emeter_realtime())
 print("Per day: %s" % await plug.get_emeter_daily(year=2016, month=12))
@@ -182,6 +192,7 @@ asyncio.run(bulb.update())
 
 if bulb.is_dimmable:
     asyncio.run(bulb.set_brightness(100))
+    asyncio.run(bulb.update())
     print(bulb.brightness)
 ```
 
@@ -189,6 +200,7 @@ if bulb.is_dimmable:
 ```python
 if bulb.is_variable_color_temp:
     await bulb.set_color_temp(3000)
+    await bulb.update()
     print(bulb.color_temp)
 ```
 
@@ -199,6 +211,7 @@ Hue is given in degrees (0-360) and saturation and value in percentage.
 ```python
 if bulb.is_color:
     await bulb.set_hsv(180, 100, 100) # set to cyan
+    await bulb.update()
     print(bulb.hsv)
 ```
 

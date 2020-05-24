@@ -50,16 +50,14 @@ class SmartPlug(SmartDevice):
 
         :raises SmartDeviceException: on error
         """
-        await self._query_helper("system", "set_relay_state", {"state": 1})
-        await self.update()
+        return await self._query_helper("system", "set_relay_state", {"state": 1})
 
     async def turn_off(self):
         """Turn the switch off.
 
         :raises SmartDeviceException: on error
         """
-        await self._query_helper("system", "set_relay_state", {"state": 0})
-        await self.update()
+        return await self._query_helper("system", "set_relay_state", {"state": 0})
 
     @property  # type: ignore
     @requires_update
@@ -78,8 +76,9 @@ class SmartPlug(SmartDevice):
         :param bool state: True to set led on, False to set led off
         :raises SmartDeviceException: on error
         """
-        await self._query_helper("system", "set_led_off", {"off": int(not state)})
-        await self.update()
+        return await self._query_helper(
+            "system", "set_led_off", {"off": int(not state)}
+        )
 
     @property  # type: ignore
     @requires_update

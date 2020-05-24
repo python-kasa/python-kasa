@@ -146,12 +146,11 @@ class SmartStrip(SmartDevice):
         :return: Strip information dict, keys in user-presentable form.
         :rtype: dict
         """
-        state: Dict[str, Any] = {"LED state": self.led}
-        for plug in self.plugs:
-            if plug.is_on:
-                state["Plug %s on since" % str(plug)] = self.on_since
-
-        return state
+        return {
+            "LED state": self.led,
+            "Childs count": len(self.plugs),
+            "On since": self.on_since,
+        }
 
     async def current_consumption(self) -> float:
         """Get the current power consumption in watts.
@@ -218,6 +217,7 @@ class SmartStrip(SmartDevice):
             plug_emeter_monthly = await plug.get_emeter_monthly(year=year, kwh=kwh)
             for month, value in plug_emeter_monthly:
                 emeter_monthly[month] += value
+
         return emeter_monthly
 
     @requires_update
@@ -245,7 +245,8 @@ class SmartStripPlug(SmartPlug):
 
         self.parent = parent
         self.child_id = child_id
-        self._sys_info = {**self.parent.sys_info, **self._get_child_info()}
+        self._last_update = parent._last_update
+        self._sys_info = parent._sys_info
 
     async def update(self):
         """Override the update to no-op and inform the user."""

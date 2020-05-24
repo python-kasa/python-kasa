@@ -419,9 +419,11 @@ async def test_children_alias(dev):
     for plug in dev.plugs:
         original = plug.alias
         await plug.set_alias(alias=test_alias)
+        await dev.update()  # TODO: set_alias does not call parent's update()..
         assert plug.alias == test_alias
 
         await plug.set_alias(alias=original)
+        await dev.update()  # TODO: set_alias does not call parent's update()..
         assert plug.alias == original
 
 

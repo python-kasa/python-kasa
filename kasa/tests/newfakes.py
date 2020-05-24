@@ -313,9 +313,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
 
     def transition_light_state(self, x, *args):
         _LOGGER.debug("Setting light state to %s", x)
-        light_state = self.proto["smartlife.iot.smartbulb.lightingservice"][
-            "get_light_state"
-        ]
+        light_state = self.proto["system"]["get_sysinfo"]["light_state"]
         # The required change depends on the light state,
         # exception being turning the bulb on and off
 
@@ -323,15 +321,11 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             if x["on_off"] and not light_state["on_off"]:  # turning on
                 new_state = light_state["dft_on_state"]
                 new_state["on_off"] = 1
-                self.proto["smartlife.iot.smartbulb.lightingservice"][
-                    "get_light_state"
-                ] = new_state
+                self.proto["system"]["get_sysinfo"]["light_state"] = new_state
             elif not x["on_off"] and light_state["on_off"]:
                 new_state = {"dft_on_state": light_state, "on_off": 0}
 
-                self.proto["smartlife.iot.smartbulb.lightingservice"][
-                    "get_light_state"
-                ] = new_state
+                self.proto["system"]["get_sysinfo"]["light_state"] = new_state
 
             return
 
@@ -343,11 +337,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             light_state[key] = x[key]
 
     def light_state(self, x, *args):
-        light_state = self.proto["smartlife.iot.smartbulb.lightingservice"][
-            "get_light_state"
-        ]
+        light_state = self.proto["system"]["get_sysinfo"]["light_state"]
         # Our tests have light state off, so we simply return the dft_on_state when device is on.
-        _LOGGER.info("reporting light state: %s", light_state)
+        _LOGGER.debug("reporting light state: %s", light_state)
         if light_state["on_off"]:
             return light_state["dft_on_state"]
         else:

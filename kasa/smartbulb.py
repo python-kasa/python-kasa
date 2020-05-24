@@ -1,6 +1,6 @@
 """Module for bulbs."""
 import re
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple, cast
 
 from kasa.smartdevice import (
     DeviceType,
@@ -33,6 +33,7 @@ class SmartBulb(SmartDevice):
 
     # change state of bulb
     await p.turn_on()
+    await p.update()
     assert p.is_on
     await p.turn_off()
 
@@ -44,6 +45,7 @@ class SmartBulb(SmartDevice):
         print("we got color!")
         # set the color to an HSV tuple
         await p.set_hsv(180, 100, 100)
+        await p.update()
         # get the current HSV value
         print(p.hsv)
 
@@ -51,6 +53,7 @@ class SmartBulb(SmartDevice):
     if p.is_variable_color_temp:
         # set the color temperature in Kelvin
         await p.set_color_temp(3000)
+        await p.update()
 
         # get the current color temperature
         print(p.color_temp)
@@ -59,6 +62,7 @@ class SmartBulb(SmartDevice):
     if p.is_dimmable:
         # set the bulb to 50% brightness
         await p.set_brightness(50)
+        await p.update()
 
         # check the current brightness
         print(p.brightness)
@@ -74,7 +78,6 @@ class SmartBulb(SmartDevice):
         super().__init__(host=host)
         self.emeter_type = "smartlife.iot.common.emeter"
         self._device_type = DeviceType.Bulb
-        self._light_state = None
 
     @property  # type: ignore
     @requires_update
@@ -126,19 +129,28 @@ class SmartBulb(SmartDevice):
                 return temp_range
         return (0, 0)
 
-    async def update(self):
-        """Update `sys_info and `light_state`."""
-        self._sys_info = await self.get_sys_info()
-        self._light_state = await self.get_light_state()
-
     @property  # type: ignore
     @requires_update
-    def light_state(self) -> Optional[Dict[str, Dict]]:
+    def light_state(self) -> Dict[str, str]:
         """Query the light state."""
-        return self._light_state
+        light_state = self._last_update["system"]["get_sysinfo"]["light_state"]
+        if light_state is None:
+            raise SmartDeviceException(
+                "The device has no light_state or you have not called update()"
+            )
+
+        # if the bulb is off, its state is stored under a different key
+        # as is_on property depends on on_off itself, we check it here manually
+        is_on = light_state["on_off"]
+        if not is_on:
+            off_state = {**light_state["dft_on_state"], "on_off": is_on}
+            return cast(dict, off_state)
+
+        return light_state
 
     async def get_light_state(self) -> Dict[str, Dict]:
         """Query the light state."""
+        # TODO: add warning and refer to use light.state?
         return await self._query_helper(self.LIGHT_SERVICE, "get_light_state")
 
     async def set_light_state(self, state: Dict) -> Dict:
@@ -146,7 +158,6 @@ class SmartBulb(SmartDevice):
         light_state = await self._query_helper(
             self.LIGHT_SERVICE, "transition_light_state", state
         )
-        await self.update()
         return light_state
 
     @property  # type: ignore
@@ -160,15 +171,11 @@ class SmartBulb(SmartDevice):
         if not self.is_color:
             raise SmartDeviceException("Bulb does not support color.")
 
-        light_state = self.light_state
-        if not self.is_on:
-            hue = light_state["dft_on_state"]["hue"]
-            saturation = light_state["dft_on_state"]["saturation"]
-            value = light_state["dft_on_state"]["brightness"]
-        else:
-            hue = light_state["hue"]
-            saturation = light_state["saturation"]
-            value = light_state["brightness"]
+        light_state = cast(dict, self.light_state)
+
+        hue = light_state["hue"]
+        saturation = light_state["saturation"]
+        value = light_state["brightness"]
 
         return hue, saturation, value
 
@@ -222,10 +229,7 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Bulb does not support colortemp.")
 
         light_state = self.light_state
-        if not self.is_on:
-            return int(light_state["dft_on_state"]["color_temp"])
-        else:
-            return int(light_state["color_temp"])
+        return int(light_state["color_temp"])
 
     @requires_update
     async def set_color_temp(self, temp: int) -> None:
@@ -258,10 +262,7 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Bulb is not dimmable.")
 
         light_state = self.light_state
-        if not self.is_on:
-            return int(light_state["dft_on_state"]["brightness"])
-        else:
-            return int(light_state["brightness"])
+        return int(light_state["brightness"])
 
     @requires_update
     async def set_brightness(self, brightness: int) -> None:
