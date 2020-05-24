@@ -17,12 +17,14 @@ SUPPORTED_DEVICES = glob.glob(
 
 BULBS = {"KL60", "LB100", "LB120", "LB130", "KL120", "KL130"}
 VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL130"}
+COLOR_BULBS = {"LB130", "KL130"}
+
 PLUGS = {"HS100", "HS103", "HS105", "HS110", "HS200", "HS210"}
 STRIPS = {"HS107", "HS300", "KP303", "KP400"}
 DIMMERS = {"HS220"}
-COLOR_BULBS = {"LB130", "KL130"}
-DIMMABLE = {*BULBS, "HS220"}
-EMETER = {"HS110", "HS300", *BULBS, *STRIPS}
+
+DIMMABLE = {*BULBS, *DIMMERS}
+WITH_EMETER = {"HS110", "HS300", *BULBS, *STRIPS}
 
 ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
@@ -39,17 +41,28 @@ def filter_model(desc, filter):
     return filtered
 
 
-has_emeter = pytest.mark.parametrize(
-    "dev", filter_model("has emeter", EMETER), indirect=True
-)
-no_emeter = pytest.mark.parametrize(
-    "dev", filter_model("no emeter", ALL_DEVICES - EMETER), indirect=True
-)
+def parametrize(desc, devices, ids=None):
+    # if ids is None:
+    #    ids = ["on", "off"]
+    return pytest.mark.parametrize(
+        "dev", filter_model(desc, devices), indirect=True, ids=ids
+    )
 
-bulb = pytest.mark.parametrize("dev", filter_model("bulbs", BULBS), indirect=True)
-plug = pytest.mark.parametrize("dev", filter_model("plugs", PLUGS), indirect=True)
-strip = pytest.mark.parametrize("dev", filter_model("strips", STRIPS), indirect=True)
-dimmer = pytest.mark.parametrize("dev", filter_model("dimmers", DIMMERS), indirect=True)
+
+has_emeter = parametrize("has emeter", WITH_EMETER)
+no_emeter = parametrize("no emeter", ALL_DEVICES - WITH_EMETER)
+
+
+def name_for_filename(x):
+    from os.path import basename
+
+    return basename(x)
+
+
+bulb = parametrize("bulbs", BULBS, ids=name_for_filename)
+plug = parametrize("plugs", PLUGS, ids=name_for_filename)
+strip = parametrize("strips", STRIPS, ids=name_for_filename)
+dimmer = parametrize("dimmers", DIMMERS, ids=name_for_filename)
 
 # This ensures that every single file inside fixtures/ is being placed in some category
 categorized_fixtures = set(dimmer.args[1] + strip.args[1] + plug.args[1] + bulb.args[1])
@@ -62,29 +75,14 @@ if diff:
         )
     raise Exception("Missing category for %s" % diff)
 
-dimmable = pytest.mark.parametrize(
-    "dev", filter_model("dimmable", DIMMABLE), indirect=True
-)
-non_dimmable = pytest.mark.parametrize(
-    "dev",
-    filter_model("non-dimmable", ALL_DEVICES - DIMMABLE - STRIPS - PLUGS),
-    indirect=True,
-)
 
-variable_temp = pytest.mark.parametrize(
-    "dev", filter_model("variable color temp", VARIABLE_TEMP), indirect=True
-)
-non_variable_temp = pytest.mark.parametrize(
-    "dev", filter_model("non-variable color temp", BULBS - VARIABLE_TEMP), indirect=True
-)
-
-color_bulb = pytest.mark.parametrize(
-    "dev", filter_model("color bulbs", COLOR_BULBS), indirect=True
-)
-non_color_bulb = pytest.mark.parametrize(
-    "dev", filter_model("non-color bulbs", BULBS - COLOR_BULBS), indirect=True
-)
-
+# bulb types
+dimmable = parametrize("dimmable", DIMMABLE)
+non_dimmable = parametrize("non-dimmable", BULBS - DIMMABLE)
+variable_temp = parametrize("variable color temp", VARIABLE_TEMP)
+non_variable_temp = parametrize("non-variable color temp", BULBS - VARIABLE_TEMP)
+color_bulb = parametrize("color bulbs", COLOR_BULBS)
+non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
@@ -116,7 +114,7 @@ def dev(request):
         asyncio.run(d.update())
         if d.model in file:
             return d
-        return
+        raise Exception("Unable to find type for %s" % ip)
 
     def device_for_file(model):
         for d in STRIPS:

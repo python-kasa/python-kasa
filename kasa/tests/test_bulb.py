@@ -13,7 +13,7 @@ from .conftest import (
     turn_on,
     variable_temp,
 )
-from .newfakes import BULB_SCHEMA
+from .newfakes import BULB_SCHEMA, LIGHT_STATE_SCHEMA
 
 
 @bulb
@@ -25,6 +25,29 @@ async def test_bulb_sysinfo(dev):
 
     assert dev.device_type == DeviceType.Bulb
     assert dev.is_bulb
+
+
+@bulb
+async def test_state_attributes(dev):
+    assert "Brightness" in dev.state_information
+    assert dev.state_information["Brightness"] == dev.brightness
+
+    assert "Is dimmable" in dev.state_information
+    assert dev.state_information["Is dimmable"] == dev.is_dimmable
+
+
+@bulb
+async def test_light_state_without_update(dev, monkeypatch):
+    with pytest.raises(SmartDeviceException):
+        monkeypatch.setitem(
+            dev._last_update["system"]["get_sysinfo"], "light_state", None
+        )
+        print(dev.light_state)
+
+
+@bulb
+async def test_get_light_state(dev):
+    LIGHT_STATE_SCHEMA(await dev.get_light_state())
 
 
 @color_bulb
@@ -65,6 +88,12 @@ async def test_invalid_hsv(dev, turn_on):
             await dev.set_hsv(0, 0, invalid_brightness)
 
 
+@color_bulb
+async def test_color_state_information(dev):
+    assert "HSV" in dev.state_information
+    assert dev.state_information["HSV"] == dev.hsv
+
+
 @non_color_bulb
 async def test_hsv_on_non_color(dev):
     assert not dev.is_color
@@ -76,6 +105,17 @@ async def test_hsv_on_non_color(dev):
 
 
 @variable_temp
+async def test_variable_temp_state_information(dev):
+    assert "Color temperature" in dev.state_information
+    assert dev.state_information["Color temperature"] == dev.color_temp
+
+    assert "Valid temperature range" in dev.state_information
+    assert (
+        dev.state_information["Valid temperature range"] == dev.valid_temperature_range
+    )
+
+
+@variable_temp
 @turn_on
 async def test_try_set_colortemp(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -83,21 +123,11 @@ async def test_try_set_colortemp(dev, turn_on):
     assert dev.color_temp == 2700
 
 
-@non_variable_temp
-async def test_non_variable_temp(dev):
+@variable_temp
+async def test_unknown_temp_range(dev, monkeypatch):
     with pytest.raises(SmartDeviceException):
-        await dev.set_color_temp(2700)
-
-
-@non_variable_temp
-async def test_temperature_on_nonsupporting(dev):
-    assert dev.valid_temperature_range == (0, 0)
-
-    # TODO test when device does not support temperature range
-    with pytest.raises(SmartDeviceException):
-        await dev.set_color_temp(2700)
-    with pytest.raises(SmartDeviceException):
-        print(dev.color_temp)
+        monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
+        dev.valid_temperature_range()
 
 
 @variable_temp
@@ -108,14 +138,16 @@ async def test_out_of_range_temperature(dev):
         await dev.set_color_temp(10000)
 
 
-@non_dimmable
-async def test_non_dimmable(dev):
-    assert not dev.is_dimmable
+@non_variable_temp
+async def test_non_variable_temp(dev):
+    with pytest.raises(SmartDeviceException):
+        await dev.set_color_temp(2700)
 
     with pytest.raises(SmartDeviceException):
-        assert dev.brightness == 0
+        dev.valid_temperature_range()
+
     with pytest.raises(SmartDeviceException):
-        await dev.set_brightness(100)
+        print(dev.color_temp)
 
 
 @dimmable
@@ -143,3 +175,13 @@ async def test_invalid_brightness(dev):
 
     with pytest.raises(ValueError):
         await dev.set_brightness(-100)
+
+
+@non_dimmable
+async def test_non_dimmable(dev):
+    assert not dev.is_dimmable
+
+    with pytest.raises(SmartDeviceException):
+        assert dev.brightness == 0
+    with pytest.raises(SmartDeviceException):
+        await dev.set_brightness(100)

@@ -113,6 +113,27 @@ PLUG_SCHEMA = Schema(
     extra=REMOVE_EXTRA,
 )
 
+LIGHT_STATE_SCHEMA = Schema(
+    {
+        "brightness": All(int, Range(min=0, max=100)),
+        "color_temp": int,
+        "hue": All(int, Range(min=0, max=255)),
+        "mode": str,
+        "on_off": check_int_bool,
+        "saturation": All(int, Range(min=0, max=255)),
+        "dft_on_state": Optional(
+            {
+                "brightness": All(int, Range(min=0, max=100)),
+                "color_temp": All(int, Range(min=2000, max=9000)),
+                "hue": All(int, Range(min=0, max=255)),
+                "mode": str,
+                "saturation": All(int, Range(min=0, max=255)),
+            }
+        ),
+        "err_code": int,
+    }
+)
+
 BULB_SCHEMA = PLUG_SCHEMA.extend(
     {
         "ctrl_protocols": Optional(dict),
@@ -124,24 +145,7 @@ BULB_SCHEMA = PLUG_SCHEMA.extend(
         "is_dimmable": check_int_bool,
         "is_factory": bool,
         "is_variable_color_temp": check_int_bool,
-        "light_state": {
-            "brightness": All(int, Range(min=0, max=100)),
-            "color_temp": int,
-            "hue": All(int, Range(min=0, max=255)),
-            "mode": str,
-            "on_off": check_int_bool,
-            "saturation": All(int, Range(min=0, max=255)),
-            "dft_on_state": Optional(
-                {
-                    "brightness": All(int, Range(min=0, max=100)),
-                    "color_temp": All(int, Range(min=2000, max=9000)),
-                    "hue": All(int, Range(min=0, max=255)),
-                    "mode": str,
-                    "saturation": All(int, Range(min=0, max=255)),
-                }
-            ),
-            "err_code": int,
-        },
+        "light_state": LIGHT_STATE_SCHEMA,
         "preferred_state": [
             {
                 "brightness": All(int, Range(min=0, max=100)),
