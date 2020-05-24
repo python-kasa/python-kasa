@@ -108,12 +108,15 @@ class SmartBulb(SmartDevice):
         :return: White temperature range in Kelvin (minimum, maximum)
         """
         if not self.is_variable_color_temp:
-            return (0, 0)
+            raise SmartDeviceException("Color temperature not supported")
         for model, temp_range in TPLINK_KELVIN.items():
             sys_info = self.sys_info
             if re.match(model, sys_info["model"]):
                 return temp_range
-        return (0, 0)
+
+        raise SmartDeviceException(
+            "Unknown color temperature range, please open an issue on github"
+        )
 
     @property  # type: ignore
     @requires_update
