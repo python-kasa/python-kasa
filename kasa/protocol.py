@@ -65,8 +65,15 @@ class TPLinkSmartHomeProtocol:
                     buffer += chunk
                     if (length > 0 and len(buffer) >= length + 4) or not chunk:
                         break
+
+                response = TPLinkSmartHomeProtocol.decrypt(buffer[4:])
+                json_payload = json.loads(response)
+                _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
+
+                return json_payload
+
             except Exception as ex:
-                if retry == retry_count:
+                if retry >= retry_count:
                     _LOGGER.debug("Giving up after %s retries", retry)
                     raise SmartDeviceException(
                         "Unable to query the device: %s" % ex
@@ -79,11 +86,8 @@ class TPLinkSmartHomeProtocol:
                     writer.close()
                     await writer.wait_closed()
 
-        response = TPLinkSmartHomeProtocol.decrypt(buffer[4:])
-        json_payload = json.loads(response)
-        _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
-
-        return json_payload
+        # make mypy happy, this should never be reached..
+        raise SmartDeviceException("Query reached somehow to unreachable")
 
     @staticmethod
     def encrypt(request: str) -> bytes:
