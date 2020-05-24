@@ -19,7 +19,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from kasa.protocol import TPLinkSmartHomeProtocol
+from .exceptions import SmartDeviceException
+from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,10 +46,6 @@ class WifiNetwork:
     bssid: Optional[str] = None
     channel: Optional[int] = None
     rssi: Optional[int] = None
-
-
-class SmartDeviceException(Exception):
-    """Base exception for device errors."""
 
 
 class EmeterStatus(dict):

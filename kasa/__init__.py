@@ -13,9 +13,10 @@ to be handled by the user of the library.
 """
 from importlib_metadata import version  # type: ignore
 from kasa.discover import Discover
+from kasa.exceptions import SmartDeviceException
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
-from kasa.smartdevice import DeviceType, EmeterStatus, SmartDevice, SmartDeviceException
+from kasa.smartdevice import DeviceType, EmeterStatus, SmartDevice
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
