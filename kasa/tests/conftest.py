@@ -3,6 +3,7 @@ import glob
 import json
 import os
 from os.path import basename
+from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
@@ -151,3 +152,14 @@ def pytest_collection_modifyitems(config, items):
         return
     else:
         print("Running against ip %s" % config.getoption("--ip"))
+
+
+# allow mocks to be awaited
+# https://stackoverflow.com/questions/51394411/python-object-magicmock-cant-be-used-in-await-expression/51399767#51399767
+
+
+async def async_magic():
+    pass
+
+
+MagicMock.__await__ = lambda x: async_magic().__await__()
