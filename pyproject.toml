@@ -43,7 +43,7 @@ known_third_party = ["asyncclick", "pytest", "setuptools", "voluptuous"]
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
-omit = ["kasa/cli.py", "kasa/tests/*"]
+omit = ["kasa/tests/*"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -51,6 +51,15 @@ exclude_lines = [
   "raise NotImplementedError",
   "def __repr__"
 ]
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-magic = true
+ignore-private = true
+ignore-semiprivate = true
+fail-under = 100
+exclude = ['kasa/tests/*']
+verbose = 2
 
 [build-system]
 requires = ["poetry>=0.12"]

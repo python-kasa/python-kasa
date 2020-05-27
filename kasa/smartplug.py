@@ -1,4 +1,4 @@
-"""Module for plugs."""
+"""Module for smart plugs (HS100, HS110, ..)."""
 import logging
 from typing import Any, Dict
 
@@ -38,44 +38,27 @@ class SmartPlug(SmartDevice):
     @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
-        """Return whether device is on.
-
-        :return: True if device is on, False otherwise
-        """
+        """Return whether device is on."""
         sys_info = self.sys_info
         return bool(sys_info["relay_state"])
 
     async def turn_on(self):
-        """Turn the switch on.
-
-        :raises SmartDeviceException: on error
-        """
+        """Turn the switch on."""
         return await self._query_helper("system", "set_relay_state", {"state": 1})
 
     async def turn_off(self):
-        """Turn the switch off.
-
-        :raises SmartDeviceException: on error
-        """
+        """Turn the switch off."""
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 
     @property  # type: ignore
     @requires_update
     def led(self) -> bool:
-        """Return the state of the led.
-
-        :return: True if led is on, False otherwise
-        :rtype: bool
-        """
+        """Return the state of the led."""
         sys_info = self.sys_info
         return bool(1 - sys_info["led_off"])
 
     async def set_led(self, state: bool):
-        """Set the state of the led (night mode).
-
-        :param bool state: True to set led on, False to set led off
-        :raises SmartDeviceException: on error
-        """
+        """Set the state of the led (night mode)."""
         return await self._query_helper(
             "system", "set_led_off", {"off": int(not state)}
         )
@@ -83,10 +66,6 @@ class SmartPlug(SmartDevice):
     @property  # type: ignore
     @requires_update
     def state_information(self) -> Dict[str, Any]:
-        """Return switch-specific state information.
-
-        :return: Switch information dict, keys in user-presentable form.
-        :rtype: dict
-        """
+        """Return switch-specific state information."""
         info = {"LED state": self.led, "On since": self.on_since}
         return info

@@ -14,7 +14,7 @@ import json
 import logging
 import struct
 from pprint import pformat as pf
-from typing import Any, Dict, Union
+from typing import Dict, Union
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,13 +27,10 @@ class TPLinkSmartHomeProtocol:
     DEFAULT_TIMEOUT = 5
 
     @staticmethod
-    async def query(
-        host: str, request: Union[str, Dict], port: int = DEFAULT_PORT
-    ) -> Any:
+    async def query(host: str, request: Union[str, Dict]) -> Dict:
         """Request information from a TP-Link SmartHome Device.
 
         :param str host: host name or ip address of the device
-        :param int port: port on the device (default: 9999)
         :param request: command to send to the device (can be either dict or
         json string)
         :return: response dict
@@ -44,7 +41,7 @@ class TPLinkSmartHomeProtocol:
         timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
         writer = None
         try:
-            task = asyncio.open_connection(host, port)
+            task = asyncio.open_connection(host, TPLinkSmartHomeProtocol.DEFAULT_PORT)
             reader, writer = await asyncio.wait_for(task, timeout=timeout)
             _LOGGER.debug("> (%i) %s", len(request), request)
             writer.write(TPLinkSmartHomeProtocol.encrypt(request))
@@ -75,11 +72,10 @@ class TPLinkSmartHomeProtocol:
 
     @staticmethod
     def encrypt(request: str) -> bytes:
-        """
-        Encrypt a request for a TP-Link Smart Home Device.
+        """Encrypt a request for a TP-Link Smart Home Device.
 
         :param request: plaintext request data
-        :return: ciphertext request
+        :return: ciphertext to be send over wire, in bytes
         """
         key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
 
@@ -95,8 +91,7 @@ class TPLinkSmartHomeProtocol:
 
     @staticmethod
     def decrypt(ciphertext: bytes) -> str:
-        """
-        Decrypt a response of a TP-Link Smart Home Device.
+        """Decrypt a response of a TP-Link Smart Home Device.
 
         :param ciphertext: encrypted response data
         :return: plaintext response
