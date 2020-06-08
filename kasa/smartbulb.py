@@ -142,8 +142,11 @@ class SmartBulb(SmartDevice):
         # TODO: add warning and refer to use light.state?
         return await self._query_helper(self.LIGHT_SERVICE, "get_light_state")
 
-    async def set_light_state(self, state: Dict) -> Dict:
+    async def set_light_state(self, state: Dict, *, transition: int = None) -> Dict:
         """Set the light state."""
+        if transition is not None:
+            state["transition_period"] = transition
+
         light_state = await self._query_helper(
             self.LIGHT_SERVICE, "transition_light_state", state
         )
@@ -174,12 +177,15 @@ class SmartBulb(SmartDevice):
             )
 
     @requires_update
-    async def set_hsv(self, hue: int, saturation: int, value: int):
+    async def set_hsv(
+        self, hue: int, saturation: int, value: int, *, transition: int = None
+    ) -> Dict:
         """Set new HSV.
 
         :param int hue: hue in degrees
         :param int saturation: saturation in percentage [0,100]
         :param int value: value in percentage [0, 100]
+        :param int transition: transition in milliseconds.
         """
         if not self.is_color:
             raise SmartDeviceException("Bulb does not support color.")
@@ -203,7 +209,8 @@ class SmartBulb(SmartDevice):
             "brightness": value,
             "color_temp": 0,
         }
-        await self.set_light_state(light_state)
+
+        return await self.set_light_state(light_state, transition=transition)
 
     @property  # type: ignore
     @requires_update
@@ -216,8 +223,12 @@ class SmartBulb(SmartDevice):
         return int(light_state["color_temp"])
 
     @requires_update
-    async def set_color_temp(self, temp: int) -> None:
-        """Set the color temperature of the device in kelvin."""
+    async def set_color_temp(self, temp: int, *, transition: int = None) -> Dict:
+        """Set the color temperature of the device in kelvin.
+
+        :param int temp: The new color temperature, in Kelvin
+        :param int transition: transition in milliseconds.
+        """
         if not self.is_variable_color_temp:
             raise SmartDeviceException("Bulb does not support colortemp.")
 
@@ -229,7 +240,7 @@ class SmartBulb(SmartDevice):
             )
 
         light_state = {"color_temp": temp}
-        await self.set_light_state(light_state)
+        return await self.set_light_state(light_state, transition=transition)
 
     @property  # type: ignore
     @requires_update
@@ -242,15 +253,19 @@ class SmartBulb(SmartDevice):
         return int(light_state["brightness"])
 
     @requires_update
-    async def set_brightness(self, brightness: int) -> None:
-        """Set the brightness in percentage."""
+    async def set_brightness(self, brightness: int, *, transition: int = None) -> Dict:
+        """Set the brightness in percentage.
+
+        :param int brightness: brightness in percent
+        :param int transition: transition in milliseconds.
+        """
         if not self.is_dimmable:  # pragma: no cover
             raise SmartDeviceException("Bulb is not dimmable.")
 
         self._raise_for_invalid_brightness(brightness)
 
         light_state = {"brightness": brightness}
-        await self.set_light_state(light_state)
+        return await self.set_light_state(light_state, transition=transition)
 
     @property  # type: ignore
     @requires_update
@@ -275,13 +290,19 @@ class SmartBulb(SmartDevice):
         light_state = self.light_state
         return bool(light_state["on_off"])
 
-    async def turn_off(self) -> None:
-        """Turn the bulb off."""
-        await self.set_light_state({"on_off": 0})
+    async def turn_off(self, *, transition: int = None) -> Dict:
+        """Turn the bulb off.
 
-    async def turn_on(self) -> None:
-        """Turn the bulb on."""
-        await self.set_light_state({"on_off": 1})
+        :param int transition: transition in milliseconds.
+        """
+        return await self.set_light_state({"on_off": 0}, transition=transition)
+
+    async def turn_on(self, *, transition: int = None) -> Dict:
+        """Turn the bulb on.
+
+        :param int transition: transition in milliseconds.
+        """
+        return await self.set_light_state({"on_off": 1}, transition=transition)
 
     @property  # type: ignore
     @requires_update
