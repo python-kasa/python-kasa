@@ -315,6 +315,15 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         _LOGGER.debug("Setting brightness to %s", x)
         self.proto["system"]["get_sysinfo"]["brightness"] = x["brightness"]
 
+    def set_hs220_dimmer_transition(self, x, *args):
+        _LOGGER.debug("Setting dimmer transition to %s", x)
+        brightness = x["brightness"]
+        if brightness == 0:
+            self.proto["system"]["get_sysinfo"]["relay_state"] = 0
+        else:
+            self.proto["system"]["get_sysinfo"]["relay_state"] = 1
+            self.proto["system"]["get_sysinfo"]["brightness"] = x["brightness"]
+
     def transition_light_state(self, x, *args):
         _LOGGER.debug("Setting light state to %s", x)
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
@@ -392,7 +401,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             "set_timezone": None,
         },
         # HS220 brightness, different setter and getter
-        "smartlife.iot.dimmer": {"set_brightness": set_hs220_brightness},
+        "smartlife.iot.dimmer": {
+            "set_brightness": set_hs220_brightness,
+            "set_dimmer_transition": set_hs220_dimmer_transition,
+        },
     }
 
     async def query(self, host, request, port=9999):
