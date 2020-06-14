@@ -70,6 +70,17 @@ async def test_hsv(dev, turn_on):
 
 
 @color_bulb
+async def test_set_hsv_transition(dev, mocker):
+    set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
+    await dev.set_hsv(10, 10, 100, transition=1000)
+
+    set_light_state.assert_called_with(
+        {"hue": 10, "saturation": 10, "brightness": 100, "color_temp": 0},
+        transition=1000,
+    )
+
+
+@color_bulb
 @turn_on
 async def test_invalid_hsv(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -124,6 +135,14 @@ async def test_try_set_colortemp(dev, turn_on):
 
 
 @variable_temp
+async def test_set_color_temp_transition(dev, mocker):
+    set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
+    await dev.set_color_temp(2700, transition=100)
+
+    set_light_state.assert_called_with({"color_temp": 2700}, transition=100)
+
+
+@variable_temp
 async def test_unknown_temp_range(dev, monkeypatch):
     with pytest.raises(SmartDeviceException):
         monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
@@ -164,6 +183,26 @@ async def test_dimmable_brightness(dev, turn_on):
 
     with pytest.raises(ValueError):
         await dev.set_brightness("foo")
+
+
+@bulb
+async def test_turn_on_transition(dev, mocker):
+    set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
+    await dev.turn_on(transition=1000)
+
+    set_light_state.assert_called_with({"on_off": 1}, transition=1000)
+
+    await dev.turn_off(transition=100)
+
+    set_light_state.assert_called_with({"on_off": 0}, transition=100)
+
+
+@bulb
+async def test_dimmable_brightness_transition(dev, mocker):
+    set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
+    await dev.set_brightness(10, transition=1000)
+
+    set_light_state.assert_called_with({"brightness": 10}, transition=1000)
 
 
 @dimmable
