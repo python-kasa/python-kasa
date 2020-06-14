@@ -345,9 +345,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         if not light_state["on_off"] and "on_off" not in x:
             light_state = light_state["dft_on_state"]
 
-        _LOGGER.debug("Current state: %s", light_state)
+        _LOGGER.debug("Old state: %s", light_state)
         for key in x:
             light_state[key] = x[key]
+        _LOGGER.debug("New state: %s", light_state)
 
     def light_state(self, x, *args):
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]

@@ -30,6 +30,8 @@ toml = "*"
 tox = "*"
 pytest-mock = "^3.1.0"
 codecov = "^2.0"
+xdoctest = "^0.12"
+
 
 [tool.isort]
 multi_line_output = 3

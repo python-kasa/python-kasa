@@ -23,53 +23,69 @@ TPLINK_KELVIN = {
 class SmartBulb(SmartDevice):
     """Representation of a TP-Link Smart Bulb.
 
-    Usage example:
-    ```python
-    p = SmartBulb("192.168.1.105")
-    await p.update()
+    To initialize, you have to await update() at least once.
+    This will allow accessing the properties using the exposed properties.
 
-    # print the devices alias
-    print(p.alias)
-
-    # change state of bulb
-    await p.turn_on()
-    await p.update()
-    assert p.is_on
-    await p.turn_off()
-
-    # query and print current state of plug
-    print(p.state_information)
-
-    # check whether the bulb supports color changes
-    if p.is_color:
-        print("we got color!")
-        # set the color to an HSV tuple
-        await p.set_hsv(180, 100, 100)
-        await p.update()
-        # get the current HSV value
-        print(p.hsv)
-
-    # check whether the bulb supports setting color temperature
-    if p.is_variable_color_temp:
-        # set the color temperature in Kelvin
-        await p.set_color_temp(3000)
-        await p.update()
-
-        # get the current color temperature
-        print(p.color_temp)
-
-    # check whether the bulb is dimmable
-    if p.is_dimmable:
-        # set the bulb to 50% brightness
-        await p.set_brightness(50)
-        await p.update()
-
-        # check the current brightness
-        print(p.brightness)
-    ```
+    All changes to the device are done using awaitable methods,
+    which will not change the cached values, but you must await update() separately.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
+
+    Examples:
+        >>> import asyncio
+        >>> bulb = SmartBulb("127.0.0.1")
+        >>> asyncio.run(bulb.update())
+        >>> print(bulb.alias)
+        KL130 office bulb
+
+        Bulbs, like any other supported devices, can be turned on and off:
+
+        >>> asyncio.run(bulb.turn_off())
+        >>> asyncio.run(bulb.turn_on())
+        >>> asyncio.run(bulb.update())
+        >>> print(bulb.is_on)
+        True
+
+        You can use the is_-prefixed properties to check for supported features
+        >>> bulb.is_dimmable
+        True
+        >>> bulb.is_color
+        True
+        >>> bulb.is_variable_color_temp
+        True
+
+        All known bulbs support changing the brightness:
+
+        >>> bulb.brightness
+        30
+        >>> asyncio.run(bulb.set_brightness(50))
+        >>> asyncio.run(bulb.update())
+        >>> bulb.brightness
+        50
+
+        Bulbs supporting color temperature can be queried to know which range is accepted:
+
+        >>> bulb.valid_temperature_range
+        (2500, 9000)
+        >>> asyncio.run(bulb.set_color_temp(3000))
+        >>> asyncio.run(bulb.update())
+        >>> bulb.color_temp
+        3000
+
+        Color bulbs can be adjusted by passing hue, saturation and value:
+
+        >>> asyncio.run(bulb.set_hsv(180, 100, 80))
+        >>> asyncio.run(bulb.update())
+        >>> bulb.hsv
+        (180, 100, 80)
+
+        If you don't want to use the default transitions, you can pass `transition` in milliseconds.
+        This applies to all transitions (turn_on, turn_off, set_hsv, set_color_temp, set_brightness).
+        The following changes the brightness over a period of 10 seconds:
+
+        >>> asyncio.run(bulb.set_brightness(100, transition=10_000))
+
     """
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"

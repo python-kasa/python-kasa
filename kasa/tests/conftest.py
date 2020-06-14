@@ -100,6 +100,33 @@ async def handle_turn_on(dev, turn_on):
 pytestmark = pytest.mark.asyncio
 
 
+def device_for_file(model):
+    for d in STRIPS:
+        if d in model:
+            return SmartStrip
+    for d in PLUGS:
+        if d in model:
+            return SmartPlug
+    for d in BULBS:
+        if d in model:
+            return SmartBulb
+    for d in DIMMERS:
+        if d in model:
+            return SmartDimmer
+
+    raise Exception("Unable to find type for %s", model)
+
+
+def get_device_for_file(file):
+    with open(file) as f:
+        sysinfo = json.load(f)
+        model = basename(file)
+        p = device_for_file(model)(host="123.123.123.123")
+        p.protocol = FakeTransportProtocol(sysinfo)
+        asyncio.run(p.update())
+        return p
+
+
 @pytest.fixture(params=SUPPORTED_DEVICES)
 def dev(request):
     """Device fixture.
@@ -117,29 +144,7 @@ def dev(request):
             return d
         raise Exception("Unable to find type for %s" % ip)
 
-    def device_for_file(model):
-        for d in STRIPS:
-            if d in model:
-                return SmartStrip
-        for d in PLUGS:
-            if d in model:
-                return SmartPlug
-        for d in BULBS:
-            if d in model:
-                return SmartBulb
-        for d in DIMMERS:
-            if d in model:
-                return SmartDimmer
-
-        raise Exception("Unable to find type for %s", model)
-
-    with open(file) as f:
-        sysinfo = json.load(f)
-        model = basename(file)
-        p = device_for_file(model)(host="123.123.123.123")
-        p.protocol = FakeTransportProtocol(sysinfo)
-        asyncio.run(p.update())
-        yield p
+    return get_device_for_file(file)
 
 
 def pytest_addoption(parser):
