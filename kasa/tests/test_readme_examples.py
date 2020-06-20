@@ -18,3 +18,21 @@ def test_smartdevice_examples(mocker):
     mocker.patch("kasa.smartdevice.SmartDevice.update")
     res = xdoctest.doctest_module("kasa.smartdevice", "all")
     assert not res["failed"]
+
+
+def test_plug_examples(mocker):
+    """Test plug examples."""
+    p = get_device_for_file("kasa/tests/fixtures/HS110(EU)_1.0_real.json")
+    mocker.patch("kasa.smartplug.SmartPlug", return_value=p)
+    mocker.patch("kasa.smartplug.SmartPlug.update")
+    res = xdoctest.doctest_module("kasa.smartplug", "all")
+    assert not res["failed"]
+
+
+def test_strip_examples(mocker):
+    """Test strip examples."""
+    p = get_device_for_file("kasa/tests/fixtures/KP303(UK)_1.0.json")
+    mocker.patch("kasa.smartstrip.SmartStrip", return_value=p)
+    mocker.patch("kasa.smartstrip.SmartStrip.update")
+    res = xdoctest.doctest_module("kasa.smartstrip", "all")
+    assert not res["failed"]

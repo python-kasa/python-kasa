@@ -18,28 +18,52 @@ _LOGGER = logging.getLogger(__name__)
 class SmartStrip(SmartDevice):
     """Representation of a TP-Link Smart Power Strip.
 
-    Usage example when used as library:
-    ```python
-    p = SmartStrip("192.168.1.105")
+    A strip consists of the parent device and its children.
+    All methods of the parent act on all children, while the child devices
+    share the common API with the `SmartPlug` class.
 
-    # query the state of the strip
-    await p.update()
-    print(p.is_on)
+    To initialize, you have to await update() at least once.
+    This will allow accessing the properties using the exposed properties.
 
-    # change state of all outlets
-    await p.turn_on()
-    await p.turn_off()
-
-    # individual outlets are accessible through plugs variable
-    for plug in p.plugs:
-        print(f"{p}: {p.is_on}")
-
-    # change state of a single outlet
-    await p.plugs[0].turn_on()
-    ```
+    All changes to the device are done using awaitable methods,
+    which will not change the cached values, but you must await update() separately.
 
     Errors reported by the device are raised as SmartDeviceExceptions,
     and should be handled by the user of the library.
+
+    Examples:
+        >>> import asyncio
+        >>> strip = SmartStrip("127.0.0.1")
+        >>> asyncio.run(strip.update())
+        >>> strip.alias
+        TP-LINK_Power Strip_CF69
+
+        All methods act on the whole strip:
+
+        >>> for plug in strip.children:
+        >>>    print(f"{plug.alias}: {plug.is_on}")
+        Plug 1: True
+        Plug 2: False
+        Plug 3: False
+        >>> strip.is_on
+        True
+        >>> asyncio.run(strip.turn_off())
+
+        Accessing individual plugs can be done using the `children` property:
+
+        >>> len(strip.children)
+        3
+        >>> for plug in strip.children:
+        >>>    print(f"{plug.alias}: {plug.is_on}")
+        Plug 1: False
+        Plug 2: False
+        Plug 3: False
+        >>> asyncio.run(strip.children[1].turn_on())
+        >>> asyncio.run(strip.update())
+        >>> strip.is_on
+        True
+
+    For more examples, see the SmartDevice class.
     """
 
     def __init__(self, host: str) -> None:
@@ -212,7 +236,7 @@ class SmartStripPlug(SmartPlug):
     def is_on(self) -> bool:
         """Return whether device is on."""
         info = self._get_child_info()
-        return info["state"]
+        return bool(info["state"])
 
     @property  # type: ignore
     @requires_update
