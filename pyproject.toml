@@ -18,6 +18,12 @@ python = "^3.7"
 importlib-metadata = "*"
 asyncclick = "^7"
 
+# required only for docs
+sphinx = { version = "^3.1.1", optional = true }
+m2r = { version = "^0.2.1", optional = true }
+sphinx_rtd_theme = { version = "^0.5.0", optional = true }
+sphinxcontrib-programoutput = { version = "^0.16", optional = true }
+
 [tool.poetry.dev-dependencies]
 pytest = "^5"
 pytest-azurepipelines = "^0.8"
@@ -31,9 +37,9 @@ tox = "*"
 pytest-mock = "^3.1.0"
 codecov = "^2.0"
 xdoctest = "^0.12"
-sphinx_rtd_theme = "^0.5.0"
-m2r = "^0.2.1"
-sphinxcontrib-programoutput = "^0.16"
+
+[tool.poetry.extras]
+docs = ["sphinx", "sphinx_rtd_theme", "m2r", "sphinxcontrib-programoutput"]
 
 
 [tool.isort]
