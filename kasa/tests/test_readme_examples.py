@@ -36,3 +36,10 @@ def test_strip_examples(mocker):
     mocker.patch("kasa.smartstrip.SmartStrip.update")
     res = xdoctest.doctest_module("kasa.smartstrip", "all")
     assert not res["failed"]
+
+
+def test_discovery_examples(mocker):
+    p = get_device_for_file("kasa/tests/fixtures/KP303(UK)_1.0.json")
+    mocker.patch("kasa.discover.Discover.discover", return_value=[p])
+    res = xdoctest.doctest_module("kasa.discover", "all")
+    assert not res["failed"]

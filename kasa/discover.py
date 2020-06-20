@@ -72,6 +72,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         device_class = Discover._get_device_class(info)
         device = device_class(ip)
+        asyncio.ensure_future(device.update())
 
         self.discovered_devices[ip] = device
         self.discovered_devices_raw[ip] = info
@@ -103,6 +104,26 @@ class Discover:
     you can initialize the corresponding device class directly without this.
 
     The protocol uses UDP broadcast datagrams on port 9999 for discovery.
+
+    Examples:
+        Discovery returns a list of discovered devices:
+
+        >>> import asyncio
+        >>> found_devices = asyncio.run(Discover.discover())
+        >>> [dev.alias for dev in found_devices]
+        ['TP-LINK_Power Strip_CF69']
+
+        Discovery can also be targeted to a specific broadcast address instead of the 255.255.255.255:
+
+        >>> asyncio.run(Discover.discover(target="192.168.8.255"))
+
+        It is also possible to pass a coroutine to be executed for each found device:
+
+        >>> async def print_alias(dev):
+        >>>    print(f"Discovered {dev.alias}")
+        >>> devices = asyncio.run(Discover.discover(on_discovered=print_alias))
+
+
     """
 
     DISCOVERY_PORT = 9999
@@ -180,7 +201,9 @@ class Discover:
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:
-            return device_class(host)
+            dev = device_class(host)
+            await dev.update()
+            return dev
 
         raise SmartDeviceException("Unable to discover device, received: %s" % info)
 
