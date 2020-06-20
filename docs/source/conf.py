@@ -31,7 +31,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.viewcode",
-    "sphinx_click.ext",
     "sphinxcontrib.programoutput",
 ]
 
