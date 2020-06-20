@@ -6,7 +6,7 @@ def test_bulb_examples(mocker):
     """Use KL130 (bulb with all features) to test the doctests."""
     p = get_device_for_file("kasa/tests/fixtures/KL130(US)_1.0.json")
     mocker.patch("kasa.smartbulb.SmartBulb", return_value=p)
-    mocker.patch("kasa.smartdevice.SmartDevice.update")
+    mocker.patch("kasa.smartbulb.SmartBulb.update")
     res = xdoctest.doctest_module("kasa.smartbulb", "all")
     assert not res["failed"]
 
