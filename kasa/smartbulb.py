@@ -89,6 +89,7 @@ class SmartBulb(SmartDevice):
     """
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"
+    SET_LIGHT_METHOD = "transition_light_state"
 
     def __init__(self, host: str) -> None:
         super().__init__(host=host)
@@ -190,7 +191,7 @@ class SmartBulb(SmartDevice):
         state["ignore_default"] = 1
 
         light_state = await self._query_helper(
-            self.LIGHT_SERVICE, "transition_light_state", state
+            self.LIGHT_SERVICE, self.SET_LIGHT_METHOD, state
         )
         return light_state
 
