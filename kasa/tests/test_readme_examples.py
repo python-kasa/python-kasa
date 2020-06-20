@@ -38,7 +38,17 @@ def test_strip_examples(mocker):
     assert not res["failed"]
 
 
+def test_dimmer_examples(mocker):
+    """Test dimmer examples."""
+    p = get_device_for_file("kasa/tests/fixtures/HS220(US)_1.0_real.json")
+    mocker.patch("kasa.smartdimmer.SmartDimmer", return_value=p)
+    mocker.patch("kasa.smartdimmer.SmartDimmer.update")
+    res = xdoctest.doctest_module("kasa.smartdimmer", "all")
+    assert not res["failed"]
+
+
 def test_discovery_examples(mocker):
+    """Test discovery examples."""
     p = get_device_for_file("kasa/tests/fixtures/KP303(UK)_1.0.json")
     mocker.patch("kasa.discover.Discover.discover", return_value=[p])
     res = xdoctest.doctest_module("kasa.discover", "all")
