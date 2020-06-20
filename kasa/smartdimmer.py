@@ -20,7 +20,7 @@ class SmartDimmer(SmartPlug):
     Errors reported by the device are raised as :class:`SmartDeviceException`s,
     and should be handled by the user of the library.
 
-    Example:
+    Examples:
     >>> import asyncio
     >>> dimmer = SmartDimmer("192.168.1.105")
     >>> asyncio.run(dimmer.turn_on())

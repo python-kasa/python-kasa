@@ -22,7 +22,7 @@ asyncclick = "^7"
 pytest = "^5"
 pytest-azurepipelines = "^0.8"
 pytest-cov = "^2.8"
-pytest-asyncio = "^0.11"
+pytest-asyncio = "^0.12"
 pytest-sugar = "*"
 pre-commit = "*"
 voluptuous = "*"
@@ -31,6 +31,9 @@ tox = "*"
 pytest-mock = "^3.1.0"
 codecov = "^2.0"
 xdoctest = "^0.12"
+sphinx_rtd_theme = "^0.5.0"
+m2r = "^0.2.1"
+sphinxcontrib-programoutput = "^0.16"
 
 
 [tool.isort]

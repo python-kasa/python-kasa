@@ -23,13 +23,13 @@ TPLINK_KELVIN = {
 class SmartBulb(SmartDevice):
     """Representation of a TP-Link Smart Bulb.
 
-    To initialize, you have to await update() at least once.
+    To initialize, you have to await :func:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
-    which will not change the cached values, but you must await update() separately.
+    which will not change the cached values, but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as SmartDeviceExceptions,
+    Errors reported by the device are raised as :class:`SmartDeviceException`s,
     and should be handled by the user of the library.
 
     Examples:

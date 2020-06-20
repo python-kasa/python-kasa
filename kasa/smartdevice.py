@@ -123,11 +123,12 @@ class SmartDevice:
     You don't usually want to construct this class which implements the shared common interfaces.
     The recommended way is to either use the discovery functionality, or construct one of the subclasses:
 
-    * SmartPlug
-    * SmartBulb
-    * SmartStrip
+    * :class:`SmartPlug`
+    * :class:`SmartBulb`
+    * :class:`SmartStrip`
+    * :class:`SmartDimmer`
 
-    To initialize, you have to await update() at least once.
+    To initialize, you have to await :func:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
@@ -141,7 +142,8 @@ class SmartDevice:
         >>> dev = SmartDevice("127.0.0.1")
         >>> asyncio.run(dev.update())
 
-        All devices provides several informational properties:
+        All devices provide several informational properties:
+
         >>> dev.alias
         Kitchen
         >>> dev.model
@@ -580,7 +582,7 @@ class SmartDevice:
         response = EmeterStatus(await self.get_emeter_realtime())
         return response["power"]
 
-    async def reboot(self, delay=1) -> None:
+    async def reboot(self, delay: int = 1) -> None:
         """Reboot the device.
 
         Note that giving a delay of zero causes this to block,
