@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Mapping, Type, Union, cast
+from typing import Awaitable, Callable, Dict, Mapping, Type, Union, Optional, cast
 
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
@@ -34,7 +34,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         timeout: int = 5,
         discovery_packets: int = 3,
-        interface: bytes = b""
+        interface: Optional[str] = None
     ):
         self.transport = None
         self.tries = discovery_packets
@@ -52,8 +52,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         sock = transport.get_extra_info("socket")
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if self.interface is not None and len(self.interface) > 0:
-            sock.setsockopt(socket.SOL_SOCKET, 25, self.interface)
+        if self.interface is not None:
+            sock.setsockopt(socket.SOL_SOCKET, 25, self.interface.encode())
 
         self.do_discover()
 
