@@ -53,7 +53,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if self.interface is not None:
-            sock.setsockopt(socket.SOL_SOCKET, 25, self.interface.encode())
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.interface.encode())
 
         self.do_discover()
 
