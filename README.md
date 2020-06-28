@@ -17,6 +17,7 @@ This project is a maintainer-made fork of [pyHS100](https://github.com/GadgetRea
   * HS107
   * HS110
 * Power Strips
+  * KP200
   * HS300
   * KP303
 * Wall switches
