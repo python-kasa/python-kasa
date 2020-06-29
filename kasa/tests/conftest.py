@@ -118,6 +118,10 @@ def device_for_file(model):
 
 
 def get_device_for_file(file):
+    # if the wanted file is not an absolute path, prepend the fixtures directory
+    if not file.startswith("/"):
+        file = f"{os.path.dirname(os.path.abspath(__file__))}/fixtures/{file}"
+
     with open(file) as f:
         sysinfo = json.load(f)
         model = basename(file)

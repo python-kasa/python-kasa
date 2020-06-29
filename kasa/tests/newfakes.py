@@ -269,8 +269,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
                     # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
                     proto[module][etype] = info[module][etype]
                 else:  # otherwise fall back to the static one
-                    dummy = {"year": 2016}  # this forces to get some data
-                    dummy_data = emeter_commands[module][etype](None, x=dummy)
+                    dummy_data = emeter_commands[module][etype]
                     # print("got %s %s from dummy: %s" % (module, etype, dummy_data))
                     proto[module][etype] = dummy_data
 

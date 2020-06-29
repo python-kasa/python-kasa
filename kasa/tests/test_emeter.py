@@ -2,7 +2,7 @@ import pytest
 
 from kasa import SmartDeviceException
 
-from .conftest import has_emeter, no_emeter
+from .conftest import has_emeter, no_emeter, pytestmark
 from .newfakes import CURRENT_CONSUMPTION_SCHEMA
 
 
