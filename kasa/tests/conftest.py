@@ -3,6 +3,7 @@ import glob
 import json
 import os
 from os.path import basename
+from pathlib import Path, PurePath
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
@@ -119,10 +120,11 @@ def device_for_file(model):
 
 def get_device_for_file(file):
     # if the wanted file is not an absolute path, prepend the fixtures directory
-    if not file.startswith("/"):
-        file = f"{os.path.dirname(os.path.abspath(__file__))}/fixtures/{file}"
+    p = Path(file)
+    if not p.is_absolute():
+        p = Path(__file__).parent / "fixtures" / file
 
-    with open(file) as f:
+    with open(p) as f:
         sysinfo = json.load(f)
         model = basename(file)
         p = device_for_file(model)(host="123.123.123.123")
