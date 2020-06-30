@@ -1,3 +1,7 @@
+import sys
+
+import pytest
+
 import xdoctest
 from kasa.tests.conftest import get_device_for_file
 
@@ -47,9 +51,15 @@ def test_dimmer_examples(mocker):
     assert not res["failed"]
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 8), reason="3.7 handles asyncio.run differently"
+)
 def test_discovery_examples(mocker):
     """Test discovery examples."""
     p = get_device_for_file("KP303(UK)_1.0.json")
+
+    # This succeeds on python 3.8 but fails on 3.7
+    # ValueError: a coroutine was expected, got [<DeviceType.Strip model KP303(UK) ...
     mocker.patch("kasa.discover.Discover.discover", return_value=[p])
     res = xdoctest.doctest_module("kasa.discover", "all")
     assert not res["failed"]
