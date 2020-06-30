@@ -21,7 +21,7 @@ OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
 class _DiscoverProtocol(asyncio.DatagramProtocol):
     """Implementation of the discovery protocol handler.
 
-    This is internal class, use :func:Discover.discover: instead.
+    This is internal class, use :func:`Discover.discover`: instead.
     """
 
     discovered_devices: Dict[str, SmartDevice]
@@ -72,6 +72,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         device_class = Discover._get_device_class(info)
         device = device_class(ip)
+        asyncio.ensure_future(device.update())
 
         self.discovered_devices[ip] = device
         self.discovered_devices_raw[ip] = info
@@ -93,16 +94,36 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 class Discover:
     """Discover TPLink Smart Home devices.
 
-    The main entry point for this library is Discover.discover(),
+    The main entry point for this library is :func:`Discover.discover()`,
     which returns a dictionary of the found devices. The key is the IP address
     of the device and the value contains ready-to-use, SmartDevice-derived
     device object.
 
-    discover_single() can be used to initialize a single device given its
+    :func:`discover_single()` can be used to initialize a single device given its
     IP address. If the type of the device and its IP address is already known,
     you can initialize the corresponding device class directly without this.
 
     The protocol uses UDP broadcast datagrams on port 9999 for discovery.
+
+    Examples:
+        Discovery returns a list of discovered devices:
+
+        >>> import asyncio
+        >>> found_devices = asyncio.run(Discover.discover())
+        >>> [dev.alias for dev in found_devices]
+        ['TP-LINK_Power Strip_CF69']
+
+        Discovery can also be targeted to a specific broadcast address instead of the 255.255.255.255:
+
+        >>> asyncio.run(Discover.discover(target="192.168.8.255"))
+
+        It is also possible to pass a coroutine to be executed for each found device:
+
+        >>> async def print_alias(dev):
+        >>>    print(f"Discovered {dev.alias}")
+        >>> devices = asyncio.run(Discover.discover(on_discovered=print_alias))
+
+
     """
 
     DISCOVERY_PORT = 9999
@@ -130,12 +151,13 @@ class Discover:
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.
 
-        If given, `on_discovered` coroutine will get passed with the SmartDevice as parameter.
-        The results of the discovery can be accessed either via `discovered_devices` (SmartDevice-derived) or
-        `discovered_devices_raw` (JSON objects).
+        If given, `on_discovered` coroutine will get passed with the :class:`SmartDevice`-derived object as parameter.
+
+        The results of the discovery are returned either as a list of :class:`SmartDevice`-derived objects
+        or as raw response dictionaries objects (if `return_raw` is True).
 
         :param target: The target broadcast address (e.g. 192.168.xxx.255).
-        :param on_discovered:
+        :param on_discovered: coroutine to execute on discovery
         :param timeout: How long to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets are broadcasted.
         :param return_raw: True to return JSON objects instead of Devices.
@@ -180,7 +202,9 @@ class Discover:
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:
-            return device_class(host)
+            dev = device_class(host)
+            await dev.update()
+            return dev
 
         raise SmartDeviceException("Unable to discover device, received: %s" % info)
 

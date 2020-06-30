@@ -3,10 +3,7 @@ import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException
 
-from .conftest import bulb, dimmer, plug, strip
-
-# to avoid adding this for each async function separately
-pytestmark = pytest.mark.asyncio
+from .conftest import bulb, dimmer, plug, pytestmark, strip
 
 
 @plug

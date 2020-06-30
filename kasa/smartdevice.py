@@ -118,7 +118,98 @@ def requires_update(f):
 
 
 class SmartDevice:
-    """Base class for all supported device types."""
+    """Base class for all supported device types.
+
+    You don't usually want to construct this class which implements the shared common interfaces.
+    The recommended way is to either use the discovery functionality, or construct one of the subclasses:
+
+    * :class:`SmartPlug`
+    * :class:`SmartBulb`
+    * :class:`SmartStrip`
+    * :class:`SmartDimmer`
+
+    To initialize, you have to await :func:`update()` at least once.
+    This will allow accessing the properties using the exposed properties.
+
+    All changes to the device are done using awaitable methods,
+    which will not change the cached values, but you must await update() separately.
+
+    Errors reported by the device are raised as SmartDeviceExceptions,
+    and should be handled by the user of the library.
+
+    Examples:
+        >>> import asyncio
+        >>> dev = SmartDevice("127.0.0.1")
+        >>> asyncio.run(dev.update())
+
+        All devices provide several informational properties:
+
+        >>> dev.alias
+        Kitchen
+        >>> dev.model
+        HS110(EU)
+        >>> dev.rssi
+        -71
+        >>> dev.mac
+        50:C7:BF:01:F8:CD
+
+        Some information can also be changed programatically:
+
+        >>> asyncio.run(dev.set_alias("new alias"))
+        >>> asyncio.run(dev.set_mac("01:23:45:67:89:ab"))
+        >>> asyncio.run(dev.update())
+        >>> dev.alias
+        new alias
+        >>> dev.mac
+        01:23:45:67:89:ab
+
+        When initialized using discovery or using a subclass, you can check the type of the device:
+
+        >>> dev.is_bulb
+        False
+        >>> dev.is_strip
+        False
+        >>> dev.is_plug
+        True
+
+        You can also get the hardware and software as a dict, or access the full device response:
+
+        >>> dev.hw_info
+        {'sw_ver': '1.2.5 Build 171213 Rel.101523',
+         'hw_ver': '1.0',
+         'mac': '01:23:45:67:89:ab',
+         'type': 'IOT.SMARTPLUGSWITCH',
+         'hwId': '45E29DA8382494D2E82688B52A0B2EB5',
+         'fwId': '00000000000000000000000000000000',
+         'oemId': '3D341ECE302C0642C99E31CE2430544B',
+         'dev_name': 'Wi-Fi Smart Plug With Energy Monitoring'}
+        >>> dev.sys_info
+
+        All devices can be turned on and off:
+
+        >>> asyncio.run(dev.turn_off())
+        >>> asyncio.run(dev.turn_on())
+        >>> asyncio.run(dev.update())
+        >>> dev.is_on
+        True
+
+        Some devices provide energy consumption meter, and regular update will already fetch some information:
+
+        >>> dev.has_emeter
+        True
+        >>> dev.emeter_realtime
+        {'current': 0.015342, 'err_code': 0, 'power': 0.983971, 'total': 32.448, 'voltage': 235.595234}
+        >>> dev.emeter_today
+        >>> dev.emeter_this_month
+
+        You can also query the historical data (note that these needs to be awaited), keyed with month/day:
+
+        >>> asyncio.run(dev.get_emeter_monthly(year=2016))
+        {11: 1.089, 12: 1.582}
+        >>> asyncio.run(dev.get_emeter_daily(year=2016, month=11))
+        {24: 0.026, 25: 0.109}
+
+    """
 
     def __init__(self, host: str) -> None:
         """Create a new SmartDevice instance.
@@ -382,6 +473,9 @@ class SmartDevice:
     @requires_update
     def emeter_today(self) -> Optional[float]:
         """Return today's energy consumption in kWh."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+
         raw_data = self._last_update[self.emeter_type]["get_daystat"]["day_list"]
         data = self._emeter_convert_emeter_data(raw_data)
         today = datetime.now().day
@@ -395,6 +489,9 @@ class SmartDevice:
     @requires_update
     def emeter_this_month(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+
         raw_data = self._last_update[self.emeter_type]["get_monthstat"]["month_list"]
         data = self._emeter_convert_emeter_data(raw_data)
         current_month = datetime.now().month
@@ -485,7 +582,7 @@ class SmartDevice:
         response = EmeterStatus(await self.get_emeter_realtime())
         return response["power"]
 
-    async def reboot(self, delay=1) -> None:
+    async def reboot(self, delay: int = 1) -> None:
         """Reboot the device.
 
         Note that giving a delay of zero causes this to block,

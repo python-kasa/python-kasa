@@ -5,7 +5,7 @@ import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import SmartDeviceException
 
-from .conftest import handle_turn_on, turn_on
+from .conftest import handle_turn_on, pytestmark, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
 
 

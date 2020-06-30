@@ -240,42 +240,41 @@ emeter_commands = {
 }
 
 
-def error(target, cmd="no-command", msg="default msg"):
-    return {target: {cmd: {"err_code": -1323, "msg": msg}}}
+def error(msg="default msg"):
+    return {"err_code": -1323, "msg": msg}
 
 
-def success(target, cmd, res):
+def success(res):
     if res:
         res.update({"err_code": 0})
     else:
         res = {"err_code": 0}
-    return {target: {cmd: res}}
+    return res
 
 
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):
         self.discovery_data = info
         proto = FakeTransportProtocol.baseproto
+
         for target in info:
             # print("target %s" % target)
             for cmd in info[target]:
                 # print("initializing tgt %s cmd %s" % (target, cmd))
                 proto[target][cmd] = info[target][cmd]
-        # if we have emeter support, check for it
+        # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
-            if module not in info:
-                # TODO required for old tests
-                continue
-            if "get_realtime" in info[module]:
-                get_realtime_res = info[module]["get_realtime"]
-                # TODO remove when removing old tests
-                if callable(get_realtime_res):
-                    get_realtime_res = get_realtime_res()
-                if (
-                    "err_code" not in get_realtime_res
-                    or not get_realtime_res["err_code"]
-                ):
-                    proto[module] = emeter_commands[module]
+            for etype in ["get_realtime", "get_daystat", "get_monthstat"]:
+                if etype in info[module]:  # if the fixture has the data, use it
+                    # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
+                    proto[module][etype] = info[module][etype]
+                else:  # otherwise fall back to the static one
+                    dummy_data = emeter_commands[module][etype]
+                    # print("got %s %s from dummy: %s" % (module, etype, dummy_data))
+                    proto[module][etype] = dummy_data
+
+            # print("initialized: %s" % proto[module])
+
         self.proto = proto
 
     def set_alias(self, x, child_ids=[]):
@@ -309,7 +308,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
 
     def set_mac(self, x, *args):
         _LOGGER.debug("Setting mac to %s", x)
-        self.proto["system"]["get_sysinfo"]["mac"] = x
+        self.proto["system"]["get_sysinfo"]["mac"] = x["mac"]
 
     def set_hs220_brightness(self, x, *args):
         _LOGGER.debug("Setting brightness to %s", x)
@@ -345,9 +344,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         if not light_state["on_off"] and "on_off" not in x:
             light_state = light_state["dft_on_state"]
 
-        _LOGGER.debug("Current state: %s", light_state)
+        _LOGGER.debug("Old state: %s", light_state)
         for key in x:
             light_state[key] = x[key]
+        _LOGGER.debug("New state: %s", light_state)
 
     def light_state(self, x, *args):
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
@@ -417,26 +417,39 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         except KeyError:
             child_ids = []
 
-        target = next(iter(request))
-        if target not in proto.keys():
-            return error(target, msg="target not found")
+        def get_response_for_module(target):
 
-        cmd = next(iter(request[target]))
-        if cmd not in proto[target].keys():
-            return error(target, cmd, msg="command not found")
+            if target not in proto.keys():
+                return error(msg="target not found")
 
-        params = request[target][cmd]
-        _LOGGER.debug(f"Going to execute {target}.{cmd} (params: {params}).. ")
+            def get_response_for_command(cmd):
+                if cmd not in proto[target].keys():
+                    return error(msg=f"command {cmd} not found")
 
-        if callable(proto[target][cmd]):
-            res = proto[target][cmd](self, params, child_ids)
-            _LOGGER.debug("[callable] %s.%s: %s", target, cmd, res)
-            # verify that change didn't break schema, requires refactoring..
-            # TestSmartPlug.sysinfo_schema(self.proto["system"]["get_sysinfo"])
-            return success(target, cmd, res)
-        elif isinstance(proto[target][cmd], dict):
-            res = proto[target][cmd]
-            _LOGGER.debug("[static] %s.%s: %s", target, cmd, res)
-            return success(target, cmd, res)
-        else:
-            raise NotImplementedError(f"target {target} cmd {cmd}")
+                params = request[target][cmd]
+                _LOGGER.debug(f"Going to execute {target}.{cmd} (params: {params}).. ")
+
+                if callable(proto[target][cmd]):
+                    res = proto[target][cmd](self, params, child_ids)
+                    _LOGGER.debug("[callable] %s.%s: %s", target, cmd, res)
+                    return success(res)
+                elif isinstance(proto[target][cmd], dict):
+                    res = proto[target][cmd]
+                    _LOGGER.debug("[static] %s.%s: %s", target, cmd, res)
+                    return success(res)
+                else:
+                    raise NotImplementedError(f"target {target} cmd {cmd}")
+
+            from collections import defaultdict
+
+            cmd_responses = defaultdict(dict)
+            for cmd in request[target]:
+                cmd_responses[target][cmd] = get_response_for_command(cmd)
+
+            return cmd_responses
+
+        response = {}
+        for target in request:
+            response.update(get_response_for_module(target))
+
+        return response

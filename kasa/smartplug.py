@@ -10,24 +10,30 @@ _LOGGER = logging.getLogger(__name__)
 class SmartPlug(SmartDevice):
     """Representation of a TP-Link Smart Switch.
 
-    Usage example:
-    ```python
-    p = SmartPlug("192.168.1.105")
+    To initialize, you have to await :func:`update()` at least once.
+    This will allow accessing the properties using the exposed properties.
 
-    # print the devices alias
-    print(p.alias)
+    All changes to the device are done using awaitable methods,
+    which will not change the cached values, but you must await :func:`update()` separately.
 
-    # change state of plug
-    await p.turn_on()
-    assert p.is_on is True
-    await p.turn_off()
-
-    # print current state of plug
-    print(p.state_information)
-    ```
-
-    Errors reported by the device are raised as SmartDeviceExceptions,
+    Errors reported by the device are raised as :class:`SmartDeviceException`s,
     and should be handled by the user of the library.
+
+    Examples:
+        >>> import asyncio
+        >>> plug = SmartPlug("127.0.0.1")
+        >>> asyncio.run(plug.update())
+        >>> plug.alias
+        Kitchen
+
+        Setting the LED state:
+
+        >>> asyncio.run(plug.set_led(True))
+        >>> asyncio.run(plug.update())
+        >>> plug.led
+        True
+
+    For more examples, see the :class:`SmartDevice` class.
     """
 
     def __init__(self, host: str) -> None:

@@ -1,12 +1,9 @@
-import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice
 from kasa.cli import alias, brightness, emeter, raw_command, state, sysinfo
 
-from .conftest import handle_turn_on, turn_on
-
-pytestmark = pytest.mark.asyncio
+from .conftest import handle_turn_on, pytestmark, turn_on
 
 
 async def test_sysinfo(dev):

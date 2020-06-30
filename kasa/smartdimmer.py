@@ -9,18 +9,30 @@ class SmartDimmer(SmartPlug):
     """Representation of a TP-Link Smart Dimmer.
 
     Dimmers work similarly to plugs, but provide also support for
-    adjusting the brightness. This class extends SmartPlug interface.
+    adjusting the brightness. This class extends :class:`SmartPlug` interface.
 
-    Example:
-    ```
-    dimmer = SmartDimmer("192.168.1.105")
-    await dimmer.turn_on()
-    print("Current brightness: %s" % dimmer.brightness)
+    To initialize, you have to await :func:`update()` at least once.
+    This will allow accessing the properties using the exposed properties.
 
-    await dimmer.set_brightness(100)
-    ```
+    All changes to the device are done using awaitable methods,
+    which will not change the cached values, but you must await :func:`update()` separately.
 
-    Refer to SmartPlug for the full API.
+    Errors reported by the device are raised as :class:`SmartDeviceException`s,
+    and should be handled by the user of the library.
+
+    Examples:
+    >>> import asyncio
+    >>> dimmer = SmartDimmer("192.168.1.105")
+    >>> asyncio.run(dimmer.turn_on())
+    >>> dimmer.brightness
+    25
+
+    >>> asyncio.run(dimmer.set_brightness(50))
+    >>> asyncio.run(dimmer.update())
+    >>> dimmer.brightness
+    50
+
+    Refer to :class:`SmartPlug` for the full API.
     """
 
     DIMMER_SERVICE = "smartlife.iot.dimmer"

@@ -37,30 +37,10 @@ This project is a maintainer-made fork of [pyHS100](https://github.com/GadgetRea
 **Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests! See below for instructions for setting up a development environment.**
 
 
-# Usage
 
-The package is shipped with a console tool named kasa, please refer to ```kasa --help``` for detailed usage.
-The device to which the commands are sent is chosen by `KASA_HOST` environment variable or passing `--host <address>` as an option.
-To see what is being sent to and received from the device, specify option `--debug`.
-
-To avoid discovering the devices when executing commands its type can be passed by specifying either `--plug` or `--bulb`,
-if no type is given its type will be discovered automatically with a small delay.
-Some commands (such as reading energy meter values and setting color of bulbs) additional parameters are required,
-which you can find by adding `--help` after the command, e.g. `kasa emeter --help` or `kasa hsv --help`.
-
-If no command is given, the `state` command will be executed to query the device state.
-
-## Initial Setup
-
-You can provision your device without any extra apps by using the `kasa wifi` command:
-1. If the device is unprovisioned, connect to its open network
-2. Use `kasa discover` (or check the routes) to locate the IP address of the device (likely 192.168.0.1)
-3. Scan for available networks using `kasa wifi scan`
-4. Join/change the network using `kasa wifi join` command, see `--help` for details.
 ## Discovering devices
 
 The devices can be discovered either by using `kasa discover` or by calling `kasa` without any parameters.
-In both cases supported devices are discovered from the same broadcast domain, and their current state will be queried and printed out.
 
 ```
 $ kasa
@@ -108,112 +88,7 @@ The commands are straightforward, so feel free to check `--help` for instruction
 
 # Library usage
 
-The property accesses use the data obtained before by awaiting `update()`.
-The values are cached until the next update call. In practice this means that property accesses do no I/O and are dependent, while I/O producing methods need to be awaited.
-
-Methods changing the state of the device do not invalidate the cache (i.e., there is no implicit `update()`).
-You can assume that the operation has succeeded if no exception is raised.
-These methods will return the device response, which can be useful for some use cases.
-
-Errors are raised as `SmartDeviceException` instances for the library user to handle.
-
-## Discovering devices
-
-`Discover.discover()` can be used to discover supported devices in the local network.
-The return value is a dictionary keyed with the IP address and the value holds a ready-to-use instance of the detected device type.
-
-Example:
-```python
-import asyncio
-from kasa import Discover
-
-devices = asyncio.run(Discover.discover())
-for addr, dev in devices.items():
-    asyncio.run(dev.update())
-    print(f"{addr} >> {dev}")
-```
-```
-$ python example.py
-<SmartPlug at 192.168.XXX.XXX (My Smart Plug), is_on: True - dev specific: {'LED state': True, 'On since': datetime.datetime(2017, 3, 26, 18, 29, 17, 52073)}>
-```
-
-## Querying basic information
-
-```python
-import asyncio
-from kasa import SmartPlug
-from pprint import pformat as pf
-
-plug = SmartPlug("192.168.XXX.XXX")
-asyncio.run(plug.update())
-print("Hardware: %s" % pf(plug.hw_info))
-print("Full sysinfo: %s" % pf(plug.sys_info))
-```
-
-The rest of the examples assume that you have initialized an instance.
-
-## State & switching
-
-Devices can be turned on and off by either calling appropriate methods on the device object.
-
-```python
-print("Current state: %s" % plug.is_on)
-await plug.turn_off()
-await plug.turn_on()
-```
-
-## Getting emeter status (if applicable)
-The `update()` call will automatically fetch the following emeter information:
-* Current consumption (accessed through `emeter_realtime` property)
-* Today's consumption (`emeter_today`)
-* This month's consumption (`emeter_this_month`)
-
-You can also request this information separately:
-
-```python
-print("Current consumption: %s" % await plug.get_emeter_realtime())
-print("Per day: %s" % await plug.get_emeter_daily(year=2016, month=12))
-print("Per month: %s" % await plug.get_emeter_monthly(year=2016))
-```
-
-## Bulb and dimmer-specific APIs
-
-The bulb API is likewise straightforward, so please refer to its API documentation.
-Information about supported features can be queried by using properties prefixed with `is_`, e.g. `is_dimmable`.
-
-### Setting the brightness
-
-```python
-import asyncio
-from kasa import SmartBulb
-
-bulb = SmartBulb("192.168.1.123")
-asyncio.run(bulb.update())
-
-if bulb.is_dimmable:
-    asyncio.run(bulb.set_brightness(100))
-    asyncio.run(bulb.update())
-    print(bulb.brightness)
-```
-
-### Setting the color temperature
-```python
-if bulb.is_variable_color_temp:
-    await bulb.set_color_temp(3000)
-    await bulb.update()
-    print(bulb.color_temp)
-```
-
-### Setting the color
-
-Hue is given in degrees (0-360) and saturation and value in percentage.
-
-```python
-if bulb.is_color:
-    await bulb.set_hsv(180, 100, 100) # set to cyan
-    await bulb.update()
-    print(bulb.hsv)
-```
+You can find several code examples in [the API documentation](broken link).
 
 ## Contributing
 
