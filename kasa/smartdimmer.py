@@ -84,7 +84,7 @@ class SmartDimmer(SmartPlug):
             self.DIMMER_SERVICE, "set_brightness", {"brightness": brightness}
         )
 
-    async def turn_off(self, *, transition: int = None):
+    async def turn_off(self, *, transition: int = None, **kwargs):
         """Turn the bulb off.
 
         :param int transition: transition duration in milliseconds.
@@ -95,7 +95,7 @@ class SmartDimmer(SmartPlug):
         return await super().turn_off()
 
     @requires_update
-    async def turn_on(self, *, transition: int = None):
+    async def turn_on(self, *, transition: int = None, **kwargs):
         """Turn the bulb on.
 
         :param int transition: transition duration in milliseconds.

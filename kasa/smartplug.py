@@ -48,11 +48,11 @@ class SmartPlug(SmartDevice):
         sys_info = self.sys_info
         return bool(sys_info["relay_state"])
 
-    async def turn_on(self):
+    async def turn_on(self, **kwargs):
         """Turn the switch on."""
         return await self._query_helper("system", "set_relay_state", {"state": 1})
 
-    async def turn_off(self):
+    async def turn_off(self, **kwargs):
         """Turn the switch off."""
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 

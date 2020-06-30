@@ -590,7 +590,7 @@ class SmartDevice:
         """
         await self._query_helper("system", "reboot", {"delay": delay})
 
-    async def turn_off(self) -> Dict:
+    async def turn_off(self, **kwargs) -> Dict:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
@@ -600,7 +600,7 @@ class SmartDevice:
         """Return True if device is off."""
         return not self.is_on
 
-    async def turn_on(self) -> Dict:
+    async def turn_on(self, **kwargs) -> Dict:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 

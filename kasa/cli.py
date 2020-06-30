@@ -337,8 +337,9 @@ async def emeter(dev: SmartDevice, year, month, erase):
 
 @cli.command()
 @click.argument("brightness", type=click.IntRange(0, 100), default=None, required=False)
+@click.option("--transition", type=int, required=False)
 @pass_dev
-async def brightness(dev, brightness):
+async def brightness(dev: SmartBulb, brightness: int, transition: int):
     """Get or set brightness."""
     await dev.update()
     if not dev.is_dimmable:
@@ -348,15 +349,16 @@ async def brightness(dev, brightness):
         click.echo(f"Brightness: {dev.brightness}")
     else:
         click.echo(f"Setting brightness to {brightness}")
-        click.echo(await dev.set_brightness(brightness))
+        click.echo(await dev.set_brightness(brightness, transition=transition))
 
 
 @cli.command()
 @click.argument(
     "temperature", type=click.IntRange(2500, 9000), default=None, required=False
 )
+@click.option("--transition", type=int, required=False)
 @pass_dev
-async def temperature(dev: SmartBulb, temperature):
+async def temperature(dev: SmartBulb, temperature: int, transition: int):
     """Get or set color temperature."""
     await dev.update()
     if temperature is None:
@@ -371,16 +373,17 @@ async def temperature(dev: SmartBulb, temperature):
             )
     else:
         click.echo(f"Setting color temperature to {temperature}")
-        asyncio.run(dev.set_color_temp(temperature))
+        asyncio.run(dev.set_color_temp(temperature, transition=transition))
 
 
 @cli.command()
 @click.argument("h", type=click.IntRange(0, 360), default=None, required=False)
 @click.argument("s", type=click.IntRange(0, 100), default=None, required=False)
 @click.argument("v", type=click.IntRange(0, 100), default=None, required=False)
+@click.option("--transition", type=int, required=False)
 @click.pass_context
 @pass_dev
-async def hsv(dev, ctx, h, s, v):
+async def hsv(dev, ctx, h, s, v, transition):
     """Get or set color in HSV. (Bulb only)."""
     await dev.update()
     if h is None or s is None or v is None:
@@ -389,7 +392,7 @@ async def hsv(dev, ctx, h, s, v):
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
         click.echo(f"Setting HSV: {h} {s} {v}")
-        click.echo(await dev.set_hsv(h, s, v))
+        click.echo(await dev.set_hsv(h, s, v, transition=transition))
 
 
 @cli.command()
@@ -415,8 +418,9 @@ async def time(dev):
 @cli.command()
 @click.option("--index", type=int, required=False)
 @click.option("--name", type=str, required=False)
+@click.option("--transition", type=int, required=False)
 @pass_dev
-async def on(dev: SmartDevice, index, name):
+async def on(dev: SmartDevice, index: int, name: str, transition: int):
     """Turn the device on."""
     await dev.update()
     if index is not None or name is not None:
@@ -430,14 +434,15 @@ async def on(dev: SmartDevice, index, name):
             dev = dev.get_plug_by_name(name)
 
     click.echo(f"Turning on {dev.alias}")
-    await dev.turn_on()
+    await dev.turn_on(transition=transition)
 
 
 @cli.command()
 @click.option("--index", type=int, required=False)
 @click.option("--name", type=str, required=False)
+@click.option("--transition", type=int, required=False)
 @pass_dev
-async def off(dev, index, name):
+async def off(dev: SmartDevice, index: int, name: str, transition: int):
     """Turn the device off."""
     await dev.update()
     if index is not None or name is not None:
@@ -451,7 +456,7 @@ async def off(dev, index, name):
             dev = dev.get_plug_by_name(name)
 
     click.echo(f"Turning off {dev.alias}")
-    await dev.turn_off()
+    await dev.turn_off(transition=transition)
 
 
 @cli.command()
