@@ -153,6 +153,25 @@ class SmartBulb(SmartDevice):
 
         return light_state
 
+    async def get_light_details(self) -> Dict[str, int]:
+        """Return light details.
+
+        Example:
+            {'lamp_beam_angle': 290, 'min_voltage': 220, 'max_voltage': 240,
+             'wattage': 5, 'incandescent_equivalent': 40, 'max_lumens': 450,
+              'color_rendering_index': 80}
+        """
+        return await self._query_helper(self.LIGHT_SERVICE, "get_light_details")
+
+    async def get_turn_on_behavior(self) -> Dict:
+        """Return the behavior for turning the bulb on.
+
+        Example:
+            {'soft_on': {'mode': 'last_status'},
+            'hard_on': {'mode': 'last_status'}}
+        """
+        return await self._query_helper(self.LIGHT_SERVICE, "get_default_behavior")
+
     async def get_light_state(self) -> Dict[str, Dict]:
         """Query the light state."""
         # TODO: add warning and refer to use light.state?
@@ -162,6 +181,13 @@ class SmartBulb(SmartDevice):
         """Set the light state."""
         if transition is not None:
             state["transition_period"] = transition
+
+        # if no on/off is defined, turn on the light
+        if "on_off" not in state:
+            state["on_off"] = 1
+
+        # This is necessary to allow turning on into a specific state
+        state["ignore_default"] = 1
 
         light_state = await self._query_helper(
             self.LIGHT_SERVICE, "transition_light_state", state
@@ -239,7 +265,9 @@ class SmartBulb(SmartDevice):
         return int(light_state["color_temp"])
 
     @requires_update
-    async def set_color_temp(self, temp: int, *, transition: int = None) -> Dict:
+    async def set_color_temp(
+        self, temp: int, *, brightness=None, transition: int = None
+    ) -> Dict:
         """Set the color temperature of the device in kelvin.
 
         :param int temp: The new color temperature, in Kelvin
@@ -256,6 +284,9 @@ class SmartBulb(SmartDevice):
             )
 
         light_state = {"color_temp": temp}
+        if brightness is not None:
+            light_state["brightness"] = brightness
+
         return await self.set_light_state(light_state, transition=transition)
 
     @property  # type: ignore

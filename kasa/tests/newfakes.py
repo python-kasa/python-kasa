@@ -323,31 +323,33 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             self.proto["system"]["get_sysinfo"]["relay_state"] = 1
             self.proto["system"]["get_sysinfo"]["brightness"] = x["brightness"]
 
-    def transition_light_state(self, x, *args):
-        _LOGGER.debug("Setting light state to %s", x)
+    def transition_light_state(self, state_changes, *args):
+        _LOGGER.debug("Setting light state to %s", state_changes)
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
-        # The required change depends on the light state,
-        # exception being turning the bulb on and off
 
-        if "on_off" in x:
-            if x["on_off"] and not light_state["on_off"]:  # turning on
+        _LOGGER.debug("Current light state: %s", light_state)
+        new_state = light_state
+
+        if state_changes["on_off"] == 1:  # turn on requested
+            if not light_state[
+                "on_off"
+            ]:  # if we were off, use the dft_on_state as a base
+                _LOGGER.debug("Bulb was off, using dft_on_state")
                 new_state = light_state["dft_on_state"]
-                new_state["on_off"] = 1
-                self.proto["system"]["get_sysinfo"]["light_state"] = new_state
-            elif not x["on_off"] and light_state["on_off"]:
-                new_state = {"dft_on_state": light_state, "on_off": 0}
 
-                self.proto["system"]["get_sysinfo"]["light_state"] = new_state
+        # override the existing settings
+        new_state.update(state_changes)
 
-            return
+        if (
+            not state_changes["on_off"] and "dft_on_state" not in light_state
+        ):  # if not already off, pack the data inside dft_on_state
+            _LOGGER.debug(
+                "Bulb was on and turn_off was requested, saving to dft_on_state"
+            )
+            new_state = {"dft_on_state": light_state, "on_off": 0}
 
-        if not light_state["on_off"] and "on_off" not in x:
-            light_state = light_state["dft_on_state"]
-
-        _LOGGER.debug("Old state: %s", light_state)
-        for key in x:
-            light_state[key] = x[key]
-        _LOGGER.debug("New state: %s", light_state)
+        _LOGGER.debug("New light state: %s", new_state)
+        self.proto["system"]["get_sysinfo"]["light_state"] = new_state
 
     def light_state(self, x, *args):
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
