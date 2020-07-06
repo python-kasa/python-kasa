@@ -1,5 +1,4 @@
 """python-kasa cli tool."""
-import asyncio
 import json
 import logging
 import re
@@ -373,7 +372,7 @@ async def temperature(dev: SmartBulb, temperature: int, transition: int):
             )
     else:
         click.echo(f"Setting color temperature to {temperature}")
-        asyncio.run(dev.set_color_temp(temperature, transition=transition))
+        await dev.set_color_temp(temperature, transition=transition)
 
 
 @cli.command()
