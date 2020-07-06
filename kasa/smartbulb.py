@@ -337,14 +337,14 @@ class SmartBulb(SmartDevice):
         light_state = self.light_state
         return bool(light_state["on_off"])
 
-    async def turn_off(self, *, transition: int = None) -> Dict:
+    async def turn_off(self, *, transition: int = None, **kwargs) -> Dict:
         """Turn the bulb off.
 
         :param int transition: transition in milliseconds.
         """
         return await self.set_light_state({"on_off": 0}, transition=transition)
 
-    async def turn_on(self, *, transition: int = None) -> Dict:
+    async def turn_on(self, *, transition: int = None, **kwargs) -> Dict:
         """Turn the bulb on.
 
         :param int transition: transition in milliseconds.
