@@ -127,4 +127,4 @@ If you want to manually execute the checks, you can run `tox -e lint` to do the 
 * KL120
 * KL130
 
-**Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests! See below for instructions for setting up a development environment.**
+**Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests!**
