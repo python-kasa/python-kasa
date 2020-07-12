@@ -3,6 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/python-kasa.svg)](https://badge.fury.io/py/python-kasa)
 [![Build Status](https://dev.azure.com/python-kasa/python-kasa/_apis/build/status/python-kasa.python-kasa?branchName=master)](https://dev.azure.com/python-kasa/python-kasa/_build/latest?definitionId=2&branchName=master)
 [![Coverage Status](https://coveralls.io/repos/github/python-kasa/python-kasa/badge.svg?branch=master)](https://coveralls.io/github/python-kasa/python-kasa?branch=master)
+[![Documentation Status](https://readthedocs.org/projects/python-kasa/badge/?version=latest)](https://python-kasa.readthedocs.io/en/latest/?badge=latest)
 
 python-kasa is a Python library to control TPLink smart home devices (plugs, wall switches, power strips, and bulbs) using asyncio.
 This project is a maintainer-made fork of [pyHS100](https://github.com/GadgetReactor/pyHS100) project.
@@ -73,7 +74,7 @@ The commands are straightforward, so feel free to check `--help` for instruction
 
 # Library usage
 
-You can find several code examples in [the API documentation](broken link).
+You can find several code examples in [the API documentation](https://python-kasa.readthedocs.io).
 
 ## Contributing
 
