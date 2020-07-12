@@ -79,23 +79,26 @@ You can find several code examples in [the API documentation](broken link).
 
 Contributions are very welcome! To simplify the process, we are leveraging automated checks and tests for contributions.
 
-### Resources
-
-* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
-* [https://github.com/plasticrake/tplink-smarthome-simulator](tplink-smarthome-simulator)
-
 ### Setting up development environment
 
-```bash
-poetry install
-pre-commit install
-```
+To get started, simply clone this repository and initialize the development environment.
+We are using [poetry](https://python-poetry.org) for dependency management, so after cloning the repository simply execute
+`poetry install` which will install all necessary packages and create a virtual environment for you.
 
 ### Code-style checks
 
-We use several tools to automatically check all contributions, which are run automatically when you commit your code.
+We use several tools to automatically check all contributions. The simplest way to verify that everything is formatted properly
+before creating a pull request, consider activating the pre-commit hooks by executing `pre-commit install`.
+This will make sure that the checks are passing when you do a commit.
 
-If you want to manually execute the checks, you can run `tox -e lint` to do the linting checks or `tox` to also execute the tests.
+You can also execute the checks by running either `tox -e lint` to only do the linting checks, or `tox` to also execute the tests.
+
+### Analyzing network captures
+
+The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
+After capturing the traffic, you can either use the [softScheck's  wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+or the `parse_pcap.py` script contained inside the `devtools` directory.
+
 
 ## Supported devices
 
@@ -128,3 +131,9 @@ If you want to manually execute the checks, you can run `tox -e lint` to do the 
 * KL130
 
 **Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests!**
+
+### Resources
+
+* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+* [https://github.com/plasticrake/tplink-smarthome-simulator](tplink-smarthome-simulator)
+* [Unofficial API documentation](https://github.com/plasticrake/tplink-smarthome-api/blob/master/API.md)
