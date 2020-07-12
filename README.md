@@ -7,40 +7,23 @@
 python-kasa is a Python library to control TPLink smart home devices (plugs, wall switches, power strips, and bulbs) using asyncio.
 This project is a maintainer-made fork of [pyHS100](https://github.com/GadgetReactor/pyHS100) project.
 
+## Getting started
 
-**Supported devices**
+You can install the most recent release using pip. Until
+```
+pip install python-kasa --pre
+```
 
-* Plugs
-  * HS100
-  * HS103
-  * HS105
-  * HS107
-  * HS110
-* Power Strips
-  * HS300
-  * KP303
-* Wall switches
-  * HS200
-  * HS210
-  * HS220
-* Bulbs
-  * LB100
-  * LB110
-  * LB120
-  * LB130
-  * LB230
-  * KL60
-  * KL110
-  * KL120
-  * KL130
-
-**Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests! See below for instructions for setting up a development environment.**
-
-
+Alternatively, you can clone this repository and use poetry to install the development version:
+```
+git clone https://github.com/python-kasa/python-kasa.git
+cd python-kasa/
+poetry install
+```
 
 ## Discovering devices
 
-The devices can be discovered either by using `kasa discover` or by calling `kasa` without any parameters.
+After installation, the devices can be discovered either by using `kasa discover` or by calling `kasa` without any parameters.
 
 ```
 $ kasa
@@ -60,6 +43,8 @@ Location:     {'latitude': XXXX, 'longitude': XXXX}
 == Emeter ==
 Current state: {'total': 133.082, 'power': 100.418681, 'current': 0.510967, 'voltage': 225.600477}
 ```
+
+Use `kasa --help` to get list of all available commands.
 
 ## Basic controls
 
@@ -111,3 +96,35 @@ pre-commit install
 We use several tools to automatically check all contributions, which are run automatically when you commit your code.
 
 If you want to manually execute the checks, you can run `tox -e lint` to do the linting checks or `tox` to also execute the tests.
+
+## Supported devices
+
+### Plugs
+
+* HS100
+* HS103
+* HS105
+* HS107
+* HS110
+
+### Power Strips
+* HS300
+* KP303
+
+### Wall switches
+* HS200
+* HS210
+* HS220
+
+### Bulbs
+* LB100
+* LB110
+* LB120
+* LB130
+* LB230
+* KL60
+* KL110
+* KL120
+* KL130
+
+**Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests!**
