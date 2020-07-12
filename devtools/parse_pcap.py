@@ -62,9 +62,7 @@ def parse_pcap(file):
     seen_items = defaultdict(Counter)
 
     for json_payload in read_payloads_from_file(file):
-        context = ""
-        if "context" in json_payload:
-            context = json_payload.pop("context")
+        context = json_payload.pop("context", "")
         for module, cmds in json_payload.items():
             seen_items["modules"][module] += 1
             if "err_code" in cmds:
