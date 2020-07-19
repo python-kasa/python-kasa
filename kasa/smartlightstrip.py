@@ -8,10 +8,33 @@ from .smartdevice import DeviceType, requires_update
 class SmartLightStrip(SmartBulb):
     """Representation of a TP-Link Smart light strip.
 
-    Interaction works just like with the bulbs, only the service name
-    for controlling the device is different.
+    Light strips work similarly to bulbs, but use a different service for controlling,
+     and expose some extra information (such as length and active effect).
+     This class extends :class:`SmartBulb` interface.
 
-    See :class:`SmartBulb` for more information.
+     Examples:
+        >>> import asyncio
+        >>> strip = SmartLightStrip("127.0.0.1")
+        >>> asyncio.run(strip.update())
+        >>> print(strip.alias)
+        KL430 pantry lightstrip
+
+        Getting the length of the strip:
+
+        >>> strip.length
+        16
+
+        Currently active effect:
+
+        >>> strip.effect
+        {'brightness': 50, 'custom': 0, 'enable': 0, 'id': '', 'name': ''}
+
+    .. note::
+        The device supports some features that are not currently implemented,
+        feel free to find out how to control them and create a PR!
+
+
+    See :class:`SmartBulb` for more examples.
     """
 
     LIGHT_SERVICE = "smartlife.iot.lightStrip"
@@ -30,7 +53,15 @@ class SmartLightStrip(SmartBulb):
     @property  # type: ignore
     @requires_update
     def effect(self) -> Dict:
-        """Return effect state."""
+        """Return effect state.
+
+        Example:
+            {'brightness': 50,
+             'custom': 0,
+             'enable': 0,
+             'id': '',
+             'name': ''}
+        """
         return self.sys_info["lighting_effect_state"]
 
     @property  # type: ignore
