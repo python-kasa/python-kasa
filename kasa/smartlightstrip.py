@@ -15,6 +15,7 @@ class SmartLightStrip(SmartBulb):
     """
 
     LIGHT_SERVICE = "smartlife.iot.lightStrip"
+    SET_LIGHT_METHOD = "set_light_state"
 
     def __init__(self, host: str) -> None:
         super().__init__(host)
