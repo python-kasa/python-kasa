@@ -112,15 +112,18 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 * HS110
 
 ### Power Strips
+
 * HS300
 * KP303
 
 ### Wall switches
+
 * HS200
 * HS210
 * HS220
 
 ### Bulbs
+
 * LB100
 * LB110
 * LB120
@@ -130,6 +133,10 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 * KL110
 * KL120
 * KL130
+
+### Light strips
+
+* KL430
 
 **Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests!**
 
