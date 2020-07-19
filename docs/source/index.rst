@@ -15,3 +15,4 @@ python-kasa documentation
    smartplug
    smartdimmer
    smartstrip
+   smartlightstrip
