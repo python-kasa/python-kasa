@@ -8,7 +8,14 @@ from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import Discover, SmartBulb, SmartDimmer, SmartPlug, SmartStrip
+from kasa import (
+    Discover,
+    SmartBulb,
+    SmartDimmer,
+    SmartLightStrip,
+    SmartPlug,
+    SmartStrip,
+)
 
 from .newfakes import FakeTransportProtocol
 
@@ -17,9 +24,11 @@ SUPPORTED_DEVICES = glob.glob(
 )
 
 
-BULBS = {"KL60", "LB100", "LB120", "LB130", "KL120", "KL130"}
-VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL130"}
-COLOR_BULBS = {"LB130", "KL130"}
+LIGHT_STRIPS = {"KL430"}
+BULBS = {"KL60", "LB100", "LB120", "LB130", "KL120", "KL130", *LIGHT_STRIPS}
+VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL130", "KL430", *LIGHT_STRIPS}
+COLOR_BULBS = {"LB130", "KL130", *LIGHT_STRIPS}
+
 
 PLUGS = {"HS100", "HS103", "HS105", "HS110", "HS200", "HS210"}
 STRIPS = {"HS107", "HS300", "KP303", "KP400"}
@@ -65,9 +74,12 @@ bulb = parametrize("bulbs", BULBS, ids=name_for_filename)
 plug = parametrize("plugs", PLUGS, ids=name_for_filename)
 strip = parametrize("strips", STRIPS, ids=name_for_filename)
 dimmer = parametrize("dimmers", DIMMERS, ids=name_for_filename)
+lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=name_for_filename)
 
 # This ensures that every single file inside fixtures/ is being placed in some category
-categorized_fixtures = set(dimmer.args[1] + strip.args[1] + plug.args[1] + bulb.args[1])
+categorized_fixtures = set(
+    dimmer.args[1] + strip.args[1] + plug.args[1] + bulb.args[1] + lightstrip.args[1]
+)
 diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
 if diff:
     for file in diff:
@@ -105,12 +117,20 @@ def device_for_file(model):
     for d in STRIPS:
         if d in model:
             return SmartStrip
+
     for d in PLUGS:
         if d in model:
             return SmartPlug
+
+    # Light strips are recognized also as bulbs, so this has to go first
+    for d in LIGHT_STRIPS:
+        if d in model:
+            return SmartLightStrip
+
     for d in BULBS:
         if d in model:
             return SmartBulb
+
     for d in DIMMERS:
         if d in model:
             return SmartDimmer

@@ -24,8 +24,10 @@ async def test_bulb_sysinfo(dev):
 
     assert dev.model is not None
 
-    assert dev.device_type == DeviceType.Bulb
-    assert dev.is_bulb
+    # TODO: remove special handling for lightstrip
+    if not dev.is_light_strip:
+        assert dev.device_type == DeviceType.Bulb
+        assert dev.is_bulb
 
 
 @bulb

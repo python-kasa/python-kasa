@@ -1,0 +1,70 @@
+{
+    "emeter": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "current_ma": 0,
+            "err_code": 0,
+            "power_mw": 8729,
+            "total_wh": 21,
+            "voltage_mv": 0
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "KL430 pantry lightstrip",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "length": 16,
+            "light_state": {
+                "brightness": 50,
+                "color_temp": 3630,
+                "hue": 0,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 50,
+                "custom": 0,
+                "enable": 0,
+                "id": "",
+                "name": ""
+            },
+            "longitude_i": 0,
+            "mic_mac": "CC32E5230F55",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL430(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [],
+            "rssi": -56,
+            "status": "new",
+            "sw_ver": "1.0.10 Build 200522 Rel.104340"
+        }
+    }
+}

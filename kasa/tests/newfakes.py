@@ -355,7 +355,8 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
         # Our tests have light state off, so we simply return the dft_on_state when device is on.
         _LOGGER.debug("reporting light state: %s", light_state)
-        if light_state["on_off"]:
+        # TODO: hack to go around KL430 fixture differences
+        if light_state["on_off"] and "dft_on_state" in light_state:
             return light_state["dft_on_state"]
         else:
             return light_state
@@ -384,6 +385,11 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         "smartlife.iot.smartbulb.lightingservice": {
             "get_light_state": light_state,
             "transition_light_state": transition_light_state,
+        },
+        # lightstrip follows the same payloads but uses different module & method
+        "smartlife.iot.lightStrip": {
+            "set_light_state": transition_light_state,
+            "get_light_state": light_state,
         },
         "time": {
             "get_time": {

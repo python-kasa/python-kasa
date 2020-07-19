@@ -51,6 +51,15 @@ def test_dimmer_examples(mocker):
     assert not res["failed"]
 
 
+def test_lightstrip_examples(mocker):
+    """Test lightstrip examples."""
+    p = get_device_for_file("KL430(US)_1.0.json")
+    mocker.patch("kasa.smartlightstrip.SmartLightStrip", return_value=p)
+    mocker.patch("kasa.smartlightstrip.SmartLightStrip.update")
+    res = xdoctest.doctest_module("kasa.smartlightstrip", "all")
+    assert not res["failed"]
+
+
 @pytest.mark.skipif(
     sys.version_info < (3, 8), reason="3.7 handles asyncio.run differently"
 )

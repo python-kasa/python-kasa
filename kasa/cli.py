@@ -7,7 +7,14 @@ from typing import cast
 
 import asyncclick as click
 
-from kasa import Discover, SmartBulb, SmartDevice, SmartPlug, SmartStrip
+from kasa import (
+    Discover,
+    SmartBulb,
+    SmartDevice,
+    SmartLightStrip,
+    SmartPlug,
+    SmartStrip,
+)
 
 click.anyio_backend = "asyncio"
 
@@ -37,10 +44,11 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option("-d", "--debug", default=False, is_flag=True)
 @click.option("--bulb", default=False, is_flag=True)
 @click.option("--plug", default=False, is_flag=True)
+@click.option("--lightstrip", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
 @click.version_option()
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, bulb, plug, strip):
+async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -64,7 +72,7 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, strip):
         await ctx.invoke(discover)
         return
     else:
-        if not bulb and not plug and not strip:
+        if not bulb and not plug and not strip and not lightstrip:
             click.echo("No --strip nor --bulb nor --plug given, discovering..")
             dev = await Discover.discover_single(host)
         elif bulb:
@@ -73,6 +81,8 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, strip):
             dev = SmartPlug(host)
         elif strip:
             dev = SmartStrip(host)
+        elif lightstrip:
+            dev = SmartLightStrip(host)
         else:
             click.echo("Unable to detect type, use --strip or --bulb or --plug!")
             return

@@ -9,6 +9,7 @@ from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
+from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
 
@@ -227,11 +228,19 @@ class Discover:
             and "get_dimmer_parameters" in info["smartlife.iot.dimmer"]
         ):
             return SmartDimmer
+
         elif "smartplug" in type_.lower() and "children" in sysinfo:
             return SmartStrip
+
         elif "smartplug" in type_.lower():
+            if "children" in sysinfo:
+                return SmartStrip
+
             return SmartPlug
         elif "smartbulb" in type_.lower():
+            if "length" in sysinfo:  # strips have length
+                return SmartLightStrip
+
             return SmartBulb
 
         raise SmartDeviceException("Unknown device type: %s", type_)

@@ -18,6 +18,7 @@ from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import DeviceType, EmeterStatus, SmartDevice
 from kasa.smartdimmer import SmartDimmer
+from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
 
@@ -35,4 +36,5 @@ __all__ = [
     "SmartPlug",
     "SmartStrip",
     "SmartDimmer",
+    "SmartLightStrip",
 ]
