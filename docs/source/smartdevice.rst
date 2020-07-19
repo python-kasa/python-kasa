@@ -12,6 +12,33 @@ These methods will return the device response, which can be useful for some use 
 
 Errors are raised as :class:`SmartDeviceException` instances for the library user to handle.
 
+Simple example script showing some functionality:
+
+.. code-block:: python
+
+    import asyncio
+    from kasa import SmartPlug
+
+    async def main():
+        p = SmartPlug("127.0.0.1")
+
+        await p.update()
+        print(p.alias)
+
+        await p.turn_off()
+
+
+    if __name__ == "__main__":
+        main()
+
+
+Refer to device type specific classes for more examples:
+
+* :class:`SmartPlug`
+* :class:`SmartBulb`
+* :class:`SmartStrip`
+* :class:`SmartDimmer`
+* :class:`SmartLightStrip`
 
 .. autoclass:: kasa.SmartDevice
     :members:

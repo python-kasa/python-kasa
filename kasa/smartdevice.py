@@ -128,6 +128,7 @@ class SmartDevice:
     * :class:`SmartBulb`
     * :class:`SmartStrip`
     * :class:`SmartDimmer`
+    * :class:`SmartLightStrip`
 
     To initialize, you have to await :func:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
