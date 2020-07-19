@@ -29,7 +29,7 @@ Simple example script showing some functionality:
 
 
     if __name__ == "__main__":
-        main()
+        asyncio.run(main())
 
 
 Refer to device type specific classes for more examples:
