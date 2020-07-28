@@ -1,5 +1,112 @@
-Changelog
-=========
+# Changelog
+
+## [0.4.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev1) (2020-07-28)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev0...0.4.0.dev1)
+
+**Implemented enhancements:**
+
+- KL430 support [\#67](https://github.com/python-kasa/python-kasa/issues/67)
+- Improve retry logic for discovery, messaging \(was: Handle empty responses\) [\#38](https://github.com/python-kasa/python-kasa/issues/38)
+- Add support for lightstrips \(KL430\) [\#74](https://github.com/python-kasa/python-kasa/pull/74) ([rytilahti](https://github.com/rytilahti))
+
+**Closed issues:**
+
+- I don't python... how do I make this executable? [\#88](https://github.com/python-kasa/python-kasa/issues/88)
+- ImportError: cannot import name 'smartplug' [\#87](https://github.com/python-kasa/python-kasa/issues/87)
+- Support for P100 Smart Plug [\#83](https://github.com/python-kasa/python-kasa/issues/83)
+- not able to pip install the library [\#82](https://github.com/python-kasa/python-kasa/issues/82)
+- Discover.discover\(\) add selecting network interface \[pull request\] [\#78](https://github.com/python-kasa/python-kasa/issues/78)
+- LB100 unable to turn on or off the lights [\#68](https://github.com/python-kasa/python-kasa/issues/68)
+- Improve poetry usage documentation [\#60](https://github.com/python-kasa/python-kasa/issues/60)
+- sys\_info not None fails assertion [\#55](https://github.com/python-kasa/python-kasa/issues/55)
+- Upload pre-release to pypi for easier testing [\#17](https://github.com/python-kasa/python-kasa/issues/17)
+
+**Merged pull requests:**
+
+- add a small example script to show library usage [\#90](https://github.com/python-kasa/python-kasa/pull/90) ([rytilahti](https://github.com/rytilahti))
+- add .readthedocs.yml required for poetry builds [\#89](https://github.com/python-kasa/python-kasa/pull/89) ([rytilahti](https://github.com/rytilahti))
+- Improve installation instructions [\#86](https://github.com/python-kasa/python-kasa/pull/86) ([rytilahti](https://github.com/rytilahti))
+- cli: Fix incorrect use of asyncio.run for temperature command [\#85](https://github.com/python-kasa/python-kasa/pull/85) ([rytilahti](https://github.com/rytilahti))
+- Add --transition to bulb-specific cli commands, fix turn\_{on,off} signatures [\#81](https://github.com/python-kasa/python-kasa/pull/81) ([rytilahti](https://github.com/rytilahti))
+- Improve bulb API, force turn on for all light changes as offline changes are not supported [\#76](https://github.com/python-kasa/python-kasa/pull/76) ([rytilahti](https://github.com/rytilahti))
+- Simplify API documentation by using doctests [\#73](https://github.com/python-kasa/python-kasa/pull/73) ([rytilahti](https://github.com/rytilahti))
+- Bulbs: allow specifying transition for state changes [\#70](https://github.com/python-kasa/python-kasa/pull/70) ([rytilahti](https://github.com/rytilahti))
+- Add transition support for SmartDimmer [\#69](https://github.com/python-kasa/python-kasa/pull/69) ([connorproctor](https://github.com/connorproctor))
+
+## [0.4.0.dev0](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev0) (2020-05-27)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.3.5...0.4.0.dev0)
+
+**Implemented enhancements:**
+
+- Add commands to control the wifi settings [\#45](https://github.com/python-kasa/python-kasa/pull/45) ([rytilahti](https://github.com/rytilahti))
+
+**Fixed bugs:**
+
+- HSV cli command not working [\#43](https://github.com/python-kasa/python-kasa/issues/43)
+
+**Closed issues:**
+
+- Pull request \#54 broke installer? [\#66](https://github.com/python-kasa/python-kasa/issues/66)
+- RFC: remove implicit updates after state changes? [\#61](https://github.com/python-kasa/python-kasa/issues/61)
+- How to install? [\#57](https://github.com/python-kasa/python-kasa/issues/57)
+- Request all necessary information during update\(\) [\#53](https://github.com/python-kasa/python-kasa/issues/53)
+- HS107 Support [\#37](https://github.com/python-kasa/python-kasa/issues/37)
+- Separate dimmer-related code from smartplug class [\#33](https://github.com/python-kasa/python-kasa/issues/33)
+- Add Mac OSX and Windows for CI [\#30](https://github.com/python-kasa/python-kasa/issues/30)
+- KP303\(UK\) does not pass check with pytest [\#27](https://github.com/python-kasa/python-kasa/issues/27)
+- Remove sync interface wrapper [\#12](https://github.com/python-kasa/python-kasa/issues/12)
+- Mass close pyhs100 issues and PRs [\#11](https://github.com/python-kasa/python-kasa/issues/11)
+- Update readme [\#10](https://github.com/python-kasa/python-kasa/issues/10)
+- Add contribution guidelines and instructions [\#8](https://github.com/python-kasa/python-kasa/issues/8)
+- Convert discovery to use asyncio [\#7](https://github.com/python-kasa/python-kasa/issues/7)
+- Python Version? [\#4](https://github.com/python-kasa/python-kasa/issues/4)
+- Fix failing tests: KeyError: 'relay\_state' [\#2](https://github.com/python-kasa/python-kasa/issues/2)
+
+**Merged pull requests:**
+
+- Add parse\_pcap to devtools, improve readme on contributing [\#84](https://github.com/python-kasa/python-kasa/pull/84) ([rytilahti](https://github.com/rytilahti))
+- Add retries to protocol queries [\#65](https://github.com/python-kasa/python-kasa/pull/65) ([rytilahti](https://github.com/rytilahti))
+- General cleanups all around \(janitoring\) [\#63](https://github.com/python-kasa/python-kasa/pull/63) ([rytilahti](https://github.com/rytilahti))
+- Improve dimmer support [\#62](https://github.com/python-kasa/python-kasa/pull/62) ([rytilahti](https://github.com/rytilahti))
+- Optimize I/O access [\#59](https://github.com/python-kasa/python-kasa/pull/59) ([rytilahti](https://github.com/rytilahti))
+- Remove unnecessary f-string definition to make tests pass [\#58](https://github.com/python-kasa/python-kasa/pull/58) ([rytilahti](https://github.com/rytilahti))
+- Convert to use poetry & pyproject.toml for dep & build management [\#54](https://github.com/python-kasa/python-kasa/pull/54) ([rytilahti](https://github.com/rytilahti))
+- Add fixture for KL60 [\#52](https://github.com/python-kasa/python-kasa/pull/52) ([rytilahti](https://github.com/rytilahti))
+- Ignore D202 where necessary [\#50](https://github.com/python-kasa/python-kasa/pull/50) ([rytilahti](https://github.com/rytilahti))
+- Support wifi scan & join for bulbs using a different interface [\#49](https://github.com/python-kasa/python-kasa/pull/49) ([rytilahti](https://github.com/rytilahti))
+- Return on\_since only when its available and the device is on [\#48](https://github.com/python-kasa/python-kasa/pull/48) ([rytilahti](https://github.com/rytilahti))
+- Allow 0 brightness for smartdimmer [\#47](https://github.com/python-kasa/python-kasa/pull/47) ([rytilahti](https://github.com/rytilahti))
+- async++, small powerstrip improvements [\#46](https://github.com/python-kasa/python-kasa/pull/46) ([rytilahti](https://github.com/rytilahti))
+- Check for emeter support on power strips/multiple plug outlets [\#41](https://github.com/python-kasa/python-kasa/pull/41) ([acmay](https://github.com/acmay))
+- Remove unnecessary cache [\#40](https://github.com/python-kasa/python-kasa/pull/40) ([rytilahti](https://github.com/rytilahti))
+- Add in some new device types [\#39](https://github.com/python-kasa/python-kasa/pull/39) ([acmay](https://github.com/acmay))
+- Add test fixture for KL130 [\#35](https://github.com/python-kasa/python-kasa/pull/35) ([bdraco](https://github.com/bdraco))
+- Move dimmer support to its own class [\#34](https://github.com/python-kasa/python-kasa/pull/34) ([rytilahti](https://github.com/rytilahti))
+- Fix azure pipeline badge [\#32](https://github.com/python-kasa/python-kasa/pull/32) ([rytilahti](https://github.com/rytilahti))
+- Enable Windows & OSX builds [\#31](https://github.com/python-kasa/python-kasa/pull/31) ([rytilahti](https://github.com/rytilahti))
+- Depend on py3.7+ for tox, add python 3.8 to azure pipeline targets [\#29](https://github.com/python-kasa/python-kasa/pull/29) ([rytilahti](https://github.com/rytilahti))
+- Add KP303 to the list of powerstrips [\#28](https://github.com/python-kasa/python-kasa/pull/28) ([rytilahti](https://github.com/rytilahti))
+- Move child socket handling to its own SmartStripPlug class [\#26](https://github.com/python-kasa/python-kasa/pull/26) ([rytilahti](https://github.com/rytilahti))
+- Adding KP303 to supported devices [\#25](https://github.com/python-kasa/python-kasa/pull/25) ([epicalex](https://github.com/epicalex))
+- use pytestmark to avoid repeating asyncio mark [\#24](https://github.com/python-kasa/python-kasa/pull/24) ([rytilahti](https://github.com/rytilahti))
+- Cleanup constructors by removing ioloop and protocol arguments [\#23](https://github.com/python-kasa/python-kasa/pull/23) ([rytilahti](https://github.com/rytilahti))
+- Add \(some\) tests to the cli tool [\#22](https://github.com/python-kasa/python-kasa/pull/22) ([rytilahti](https://github.com/rytilahti))
+- Test against the newly added device fixtures  [\#21](https://github.com/python-kasa/python-kasa/pull/21) ([rytilahti](https://github.com/rytilahti))
+- move testing reqs to requirements\_test.txt, add pytest-asyncio for pipelines [\#20](https://github.com/python-kasa/python-kasa/pull/20) ([rytilahti](https://github.com/rytilahti))
+- Remove unused save option and add scrubbing [\#19](https://github.com/python-kasa/python-kasa/pull/19) ([TheGardenMonkey](https://github.com/TheGardenMonkey))
+- Add real kasa device dumps [\#18](https://github.com/python-kasa/python-kasa/pull/18) ([TheGardenMonkey](https://github.com/TheGardenMonkey))
+- Fix dump-discover to use asyncio.run [\#16](https://github.com/python-kasa/python-kasa/pull/16) ([rytilahti](https://github.com/rytilahti))
+- Add device\_id property, rename context to child\_id [\#15](https://github.com/python-kasa/python-kasa/pull/15) ([rytilahti](https://github.com/rytilahti))
+- Remove sync interface, add asyncio discovery [\#14](https://github.com/python-kasa/python-kasa/pull/14) ([rytilahti](https://github.com/rytilahti))
+- Remove --ip which was just an alias to --host [\#6](https://github.com/python-kasa/python-kasa/pull/6) ([rytilahti](https://github.com/rytilahti))
+- Set minimum requirement to python 3.7 [\#5](https://github.com/python-kasa/python-kasa/pull/5) ([rytilahti](https://github.com/rytilahti))
+- change ID of Azure Pipeline [\#3](https://github.com/python-kasa/python-kasa/pull/3) ([basnijholt](https://github.com/basnijholt))
+- Mass rename to \(python-\)kasa [\#1](https://github.com/python-kasa/python-kasa/pull/1) ([rytilahti](https://github.com/rytilahti))
+
+Historical pyHS100 changelog
+============================
 
 0.3.5 (2019-04-13)
 ------------
@@ -699,3 +806,6 @@ Other changes:
 - Create pyHS100.py. [GadgetReactor]
 
 - Initial commit. [GadgetReactor]
+
+
+\* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*

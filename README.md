@@ -45,7 +45,7 @@ Location:     {'latitude': XXXX, 'longitude': XXXX}
 Current state: {'total': 133.082, 'power': 100.418681, 'current': 0.510967, 'voltage': 225.600477}
 ```
 
-Use `kasa --help` to get list of all available commands.
+Use `kasa --help` to get list of all available commands, or alternatively, [consult the documentation](https://python-kasa.readthedocs.io/en/latest/cli.html).
 
 ## Basic controls
 
