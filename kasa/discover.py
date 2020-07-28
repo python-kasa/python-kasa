@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Mapping, Type, Union, cast
+from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
 
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
@@ -35,10 +35,12 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         timeout: int = 5,
         discovery_packets: int = 3,
+        interface: Optional[str] = None,
     ):
         self.transport = None
         self.tries = discovery_packets
         self.timeout = timeout
+        self.interface = interface
         self.on_discovered = on_discovered
         self.protocol = TPLinkSmartHomeProtocol()
         self.target = (target, Discover.DISCOVERY_PORT)
@@ -51,6 +53,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         sock = transport.get_extra_info("socket")
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if self.interface is not None:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.interface.encode())
 
         self.do_discover()
 
@@ -145,6 +149,7 @@ class Discover:
         timeout=5,
         discovery_packets=3,
         return_raw=False,
+        interface=None,
     ) -> Mapping[str, Union[SmartDevice, Dict]]:
         """Discover supported devices.
 
@@ -171,6 +176,7 @@ class Discover:
                 on_discovered=on_discovered,
                 timeout=timeout,
                 discovery_packets=discovery_packets,
+                interface=interface,
             ),
             local_addr=("0.0.0.0", 0),
         )
