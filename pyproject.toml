@@ -19,24 +19,24 @@ importlib-metadata = "*"
 asyncclick = "^7"
 
 # required only for docs
-sphinx = { version = "^3.1.1", optional = true }
-m2r = { version = "^0.2.1", optional = true }
-sphinx_rtd_theme = { version = "^0.5.0", optional = true }
-sphinxcontrib-programoutput = { version = "^0.16", optional = true }
+sphinx = { version = "^3", optional = true }
+m2r = { version = "^0", optional = true }
+sphinx_rtd_theme = { version = "^0", optional = true }
+sphinxcontrib-programoutput = { version = "^0", optional = true }
 
 [tool.poetry.dev-dependencies]
 pytest = "^5"
-pytest-azurepipelines = "^0.8"
-pytest-cov = "^2.8"
-pytest-asyncio = "^0.12"
+pytest-azurepipelines = "^0"
+pytest-cov = "^2"
+pytest-asyncio = "^0"
 pytest-sugar = "*"
 pre-commit = "*"
 voluptuous = "*"
 toml = "*"
 tox = "*"
-pytest-mock = "^3.1.0"
-codecov = "^2.0"
-xdoctest = "^0.12"
+pytest-mock = "^3"
+codecov = "^2"
+xdoctest = "^0"
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx_rtd_theme", "m2r", "sphinxcontrib-programoutput"]
