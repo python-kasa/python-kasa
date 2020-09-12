@@ -323,12 +323,14 @@ async def emeter(dev: SmartDevice, year, month, erase):
 
     if year:
         click.echo(f"== For year {year.year} ==")
-        emeter_status = await dev.get_emeter_monthly(year.year)
+        click.echo(await dev.get_emeter_monthly(year.year))
+        return
     elif month:
         click.echo(f"== For month {month.month} of {month.year} ==")
-        emeter_status = await dev.get_emeter_daily(year=month.year, month=month.month)
-    else:
-        emeter_status = dev.emeter_realtime
+        click.echo(await dev.get_emeter_daily(year=month.year, month=month.month))
+        return
+               
+    emeter_status = dev.emeter_realtime
 
     if isinstance(emeter_status, list):
         for plug in emeter_status:
