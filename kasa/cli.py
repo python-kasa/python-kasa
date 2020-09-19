@@ -311,7 +311,8 @@ async def raw_command(dev: SmartDevice, module, command, parameters):
 async def emeter(dev: SmartDevice, year, month, erase):
     """Query emeter for historical consumption.
 
-    Daily and monthly data provided in CSV format."""
+    Daily and monthly data provided in CSV format.
+    """
     click.echo(click.style("== Emeter ==", bold=True))
     await dev.update()
     if not dev.has_emeter:
