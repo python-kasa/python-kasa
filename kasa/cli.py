@@ -309,7 +309,10 @@ async def raw_command(dev: SmartDevice, module, command, parameters):
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
 async def emeter(dev: SmartDevice, year, month, erase):
-    """Query emeter for historical consumption."""
+    """Query emeter for historical consumption.
+
+    Daily and monthly data provided in CSV format.
+    """
     click.echo(click.style("== Emeter ==", bold=True))
     await dev.update()
     if not dev.has_emeter:
@@ -323,18 +326,17 @@ async def emeter(dev: SmartDevice, year, month, erase):
 
     if year:
         click.echo(f"== For year {year.year} ==")
-        emeter_status = await dev.get_emeter_monthly(year.year)
+        click.echo("Month, usage (kWh)")
+        usage_data = await dev.get_emeter_monthly(year.year)
     elif month:
         click.echo(f"== For month {month.month} of {month.year} ==")
-        emeter_status = await dev.get_emeter_daily(year=month.year, month=month.month)
+        click.echo("Day, usage (kWh)")
+        usage_data = await dev.get_emeter_daily(year=month.year, month=month.month)
     else:
+        # Call with no argument outputs summary data and returns
+        usage_data = {}
         emeter_status = dev.emeter_realtime
 
-    if isinstance(emeter_status, list):
-        for plug in emeter_status:
-            index = emeter_status.index(plug) + 1
-            click.echo(f"Plug {index}: {plug}")
-    else:
         click.echo("Current: %s A" % emeter_status["current"])
         click.echo("Voltage: %s V" % emeter_status["voltage"])
         click.echo("Power: %s W" % emeter_status["power"])
@@ -342,6 +344,12 @@ async def emeter(dev: SmartDevice, year, month, erase):
 
         click.echo("Today: %s kWh" % dev.emeter_today)
         click.echo("This month: %s kWh" % dev.emeter_this_month)
+
+        return
+
+    # output any detailed usage data
+    for index, usage in usage_data.items():
+        click.echo(f"{index}, {usage}")
 
 
 @cli.command()
