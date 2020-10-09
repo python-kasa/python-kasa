@@ -1,17 +1,6 @@
 {
-    "emeter": {
-        "get_realtime": {
-            "err_code": -1,
-            "err_msg": "module not support"
-        }
-    },
-    "smartlife.iot.common.emeter": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
     "smartlife.iot.dimmer": {
         "get_dimmer_parameters": {
-            "bulb_type": 1,
             "err_code": 0,
             "fadeOffTime": 1000,
             "fadeOnTime": 1000,
