@@ -33,13 +33,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         *,
         on_discovered: OnDiscoveredCallable = None,
         target: str = "255.255.255.255",
-        timeout: int = 5,
         discovery_packets: int = 3,
         interface: Optional[str] = None,
     ):
         self.transport = None
-        self.tries = discovery_packets
-        self.timeout = timeout
+        self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
         self.protocol = TPLinkSmartHomeProtocol()
@@ -65,7 +63,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = self.protocol.encrypt(req)
-        for i in range(self.tries):
+        for i in range(self.discovery_packets):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
 
     def datagram_received(self, data, addr) -> None:
@@ -176,7 +174,6 @@ class Discover:
             lambda: _DiscoverProtocol(
                 target=target,
                 on_discovered=on_discovered,
-                timeout=timeout,
                 discovery_packets=discovery_packets,
                 interface=interface,
             ),
@@ -186,7 +183,7 @@ class Discover:
 
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", timeout)
-            await asyncio.sleep(5)
+            await asyncio.sleep(timeout)
         finally:
             transport.close()
 
@@ -220,32 +217,24 @@ class Discover:
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:
         """Find SmartDevice subclass for device described by passed data."""
-        if "system" in info and "get_sysinfo" in info["system"]:
-            sysinfo = info["system"]["get_sysinfo"]
-            if "type" in sysinfo:
-                type_ = sysinfo["type"]
-            elif "mic_type" in sysinfo:
-                type_ = sysinfo["mic_type"]
-            else:
-                raise SmartDeviceException("Unable to find the device type field!")
-        else:
-            raise SmartDeviceException("No 'system' nor 'get_sysinfo' in response")
+        if "system" not in info or "get_sysinfo" not in info["system"]:
+            raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
 
-        if (
-            "smartlife.iot.dimmer" in info
-            and "get_dimmer_parameters" in info["smartlife.iot.dimmer"]
-        ):
+        sysinfo = info["system"]["get_sysinfo"]
+        type_ = sysinfo.get("type", sysinfo.get("mic_type"))
+        if type_ is None:
+            raise SmartDeviceException("Unable to find the device type field!")
+
+        if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
             return SmartDimmer
 
-        elif "smartplug" in type_.lower() and "children" in sysinfo:
-            return SmartStrip
-
-        elif "smartplug" in type_.lower():
+        if "smartplug" in type_.lower():
             if "children" in sysinfo:
                 return SmartStrip
 
             return SmartPlug
-        elif "smartbulb" in type_.lower():
+
+        if "smartbulb" in type_.lower():
             if "length" in sysinfo:  # strips have length
                 return SmartLightStrip
 
