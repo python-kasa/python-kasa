@@ -46,9 +46,10 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option("--plug", default=False, is_flag=True)
 @click.option("--lightstrip", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
+@click.option("--klap", default=False, is_flag=True)
 @click.version_option()
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip):
+async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, klap):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -67,6 +68,11 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip):
             click.echo(f"No device with name {alias} found")
             return
 
+    if klap:
+    	authentication = {"user":"", "password":""}
+    else:
+        authentication = None
+
     if host is None:
         click.echo("No host name given, trying discovery..")
         await ctx.invoke(discover)
@@ -78,7 +84,7 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip):
         elif bulb:
             dev = SmartBulb(host)
         elif plug:
-            dev = SmartPlug(host)
+            dev = SmartPlug(host, authentication)
         elif strip:
             dev = SmartStrip(host)
         elif lightstrip:

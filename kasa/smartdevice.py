@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 
 from .exceptions import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
+from .protocol import TPLinkKLAP
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -213,14 +214,18 @@ class SmartDevice:
 
     """
 
-    def __init__(self, host: str) -> None:
+    def __init__(self, host: str, authentication: None) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
         """
         self.host = host
 
-        self.protocol = TPLinkSmartHomeProtocol()
+        if authentication is None:
+            self.protocol = TPLinkSmartHomeProtocol()
+        else:
+            self.protocol = TPLinkKLAP(host, authentication)
+
         self.emeter_type = "emeter"
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown

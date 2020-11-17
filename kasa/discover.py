@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 import socket
+import binascii
 from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
 
 from kasa.protocol import TPLinkSmartHomeProtocol
@@ -42,6 +43,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.on_discovered = on_discovered
         self.protocol = TPLinkSmartHomeProtocol()
         self.target = (target, Discover.DISCOVERY_PORT)
+        self.new_target = (target, Discover.NEW_DISCOVERY_PORT)
         self.discovered_devices = {}
         self.discovered_devices_raw = {}
 
@@ -63,8 +65,12 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = self.protocol.encrypt(req)
+        new_req = binascii.unhexlify('020000010000000000000000463cb5d3')
+#        for i in range(self.discovery_packets):
+#            self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
+        _LOGGER.debug("[NEW DISCOVERY] %s >> magic_packet", self.target)
         for i in range(self.discovery_packets):
-            self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
+            self.transport.sendto(new_req, self.new_target)
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
@@ -72,11 +78,17 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         if ip in self.discovered_devices:
             return
 
-        info = json.loads(self.protocol.decrypt(data))
+        if port == 9999:
+            info = json.loads(self.protocol.decrypt(data))
+            device_class = Discover._get_device_class(info)
+            device = device_class(ip)
+        else:
+            info = json.loads(data[16:])
+            device_class = Discover._get_new_device_class(info)
+            device = device_class(ip, {"user":"","password":""})
+
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
-        device_class = Discover._get_device_class(info)
-        device = device_class(ip)
         asyncio.ensure_future(device.update())
 
         self.discovered_devices[ip] = device
@@ -132,6 +144,8 @@ class Discover:
     """
 
     DISCOVERY_PORT = 9999
+
+    NEW_DISCOVERY_PORT = 20002
 
     DISCOVERY_QUERY = {
         "system": {"get_sysinfo": None},
@@ -242,6 +256,20 @@ class Discover:
 
         raise SmartDeviceException("Unknown device type: %s", type_)
 
+    def _get_new_device_class(info: dict) -> Type[SmartDevice]:
+        """Find SmartDevice subclass given new discovery payload."""
+        if "result" not in info:
+            raise SmartDeviceException("No 'result' in discovery response")
+
+        if "device_type" not in info["result"]:
+            raise SmartDeviceException("No 'device_type' in discovery result")
+
+        dtype = info["result"]["device_type"]
+
+        if dtype == "IOT.SMARTPLUGSWITCH":
+            return SmartPlug
+
+        raise SmartDeviceExpection("Unknown device type: %s", dtype)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
