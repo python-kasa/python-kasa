@@ -66,8 +66,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = self.protocol.encrypt(req)
         new_req = binascii.unhexlify('020000010000000000000000463cb5d3')
-#        for i in range(self.discovery_packets):
-#            self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
+        for i in range(self.discovery_packets):
+            self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
         _LOGGER.debug("[NEW DISCOVERY] %s >> magic_packet", self.target)
         for i in range(self.discovery_packets):
             self.transport.sendto(new_req, self.new_target)
