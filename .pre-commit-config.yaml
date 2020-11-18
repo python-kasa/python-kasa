@@ -36,4 +36,5 @@ repos:
   rev: v0.740
   hooks:
   - id: mypy
+    additional_dependencies: [pycryptodome]
 #    args: [--no-strict-optional, --ignore-missing-imports]
