@@ -17,7 +17,7 @@ import logging
 import secrets
 import struct
 from pprint import pformat as pf
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 
 import aiohttp
 from Crypto.Cipher import AES
@@ -154,9 +154,14 @@ class TPLinkKLAP:
         _LOGGER.debug("[KLAP] Created KLAP object for %s", self.host)
 
     @staticmethod
-    def __computeAuthenticator(authentication: list) -> bytes:
-        username = bytearray(b"")
-        password = bytearray(b"")
+    def __computeAuthenticator(authentication: Optional[dict]) -> bytes:
+        if authentication is not None:
+            username = authentication["user"].encode()
+            password = authentication["password"].encode()
+        else:
+            username = bytearray(b"")
+            password = bytearray(b"")
+        _LOGGER.debug("[KLAP] Using username %s and password %s", username, password)
         return hashlib.md5(
             hashlib.md5(username).digest() + hashlib.md5(password).digest()
         ).digest()

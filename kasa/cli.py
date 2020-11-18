@@ -47,9 +47,23 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option("--lightstrip", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
 @click.option("--klap", default=False, is_flag=True)
+@click.option(
+    "--user",
+    default="",
+    required=False,
+    help="Username/email address to authenticate to device.",
+)
+@click.option(
+    "--password",
+    default="",
+    required=False,
+    help="Password to use to authenticate to device.",
+)
 @click.version_option()
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, klap):
+async def cli(
+    ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, klap, user, password
+):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -68,8 +82,12 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, kl
             click.echo(f"No device with name {alias} found")
             return
 
-    if klap:
-        authentication = {"user": "", "password": ""}
+    if password != "" and user == "":
+        click.echo("Using a password requires a username")
+        return
+
+    if klap or user != "":
+        authentication = {"user": user, "password": password}
     else:
         authentication = None
 
@@ -80,7 +98,7 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, kl
     else:
         if not bulb and not plug and not strip and not lightstrip:
             click.echo("No --strip nor --bulb nor --plug given, discovering..")
-            dev = await Discover.discover_single(host)
+            dev = await Discover.discover_single(host, authentication)
         elif bulb:
             dev = SmartBulb(host)
         elif plug:
@@ -180,9 +198,17 @@ async def dump_discover(ctx, scrub):
 async def discover(ctx, timeout, discover_only, dump_raw):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
+    user = ctx.parent.params["user"]
+    password = ctx.parent.params["password"]
+
+    if user:
+        auth = {"user": user, "password": password}
+    else:
+        auth = None
+
     click.echo(f"Discovering devices for {timeout} seconds")
     found_devs = await Discover.discover(
-        target=target, timeout=timeout, return_raw=dump_raw
+        target=target, timeout=timeout, return_raw=dump_raw, authentication=auth
     )
     if not discover_only:
         for ip, dev in found_devs.items():

@@ -1,6 +1,7 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
 import binascii
+import hashlib
 import json
 import logging
 import socket
@@ -36,6 +37,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
+        authentication: Optional[dict] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
@@ -46,6 +48,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.new_target = (target, Discover.NEW_DISCOVERY_PORT)
         self.discovered_devices = {}
         self.discovered_devices_raw = {}
+        self.authentication = authentication
+        self.emptyUser = hashlib.md5().digest()
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -83,7 +87,26 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         else:
             info = json.loads(data[16:])
             device_class = Discover._get_new_device_class(info)
-            device = device_class(ip, {"user": "", "password": ""})
+            owner = Discover._get_new_owner(info)
+            if owner is not None:
+                owner_bin = bytes.fromhex(owner)
+
+            _LOGGER.debug(
+                "[DISCOVERY] Device owner is %s, empty owner is %s",
+                owner_bin,
+                self.emptyUser,
+            )
+            if owner is None or owner == "" or owner_bin == self.emptyUser:
+                _LOGGER.debug("[DISCOVERY] Device %s has no owner", ip)
+                device = device_class(ip, {"user": "", "password": ""})
+            elif (
+                owner_bin == hashlib.md5(self.authentication["user"].encode()).digest()
+            ):
+                _LOGGER.debug("[DISCOVERY] Device %s has authenticated owner", ip)
+                device = device_class(ip, self.authentication)
+            else:
+                _LOGGER.debug("[DISCOVERY] Found %s with unknown owner %s", ip, owner)
+                return
 
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
@@ -162,6 +185,7 @@ class Discover:
         discovery_packets=3,
         return_raw=False,
         interface=None,
+        authentication=None,
     ) -> Mapping[str, Union[SmartDevice, Dict]]:
         """Discover supported devices.
 
@@ -188,6 +212,7 @@ class Discover:
                 on_discovered=on_discovered,
                 discovery_packets=discovery_packets,
                 interface=interface,
+                authentication=authentication,
             ),
             local_addr=("0.0.0.0", 0),
         )
@@ -269,6 +294,17 @@ class Discover:
             return SmartPlug
 
         raise SmartDeviceException("Unknown device type: %s", dtype)
+
+    @staticmethod
+    def _get_new_owner(info: dict) -> Optional[str]:
+        """Find owner given new-style discovery payload."""
+        if "result" not in info:
+            raise SmartDeviceException("No 'result' in discovery response")
+
+        if "owner" not in info["result"]:
+            return None
+
+        return info["result"]["owner"]
 
 
 if __name__ == "__main__":
