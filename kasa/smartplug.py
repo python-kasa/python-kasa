@@ -36,7 +36,7 @@ class SmartPlug(SmartDevice):
     For more examples, see the :class:`SmartDevice` class.
     """
 
-    def __init__(self, host: str, authentication = None) -> None:
+    def __init__(self, host: str, authentication=None) -> None:
         super().__init__(host, authentication)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug

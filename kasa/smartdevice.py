@@ -17,11 +17,10 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from .exceptions import SmartDeviceException
-from .protocol import TPLinkSmartHomeProtocol
-from .protocol import TPLinkKLAP
+from .protocol import TPLinkKLAP, TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -214,7 +213,9 @@ class SmartDevice:
 
     """
 
-    def __init__(self, host: str, authentication: None) -> None:
+    protocol: Union[TPLinkSmartHomeProtocol, TPLinkKLAP]
+
+    def __init__(self, host: str, authentication: Optional[dict] = None) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens

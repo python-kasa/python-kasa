@@ -69,7 +69,7 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, kl
             return
 
     if klap:
-    	authentication = {"user":"", "password":""}
+        authentication = {"user": "", "password": ""}
     else:
         authentication = None
 

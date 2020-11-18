@@ -1,9 +1,9 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
+import binascii
 import json
 import logging
 import socket
-import binascii
 from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
 
 from kasa.protocol import TPLinkSmartHomeProtocol
@@ -65,12 +65,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = self.protocol.encrypt(req)
-        new_req = binascii.unhexlify('020000010000000000000000463cb5d3')
+        new_req = binascii.unhexlify("020000010000000000000000463cb5d3")
         for i in range(self.discovery_packets):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
-        _LOGGER.debug("[NEW DISCOVERY] %s >> magic_packet", self.target)
-        for i in range(self.discovery_packets):
-            self.transport.sendto(new_req, self.new_target)
+            self.transport.sendto(new_req, self.new_target)  # type: ignore
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
@@ -85,7 +83,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         else:
             info = json.loads(data[16:])
             device_class = Discover._get_new_device_class(info)
-            device = device_class(ip, {"user":"","password":""})
+            device = device_class(ip, {"user": "", "password": ""})
 
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
@@ -256,6 +254,7 @@ class Discover:
 
         raise SmartDeviceException("Unknown device type: %s", type_)
 
+    @staticmethod
     def _get_new_device_class(info: dict) -> Type[SmartDevice]:
         """Find SmartDevice subclass given new discovery payload."""
         if "result" not in info:
@@ -269,7 +268,8 @@ class Discover:
         if dtype == "IOT.SMARTPLUGSWITCH":
             return SmartPlug
 
-        raise SmartDeviceExpection("Unknown device type: %s", dtype)
+        raise SmartDeviceException("Unknown device type: %s", dtype)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
