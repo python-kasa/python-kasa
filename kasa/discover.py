@@ -100,7 +100,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 _LOGGER.debug("[DISCOVERY] Device %s has no owner", ip)
                 device = device_class(ip, {"user": "", "password": ""})
             elif (
-                owner_bin == hashlib.md5(self.authentication["user"].encode()).digest()
+                self.authentication is not None
+                and owner_bin
+                == hashlib.md5(self.authentication["user"].encode()).digest()
             ):
                 _LOGGER.debug("[DISCOVERY] Device %s has authenticated owner", ip)
                 device = device_class(ip, self.authentication)

@@ -17,7 +17,7 @@ import logging
 import secrets
 import struct
 from pprint import pformat as pf
-from typing import Dict, Union, Optional
+from typing import Dict, Optional, Union
 
 import aiohttp
 from Crypto.Cipher import AES
