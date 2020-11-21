@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.4.0.dev2](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev2) (2020-11-21)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev1...0.4.0.dev2)
+
+**Implemented enhancements:**
+
+- 'Interface' parameter added to discovery process [\#79](https://github.com/python-kasa/python-kasa/pull/79) ([dmitryelj](https://github.com/dmitryelj))
+
+**Fixed bugs:**
+
+- Simplify device class detection for discovery, fix hardcoded timeout [\#112](https://github.com/python-kasa/python-kasa/pull/112) ([rytilahti](https://github.com/rytilahti))
+- Update cli.py to addresss crash on year/month calls and improve output formatting [\#103](https://github.com/python-kasa/python-kasa/pull/103) ([BuongiornoTexas](https://github.com/BuongiornoTexas))
+
+**Closed issues:**
+
+- TPLINK HS100 firmware 4.1 no longer has TCP 9999 available [\#114](https://github.com/python-kasa/python-kasa/issues/114)
+- 7.1.2 Update to asyncclick breaks github install of python-kasa [\#106](https://github.com/python-kasa/python-kasa/issues/106)
+- cli emeter year and month functions fail [\#102](https://github.com/python-kasa/python-kasa/issues/102)
+- how to know the duration for which the plug was ON? [\#99](https://github.com/python-kasa/python-kasa/issues/99)
+- problem controlling the smartplug through a controller [\#98](https://github.com/python-kasa/python-kasa/issues/98)
+- unable to install [\#97](https://github.com/python-kasa/python-kasa/issues/97)
+- Install on Ubuntu 18.04 no luck [\#96](https://github.com/python-kasa/python-kasa/issues/96)
+- issue with installation [\#95](https://github.com/python-kasa/python-kasa/issues/95)
+- Running via Crontab [\#92](https://github.com/python-kasa/python-kasa/issues/92)
+- Issues with setup [\#91](https://github.com/python-kasa/python-kasa/issues/91)
+
+**Merged pull requests:**
+
+- Pin dependencies on major versions, add poetry.lock [\#94](https://github.com/python-kasa/python-kasa/pull/94) ([rytilahti](https://github.com/rytilahti))
+
 ## [0.4.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev1) (2020-07-28)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev0...0.4.0.dev1)
@@ -24,10 +54,12 @@
 
 **Merged pull requests:**
 
+- Release 0.4.0.dev1 [\#93](https://github.com/python-kasa/python-kasa/pull/93) ([rytilahti](https://github.com/rytilahti))
 - add a small example script to show library usage [\#90](https://github.com/python-kasa/python-kasa/pull/90) ([rytilahti](https://github.com/rytilahti))
 - add .readthedocs.yml required for poetry builds [\#89](https://github.com/python-kasa/python-kasa/pull/89) ([rytilahti](https://github.com/rytilahti))
 - Improve installation instructions [\#86](https://github.com/python-kasa/python-kasa/pull/86) ([rytilahti](https://github.com/rytilahti))
 - cli: Fix incorrect use of asyncio.run for temperature command [\#85](https://github.com/python-kasa/python-kasa/pull/85) ([rytilahti](https://github.com/rytilahti))
+- Add parse\_pcap to devtools, improve readme on contributing [\#84](https://github.com/python-kasa/python-kasa/pull/84) ([rytilahti](https://github.com/rytilahti))
 - Add --transition to bulb-specific cli commands, fix turn\_{on,off} signatures [\#81](https://github.com/python-kasa/python-kasa/pull/81) ([rytilahti](https://github.com/rytilahti))
 - Improve bulb API, force turn on for all light changes as offline changes are not supported [\#76](https://github.com/python-kasa/python-kasa/pull/76) ([rytilahti](https://github.com/rytilahti))
 - Simplify API documentation by using doctests [\#73](https://github.com/python-kasa/python-kasa/pull/73) ([rytilahti](https://github.com/rytilahti))
@@ -66,7 +98,6 @@
 
 **Merged pull requests:**
 
-- Add parse\_pcap to devtools, improve readme on contributing [\#84](https://github.com/python-kasa/python-kasa/pull/84) ([rytilahti](https://github.com/rytilahti))
 - Add retries to protocol queries [\#65](https://github.com/python-kasa/python-kasa/pull/65) ([rytilahti](https://github.com/rytilahti))
 - General cleanups all around \(janitoring\) [\#63](https://github.com/python-kasa/python-kasa/pull/63) ([rytilahti](https://github.com/rytilahti))
 - Improve dimmer support [\#62](https://github.com/python-kasa/python-kasa/pull/62) ([rytilahti](https://github.com/rytilahti))
