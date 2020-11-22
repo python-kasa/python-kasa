@@ -125,7 +125,8 @@ class TPLinkKLAP(TPLinkProtocol):
     async def _ask(self, request: str) -> str:
 
         try:
-            session = aiohttp.ClientSession(cookie_jar=self.jar)
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
+            session = aiohttp.ClientSession(cookie_jar=self.jar, timeout=timeout)
 
             async with self.handshake_lock:
                 if not self.handshake_done:
