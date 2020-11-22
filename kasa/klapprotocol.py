@@ -138,6 +138,11 @@ class TPLinkKLAP(TPLinkProtocol):
             url = f"http://{self.host}/app/request"
             resp = await session.post(url, params={"seq": msg_seq}, data=payload)
             _LOGGER.debug("Got response of %d to request", resp.status)
+
+            # If we failed with a security error, force a new handshake next time
+            if resp.status == 403:
+                self.handshake_done = False
+
             if resp.status != 200:
                 raise SmartDeviceException(
                     "Device responded with %d to request with seq %d"
