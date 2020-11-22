@@ -23,8 +23,8 @@ sphinx = { version = "^3", optional = true }
 m2r = { version = "^0", optional = true }
 sphinx_rtd_theme = { version = "^0", optional = true }
 sphinxcontrib-programoutput = { version = "^0", optional = true }
-aiohttp = "^3.7.2"
-pycryptodome = "^3.9.9"
+aiohttp = "^3"
+pycryptodome = "^3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5"
