@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
+from .auth import Auth
 from .exceptions import SmartDeviceException
 from .protocol import TPLinkKLAP, TPLinkSmartHomeProtocol
 
@@ -215,7 +216,7 @@ class SmartDevice:
 
     protocol: Union[TPLinkSmartHomeProtocol, TPLinkKLAP]
 
-    def __init__(self, host: str, authentication: Optional[dict] = None) -> None:
+    def __init__(self, host: str, authentication: Optional[Auth] = None) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens

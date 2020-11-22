@@ -8,6 +8,7 @@ from typing import cast
 import asyncclick as click
 
 from kasa import (
+    Auth,
     Discover,
     SmartBulb,
     SmartDevice,
@@ -87,7 +88,7 @@ async def cli(
         return
 
     if klap or user != "":
-        authentication = {"user": user, "password": password}
+        authentication = Auth(user=user, password=password)
     else:
         authentication = None
 
@@ -202,7 +203,7 @@ async def discover(ctx, timeout, discover_only, dump_raw):
     password = ctx.parent.params["password"]
 
     if user:
-        auth = {"user": user, "password": password}
+        auth = Auth(user=user, password=password)
     else:
         auth = None
 

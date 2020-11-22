@@ -17,13 +17,14 @@ import logging
 import secrets
 import struct
 from pprint import pformat as pf
-from typing import Dict, Optional, Union
+from typing import Dict, Union
 
 import aiohttp
 from Crypto.Cipher import AES
 from Crypto.Util import Padding
 from yarl import URL
 
+from .auth import Auth
 from .exceptions import SmartDeviceException
 
 _LOGGER = logging.getLogger(__name__)
@@ -143,28 +144,15 @@ class TPLinkKLAP:
     protocol, which appeared with firmware 1.1.0.
     """
 
-    def __init__(self, host: str, authentication) -> None:
+    def __init__(self, host: str, authentication: Auth = Auth()) -> None:
         self.host = host
         self.jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
         self.clientBytes = secrets.token_bytes(16)
-        self.authenticator = self.__computeAuthenticator(authentication)
+        self.authenticator = authentication.authenticator()
         self.handshake_lock = asyncio.Lock()
         self.handshake_done = False
 
         _LOGGER.debug("[KLAP] Created KLAP object for %s", self.host)
-
-    @staticmethod
-    def __computeAuthenticator(authentication: Optional[dict]) -> bytes:
-        if authentication is not None:
-            username = authentication["user"].encode()
-            password = authentication["password"].encode()
-        else:
-            username = bytearray(b"")
-            password = bytearray(b"")
-        _LOGGER.debug("[KLAP] Using username %s and password %s", username, password)
-        return hashlib.md5(
-            hashlib.md5(username).digest() + hashlib.md5(password).digest()
-        ).digest()
 
     async def __handshake(self, session) -> None:
         _LOGGER.debug("[KLAP] Starting handshake with %s", self.host)

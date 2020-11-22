@@ -7,6 +7,7 @@ import logging
 import socket
 from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
 
+from kasa.auth import Auth
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
@@ -37,7 +38,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
-        authentication: Optional[dict] = None,
+        authentication: Optional[Auth] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
@@ -98,11 +99,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             )
             if owner is None or owner == "" or owner_bin == self.emptyUser:
                 _LOGGER.debug("[DISCOVERY] Device %s has no owner", ip)
-                device = device_class(ip, {"user": "", "password": ""})
+                device = device_class(ip, Auth())
             elif (
                 self.authentication is not None
-                and owner_bin
-                == hashlib.md5(self.authentication["user"].encode()).digest()
+                and owner_bin == self.authentication.owner()
             ):
                 _LOGGER.debug("[DISCOVERY] Device %s has authenticated owner", ip)
                 device = device_class(ip, self.authentication)
