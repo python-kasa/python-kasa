@@ -10,7 +10,6 @@ which are licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
-import binascii
 import hashlib
 import json
 import logging
@@ -32,47 +31,52 @@ class TPLinkKLAP:
     """Implementation of the KLAP encryption protocol.
 
     KLAP is the name used in device discovery for TP-Link's new encryption
-    protocol, which appeared with firmware 1.1.0.
+    protocol, used by newer firmware versions.
     """
 
     def __init__(self, host: str, authentication: Auth = Auth()) -> None:
         self.host = host
         self.jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
-        self.clientBytes = secrets.token_bytes(16)
+        self.client_challenge = secrets.token_bytes(16)
         self.authenticator = authentication.authenticator()
         self.handshake_lock = asyncio.Lock()
         self.handshake_done = False
 
         _LOGGER.debug("[KLAP] Created KLAP object for %s", self.host)
 
-    async def __handshake(self, session) -> None:
+    @staticmethod
+    def _sha256(payload: bytes) -> bytes:
+        return hashlib.sha256(payload).digest()
+
+    async def _handshake(self, session) -> None:
         _LOGGER.debug("[KLAP] Starting handshake with %s", self.host)
 
-        # Handshake 1 has a payload of clientBytes
+        # Handshake 1 has a payload of client_challenge
         # and a response of 16 bytes, followed by sha256(clientBytes | authenticator)
 
-        url = "http://%s/app/handshake1" % self.host
-        resp = await session.post(url, data=self.clientBytes)
+        url = f"http://{self.host}/app/handshake1"
+        resp = await session.post(url, data=self.client_challenge)
         _LOGGER.debug("Got response of %d to handshake1", resp.status)
         if resp.status != 200:
             raise SmartDeviceException(
                 "Device responded with %d to handshake1" % resp.status
             )
-        response = await resp.read()
-        self.serverBytes = response[0:16]
-        serverHash = response[16:]
 
-        _LOGGER.debug("Server bytes are: %s", binascii.hexlify(self.serverBytes))
-        _LOGGER.debug("Server hash is: %s", binascii.hexlify(serverHash))
+        response = await resp.read()
+        self.server_challenge = response[0:16]
+        server_hash = response[16:]
+
+        _LOGGER.debug("Server bytes are: %s", self.server_challenge.hex())
+        _LOGGER.debug("Server hash is: %s", server_hash.hex())
 
         # Check the response from the device
-        localHash = hashlib.sha256(self.clientBytes + self.authenticator).digest()
+        local_hash = self._sha256(self.client_challenge + self.authenticator)
 
-        if localHash != serverHash:
+        if local_hash != server_hash:
             _LOGGER.debug(
                 "Expected %s got %s in handshake1",
-                binascii.hexlify(localHash),
-                binascii.hexlify(serverHash),
+                local_hash.hex(),
+                server_hash.hex(),
             )
             raise SmartDeviceException("Server response doesn't match our challenge")
         else:
@@ -87,8 +91,8 @@ class TPLinkKLAP:
 
         # Handshake 2 has the following payload:
         #    sha256(serverBytes | authenticator)
-        url = "http://%s/app/handshake2" % self.host
-        payload = hashlib.sha256(self.serverBytes + self.authenticator).digest()
+        url = f"http://{self.host}/app/handshake2"
+        payload = self._sha256(self.server_challenge + self.authenticator)
         resp = await session.post(url, data=payload)
         _LOGGER.debug("Got response of %d to handshake2", resp.status)
         if resp.status != 200:
@@ -97,24 +101,24 @@ class TPLinkKLAP:
             )
 
         # Done handshaking, now we need to compute the encryption keys
-        agreedBytes = self.clientBytes + self.serverBytes + self.authenticator
-        self.encryptKey = hashlib.sha256(bytearray(b"lsk") + agreedBytes).digest()[:16]
-        self.hmacKey = hashlib.sha256(bytearray(b"ldk") + agreedBytes).digest()[:28]
-        fulliv = hashlib.sha256(bytearray(b"iv") + agreedBytes).digest()
+        agreed = self.client_challenge + self.server_challenge + self.authenticator
+        self.encrypt_key = self._sha256(b"lsk" + agreed)[:16]
+        self.hmac_key = self._sha256(b"ldk" + agreed)[:28]
+        fulliv = self._sha256(b"iv" + agreed)
         self.iv = fulliv[:12]
         self.seq = int.from_bytes(fulliv[-4:], "big", signed=True)
         self.handshake_done = True
 
-    def __encrypt(self, plaintext: bytes, iv: bytes, seq: int) -> bytes:
-        cipher = AES.new(self.encryptKey, AES.MODE_CBC, iv)
+    def _encrypt(self, plaintext: bytes, iv: bytes, seq: int) -> bytes:
+        cipher = AES.new(self.encrypt_key, AES.MODE_CBC, iv)
         ciphertext = cipher.encrypt(Padding.pad(plaintext, AES.block_size))
-        signature = hashlib.sha256(
-            self.hmacKey + seq.to_bytes(4, "big", signed=True) + ciphertext
-        ).digest()
+        signature = self._sha256(
+            self.hmac_key + seq.to_bytes(4, "big", signed=True) + ciphertext
+        )
         return signature + ciphertext
 
-    def __decrypt(self, payload: bytes, iv: bytes, seq: int) -> bytes:
-        cipher = AES.new(self.encryptKey, AES.MODE_CBC, iv)
+    def _decrypt(self, payload: bytes, iv: bytes, seq: int) -> bytes:
+        cipher = AES.new(self.encrypt_key, AES.MODE_CBC, iv)
         # In theory we should verify the hmac here too
         return Padding.unpad(cipher.decrypt(payload[32:]), AES.block_size)
 
@@ -142,13 +146,13 @@ class TPLinkKLAP:
 
             async with self.handshake_lock:
                 if not self.handshake_done:
-                    await self.__handshake(session)
+                    await self._handshake(session)
 
             msg_seq = self.seq
             msg_iv = self.iv + msg_seq.to_bytes(4, "big", signed=True)
-            payload = self.__encrypt(request.encode("utf-8"), msg_iv, msg_seq)
+            payload = self._encrypt(request.encode("utf-8"), msg_iv, msg_seq)
 
-            url = "http://%s/app/request" % self.host
+            url = f"http://{self.host}/app/request"
             resp = await session.post(url, params={"seq": msg_seq}, data=payload)
             _LOGGER.debug("Got response of %d to request", resp.status)
             if resp.status != 200:
@@ -157,7 +161,7 @@ class TPLinkKLAP:
                     % (resp.status, msg_seq)
                 )
             response = await resp.read()
-            plaintext = self.__decrypt(response, msg_iv, msg_seq)
+            plaintext = self._decrypt(response, msg_iv, msg_seq)
         finally:
             await session.close()
 
