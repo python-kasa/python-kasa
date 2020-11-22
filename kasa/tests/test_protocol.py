@@ -21,7 +21,8 @@ async def test_protocol_retries(mocker, retry_count):
 
     conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol.query("127.0.0.1", {}, retry_count=retry_count)
+        protocol = TPLinkSmartHomeProtocol("127.0.0.1")
+        await protocol.query({}, retry_count=retry_count)
 
     assert conn.call_count == retry_count + 1
 

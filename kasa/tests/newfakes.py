@@ -415,7 +415,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         },
     }
 
-    async def query(self, host, request, port=9999):
+    async def query(self, request, port=9999):
         proto = self.proto
 
         # collect child ids from context
