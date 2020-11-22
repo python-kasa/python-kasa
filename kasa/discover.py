@@ -44,7 +44,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
-        self.protocol = TPLinkSmartHomeProtocol()
         self.target = (target, Discover.DISCOVERY_PORT)
         self.new_target = (target, Discover.NEW_DISCOVERY_PORT)
         self.discovered_devices = {}
@@ -69,7 +68,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         """Send number of discovery datagrams."""
         req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
-        encrypted_req = self.protocol.encrypt(req)
+        encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
         new_req = binascii.unhexlify("020000010000000000000000463cb5d3")
         for i in range(self.discovery_packets):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
@@ -82,7 +81,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             return
 
         if port == 9999:
-            info = json.loads(self.protocol.decrypt(data))
+            info = json.loads(TPLinkSmartHomeProtocol.decrypt(data))
             device_class = Discover._get_device_class(info)
             device = device_class(ip)
         else:
@@ -241,9 +240,9 @@ class Discover:
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol()
+        protocol = TPLinkSmartHomeProtocol(host)
 
-        info = await protocol.query(host, Discover.DISCOVERY_QUERY)
+        info = await protocol.query(Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:

@@ -11,10 +11,8 @@ http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
 import hashlib
-import json
 import logging
 import secrets
-from typing import Dict, Union
 
 import aiohttp
 from Crypto.Cipher import AES
@@ -23,11 +21,12 @@ from yarl import URL
 
 from .auth import Auth
 from .exceptions import SmartDeviceException
+from .protocol import TPLinkProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TPLinkKLAP:
+class TPLinkKLAP(TPLinkProtocol):
     """Implementation of the KLAP encryption protocol.
 
     KLAP is the name used in device discovery for TP-Link's new encryption
@@ -35,12 +34,13 @@ class TPLinkKLAP:
     """
 
     def __init__(self, host: str, authentication: Auth = Auth()) -> None:
-        self.host = host
         self.jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
         self.client_challenge = secrets.token_bytes(16)
         self.authenticator = authentication.authenticator()
         self.handshake_lock = asyncio.Lock()
         self.handshake_done = False
+
+        super().__init__(host=host)
 
         _LOGGER.debug("[KLAP] Created KLAP object for %s", self.host)
 
@@ -122,24 +122,7 @@ class TPLinkKLAP:
         # In theory we should verify the hmac here too
         return Padding.unpad(cipher.decrypt(payload[32:]), AES.block_size)
 
-    async def query(
-        self, host: str, request: Union[str, Dict], retry_count: int = 3
-    ) -> Dict:
-        """Request information from a TP-Link SmartHome Device.
-
-        :param str host: host name or ip address of the device
-        :param request: command to send to the device (can be either dict or
-        json string)
-        :param retry_count: ignored, for backwards compatibility only
-        :return: response dict
-        """
-        if host != self.host:
-            raise SmartDeviceException("Host %s doesn't match configured host %s")
-
-        if isinstance(request, dict):
-            request = json.dumps(request)
-
-        _LOGGER.debug("Sending request %s", request)
+    async def _ask(self, request: str) -> str:
 
         try:
             session = aiohttp.ClientSession(cookie_jar=self.jar)
@@ -161,8 +144,6 @@ class TPLinkKLAP:
                     % (resp.status, msg_seq)
                 )
             response = await resp.read()
-            plaintext = self._decrypt(response, msg_iv, msg_seq)
+            return self._decrypt(response, msg_iv, msg_seq).decode("utf-8")
         finally:
             await session.close()
-
-        return json.loads(plaintext)

@@ -225,7 +225,7 @@ class SmartDevice:
         self.host = host
 
         if authentication is None:
-            self.protocol = TPLinkSmartHomeProtocol()
+            self.protocol = TPLinkSmartHomeProtocol(host)
         else:
             self.protocol = TPLinkKLAP(host, authentication)
 
@@ -263,7 +263,7 @@ class SmartDevice:
         request = self._create_request(target, cmd, arg, child_ids)
 
         try:
-            response = await self.protocol.query(host=self.host, request=request)
+            response = await self.protocol.query(request=request)
         except Exception as ex:
             raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
@@ -308,7 +308,7 @@ class SmartDevice:
         # Check for emeter if we were never updated, or if the device has emeter
         if self._last_update is None or self.has_emeter:
             req.update(self._create_emeter_request())
-        self._last_update = await self.protocol.query(self.host, req)
+        self._last_update = await self.protocol.query(request=req)
         # TODO: keep accessible for tests
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
