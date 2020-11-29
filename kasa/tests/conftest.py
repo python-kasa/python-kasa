@@ -148,7 +148,7 @@ def get_device_for_file(file):
         sysinfo = json.load(f)
         model = basename(file)
         p = device_for_file(model)(host="123.123.123.123")
-        p.protocol = FakeTransportProtocol(sysinfo)
+        p.protocol = FakeTransportProtocol("123.123.123.123", sysinfo)
         asyncio.run(p.update())
         return p
 

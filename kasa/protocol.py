@@ -28,14 +28,21 @@ class TPLinkSmartHomeProtocol:
     DEFAULT_PORT = 9999
     DEFAULT_TIMEOUT = 5
 
-    @staticmethod
-    async def query(host: str, request: Union[str, Dict], retry_count: int = 3) -> Dict:
-        """Request information from a TP-Link SmartHome Device.
+    def __init__(self, host: str, retry_count: int = 3):
+        """Initialize a new instance of protocol.
 
         :param str host: host name or ip address of the device
+        :param int retry_count: how many retries to do in case of failure
+        """
+        self.host = host
+        self.port = TPLinkSmartHomeProtocol.DEFAULT_PORT
+        self.retry_count = retry_count
+
+    async def query(self, request: Union[str, Dict]) -> Dict:
+        """Request information from a TP-Link SmartHome Device.
+
         :param request: command to send to the device (can be either dict or
         json string)
-        :param retry_count: how many retries to do in case of failure
         :return: response dict
         """
         if isinstance(request, dict):
@@ -43,11 +50,9 @@ class TPLinkSmartHomeProtocol:
 
         timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
         writer = None
-        for retry in range(retry_count + 1):
+        for retry in range(self.retry_count + 1):
             try:
-                task = asyncio.open_connection(
-                    host, TPLinkSmartHomeProtocol.DEFAULT_PORT
-                )
+                task = asyncio.open_connection(self.host, self.port)
                 reader, writer = await asyncio.wait_for(task, timeout=timeout)
                 _LOGGER.debug("> (%i) %s", len(request), request)
                 writer.write(TPLinkSmartHomeProtocol.encrypt(request))
@@ -73,7 +78,7 @@ class TPLinkSmartHomeProtocol:
                 return json_payload
 
             except Exception as ex:
-                if retry >= retry_count:
+                if retry >= self.retry_count:
                     _LOGGER.debug("Giving up after %s retries", retry)
                     raise SmartDeviceException(
                         "Unable to query the device: %s" % ex

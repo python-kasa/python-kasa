@@ -218,11 +218,9 @@ class SmartDevice:
 
         :param str host: host name or ip address on which the device listens
         """
-        self.host = host
-
-        self.protocol = TPLinkSmartHomeProtocol()
+        self.protocol = TPLinkSmartHomeProtocol(host)
         self.emeter_type = "emeter"
-        _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
+        _LOGGER.debug("Initializing %s of type %s", self.protocol.host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate checks in
         #       accessors. the @updated_required decorator does not ensure mypy that these
@@ -255,7 +253,7 @@ class SmartDevice:
         request = self._create_request(target, cmd, arg, child_ids)
 
         try:
-            response = await self.protocol.query(host=self.host, request=request)
+            response = await self.protocol.query(request=request)
         except Exception as ex:
             raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
@@ -300,7 +298,7 @@ class SmartDevice:
         # Check for emeter if we were never updated, or if the device has emeter
         if self._last_update is None or self.has_emeter:
             req.update(self._create_emeter_request())
-        self._last_update = await self.protocol.query(self.host, req)
+        self._last_update = await self.protocol.query(req)
         # TODO: keep accessible for tests
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
@@ -741,5 +739,5 @@ class SmartDevice:
 
     def __repr__(self):
         if self._last_update is None:
-            return f"<{self._device_type} at {self.host} - update() needed>"
-        return f"<{self._device_type} model {self.model} at {self.host} ({self.alias}), is_on: {self.is_on} - dev specific: {self.state_information}>"
+            return f"<{self._device_type} at {self.protocol.host} - update() needed>"
+        return f"<{self._device_type} model {self.model} at {self.protocol.host} ({self.alias}), is_on: {self.is_on} - dev specific: {self.state_information}>"

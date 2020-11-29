@@ -94,7 +94,9 @@ class SmartStrip(SmartDevice):
             _LOGGER.debug("Initializing %s child sockets", len(children))
             for child in children:
                 self.children.append(
-                    SmartStripPlug(self.host, parent=self, child_id=child["id"])
+                    SmartStripPlug(
+                        self.protocol.host, parent=self, child_id=child["id"]
+                    )
                 )
 
     async def turn_on(self, **kwargs):

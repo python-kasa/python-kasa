@@ -223,7 +223,7 @@ async def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
     await dev.update()
     click.echo(click.style(f"== {dev.alias} - {dev.model} ==", bold=True))
-    click.echo(f"\tHost: {dev.host}")
+    click.echo(f"\tHost: {dev.protocol.host}")
     click.echo(
         click.style(
             "\tDevice state: {}\n".format("ON" if dev.is_on else "OFF"),
