@@ -207,7 +207,7 @@ class Discover:
         """
         protocol = TPLinkSmartHomeProtocol(host)
 
-        info = await protocol.query(host, Discover.DISCOVERY_QUERY)
+        info = await protocol.query(Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:
