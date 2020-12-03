@@ -281,8 +281,11 @@ class SmartDevice:
     @requires_update
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
-        sys_info = self.sys_info
-        features = sys_info["feature"].split(":")
+        return SmartDevice._check_emeter_feature_presence(self.sys_info)
+
+    @staticmethod
+    def _check_emeter_feature_presence(sys_info: Dict[str, Any]) -> bool:
+        features = sys_info.get("feature", "").split(":")
         return "ENE" in features
 
     async def get_sys_info(self) -> Dict[str, Any]:
@@ -294,13 +297,19 @@ class SmartDevice:
 
         Needed for methods that are decorated with `requires_update`.
         """
-        req = {}
-        req.update(self._create_request("system", "get_sysinfo"))
+        update_response = {}
+        update_response.update(
+            await self.protocol.query(
+                self.host, self._create_request("system", "get_sysinfo")
+            )
+        )
 
-        # Check for emeter if we were never updated, or if the device has emeter
-        if self._last_update is None or self.has_emeter:
-            req.update(self._create_emeter_request())
-        self._last_update = await self.protocol.query(self.host, req)
+        if SmartDevice._check_emeter_feature_presence(update_response):
+            update_response.update(
+                await self.protocol.query(self.host, self._create_emeter_request())
+            )
+
+        self._last_update = update_response
         # TODO: keep accessible for tests
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
