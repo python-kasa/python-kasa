@@ -1,6 +1,3 @@
-python-kasa documentation
-=========================
-
 .. mdinclude:: ../../README.md
 
 .. toctree::

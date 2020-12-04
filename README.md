@@ -115,6 +115,7 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 
 * HS300
 * KP303
+* KP400
 
 ### Wall switches
 
