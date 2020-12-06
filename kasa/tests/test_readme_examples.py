@@ -18,13 +18,8 @@ def test_bulb_examples(mocker):
 def test_smartdevice_examples(mocker):
     """Use HS110 for emeter examples."""
     p = get_device_for_file("HS110(EU)_1.0_real.json")
-    has_emeter = p.has_emeter
     mocker.patch("kasa.smartdevice.SmartDevice", return_value=p)
     mocker.patch("kasa.smartdevice.SmartDevice.update")
-    mocker.patch(
-        "kasa.smartdevice.SmartDevice._check_emeter_feature_presence",
-        return_value=has_emeter,
-    )
     res = xdoctest.doctest_module("kasa.smartdevice", "all")
     assert not res["failed"]
 
