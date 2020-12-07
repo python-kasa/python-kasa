@@ -289,22 +289,32 @@ class SmartDevice:
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
 
+    def _update_query(self, include_emeter=True) -> Dict[str, Dict[str, Any]]:
+        req: Dict[str, Dict[str, Any]] = {}
+        if include_emeter:
+            req.update(self._create_emeter_request())
+        req.update(self._create_request("system", "get_sysinfo"))
+        return req
+
+    async def _update_with_request(self, request):
+        self._last_update = await self.protocol.query(self.host, request)
+        self._sys_info = self._last_update["system"]["get_sysinfo"]
+
     async def update(self):
         """Update some of the attributes.
 
         Needed for methods that are decorated with `requires_update`.
         """
-        req = {}
+        # Some devices without an emeter will crash if their emeter status
+        # is queried. Therefore, ensure the first update query is only for
+        # get_sysinfo.
+        if self._last_update is None:
+            initial_update_req = self._update_query(include_emeter=False)
+            await self._update_with_request(initial_update_req)
 
-        # Note: some devices (particularly the HS220) running older firmware
-        # versions will hang on this request unless the "emeter" query is
-        # placed before the "system" query.
-        if self._last_update is None or self.has_emeter:
-            req.update(self._create_emeter_request())
-        req.update(self._create_request("system", "get_sysinfo"))
-        self._last_update = await self.protocol.query(self.host, req)
-        # TODO: keep accessible for tests
-        self._sys_info = self._last_update["system"]["get_sysinfo"]
+        update_emeter = True if self.has_emeter else False
+        request = self._update_query(include_emeter=update_emeter)
+        await self._update_with_request(request)
 
     @property  # type: ignore
     @requires_update
