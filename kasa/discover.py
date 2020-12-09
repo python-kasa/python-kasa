@@ -1,10 +1,13 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
+import binascii
+import hashlib
 import json
 import logging
 import socket
 from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
 
+from kasa.auth import Auth
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
@@ -35,15 +38,18 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
+        authentication: Optional[Auth] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
-        self.protocol = TPLinkSmartHomeProtocol()
         self.target = (target, Discover.DISCOVERY_PORT)
+        self.new_target = (target, Discover.NEW_DISCOVERY_PORT)
         self.discovered_devices = {}
         self.discovered_devices_raw = {}
+        self.authentication = authentication
+        self.emptyUser = hashlib.md5().digest()
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -62,9 +68,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         """Send number of discovery datagrams."""
         req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
-        encrypted_req = self.protocol.encrypt(req)
+        encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
+        new_req = binascii.unhexlify("020000010000000000000000463cb5d3")
         for i in range(self.discovery_packets):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
+            self.transport.sendto(new_req, self.new_target)  # type: ignore
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
@@ -72,11 +80,37 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         if ip in self.discovered_devices:
             return
 
-        info = json.loads(self.protocol.decrypt(data))
+        if port == 9999:
+            info = json.loads(TPLinkSmartHomeProtocol.decrypt(data))
+            device_class = Discover._get_device_class(info)
+            device = device_class(ip)
+        else:
+            info = json.loads(data[16:])
+            device_class = Discover._get_new_device_class(info)
+            owner = Discover._get_new_owner(info)
+            if owner is not None:
+                owner_bin = bytes.fromhex(owner)
+
+            _LOGGER.debug(
+                "[DISCOVERY] Device owner is %s, empty owner is %s",
+                owner_bin,
+                self.emptyUser,
+            )
+            if owner is None or owner == "" or owner_bin == self.emptyUser:
+                _LOGGER.debug("[DISCOVERY] Device %s has no owner", ip)
+                device = device_class(ip, Auth())
+            elif (
+                self.authentication is not None
+                and owner_bin == self.authentication.owner()
+            ):
+                _LOGGER.debug("[DISCOVERY] Device %s has authenticated owner", ip)
+                device = device_class(ip, self.authentication)
+            else:
+                _LOGGER.debug("[DISCOVERY] Found %s with unknown owner %s", ip, owner)
+                return
+
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
-        device_class = Discover._get_device_class(info)
-        device = device_class(ip)
         asyncio.ensure_future(device.update())
 
         self.discovered_devices[ip] = device
@@ -133,6 +167,8 @@ class Discover:
 
     DISCOVERY_PORT = 9999
 
+    NEW_DISCOVERY_PORT = 20002
+
     DISCOVERY_QUERY = {
         "system": {"get_sysinfo": None},
         "emeter": {"get_realtime": None},
@@ -150,6 +186,7 @@ class Discover:
         discovery_packets=3,
         return_raw=False,
         interface=None,
+        authentication=None,
     ) -> Mapping[str, Union[SmartDevice, Dict]]:
         """Discover supported devices.
 
@@ -176,6 +213,7 @@ class Discover:
                 on_discovered=on_discovered,
                 discovery_packets=discovery_packets,
                 interface=interface,
+                authentication=authentication,
             ),
             local_addr=("0.0.0.0", 0),
         )
@@ -202,9 +240,9 @@ class Discover:
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol()
+        protocol = TPLinkSmartHomeProtocol(host)
 
-        info = await protocol.query(host, Discover.DISCOVERY_QUERY)
+        info = await protocol.query(Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:
@@ -241,6 +279,33 @@ class Discover:
             return SmartBulb
 
         raise SmartDeviceException("Unknown device type: %s", type_)
+
+    @staticmethod
+    def _get_new_device_class(info: dict) -> Type[SmartDevice]:
+        """Find SmartDevice subclass given new discovery payload."""
+        if "result" not in info:
+            raise SmartDeviceException("No 'result' in discovery response")
+
+        if "device_type" not in info["result"]:
+            raise SmartDeviceException("No 'device_type' in discovery result")
+
+        dtype = info["result"]["device_type"]
+
+        if dtype == "IOT.SMARTPLUGSWITCH":
+            return SmartPlug
+
+        raise SmartDeviceException("Unknown device type: %s", dtype)
+
+    @staticmethod
+    def _get_new_owner(info: dict) -> Optional[str]:
+        """Find owner given new-style discovery payload."""
+        if "result" not in info:
+            raise SmartDeviceException("No 'result' in discovery response")
+
+        if "owner" not in info["result"]:
+            return None
+
+        return info["result"]["owner"]
 
 
 if __name__ == "__main__":
