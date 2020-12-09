@@ -2,18 +2,23 @@ Command-line usage
 ==================
 
 The package is shipped with a console tool named kasa, please refer to ``kasa --help`` for detailed usage.
-The device to which the commands are sent is chosen by `KASA_HOST` environment variable or passing ``--host <address>`` as an option.
+The device to which the commands are sent is chosen by ``KASA_HOST`` environment variable or passing ``--host <address>`` as an option.
 To see what is being sent to and received from the device, specify option ``--debug``.
 
-To avoid discovering the devices when executing commands its type can be passed by specifying either ``--plug`` or ``--bulb``,
-if no type is given its type will be discovered automatically with a small delay.
-Some commands (such as reading energy meter values and setting color of bulbs) additional parameters are required,
-which you can find by adding ``--help`` after the command, e.g. ``kasa emeter --help`` or ``kasa hsv --help``.
+To avoid discovering the devices when executing commands its type can be passed as an option (e.g., ``--plug`` for plugs, ``--bulb`` for bulbs, ..).
+If no type is manually given, its type will be discovered automatically which causes a short delay.
 
 If no command is given, the ``state`` command will be executed to query the device state.
 
+.. note::
+
+    Some commands (such as reading energy meter values, changing bulb settings, or accessing individual sockets on smart strips) additional parameters are required,
+    which you can find by adding ``--help`` after the command, e.g. ``kasa emeter --help`` or ``kasa hsv --help``.
+    Refer to the device type specific documentation for more details.
+
+
 Provisioning
-~~~~~~~~~~~~
+************
 
 You can provision your device without any extra apps by using the ``kasa wifi`` command:
 
@@ -23,6 +28,6 @@ You can provision your device without any extra apps by using the ``kasa wifi`` 
 4. Join/change the network using ``kasa wifi join`` command, see ``--help`` for details.
 
 ``kasa --help``
-~~~~~~~~~~~~~~~
+***************
 
 .. program-output:: kasa --help
