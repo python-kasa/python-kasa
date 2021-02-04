@@ -304,6 +304,11 @@ class SmartDevice:
         # TODO: keep accessible for tests
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
+    def update_from_discover_info(self,info):
+        """Update state from info from the discover call"""
+        self._last_update = info
+        self._sys_info = info["system"]["get_sysinfo"]
+
     @property  # type: ignore
     @requires_update
     def sys_info(self) -> Dict[str, Any]:

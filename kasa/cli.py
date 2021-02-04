@@ -174,13 +174,12 @@ async def dump_discover(ctx, scrub):
 async def discover(ctx, timeout, discover_only, dump_raw):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
-    click.echo(f"Discovering devices for {timeout} seconds")
+    click.echo(f"Discovering devices on {target} for {timeout} seconds")
     found_devs = await Discover.discover(
         target=target, timeout=timeout, return_raw=dump_raw
     )
     if not discover_only:
         for ip, dev in found_devs.items():
-            await dev.update()
             if dump_raw:
                 click.echo(dev)
                 continue

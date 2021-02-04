@@ -77,7 +77,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         device_class = Discover._get_device_class(info)
         device = device_class(ip)
-        asyncio.ensure_future(device.update())
+        device.update_from_discover_info(info)
 
         self.discovered_devices[ip] = device
         self.discovered_devices_raw[ip] = info

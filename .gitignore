@@ -27,3 +27,4 @@ venv
 .venv
 
 /build
+kasa/launch.json
