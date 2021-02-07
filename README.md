@@ -141,8 +141,15 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 
 **Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests!**
 
-### Resources
+## Resources
+
+### Links
 
 * [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
-* [https://github.com/plasticrake/tplink-smarthome-simulator](tplink-smarthome-simulator)
+* [TP-Link Smart Home Device Simulator](https://github.com/plasticrake/tplink-smarthome-simulator)
 * [Unofficial API documentation](https://github.com/plasticrake/tplink-smarthome-api/blob/master/API.md)
+
+### TP-Link Tapo support
+
+* [Tapo P100 (Tapo P105/P100 plugs, Tapo L510E bulbs)](https://github.com/fishbigger/TapoP100)
+  * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
