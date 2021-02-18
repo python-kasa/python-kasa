@@ -148,6 +148,7 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 * [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
 * [TP-Link Smart Home Device Simulator](https://github.com/plasticrake/tplink-smarthome-simulator)
 * [Unofficial API documentation](https://github.com/plasticrake/tplink-smarthome-api/blob/master/API.md)
+* [MQTT access to TP-Link devices, using python-kasa](https://github.com/flavio-fernandes/mqtt2kasa)
 
 ### TP-Link Tapo support
 
