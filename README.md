@@ -133,6 +133,7 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 * KL60
 * KL110
 * KL120
+* KL125
 * KL130
 
 ### Light strips
