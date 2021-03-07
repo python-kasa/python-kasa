@@ -16,13 +16,13 @@ Command-line usage
 To command a single socket of a strip, you will need to specify it either by using ``--index`` or by using ``--name``.
 If not specified, the commands will act on the parent device: turning the strip off will turn off all sockets.
 
-**Example:** Turn off the first socket (the indexing starts from zero):
+**Example:** Turn on the first socket (the indexing starts from zero):
 
 .. code::
 
    $ kasa --strip --host <host> on --index 0
 
-**Example:** Turn on the socket by name:
+**Example:** Turn off the socket by name:
 
 .. code::
 
