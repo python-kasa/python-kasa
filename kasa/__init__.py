@@ -12,6 +12,7 @@ Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
 from importlib_metadata import version  # type: ignore
+
 from kasa.discover import Discover
 from kasa.exceptions import SmartDeviceException
 from kasa.protocol import TPLinkSmartHomeProtocol

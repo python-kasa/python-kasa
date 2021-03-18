@@ -115,3 +115,19 @@ async def test_current_consumption(dev):
         assert x >= 0.0
     else:
         assert await dev.current_consumption() is None
+
+
+async def test_emeterstatus_missing_current():
+    """KL125 does not report 'current' for emeter."""
+    from kasa import EmeterStatus
+
+    regular = EmeterStatus(
+        {"err_code": 0, "power_mw": 0, "total_wh": 13, "current_ma": 123}
+    )
+    assert regular["current"] == 0.123
+
+    with pytest.raises(KeyError):
+        regular["invalid_key"]
+
+    missing_current = EmeterStatus({"err_code": 0, "power_mw": 0, "total_wh": 13})
+    assert missing_current["current"] is None
