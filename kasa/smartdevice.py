@@ -87,7 +87,8 @@ class EmeterStatus(dict):
                     if i.startswith(item):
                         return self.__getitem__(i) / 1000
 
-                raise SmartDeviceException("Unable to find a value for '%s'" % item)
+                _LOGGER.debug(f"Unable to find value for '{item}'")
+                return None
 
 
 def requires_update(f):
