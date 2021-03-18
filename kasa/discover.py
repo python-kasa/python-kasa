@@ -135,10 +135,6 @@ class Discover:
 
     DISCOVERY_QUERY = {
         "system": {"get_sysinfo": None},
-        "emeter": {"get_realtime": None},
-        "smartlife.iot.dimmer": {"get_dimmer_parameters": None},
-        "smartlife.iot.common.emeter": {"get_realtime": None},
-        "smartlife.iot.smartbulb.lightingservice": {"get_light_state": None},
     }
 
     @staticmethod
