@@ -40,7 +40,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
-        self.protocol = TPLinkSmartHomeProtocol()
+        self.protocol = TPLinkSmartHomeProtocol(target)
         self.target = (target, Discover.DISCOVERY_PORT)
         self.discovered_devices = {}
         self.discovered_devices_raw = {}
@@ -198,13 +198,13 @@ class Discover:
     async def discover_single(host: str) -> SmartDevice:
         """Discover a single device by the given IP address.
 
-        :param host: Hostname of device to query
+        :param host: fname of device to query
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol()
+        protocol = TPLinkSmartHomeProtocol(host)
 
-        info = await protocol.query(host, Discover.DISCOVERY_QUERY)
+        info = await protocol.query(Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:

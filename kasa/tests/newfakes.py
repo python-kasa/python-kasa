@@ -253,8 +253,9 @@ def success(res):
 
 
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
-    def __init__(self, info):
+    def __init__(self, host, info):
         self.discovery_data = info
+        self.host = host
         proto = FakeTransportProtocol.baseproto
 
         for target in info:
@@ -415,7 +416,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         },
     }
 
-    async def query(self, host, request, port=9999):
+    async def query(self, request):
         proto = self.proto
 
         # collect child ids from context
