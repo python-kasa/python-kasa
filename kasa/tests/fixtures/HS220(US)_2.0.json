@@ -1,0 +1,64 @@
+{
+    "smartlife.iot.dimmer": {
+        "get_dimmer_parameters": {
+            "err_code": 0,
+            "fadeOffTime": 1000,
+            "fadeOnTime": 1000,
+            "gentleOffTime": 10000,
+            "gentleOnTime": 3000,
+            "minThreshold": 0,
+            "rampRate": 30
+        }
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "err_code": -1,
+        "err_msg": "module not support"
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Living Room Lights",
+            "brightness": 100,
+            "dev_name": "Wi-Fi Smart Dimmer",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS220(US)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "index": 0
+                },
+                {
+                    "brightness": 75,
+                    "index": 1
+                },
+                {
+                    "brightness": 50,
+                    "index": 2
+                },
+                {
+                    "brightness": 25,
+                    "index": 3
+                }
+            ],
+            "relay_state": 0,
+            "rssi": -45,
+            "sw_ver": "1.0.3 Build 200326 Rel.082355",
+            "updating": 0
+        }
+    }
+}
