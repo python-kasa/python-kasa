@@ -6,6 +6,7 @@ from typing import Any, DefaultDict, Dict, Optional
 
 from kasa.smartdevice import (
     DeviceType,
+    EmeterStatus,
     SmartDevice,
     SmartDeviceException,
     requires_update,
@@ -155,6 +156,35 @@ class SmartStrip(SmartDevice):
         return await super().set_alias(alias)
 
     @requires_update
+    async def get_emeter_realtime(self) -> EmeterStatus:
+        """Retrieve current energy readings."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+
+        plug_emeter = False
+        for plug in self.children:
+            if plug.has_emeter:
+                plug_emeter = True
+
+        if not plug_emeter:
+            return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
+
+        emeter_rt: DefaultDict[int, float] = defaultdict(lambda: 0.0)
+        count = 0
+        for plug in self.children:
+            if not plug.has_emeter:
+                continue
+            count += 1
+            plug_emeter_rt = await plug.get_emeter_realtime()
+            for field, value in plug_emeter_rt.items():
+                emeter_rt[field] += value
+    
+        # Voltage is averaged
+        emeter_rt['voltage_mv'] /= count
+
+        return EmeterStatus(emeter_rt)
+
+    @requires_update
     async def get_emeter_daily(
         self, year: int = None, month: int = None, kwh: bool = True
     ) -> Dict:
@@ -245,12 +275,6 @@ class SmartStripPlug(SmartPlug):
 
         This is always false for subdevices.
         """
-        return False
-
-    @property  # type: ignore
-    @requires_update
-    def has_emeter(self) -> bool:
-        """Children have no emeter to my knowledge."""
         return False
 
     @property  # type: ignore
