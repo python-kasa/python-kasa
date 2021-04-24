@@ -24,9 +24,12 @@ async def test_type_detection_bulb(dev: SmartDevice):
 
 @strip
 async def test_type_detection_strip(dev: SmartDevice):
-    d = Discover._get_device_class(dev.protocol.discovery_data)("localhost")
+    d = Discover._create_device_from_discovery_info(
+        "localhost", dev.protocol.discovery_data
+    )
     assert d.is_strip
     assert d.device_type == DeviceType.Strip
+    assert len(d.children) > 0
 
 
 @dimmer

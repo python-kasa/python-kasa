@@ -87,8 +87,19 @@ class SmartStrip(SmartDevice):
         Needed for methods that are decorated with `requires_update`.
         """
         await super().update()
+        self.create_children()
 
-        # Initialize the child devices during the first update.
+    def update_from_discovery_info(self, info):
+        """Update state from info from the discover call."""
+        super().update_from_discovery_info(info)
+        self.create_children()
+
+    @requires_update
+    def create_children(self):
+        """Initialize the child devices during the first update.
+
+        Called by update and update_from_discovery
+        """
         if not self.children:
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
@@ -227,9 +238,21 @@ class SmartStripPlug(SmartPlug):
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
     ) -> Any:
         """Override query helper to include the child_ids."""
-        return await self.parent._query_helper(
-            target, cmd, arg, child_ids=[self.child_id]
-        )
+        try:
+            return await self.parent._query_helper(
+                target, cmd, arg, child_ids=[self.child_id]
+            )
+        except Exception as ex:
+            if len(self.child_id) < 3:
+                # the discovery protocol only returns the index for the child ID
+                #  but the 2021 KP400 requires the full ID including the parent ID
+                #  so we swallow this exception, update the child_id and try again
+                self.child_id = self.parent.sys_info["deviceId"] + self.child_id
+                return await self.parent._query_helper(
+                    target, cmd, arg, child_ids=[self.child_id]
+                )
+            else:
+                raise ex
 
     @property  # type: ignore
     @requires_update
