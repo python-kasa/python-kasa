@@ -75,7 +75,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         info = json.loads(self.protocol.decrypt(data))
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
-        device = Discover._create_device_from_discovery_info(info, ip)
+        device = Discover._create_device_from_discovery_info(ip, info)
 
         self.discovered_devices[ip] = device
         self.discovered_devices_raw[ip] = info
@@ -241,14 +241,11 @@ class Discover:
         raise SmartDeviceException("Unknown device type: %s", type_)
 
     @staticmethod
-    def _create_device_from_discovery_info(info: dict, ip) -> SmartDevice:
+    def _create_device_from_discovery_info(ip, info: dict) -> SmartDevice:
         """Create a SmartDevice for device described by passed data."""
         device_class = Discover._get_device_class(info)
         device = device_class(ip)
-        device.update_from_discover_info(info)
-        if device.is_strip:
-            strip: SmartStrip = device  # type: ignore
-            strip.create_children()
+        device.update_from_discovery_info(info)
         return device
 
 
