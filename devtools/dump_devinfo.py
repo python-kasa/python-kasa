@@ -15,6 +15,7 @@ from collections import defaultdict, namedtuple
 from pprint import pprint
 
 import click
+
 from kasa import TPLinkSmartHomeProtocol
 
 Call = namedtuple("Call", "module method")
