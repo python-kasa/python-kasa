@@ -1,7 +1,5 @@
 """python-kasa cli tool."""
-import json
 import logging
-import re
 from pprint import pformat as pf
 from typing import cast
 
@@ -131,39 +129,9 @@ async def dump_discover(ctx, scrub):
 
     Useful for dumping into a file to be added to the test suite.
     """
-    target = ctx.parent.params["target"]
-    keys_to_scrub = [
-        "deviceId",
-        "fwId",
-        "hwId",
-        "oemId",
-        "mac",
-        "latitude_i",
-        "longitude_i",
-        "latitude",
-        "longitude",
-    ]
-    devs = await Discover.discover(target=target, return_raw=True)
-    if scrub:
-        click.echo("Scrubbing personal data before writing")
-    for dev in devs.values():
-        if scrub:
-            for key in keys_to_scrub:
-                if key in dev["system"]["get_sysinfo"]:
-                    val = dev["system"]["get_sysinfo"][key]
-                    if key in ["latitude_i", "longitude_i"]:
-                        val = 0
-                    else:
-                        val = re.sub(r"\w", "0", val)
-                    dev["system"]["get_sysinfo"][key] = val
-
-        model = dev["system"]["get_sysinfo"]["model"]
-        hw_version = dev["system"]["get_sysinfo"]["hw_ver"]
-        save_to = f"{model}_{hw_version}.json"
-        click.echo(f"Saving info to {save_to}")
-        with open(save_to, "w") as f:
-            json.dump(dev, f, sort_keys=True, indent=4)
-            f.write("\n")
+    click.echo(
+        "This is deprecated, use the script inside devtools to generate a devinfo file."
+    )
 
 
 @cli.command()
