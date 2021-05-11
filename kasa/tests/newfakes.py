@@ -265,7 +265,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
             for etype in ["get_realtime", "get_daystat", "get_monthstat"]:
-                if module in info and etype in info[module]:  # if the fixture has the data, use it
+                if (
+                    module in info and etype in info[module]
+                ):  # if the fixture has the data, use it
                     # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
                     proto[module][etype] = info[module][etype]
                 else:  # otherwise fall back to the static one
