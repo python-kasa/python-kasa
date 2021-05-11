@@ -411,16 +411,16 @@ class SmartDevice:
         """
         sys_info = self.sys_info
 
-        if "mac" in sys_info:
-            return str(sys_info["mac"])
-        elif "mic_mac" in sys_info:
-            return ":".join(
-                format(s, "02x") for s in bytes.fromhex(sys_info["mic_mac"])
+        mac = sys_info.get("mac", sys_info.get("mic_mac"))
+        if not mac:
+            raise SmartDeviceException(
+                "Unknown mac, please submit a bug report with sys_info output."
             )
 
-        raise SmartDeviceException(
-            "Unknown mac, please submit a bug report with sys_info output."
-        )
+        if ":" not in mac:
+            mac = ":".join(format(s, "02x") for s in bytes.fromhex(mac))
+
+        return mac
 
     async def set_mac(self, mac):
         """Set the mac address.
