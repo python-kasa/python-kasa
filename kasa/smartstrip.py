@@ -143,7 +143,7 @@ class SmartStrip(SmartDevice):
 
     async def current_consumption(self) -> float:
         """Get the current power consumption in watts."""
-        consumption = sum([await plug.current_consumption() for plug in self.children])
+        consumption = sum(await plug.current_consumption() for plug in self.children)
 
         return consumption
 
