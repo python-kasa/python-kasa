@@ -41,7 +41,7 @@ def scrub(res):
             res[k] = scrub(res.get(k))
         else:
             if k in keys_to_scrub:
-                if k in ["latitude_i", "longitude_i"]:
+                if k in ["latitude", "latitude_i", "longitude", "longitude_i"]:
                     v = 0
                 else:
                     v = re.sub(r"\w", "0", v)
@@ -62,7 +62,7 @@ def default_to_regular(d):
 
 @click.command()
 @click.argument("host")
-@click.option("--debug")
+@click.option("-d", "--debug", is_flag=True)
 def cli(host, debug):
     """Generate devinfo file for given device."""
     if debug:
