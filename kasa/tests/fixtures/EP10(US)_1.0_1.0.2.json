@@ -1,0 +1,32 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "167 lamp",
+            "dev_name": "Smart Wi-Fi Plug Mini",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "EP10(US)",
+            "next_action": {
+                "type": -1
+            },
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -64,
+            "status": "new",
+            "sw_ver": "1.0.2 Build 200915 Rel.085940",
+            "updating": 0
+        }
+    }
+}
