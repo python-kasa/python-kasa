@@ -150,9 +150,9 @@ BULB_SCHEMA = PLUG_SCHEMA.extend(
             {
                 "brightness": All(int, Range(min=0, max=100)),
                 "color_temp": int,
-                "hue": All(int, Range(min=0, max=255)),
+                "hue": All(int, Range(min=0, max=360)),
                 "index": int,
-                "saturation": All(int, Range(min=0, max=255)),
+                "saturation": All(int, Range(min=0, max=100)),
             }
         ],
     }
