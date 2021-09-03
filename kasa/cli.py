@@ -345,22 +345,22 @@ async def brightness(dev: SmartBulb, brightness: int, transition: int):
 async def temperature(dev: SmartBulb, temperature: int, transition: int):
     """Get or set color temperature."""
     await dev.update()
-    if not dev.is_plug:
-        if temperature is None:
-            click.echo(f"Color temperature: {dev.color_temp}")
-            valid_temperature_range = dev.valid_temperature_range
-            if valid_temperature_range != (0, 0):
-                click.echo("(min: {}, max: {})".format(*valid_temperature_range))
-            else:
-                click.echo(
-                    "Temperature range unknown, please open a github issue"
-                    f" or a pull request for model '{dev.model}'"
-                )
+    if not dev.is_variable_color_temp:
+        click.echo(f"Device does not support color temperature")
+        return
+    if temperature is None:
+        click.echo(f"Color temperature: {dev.color_temp}")
+        valid_temperature_range = dev.valid_temperature_range
+        if valid_temperature_range != (0, 0):
+            click.echo("(min: {}, max: {})".format(*valid_temperature_range))
         else:
-            click.echo(f"Setting color temperature to {temperature}")
-            await dev.set_color_temp(temperature, transition=transition)
+            click.echo(
+                "Temperature range unknown, please open a github issue"
+                f" or a pull request for model '{dev.model}'"
+            )
     else:
-        print("This device does not support temperature.")
+        click.echo(f"Setting color temperature to {temperature}")
+        await dev.set_color_temp(temperature, transition=transition)
 
 
 @cli.command()
