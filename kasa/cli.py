@@ -346,7 +346,7 @@ async def temperature(dev: SmartBulb, temperature: int, transition: int):
     """Get or set color temperature."""
     await dev.update()
     if not dev.is_variable_color_temp:
-        click.echo(f"Device does not support color temperature")
+        click.echo("Device does not support color temperature")
         return
     if temperature is None:
         click.echo(f"Color temperature: {dev.color_temp}")
