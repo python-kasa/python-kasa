@@ -15,22 +15,22 @@ async def test_children_change_state(dev, turn_on):
         orig_state = plug.is_on
         if orig_state:
             await plug.turn_off()
-            await plug.update()
+            await dev.update()
             assert plug.is_on is False
             assert plug.is_off is True
 
             await plug.turn_on()
-            await plug.update()
+            await dev.update()
             assert plug.is_on is True
             assert plug.is_off is False
         else:
             await plug.turn_on()
-            await plug.update()
+            await dev.update()
             assert plug.is_on is True
             assert plug.is_off is False
 
             await plug.turn_off()
-            await plug.update()
+            await dev.update()
             assert plug.is_on is False
             assert plug.is_off is True
 
