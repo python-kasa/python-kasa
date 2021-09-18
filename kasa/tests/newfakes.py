@@ -124,7 +124,7 @@ LIGHT_STATE_SCHEMA = Schema(
         "dft_on_state": Optional(
             {
                 "brightness": All(int, Range(min=0, max=100)),
-                "color_temp": All(int, Range(min=2000, max=9000)),
+                "color_temp": All(int, Range(min=0, max=9000)),
                 "hue": All(int, Range(min=0, max=255)),
                 "mode": str,
                 "saturation": All(int, Range(min=0, max=255)),

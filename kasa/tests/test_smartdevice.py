@@ -13,6 +13,7 @@ async def test_state_info(dev):
     assert isinstance(dev.state_information, dict)
 
 
+@pytest.mark.requires_dummy
 async def test_invalid_connection(dev):
     with patch.object(FakeTransportProtocol, "query", side_effect=SmartDeviceException):
         with pytest.raises(SmartDeviceException):
@@ -32,18 +33,22 @@ async def test_state(dev, turn_on):
     orig_state = dev.is_on
     if orig_state:
         await dev.turn_off()
+        await dev.update()
         assert not dev.is_on
         assert dev.is_off
 
         await dev.turn_on()
+        await dev.update()
         assert dev.is_on
         assert not dev.is_off
     else:
         await dev.turn_on()
+        await dev.update()
         assert dev.is_on
         assert not dev.is_off
 
         await dev.turn_off()
+        await dev.update()
         assert not dev.is_on
         assert dev.is_off
 
@@ -54,9 +59,11 @@ async def test_alias(dev):
 
     assert isinstance(original, str)
     await dev.set_alias(test_alias)
+    await dev.update()
     assert dev.alias == test_alias
 
     await dev.set_alias(original)
+    await dev.update()
     assert dev.alias == original
 
 
