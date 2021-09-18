@@ -8,14 +8,14 @@ from .conftest import bulb, dimmer, lightstrip, plug, pytestmark, strip
 
 @plug
 async def test_type_detection_plug(dev: SmartDevice):
-    d = Discover._get_device_class(dev.protocol.discovery_data)("localhost")
+    d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_plug
     assert d.device_type == DeviceType.Plug
 
 
 @bulb
 async def test_type_detection_bulb(dev: SmartDevice):
-    d = Discover._get_device_class(dev.protocol.discovery_data)("localhost")
+    d = Discover._get_device_class(dev._last_update)("localhost")
     # TODO: light_strip is a special case for now to force bulb tests on it
     if not d.is_light_strip:
         assert d.is_bulb
@@ -24,21 +24,21 @@ async def test_type_detection_bulb(dev: SmartDevice):
 
 @strip
 async def test_type_detection_strip(dev: SmartDevice):
-    d = Discover._get_device_class(dev.protocol.discovery_data)("localhost")
+    d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_strip
     assert d.device_type == DeviceType.Strip
 
 
 @dimmer
 async def test_type_detection_dimmer(dev: SmartDevice):
-    d = Discover._get_device_class(dev.protocol.discovery_data)("localhost")
+    d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_dimmer
     assert d.device_type == DeviceType.Dimmer
 
 
 @lightstrip
 async def test_type_detection_lightstrip(dev: SmartDevice):
-    d = Discover._get_device_class(dev.protocol.discovery_data)("localhost")
+    d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_light_strip
     assert d.device_type == DeviceType.LightStrip
 
