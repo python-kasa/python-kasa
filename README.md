@@ -94,6 +94,15 @@ This will make sure that the checks are passing when you do a commit.
 
 You can also execute the checks by running either `tox -e lint` to only do the linting checks, or `tox` to also execute the tests.
 
+### Running tests
+
+You can run tests on the library by executing `pytest` in the source directory.
+This will run the tests against contributed example responses, but you can also execute the tests against a real device:
+```
+pytest --ip <address>
+```
+Note that this will perform state changes on the device.
+
 ### Analyzing network captures
 
 The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
