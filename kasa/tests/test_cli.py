@@ -32,12 +32,16 @@ async def test_alias(dev):
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {dev.alias}" in res.output
 
+    old_alias = dev.alias
+
     new_alias = "new alias"
     res = await runner.invoke(alias, [new_alias], obj=dev)
     assert f"Setting alias to {new_alias}" in res.output
 
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
+
+    await dev.set_alias(old_alias)
 
 
 async def test_raw_command(dev):
