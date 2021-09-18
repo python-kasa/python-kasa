@@ -214,6 +214,8 @@ class SmartDevice:
 
     """
 
+    TIME_SERVICE = "time"
+
     def __init__(self, host: str) -> None:
         """Create a new SmartDevice instance.
 
@@ -352,7 +354,7 @@ class SmartDevice:
     async def get_time(self) -> Optional[datetime]:
         """Return current time from the device, if available."""
         try:
-            res = await self._query_helper("time", "get_time")
+            res = await self._query_helper(self.TIME_SERVICE, "get_time")
             return datetime(
                 res["year"],
                 res["month"],
@@ -366,7 +368,7 @@ class SmartDevice:
 
     async def get_timezone(self) -> Dict:
         """Return timezone information."""
-        return await self._query_helper("time", "get_timezone")
+        return await self._query_helper(self.TIME_SERVICE, "get_timezone")
 
     @property  # type: ignore
     @requires_update
