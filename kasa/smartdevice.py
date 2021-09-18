@@ -588,7 +588,7 @@ class SmartDevice:
             raise SmartDeviceException("Device has no emeter")
 
         response = EmeterStatus(await self.get_emeter_realtime())
-        return response["power"]
+        return float(response["power"])
 
     async def reboot(self, delay: int = 1) -> None:
         """Reboot the device.
@@ -643,7 +643,8 @@ class SmartDevice:
     def device_id(self) -> str:
         """Return unique ID for the device.
 
-        This is the MAC address of the device.
+        If not overridden, this is the MAC address of the device.
+        Individual sockets on strips will override this.
         """
         return self.mac
 
