@@ -91,6 +91,7 @@ class SmartBulb(SmartDevice):
     """
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"
+    TIME_SERVICE = "smartlife.iot.common.timesetting"
     SET_LIGHT_METHOD = "transition_light_state"
 
     def __init__(self, host: str) -> None:
@@ -359,3 +360,12 @@ class SmartBulb(SmartDevice):
     def has_emeter(self) -> bool:
         """Return that the bulb has an emeter."""
         return True
+
+    async def set_alias(self, alias: str) -> None:
+        """Set the device name (alias).
+
+        Overridden to use a different module name.
+        """
+        return await self._query_helper(
+            "smartlife.iot.common.system", "set_dev_alias", {"alias": alias}
+        )

@@ -153,7 +153,7 @@ def get_device_for_file(file):
         return p
 
 
-@pytest.fixture(params=SUPPORTED_DEVICES)
+@pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
 def dev(request):
     """Device fixture.
 

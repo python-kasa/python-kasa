@@ -252,6 +252,27 @@ def success(res):
     return res
 
 
+# plugs and bulbs use a different module for time information,
+# so we define the contents here to avoid repeating ourselves
+TIME_MODULE = {
+    "get_time": {
+        "year": 2017,
+        "month": 1,
+        "mday": 2,
+        "hour": 3,
+        "min": 4,
+        "sec": 5,
+    },
+    "get_timezone": {
+        "zone_str": "test",
+        "dst_offset": -1,
+        "index": 12,
+        "tz_str": "test2",
+    },
+    "set_timezone": None,
+}
+
+
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):
         self.discovery_data = info
@@ -393,23 +414,11 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             "set_light_state": transition_light_state,
             "get_light_state": light_state,
         },
-        "time": {
-            "get_time": {
-                "year": 2017,
-                "month": 1,
-                "mday": 2,
-                "hour": 3,
-                "min": 4,
-                "sec": 5,
-            },
-            "get_timezone": {
-                "zone_str": "test",
-                "dst_offset": -1,
-                "index": 12,
-                "tz_str": "test2",
-            },
-            "set_timezone": None,
+        "smartlife.iot.common.system": {
+            "set_dev_alias": set_alias,
         },
+        "time": TIME_MODULE,
+        "smartlife.iot.common.timesetting": TIME_MODULE,
         # HS220 brightness, different setter and getter
         "smartlife.iot.dimmer": {
             "set_brightness": set_hs220_brightness,
