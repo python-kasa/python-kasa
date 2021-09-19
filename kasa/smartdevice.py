@@ -291,18 +291,33 @@ class SmartDevice:
         return await self._query_helper("system", "get_sysinfo")
 
     async def update(self):
-        """Update some of the attributes.
+        """Query the device to update the data.
 
-        Needed for methods that are decorated with `requires_update`.
+        Needed for properties that are decorated with `requires_update`.
         """
         req = {}
         req.update(self._create_request("system", "get_sysinfo"))
 
-        # Check for emeter if we were never updated, or if the device has emeter
-        if self._last_update is None or self.has_emeter:
+        # If this is the initial update, check only for the sysinfo
+        # This is necessary as some devices crash on unexpected modules
+        # See #105, #120, #161
+        if self._last_update is None:
+            _LOGGER.debug("Performing the initial update to obtain sysinfo")
+            self._last_update = await self.protocol.query(self.host, req)
+            self._sys_info = self._last_update["system"]["get_sysinfo"]
+            # If the device has no emeter, we are done for the initial update
+            # Otherwise we will follow the regular code path to also query
+            # the emeter data also during the initial update
+            if not self.has_emeter:
+                return
+
+        if self.has_emeter:
+            _LOGGER.debug(
+                "The device has emeter, querying its information along sysinfo"
+            )
             req.update(self._create_emeter_request())
+
         self._last_update = await self.protocol.query(self.host, req)
-        # TODO: keep accessible for tests
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
     def update_from_discover_info(self, info):
