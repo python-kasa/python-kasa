@@ -32,6 +32,7 @@ async def test_get_emeter_realtime(dev):
 
 
 @has_emeter
+@pytest.mark.requires_dummy
 async def test_get_emeter_daily(dev):
     if dev.is_strip:
         pytest.skip("Disabled for strips temporarily")
@@ -54,6 +55,7 @@ async def test_get_emeter_daily(dev):
 
 
 @has_emeter
+@pytest.mark.requires_dummy
 async def test_get_emeter_monthly(dev):
     if dev.is_strip:
         pytest.skip("Disabled for strips temporarily")

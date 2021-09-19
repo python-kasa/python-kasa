@@ -20,9 +20,11 @@ async def test_led(dev):
     original = dev.led
 
     await dev.set_led(False)
+    await dev.update()
     assert not dev.led
 
     await dev.set_led(True)
+    await dev.update()
     assert dev.led
 
     await dev.set_led(original)

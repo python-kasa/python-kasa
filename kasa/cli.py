@@ -247,6 +247,7 @@ async def alias(dev, new_alias, index):
     if new_alias is not None:
         click.echo(f"Setting alias to {new_alias}")
         click.echo(await dev.set_alias(new_alias))
+        await dev.update()
 
     click.echo(f"Alias: {dev.alias}")
     if dev.is_strip:

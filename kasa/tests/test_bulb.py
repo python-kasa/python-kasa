@@ -66,6 +66,7 @@ async def test_hsv(dev, turn_on):
 
     await dev.set_hsv(hue=1, saturation=1, value=1)
 
+    await dev.update()
     hue, saturation, brightness = dev.hsv
     assert hue == 1
     assert saturation == 1
@@ -134,6 +135,7 @@ async def test_variable_temp_state_information(dev):
 async def test_try_set_colortemp(dev, turn_on):
     await handle_turn_on(dev, turn_on)
     await dev.set_color_temp(2700)
+    await dev.update()
     assert dev.color_temp == 2700
 
 
@@ -179,9 +181,11 @@ async def test_dimmable_brightness(dev, turn_on):
     assert dev.is_dimmable
 
     await dev.set_brightness(50)
+    await dev.update()
     assert dev.brightness == 50
 
     await dev.set_brightness(10)
+    await dev.update()
     assert dev.brightness == 10
 
     with pytest.raises(ValueError):

@@ -18,7 +18,7 @@ async def test_state(dev, turn_on):
     await handle_turn_on(dev, turn_on)
     runner = CliRunner()
     res = await runner.invoke(state, obj=dev)
-    print(res.output)
+    await dev.update()
 
     if dev.is_on:
         assert "Device state: ON" in res.output
@@ -32,12 +32,16 @@ async def test_alias(dev):
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {dev.alias}" in res.output
 
+    old_alias = dev.alias
+
     new_alias = "new alias"
     res = await runner.invoke(alias, [new_alias], obj=dev)
     assert f"Setting alias to {new_alias}" in res.output
 
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
+
+    await dev.set_alias(old_alias)
 
 
 async def test_raw_command(dev):
@@ -63,11 +67,13 @@ async def test_emeter(dev: SmartDevice, mocker):
     assert "== Emeter ==" in res.output
 
     monthly = mocker.patch.object(dev, "get_emeter_monthly")
+    monthly.return_value = []
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
     assert "For year" in res.output
     monthly.assert_called()
 
     daily = mocker.patch.object(dev, "get_emeter_daily")
+    daily.return_value = []
     res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
     assert "For month" in res.output
     daily.assert_called()

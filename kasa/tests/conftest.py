@@ -147,7 +147,7 @@ def get_device_for_file(file):
     with open(p) as f:
         sysinfo = json.load(f)
         model = basename(file)
-        p = device_for_file(model)(host="123.123.123.123")
+        p = device_for_file(model)(host="127.0.0.123")
         p.protocol = FakeTransportProtocol(sysinfo)
         asyncio.run(p.update())
         return p
@@ -168,21 +168,29 @@ def dev(request):
         asyncio.run(d.update())
         if d.model in file:
             return d
-        raise Exception("Unable to find type for %s" % ip)
+        else:
+            pytest.skip(f"skipping file {file}")
 
     return get_device_for_file(file)
 
 
 def pytest_addoption(parser):
-    parser.addoption("--ip", action="store", default=None, help="run against device")
+    parser.addoption(
+        "--ip", action="store", default=None, help="run against device on given ip"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--ip"):
         print("Testing against fixtures.")
-        return
     else:
         print("Running against ip %s" % config.getoption("--ip"))
+        requires_dummy = pytest.mark.skip(
+            reason="test requires to be run against dummy data"
+        )
+        for item in items:
+            if "requires_dummy" in item.keywords:
+                item.add_marker(requires_dummy)
 
 
 # allow mocks to be awaited

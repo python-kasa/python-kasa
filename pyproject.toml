@@ -72,6 +72,11 @@ fail-under = 100
 exclude = ['kasa/tests/*']
 verbose = 2
 
+[tool.pytest.ini_options]
+markers = [
+    "requires_dummy: test requires dummy data to pass, skipped on real devices",
+]
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
