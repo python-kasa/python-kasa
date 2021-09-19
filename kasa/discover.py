@@ -152,13 +152,14 @@ class Discover:
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.
+        If you have multiple interfaces, you can use target parameter to specify the network for discovery.
 
         If given, `on_discovered` coroutine will get passed with the :class:`SmartDevice`-derived object as parameter.
 
         The results of the discovery are returned either as a list of :class:`SmartDevice`-derived objects
         or as raw response dictionaries objects (if `return_raw` is True).
 
-        :param target: The target broadcast address (e.g. 192.168.xxx.255).
+        :param target: The target address where to send the broadcast discovery queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
         :param timeout: How long to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets are broadcasted.
