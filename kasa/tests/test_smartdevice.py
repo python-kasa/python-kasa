@@ -5,7 +5,7 @@ import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import SmartDeviceException
 
-from .conftest import handle_turn_on, pytestmark, turn_on
+from .conftest import handle_turn_on, has_emeter, no_emeter, pytestmark, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
 
 
@@ -17,7 +17,24 @@ async def test_invalid_connection(dev):
     with patch.object(FakeTransportProtocol, "query", side_effect=SmartDeviceException):
         with pytest.raises(SmartDeviceException):
             await dev.update()
-            dev.is_on
+
+
+@has_emeter
+async def test_initial_update_emeter(dev, mocker):
+    """Test that the initial update performs second query if emeter is available."""
+    dev._last_update = None
+    spy = mocker.spy(dev.protocol, "query")
+    await dev.update()
+    assert spy.call_count == 2
+
+
+@no_emeter
+async def test_initial_update_no_emeter(dev, mocker):
+    """Test that the initial update performs second query if emeter is available."""
+    dev._last_update = None
+    spy = mocker.spy(dev.protocol, "query")
+    await dev.update()
+    assert spy.call_count == 1
 
 
 async def test_query_helper(dev):
