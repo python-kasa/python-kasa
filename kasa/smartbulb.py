@@ -1,7 +1,7 @@
 """Module for bulbs (LB*, KL*, KB*)."""
 import logging
 import re
-from typing import Any, Dict, NamedTuple, Tuple, cast
+from typing import Any, Dict, NamedTuple, cast
 
 from kasa.smartdevice import (
     DeviceType,
@@ -88,7 +88,7 @@ class SmartBulb(SmartDevice):
         Bulbs supporting color temperature can be queried to know which range is accepted:
 
         >>> bulb.valid_temperature_range
-        (2500, 9000)
+        ColorTempRange(min=2500, max=9000)
         >>> asyncio.run(bulb.set_color_temp(3000))
         >>> asyncio.run(bulb.update())
         >>> bulb.color_temp
@@ -99,7 +99,7 @@ class SmartBulb(SmartDevice):
         >>> asyncio.run(bulb.set_hsv(180, 100, 80))
         >>> asyncio.run(bulb.update())
         >>> bulb.hsv
-        (180, 100, 80)
+        HSV(hue=180, saturation=100, value=80)
 
         If you don't want to use the default transitions, you can pass `transition` in milliseconds.
         This applies to all transitions (turn_on, turn_off, set_hsv, set_color_temp, set_brightness).
@@ -141,20 +141,21 @@ class SmartBulb(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def valid_temperature_range(self) -> Tuple[int, int]:
+    def valid_temperature_range(self) -> ColorTempRange:
         """Return the device-specific white temperature range (in Kelvin).
 
         :return: White temperature range in Kelvin (minimum, maximum)
         """
         if not self.is_variable_color_temp:
             raise SmartDeviceException("Color temperature not supported")
+
         for model, temp_range in TPLINK_KELVIN.items():
             sys_info = self.sys_info
             if re.match(model, sys_info["model"]):
                 return temp_range
 
-        _LOGGER.error("Unknown color temperature range, please open an issue on github")
-        return ColorTempRange(2000, 5000)
+        _LOGGER.warning("Unknown color temperature range, fallback to 2700-5000")
+        return ColorTempRange(2700, 5000)
 
     @property  # type: ignore
     @requires_update
@@ -272,6 +273,7 @@ class SmartBulb(SmartDevice):
         }
 
         if value is not None:
+            self._raise_for_invalid_brightness(value)
             light_state["brightness"] = value
 
         return await self.set_light_state(light_state, transition=transition)
