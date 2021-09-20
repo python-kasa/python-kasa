@@ -1,6 +1,7 @@
 """Module for bulbs (LB*, KL*, KB*)."""
+import logging
 import re
-from typing import Any, Dict, Tuple, cast
+from typing import Any, Dict, NamedTuple, Tuple, cast
 
 from kasa.smartdevice import (
     DeviceType,
@@ -9,17 +10,35 @@ from kasa.smartdevice import (
     requires_update,
 )
 
+
+class ColorTempRange(NamedTuple):
+    """Color temperature range."""
+
+    min: int
+    max: int
+
+
+class HSV(NamedTuple):
+    """Hue-saturation-value."""
+
+    hue: int
+    saturation: int
+    value: int
+
+
 TPLINK_KELVIN = {
-    "LB130": (2500, 9000),
-    "LB120": (2700, 6500),
-    "LB230": (2500, 9000),
-    "KB130": (2500, 9000),
-    "KL130": (2500, 9000),
-    "KL125": (2500, 6500),
-    r"KL120\(EU\)": (2700, 6500),
-    r"KL120\(US\)": (2700, 5000),
-    r"KL430": (2500, 9000),
+    "LB130": ColorTempRange(2500, 9000),
+    "LB120": ColorTempRange(2700, 6500),
+    "LB230": ColorTempRange(2500, 9000),
+    "KB130": ColorTempRange(2500, 9000),
+    "KL130": ColorTempRange(2500, 9000),
+    "KL125": ColorTempRange(2500, 6500),
+    r"KL120\(EU\)": ColorTempRange(2700, 6500),
+    r"KL120\(US\)": ColorTempRange(2700, 5000),
+    r"KL430": ColorTempRange(2500, 9000),
 }
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class SmartBulb(SmartDevice):
@@ -134,9 +153,8 @@ class SmartBulb(SmartDevice):
             if re.match(model, sys_info["model"]):
                 return temp_range
 
-        raise SmartDeviceException(
-            "Unknown color temperature range, please open an issue on github"
-        )
+        _LOGGER.error("Unknown color temperature range, please open an issue on github")
+        return ColorTempRange(2000, 5000)
 
     @property  # type: ignore
     @requires_update
@@ -200,7 +218,7 @@ class SmartBulb(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def hsv(self) -> Tuple[int, int, int]:
+    def hsv(self) -> HSV:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
@@ -214,7 +232,7 @@ class SmartBulb(SmartDevice):
         saturation = light_state["saturation"]
         value = light_state["brightness"]
 
-        return hue, saturation, value
+        return HSV(hue, saturation, value)
 
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int) or not (0 <= value <= 100):
@@ -224,7 +242,7 @@ class SmartBulb(SmartDevice):
 
     @requires_update
     async def set_hsv(
-        self, hue: int, saturation: int, value: int, *, transition: int = None
+        self, hue: int, saturation: int, value: int = None, *, transition: int = None
     ) -> Dict:
         """Set new HSV.
 
@@ -247,14 +265,14 @@ class SmartBulb(SmartDevice):
                 "(valid range: 0-100%)".format(saturation)
             )
 
-        self._raise_for_invalid_brightness(value)
-
         light_state = {
             "hue": hue,
             "saturation": saturation,
-            "brightness": value,
             "color_temp": 0,
         }
+
+        if value is not None:
+            light_state["brightness"] = value
 
         return await self.set_light_state(light_state, transition=transition)
 
@@ -284,7 +302,7 @@ class SmartBulb(SmartDevice):
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
                 "Temperature should be between {} "
-                "and {}".format(*valid_temperature_range)
+                "and {}, was {}".format(*valid_temperature_range, temp)
             )
 
         light_state = {"color_temp": temp}
