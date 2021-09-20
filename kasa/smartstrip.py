@@ -211,6 +211,7 @@ class SmartStripPlug(SmartPlug):
         self.child_id = child_id
         self._last_update = parent._last_update
         self._sys_info = parent._sys_info
+        self._device_type = DeviceType.StripSocket
 
     async def update(self):
         """Override the update to no-op and inform the user."""
