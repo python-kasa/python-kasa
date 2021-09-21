@@ -148,10 +148,11 @@ async def test_set_color_temp_transition(dev, mocker):
 
 
 @variable_temp
-async def test_unknown_temp_range(dev, monkeypatch):
-    with pytest.raises(SmartDeviceException):
-        monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
-        dev.valid_temperature_range()
+async def test_unknown_temp_range(dev, monkeypatch, caplog):
+    monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
+
+    assert dev.valid_temperature_range == (2700, 5000)
+    assert "Unknown color temperature range, fallback to 2700-5000" in caplog.text
 
 
 @variable_temp
