@@ -157,16 +157,18 @@ class SmartStrip(SmartDevice):
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
         if not self.children:
-            return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
+            return EmeterStatus(
+                await self._query_helper(self.emeter_type, "get_realtime")
+            )
 
         emeter_rt: DefaultDict[int, float] = defaultdict(lambda: 0.0)
         for plug in self.children:
             plug_emeter_rt = await plug.get_emeter_realtime()
             for field, value in plug_emeter_rt.items():
                 emeter_rt[field] += value
-    
+
         # Voltage is averaged but its probably all the same
-        emeter_rt['voltage_mv'] /= len(self.children)
+        emeter_rt["voltage_mv"] /= len(self.children)
         return EmeterStatus(emeter_rt)
 
     @requires_update
