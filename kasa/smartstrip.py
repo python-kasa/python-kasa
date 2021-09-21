@@ -156,11 +156,6 @@ class SmartStrip(SmartDevice):
     @requires_update
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
-        if not self.children:
-            return EmeterStatus(
-                await self._query_helper(self.emeter_type, "get_realtime")
-            )
-
         emeter_rt: DefaultDict[int, float] = defaultdict(lambda: 0.0)
         for plug in self.children:
             plug_emeter_rt = await plug.get_emeter_realtime()
