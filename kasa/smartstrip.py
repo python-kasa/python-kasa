@@ -189,7 +189,7 @@ class SmartStrip(SmartDevice):
             "get_emeter_monthly", {"year": year, "kwh": kwh}
         )
 
-    async def _async_get_emeter_sum(self, func: str, kwargs: dict[str, Any]) -> Dict:
+    async def _async_get_emeter_sum(self, func: str, kwargs: Dict[str, Any]) -> Dict:
         """Retreive emeter stats for a time period from children."""
         self._async_verify_emeter()
 
