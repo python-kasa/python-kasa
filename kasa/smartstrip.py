@@ -1,4 +1,5 @@
 """Module for multi-socket devices (HS300, HS107, KP303, ..)."""
+import asyncio
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -155,30 +156,17 @@ class SmartStrip(SmartDevice):
     @requires_update
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
-        plug_emeter = False
-        for plug in self.children:
-            if plug.has_emeter:
-                plug_emeter = True
-
-        if not plug_emeter:
+        if not self.children:
             return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
 
         emeter_rt: DefaultDict[int, float] = defaultdict(lambda: 0.0)
-        count = 0
         for plug in self.children:
-            if not plug.has_emeter:
-                continue
-            count += 1
             plug_emeter_rt = await plug.get_emeter_realtime()
             for field, value in plug_emeter_rt.items():
                 emeter_rt[field] += value
     
-        # Voltage is averaged
-        emeter_rt['voltage_mv'] /= count
-
+        # Voltage is averaged but its probably all the same
+        emeter_rt['voltage_mv'] /= len(self.children)
         return EmeterStatus(emeter_rt)
 
     @requires_update
@@ -274,6 +262,14 @@ class SmartStripPlug(SmartPlug):
         This is always false for subdevices.
         """
         return False
+
+    @property  # type: ignore
+    @requires_update
+    def has_emeter(self) -> bool:
+        """Return that the smartstrip plug has an emeter."""
+        sys_info = self.sys_info
+        features = sys_info["feature"].split(":")
+        return "ENE" in features
 
     @property  # type: ignore
     @requires_update
