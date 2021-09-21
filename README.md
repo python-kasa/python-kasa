@@ -119,6 +119,7 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 * HS105
 * HS107
 * HS110
+* KP115
 
 ### Power Strips
 
