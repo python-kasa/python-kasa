@@ -16,7 +16,7 @@ import inspect
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum
+from enum import Enum, auto
 from typing import Any, Dict, List, Optional
 
 from .exceptions import SmartDeviceException
@@ -28,11 +28,12 @@ _LOGGER = logging.getLogger(__name__)
 class DeviceType(Enum):
     """Device type enum."""
 
-    Plug = 1
-    Bulb = 2
-    Strip = 3
-    Dimmer = 4
-    LightStrip = 5
+    Plug = auto()
+    Bulb = auto()
+    Strip = auto()
+    StripSocket = auto()
+    Dimmer = auto()
+    LightStrip = auto()
     Unknown = -1
 
 
@@ -742,6 +743,11 @@ class SmartDevice:
     def is_strip(self) -> bool:
         """Return True if the device is a strip."""
         return self._device_type == DeviceType.Strip
+
+    @property
+    def is_strip_socket(self) -> bool:
+        """Return True if the device is a strip socket."""
+        return self._device_type == DeviceType.StripSocket
 
     @property
     def is_dimmer(self) -> bool:
