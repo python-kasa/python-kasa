@@ -167,8 +167,9 @@ class SmartStrip(SmartDevice):
             for field, value in plug_emeter_rt.items():
                 emeter_rt[field] += value
 
-        # Voltage is averaged but its probably all the same
-        emeter_rt["voltage_mv"] /= len(self.children)
+        # Voltage is averaged since each read will result
+        # in a slightly different voltage since they are not atomic
+        emeter_rt["voltage_mv"] = int(emeter_rt["voltage_mv"] / len(self.children))
         return EmeterStatus(emeter_rt)
 
     @requires_update
@@ -269,9 +270,7 @@ class SmartStripPlug(SmartPlug):
     @requires_update
     def has_emeter(self) -> bool:
         """Return that the smartstrip plug has an emeter."""
-        sys_info = self.sys_info
-        features = sys_info["feature"].split(":")
-        return "ENE" in features
+        return "ENE" in self.features
 
     @property  # type: ignore
     @requires_update

@@ -17,7 +17,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from .exceptions import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
@@ -282,12 +282,15 @@ class SmartDevice:
         return result
 
     @property  # type: ignore
+    def features(self) -> Set[str]:
+        sys_info = self.sys_info
+        return set(sys_info["feature"].split(":"))
+
+    @property  # type: ignore
     @requires_update
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
-        sys_info = self.sys_info
-        features = sys_info["feature"].split(":")
-        return "ENE" in features
+        return "ENE" in self.features
 
     async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information."""
