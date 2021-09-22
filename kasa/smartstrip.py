@@ -217,7 +217,7 @@ class SmartStrip(SmartDevice):
         # Voltage is averaged since each read will result
         # in a slightly different voltage since they are not atomic
         emeter["voltage_mv"] = int(emeter["voltage_mv"] / len(self.children))
-        return emeter
+        return EmeterStatus(emeter)
 
 
 class SmartStripPlug(SmartPlug):
