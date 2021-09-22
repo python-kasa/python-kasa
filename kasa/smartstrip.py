@@ -215,16 +215,17 @@ class SmartStripPlug(SmartPlug):
 
         self.parent = parent
         self.child_id = child_id
-        self._last_update = parent._last_update
+        self._last_update = None
         self._sys_info = parent._sys_info
         self._device_type = DeviceType.StripSocket
 
     async def update(self):
-        """Override the update to no-op and inform the user."""
-        _LOGGER.warning(
-            "You called update() on a child device, which has no effect."
-            "Call update() on the parent device instead."
-        )
+        """Query the device to update the data.
+
+        Needed for properties that are decorated with `requires_update`.
+        """
+        req = self._create_emeter_request()
+        self._last_update = await self.protocol.query(self.host, req)
         return
 
     async def _query_helper(
