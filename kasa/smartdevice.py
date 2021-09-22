@@ -246,6 +246,11 @@ class SmartDevice:
 
         return request
 
+    def _verify_emeter(self) -> None:
+        """Raise an exception if there is not emeter."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
     ) -> Any:
@@ -456,16 +461,12 @@ class SmartDevice:
     @requires_update
     def emeter_realtime(self) -> EmeterStatus:
         """Return current energy readings."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         return EmeterStatus(self._last_update[self.emeter_type]["get_realtime"])
 
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
 
     def _create_emeter_request(self, year: int = None, month: int = None):
@@ -493,9 +494,7 @@ class SmartDevice:
     @requires_update
     def emeter_today(self) -> Optional[float]:
         """Return today's energy consumption in kWh."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         raw_data = self._last_update[self.emeter_type]["get_daystat"]["day_list"]
         data = self._emeter_convert_emeter_data(raw_data)
         today = datetime.now().day
@@ -509,9 +508,7 @@ class SmartDevice:
     @requires_update
     def emeter_this_month(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         raw_data = self._last_update[self.emeter_type]["get_monthstat"]["month_list"]
         data = self._emeter_convert_emeter_data(raw_data)
         current_month = datetime.now().month
@@ -551,9 +548,7 @@ class SmartDevice:
         :param kwh: return usage in kWh (default: True)
         :return: mapping of day of month to value
         """
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         if year is None:
             year = datetime.now().year
         if month is None:
@@ -573,9 +568,7 @@ class SmartDevice:
         :param kwh: return usage in kWh (default: True)
         :return: dict: mapping of month to value
         """
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         if year is None:
             year = datetime.now().year
 
@@ -588,17 +581,13 @@ class SmartDevice:
     @requires_update
     async def erase_emeter_stats(self) -> Dict:
         """Erase energy meter statistics."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         return await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
     @requires_update
     async def current_consumption(self) -> float:
         """Get the current power consumption in Watt."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         response = EmeterStatus(await self.get_emeter_realtime())
         return float(response["power"])
 

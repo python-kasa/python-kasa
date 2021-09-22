@@ -144,11 +144,6 @@ class SmartStrip(SmartDevice):
         """Get the current power consumption in watts."""
         return sum([await plug.current_consumption() for plug in self.children])
 
-    def _async_verify_emeter(self) -> None:
-        """Raise an exception if there is not emeter."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
     @requires_update
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
@@ -187,7 +182,7 @@ class SmartStrip(SmartDevice):
 
     async def _async_get_emeter_sum(self, func: str, kwargs: Dict[str, Any]) -> Dict:
         """Retreive emeter stats for a time period from children."""
-        self._async_verify_emeter()
+        self._verify_emeter()
         return merge_sums(
             [await getattr(plug, func)(**kwargs) for plug in self.children]
         )
