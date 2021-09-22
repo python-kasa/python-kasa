@@ -425,10 +425,8 @@ class SmartDevice:
     @requires_update
     def rssi(self) -> Optional[int]:
         """Return WiFi signal strenth (rssi)."""
-        sys_info = self.sys_info
-        if "rssi" in sys_info:
-            return int(sys_info["rssi"])
-        return None
+        rssi = self.sys_info.get("rssi")
+        return None if rssi is None else int(rssi)
 
     @property  # type: ignore
     @requires_update
