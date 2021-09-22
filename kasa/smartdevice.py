@@ -247,7 +247,7 @@ class SmartDevice:
         return request
 
     def _verify_emeter(self) -> None:
-        """Raise an exception if there is not emeter."""
+        """Raise an exception if there is no emeter."""
         if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
