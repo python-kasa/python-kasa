@@ -12,6 +12,7 @@ from kasa.smartdevice import (
     requires_update,
 )
 from kasa.smartplug import SmartPlug
+from .utils import merge_sums
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,15 +87,16 @@ class SmartStrip(SmartDevice):
         await super().update()
 
         # Initialize the child devices during the first update.
-        if self.children:
-            return
+        if not self.children:
+            children = self.sys_info["children"]
+            _LOGGER.debug("Initializing %s child sockets", len(children))
+            for child in children:
+                self.children.append(
+                    SmartStripPlug(self.host, parent=self, child_id=child["id"])
+                )
 
-        children = self.sys_info["children"]
-        _LOGGER.debug("Initializing %s child sockets", len(children))
-        for child in children:
-            self.children.append(
-                SmartStripPlug(self.host, parent=self, child_id=child["id"])
-            )
+        for plug in self.children:
+            await plug.update()
 
     async def turn_on(self, **kwargs):
         """Turn the strip on."""
@@ -185,19 +187,37 @@ class SmartStrip(SmartDevice):
     async def _async_get_emeter_sum(self, func: str, kwargs: Dict[str, Any]) -> Dict:
         """Retreive emeter stats for a time period from children."""
         self._async_verify_emeter()
-
-        emeter: DefaultDict[int, float] = defaultdict(lambda: 0.0)
-        for plug in self.children:
-            emeter_daily = await getattr(plug, func)(**kwargs)
-            for day, value in emeter_daily.items():
-                emeter[day] += value
-        return emeter
+        return merge_sums(
+            [await getattr(plug, func)(**kwargs) for plug in self.children]
+        )
 
     @requires_update
     async def erase_emeter_stats(self):
         """Erase energy meter statistics for all plugs."""
         for plug in self.children:
             await plug.erase_emeter_stats()
+
+    @property  # type: ignore
+    @requires_update
+    def emeter_this_month(self) -> Optional[float]:
+        """Return this month's energy consumption in kWh."""
+        return sum([plug.emeter_this_month for plug in self.children])
+
+    @property  # type: ignore
+    @requires_update
+    def emeter_today(self) -> Optional[float]:
+        """Return this month's energy consumption in kWh."""
+        return sum([plug.emeter_today for plug in self.children])
+
+    @property  # type: ignore
+    @requires_update
+    def emeter_realtime(self) -> EmeterStatus:
+        """Return current energy readings."""
+        emeter = merge_sums([plug.emeter_realtime for plug in self.children])
+        # Voltage is averaged since each read will result
+        # in a slightly different voltage since they are not atomic
+        emeter["voltage_mv"] = int(emeter["voltage_mv"] / len(self.children))
+        return emeter
 
 
 class SmartStripPlug(SmartPlug):
@@ -227,6 +247,13 @@ class SmartStripPlug(SmartPlug):
         req = self._create_emeter_request()
         self._last_update = await self.protocol.query(self.host, req)
         return
+
+    def _create_request(self, target: str, cmd: str, arg: Optional[Dict] = None):
+        request: Dict[str, Any] = {
+            "context": {"child_ids": [self.child_id]},
+            target: {cmd: arg},
+        }
+        return request
 
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None

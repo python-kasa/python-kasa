@@ -14,6 +14,8 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 
 import collections.abc
+from collections import defaultdict
+from typing import DefaultDict
 
 
 def merge(d, u):
@@ -24,3 +26,12 @@ def merge(d, u):
         else:
             d[k] = v
     return d
+
+
+def merge_sums(dicts):
+    """Merge the sum of dicts."""
+    total_dict: DefaultDict[int, float] = defaultdict(lambda: 0.0)
+    for sum_dict in dicts:
+        for day, value in sum_dict.items():
+            total_dict[day] += value
+    return total_dict

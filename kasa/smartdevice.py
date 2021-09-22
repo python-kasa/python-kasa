@@ -285,8 +285,7 @@ class SmartDevice:
     @property  # type: ignore
     def features(self) -> Set[str]:
         """Return a set of features that the device supports."""
-        sys_info = self.sys_info
-        return set(sys_info["feature"].split(":"))
+        return set(self.sys_info["feature"].split(":"))
 
     @property  # type: ignore
     @requires_update
