@@ -95,8 +95,9 @@ class SmartStrip(SmartDevice):
                     SmartStripPlug(self.host, parent=self, child_id=child["id"])
                 )
 
-        for plug in self.children:
-            await plug.update()
+        if self.has_emeter:
+            for plug in self.children:
+                await plug.update()
 
     async def turn_on(self, **kwargs):
         """Turn the strip on."""
