@@ -150,7 +150,7 @@ class SmartStrip(SmartDevice):
 
     def _async_verify_emeter(self) -> None:
         """Raise an exception if there is not emeter."""
-        if not any(plug.has_emeter for plug in self.children):
+        if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
 
     @requires_update
