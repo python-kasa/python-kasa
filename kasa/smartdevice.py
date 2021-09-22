@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from .exceptions import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
+from .utils import merge
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -474,23 +475,12 @@ class SmartDevice:
         if month is None:
             month = datetime.now().month
 
-        import collections.abc
-
-        def update(d, u):
-            """Update dict recursively."""
-            for k, v in u.items():
-                if isinstance(v, collections.abc.Mapping):
-                    d[k] = update(d.get(k, {}), v)
-                else:
-                    d[k] = v
-            return d
-
         req: Dict[str, Any] = {}
-        update(req, self._create_request(self.emeter_type, "get_realtime"))
-        update(
+        merge(req, self._create_request(self.emeter_type, "get_realtime"))
+        merge(
             req, self._create_request(self.emeter_type, "get_monthstat", {"year": year})
         )
-        update(
+        merge(
             req,
             self._create_request(
                 self.emeter_type, "get_daystat", {"month": month, "year": year}

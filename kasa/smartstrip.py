@@ -253,12 +253,6 @@ class SmartStripPlug(SmartPlug):
 
     @property  # type: ignore
     @requires_update
-    def has_emeter(self) -> bool:
-        """Return if the smartstrip plug has an emeter."""
-        return "ENE" in self.features
-
-    @property  # type: ignore
-    @requires_update
     def device_id(self) -> str:
         """Return unique ID for the socket.
 
