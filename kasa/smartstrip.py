@@ -11,6 +11,7 @@ from kasa.smartdevice import (
     requires_update,
 )
 from kasa.smartplug import SmartPlug
+
 from .utils import merge_sums
 
 _LOGGER = logging.getLogger(__name__)

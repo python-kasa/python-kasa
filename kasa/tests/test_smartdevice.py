@@ -1,10 +1,10 @@
 from datetime import datetime
-from kasa.smartstrip import SmartStripPlug
 from unittest.mock import patch
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import SmartDeviceException
+from kasa.smartstrip import SmartStripPlug
 
 from .conftest import handle_turn_on, has_emeter, no_emeter, pytestmark, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
