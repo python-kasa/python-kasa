@@ -248,20 +248,14 @@ class SmartStripPlug(SmartPlug):
         )
         return
 
-    def _create_request(self, target: str, cmd: str, arg: Optional[Dict] = None):
+    def _create_request(
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    ):
         request: Dict[str, Any] = {
             "context": {"child_ids": [self.child_id]},
             target: {cmd: arg},
         }
         return request
-
-    async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
-    ) -> Any:
-        """Override query helper to include the child_ids."""
-        return await self.parent._query_helper(
-            target, cmd, arg, child_ids=[self.child_id]
-        )
 
     @property  # type: ignore
     @requires_update
