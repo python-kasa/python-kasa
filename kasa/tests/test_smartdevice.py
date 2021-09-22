@@ -36,7 +36,7 @@ async def test_initial_update_no_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 3 if isinstance(dev, SmartStripPlug) else 1
+    assert spy.call_count == 1
 
 
 async def test_query_helper(dev):
