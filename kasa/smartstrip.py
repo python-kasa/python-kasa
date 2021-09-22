@@ -257,6 +257,14 @@ class SmartStripPlug(SmartPlug):
         }
         return request
 
+    async def _query_helper(
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    ) -> Any:
+        """Override query helper to include the child_ids."""
+        return await self.parent._query_helper(
+            target, cmd, arg, child_ids=[self.child_id]
+        )
+
     @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
