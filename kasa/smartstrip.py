@@ -141,13 +141,6 @@ class SmartStrip(SmartDevice):
         """Get the current power consumption in watts."""
         return sum([await plug.current_consumption() for plug in self.children])
 
-    async def set_alias(self, alias: str) -> None:
-        """Set the alias for the strip.
-
-        :param alias: new alias
-        """
-        return await super().set_alias(alias)
-
     def _async_verify_emeter(self) -> None:
         """Raise an exception if there is not emeter."""
         if not self.has_emeter:
