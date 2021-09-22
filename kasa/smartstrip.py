@@ -235,7 +235,7 @@ class SmartStripPlug(SmartPlug):
 
         self.parent = parent
         self.child_id = child_id
-        self._last_update = None
+        self._last_update = parent._last_update
         self._sys_info = parent._sys_info
         self._device_type = DeviceType.StripSocket
 
