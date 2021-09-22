@@ -261,7 +261,7 @@ class SmartStripPlug(SmartPlug):
     @property  # type: ignore
     @requires_update
     def has_emeter(self) -> bool:
-        """Return that the smartstrip plug has an emeter."""
+        """Return if the smartstrip plug has an emeter."""
         return "ENE" in self.features
 
     @property  # type: ignore
