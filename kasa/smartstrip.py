@@ -244,8 +244,7 @@ class SmartStripPlug(SmartPlug):
 
         Needed for properties that are decorated with `requires_update`.
         """
-        req = self._create_emeter_request()
-        self._last_update = await self.protocol.query(self.host, req)
+        self._last_update = await self.protocol.query(self.host, self._create_emeter_request())
         return
 
     def _create_request(self, target: str, cmd: str, arg: Optional[Dict] = None):
