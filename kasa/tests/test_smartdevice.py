@@ -27,7 +27,7 @@ async def test_initial_update_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 8 if isinstance(dev, SmartStripPlug) else 2
+    assert spy.call_count == 2 + len(dev.children)
 
 
 @no_emeter
