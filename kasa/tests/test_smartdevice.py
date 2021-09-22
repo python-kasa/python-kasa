@@ -1,4 +1,5 @@
 from datetime import datetime
+from kasa.smartstrip import SmartStripPlug
 from unittest.mock import patch
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
@@ -26,7 +27,7 @@ async def test_initial_update_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 2
+    assert spy.call_count == 8 if isinstance(dev, SmartStripPlug) else 2
 
 
 @no_emeter
@@ -35,7 +36,7 @@ async def test_initial_update_no_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 1
+    assert spy.call_count == 3 if isinstance(dev, SmartStripPlug) else 1
 
 
 async def test_query_helper(dev):
