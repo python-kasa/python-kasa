@@ -90,23 +90,23 @@ class TPLinkSmartHomeProtocol:
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     @staticmethod
+    def _generate_tplink(unencrypted):
+        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
+        for unencryptedbyte in unencrypted:
+            key = key ^ unencryptedbyte
+            yield key
+
+    @staticmethod
     def encrypt(request: str) -> bytes:
         """Encrypt a request for a TP-Link Smart Home Device.
 
         :param request: plaintext request data
         :return: ciphertext to be send over wire, in bytes
         """
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-
         plainbytes = request.encode()
-        buffer = bytearray(struct.pack(">I", len(plainbytes)))
-
-        for plainbyte in plainbytes:
-            cipherbyte = key ^ plainbyte
-            key = cipherbyte
-            buffer.append(cipherbyte)
-
-        return bytes(buffer)
+        return struct.pack(">I", len(plainbytes)) + bytes(
+            TPLinkSmartHomeProtocol._generate_tplink(plainbytes)
+        )
 
     @staticmethod
     def decrypt(ciphertext: bytes) -> str:
