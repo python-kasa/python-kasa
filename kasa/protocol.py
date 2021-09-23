@@ -90,23 +90,31 @@ class TPLinkSmartHomeProtocol:
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     @staticmethod
+    def _xor_payload(unencrypted):
+        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
+        for unencryptedbyte in unencrypted:
+            key = key ^ unencryptedbyte
+            yield key
+
+    @staticmethod
     def encrypt(request: str) -> bytes:
         """Encrypt a request for a TP-Link Smart Home Device.
 
         :param request: plaintext request data
         :return: ciphertext to be send over wire, in bytes
         """
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-
         plainbytes = request.encode()
-        buffer = bytearray(struct.pack(">I", len(plainbytes)))
+        return struct.pack(">I", len(plainbytes)) + bytes(
+            TPLinkSmartHomeProtocol._xor_payload(plainbytes)
+        )
 
-        for plainbyte in plainbytes:
-            cipherbyte = key ^ plainbyte
+    @staticmethod
+    def _xor_encrypted_payload(ciphertext):
+        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
+        for cipherbyte in ciphertext:
+            plainbyte = key ^ cipherbyte
             key = cipherbyte
-            buffer.append(cipherbyte)
-
-        return bytes(buffer)
+            yield plainbyte
 
     @staticmethod
     def decrypt(ciphertext: bytes) -> str:
@@ -115,14 +123,6 @@ class TPLinkSmartHomeProtocol:
         :param ciphertext: encrypted response data
         :return: plaintext response
         """
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        buffer = []
-
-        for cipherbyte in ciphertext:
-            plainbyte = key ^ cipherbyte
-            key = cipherbyte
-            buffer.append(plainbyte)
-
-        plaintext = bytes(buffer)
-
-        return plaintext.decode()
+        return bytes(
+            TPLinkSmartHomeProtocol._xor_encrypted_payload(ciphertext)
+        ).decode()
