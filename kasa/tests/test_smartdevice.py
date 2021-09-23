@@ -4,6 +4,7 @@ from unittest.mock import patch
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import SmartDeviceException
+from kasa.smartstrip import SmartStripPlug
 
 from .conftest import handle_turn_on, has_emeter, no_emeter, pytestmark, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
@@ -26,7 +27,7 @@ async def test_initial_update_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 2
+    assert spy.call_count == 2 + len(dev.children)
 
 
 @no_emeter
