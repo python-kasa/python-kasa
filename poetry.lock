@@ -387,17 +387,6 @@ pytest = ">=5.4.0"
 testing = ["coverage", "hypothesis (>=5.7.1)"]
 
 [[package]]
-name = "pytest-azurepipelines"
-version = "0.8.0"
-description = "Formatting PyTest output for Azure Pipelines UI"
-category = "dev"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-
-[package.dependencies]
-pytest = ">=3.5.0"
-
-[[package]]
 name = "pytest-cov"
 version = "2.12.1"
 description = "Pytest plugin for measuring coverage."
@@ -758,7 +747,7 @@ docs = ["sphinx", "sphinx_rtd_theme", "m2r", "sphinxcontrib-programoutput"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "c73c14c7f8588e3be3cd04a1b8cdcbcc32f2d042d8e30b58b7084b2b544ddb90"
+content-hash = "e388fa366e9423e60697bfa77c37151094ca0367eb3ed441d61bb8cc7f055675"
 
 [metadata.files]
 alabaster = [
@@ -981,10 +970,6 @@ pytest = [
 pytest-asyncio = [
     {file = "pytest-asyncio-0.15.1.tar.gz", hash = "sha256:2564ceb9612bbd560d19ca4b41347b54e7835c2f792c504f698e05395ed63f6f"},
     {file = "pytest_asyncio-0.15.1-py3-none-any.whl", hash = "sha256:3042bcdf1c5d978f6b74d96a151c4cfb9dcece65006198389ccd7e6c60eb1eea"},
-]
-pytest-azurepipelines = [
-    {file = "pytest-azurepipelines-0.8.0.tar.gz", hash = "sha256:944ae2c0790b792d123aa7312fe307bc35214dd26531728923ae5085a1d1feab"},
-    {file = "pytest_azurepipelines-0.8.0-py3-none-any.whl", hash = "sha256:38b841a90e88d1966715966d7ea35619ed710386138a6a0b8fb5954c991ca4f1"},
 ]
 pytest-cov = [
     {file = "pytest-cov-2.12.1.tar.gz", hash = "sha256:261ceeb8c227b726249b376b8526b600f38667ee314f910353fa318caa01f4d7"},
