@@ -90,7 +90,7 @@ class TPLinkSmartHomeProtocol:
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     @staticmethod
-    def _generate_tplink(unencrypted):
+    def _xor_payload(unencrypted):
         key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
         for unencryptedbyte in unencrypted:
             key = key ^ unencryptedbyte
