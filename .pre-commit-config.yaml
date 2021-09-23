@@ -10,13 +10,13 @@ repos:
   - id: check-ast
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v2.19.4
+  rev: v2.27.0
   hooks:
   - id: pyupgrade
     args: ['--py36-plus']
 
 - repo: https://github.com/python/black
-  rev: 21.6b0
+  rev: 21.9b0
   hooks:
   - id: black
 
@@ -27,13 +27,13 @@ repos:
     additional_dependencies: [flake8-docstrings]
 
 - repo: https://github.com/pre-commit/mirrors-isort
-  rev: v5.8.0
+  rev: v5.9.3
   hooks:
   - id: isort
     additional_dependencies: [toml]
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v0.902
+  rev: v0.910
   hooks:
   - id: mypy
     additional_dependencies: [types-click]
