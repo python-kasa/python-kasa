@@ -1,7 +1,8 @@
 """Module for multi-socket devices (HS300, HS107, KP303, ..)."""
 import logging
+from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, DefaultDict, Dict, Optional
 
 from kasa.smartdevice import (
     DeviceType,
@@ -13,10 +14,6 @@ from kasa.smartdevice import (
 from kasa.smartplug import SmartPlug
 
 _LOGGER = logging.getLogger(__name__)
-
-
-from collections import defaultdict
-from typing import DefaultDict
 
 
 def merge_sums(dicts):
