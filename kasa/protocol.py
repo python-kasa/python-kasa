@@ -109,20 +109,20 @@ class TPLinkSmartHomeProtocol:
         )
 
     @staticmethod
+    def _xor_encrypted_payload(ciphertext):
+        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
+        for cipherbyte in ciphertext:
+            plainbyte = key ^ cipherbyte
+            key = cipherbyte
+            yield plainbyte
+
+    @staticmethod
     def decrypt(ciphertext: bytes) -> str:
         """Decrypt a response of a TP-Link Smart Home Device.
 
         :param ciphertext: encrypted response data
         :return: plaintext response
         """
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        buffer = []
-
-        for cipherbyte in ciphertext:
-            plainbyte = key ^ cipherbyte
-            key = cipherbyte
-            buffer.append(plainbyte)
-
-        plaintext = bytes(buffer)
-
-        return plaintext.decode()
+        return bytes(
+            TPLinkSmartHomeProtocol._xor_encrypted_payload(ciphertext)
+        ).decode()
