@@ -105,7 +105,7 @@ class TPLinkSmartHomeProtocol:
         """
         plainbytes = request.encode()
         return struct.pack(">I", len(plainbytes)) + bytes(
-            TPLinkSmartHomeProtocol._generate_tplink(plainbytes)
+            TPLinkSmartHomeProtocol._xor_payload(plainbytes)
         )
 
     @staticmethod
