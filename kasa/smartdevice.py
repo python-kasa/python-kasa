@@ -11,6 +11,7 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
+import collections.abc
 import functools
 import inspect
 import logging
@@ -21,7 +22,6 @@ from typing import Any, Dict, List, Optional, Set
 
 from .exceptions import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
-from .utils import merge
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,6 +91,16 @@ class EmeterStatus(dict):
 
                 _LOGGER.debug(f"Unable to find value for '{item}'")
                 return None
+
+
+def merge(d, u):
+    """Update dict recursively."""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = merge(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 
 def requires_update(f):

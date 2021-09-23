@@ -12,9 +12,20 @@ from kasa.smartdevice import (
 )
 from kasa.smartplug import SmartPlug
 
-from .utils import merge_sums
-
 _LOGGER = logging.getLogger(__name__)
+
+
+from collections import defaultdict
+from typing import DefaultDict
+
+
+def merge_sums(dicts):
+    """Merge the sum of dicts."""
+    total_dict: DefaultDict[int, float] = defaultdict(lambda: 0.0)
+    for sum_dict in dicts:
+        for day, value in sum_dict.items():
+            total_dict[day] += value
+    return total_dict
 
 
 class SmartStrip(SmartDevice):
