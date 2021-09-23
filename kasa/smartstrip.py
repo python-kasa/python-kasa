@@ -243,7 +243,6 @@ class SmartStripPlug(SmartPlug):
         self._last_update = await self.parent.protocol.query(
             self.host, self._create_emeter_request()
         )
-        return
 
     def _create_request(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
