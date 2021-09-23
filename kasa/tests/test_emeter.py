@@ -1,6 +1,6 @@
 import pytest
 
-from kasa import SmartDeviceException
+from kasa import EmeterStatus, SmartDeviceException
 
 from .conftest import has_emeter, no_emeter, pytestmark
 from .newfakes import CURRENT_CONSUMPTION_SCHEMA
@@ -121,8 +121,6 @@ async def test_current_consumption(dev):
 
 async def test_emeterstatus_missing_current():
     """KL125 does not report 'current' for emeter."""
-    from kasa import EmeterStatus
-
     regular = EmeterStatus(
         {"err_code": 0, "power_mw": 0, "total_wh": 13, "current_ma": 123}
     )

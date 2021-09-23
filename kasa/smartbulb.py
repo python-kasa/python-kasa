@@ -3,12 +3,7 @@ import logging
 import re
 from typing import Any, Dict, NamedTuple, cast
 
-from kasa.smartdevice import (
-    DeviceType,
-    SmartDevice,
-    SmartDeviceException,
-    requires_update,
-)
+from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
 
 
 class ColorTempRange(NamedTuple):
