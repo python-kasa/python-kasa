@@ -53,10 +53,6 @@ jobs:
       - name: "Run check-ast"
         run: |
           poetry run pre-commit run check-ast --all-files
-      - name: "Potential security issues (bandit)"
-        run: |
-          poetry run pre-commit run bandit --all-files
-
 
   tests:
     name: "Python ${{ matrix.python-version}} on ${{ matrix.os }}"
