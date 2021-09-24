@@ -1,5 +1,6 @@
 import json
 import struct
+import sys
 
 import pytest
 
@@ -27,6 +28,7 @@ async def test_protocol_retries(mocker, retry_count):
     assert conn.call_count == retry_count + 1
 
 
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
 async def test_protocol_reconnect(mocker, retry_count):
     remaining = retry_count
