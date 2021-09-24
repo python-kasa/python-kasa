@@ -3,7 +3,7 @@ import sys
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException
+from kasa import protocol, DeviceType, Discover, SmartDevice, SmartDeviceException
 from kasa.discover import _DiscoverProtocol
 
 from .conftest import bulb, dimmer, lightstrip, plug, pytestmark, strip
@@ -94,7 +94,8 @@ async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
     proto = _DiscoverProtocol()
     mocker.patch("json.loads", return_value=discovery_data)
-    mocker.patch.object(proto, "protocol")
+    mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
+    mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
     addr = "127.0.0.1"
     proto.datagram_received("<placeholder data>", (addr, 1234))
