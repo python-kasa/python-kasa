@@ -151,23 +151,28 @@ async def _discover_update_and_close(ip):
     return await _update_and_close(d)
 
 
-def get_device_for_file(file):
+async def get_device_for_file(file):
     # if the wanted file is not an absolute path, prepend the fixtures directory
     p = Path(file)
     if not p.is_absolute():
         p = Path(__file__).parent / "fixtures" / file
 
-    with open(p) as f:
-        sysinfo = json.load(f)
-        model = basename(file)
-        d = device_for_file(model)(host="127.0.0.123")
-        d.protocol = FakeTransportProtocol(sysinfo)
-        asyncio.run(_update_and_close(d))
-        return d
+    def load_file():
+        with open(p) as f:
+            return json.load(f)
+
+    loop = asyncio.get_running_loop()
+    sysinfo = await loop.run_in_executor(None, load_file)
+
+    model = basename(file)
+    d = device_for_file(model)(host="127.0.0.123")
+    d.protocol = FakeTransportProtocol(sysinfo)
+    await _update_and_close(d)
+    return d
 
 
-@pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
-def dev(request):
+@pytest.fixture(params=SUPPORTED_DEVICES)
+async def dev(request):
     """Device fixture.
 
     Provides a device (given --ip) or parametrized fixture for the supported devices.
@@ -180,13 +185,13 @@ def dev(request):
         model = IP_MODEL_CACHE.get(ip)
         d = None
         if not model:
-            d = asyncio.run(_discover_update_and_close(ip))
+            d = await _discover_update_and_close(ip)
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        return d if d else asyncio.run(_discover_update_and_close(ip))
+        return d if d else await _discover_update_and_close(ip)
 
-    return get_device_for_file(file)
+    return await get_device_for_file(file)
 
 
 @pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
