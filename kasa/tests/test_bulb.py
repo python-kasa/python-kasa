@@ -60,7 +60,7 @@ async def test_hsv(dev, turn_on):
     assert dev.is_color
 
     hue, saturation, brightness = dev.hsv
-    assert 0 <= hue <= 255
+    assert 0 <= hue <= 360
     assert 0 <= saturation <= 100
     assert 0 <= brightness <= 100
 

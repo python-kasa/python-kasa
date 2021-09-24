@@ -117,17 +117,17 @@ LIGHT_STATE_SCHEMA = Schema(
     {
         "brightness": All(int, Range(min=0, max=100)),
         "color_temp": int,
-        "hue": All(int, Range(min=0, max=255)),
+        "hue": All(int, Range(min=0, max=360)),
         "mode": str,
         "on_off": check_int_bool,
-        "saturation": All(int, Range(min=0, max=255)),
+        "saturation": All(int, Range(min=0, max=100)),
         "dft_on_state": Optional(
             {
                 "brightness": All(int, Range(min=0, max=100)),
                 "color_temp": All(int, Range(min=0, max=9000)),
-                "hue": All(int, Range(min=0, max=255)),
+                "hue": All(int, Range(min=0, max=360)),
                 "mode": str,
-                "saturation": All(int, Range(min=0, max=255)),
+                "saturation": All(int, Range(min=0, max=100)),
             }
         ),
         "err_code": int,
