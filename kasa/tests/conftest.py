@@ -58,6 +58,24 @@ def parametrize(desc, devices, ids=None):
     )
 
 
+has_emeter = parametrize("has emeter", WITH_EMETER)
+no_emeter = parametrize("no emeter", ALL_DEVICES - WITH_EMETER)
+
+bulb = parametrize("bulbs", BULBS, ids=basename)
+plug = parametrize("plugs", PLUGS, ids=basename)
+strip = parametrize("strips", STRIPS, ids=basename)
+dimmer = parametrize("dimmers", DIMMERS, ids=basename)
+lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=basename)
+
+# bulb types
+dimmable = parametrize("dimmable", DIMMABLE)
+non_dimmable = parametrize("non-dimmable", BULBS - DIMMABLE)
+variable_temp = parametrize("variable color temp", VARIABLE_TEMP)
+non_variable_temp = parametrize("non-variable color temp", BULBS - VARIABLE_TEMP)
+color_bulb = parametrize("color bulbs", COLOR_BULBS)
+non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
+
+
 def check_categories():
     """Check that every fixture file is categorized."""
     categorized_fixtures = set(
@@ -78,23 +96,6 @@ def check_categories():
 
 
 check_categories()
-
-has_emeter = parametrize("has emeter", WITH_EMETER)
-no_emeter = parametrize("no emeter", ALL_DEVICES - WITH_EMETER)
-
-bulb = parametrize("bulbs", BULBS, ids=basename)
-plug = parametrize("plugs", PLUGS, ids=basename)
-strip = parametrize("strips", STRIPS, ids=basename)
-dimmer = parametrize("dimmers", DIMMERS, ids=basename)
-lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=basename)
-
-# bulb types
-dimmable = parametrize("dimmable", DIMMABLE)
-non_dimmable = parametrize("non-dimmable", BULBS - DIMMABLE)
-variable_temp = parametrize("variable color temp", VARIABLE_TEMP)
-non_variable_temp = parametrize("non-variable color temp", BULBS - VARIABLE_TEMP)
-color_bulb = parametrize("color bulbs", COLOR_BULBS)
-non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
