@@ -39,6 +39,8 @@ WITH_EMETER = {"HS110", "HS300", "KP115", *BULBS}
 
 ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
+IP_MODEL_CACHE = {}
+
 
 def filter_model(desc, filter):
     filtered = list()
@@ -174,11 +176,14 @@ def dev(request):
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = asyncio.run(_discover_update_and_close(ip))
-        if d.model in file:
-            return d
-        else:
+        model = IP_MODEL_CACHE.get(ip)
+        d = None
+        if not model:
+            d = asyncio.run(_discover_update_and_close(ip))
+            IP_MODEL_CACHE[ip] = model = d.model
+        if model not in file:
             pytest.skip(f"skipping file {file}")
+        return d if d else asyncio.run(_discover_update_and_close(ip))
 
     return get_device_for_file(file)
 
