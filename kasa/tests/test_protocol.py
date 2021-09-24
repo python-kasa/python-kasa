@@ -1,6 +1,5 @@
 import json
 import struct
-from unittest.mock import patch
 
 import pytest
 
