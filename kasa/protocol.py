@@ -15,7 +15,7 @@ import json
 import logging
 import struct
 from pprint import pformat as pf
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 from .exceptions import SmartDeviceException
 
@@ -34,9 +34,9 @@ class TPLinkSmartHomeProtocol:
     def __init__(self, host: str) -> None:
         """Create a protocol object."""
         self.host = host
-        self.reader = None
-        self.writer = None
-        self.query_lock = None
+        self.reader: Optional[asyncio.StreamReader] = None
+        self.writer: Optional[asyncio.StreamWriter] = None
+        self.query_lock: Optional[asyncio.Lock] = None
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Request information from a TP-Link SmartHome Device.
@@ -52,6 +52,8 @@ class TPLinkSmartHomeProtocol:
 
         if isinstance(request, dict):
             request = json.dumps(request)
+
+        assert isinstance(request, str)
 
         timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
 
@@ -70,8 +72,10 @@ class TPLinkSmartHomeProtocol:
             return True
         return False
 
-    async def _execute_query(self, request: Dict) -> Dict:
+    async def _execute_query(self, request: str) -> Dict:
         """Execute a query on the device and wait for the response."""
+        assert self.writer is not None
+        assert self.reader is not None
         _LOGGER.debug("> (%i) %s", len(request), request)
         self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
         await self.writer.drain()
@@ -83,7 +87,7 @@ class TPLinkSmartHomeProtocol:
         _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
         return json_payload
 
-    async def _query(self, request: Dict, retry_count: int, timeout: int) -> Dict:
+    async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
         for retry in range(retry_count + 1):
 
@@ -91,12 +95,15 @@ class TPLinkSmartHomeProtocol:
                 continue
 
             try:
+                assert self.reader is not None
+                assert self.writer is not None
                 return await asyncio.wait_for(
                     self._execute_query(request), timeout=timeout
                 )
             except Exception as ex:
-                self.writer.close()
-                await self.writer.wait_closed()
+                if self.writer:
+                    self.writer.close()
+                    await self.writer.wait_closed()
                 self.writer = None
                 self.reader = None
                 if retry >= retry_count:
