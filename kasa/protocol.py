@@ -124,6 +124,7 @@ class TPLinkSmartHomeProtocol:
         """Try to query a device."""
         for retry in range(retry_count + 1):
             if not await self._connect(timeout):
+                await self.close()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up after %s retries", retry)
                     raise SmartDeviceException(
