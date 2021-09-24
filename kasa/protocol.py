@@ -52,8 +52,7 @@ class TPLinkSmartHomeProtocol:
 
         if isinstance(request, dict):
             request = json.dumps(request)
-
-        assert isinstance(request, str)
+            assert isinstance(request, str)
 
         timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
 
@@ -96,6 +95,7 @@ class TPLinkSmartHomeProtocol:
         """Close the connection."""
         if self.writer:
             self.writer.close()
+            await asyncio.sleep(0)
             with contextlib.suppress(Exception):
                 await self.writer.wait_closed()
         self._clear_persistent()

@@ -4,6 +4,7 @@ import json
 import os
 from os.path import basename
 from pathlib import Path, PurePath
+from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
@@ -39,7 +40,7 @@ WITH_EMETER = {"HS110", "HS300", "KP115", *BULBS}
 
 ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
-IP_MODEL_CACHE = {}
+IP_MODEL_CACHE: Dict[str, str] = {}
 
 
 def filter_model(desc, filter):
