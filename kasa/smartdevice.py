@@ -383,8 +383,8 @@ class SmartDevice:
             loc["latitude"] = sys_info["latitude"]
             loc["longitude"] = sys_info["longitude"]
         elif "latitude_i" in sys_info and "longitude_i" in sys_info:
-            loc["latitude"] = sys_info["latitude_i"]
-            loc["longitude"] = sys_info["longitude_i"]
+            loc["latitude"] = sys_info["latitude_i"] / 10000
+            loc["longitude"] = sys_info["longitude_i"] / 10000
         else:
             _LOGGER.warning("Unsupported device location.")
 
