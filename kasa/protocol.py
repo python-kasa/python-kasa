@@ -87,10 +87,18 @@ class TPLinkSmartHomeProtocol:
         _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
         return json_payload
 
+    async def _close(self):
+        """Close the connection."""
+        if self.writer:
+            self.writer.close()
+            with contextlib.suppress(Exception):
+                await self.writer.wait_closed()
+        self.writer = None
+        self.reader = None
+
     async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
         for retry in range(retry_count + 1):
-
             if not await self._connect(timeout):
                 continue
 
@@ -101,11 +109,7 @@ class TPLinkSmartHomeProtocol:
                     self._execute_query(request), timeout=timeout
                 )
             except Exception as ex:
-                if self.writer:
-                    self.writer.close()
-                    await self.writer.wait_closed()
-                self.writer = None
-                self.reader = None
+                await self._close()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up after %s retries", retry)
                     raise SmartDeviceException(
@@ -115,6 +119,7 @@ class TPLinkSmartHomeProtocol:
                 _LOGGER.debug("Unable to query the device, retrying: %s", ex)
 
         # make mypy happy, this should never be reached..
+        await self._close()
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     def __del__(self):
@@ -122,6 +127,8 @@ class TPLinkSmartHomeProtocol:
             return
         with contextlib.suppress(Exception):
             self.writer.close()
+        self.writer = None
+        self.reader = None
 
     @staticmethod
     def _xor_payload(unencrypted):
