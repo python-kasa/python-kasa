@@ -1,6 +1,6 @@
+import asyncio
 import sys
 
-import asyncio
 import pytest
 import xdoctest
 
