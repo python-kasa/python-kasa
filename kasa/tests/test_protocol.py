@@ -32,7 +32,7 @@ async def test_protocol_retries(mocker, retry_count):
 async def test_protocol_reconnect(mocker, retry_count):
     remaining = retry_count
 
-    def _fail_one_less_than_retry_count():
+    def _fail_one_less_than_retry_count(*_):
         nonlocal remaining
         remaining -= 1
         if remaining:
@@ -51,9 +51,8 @@ async def test_protocol_reconnect(mocker, retry_count):
 
     def aio_mock_writer(_, __):
         reader = mocker.patch("asyncio.StreamReader")
-        writer = mocker.patch(
-            "asyncio.StreamWriter", side_effect=_fail_one_less_than_retry_count
-        )
+        writer = mocker.patch("asyncio.StreamWriter")
+        writer.write = _fail_one_less_than_retry_count
         reader.readexactly = _mock_read
         return reader, writer
 
