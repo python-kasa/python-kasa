@@ -31,23 +31,24 @@ async def test_protocol_retries(mocker, retry_count):
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
 async def test_protocol_reconnect(mocker, retry_count):
     remaining = retry_count
+    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
+        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    ]
 
     def _fail_one_less_than_retry_count(*_):
         nonlocal remaining
         remaining -= 1
         if remaining:
-            raise Exception("write failure")
+            raise Exception("Simulated write failure")
 
     async def _mock_read(byte_count):
-        if byte_count == 4:
-            return struct.pack(">I", 19)
-        if byte_count == 19:
-            return '{"great":"success"}'
+        nonlocal encrypted
+        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+            return struct.pack(">I", len(encrypted))
+        if byte_count == len(encrypted):
+            return encrypted
 
         raise ValueError(f"No mock for {byte_count}")
-
-    def _mock_decrypt(encrypted):
-        return encrypted
 
     def aio_mock_writer(_, __):
         reader = mocker.patch("asyncio.StreamReader")
@@ -58,12 +59,8 @@ async def test_protocol_reconnect(mocker, retry_count):
 
     protocol = TPLinkSmartHomeProtocol("127.0.0.1")
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
-
-    with patch(
-        "kasa.protocol.TPLinkSmartHomeProtocol.decrypt", side_effect=_mock_decrypt
-    ):
-        response = await protocol.query({}, retry_count=retry_count)
-        assert response == {"great": "success"}
+    response = await protocol.query({}, retry_count=retry_count)
+    assert response == {"great": "success"}
 
 
 def test_encrypt():
