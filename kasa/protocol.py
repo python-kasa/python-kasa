@@ -77,6 +77,7 @@ class TPLinkSmartHomeProtocol:
             return True
 
         with contextlib.suppress(Exception):
+            self.reader = self.writer = None
             task = asyncio.open_connection(
                 self.host, TPLinkSmartHomeProtocol.DEFAULT_PORT
             )
@@ -123,6 +124,11 @@ class TPLinkSmartHomeProtocol:
         """Try to query a device."""
         for retry in range(retry_count + 1):
             if not await self._connect(timeout):
+                if retry >= retry_count:
+                    _LOGGER.debug("Giving up after %s retries", retry)
+                    raise SmartDeviceException(
+                        f"Unable to connect to the device: {self.host}"
+                    )
                 continue
 
             try:
@@ -136,7 +142,7 @@ class TPLinkSmartHomeProtocol:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up after %s retries", retry)
                     raise SmartDeviceException(
-                        "Unable to query the device: %s" % ex
+                        f"Unable to query the device: {ex}"
                     ) from ex
 
                 _LOGGER.debug("Unable to query the device, retrying: %s", ex)
