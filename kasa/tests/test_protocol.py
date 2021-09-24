@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 import pytest
 
-from .. import protocol
 from ..exceptions import SmartDeviceException
 from ..protocol import TPLinkSmartHomeProtocol
 from .conftest import pytestmark
