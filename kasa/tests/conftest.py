@@ -137,6 +137,17 @@ def device_for_file(model):
     raise Exception("Unable to find type for %s", model)
 
 
+async def _update_and_close(d):
+    await d.update()
+    await d.protocol.close()
+    return d
+
+
+async def _discover_update_and_close(ip):
+    d = await Discover.discover_single(ip)
+    return await _update_and_close(d)
+
+
 def get_device_for_file(file):
     # if the wanted file is not an absolute path, prepend the fixtures directory
     p = Path(file)
@@ -146,10 +157,10 @@ def get_device_for_file(file):
     with open(p) as f:
         sysinfo = json.load(f)
         model = basename(file)
-        p = device_for_file(model)(host="127.0.0.123")
-        p.protocol = FakeTransportProtocol(sysinfo)
-        asyncio.run(p.update())
-        return p
+        d = device_for_file(model)(host="127.0.0.123")
+        d.protocol = FakeTransportProtocol(sysinfo)
+        asyncio.run(_update_and_close(d))
+        return d
 
 
 @pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
@@ -163,8 +174,7 @@ def dev(request):
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = asyncio.run(Discover.discover_single(ip))
-        asyncio.run(d.update())
+        d = asyncio.run(_discover_update_and_close(ip))
         if d.model in file:
             return d
         else:
