@@ -39,12 +39,12 @@ async def test_protocol_reconnect(mocker, retry_count):
             raise Exception("write failure")
 
     async def _mock_read(byte_count):
-        assert ValueError(f"No mock for {byte_count}")
-
         if byte_count == 4:
             return struct.pack(">I", 19)
         if byte_count == 19:
             return '{"great":"success"}'
+
+        raise ValueError(f"No mock for {byte_count}")
 
     def _mock_decrypt(encrypted):
         return encrypted
