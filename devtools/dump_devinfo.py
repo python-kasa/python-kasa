@@ -78,16 +78,17 @@ def cli(host, debug):
         ),
     ]
 
-    protocol = TPLinkSmartHomeProtocol()
-
     successes = []
 
     for test_call in items:
+
+        async def _run_query():
+            protocol = TPLinkSmartHomeProtocol(host)
+            return await protocol.query({test_call.module: {test_call.method: None}})
+
         try:
             click.echo(f"Testing {test_call}..", nl=False)
-            info = asyncio.run(
-                protocol.query(host, {test_call.module: {test_call.method: None}})
-            )
+            info = asyncio.run(_run_query())
             resp = info[test_call.module]
         except Exception as ex:
             click.echo(click.style(f"FAIL {ex}", fg="red"))
@@ -107,8 +108,12 @@ def cli(host, debug):
 
     final = default_to_regular(final)
 
+    async def _run_final_query():
+        protocol = TPLinkSmartHomeProtocol(host)
+        return await protocol.query(final_query)
+
     try:
-        final = asyncio.run(protocol.query(host, final_query))
+        final = asyncio.run(_run_final_query())
     except Exception as ex:
         click.echo(
             click.style(

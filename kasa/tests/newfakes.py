@@ -83,9 +83,19 @@ PLUG_SCHEMA = Schema(
         "icon_hash": str,
         "led_off": check_int_bool,
         "latitude": Any(All(float, Range(min=-90, max=90)), 0, None),
-        "latitude_i": Any(All(float, Range(min=-90, max=90)), 0, None),
+        "latitude_i": Any(
+            All(int, Range(min=-900000, max=900000)),
+            All(float, Range(min=-900000, max=900000)),
+            0,
+            None,
+        ),
         "longitude": Any(All(float, Range(min=-180, max=180)), 0, None),
-        "longitude_i": Any(All(float, Range(min=-180, max=180)), 0, None),
+        "longitude_i": Any(
+            All(int, Range(min=-18000000, max=18000000)),
+            All(float, Range(min=-18000000, max=18000000)),
+            0,
+            None,
+        ),
         "mac": check_mac,
         "model": str,
         "oemId": str,
@@ -117,17 +127,17 @@ LIGHT_STATE_SCHEMA = Schema(
     {
         "brightness": All(int, Range(min=0, max=100)),
         "color_temp": int,
-        "hue": All(int, Range(min=0, max=255)),
+        "hue": All(int, Range(min=0, max=360)),
         "mode": str,
         "on_off": check_int_bool,
-        "saturation": All(int, Range(min=0, max=255)),
+        "saturation": All(int, Range(min=0, max=100)),
         "dft_on_state": Optional(
             {
                 "brightness": All(int, Range(min=0, max=100)),
                 "color_temp": All(int, Range(min=0, max=9000)),
-                "hue": All(int, Range(min=0, max=255)),
+                "hue": All(int, Range(min=0, max=360)),
                 "mode": str,
-                "saturation": All(int, Range(min=0, max=255)),
+                "saturation": All(int, Range(min=0, max=100)),
             }
         ),
         "err_code": int,
@@ -276,6 +286,8 @@ TIME_MODULE = {
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):
         self.discovery_data = info
+        self.writer = None
+        self.reader = None
         proto = FakeTransportProtocol.baseproto
 
         for target in info:
@@ -426,7 +438,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         },
     }
 
-    async def query(self, host, request, port=9999):
+    async def query(self, request, port=9999):
         proto = self.proto
 
         # collect child ids from context

@@ -4,6 +4,7 @@ import json
 import os
 from os.path import basename
 from pathlib import Path, PurePath
+from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
@@ -38,6 +39,8 @@ DIMMABLE = {*BULBS, *DIMMERS}
 WITH_EMETER = {"HS110", "HS300", "KP115", *BULBS}
 
 ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
+
+IP_MODEL_CACHE: Dict[str, str] = {}
 
 
 def filter_model(desc, filter):
@@ -137,23 +140,39 @@ def device_for_file(model):
     raise Exception("Unable to find type for %s", model)
 
 
-def get_device_for_file(file):
+async def _update_and_close(d):
+    await d.update()
+    await d.protocol.close()
+    return d
+
+
+async def _discover_update_and_close(ip):
+    d = await Discover.discover_single(ip)
+    return await _update_and_close(d)
+
+
+async def get_device_for_file(file):
     # if the wanted file is not an absolute path, prepend the fixtures directory
     p = Path(file)
     if not p.is_absolute():
         p = Path(__file__).parent / "fixtures" / file
 
-    with open(p) as f:
-        sysinfo = json.load(f)
-        model = basename(file)
-        p = device_for_file(model)(host="127.0.0.123")
-        p.protocol = FakeTransportProtocol(sysinfo)
-        asyncio.run(p.update())
-        return p
+    def load_file():
+        with open(p) as f:
+            return json.load(f)
+
+    loop = asyncio.get_running_loop()
+    sysinfo = await loop.run_in_executor(None, load_file)
+
+    model = basename(file)
+    d = device_for_file(model)(host="127.0.0.123")
+    d.protocol = FakeTransportProtocol(sysinfo)
+    await _update_and_close(d)
+    return d
 
 
-@pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
-def dev(request):
+@pytest.fixture(params=SUPPORTED_DEVICES)
+async def dev(request):
     """Device fixture.
 
     Provides a device (given --ip) or parametrized fixture for the supported devices.
@@ -163,14 +182,16 @@ def dev(request):
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = asyncio.run(Discover.discover_single(ip))
-        asyncio.run(d.update())
-        if d.model in file:
-            return d
-        else:
+        model = IP_MODEL_CACHE.get(ip)
+        d = None
+        if not model:
+            d = await _discover_update_and_close(ip)
+            IP_MODEL_CACHE[ip] = model = d.model
+        if model not in file:
             pytest.skip(f"skipping file {file}")
+        return d if d else await _discover_update_and_close(ip)
 
-    return get_device_for_file(file)
+    return await get_device_for_file(file)
 
 
 @pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
