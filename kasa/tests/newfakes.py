@@ -276,6 +276,8 @@ TIME_MODULE = {
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):
         self.discovery_data = info
+        self.writer = None
+        self.reader = None
         proto = FakeTransportProtocol.baseproto
 
         for target in info:
@@ -426,7 +428,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         },
     }
 
-    async def query(self, host, request, port=9999):
+    async def query(self, request, port=9999):
         proto = self.proto
 
         # collect child ids from context

@@ -194,7 +194,7 @@ class SmartDevice:
         """
         self.host = host
 
-        self.protocol = TPLinkSmartHomeProtocol()
+        self.protocol = TPLinkSmartHomeProtocol(host)
         self.emeter_type = "emeter"
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
@@ -234,7 +234,7 @@ class SmartDevice:
         request = self._create_request(target, cmd, arg, child_ids)
 
         try:
-            response = await self.protocol.query(host=self.host, request=request)
+            response = await self.protocol.query(request=request)
         except Exception as ex:
             raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
@@ -285,7 +285,7 @@ class SmartDevice:
         # See #105, #120, #161
         if self._last_update is None:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
-            self._last_update = await self.protocol.query(self.host, req)
+            self._last_update = await self.protocol.query(req)
             self._sys_info = self._last_update["system"]["get_sysinfo"]
             # If the device has no emeter, we are done for the initial update
             # Otherwise we will follow the regular code path to also query
@@ -299,7 +299,7 @@ class SmartDevice:
             )
             req.update(self._create_emeter_request())
 
-        self._last_update = await self.protocol.query(self.host, req)
+        self._last_update = await self.protocol.query(req)
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
     def update_from_discover_info(self, info):
