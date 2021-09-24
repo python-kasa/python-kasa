@@ -57,7 +57,7 @@ async def test_protocol_reconnect(mocker, retry_count):
         return reader, writer
 
     protocol = TPLinkSmartHomeProtocol("127.0.0.1")
-    conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
+    mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
 
     with patch(
         "kasa.protocol.TPLinkSmartHomeProtocol.decrypt", side_effect=_mock_decrypt
