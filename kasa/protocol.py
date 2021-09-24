@@ -78,6 +78,7 @@ class TPLinkSmartHomeProtocol:
         """Execute a query on the device and wait for the response."""
         assert self.writer is not None
         assert self.reader is not None
+
         _LOGGER.debug("> (%i) %s", len(request), request)
         self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
         await self.writer.drain()
