@@ -85,6 +85,7 @@ class TPLinkSmartHomeProtocol:
 
         packed_block_size = await self.reader.readexactly(self.BLOCK_SIZE)
         length = struct.unpack(">I", packed_block_size)[0]
+
         buffer = await self.reader.readexactly(length)
         response = TPLinkSmartHomeProtocol.decrypt(buffer)
         json_payload = json.loads(response)
