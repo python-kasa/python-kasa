@@ -82,6 +82,7 @@ class TPLinkSmartHomeProtocol:
         _LOGGER.debug("> (%i) %s", len(request), request)
         self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
         await self.writer.drain()
+
         packed_block_size = await self.reader.readexactly(self.BLOCK_SIZE)
         length = struct.unpack(">I", packed_block_size)[0]
         buffer = await self.reader.readexactly(length)
