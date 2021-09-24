@@ -53,8 +53,6 @@ def filter_model(desc, filter):
 
 
 def parametrize(desc, devices, ids=None):
-    # if ids is None:
-    #    ids = ["on", "off"]
     return pytest.mark.parametrize(
         "dev", filter_model(desc, devices), indirect=True, ids=ids
     )
@@ -63,32 +61,11 @@ def parametrize(desc, devices, ids=None):
 has_emeter = parametrize("has emeter", WITH_EMETER)
 no_emeter = parametrize("no emeter", ALL_DEVICES - WITH_EMETER)
 
-
-def name_for_filename(x):
-    from os.path import basename
-
-    return basename(x)
-
-
-bulb = parametrize("bulbs", BULBS, ids=name_for_filename)
-plug = parametrize("plugs", PLUGS, ids=name_for_filename)
-strip = parametrize("strips", STRIPS, ids=name_for_filename)
-dimmer = parametrize("dimmers", DIMMERS, ids=name_for_filename)
-lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=name_for_filename)
-
-# This ensures that every single file inside fixtures/ is being placed in some category
-categorized_fixtures = set(
-    dimmer.args[1] + strip.args[1] + plug.args[1] + bulb.args[1] + lightstrip.args[1]
-)
-diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
-if diff:
-    for file in diff:
-        print(
-            "No category for file %s, add to the corresponding set (BULBS, PLUGS, ..)"
-            % file
-        )
-    raise Exception("Missing category for %s" % diff)
-
+bulb = parametrize("bulbs", BULBS, ids=basename)
+plug = parametrize("plugs", PLUGS, ids=basename)
+strip = parametrize("strips", STRIPS, ids=basename)
+dimmer = parametrize("dimmers", DIMMERS, ids=basename)
+lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=basename)
 
 # bulb types
 dimmable = parametrize("dimmable", DIMMABLE)
@@ -97,6 +74,28 @@ variable_temp = parametrize("variable color temp", VARIABLE_TEMP)
 non_variable_temp = parametrize("non-variable color temp", BULBS - VARIABLE_TEMP)
 color_bulb = parametrize("color bulbs", COLOR_BULBS)
 non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
+
+
+def check_categories():
+    """Check that every fixture file is categorized."""
+    categorized_fixtures = set(
+        dimmer.args[1]
+        + strip.args[1]
+        + plug.args[1]
+        + bulb.args[1]
+        + lightstrip.args[1]
+    )
+    diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
+    if diff:
+        for file in diff:
+            print(
+                "No category for file %s, add to the corresponding set (BULBS, PLUGS, ..)"
+                % file
+            )
+        raise Exception("Missing category for %s" % diff)
+
+
+check_categories()
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
@@ -172,6 +171,18 @@ def dev(request):
             pytest.skip(f"skipping file {file}")
 
     return get_device_for_file(file)
+
+
+@pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
+def discovery_data(request):
+    """Return raw discovery file contents as JSON. Used for discovery tests."""
+    file = request.param
+    p = Path(file)
+    if not p.is_absolute():
+        p = Path(__file__).parent / "fixtures" / file
+
+    with open(p) as f:
+        return json.load(f)
 
 
 def pytest_addoption(parser):
