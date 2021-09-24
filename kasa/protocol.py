@@ -98,6 +98,10 @@ class TPLinkSmartHomeProtocol:
             self.writer.close()
             with contextlib.suppress(Exception):
                 await self.writer.wait_closed()
+        self._clear_persistent()
+
+    def _clear_persistent(self):
+        """Clear any varibles that should not survive between loops."""
         self.writer = None
         self.reader = None
         self.query_lock = None
@@ -133,9 +137,7 @@ class TPLinkSmartHomeProtocol:
             return
         with contextlib.suppress(Exception):
             self.writer.close()
-        self.writer = None
-        self.reader = None
-        self.query_lock = None
+        self._clear_persistent()
 
     @staticmethod
     def _xor_payload(unencrypted):
