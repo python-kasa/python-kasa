@@ -64,12 +64,14 @@ class TPLinkSmartHomeProtocol:
         """Try to connect or reconnect to the device."""
         if self.writer:
             return True
+
         with contextlib.suppress(Exception):
             task = asyncio.open_connection(
                 self.host, TPLinkSmartHomeProtocol.DEFAULT_PORT
             )
             self.reader, self.writer = await asyncio.wait_for(task, timeout=timeout)
             return True
+
         return False
 
     async def _execute_query(self, request: str) -> Dict:
