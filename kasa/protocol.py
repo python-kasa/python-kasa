@@ -37,6 +37,16 @@ class TPLinkSmartHomeProtocol:
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None
         self.query_lock: Optional[asyncio.Lock] = None
+        self.loop: Optional[asyncio.AbstractEventLoop] = None
+
+    def _detect_event_loop_change(self) -> None:
+        """Check if this object has been reused betwen event loops."""
+        loop = asyncio.get_running_loop()
+        if not self.loop:
+            self.loop = loop
+        elif self.loop != loop:
+            _LOGGER.warning("Detected protocol reuse between different event loop")
+            self._reset()
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Request information from a TP-Link SmartHome Device.
@@ -47,6 +57,8 @@ class TPLinkSmartHomeProtocol:
         :param retry_count: how many retries to do in case of failure
         :return: response dict
         """
+        self._detect_event_loop_change()
+
         if not self.query_lock:
             self.query_lock = asyncio.Lock()
 
@@ -93,18 +105,19 @@ class TPLinkSmartHomeProtocol:
 
     async def close(self):
         """Close the connection."""
-        if self.writer:
-            self.writer.close()
-            await asyncio.sleep(0)
+        writer = self.writer
+        self._reset()
+        if writer:
+            writer.close()
             with contextlib.suppress(Exception):
-                await self.writer.wait_closed()
-        self._clear_persistent()
+                await writer.wait_closed()
 
-    def _clear_persistent(self):
+    def _reset(self):
         """Clear any varibles that should not survive between loops."""
         self.writer = None
         self.reader = None
         self.query_lock = None
+        self.loop = None
 
     async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
@@ -133,11 +146,9 @@ class TPLinkSmartHomeProtocol:
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     def __del__(self):
-        if not self.writer:
-            return
-        with contextlib.suppress(Exception):
+        if self.writer and self.loop and self.loop.is_running():
             self.writer.close()
-        self._clear_persistent()
+        self._reset()
 
     @staticmethod
     def _xor_payload(unencrypted):
