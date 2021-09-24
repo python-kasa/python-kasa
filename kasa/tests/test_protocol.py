@@ -52,8 +52,8 @@ async def test_protocol_reconnect(mocker, retry_count):
     def aio_mock_writer(_, __):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
-        writer.write = _fail_one_less_than_retry_count
-        reader.readexactly = _mock_read
+        mocker.patch.object(writer, "write", _fail_one_less_than_retry_count)
+        mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
     protocol = TPLinkSmartHomeProtocol("127.0.0.1")
