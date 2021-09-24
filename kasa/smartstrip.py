@@ -87,12 +87,12 @@ class SmartStrip(SmartDevice):
         """Return if any of the outlets are on."""
         return any(plug.is_on for plug in self.children)
 
-    async def update(self):
+    async def update(self, children: bool = True):
         """Update some of the attributes.
 
         Needed for methods that are decorated with `requires_update`.
         """
-        await super().update()
+        await super().update(children)
 
         # Initialize the child devices during the first update.
         if not self.children:
@@ -103,7 +103,7 @@ class SmartStrip(SmartDevice):
                     SmartStripPlug(self.host, parent=self, child_id=child["id"])
                 )
 
-        if self.has_emeter:
+        if children and self.has_emeter:
             for plug in self.children:
                 await plug.update()
 
@@ -243,7 +243,7 @@ class SmartStripPlug(SmartPlug):
         self._sys_info = parent._sys_info
         self._device_type = DeviceType.StripSocket
 
-    async def update(self):
+    async def update(self, children: bool = True):
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.

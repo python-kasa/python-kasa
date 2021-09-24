@@ -272,7 +272,7 @@ class SmartDevice:
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
 
-    async def update(self):
+    async def update(self, children: bool = True):
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.
