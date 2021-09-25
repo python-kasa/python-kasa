@@ -1,7 +1,7 @@
 import json
+import logging
 import struct
 import sys
-import logging
 
 import pytest
 
