@@ -93,7 +93,7 @@ class TPLinkSmartHomeProtocol:
         debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if debug_log:
-            _LOGGER.debug("> (%i) %s", len(request), request)
+            _LOGGER.debug("%s >> %s", self.host, request)
         self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
         await self.writer.drain()
 
@@ -104,7 +104,8 @@ class TPLinkSmartHomeProtocol:
         response = TPLinkSmartHomeProtocol.decrypt(buffer)
         json_payload = json.loads(response)
         if debug_log:
-            _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
+            _LOGGER.debug("%s << %s", self.host, pf(json_payload))
+
         return json_payload
 
     async def close(self):
@@ -129,7 +130,7 @@ class TPLinkSmartHomeProtocol:
             if not await self._connect(timeout):
                 await self.close()
                 if retry >= retry_count:
-                    _LOGGER.debug("Giving up after %s retries", retry)
+                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
                         f"Unable to connect to the device: {self.host}"
                     )
@@ -144,12 +145,14 @@ class TPLinkSmartHomeProtocol:
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:
-                    _LOGGER.debug("Giving up after %s retries", retry)
+                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
-                        f"Unable to query the device: {ex}"
+                        f"Unable to query the device {self.host}: {ex}"
                     ) from ex
 
-                _LOGGER.debug("Unable to query the device, retrying: %s", ex)
+                _LOGGER.debug(
+                    "Unable to query the device %s, retrying: %s", self.host, ex
+                )
 
         # make mypy happy, this should never be reached..
         await self.close()
