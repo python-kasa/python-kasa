@@ -66,9 +66,10 @@ async def test_protocol_reconnect(mocker, retry_count):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
-async def test_protocol_logging(mocker, caplog):
-    caplog.set_level(logging.WARNING)
-    logging.getLogger("kasa").setLevel(logging.WARNING)
+@pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])
+async def test_protocol_logging(mocker, caplog, log_level):
+    caplog.set_level(log_level)
+    logging.getLogger("kasa").setLevel(log_level)
     encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
         TPLinkSmartHomeProtocol.BLOCK_SIZE :
     ]
@@ -91,8 +92,10 @@ async def test_protocol_logging(mocker, caplog):
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})
     assert response == {"great": "success"}
-    assert "success" not in caplog.text
-
+    if log_level == logging.DEBUG:
+        assert "success" in caplog.text
+    else:
+        assert "success" not in caplog.text
 
 def test_encrypt():
     d = json.dumps({"foo": 1, "bar": 2})
