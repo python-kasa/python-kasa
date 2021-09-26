@@ -10,9 +10,9 @@ This project is a maintainer-made fork of [pyHS100](https://github.com/GadgetRea
 
 ## Getting started
 
-You can install the most recent release using pip. Until
+You can install the most recent release using pip:
 ```
-pip install python-kasa --pre
+pip install python-kasa
 ```
 
 Alternatively, you can clone this repository and use poetry to install the development version:

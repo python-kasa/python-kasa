@@ -39,25 +39,13 @@ git fetch upstream
 git rebase upstream/master
 ```
 
-5. Tag the release (add short changelog as a tag commit message), push the tag to git
+7. Tag the release (add short changelog as a tag commit message), push the tag to git
 
 ```bash
 git tag -a $NEW_RELEASE
 git push upstream $NEW_RELEASE
 ```
 
-7. Upload new version to pypi
-
-If not done already, create an API key for pypi (https://pypi.org/manage/account/token/) and configure it:
-```
-poetry config pypi-token.pypi <token>
-```
-
-To build & release:
-
-```bash
-poetry build
-poetry publish
-```
+All tags on master branch will trigger a new release on pypi.
 
 8. Click the "Draft a new release" button on github, select the new tag and copy & paste the changelog into the description.
