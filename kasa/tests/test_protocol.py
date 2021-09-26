@@ -97,6 +97,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
     else:
         assert "success" not in caplog.text
 
+
 def test_encrypt():
     d = json.dumps({"foo": 1, "bar": 2})
     encrypted = TPLinkSmartHomeProtocol.encrypt(d)
