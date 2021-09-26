@@ -28,7 +28,6 @@ class TPLinkSmartHomeProtocol:
     INITIALIZATION_VECTOR = 171
     DEFAULT_PORT = 9999
     DEFAULT_TIMEOUT = 5
-    BACKOFF_TIME = 2
     BLOCK_SIZE = 4
 
     def __init__(self, host: str) -> None:
@@ -140,12 +139,6 @@ class TPLinkSmartHomeProtocol:
                 )
             except Exception as ex:
                 await self.close()
-                if retry >= 1 and isinstance(ex, asyncio.TimeoutError):
-                    _LOGGER.debug(
-                        "Connection timeout, backing off for %s seconds",
-                        self.BACKOFF_TIME,
-                    )
-                    await asyncio.sleep(self.BACKOFF_TIME)
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up after %s retries", retry)
                     raise SmartDeviceException(
