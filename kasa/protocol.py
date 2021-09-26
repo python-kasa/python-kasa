@@ -110,7 +110,7 @@ class TPLinkSmartHomeProtocol:
     async def close(self):
         """Close the connection."""
         writer = self.writer
-        self._reset()
+        self.reader = self.writer = None
         if writer:
             writer.close()
             with contextlib.suppress(Exception):
@@ -118,10 +118,7 @@ class TPLinkSmartHomeProtocol:
 
     def _reset(self):
         """Clear any varibles that should not survive between loops."""
-        self.writer = None
-        self.reader = None
-        self.query_lock = None
-        self.loop = None
+        self.reader = self.writer = self.loop = self.query_lock = None
 
     async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
