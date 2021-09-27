@@ -1,13 +1,35 @@
 # Changelog
 
+## [0.4.0](https://github.com/python-kasa/python-kasa/tree/0.4.0) (2021-09-26)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev5...0.4.0)
+
+**Implemented enhancements:**
+
+- Fix lock being unexpectedly reset on close [\#218](https://github.com/python-kasa/python-kasa/pull/218) ([bdraco](https://github.com/bdraco))
+- Avoid calling pformat unless debug logging is enabled [\#217](https://github.com/python-kasa/python-kasa/pull/217) ([bdraco](https://github.com/bdraco))
+
+**Closed issues:**
+
+- Debug logging in protocol.py is the majority of the execution time [\#216](https://github.com/python-kasa/python-kasa/issues/216)
+
+**Merged pull requests:**
+
+- Add github workflow for pypi publishing [\#220](https://github.com/python-kasa/python-kasa/pull/220) ([rytilahti](https://github.com/rytilahti))
+- Add host information to protocol debug logs [\#219](https://github.com/python-kasa/python-kasa/pull/219) ([rytilahti](https://github.com/rytilahti))
+
 ## [0.4.0.dev5](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev5) (2021-09-24)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev4...0.4.0.dev5)
 
+**Implemented enhancements:**
+
+- Keep connection open and lock to prevent duplicate requests [\#213](https://github.com/python-kasa/python-kasa/pull/213) ([bdraco](https://github.com/bdraco))
+
 **Merged pull requests:**
 
+- Release 0.4.0.dev5 [\#215](https://github.com/python-kasa/python-kasa/pull/215) ([rytilahti](https://github.com/rytilahti))
 - Add KL130 fixture, initial lightstrip tests [\#214](https://github.com/python-kasa/python-kasa/pull/214) ([rytilahti](https://github.com/rytilahti))
-- Keep connection open and lock to prevent duplicate requests [\#213](https://github.com/python-kasa/python-kasa/pull/213) ([bdraco](https://github.com/bdraco))
 - Cleanup discovery & add tests [\#212](https://github.com/python-kasa/python-kasa/pull/212) ([rytilahti](https://github.com/rytilahti))
 
 ## [0.4.0.dev4](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev4) (2021-09-23)
