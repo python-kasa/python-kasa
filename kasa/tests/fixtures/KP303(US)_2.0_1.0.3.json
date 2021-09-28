@@ -1,0 +1,54 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "alias": "TP-LINK_Power Strip_BDF6",
+            "child_num": 3,
+            "children": [
+                {
+                    "alias": "Plug 1",
+                    "id": "800681855E0E9AEF096F4891B3DC88C71E59F42E00",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Plug 2",
+                    "id": "800681855E0E9AEF096F4891B3DC88C71E59F42E01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "Plug 3",
+                    "id": "800681855E0E9AEF096F4891B3DC88C71E59F42E02",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP303(US)",
+            "ntc_state": 0,
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -56,
+            "status": "new",
+            "sw_ver": "1.0.3 Build 201015 Rel.173920",
+            "updating": 0
+        }
+    }
+}
