@@ -62,6 +62,7 @@ CURRENT_CONSUMPTION_SCHEMA = Schema(
             "current_ma": Any(
                 All(float, Range(min=0)), int, None
             ),  # TODO can this be int?
+            "slot_id": Any(Coerce(int, Range(min=0)), None),
         },
         None,
     )
