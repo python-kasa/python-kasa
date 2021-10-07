@@ -148,6 +148,7 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 
 ### Light strips
 
+* KL400
 * KL430
 
 **Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests!**
