@@ -29,7 +29,7 @@ Options:
   --help  Show this message and exit.
 ```
 
-## perf_test
+## perftest
 
 * Runs several rounds of update cycles for the given list of addresses, and prints out statistics about the performance
 
