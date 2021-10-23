@@ -119,10 +119,13 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 * HS105
 * HS107
 * HS110
+* KP105
 * KP115
+* KP401
 
 ### Power Strips
 
+* EP40
 * HS300
 * KP303
 * KP400
@@ -135,11 +138,13 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 
 ### Bulbs
 
+* EP40
 * LB100
 * LB110
 * LB120
 * LB130
 * LB230
+* KL50
 * KL60
 * KL110
 * KL120
