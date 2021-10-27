@@ -1,6 +1,5 @@
-from typing import Dict, List
-
-from .rulemodule import Rule, RuleModule
+"""Implementation of the antitheft module."""
+from .rulemodule import RuleModule
 
 
 class Antitheft(RuleModule):
