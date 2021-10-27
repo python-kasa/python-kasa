@@ -1,8 +1,10 @@
 """Base class for all module implementations."""
 import collections
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from kasa import SmartDevice
+if TYPE_CHECKING:
+    from kasa import SmartDevice
 
 
 # TODO: This is used for query construcing

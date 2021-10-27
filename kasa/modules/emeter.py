@@ -1,6 +1,6 @@
 """Implementation of the emeter module."""
 from ..emeterstatus import EmeterStatus
-from .usagemodule import Usage
+from .usage import Usage
 
 
 class Emeter(Usage):
