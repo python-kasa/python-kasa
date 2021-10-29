@@ -85,9 +85,9 @@ async def test_discover_send(mocker):
     proto = _DiscoverProtocol()
     assert proto.discovery_packets == 3
     assert proto.target == ("255.255.255.255", 9999)
-    sendto = mocker.patch.object(proto, "transport")
+    transport = mocker.patch.object(proto, "transport")
     proto.do_discover()
-    assert sendto.sendto.call_count == proto.discovery_packets
+    assert transport.sendto.call_count == proto.discovery_packets
 
 
 async def test_discover_datagram_received(mocker, discovery_data):
@@ -105,3 +105,15 @@ async def test_discover_datagram_received(mocker, discovery_data):
     dev = proto.discovered_devices[addr]
     assert issubclass(dev.__class__, SmartDevice)
     assert dev.host == addr
+
+
+@pytest.mark.parametrize("msg, data", INVALIDS)
+async def test_discover_invalid_responses(msg, data, mocker):
+    """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
+    proto = _DiscoverProtocol()
+    mocker.patch("json.loads", return_value=data)
+    mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
+    mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
+
+    proto.datagram_received(data, ("127.0.0.1", 1234))
+    assert len(proto.discovered_devices) == 0

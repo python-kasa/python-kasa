@@ -73,7 +73,12 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         info = json.loads(TPLinkSmartHomeProtocol.decrypt(data))
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
-        device_class = Discover._get_device_class(info)
+        try:
+            device_class = Discover._get_device_class(info)
+        except SmartDeviceException as ex:
+            _LOGGER.debug("Unable to find device type from %s: %s", info, ex)
+            return
+
         device = device_class(ip)
         device.update_from_discover_info(info)
 
