@@ -323,7 +323,7 @@ class SmartDevice:
         for module in self.modules.values():
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
-            req = merge(req, module.query(q))
+            req = merge(req, module.query())
 
         self._last_update = await self.protocol.query(req)
         self._sys_info = self._last_update["system"]["get_sysinfo"]
