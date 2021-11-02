@@ -215,6 +215,10 @@ async def state(ctx, dev: SmartDevice):
         emeter_status = dev.emeter_realtime
         click.echo(f"\t{emeter_status}")
 
+    click.echo(click.style("\n\t== Supported modules ==", bold=True))
+    for module in dev.supported_modules:
+        click.echo(f"\t- {module}")
+
 
 @cli.command()
 @pass_dev

@@ -277,6 +277,14 @@ class SmartDevice:
 
     @property  # type: ignore
     @requires_update
+    def supported_modules(self) -> List[str]:
+        """Return a set of modules supported by the device."""
+        # TODO: this should rather be called `features`, but we don't want to break
+        #       the API now. Maybe just deprecate it and point the users to use this?
+        return list(self.modules.keys())
+
+    @property  # type: ignore
+    @requires_update
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
         return "ENE" in self.features
