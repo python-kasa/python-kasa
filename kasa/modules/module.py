@@ -42,6 +42,11 @@ class Module(ABC):
         """Return the module specific raw data from the last update."""
         return self._device._last_update[self._module]
 
+    @property
+    def is_supported(self) -> bool:
+        """Return whether the module is supported by the device."""
+        return "err_code" not in self.data
+
     def call(self, method, params=None):
         """Call the given method with the given parameters."""
         return self._device._query_helper(self._module, method, params)

@@ -215,9 +215,12 @@ async def state(ctx, dev: SmartDevice):
         emeter_status = dev.emeter_realtime
         click.echo(f"\t{emeter_status}")
 
-    click.echo(click.style("\n\t== Supported modules ==", bold=True))
-    for module in dev.supported_modules:
-        click.echo(f"\t- {module}")
+    click.echo(click.style("\n\t== Modules ==", bold=True))
+    for module in dev.modules.values():
+        if module.is_supported:
+            click.echo(click.style(f"\t+ {module}", fg="green"))
+        else:
+            click.echo(click.style(f"\t- {module}", fg="red"))
 
 
 @cli.command()
@@ -458,14 +461,14 @@ async def schedule(dev):
 
 @schedule.command(name="list")
 @pass_dev
-def _schedule_list(dev):
+@click.argument("type", default="schedule")
+def _schedule_list(dev, type):
     """Return the list of schedule actions for the given type."""
-    type_ = "schedule"
-    sched = dev.modules[type_]
+    sched = dev.modules[type]
     for rule in sched.rules:
         print(rule)
     else:
-        click.echo(f"No rules of type {type_}")
+        click.echo(f"No rules of type {type}")
 
 
 if __name__ == "__main__":
