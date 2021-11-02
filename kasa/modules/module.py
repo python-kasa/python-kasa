@@ -51,4 +51,4 @@ class Module(ABC):
         return self._device._create_request(self._module, query, params)
 
     def __repr__(self) -> str:
-        return f"<Module {self.__class__.__name__} ({self._module}) for {self._device.alias}>"
+        return f"<Module {self.__class__.__name__} ({self._module}) for {self._device.host}>"
