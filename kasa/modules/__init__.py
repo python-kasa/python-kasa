@@ -7,3 +7,4 @@ from .module import Module
 from .rulemodule import Rule, RuleModule
 from .schedule import Schedule
 from .time import Time
+from .usage import Usage

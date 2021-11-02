@@ -13,7 +13,7 @@ from kasa.smartdevice import (
 )
 from kasa.smartplug import SmartPlug
 
-from .modules import Antitheft, Countdown, Schedule, Time
+from .modules import Antitheft, Countdown, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,6 +84,7 @@ class SmartStrip(SmartDevice):
         self._device_type = DeviceType.Strip
         self.add_module("antitheft", Antitheft(self, "anti_theft"))
         self.add_module("schedule", Schedule(self, "schedule"))
+        self.add_module("usage", Usage(self, "schedule"))
         self.add_module("time", Time(self, "time"))
         self.add_module("countdown", Countdown(self, "countdown"))
 

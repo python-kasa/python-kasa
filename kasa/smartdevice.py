@@ -321,8 +321,9 @@ class SmartDevice:
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
         for module in self.modules.values():
-            _LOGGER.debug("Adding query from %s", module)
-            req.update(module.query())
+            q = module.query()
+            _LOGGER.debug("Adding query for %s: %s", module, q)
+            req = merge(req, module.query(q))
 
         self._last_update = await self.protocol.query(req)
         self._sys_info = self._last_update["system"]["get_sysinfo"]

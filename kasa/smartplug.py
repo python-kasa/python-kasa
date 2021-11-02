@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from kasa.modules import Antitheft, Cloud, Schedule, Time
+from kasa.modules import Antitheft, Cloud, Schedule, Time, Usage
 from kasa.smartdevice import DeviceType, SmartDevice, requires_update
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ class SmartPlug(SmartDevice):
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
         self.add_module("schedule", Schedule(self, "schedule"))
+        self.add_module("usage", Usage(self, "schedule"))
         self.add_module("antitheft", Antitheft(self, "anti_theft"))
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))

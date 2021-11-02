@@ -1,4 +1,4 @@
-"""Implmention for the countdown timer."""
+"""Implementation for the countdown timer."""
 from .rulemodule import RuleModule
 
 
