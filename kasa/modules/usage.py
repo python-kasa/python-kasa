@@ -12,7 +12,7 @@ class Usage(Module):
         year = datetime.now().year
         month = datetime.now().month
 
-        req = self.query_for_command(self._module, "get_realtime")
+        req = self.query_for_command("get_realtime")
         req = merge(
             req, self.query_for_command("get_daystat", {"year": year, "month": month})
         )
