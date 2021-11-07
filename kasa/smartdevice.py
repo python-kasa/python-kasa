@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
+from .modules import Emeter, Module
 from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -186,6 +187,7 @@ class SmartDevice:
     """
 
     TIME_SERVICE = "time"
+    emeter_type = "emeter"
 
     def __init__(self, host: str) -> None:
         """Create a new SmartDevice instance.
@@ -195,7 +197,6 @@ class SmartDevice:
         self.host = host
 
         self.protocol = TPLinkSmartHomeProtocol(host)
-        self.emeter_type = "emeter"
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate checks in
@@ -203,8 +204,20 @@ class SmartDevice:
         #       are not accessed incorrectly.
         self._last_update: Any = None
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
+        self.modules: Dict[str, Any] = {}
 
         self.children: List["SmartDevice"] = []
+
+    def add_module(self, name: str, module: Module):
+        """Register a module."""
+        if name in self.modules:
+            _LOGGER.debug("Module %s already registered, ignoring..." % name)
+            return
+
+        assert name not in self.modules
+
+        _LOGGER.debug("Adding module %s", module)
+        self.modules[name] = module
 
     def _create_request(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
@@ -270,6 +283,14 @@ class SmartDevice:
 
     @property  # type: ignore
     @requires_update
+    def supported_modules(self) -> List[str]:
+        """Return a set of modules supported by the device."""
+        # TODO: this should rather be called `features`, but we don't want to break
+        #       the API now. Maybe just deprecate it and point the users to use this?
+        return list(self.modules.keys())
+
+    @property  # type: ignore
+    @requires_update
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
         return "ENE" in self.features
@@ -303,7 +324,12 @@ class SmartDevice:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
             )
-            req.update(self._create_emeter_request())
+            self.add_module("emeter", Emeter(self, self.emeter_type))
+
+        for module in self.modules.values():
+            q = module.query()
+            _LOGGER.debug("Adding query for %s: %s", module, q)
+            req = merge(req, module.query())
 
         self._last_update = await self.protocol.query(req)
         self._sys_info = self._last_update["system"]["get_sysinfo"]
@@ -336,6 +362,18 @@ class SmartDevice:
     async def set_alias(self, alias: str) -> None:
         """Set the device name (alias)."""
         return await self._query_helper("system", "set_dev_alias", {"alias": alias})
+
+    @property  # type: ignore
+    @requires_update
+    def time(self) -> datetime:
+        """Return current time from the device."""
+        return self.modules["time"].time
+
+    @property  # type: ignore
+    @requires_update
+    def timezone(self) -> Dict:
+        """Return the current timezone."""
+        return self.modules["time"].timezone
 
     async def get_time(self) -> Optional[datetime]:
         """Return current time from the device, if available."""
@@ -435,7 +473,7 @@ class SmartDevice:
     def emeter_realtime(self) -> EmeterStatus:
         """Return current energy readings."""
         self._verify_emeter()
-        return EmeterStatus(self._last_update[self.emeter_type]["get_realtime"])
+        return EmeterStatus(self.modules["emeter"].realtime)
 
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
@@ -555,7 +593,7 @@ class SmartDevice:
     async def erase_emeter_stats(self) -> Dict:
         """Erase energy meter statistics."""
         self._verify_emeter()
-        return await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
+        return await self.modules["emeter"].erase_stats()
 
     @requires_update
     async def current_consumption(self) -> float:
