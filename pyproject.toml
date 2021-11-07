@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-kasa"
-version = "0.4.2"
+version = "0.4.1"
 description = "Python API for TP-Link Kasa Smarthome devices"
 license = "GPL-3.0-or-later"
 authors = ["Your Name <you@example.com>"]
@@ -18,7 +18,8 @@ kasa = "kasa.cli:cli"
 python = "^3.7"
 anyio = "*"  # see https://github.com/python-trio/asyncclick/issues/18
 importlib-metadata = "*"
-asyncclick = ">=8"
+asyncclick = ">=7"
+pydantic = "^1"
 
 # required only for docs
 sphinx = { version = "^3", optional = true }
