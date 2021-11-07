@@ -19,6 +19,7 @@ python = "^3.7"
 anyio = "*"  # see https://github.com/python-trio/asyncclick/issues/18
 importlib-metadata = "*"
 asyncclick = ">=7"
+pydantic = "^1"
 
 # required only for docs
 sphinx = { version = "^3", optional = true }
