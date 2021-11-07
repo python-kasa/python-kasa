@@ -13,6 +13,8 @@ from kasa.smartdevice import (
 )
 from kasa.smartplug import SmartPlug
 
+from .modules import Antitheft, Countdown, Schedule, Time, Usage
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -80,6 +82,11 @@ class SmartStrip(SmartDevice):
         super().__init__(host=host)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
+        self.add_module("antitheft", Antitheft(self, "anti_theft"))
+        self.add_module("schedule", Schedule(self, "schedule"))
+        self.add_module("usage", Usage(self, "schedule"))
+        self.add_module("time", Time(self, "time"))
+        self.add_module("countdown", Countdown(self, "countdown"))
 
     @property  # type: ignore
     @requires_update
@@ -205,13 +212,13 @@ class SmartStrip(SmartDevice):
     @requires_update
     def emeter_this_month(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        return sum([plug.emeter_this_month for plug in self.children])
+        return sum(plug.emeter_this_month for plug in self.children)
 
     @property  # type: ignore
     @requires_update
     def emeter_today(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        return sum([plug.emeter_today for plug in self.children])
+        return sum(plug.emeter_today for plug in self.children)
 
     @property  # type: ignore
     @requires_update

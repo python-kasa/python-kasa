@@ -199,7 +199,7 @@ async def state(ctx, dev: SmartDevice):
         click.echo()
 
     click.echo(click.style("\t== Generic information ==", bold=True))
-    click.echo(f"\tTime:         {await dev.get_time()}")
+    click.echo(f"\tTime:         {dev.time} (tz: {dev.timezone}")
     click.echo(f"\tHardware:     {dev.hw_info['hw_ver']}")
     click.echo(f"\tSoftware:     {dev.hw_info['sw_ver']}")
     click.echo(f"\tMAC (rssi):   {dev.mac} ({dev.rssi})")
@@ -214,6 +214,13 @@ async def state(ctx, dev: SmartDevice):
         click.echo(click.style("\n\t== Current State ==", bold=True))
         emeter_status = dev.emeter_realtime
         click.echo(f"\t{emeter_status}")
+
+    click.echo(click.style("\n\t== Modules ==", bold=True))
+    for module in dev.modules.values():
+        if module.is_supported:
+            click.echo(click.style(f"\t+ {module}", fg="green"))
+        else:
+            click.echo(click.style(f"\t- {module}", fg="red"))
 
 
 @cli.command()
@@ -388,7 +395,7 @@ async def led(dev, state):
 @pass_dev
 async def time(dev):
     """Get the device time."""
-    res = await dev.get_time()
+    res = dev.time
     click.echo(f"Current time: {res}")
     return res
 
@@ -444,6 +451,24 @@ async def reboot(plug, delay):
     """Reboot the device."""
     click.echo("Rebooting the device..")
     return await plug.reboot(delay)
+
+
+@cli.group()
+@pass_dev
+async def schedule(dev):
+    """Scheduling commands."""
+
+
+@schedule.command(name="list")
+@pass_dev
+@click.argument("type", default="schedule")
+def _schedule_list(dev, type):
+    """Return the list of schedule actions for the given type."""
+    sched = dev.modules[type]
+    for rule in sched.rules:
+        print(rule)
+    else:
+        click.echo(f"No rules of type {type}")
 
 
 if __name__ == "__main__":
