@@ -233,7 +233,7 @@ class Discover:
         return protocol.discovered_devices
 
     @staticmethod
-    async def discover_single(host: str) -> SmartDevice:
+    async def discover_single(self, host: str) -> SmartDevice:
         """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
