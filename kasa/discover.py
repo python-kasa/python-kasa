@@ -9,6 +9,7 @@ from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, ca
 
 from kasa.auth import Auth
 from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.klapprotocol import TPLinkKLAP
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
@@ -233,20 +234,28 @@ class Discover:
         return protocol.discovered_devices
 
     @staticmethod
-    async def discover_single(self, host: str) -> SmartDevice:
+    async def discover_single(host: str, authentication=None) -> SmartDevice:
         """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol(host)
+
+        if authentication is None:
+            protocol = TPLinkSmartHomeProtocol(host)
+        else:
+            protocol = TPLinkKLAP(host, authentication)
+        # protocol = TPLinkSmartHomeProtocol(host)
 
         info = await protocol.query(Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
         if device_class is not None:
-            dev = device_class(host)
+            if authentication is None:
+               dev = device_class(host)
+            else:
+                dev = device_class(host, authentication)
             await dev.update()
             return dev
 
