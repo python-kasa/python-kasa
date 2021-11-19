@@ -482,6 +482,7 @@ class SmartDevice:
 
     def _create_emeter_request(self, year: int = None, month: int = None):
         """Create a Internal method for building a request for all emeter statistics at once."""
+        # TODO: this is currently only here for smartstrip plug support, move it there?
         if year is None:
             year = datetime.now().year
         if month is None:
@@ -506,28 +507,14 @@ class SmartDevice:
     def emeter_today(self) -> Optional[float]:
         """Return today's energy consumption in kWh."""
         self._verify_emeter()
-        raw_data = self._last_update[self.emeter_type]["get_daystat"]["day_list"]
-        data = self._emeter_convert_emeter_data(raw_data)
-        today = datetime.now().day
-
-        if today in data:
-            return data[today]
-
-        return None
+        return self.modules["emeter"].emeter_today
 
     @property  # type: ignore
     @requires_update
     def emeter_this_month(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
         self._verify_emeter()
-        raw_data = self._last_update[self.emeter_type]["get_monthstat"]["month_list"]
-        data = self._emeter_convert_emeter_data(raw_data)
-        current_month = datetime.now().month
-
-        if current_month in data:
-            return data[current_month]
-
-        return None
+        return self.modules["emeter"].emeter_this_month
 
     def _emeter_convert_emeter_data(self, data, kwh=True) -> Dict:
         """Return emeter information keyed with the day/month.."""
@@ -560,16 +547,7 @@ class SmartDevice:
         :return: mapping of day of month to value
         """
         self._verify_emeter()
-        if year is None:
-            year = datetime.now().year
-        if month is None:
-            month = datetime.now().month
-
-        response = await self._query_helper(
-            self.emeter_type, "get_daystat", {"month": month, "year": year}
-        )
-
-        return self._emeter_convert_emeter_data(response["day_list"], kwh)
+        return await self.modules["emeter"].get_daystat(year=year, month=month, kwh=kwh)
 
     @requires_update
     async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
@@ -580,14 +558,7 @@ class SmartDevice:
         :return: dict: mapping of month to value
         """
         self._verify_emeter()
-        if year is None:
-            year = datetime.now().year
-
-        response = await self._query_helper(
-            self.emeter_type, "get_monthstat", {"year": year}
-        )
-
-        return self._emeter_convert_emeter_data(response["month_list"], kwh)
+        return await self.modules["emeter"].get_monthstat(year=year, kwh=kwh)
 
     @requires_update
     async def erase_emeter_stats(self) -> Dict:
@@ -599,7 +570,7 @@ class SmartDevice:
     async def current_consumption(self) -> float:
         """Get the current power consumption in Watt."""
         self._verify_emeter()
-        response = EmeterStatus(await self.get_emeter_realtime())
+        response = self.emeter_realtime
         return float(response["power"])
 
     async def reboot(self, delay: int = 1) -> None:
