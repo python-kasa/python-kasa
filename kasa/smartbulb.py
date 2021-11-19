@@ -28,6 +28,7 @@ TPLINK_KELVIN = {
     "KB130": ColorTempRange(2500, 9000),
     "KL130": ColorTempRange(2500, 9000),
     "KL125": ColorTempRange(2500, 6500),
+    "KL135": ColorTempRange(2500, 6500),
     r"KL120\(EU\)": ColorTempRange(2700, 6500),
     r"KL120\(US\)": ColorTempRange(2700, 5000),
     r"KL430": ColorTempRange(2500, 9000),
