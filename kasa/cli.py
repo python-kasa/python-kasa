@@ -295,7 +295,6 @@ async def emeter(dev: SmartDevice, year, month, erase):
         usage_data = await dev.get_emeter_daily(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        usage_data = {}
         emeter_status = dev.emeter_realtime
 
         click.echo("Current: %s A" % emeter_status["current"])
@@ -305,6 +304,44 @@ async def emeter(dev: SmartDevice, year, month, erase):
 
         click.echo("Today: %s kWh" % dev.emeter_today)
         click.echo("This month: %s kWh" % dev.emeter_this_month)
+
+        return
+
+    # output any detailed usage data
+    for index, usage in usage_data.items():
+        click.echo(f"{index}, {usage}")
+
+
+@cli.command()
+@pass_dev
+@click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
+@click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
+@click.option("--erase", is_flag=True)
+async def usage(dev: SmartDevice, year, month, erase):
+    """Query usage for historical consumption.
+
+    Daily and monthly data provided in CSV format.
+    """
+    click.echo(click.style("== Usage ==", bold=True))
+    usage = dev.modules["usage"]
+
+    if erase:
+        click.echo("Erasing usage statistics..")
+        click.echo(await usage.erase_stats())
+        return
+
+    if year:
+        click.echo(f"== For year {year.year} ==")
+        click.echo("Month, usage (minutes)")
+        usage_data = await usage.get_monthstat(year.year)
+    elif month:
+        click.echo(f"== For month {month.month} of {month.year} ==")
+        click.echo("Day, usage (minutes)")
+        usage_data = await usage.get_daystat(year=month.year, month=month.month)
+    else:
+        # Call with no argument outputs summary data and returns
+        click.echo("Today: %s minutes" % usage.usage_today)
+        click.echo("This month: %s minutes" % usage.usage_this_month)
 
         return
 
