@@ -73,5 +73,5 @@ class SmartPlug(SmartDevice):
     @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information."""
-        info = {"LED state": self.led, "On since": self.on_since}
+        info = {"led_state": self.led, "on_since": str(self.on_since)}
         return info

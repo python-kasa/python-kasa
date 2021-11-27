@@ -145,6 +145,6 @@ class SmartDimmer(SmartPlug):
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information."""
         info = super().state_information
-        info["Brightness"] = self.brightness
+        info["brightness"] = self.brightness
 
         return info

@@ -143,9 +143,9 @@ class SmartStrip(SmartDevice):
         :return: Strip information dict, keys in user-presentable form.
         """
         return {
-            "LED state": self.led,
-            "Childs count": len(self.children),
-            "On since": self.on_since,
+            "led_state": self.led,
+            "childs_count": len(self.children),
+            "on_since": str(self.on_since),
         }
 
     async def current_consumption(self) -> float:
@@ -205,13 +205,13 @@ class SmartStrip(SmartDevice):
     @requires_update
     def emeter_this_month(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        return sum([plug.emeter_this_month for plug in self.children])
+        return sum(plug.emeter_this_month for plug in self.children)
 
     @property  # type: ignore
     @requires_update
     def emeter_today(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        return sum([plug.emeter_today for plug in self.children])
+        return sum(plug.emeter_today for plug in self.children)
 
     @property  # type: ignore
     @requires_update

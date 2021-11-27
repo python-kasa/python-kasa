@@ -70,6 +70,6 @@ class SmartLightStrip(SmartBulb):
         """Return strip specific state information."""
         info = super().state_information
 
-        info["Length"] = self.length
+        info["length"] = self.length
 
         return info

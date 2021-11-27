@@ -339,14 +339,14 @@ class SmartBulb(SmartDevice):
     def state_information(self) -> Dict[str, Any]:
         """Return bulb-specific state information."""
         info: Dict[str, Any] = {
-            "Brightness": self.brightness,
-            "Is dimmable": self.is_dimmable,
+            "brightness": self.brightness,
+            "is_dimmable": self.is_dimmable,
         }
         if self.is_variable_color_temp:
-            info["Color temperature"] = self.color_temp
-            info["Valid temperature range"] = self.valid_temperature_range
+            info["color_temperature"] = self.color_temp
+            info["valid_temperature_range"] = self.valid_temperature_range
         if self.is_color:
-            info["HSV"] = self.hsv
+            info["hsv"] = self.hsv
 
         return info
 
