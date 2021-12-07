@@ -70,9 +70,14 @@ class RuleModule(Module):
             _LOGGER.error("Unable to read rule list: %s (data: %s)", ex, self.data)
             return []
 
+    @property
+    def is_enabled(self) -> bool:
+        """Return True if the service is enabled."""
+        return bool(self.data["get_rules"]["enable"])
+
     async def set_enabled(self, state: bool):
         """Enable or disable the service."""
-        return await self.call("set_overall_enable", state)
+        return await self.call("set_overall_enable", {"enable": int(state)})
 
     async def delete_rule(self, rule: Rule):
         """Delete the given rule."""
