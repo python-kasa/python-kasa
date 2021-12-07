@@ -62,6 +62,7 @@ CURRENT_CONSUMPTION_SCHEMA = Schema(
             "current_ma": Any(
                 All(float, Range(min=0)), int, None
             ),  # TODO can this be int?
+            "slot_id": Any(Coerce(int, Range(min=0)), None),
         },
         None,
     )
@@ -83,9 +84,19 @@ PLUG_SCHEMA = Schema(
         "icon_hash": str,
         "led_off": check_int_bool,
         "latitude": Any(All(float, Range(min=-90, max=90)), 0, None),
-        "latitude_i": Any(All(float, Range(min=-90, max=90)), 0, None),
+        "latitude_i": Any(
+            All(int, Range(min=-900000, max=900000)),
+            All(float, Range(min=-900000, max=900000)),
+            0,
+            None,
+        ),
         "longitude": Any(All(float, Range(min=-180, max=180)), 0, None),
-        "longitude_i": Any(All(float, Range(min=-180, max=180)), 0, None),
+        "longitude_i": Any(
+            All(int, Range(min=-18000000, max=18000000)),
+            All(float, Range(min=-18000000, max=18000000)),
+            0,
+            None,
+        ),
         "mac": check_mac,
         "model": str,
         "oemId": str,
@@ -117,17 +128,17 @@ LIGHT_STATE_SCHEMA = Schema(
     {
         "brightness": All(int, Range(min=0, max=100)),
         "color_temp": int,
-        "hue": All(int, Range(min=0, max=255)),
+        "hue": All(int, Range(min=0, max=360)),
         "mode": str,
         "on_off": check_int_bool,
-        "saturation": All(int, Range(min=0, max=255)),
+        "saturation": All(int, Range(min=0, max=100)),
         "dft_on_state": Optional(
             {
                 "brightness": All(int, Range(min=0, max=100)),
-                "color_temp": All(int, Range(min=2000, max=9000)),
-                "hue": All(int, Range(min=0, max=255)),
+                "color_temp": All(int, Range(min=0, max=9000)),
+                "hue": All(int, Range(min=0, max=360)),
                 "mode": str,
-                "saturation": All(int, Range(min=0, max=255)),
+                "saturation": All(int, Range(min=0, max=100)),
             }
         ),
         "err_code": int,
@@ -150,9 +161,9 @@ BULB_SCHEMA = PLUG_SCHEMA.extend(
             {
                 "brightness": All(int, Range(min=0, max=100)),
                 "color_temp": int,
-                "hue": All(int, Range(min=0, max=255)),
+                "hue": All(int, Range(min=0, max=360)),
                 "index": int,
-                "saturation": All(int, Range(min=0, max=255)),
+                "saturation": All(int, Range(min=0, max=100)),
             }
         ],
     }
@@ -252,9 +263,32 @@ def success(res):
     return res
 
 
+# plugs and bulbs use a different module for time information,
+# so we define the contents here to avoid repeating ourselves
+TIME_MODULE = {
+    "get_time": {
+        "year": 2017,
+        "month": 1,
+        "mday": 2,
+        "hour": 3,
+        "min": 4,
+        "sec": 5,
+    },
+    "get_timezone": {
+        "zone_str": "test",
+        "dst_offset": -1,
+        "index": 12,
+        "tz_str": "test2",
+    },
+    "set_timezone": None,
+}
+
+
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):
         self.discovery_data = info
+        self.writer = None
+        self.reader = None
         proto = FakeTransportProtocol.baseproto
 
         for target in info:
@@ -265,7 +299,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
             for etype in ["get_realtime", "get_daystat", "get_monthstat"]:
-                if etype in info[module]:  # if the fixture has the data, use it
+                if (
+                    module in info and etype in info[module]
+                ):  # if the fixture has the data, use it
                     # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
                     proto[module][etype] = info[module][etype]
                 else:  # otherwise fall back to the static one
@@ -391,23 +427,11 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             "set_light_state": transition_light_state,
             "get_light_state": light_state,
         },
-        "time": {
-            "get_time": {
-                "year": 2017,
-                "month": 1,
-                "mday": 2,
-                "hour": 3,
-                "min": 4,
-                "sec": 5,
-            },
-            "get_timezone": {
-                "zone_str": "test",
-                "dst_offset": -1,
-                "index": 12,
-                "tz_str": "test2",
-            },
-            "set_timezone": None,
+        "smartlife.iot.common.system": {
+            "set_dev_alias": set_alias,
         },
+        "time": TIME_MODULE,
+        "smartlife.iot.common.timesetting": TIME_MODULE,
         # HS220 brightness, different setter and getter
         "smartlife.iot.dimmer": {
             "set_brightness": set_hs220_brightness,

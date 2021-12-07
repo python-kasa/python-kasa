@@ -4,6 +4,7 @@ import json
 import os
 from os.path import basename
 from pathlib import Path, PurePath
+from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
@@ -24,20 +25,42 @@ SUPPORTED_DEVICES = glob.glob(
 )
 
 
-LIGHT_STRIPS = {"KL430"}
-BULBS = {"KL60", "LB100", "LB120", "LB130", "KL120", "KL130", *LIGHT_STRIPS}
-VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL130", "KL430", *LIGHT_STRIPS}
-COLOR_BULBS = {"LB130", "KL130", *LIGHT_STRIPS}
+LIGHT_STRIPS = {"KL400", "KL430"}
+VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL125", "KL130", "KL135", "KL430"}
+COLOR_BULBS = {"LB130", "KL125", "KL130", "KL135", *LIGHT_STRIPS}
+BULBS = {
+    "KL50",
+    "KL60",
+    "LB100",
+    "LB110",
+    "KL110",
+    *VARIABLE_TEMP,
+    *COLOR_BULBS,
+    *LIGHT_STRIPS,
+}
 
 
-PLUGS = {"HS100", "HS103", "HS105", "HS110", "HS200", "HS210"}
-STRIPS = {"HS107", "HS300", "KP303", "KP400"}
+PLUGS = {
+    "HS100",
+    "HS103",
+    "HS105",
+    "HS110",
+    "HS200",
+    "HS210",
+    "EP10",
+    "KP115",
+    "KP105",
+    "KP401",
+}
+STRIPS = {"HS107", "HS300", "KP303", "KP400", "EP40"}
 DIMMERS = {"HS220"}
 
 DIMMABLE = {*BULBS, *DIMMERS}
-WITH_EMETER = {"HS110", "HS300", *BULBS, *STRIPS}
+WITH_EMETER = {"HS110", "HS300", "KP115", *BULBS}
 
 ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
+
+IP_MODEL_CACHE: Dict[str, str] = {}
 
 
 def filter_model(desc, filter):
@@ -53,8 +76,6 @@ def filter_model(desc, filter):
 
 
 def parametrize(desc, devices, ids=None):
-    # if ids is None:
-    #    ids = ["on", "off"]
     return pytest.mark.parametrize(
         "dev", filter_model(desc, devices), indirect=True, ids=ids
     )
@@ -63,32 +84,11 @@ def parametrize(desc, devices, ids=None):
 has_emeter = parametrize("has emeter", WITH_EMETER)
 no_emeter = parametrize("no emeter", ALL_DEVICES - WITH_EMETER)
 
-
-def name_for_filename(x):
-    from os.path import basename
-
-    return basename(x)
-
-
-bulb = parametrize("bulbs", BULBS, ids=name_for_filename)
-plug = parametrize("plugs", PLUGS, ids=name_for_filename)
-strip = parametrize("strips", STRIPS, ids=name_for_filename)
-dimmer = parametrize("dimmers", DIMMERS, ids=name_for_filename)
-lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=name_for_filename)
-
-# This ensures that every single file inside fixtures/ is being placed in some category
-categorized_fixtures = set(
-    dimmer.args[1] + strip.args[1] + plug.args[1] + bulb.args[1] + lightstrip.args[1]
-)
-diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
-if diff:
-    for file in diff:
-        print(
-            "No category for file %s, add to the corresponding set (BULBS, PLUGS, ..)"
-            % file
-        )
-    raise Exception("Missing category for %s" % diff)
-
+bulb = parametrize("bulbs", BULBS, ids=basename)
+plug = parametrize("plugs", PLUGS, ids=basename)
+strip = parametrize("strips", STRIPS, ids=basename)
+dimmer = parametrize("dimmers", DIMMERS, ids=basename)
+lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=basename)
 
 # bulb types
 dimmable = parametrize("dimmable", DIMMABLE)
@@ -97,6 +97,28 @@ variable_temp = parametrize("variable color temp", VARIABLE_TEMP)
 non_variable_temp = parametrize("non-variable color temp", BULBS - VARIABLE_TEMP)
 color_bulb = parametrize("color bulbs", COLOR_BULBS)
 non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
+
+
+def check_categories():
+    """Check that every fixture file is categorized."""
+    categorized_fixtures = set(
+        dimmer.args[1]
+        + strip.args[1]
+        + plug.args[1]
+        + bulb.args[1]
+        + lightstrip.args[1]
+    )
+    diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
+    if diff:
+        for file in diff:
+            print(
+                "No category for file %s, add to the corresponding set (BULBS, PLUGS, ..)"
+                % file
+            )
+        raise Exception("Missing category for %s" % diff)
+
+
+check_categories()
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
@@ -138,23 +160,39 @@ def device_for_file(model):
     raise Exception("Unable to find type for %s", model)
 
 
-def get_device_for_file(file):
+async def _update_and_close(d):
+    await d.update()
+    await d.protocol.close()
+    return d
+
+
+async def _discover_update_and_close(ip):
+    d = await Discover.discover_single(ip)
+    return await _update_and_close(d)
+
+
+async def get_device_for_file(file):
     # if the wanted file is not an absolute path, prepend the fixtures directory
     p = Path(file)
     if not p.is_absolute():
         p = Path(__file__).parent / "fixtures" / file
 
-    with open(p) as f:
-        sysinfo = json.load(f)
-        model = basename(file)
-        p = device_for_file(model)(host="123.123.123.123")
-        p.protocol = FakeTransportProtocol(sysinfo)
-        asyncio.run(p.update())
-        return p
+    def load_file():
+        with open(p) as f:
+            return json.load(f)
+
+    loop = asyncio.get_running_loop()
+    sysinfo = await loop.run_in_executor(None, load_file)
+
+    model = basename(file)
+    d = device_for_file(model)(host="127.0.0.123")
+    d.protocol = FakeTransportProtocol(sysinfo)
+    await _update_and_close(d)
+    return d
 
 
 @pytest.fixture(params=SUPPORTED_DEVICES)
-def dev(request):
+async def dev(request):
     """Device fixture.
 
     Provides a device (given --ip) or parametrized fixture for the supported devices.
@@ -164,25 +202,47 @@ def dev(request):
 
     ip = request.config.getoption("--ip")
     if ip:
-        d = asyncio.run(Discover.discover_single(ip))
-        asyncio.run(d.update())
-        if d.model in file:
-            return d
-        raise Exception("Unable to find type for %s" % ip)
+        model = IP_MODEL_CACHE.get(ip)
+        d = None
+        if not model:
+            d = await _discover_update_and_close(ip)
+            IP_MODEL_CACHE[ip] = model = d.model
+        if model not in file:
+            pytest.skip(f"skipping file {file}")
+        return d if d else await _discover_update_and_close(ip)
 
-    return get_device_for_file(file)
+    return await get_device_for_file(file)
+
+
+@pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
+def discovery_data(request):
+    """Return raw discovery file contents as JSON. Used for discovery tests."""
+    file = request.param
+    p = Path(file)
+    if not p.is_absolute():
+        p = Path(__file__).parent / "fixtures" / file
+
+    with open(p) as f:
+        return json.load(f)
 
 
 def pytest_addoption(parser):
-    parser.addoption("--ip", action="store", default=None, help="run against device")
+    parser.addoption(
+        "--ip", action="store", default=None, help="run against device on given ip"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--ip"):
         print("Testing against fixtures.")
-        return
     else:
         print("Running against ip %s" % config.getoption("--ip"))
+        requires_dummy = pytest.mark.skip(
+            reason="test requires to be run against dummy data"
+        )
+        for item in items:
+            if "requires_dummy" in item.keywords:
+                item.add_marker(requires_dummy)
 
 
 # allow mocks to be awaited

@@ -1,0 +1,31 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Plug",
+            "dev_name": "Smart Wi-Fi Plug Lite",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.1",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS103(US)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -48,
+            "status": "new",
+            "sw_ver": "1.1.4 Build 210409 Rel.113427",
+            "updating": 0
+        }
+    }
+}

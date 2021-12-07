@@ -5,7 +5,7 @@ import hashlib
 import json
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
+from typing import Awaitable, Callable, Dict, Optional, Type, cast
 
 from kasa.auth import Auth
 from kasa.protocol import TPLinkSmartHomeProtocol
@@ -276,7 +276,7 @@ class Discover:
 
             return SmartBulb
 
-        raise SmartDeviceException("Unknown device type: %s", type_)
+        raise SmartDeviceException("Unknown device type: %s" % type_)
 
     @staticmethod
     def _get_new_device_class(info: dict) -> Type[SmartDevice]:

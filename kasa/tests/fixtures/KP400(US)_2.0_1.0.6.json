@@ -1,0 +1,45 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "alias": "TP-LINK_Smart Plug_DC2A",
+            "child_num": 2,
+            "children": [
+                {
+                    "alias": "Anc ",
+                    "id": "8006B8E953CC4149E2B13AA27E0D18EF1DCFBF3400",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 313,
+                    "state": 1
+                },
+                {
+                    "alias": "Plug 2",
+                    "id": "8006B8E953CC4149E2B13AA27E0D18EF1DCFBF3401",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 313,
+                    "state": 1
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP400(US)",
+            "ntc_state": 0,
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -46,
+            "status": "new",
+            "sw_ver": "1.0.6 Build 200821 Rel.090909",
+            "updating": 0
+        }
+    }
+}

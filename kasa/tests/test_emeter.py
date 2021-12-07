@@ -1,6 +1,6 @@
 import pytest
 
-from kasa import SmartDeviceException
+from kasa import EmeterStatus, SmartDeviceException
 
 from .conftest import has_emeter, no_emeter, pytestmark
 from .newfakes import CURRENT_CONSUMPTION_SCHEMA
@@ -22,9 +22,6 @@ async def test_no_emeter(dev):
 
 @has_emeter
 async def test_get_emeter_realtime(dev):
-    if dev.is_strip:
-        pytest.skip("Disabled for strips temporarily")
-
     assert dev.has_emeter
 
     current_emeter = await dev.get_emeter_realtime()
@@ -32,10 +29,8 @@ async def test_get_emeter_realtime(dev):
 
 
 @has_emeter
+@pytest.mark.requires_dummy
 async def test_get_emeter_daily(dev):
-    if dev.is_strip:
-        pytest.skip("Disabled for strips temporarily")
-
     assert dev.has_emeter
 
     assert await dev.get_emeter_daily(year=1900, month=1) == {}
@@ -54,10 +49,8 @@ async def test_get_emeter_daily(dev):
 
 
 @has_emeter
+@pytest.mark.requires_dummy
 async def test_get_emeter_monthly(dev):
-    if dev.is_strip:
-        pytest.skip("Disabled for strips temporarily")
-
     assert dev.has_emeter
 
     assert await dev.get_emeter_monthly(year=1900) == {}
@@ -77,9 +70,6 @@ async def test_get_emeter_monthly(dev):
 
 @has_emeter
 async def test_emeter_status(dev):
-    if dev.is_strip:
-        pytest.skip("Disabled for strips temporarily")
-
     assert dev.has_emeter
 
     d = await dev.get_emeter_realtime()
@@ -89,7 +79,7 @@ async def test_emeter_status(dev):
 
     assert d["power_mw"] == d["power"] * 1000
     # bulbs have only power according to tplink simulator.
-    if not dev.is_bulb:
+    if not dev.is_bulb and not dev.is_light_strip:
         assert d["voltage_mv"] == d["voltage"] * 1000
 
         assert d["current_ma"] == d["current"] * 1000
@@ -106,12 +96,23 @@ async def test_erase_emeter_stats(dev):
 
 @has_emeter
 async def test_current_consumption(dev):
-    if dev.is_strip:
-        pytest.skip("Disabled for strips temporarily")
-
     if dev.has_emeter:
         x = await dev.current_consumption()
         assert isinstance(x, float)
         assert x >= 0.0
     else:
         assert await dev.current_consumption() is None
+
+
+async def test_emeterstatus_missing_current():
+    """KL125 does not report 'current' for emeter."""
+    regular = EmeterStatus(
+        {"err_code": 0, "power_mw": 0, "total_wh": 13, "current_ma": 123}
+    )
+    assert regular["current"] == 0.123
+
+    with pytest.raises(KeyError):
+        regular["invalid_key"]
+
+    missing_current = EmeterStatus({"err_code": 0, "power_mw": 0, "total_wh": 13})
+    assert missing_current["current"] is None

@@ -1,0 +1,89 @@
+{
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 0
+        }
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_light_state": {
+            "dft_on_state": {
+                "brightness": 30,
+                "color_temp": 0,
+                "hue": 240,
+                "mode": "normal",
+                "saturation": 100
+            },
+            "err_code": 0,
+            "on_off": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Bulb2",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Smart Wi-Fi LED Bulb with Color Changing",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "heapsize": 305252,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 30,
+                    "color_temp": 0,
+                    "hue": 240,
+                    "mode": "normal",
+                    "saturation": 100
+                },
+                "on_off": 0
+            },
+            "mic_mac": "000000000000",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL130(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [
+                {
+                    "brightness": 50,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 75
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 120,
+                    "index": 2,
+                    "saturation": 75
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 240,
+                    "index": 3,
+                    "saturation": 75
+                }
+            ],
+            "rssi": -52,
+            "sw_ver": "1.8.11 Build 191113 Rel.105336"
+        }
+    }
+}

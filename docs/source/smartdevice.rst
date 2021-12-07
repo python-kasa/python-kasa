@@ -40,6 +40,10 @@ Refer to device type specific classes for more examples:
 * :class:`SmartDimmer`
 * :class:`SmartLightStrip`
 
+
+API documentation
+~~~~~~~~~~~~~~~~~
+
 .. autoclass:: kasa.SmartDevice
     :members:
     :undoc-members:

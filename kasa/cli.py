@@ -1,7 +1,5 @@
 """python-kasa cli tool."""
-import json
 import logging
-import re
 from pprint import pformat as pf
 from typing import cast
 
@@ -111,6 +109,8 @@ async def cli(
         else:
             click.echo("Unable to detect type, use --strip or --bulb or --plug!")
             return
+
+        await dev.update()
         ctx.obj = dev
 
     if ctx.invoked_subcommand is None:
@@ -133,6 +133,8 @@ async def scan(dev):
     for dev in devs:
         click.echo(f"\t {dev}")
 
+    return devs
+
 
 @wifi.command()
 @click.argument("ssid")
@@ -147,48 +149,7 @@ async def join(dev: SmartDevice, ssid, password, keytype):
         f"Response: {res} - if the device is not able to join the network, it will revert back to its previous state."
     )
 
-
-@cli.command()
-@click.option("--scrub/--no-scrub", default=True)
-@click.pass_context
-async def dump_discover(ctx, scrub):
-    """Dump discovery information.
-
-    Useful for dumping into a file to be added to the test suite.
-    """
-    target = ctx.parent.params["target"]
-    keys_to_scrub = [
-        "deviceId",
-        "fwId",
-        "hwId",
-        "oemId",
-        "mac",
-        "latitude_i",
-        "longitude_i",
-        "latitude",
-        "longitude",
-    ]
-    devs = await Discover.discover(target=target, return_raw=True)
-    if scrub:
-        click.echo("Scrubbing personal data before writing")
-    for dev in devs.values():
-        if scrub:
-            for key in keys_to_scrub:
-                if key in dev["system"]["get_sysinfo"]:
-                    val = dev["system"]["get_sysinfo"][key]
-                    if key in ["latitude_i", "longitude_i"]:
-                        val = 0
-                    else:
-                        val = re.sub(r"\w", "0", val)
-                    dev["system"]["get_sysinfo"][key] = val
-
-        model = dev["system"]["get_sysinfo"]["model"]
-        hw_version = dev["system"]["get_sysinfo"]["hw_ver"]
-        save_to = f"{model}_{hw_version}.json"
-        click.echo(f"Saving info to {save_to}")
-        with open(save_to, "w") as f:
-            json.dump(dev, f, sort_keys=True, indent=4)
-            f.write("\n")
+    return res
 
 
 @cli.command()
@@ -213,9 +174,8 @@ async def discover(ctx, timeout, discover_only, dump_raw):
     )
     if not discover_only:
         for ip, dev in found_devs.items():
-            await dev.update()
             if dump_raw:
-                click.echo(dev)
+                click.echo(dev.sys_info)
                 continue
             ctx.obj = dev
             await ctx.invoke(state)
@@ -226,17 +186,13 @@ async def discover(ctx, timeout, discover_only, dump_raw):
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
     """Discover a device identified by its alias."""
-    click.echo(
-        f"Trying to discover {alias} using {attempts} attempts of {timeout} seconds"
-    )
     for attempt in range(1, attempts):
-        click.echo(f"Attempt {attempt} of {attempts}")
         found_devs = await Discover.discover(target=target, timeout=timeout)
-        found_devs = found_devs.items()
-        for ip, dev in found_devs:
+        for ip, dev in found_devs.items():
             if dev.alias.lower() == alias.lower():
                 host = dev.host
                 return host
+
     return None
 
 
@@ -244,9 +200,9 @@ async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attem
 @pass_dev
 async def sysinfo(dev):
     """Print out full system information."""
-    await dev.update()
     click.echo(click.style("== System info ==", bold=True))
     click.echo(pf(dev.sys_info))
+    return dev.sys_info
 
 
 @cli.command()
@@ -254,7 +210,6 @@ async def sysinfo(dev):
 @click.pass_context
 async def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
-    await dev.update()
     click.echo(click.style(f"== {dev.alias} - {dev.model} ==", bold=True))
     click.echo(f"\tHost: {dev.host}")
     click.echo(
@@ -302,7 +257,6 @@ async def state(ctx, dev: SmartDevice):
 @click.option("--index", type=int)
 async def alias(dev, new_alias, index):
     """Get or set the device (or plug) alias."""
-    await dev.update()
     if index is not None:
         if not dev.is_strip:
             click.echo("Index can only used for power strips!")
@@ -312,7 +266,8 @@ async def alias(dev, new_alias, index):
 
     if new_alias is not None:
         click.echo(f"Setting alias to {new_alias}")
-        click.echo(await dev.set_alias(new_alias))
+        res = await dev.set_alias(new_alias)
+        return res
 
     click.echo(f"Alias: {dev.alias}")
     if dev.is_strip:
@@ -331,9 +286,11 @@ async def raw_command(dev: SmartDevice, module, command, parameters):
 
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
+
     res = await dev._query_helper(module, command, parameters)
-    await dev.update()  # TODO: is this needed?
+
     click.echo(res)
+    return res
 
 
 @cli.command()
@@ -347,7 +304,6 @@ async def emeter(dev: SmartDevice, year, month, erase):
     Daily and monthly data provided in CSV format.
     """
     click.echo(click.style("== Emeter ==", bold=True))
-    await dev.update()
     if not dev.has_emeter:
         click.echo("Device has no emeter")
         return
@@ -391,15 +347,15 @@ async def emeter(dev: SmartDevice, year, month, erase):
 @pass_dev
 async def brightness(dev: SmartBulb, brightness: int, transition: int):
     """Get or set brightness."""
-    await dev.update()
     if not dev.is_dimmable:
         click.echo("This device does not support brightness.")
         return
+
     if brightness is None:
         click.echo(f"Brightness: {dev.brightness}")
     else:
         click.echo(f"Setting brightness to {brightness}")
-        click.echo(await dev.set_brightness(brightness, transition=transition))
+        return await dev.set_brightness(brightness, transition=transition)
 
 
 @cli.command()
@@ -410,7 +366,10 @@ async def brightness(dev: SmartBulb, brightness: int, transition: int):
 @pass_dev
 async def temperature(dev: SmartBulb, temperature: int, transition: int):
     """Get or set color temperature."""
-    await dev.update()
+    if not dev.is_variable_color_temp:
+        click.echo("Device does not support color temperature")
+        return
+
     if temperature is None:
         click.echo(f"Color temperature: {dev.color_temp}")
         valid_temperature_range = dev.valid_temperature_range
@@ -423,7 +382,7 @@ async def temperature(dev: SmartBulb, temperature: int, transition: int):
             )
     else:
         click.echo(f"Setting color temperature to {temperature}")
-        await dev.set_color_temp(temperature, transition=transition)
+        return await dev.set_color_temp(temperature, transition=transition)
 
 
 @cli.command()
@@ -434,15 +393,18 @@ async def temperature(dev: SmartBulb, temperature: int, transition: int):
 @click.pass_context
 @pass_dev
 async def hsv(dev, ctx, h, s, v, transition):
-    """Get or set color in HSV. (Bulb only)."""
-    await dev.update()
+    """Get or set color in HSV."""
+    if not dev.is_color:
+        click.echo("Device does not support colors")
+        return
+
     if h is None or s is None or v is None:
         click.echo(f"Current HSV: {dev.hsv}")
     elif s is None or v is None:
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
         click.echo(f"Setting HSV: {h} {s} {v}")
-        click.echo(await dev.set_hsv(h, s, v, transition=transition))
+        return await dev.set_hsv(h, s, v, transition=transition)
 
 
 @cli.command()
@@ -450,10 +412,9 @@ async def hsv(dev, ctx, h, s, v, transition):
 @pass_dev
 async def led(dev, state):
     """Get or set (Plug's) led state."""
-    await dev.update()
     if state is not None:
         click.echo(f"Turning led to {state}")
-        click.echo(await dev.set_led(state))
+        return await dev.set_led(state)
     else:
         click.echo(f"LED state: {dev.led}")
 
@@ -462,7 +423,9 @@ async def led(dev, state):
 @pass_dev
 async def time(dev):
     """Get the device time."""
-    click.echo(await dev.get_time())
+    res = await dev.get_time()
+    click.echo(f"Current time: {res}")
+    return res
 
 
 @cli.command()
@@ -472,11 +435,11 @@ async def time(dev):
 @pass_dev
 async def on(dev: SmartDevice, index: int, name: str, transition: int):
     """Turn the device on."""
-    await dev.update()
     if index is not None or name is not None:
         if not dev.is_strip:
             click.echo("Index and name are only for power strips!")
             return
+
         dev = cast(SmartStrip, dev)
         if index is not None:
             dev = dev.get_plug_by_index(index)
@@ -484,7 +447,7 @@ async def on(dev: SmartDevice, index: int, name: str, transition: int):
             dev = dev.get_plug_by_name(name)
 
     click.echo(f"Turning on {dev.alias}")
-    await dev.turn_on(transition=transition)
+    return await dev.turn_on(transition=transition)
 
 
 @cli.command()
@@ -494,11 +457,11 @@ async def on(dev: SmartDevice, index: int, name: str, transition: int):
 @pass_dev
 async def off(dev: SmartDevice, index: int, name: str, transition: int):
     """Turn the device off."""
-    await dev.update()
     if index is not None or name is not None:
         if not dev.is_strip:
             click.echo("Index and name are only for power strips!")
             return
+
         dev = cast(SmartStrip, dev)
         if index is not None:
             dev = dev.get_plug_by_index(index)
@@ -506,7 +469,7 @@ async def off(dev: SmartDevice, index: int, name: str, transition: int):
             dev = dev.get_plug_by_name(name)
 
     click.echo(f"Turning off {dev.alias}")
-    await dev.turn_off(transition=transition)
+    return await dev.turn_off(transition=transition)
 
 
 @cli.command()
@@ -515,7 +478,7 @@ async def off(dev: SmartDevice, index: int, name: str, transition: int):
 async def reboot(plug, delay):
     """Reboot the device."""
     click.echo("Rebooting the device..")
-    click.echo(await plug.reboot(delay))
+    return await plug.reboot(delay)
 
 
 if __name__ == "__main__":

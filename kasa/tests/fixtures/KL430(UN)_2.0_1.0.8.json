@@ -1,0 +1,90 @@
+{
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 16760,
+            "total_wh": 120
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "LEF": 1,
+            "active_mode": "none",
+            "alias": "Bedroom light strip",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "length": 16,
+            "light_state": {
+                "brightness": 100,
+                "color_temp": 9000,
+                "hue": 0,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 100,
+                "custom": 1,
+                "enable": 1,
+                "id": "yMwcNpLxijmoKamskHCvvravpbnIqAIN",
+                "name": "Aurora 1"
+            },
+            "longitude_i": 0,
+            "mic_mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL430(UN)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 9000,
+                    "hue": 0,
+                    "index": 0,
+                    "mode": 1,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 217,
+                    "index": 1,
+                    "mode": 1,
+                    "saturation": 99
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 194,
+                    "index": 2,
+                    "mode": 1,
+                    "saturation": 50
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 277,
+                    "index": 3,
+                    "mode": 1,
+                    "saturation": 86
+                }
+            ],
+            "rssi": -43,
+            "status": "new",
+            "sw_ver": "1.0.8 Build 210121 Rel.084339"
+        }
+    }
+}
