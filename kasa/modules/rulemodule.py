@@ -32,7 +32,7 @@ class Rule(BaseModel):
     id: str
     name: str
     enable: bool
-    wday: List[int]
+    wday: List[bool]  # enabled on weekdays, starts from sunday
     repeat: bool
 
     # start action
@@ -79,8 +79,22 @@ class RuleModule(Module):
         """Enable or disable the service."""
         return await self.call("set_overall_enable", {"enable": int(state)})
 
+    async def add_rule(self, rule: Rule):
+        """Add the given rule."""
+        # TODO: check that rule has no ID
+        # TODO: convert to method inside Rule
+        return await self.call("add_rule", rule.dict())
+
+    async def edit_rule(self, rule: Rule):
+        """Edit the given rule."""
+        # TODO: check that the rule has an id
+        # TODO: convert to method inside Rule
+        return await self.call("edit_rule", rule.dict())
+
     async def delete_rule(self, rule: Rule):
         """Delete the given rule."""
+        # TODO: check that the rule has an id
+        # TODO: convert to method inside Rule
         return await self.call("delete_rule", {"id": rule.id})
 
     async def delete_all_rules(self):
