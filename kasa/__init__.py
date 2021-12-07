@@ -12,6 +12,7 @@ Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
 from importlib_metadata import version  # type: ignore
+
 from kasa.auth import Auth
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus

@@ -10,233 +10,146 @@ which are licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
-import contextlib
-import json
+import hashlib
 import logging
-import struct
-from pprint import pformat as pf
-from typing import Dict, Optional, Union
+import secrets
 
+import aiohttp
+from Crypto.Cipher import AES
+from Crypto.Util import Padding
+from yarl import URL
+
+from .auth import Auth
 from .exceptions import SmartDeviceException
+from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TPLinkProtocol:
-    """Base class for all TP-Link Smart Home communication."""
+class TPLinkKLAP(TPLinkSmartHomeProtocol):
+    """Implementation of the KLAP encryption protocol.
 
-    DEFAULT_TIMEOUT = 5
+    KLAP is the name used in device discovery for TP-Link's new encryption
+    protocol, used by newer firmware versions.
+    """
 
-    def __init__(self, host: str) -> None:
-        self.host = host
-        self.timeout = TPLinkProtocol.DEFAULT_TIMEOUT
+    def __init__(self, host: str, authentication: Auth = Auth()) -> None:
+        self.jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
+        self.client_challenge = secrets.token_bytes(16)
+        self.authenticator = authentication.authenticator()
+        self.handshake_lock = asyncio.Lock()
+        self.handshake_done = False
 
-    async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
-        """Request information from a TP-Link SmartHome Device.
+        super().__init__(host=host)
 
-        :param request: command to send to the device (can be either dict or
-        json string)
-        :param retry_count: how many retries to do in case of failure
-        :return: response dict
-        """
-        if isinstance(request, dict):
-            request = json.dumps(request)
+        _LOGGER.debug("[KLAP] Created KLAP object for %s", self.host)
 
-        for retry in range(retry_count + 1):
-            try:
-                _LOGGER.debug("> (%i) %s", len(request), request)
-                response = await self._ask(request)
-                json_payload = json.loads(response)
-                _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
+    @staticmethod
+    def _sha256(payload: bytes) -> bytes:
+        return hashlib.sha256(payload).digest()
 
-                return json_payload
+    async def _handshake(self, session) -> None:
+        _LOGGER.debug("[KLAP] Starting handshake with %s", self.host)
 
-            except Exception as ex:
-                if retry >= retry_count:
-                    _LOGGER.debug("Giving up after %s retries", retry)
-                    raise SmartDeviceException(
-                        "Unable to query the device: %s" % ex
-                    ) from ex
+        # Handshake 1 has a payload of client_challenge
+        # and a response of 16 bytes, followed by sha256(clientBytes | authenticator)
 
-                _LOGGER.debug("Unable to query the device, retrying: %s", ex)
+        url = f"http://{self.host}/app/handshake1"
+        resp = await session.post(url, data=self.client_challenge)
+        _LOGGER.debug("Got response of %d to handshake1", resp.status)
+        if resp.status != 200:
+            raise SmartDeviceException(
+                "Device responded with %d to handshake1" % resp.status
+            )
 
-        raise SmartDeviceException("Not reached")
+        response = await resp.read()
+        self.server_challenge = response[0:16]
+        server_hash = response[16:]
+
+        _LOGGER.debug("Server bytes are: %s", self.server_challenge.hex())
+        _LOGGER.debug("Server hash is: %s", server_hash.hex())
+
+        # Check the response from the device
+        local_hash = self._sha256(self.client_challenge + self.authenticator)
+
+        if local_hash != server_hash:
+            _LOGGER.debug(
+                "Expected %s got %s in handshake1",
+                local_hash.hex(),
+                server_hash.hex(),
+            )
+            raise SmartDeviceException("Server response doesn't match our challenge")
+        else:
+            _LOGGER.debug("handshake1 hashes match")
+
+        # We need to include only the TP_SESSIONID cookie - aiohttp's cookie handling
+        # adds a bogus TIMEOUT cookie
+        cookie = session.cookie_jar.filter_cookies(url).get("TP_SESSIONID")
+        session.cookie_jar.clear()
+        session.cookie_jar.update_cookies({"TP_SESSIONID": cookie}, URL(url))
+        _LOGGER.debug("Cookie is %s", cookie)
+
+        # Handshake 2 has the following payload:
+        #    sha256(serverBytes | authenticator)
+        url = f"http://{self.host}/app/handshake2"
+        payload = self._sha256(self.server_challenge + self.authenticator)
+        resp = await session.post(url, data=payload)
+        _LOGGER.debug("Got response of %d to handshake2", resp.status)
+        if resp.status != 200:
+            raise SmartDeviceException(
+                "Device responded with %d to handshake2" % resp.status
+            )
+
+        # Done handshaking, now we need to compute the encryption keys
+        agreed = self.client_challenge + self.server_challenge + self.authenticator
+        self.encrypt_key = self._sha256(b"lsk" + agreed)[:16]
+        self.hmac_key = self._sha256(b"ldk" + agreed)[:28]
+        fulliv = self._sha256(b"iv" + agreed)
+        self.iv = fulliv[:12]
+        self.seq = int.from_bytes(fulliv[-4:], "big", signed=True)
+        self.handshake_done = True
+
+    def _encrypt(self, plaintext: bytes, iv: bytes, seq: int) -> bytes:
+        cipher = AES.new(self.encrypt_key, AES.MODE_CBC, iv)
+        ciphertext = cipher.encrypt(Padding.pad(plaintext, AES.block_size))
+        signature = self._sha256(
+            self.hmac_key + seq.to_bytes(4, "big", signed=True) + ciphertext
+        )
+        return signature + ciphertext
+
+    def _decrypt(self, payload: bytes, iv: bytes, seq: int) -> bytes:
+        cipher = AES.new(self.encrypt_key, AES.MODE_CBC, iv)
+        # In theory we should verify the hmac here too
+        return Padding.unpad(cipher.decrypt(payload[32:]), AES.block_size)
 
     async def _ask(self, request: str) -> str:
-        raise SmartDeviceException("ask should be overridden")
 
+        try:
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
+            session = aiohttp.ClientSession(cookie_jar=self.jar, timeout=timeout)
 
-class TPLinkSmartHomeProtocol(TPLinkProtocol):
-    """Implementation of the TP-Link Smart Home protocol."""
+            async with self.handshake_lock:
+                if not self.handshake_done:
+                    await self._handshake(session)
 
-    INITIALIZATION_VECTOR = 171
-    DEFAULT_PORT = 9999
-    DEFAULT_TIMEOUT = 5
-    BLOCK_SIZE = 4
+            msg_seq = self.seq
+            msg_iv = self.iv + msg_seq.to_bytes(4, "big", signed=True)
+            payload = self._encrypt(request.encode("utf-8"), msg_iv, msg_seq)
 
-    def __init__(self, host: str) -> None:
-        """Create a protocol object."""
-        self.host = host
-        self.reader: Optional[asyncio.StreamReader] = None
-        self.writer: Optional[asyncio.StreamWriter] = None
-        self.query_lock: Optional[asyncio.Lock] = None
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
+            url = f"http://{self.host}/app/request"
+            resp = await session.post(url, params={"seq": msg_seq}, data=payload)
+            _LOGGER.debug("Got response of %d to request", resp.status)
 
-    def _detect_event_loop_change(self) -> None:
-        """Check if this object has been reused betwen event loops."""
-        loop = asyncio.get_running_loop()
-        if not self.loop:
-            self.loop = loop
-        elif self.loop != loop:
-            _LOGGER.warning("Detected protocol reuse between different event loop")
-            self._reset()
+            # If we failed with a security error, force a new handshake next time
+            if resp.status == 403:
+                self.handshake_done = False
 
-    async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
-        """Request information from a TP-Link SmartHome Device.
-
-        :param str host: host name or ip address of the device
-        :param request: command to send to the device (can be either dict or
-        json string)
-        :param retry_count: how many retries to do in case of failure
-        :return: response dict
-        """
-        self._detect_event_loop_change()
-
-        if not self.query_lock:
-            self.query_lock = asyncio.Lock()
-
-        if isinstance(request, dict):
-            request = json.dumps(request)
-            assert isinstance(request, str)
-
-        timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
-
-        async with self.query_lock:
-            return await self._query(request, retry_count, timeout)
-
-    async def _connect(self, timeout: int) -> bool:
-        """Try to connect or reconnect to the device."""
-        if self.writer:
-            return True
-
-        with contextlib.suppress(Exception):
-            self.reader = self.writer = None
-            task = asyncio.open_connection(
-                self.host, TPLinkSmartHomeProtocol.DEFAULT_PORT
-            )
-            self.reader, self.writer = await asyncio.wait_for(task, timeout=timeout)
-            return True
-
-        return False
-
-    async def _execute_query(self, request: str) -> Dict:
-        """Execute a query on the device and wait for the response."""
-        assert self.writer is not None
-        assert self.reader is not None
-        debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
-
-        if debug_log:
-            _LOGGER.debug("%s >> %s", self.host, request)
-        self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
-        await self.writer.drain()
-
-        packed_block_size = await self.reader.readexactly(self.BLOCK_SIZE)
-        length = struct.unpack(">I", packed_block_size)[0]
-
-        buffer = await self.reader.readexactly(length)
-        response = TPLinkSmartHomeProtocol.decrypt(buffer)
-        json_payload = json.loads(response)
-        if debug_log:
-            _LOGGER.debug("%s << %s", self.host, pf(json_payload))
-
-        return json_payload
-
-    async def close(self):
-        """Close the connection."""
-        writer = self.writer
-        self.reader = self.writer = None
-        if writer:
-            writer.close()
-            with contextlib.suppress(Exception):
-                await writer.wait_closed()
-
-    def _reset(self):
-        """Clear any varibles that should not survive between loops."""
-        self.reader = self.writer = self.loop = self.query_lock = None
-
-    async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
-        """Try to query a device."""
-        for retry in range(retry_count + 1):
-            if not await self._connect(timeout):
-                await self.close()
-                if retry >= retry_count:
-                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
-                    raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}"
-                    )
-                continue
-
-            try:
-                assert self.reader is not None
-                assert self.writer is not None
-                return await asyncio.wait_for(
-                    self._execute_query(request), timeout=timeout
+            if resp.status != 200:
+                raise SmartDeviceException(
+                    "Device responded with %d to request with seq %d"
+                    % (resp.status, msg_seq)
                 )
-            except Exception as ex:
-                await self.close()
-                if retry >= retry_count:
-                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
-                    raise SmartDeviceException(
-                        f"Unable to query the device {self.host}: {ex}"
-                    ) from ex
-
-                _LOGGER.debug(
-                    "Unable to query the device %s, retrying: %s", self.host, ex
-                )
-
-        # make mypy happy, this should never be reached..
-        await self.close()
-        raise SmartDeviceException("Query reached somehow to unreachable")
-
-    def __del__(self):
-        if self.writer and self.loop and self.loop.is_running():
-            self.writer.close()
-        self._reset()
-
-    @staticmethod
-    def _xor_payload(unencrypted):
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        for unencryptedbyte in unencrypted:
-            key = key ^ unencryptedbyte
-            yield key
-
-    @staticmethod
-    def encrypt(request: str) -> bytes:
-        """Encrypt a request for a TP-Link Smart Home Device.
-
-        :param request: plaintext request data
-        :return: ciphertext to be send over wire, in bytes
-        """
-        plainbytes = request.encode()
-        return struct.pack(">I", len(plainbytes)) + bytes(
-            TPLinkSmartHomeProtocol._xor_payload(plainbytes)
-        )
-
-    @staticmethod
-    def _xor_encrypted_payload(ciphertext):
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        for cipherbyte in ciphertext:
-            plainbyte = key ^ cipherbyte
-            key = cipherbyte
-            yield plainbyte
-
-    @staticmethod
-    def decrypt(ciphertext: bytes) -> str:
-        """Decrypt a response of a TP-Link Smart Home Device.
-
-        :param ciphertext: encrypted response data
-        :return: plaintext response
-        """
-        return bytes(
-            TPLinkSmartHomeProtocol._xor_encrypted_payload(ciphertext)
-        ).decode()
+            response = await resp.read()
+            return self._decrypt(response, msg_iv, msg_seq).decode("utf-8")
+        finally:
+            await session.close()

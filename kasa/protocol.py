@@ -22,19 +22,35 @@ from .exceptions import SmartDeviceException
 _LOGGER = logging.getLogger(__name__)
 
 
-class TPLinkProtocol:
-    """Base class for all TP-Link Smart Home communication."""
+class TPLinkSmartHomeProtocol:
+    """Implementation of the TP-Link Smart Home protocol."""
 
+    INITIALIZATION_VECTOR = 171
+    DEFAULT_PORT = 9999
     DEFAULT_TIMEOUT = 5
     BLOCK_SIZE = 4
 
     def __init__(self, host: str) -> None:
+        """Create a protocol object."""
         self.host = host
-        self.timeout = TPLinkProtocol.DEFAULT_TIMEOUT
+        self.reader: Optional[asyncio.StreamReader] = None
+        self.writer: Optional[asyncio.StreamWriter] = None
+        self.query_lock: Optional[asyncio.Lock] = None
+        self.loop: Optional[asyncio.AbstractEventLoop] = None
+
+    def _detect_event_loop_change(self) -> None:
+        """Check if this object has been reused betwen event loops."""
+        loop = asyncio.get_running_loop()
+        if not self.loop:
+            self.loop = loop
+        elif self.loop != loop:
+            _LOGGER.warning("Detected protocol reuse between different event loop")
+            self._reset()
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Request information from a TP-Link SmartHome Device.
 
+        :param str host: host name or ip address of the device
         :param request: command to send to the device (can be either dict or
         json string)
         :param retry_count: how many retries to do in case of failure
@@ -49,12 +65,15 @@ class TPLinkProtocol:
             request = json.dumps(request)
             assert isinstance(request, str)
 
-        for retry in range(retry_count + 1):
-            try:
-                _LOGGER.debug("> (%i) %s", len(request), request)
-                response = await self._ask(request)
-                json_payload = json.loads(response)
-                _LOGGER.debug("< (%i) %s", len(response), pf(json_payload))
+        timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
+
+        async with self.query_lock:
+            return await self._query(request, retry_count, timeout)
+
+    async def _connect(self, timeout: int) -> bool:
+        """Try to connect or reconnect to the device."""
+        if self.writer:
+            return True
 
         with contextlib.suppress(Exception):
             self.reader = self.writer = None
@@ -130,49 +149,6 @@ class TPLinkProtocol:
                 _LOGGER.debug(
                     "Unable to query the device %s, retrying: %s", self.host, ex
                 )
-
-        raise SmartDeviceException("Not reached")
-
-    async def _ask(self, request: str) -> str:
-        raise SmartDeviceException("ask should be overridden")
-
-
-class TPLinkSmartHomeProtocol(TPLinkProtocol):
-    """Implementation of the TP-Link Smart Home protocol."""
-
-    INITIALIZATION_VECTOR = 171
-    DEFAULT_PORT = 9999
-
-    def __init__(self, host: str):
-        super().__init__(host=host)
-
-    async def _ask(self, request: str) -> str:
-        writer = None
-        try:
-            task = asyncio.open_connection(self.host, self.DEFAULT_PORT)
-            reader, writer = await asyncio.wait_for(task, timeout=self.timeout)
-            writer.write(TPLinkSmartHomeProtocol.encrypt(request))
-            await writer.drain()
-
-            buffer = bytes()
-            # Some devices send responses with a length header of 0 and
-            # terminate with a zero size chunk. Others send the length and
-            # will hang if we attempt to read more data.
-            length = -1
-            while True:
-                chunk = await reader.read(4096)
-                if length == -1:
-                    length = struct.unpack(">I", chunk[0:4])[0]
-                buffer += chunk
-                if (length > 0 and len(buffer) >= length + 4) or not chunk:
-                    break
-
-            return TPLinkSmartHomeProtocol.decrypt(buffer[4:])
-
-        finally:
-            if writer:
-                writer.close()
-                await writer.wait_closed()
 
         # make mypy happy, this should never be reached..
         await self.close()

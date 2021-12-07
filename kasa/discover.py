@@ -5,11 +5,11 @@ import hashlib
 import json
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Optional, Type, cast
+from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
 
 from kasa.auth import Auth
-from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.klapprotocol import TPLinkKLAP
+from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
@@ -48,7 +48,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target = (target, Discover.DISCOVERY_PORT)
         self.new_target = (target, Discover.NEW_DISCOVERY_PORT)
         self.discovered_devices = {}
-        self.discovered_devices_raw = {}
         self.authentication = authentication
         self.emptyUser = hashlib.md5().digest()
 
@@ -230,7 +229,6 @@ class Discover:
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-
         if authentication is None:
             protocol = TPLinkSmartHomeProtocol(host)
         else:
@@ -242,7 +240,7 @@ class Discover:
         device_class = Discover._get_device_class(info)
         if device_class is not None:
             if authentication is None:
-               dev = device_class(host)
+                dev = device_class(host)
             else:
                 dev = device_class(host, authentication)
             await dev.update()
