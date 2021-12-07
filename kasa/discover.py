@@ -21,6 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
+DeviceDict = Dict[str, SmartDevice]
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -29,8 +30,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     This is internal class, use :func:`Discover.discover`: instead.
     """
 
-    discovered_devices: Dict[str, SmartDevice]
-    discovered_devices_raw: Dict[str, Dict]
+    discovered_devices: DeviceDict
 
     def __init__(
         self,
@@ -115,13 +115,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         asyncio.ensure_future(device.update())
 
         self.discovered_devices[ip] = device
-        self.discovered_devices_raw[ip] = info
 
-        if device_class is not None:
-            if self.on_discovered is not None:
-                asyncio.ensure_future(self.on_discovered(device))
-        else:
-            _LOGGER.error("Received invalid response: %s", info)
+        if self.on_discovered is not None:
+            asyncio.ensure_future(self.on_discovered(device))
 
     def error_received(self, ex):
         """Handle asyncio.Protocol errors."""
@@ -172,10 +168,6 @@ class Discover:
 
     DISCOVERY_QUERY = {
         "system": {"get_sysinfo": None},
-        "emeter": {"get_realtime": None},
-        "smartlife.iot.dimmer": {"get_dimmer_parameters": None},
-        "smartlife.iot.common.emeter": {"get_realtime": None},
-        "smartlife.iot.smartbulb.lightingservice": {"get_light_state": None},
     }
 
     @staticmethod
@@ -185,7 +177,6 @@ class Discover:
         on_discovered=None,
         timeout=5,
         discovery_packets=3,
-        return_raw=False,
         interface=None,
         authentication=None,
     ) -> Mapping[str, Union[SmartDevice, Dict]]:
@@ -194,18 +185,19 @@ class Discover:
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.
+        If you have multiple interfaces, you can use target parameter to specify the network for discovery.
 
-        If given, `on_discovered` coroutine will get passed with the :class:`SmartDevice`-derived object as parameter.
+        If given, `on_discovered` coroutine will get awaited with a :class:`SmartDevice`-derived object as parameter.
 
-        The results of the discovery are returned either as a list of :class:`SmartDevice`-derived objects
-        or as raw response dictionaries objects (if `return_raw` is True).
+        The results of the discovery are returned as a dict of :class:`SmartDevice`-derived objects keyed with IP addresses.
+        The devices are already initialized and all but emeter-related properties can be accessed directly.
 
-        :param target: The target broadcast address (e.g. 192.168.xxx.255).
+        :param target: The target address where to send the broadcast discovery queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
         :param timeout: How long to wait for responses, defaults to 5
-        :param discovery_packets: Number of discovery packets are broadcasted.
-        :param return_raw: True to return JSON objects instead of Devices.
-        :return:
+        :param discovery_packets: Number of discovery packets to broadcast
+        :param interface: Bind to specific interface
+        :return: dictionary with discovered devices
         """
         loop = asyncio.get_event_loop()
         transport, protocol = await loop.create_datagram_endpoint(
@@ -227,9 +219,6 @@ class Discover:
             transport.close()
 
         _LOGGER.debug("Discovered %s devices", len(protocol.discovered_devices))
-
-        if return_raw:
-            return protocol.discovered_devices_raw
 
         return protocol.discovered_devices
 
@@ -259,7 +248,7 @@ class Discover:
             await dev.update()
             return dev
 
-        raise SmartDeviceException("Unable to discover device, received: %s" % info)
+        return dev
 
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:
