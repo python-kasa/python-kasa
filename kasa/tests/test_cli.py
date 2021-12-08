@@ -1,7 +1,17 @@
+import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice
-from kasa.cli import alias, brightness, emeter, raw_command, state, sysinfo
+from kasa.cli import (
+    TYPE_TO_CLASS,
+    alias,
+    brightness,
+    cli,
+    emeter,
+    raw_command,
+    state,
+    sysinfo,
+)
 
 from .conftest import handle_turn_on, pytestmark, turn_on
 
@@ -94,6 +104,21 @@ async def test_brightness(dev):
 
     res = await runner.invoke(brightness, obj=dev)
     assert "Brightness: 12" in res.output
+
+
+def _generate_type_class_pairs():
+    yield from TYPE_TO_CLASS.items()
+
+
+@pytest.mark.parametrize("type_class", _generate_type_class_pairs())
+async def test_deprecated_type(dev, type_class):
+    """Make sure that using deprecated types yields a warning."""
+    type, cls = type_class
+    if type == "dimmer":
+        return
+    runner = CliRunner()
+    res = await runner.invoke(cli, ["--host", "127.0.0.2", f"--{type}"])
+    assert "Using --bulb, --plug, --strip, and --lightstrip is deprecated" in res.output
 
 
 async def test_temperature(dev):
