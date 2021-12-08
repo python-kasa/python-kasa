@@ -22,6 +22,7 @@ asyncclick = "^7"
 # required only for docs
 sphinx = { version = "^3", optional = true }
 m2r = { version = "^0", optional = true }
+mistune = { version = "<2.0.0", optional = true }
 sphinx_rtd_theme = { version = "^0", optional = true }
 sphinxcontrib-programoutput = { version = "^0", optional = true }
 
@@ -39,7 +40,7 @@ codecov = "^2"
 xdoctest = "^0"
 
 [tool.poetry.extras]
-docs = ["sphinx", "sphinx_rtd_theme", "m2r", "sphinxcontrib-programoutput"]
+docs = ["sphinx", "sphinx_rtd_theme", "m2r", "mistune", "sphinxcontrib-programoutput"]
 
 
 [tool.isort]
