@@ -9,10 +9,19 @@ from kasa import (
     Discover,
     SmartBulb,
     SmartDevice,
+    SmartDimmer,
     SmartLightStrip,
     SmartPlug,
     SmartStrip,
 )
+
+TYPE_TO_CLASS = {
+    "plug": SmartPlug,
+    "bulb": SmartBulb,
+    "dimmer": SmartDimmer,
+    "strip": SmartStrip,
+    "lightstrip": SmartLightStrip,
+}
 
 click.anyio_backend = "asyncio"
 
@@ -44,9 +53,12 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option("--plug", default=False, is_flag=True)
 @click.option("--lightstrip", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
+@click.option(
+    "--type", default=None, type=click.Choice(TYPE_TO_CLASS, case_sensitive=False)
+)
 @click.version_option()
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip):
+async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, type):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -69,24 +81,28 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip):
         click.echo("No host name given, trying discovery..")
         await ctx.invoke(discover)
         return
-    else:
-        if not bulb and not plug and not strip and not lightstrip:
-            click.echo("No --strip nor --bulb nor --plug given, discovering..")
-            dev = await Discover.discover_single(host)
-        elif bulb:
-            dev = SmartBulb(host)
-        elif plug:
-            dev = SmartPlug(host)
-        elif strip:
-            dev = SmartStrip(host)
-        elif lightstrip:
-            dev = SmartLightStrip(host)
-        else:
-            click.echo("Unable to detect type, use --strip or --bulb or --plug!")
-            return
 
-        await dev.update()
-        ctx.obj = dev
+    if bulb or plug or strip or lightstrip:
+        click.echo(
+            "Using --bulb, --plug, --strip, and --lightstrip is deprecated. Use --type instead to define the type"
+        )
+        if bulb:
+            type = "bulb"
+        elif plug:
+            type = "plug"
+        elif strip:
+            type = "strip"
+        elif lightstrip:
+            type = "lightstrip"
+
+    if type is not None:
+        dev = TYPE_TO_CLASS[type](host)
+    else:
+        click.echo("No --type defined, discovering..")
+        dev = await Discover.discover_single(host)
+
+    await dev.update()
+    ctx.obj = dev
 
     if ctx.invoked_subcommand is None:
         await ctx.invoke(state)
