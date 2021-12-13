@@ -38,6 +38,7 @@ tox = "*"
 pytest-mock = "^3"
 codecov = "^2"
 xdoctest = "^0"
+coverage = {version = "^6", extras = ["toml"]}
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx_rtd_theme", "m2r", "mistune", "sphinxcontrib-programoutput"]
