@@ -27,7 +27,7 @@ sphinx_rtd_theme = { version = "^0", optional = true }
 sphinxcontrib-programoutput = { version = "^0", optional = true }
 
 [tool.poetry.dev-dependencies]
-pytest = "^5"
+pytest = ">=6.2.5"
 pytest-cov = "^2"
 pytest-asyncio = "^0"
 pytest-sugar = "*"
