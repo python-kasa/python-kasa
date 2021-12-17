@@ -13,7 +13,7 @@ repos:
   rev: v2.27.0
   hooks:
   - id: pyupgrade
-    args: ['--py36-plus']
+    args: ['--py37-plus']
 
 - repo: https://github.com/python/black
   rev: 21.9b0
