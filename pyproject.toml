@@ -17,7 +17,7 @@ kasa = "kasa.cli:cli"
 [tool.poetry.dependencies]
 python = "^3.7"
 importlib-metadata = "*"
-asyncclick = "^7"
+asyncclick = "^8"
 
 # required only for docs
 sphinx = { version = "^3", optional = true }
