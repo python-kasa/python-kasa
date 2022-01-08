@@ -46,9 +46,14 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
         self.transport = transport
+
         sock = transport.get_extra_info("socket")
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        except OSError as ex:  # WSL does not support SO_REUSEADDR, see #246
+            _LOGGER.debug("Unable to set SO_REUSEADDR: %s", ex)
+
         if self.interface is not None:
             sock.setsockopt(
                 socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.interface.encode()
