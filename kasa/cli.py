@@ -56,7 +56,7 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.option(
     "--type", default=None, type=click.Choice(TYPE_TO_CLASS, case_sensitive=False)
 )
-@click.version_option()
+@click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, type):
     """A tool for controlling TP-Link smart home devices."""  # noqa
