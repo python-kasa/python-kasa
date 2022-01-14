@@ -15,7 +15,7 @@ import json
 import logging
 import struct
 from pprint import pformat as pf
-from typing import Dict, Optional, Union
+from typing import Dict, Generator, Optional, Union
 
 from .exceptions import SmartDeviceException
 
@@ -107,7 +107,7 @@ class TPLinkSmartHomeProtocol:
 
         return json_payload
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the connection."""
         writer = self.writer
         self.reader = self.writer = None
@@ -116,7 +116,7 @@ class TPLinkSmartHomeProtocol:
             with contextlib.suppress(Exception):
                 await writer.wait_closed()
 
-    def _reset(self):
+    def _reset(self) -> None:
         """Clear any varibles that should not survive between loops."""
         self.reader = self.writer = self.loop = self.query_lock = None
 
@@ -154,13 +154,13 @@ class TPLinkSmartHomeProtocol:
         await self.close()
         raise SmartDeviceException("Query reached somehow to unreachable")
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.writer and self.loop and self.loop.is_running():
             self.writer.close()
         self._reset()
 
     @staticmethod
-    def _xor_payload(unencrypted):
+    def _xor_payload(unencrypted: bytes) -> Generator[int, None, None]:
         key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
         for unencryptedbyte in unencrypted:
             key = key ^ unencryptedbyte
@@ -179,7 +179,7 @@ class TPLinkSmartHomeProtocol:
         )
 
     @staticmethod
-    def _xor_encrypted_payload(ciphertext):
+    def _xor_encrypted_payload(ciphertext: bytes) -> Generator[int, None, None]:
         key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
         for cipherbyte in ciphertext:
             plainbyte = key ^ cipherbyte
