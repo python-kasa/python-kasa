@@ -1,6 +1,61 @@
 # Changelog
 
-## [0.4.0](https://github.com/python-kasa/python-kasa/tree/0.4.0) (2021-09-26)
+## [0.4.1](https://github.com/python-kasa/python-kasa/tree/0.4.1) (2022-01-14)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0...0.4.1)
+
+**Implemented enhancements:**
+
+- Add --type option to cli [\#269](https://github.com/python-kasa/python-kasa/pull/269) ([rytilahti](https://github.com/rytilahti))
+- Minor improvements to onboarding doc [\#264](https://github.com/python-kasa/python-kasa/pull/264) ([rytilahti](https://github.com/rytilahti))
+- Add fixture file for KL135 [\#263](https://github.com/python-kasa/python-kasa/pull/263) ([ErikSGross](https://github.com/ErikSGross))
+- Add KL135 color temperature range [\#256](https://github.com/python-kasa/python-kasa/pull/256) ([rytilahti](https://github.com/rytilahti))
+- Add py.typed to flag that the package is typed [\#251](https://github.com/python-kasa/python-kasa/pull/251) ([rytilahti](https://github.com/rytilahti))
+- Add script to check supported devices, update README [\#242](https://github.com/python-kasa/python-kasa/pull/242) ([rytilahti](https://github.com/rytilahti))
+- Add perftest to devtools [\#236](https://github.com/python-kasa/python-kasa/pull/236) ([rytilahti](https://github.com/rytilahti))
+- Add KP401 US fixture [\#234](https://github.com/python-kasa/python-kasa/pull/234) ([bdraco](https://github.com/bdraco))
+- Add KL60 US KP105 UK fixture [\#233](https://github.com/python-kasa/python-kasa/pull/233) ([bdraco](https://github.com/bdraco))
+- Make cli interface more consistent [\#232](https://github.com/python-kasa/python-kasa/pull/232) ([rytilahti](https://github.com/rytilahti))
+- Add KL400, KL50 fixtures [\#231](https://github.com/python-kasa/python-kasa/pull/231) ([bdraco](https://github.com/bdraco))
+- Add fixture for newer KP400 firmware [\#227](https://github.com/python-kasa/python-kasa/pull/227) ([bdraco](https://github.com/bdraco))
+- Switch to poetry-core [\#226](https://github.com/python-kasa/python-kasa/pull/226) ([fabaff](https://github.com/fabaff))
+- Add fixtures for LB110, KL110, EP40, KL430, KP115 [\#224](https://github.com/python-kasa/python-kasa/pull/224) ([bdraco](https://github.com/bdraco))
+
+**Fixed bugs:**
+
+- Discovery on WSL results in OSError: \[Errno 22\] Invalid argument [\#246](https://github.com/python-kasa/python-kasa/issues/246)
+- New firmware for HS103 blocking local access? [\#42](https://github.com/python-kasa/python-kasa/issues/42)
+- Pin mistune to \<2.0.0 to fix doc builds [\#270](https://github.com/python-kasa/python-kasa/pull/270) ([rytilahti](https://github.com/rytilahti))
+- Catch exceptions raised on unknown devices during discovery [\#240](https://github.com/python-kasa/python-kasa/pull/240) ([rytilahti](https://github.com/rytilahti))
+
+**Closed issues:**
+
+- Control device with alias via python api? [\#285](https://github.com/python-kasa/python-kasa/issues/285)
+- Can't install using pip install python-kasa [\#255](https://github.com/python-kasa/python-kasa/issues/255)
+- Kasa Smart Bulb KL135 - Unknown color temperature range error [\#252](https://github.com/python-kasa/python-kasa/issues/252)
+- KL400 Support [\#247](https://github.com/python-kasa/python-kasa/issues/247)
+- Cloud support? [\#245](https://github.com/python-kasa/python-kasa/issues/245)
+- Support for kp401 [\#241](https://github.com/python-kasa/python-kasa/issues/241)
+- LB130 Bulb stopped working [\#237](https://github.com/python-kasa/python-kasa/issues/237)
+- Unable to constantly query bulb in loop [\#225](https://github.com/python-kasa/python-kasa/issues/225)
+- HS103: Unable to query the device: unpack requires a buffer of 4 bytes [\#187](https://github.com/python-kasa/python-kasa/issues/187)
+- Help request - query value [\#171](https://github.com/python-kasa/python-kasa/issues/171)
+- Can't Discover Devices [\#164](https://github.com/python-kasa/python-kasa/issues/164)
+- Concurrency performance question [\#110](https://github.com/python-kasa/python-kasa/issues/110)
+- Define the port by self? [\#108](https://github.com/python-kasa/python-kasa/issues/108)
+- Convert homeassistant integration to use the library [\#9](https://github.com/python-kasa/python-kasa/issues/9)
+
+**Merged pull requests:**
+
+- Publish to pypi on github release published [\#287](https://github.com/python-kasa/python-kasa/pull/287) ([rytilahti](https://github.com/rytilahti))
+- Relax asyncclick version requirement [\#286](https://github.com/python-kasa/python-kasa/pull/286) ([rytilahti](https://github.com/rytilahti))
+- Do not crash on discovery on WSL [\#283](https://github.com/python-kasa/python-kasa/pull/283) ([rytilahti](https://github.com/rytilahti))
+- Add python 3.10 to CI [\#279](https://github.com/python-kasa/python-kasa/pull/279) ([rytilahti](https://github.com/rytilahti))
+- Use codecov-action@v2 for CI [\#277](https://github.com/python-kasa/python-kasa/pull/277) ([rytilahti](https://github.com/rytilahti))
+- Add coverage\[toml\] dependency to fix coverage on CI [\#271](https://github.com/python-kasa/python-kasa/pull/271) ([rytilahti](https://github.com/rytilahti))
+- Allow publish on test pypi workflow to fail [\#248](https://github.com/python-kasa/python-kasa/pull/248) ([rytilahti](https://github.com/rytilahti))
+
+## [0.4.0](https://github.com/python-kasa/python-kasa/tree/0.4.0) (2021-09-27)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev5...0.4.0)
 
@@ -15,6 +70,7 @@
 
 **Merged pull requests:**
 
+- Release 0.4.0 [\#221](https://github.com/python-kasa/python-kasa/pull/221) ([rytilahti](https://github.com/rytilahti))
 - Add github workflow for pypi publishing [\#220](https://github.com/python-kasa/python-kasa/pull/220) ([rytilahti](https://github.com/rytilahti))
 - Add host information to protocol debug logs [\#219](https://github.com/python-kasa/python-kasa/pull/219) ([rytilahti](https://github.com/rytilahti))
 
