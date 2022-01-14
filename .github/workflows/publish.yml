@@ -30,7 +30,6 @@ jobs:
         --outdir dist/
         .
     - name: Publish release on pypi
-      if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
