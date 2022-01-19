@@ -101,7 +101,7 @@ class SmartStrip(SmartDevice):
         self.create_children()
 
     @requires_update
-    def create_children(self):
+    def create_children(self, update_children):
         """Initialize the child devices during the first update.
 
         Called by update and update_from_discovery
@@ -113,10 +113,11 @@ class SmartStrip(SmartDevice):
                 self.children.append(
                     SmartStripPlug(self.host, parent=self, child_id=child["id"])
                 )
+                
 
         if update_children and self.has_emeter:
-            for plug in self.children:
-                await plug.update()
+            for plug in self.children: 
+                await plug.update() # type:ignore
 
     async def turn_on(self, **kwargs):
         """Turn the strip on."""
