@@ -1,0 +1,31 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "House Fan",
+            "dev_name": "Smart Wi-Fi Light Switch",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "5.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS200(US)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -50,
+            "status": "new",
+            "sw_ver": "1.0.2 Build 200819 Rel.105309",
+            "updating": 0
+        }
+    }
+}

@@ -60,12 +60,13 @@ async def test_hsv(dev, turn_on):
     assert dev.is_color
 
     hue, saturation, brightness = dev.hsv
-    assert 0 <= hue <= 255
+    assert 0 <= hue <= 360
     assert 0 <= saturation <= 100
     assert 0 <= brightness <= 100
 
     await dev.set_hsv(hue=1, saturation=1, value=1)
 
+    await dev.update()
     hue, saturation, brightness = dev.hsv
     assert hue == 1
     assert saturation == 1
@@ -134,6 +135,7 @@ async def test_variable_temp_state_information(dev):
 async def test_try_set_colortemp(dev, turn_on):
     await handle_turn_on(dev, turn_on)
     await dev.set_color_temp(2700)
+    await dev.update()
     assert dev.color_temp == 2700
 
 
@@ -146,10 +148,11 @@ async def test_set_color_temp_transition(dev, mocker):
 
 
 @variable_temp
-async def test_unknown_temp_range(dev, monkeypatch):
-    with pytest.raises(SmartDeviceException):
-        monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
-        dev.valid_temperature_range()
+async def test_unknown_temp_range(dev, monkeypatch, caplog):
+    monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
+
+    assert dev.valid_temperature_range == (2700, 5000)
+    assert "Unknown color temperature range, fallback to 2700-5000" in caplog.text
 
 
 @variable_temp
@@ -179,9 +182,11 @@ async def test_dimmable_brightness(dev, turn_on):
     assert dev.is_dimmable
 
     await dev.set_brightness(50)
+    await dev.update()
     assert dev.brightness == 50
 
     await dev.set_brightness(10)
+    await dev.update()
     assert dev.brightness == 10
 
     with pytest.raises(ValueError):

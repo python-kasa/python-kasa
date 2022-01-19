@@ -11,14 +11,16 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
+import collections.abc
 import functools
 import inspect
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from enum import Enum, auto
+from typing import Any, Dict, List, Optional, Set
 
+from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .protocol import TPLinkSmartHomeProtocol
 
@@ -28,11 +30,12 @@ _LOGGER = logging.getLogger(__name__)
 class DeviceType(Enum):
     """Device type enum."""
 
-    Plug = 1
-    Bulb = 2
-    Strip = 3
-    Dimmer = 4
-    LightStrip = 5
+    Plug = auto()
+    Bulb = auto()
+    Strip = auto()
+    StripSocket = auto()
+    Dimmer = auto()
+    LightStrip = auto()
     Unknown = -1
 
 
@@ -49,45 +52,14 @@ class WifiNetwork:
     rssi: Optional[int] = None
 
 
-class EmeterStatus(dict):
-    """Container for converting different representations of emeter data.
-
-    Newer FW/HW versions postfix the variable names with the used units,
-    where-as the olders do not have this feature.
-
-    This class automatically converts between these two to allow
-    backwards and forwards compatibility.
-    """
-
-    def __getitem__(self, item):
-        valid_keys = [
-            "voltage_mv",
-            "power_mw",
-            "current_ma",
-            "energy_wh",
-            "total_wh",
-            "voltage",
-            "power",
-            "current",
-            "total",
-            "energy",
-        ]
-
-        # 1. if requested data is available, return it
-        if item in super().keys():
-            return super().__getitem__(item)
-        # otherwise decide how to convert it
+def merge(d, u):
+    """Update dict recursively."""
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = merge(d.get(k, {}), v)
         else:
-            if item not in valid_keys:
-                raise KeyError(item)
-            if "_" in item:  # upscale
-                return super().__getitem__(item[: item.find("_")]) * 1000
-            else:  # downscale
-                for i in super().keys():
-                    if i.startswith(item):
-                        return self.__getitem__(i) / 1000
-
-                raise SmartDeviceException("Unable to find a value for '%s'" % item)
+            d[k] = v
+    return d
 
 
 def requires_update(f):
@@ -200,7 +172,7 @@ class SmartDevice:
         >>> dev.has_emeter
         True
         >>> dev.emeter_realtime
-        {'current': 0.015342, 'err_code': 0, 'power': 0.983971, 'total': 32.448, 'voltage': 235.595234}
+        <EmeterStatus power=0.983971 voltage=235.595234 current=0.015342 total=32.448>
         >>> dev.emeter_today
         >>> dev.emeter_this_month
 
@@ -213,6 +185,8 @@ class SmartDevice:
 
     """
 
+    TIME_SERVICE = "time"
+
     def __init__(self, host: str) -> None:
         """Create a new SmartDevice instance.
 
@@ -220,7 +194,7 @@ class SmartDevice:
         """
         self.host = host
 
-        self.protocol = TPLinkSmartHomeProtocol()
+        self.protocol = TPLinkSmartHomeProtocol(host)
         self.emeter_type = "emeter"
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
@@ -241,6 +215,11 @@ class SmartDevice:
 
         return request
 
+    def _verify_emeter(self) -> None:
+        """Raise an exception if there is no emeter."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
     ) -> Any:
@@ -255,7 +234,7 @@ class SmartDevice:
         request = self._create_request(target, cmd, arg, child_ids)
 
         try:
-            response = await self.protocol.query(host=self.host, request=request)
+            response = await self.protocol.query(request=request)
         except Exception as ex:
             raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
@@ -279,29 +258,48 @@ class SmartDevice:
 
     @property  # type: ignore
     @requires_update
+    def features(self) -> Set[str]:
+        """Return a set of features that the device supports."""
+        return set(self.sys_info["feature"].split(":"))
+
+    @property  # type: ignore
+    @requires_update
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
-        sys_info = self.sys_info
-        features = sys_info["feature"].split(":")
-        return "ENE" in features
+        return "ENE" in self.features
 
     async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
 
-    async def update(self):
-        """Update some of the attributes.
+    async def update(self, update_children: bool = True):
+        """Query the device to update the data.
 
-        Needed for methods that are decorated with `requires_update`.
+        Needed for properties that are decorated with `requires_update`.
         """
         req = {}
         req.update(self._create_request("system", "get_sysinfo"))
 
-        # Check for emeter if we were never updated, or if the device has emeter
-        if self._last_update is None or self.has_emeter:
+        # If this is the initial update, check only for the sysinfo
+        # This is necessary as some devices crash on unexpected modules
+        # See #105, #120, #161
+        if self._last_update is None:
+            _LOGGER.debug("Performing the initial update to obtain sysinfo")
+            self._last_update = await self.protocol.query(req)
+            self._sys_info = self._last_update["system"]["get_sysinfo"]
+            # If the device has no emeter, we are done for the initial update
+            # Otherwise we will follow the regular code path to also query
+            # the emeter data also during the initial update
+            if not self.has_emeter:
+                return
+
+        if self.has_emeter:
+            _LOGGER.debug(
+                "The device has emeter, querying its information along sysinfo"
+            )
             req.update(self._create_emeter_request())
-        self._last_update = await self.protocol.query(self.host, req)
-        # TODO: keep accessible for tests
+
+        self._last_update = await self.protocol.query(req)
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
     def update_from_discovery_info(self, info):
@@ -336,7 +334,7 @@ class SmartDevice:
     async def get_time(self) -> Optional[datetime]:
         """Return current time from the device, if available."""
         try:
-            res = await self._query_helper("time", "get_time")
+            res = await self._query_helper(self.TIME_SERVICE, "get_time")
             return datetime(
                 res["year"],
                 res["month"],
@@ -350,7 +348,7 @@ class SmartDevice:
 
     async def get_timezone(self) -> Dict:
         """Return timezone information."""
-        return await self._query_helper("time", "get_timezone")
+        return await self._query_helper(self.TIME_SERVICE, "get_timezone")
 
     @property  # type: ignore
     @requires_update
@@ -385,8 +383,8 @@ class SmartDevice:
             loc["latitude"] = sys_info["latitude"]
             loc["longitude"] = sys_info["longitude"]
         elif "latitude_i" in sys_info and "longitude_i" in sys_info:
-            loc["latitude"] = sys_info["latitude_i"]
-            loc["longitude"] = sys_info["longitude_i"]
+            loc["latitude"] = sys_info["latitude_i"] / 10000
+            loc["longitude"] = sys_info["longitude_i"] / 10000
         else:
             _LOGGER.warning("Unsupported device location.")
 
@@ -396,10 +394,8 @@ class SmartDevice:
     @requires_update
     def rssi(self) -> Optional[int]:
         """Return WiFi signal strenth (rssi)."""
-        sys_info = self.sys_info
-        if "rssi" in sys_info:
-            return int(sys_info["rssi"])
-        return None
+        rssi = self.sys_info.get("rssi")
+        return None if rssi is None else int(rssi)
 
     @property  # type: ignore
     @requires_update
@@ -410,16 +406,16 @@ class SmartDevice:
         """
         sys_info = self.sys_info
 
-        if "mac" in sys_info:
-            return str(sys_info["mac"])
-        elif "mic_mac" in sys_info:
-            return ":".join(
-                format(s, "02x") for s in bytes.fromhex(sys_info["mic_mac"])
+        mac = sys_info.get("mac", sys_info.get("mic_mac"))
+        if not mac:
+            raise SmartDeviceException(
+                "Unknown mac, please submit a bug report with sys_info output."
             )
 
-        raise SmartDeviceException(
-            "Unknown mac, please submit a bug report with sys_info output."
-        )
+        if ":" not in mac:
+            mac = ":".join(format(s, "02x") for s in bytes.fromhex(mac))
+
+        return mac
 
     async def set_mac(self, mac):
         """Set the mac address.
@@ -432,16 +428,12 @@ class SmartDevice:
     @requires_update
     def emeter_realtime(self) -> EmeterStatus:
         """Return current energy readings."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         return EmeterStatus(self._last_update[self.emeter_type]["get_realtime"])
 
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
 
     def _create_emeter_request(self, year: int = None, month: int = None):
@@ -451,23 +443,12 @@ class SmartDevice:
         if month is None:
             month = datetime.now().month
 
-        import collections.abc
-
-        def update(d, u):
-            """Update dict recursively."""
-            for k, v in u.items():
-                if isinstance(v, collections.abc.Mapping):
-                    d[k] = update(d.get(k, {}), v)
-                else:
-                    d[k] = v
-            return d
-
         req: Dict[str, Any] = {}
-        update(req, self._create_request(self.emeter_type, "get_realtime"))
-        update(
+        merge(req, self._create_request(self.emeter_type, "get_realtime"))
+        merge(
             req, self._create_request(self.emeter_type, "get_monthstat", {"year": year})
         )
-        update(
+        merge(
             req,
             self._create_request(
                 self.emeter_type, "get_daystat", {"month": month, "year": year}
@@ -480,9 +461,7 @@ class SmartDevice:
     @requires_update
     def emeter_today(self) -> Optional[float]:
         """Return today's energy consumption in kWh."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         raw_data = self._last_update[self.emeter_type]["get_daystat"]["day_list"]
         data = self._emeter_convert_emeter_data(raw_data)
         today = datetime.now().day
@@ -496,9 +475,7 @@ class SmartDevice:
     @requires_update
     def emeter_this_month(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         raw_data = self._last_update[self.emeter_type]["get_monthstat"]["month_list"]
         data = self._emeter_convert_emeter_data(raw_data)
         current_month = datetime.now().month
@@ -538,9 +515,7 @@ class SmartDevice:
         :param kwh: return usage in kWh (default: True)
         :return: mapping of day of month to value
         """
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         if year is None:
             year = datetime.now().year
         if month is None:
@@ -560,9 +535,7 @@ class SmartDevice:
         :param kwh: return usage in kWh (default: True)
         :return: dict: mapping of month to value
         """
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         if year is None:
             year = datetime.now().year
 
@@ -575,19 +548,15 @@ class SmartDevice:
     @requires_update
     async def erase_emeter_stats(self) -> Dict:
         """Erase energy meter statistics."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         return await self._query_helper(self.emeter_type, "erase_emeter_stat", None)
 
     @requires_update
     async def current_consumption(self) -> float:
         """Get the current power consumption in Watt."""
-        if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
-
+        self._verify_emeter()
         response = EmeterStatus(await self.get_emeter_realtime())
-        return response["power"]
+        return float(response["power"])
 
     async def reboot(self, delay: int = 1) -> None:
         """Reboot the device.
@@ -642,7 +611,8 @@ class SmartDevice:
     def device_id(self) -> str:
         """Return unique ID for the device.
 
-        This is the MAC address of the device.
+        If not overridden, this is the MAC address of the device.
+        Individual sockets on strips will override this.
         """
         return self.mac
 
@@ -723,6 +693,11 @@ class SmartDevice:
     def is_strip(self) -> bool:
         """Return True if the device is a strip."""
         return self._device_type == DeviceType.Strip
+
+    @property
+    def is_strip_socket(self) -> bool:
+        """Return True if the device is a strip socket."""
+        return self._device_type == DeviceType.StripSocket
 
     @property
     def is_dimmer(self) -> bool:

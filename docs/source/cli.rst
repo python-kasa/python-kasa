@@ -23,9 +23,11 @@ Provisioning
 You can provision your device without any extra apps by using the ``kasa wifi`` command:
 
 1. If the device is unprovisioned, connect to its open network
-2. Use ``kasa discover`` (or check the routes) to locate the IP address of the device (likely 192.168.0.1)
-3. Scan for available networks using ``kasa wifi scan``
-4. Join/change the network using ``kasa wifi join`` command, see ``--help`` for details.
+2. Use ``kasa discover`` (or check the routes) to locate the IP address of the device (likely 192.168.0.1, if unprovisioned)
+3. Scan for available networks using ``kasa --host 192.168.0.1 wifi scan`` see which networks are visible to the device
+4. Join/change the network using ``kasa --host 192.168.0.1 wifi join <network to join>``
+
+As with all other commands, you can also pass ``--help`` to both ``join`` and ``scan`` commands to see the available options.
 
 ``kasa --help``
 ***************

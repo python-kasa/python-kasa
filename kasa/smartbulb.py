@@ -1,25 +1,40 @@
 """Module for bulbs (LB*, KL*, KB*)."""
+import logging
 import re
-from typing import Any, Dict, Tuple, cast
+from typing import Any, Dict, NamedTuple, cast
 
-from kasa.smartdevice import (
-    DeviceType,
-    SmartDevice,
-    SmartDeviceException,
-    requires_update,
-)
+from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
+
+
+class ColorTempRange(NamedTuple):
+    """Color temperature range."""
+
+    min: int
+    max: int
+
+
+class HSV(NamedTuple):
+    """Hue-saturation-value."""
+
+    hue: int
+    saturation: int
+    value: int
+
 
 TPLINK_KELVIN = {
-    "LB130": (2500, 9000),
-    "LB120": (2700, 6500),
-    "LB230": (2500, 9000),
-    "KB130": (2500, 9000),
-    "KL130": (2500, 9000),
-    "KL125": (2500, 6500),
-    r"KL120\(EU\)": (2700, 6500),
-    r"KL120\(US\)": (2700, 5000),
-    r"KL430\(US\)": (2500, 9000),
+    "LB130": ColorTempRange(2500, 9000),
+    "LB120": ColorTempRange(2700, 6500),
+    "LB230": ColorTempRange(2500, 9000),
+    "KB130": ColorTempRange(2500, 9000),
+    "KL130": ColorTempRange(2500, 9000),
+    "KL125": ColorTempRange(2500, 6500),
+    "KL135": ColorTempRange(2500, 6500),
+    r"KL120\(EU\)": ColorTempRange(2700, 6500),
+    r"KL120\(US\)": ColorTempRange(2700, 5000),
+    r"KL430": ColorTempRange(2500, 9000),
 }
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class SmartBulb(SmartDevice):
@@ -69,7 +84,7 @@ class SmartBulb(SmartDevice):
         Bulbs supporting color temperature can be queried to know which range is accepted:
 
         >>> bulb.valid_temperature_range
-        (2500, 9000)
+        ColorTempRange(min=2500, max=9000)
         >>> asyncio.run(bulb.set_color_temp(3000))
         >>> asyncio.run(bulb.update())
         >>> bulb.color_temp
@@ -80,7 +95,7 @@ class SmartBulb(SmartDevice):
         >>> asyncio.run(bulb.set_hsv(180, 100, 80))
         >>> asyncio.run(bulb.update())
         >>> bulb.hsv
-        (180, 100, 80)
+        HSV(hue=180, saturation=100, value=80)
 
         If you don't want to use the default transitions, you can pass `transition` in milliseconds.
         This applies to all transitions (turn_on, turn_off, set_hsv, set_color_temp, set_brightness).
@@ -91,6 +106,7 @@ class SmartBulb(SmartDevice):
     """
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"
+    TIME_SERVICE = "smartlife.iot.common.timesetting"
     SET_LIGHT_METHOD = "transition_light_state"
 
     def __init__(self, host: str) -> None:
@@ -121,21 +137,21 @@ class SmartBulb(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def valid_temperature_range(self) -> Tuple[int, int]:
+    def valid_temperature_range(self) -> ColorTempRange:
         """Return the device-specific white temperature range (in Kelvin).
 
         :return: White temperature range in Kelvin (minimum, maximum)
         """
         if not self.is_variable_color_temp:
             raise SmartDeviceException("Color temperature not supported")
+
         for model, temp_range in TPLINK_KELVIN.items():
             sys_info = self.sys_info
             if re.match(model, sys_info["model"]):
                 return temp_range
 
-        raise SmartDeviceException(
-            "Unknown color temperature range, please open an issue on github"
-        )
+        _LOGGER.warning("Unknown color temperature range, fallback to 2700-5000")
+        return ColorTempRange(2700, 5000)
 
     @property  # type: ignore
     @requires_update
@@ -199,7 +215,7 @@ class SmartBulb(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def hsv(self) -> Tuple[int, int, int]:
+    def hsv(self) -> HSV:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
@@ -213,7 +229,7 @@ class SmartBulb(SmartDevice):
         saturation = light_state["saturation"]
         value = light_state["brightness"]
 
-        return hue, saturation, value
+        return HSV(hue, saturation, value)
 
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int) or not (0 <= value <= 100):
@@ -223,7 +239,7 @@ class SmartBulb(SmartDevice):
 
     @requires_update
     async def set_hsv(
-        self, hue: int, saturation: int, value: int, *, transition: int = None
+        self, hue: int, saturation: int, value: int = None, *, transition: int = None
     ) -> Dict:
         """Set new HSV.
 
@@ -246,14 +262,15 @@ class SmartBulb(SmartDevice):
                 "(valid range: 0-100%)".format(saturation)
             )
 
-        self._raise_for_invalid_brightness(value)
-
         light_state = {
             "hue": hue,
             "saturation": saturation,
-            "brightness": value,
             "color_temp": 0,
         }
+
+        if value is not None:
+            self._raise_for_invalid_brightness(value)
+            light_state["brightness"] = value
 
         return await self.set_light_state(light_state, transition=transition)
 
@@ -283,7 +300,7 @@ class SmartBulb(SmartDevice):
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
                 "Temperature should be between {} "
-                "and {}".format(*valid_temperature_range)
+                "and {}, was {}".format(*valid_temperature_range, temp)
             )
 
         light_state = {"color_temp": temp}
@@ -359,3 +376,12 @@ class SmartBulb(SmartDevice):
     def has_emeter(self) -> bool:
         """Return that the bulb has an emeter."""
         return True
+
+    async def set_alias(self, alias: str) -> None:
+        """Set the device name (alias).
+
+        Overridden to use a different module name.
+        """
+        return await self._query_helper(
+            "smartlife.iot.common.system", "set_dev_alias", {"alias": alias}
+        )

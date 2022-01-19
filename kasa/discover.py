@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Mapping, Optional, Type, Union, cast
+from typing import Awaitable, Callable, Dict, Optional, Type, cast
 
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
@@ -17,6 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
+DeviceDict = Dict[str, SmartDevice]
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -25,8 +26,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     This is internal class, use :func:`Discover.discover`: instead.
     """
 
-    discovered_devices: Dict[str, SmartDevice]
-    discovered_devices_raw: Dict[str, Dict]
+    discovered_devices: DeviceDict
 
     def __init__(
         self,
@@ -40,17 +40,20 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
-        self.protocol = TPLinkSmartHomeProtocol()
         self.target = (target, Discover.DISCOVERY_PORT)
         self.discovered_devices = {}
-        self.discovered_devices_raw = {}
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
         self.transport = transport
+
         sock = transport.get_extra_info("socket")
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        except OSError as ex:  # WSL does not support SO_REUSEADDR, see #246
+            _LOGGER.debug("Unable to set SO_REUSEADDR: %s", ex)
+
         if self.interface is not None:
             sock.setsockopt(
                 socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.interface.encode()
@@ -62,7 +65,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         """Send number of discovery datagrams."""
         req = json.dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
-        encrypted_req = self.protocol.encrypt(req)
+        encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
         for i in range(self.discovery_packets):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
 
@@ -72,13 +75,19 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         if ip in self.discovered_devices:
             return
 
-        info = json.loads(self.protocol.decrypt(data))
+        info = json.loads(TPLinkSmartHomeProtocol.decrypt(data))
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
-        device = Discover._create_device_from_discovery_info(ip, info)
+        try:
+            device_class = Discover._create_device_from_discovery_info(ip, info)
+        except SmartDeviceException as ex:
+            _LOGGER.debug("Unable to find device type from %s: %s", info, ex)
+            return
+
+        device = device_class(ip)
+        device.update_from_discover_info(info)
 
         self.discovered_devices[ip] = device
-        self.discovered_devices_raw[ip] = info
 
         if device is not None:
             if self.on_discovered is not None:
@@ -133,10 +142,6 @@ class Discover:
 
     DISCOVERY_QUERY = {
         "system": {"get_sysinfo": None},
-        "emeter": {"get_realtime": None},
-        "smartlife.iot.dimmer": {"get_dimmer_parameters": None},
-        "smartlife.iot.common.emeter": {"get_realtime": None},
-        "smartlife.iot.smartbulb.lightingservice": {"get_light_state": None},
     }
 
     @staticmethod
@@ -146,26 +151,26 @@ class Discover:
         on_discovered=None,
         timeout=5,
         discovery_packets=3,
-        return_raw=False,
         interface=None,
-    ) -> Mapping[str, Union[SmartDevice, Dict]]:
+    ) -> DeviceDict:
         """Discover supported devices.
 
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.
+        If you have multiple interfaces, you can use target parameter to specify the network for discovery.
 
-        If given, `on_discovered` coroutine will get passed with the :class:`SmartDevice`-derived object as parameter.
+        If given, `on_discovered` coroutine will get awaited with a :class:`SmartDevice`-derived object as parameter.
 
-        The results of the discovery are returned either as a list of :class:`SmartDevice`-derived objects
-        or as raw response dictionaries objects (if `return_raw` is True).
+        The results of the discovery are returned as a dict of :class:`SmartDevice`-derived objects keyed with IP addresses.
+        The devices are already initialized and all but emeter-related properties can be accessed directly.
 
-        :param target: The target broadcast address (e.g. 192.168.xxx.255).
+        :param target: The target address where to send the broadcast discovery queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
         :param timeout: How long to wait for responses, defaults to 5
-        :param discovery_packets: Number of discovery packets are broadcasted.
-        :param return_raw: True to return JSON objects instead of Devices.
-        :return:
+        :param discovery_packets: Number of discovery packets to broadcast
+        :param interface: Bind to specific interface
+        :return: dictionary with discovered devices
         """
         loop = asyncio.get_event_loop()
         transport, protocol = await loop.create_datagram_endpoint(
@@ -187,9 +192,6 @@ class Discover:
 
         _LOGGER.debug("Discovered %s devices", len(protocol.discovered_devices))
 
-        if return_raw:
-            return protocol.discovered_devices_raw
-
         return protocol.discovered_devices
 
     @staticmethod
@@ -200,17 +202,15 @@ class Discover:
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol()
+        protocol = TPLinkSmartHomeProtocol(host)
 
-        info = await protocol.query(host, Discover.DISCOVERY_QUERY)
+        info = await protocol.query(Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
-        if device_class is not None:
-            dev = device_class(host)
-            await dev.update()
-            return dev
+        dev = device_class(host)
+        await dev.update()
 
-        raise SmartDeviceException("Unable to discover device, received: %s" % info)
+        return dev
 
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:
