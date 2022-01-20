@@ -92,10 +92,11 @@ class SmartStrip(SmartDevice):
 
         Needed for methods that are decorated with `requires_update`.
         """
-        await super().update(
-            update_children
-        )  # XXXX check update children or blank here
         self.create_children()
+        await super().update(update_children)
+        if update_children and self.has_emeter:
+            for plug in self.children:
+                await plug.update()
 
     def update_from_discovery_info(self, info):
         """Update state from info from the discover call."""
@@ -103,7 +104,7 @@ class SmartStrip(SmartDevice):
         self.create_children()
 
     @requires_update
-    def create_children(self, update_children):
+    def create_children(self):
         """Initialize the child devices during the first update.
 
         Called by update and update_from_discovery
@@ -115,10 +116,6 @@ class SmartStrip(SmartDevice):
                 self.children.append(
                     SmartStripPlug(self.host, parent=self, child_id=child["id"])
                 )
-
-        if update_children and self.has_emeter:
-            for plug in self.children:
-                await plug.update()  # type:ignore
 
     async def turn_on(self, **kwargs):
         """Turn the strip on."""

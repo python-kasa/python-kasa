@@ -79,13 +79,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
         try:
-            device_class = Discover._create_device_from_discovery_info(ip, info)
+            device = Discover._create_device_from_discovery_info(ip, info)
         except SmartDeviceException as ex:
             _LOGGER.debug("Unable to find device type from %s: %s", info, ex)
             return
-
-        device = device_class(ip)
-        device.update_from_discover_info(info)
 
         self.discovered_devices[ip] = device
 
