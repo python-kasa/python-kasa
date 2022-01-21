@@ -235,7 +235,7 @@ class Discover:
 
             return SmartBulb
 
-        raise SmartDeviceException("Unknown device type: %s", type_)
+        raise SmartDeviceException("Unknown device type: %s" % type_)
 
     @staticmethod
     def _create_device_from_discovery_info(ip, info: dict) -> SmartDevice:
