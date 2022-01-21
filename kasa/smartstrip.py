@@ -92,8 +92,8 @@ class SmartStrip(SmartDevice):
 
         Needed for methods that are decorated with `requires_update`.
         """
-        self.create_children()
         await super().update(update_children)
+        self.create_children()
         if update_children and self.has_emeter:
             for plug in self.children:
                 await plug.update()
