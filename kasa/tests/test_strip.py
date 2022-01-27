@@ -1,4 +1,5 @@
 from datetime import datetime
+from re import I
 
 import pytest
 from pytest_mock import mocker
@@ -91,7 +92,8 @@ async def test_get_plug_by_index(dev: SmartStrip):
 
 @strip
 async def test_toggle_plug_by_index(dev: SmartStrip):
-    plug:SmartStripPlug = dev.children[0]
+    assert isinstance(dev.children[0], SmartStripPlug)
+    plug: SmartStripPlug = dev.children[0]
     await plug.turn_on()
     await plug.update()
     assert plug.is_on
@@ -99,10 +101,10 @@ async def test_toggle_plug_by_index(dev: SmartStrip):
     await plug.update()
     assert plug.is_off
 
-    # Discovery protocol for KP400 sets the child_id to be the  
-    #   index without the deviceID but expects the child to 
-    #   be called with the strip deviceID prepended as part of the childId 
-    original_child_id = plug.child_id 
+    # Discovery protocol for KP400 sets the child_id to be the
+    #   index without the deviceID but expects the child to
+    #   be called with the strip deviceID prepended as part of the childId
+    original_child_id = plug.child_id
     plug.child_id = plug.child_id[-2:]
     await plug.turn_on()
     await plug.update()
@@ -114,7 +116,6 @@ async def test_toggle_plug_by_index(dev: SmartStrip):
     await plug.update()
     assert plug.is_off
     assert plug.child_id == original_child_id
-
 
 
 @pytest.mark.skip("this test will wear out your relays")

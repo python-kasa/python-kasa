@@ -65,7 +65,9 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 )
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, use_discovery, debug, bulb, plug, lightstrip, strip, type):
+async def cli(
+    ctx, host, alias, target, use_discovery, debug, bulb, plug, lightstrip, strip, type
+):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -91,10 +93,10 @@ async def cli(ctx, host, alias, target, use_discovery, debug, bulb, plug, lights
 
     if use_discovery:
         dev = await find_dev_using_discovery(host)
-        if (dev is None):
+        if dev is None:
             click.echo(f"Could not find {host} through discovery")
             return
-    else: 
+    else:
         if bulb or plug or strip or lightstrip:
             click.echo(
                 "Using --bulb, --plug, --strip, and --lightstrip is deprecated. Use --type instead to define the type"
@@ -179,14 +181,17 @@ async def discover(ctx, timeout, discover_only, dump_raw):
     return found_devs
 
 
-async def find_dev_using_discovery(host, target="255.255.255.255", timeout=1, attempts=3):
-    """Find a device using discovery protocol to fill in the device details"""
+async def find_dev_using_discovery(
+    host, target="255.255.255.255", timeout=1, attempts=3
+):
+    """Find a device using discovery protocol to fill in the device details."""
     for attempt in range(1, attempts):
         found_devs = await Discover.discover(target=target, timeout=timeout)
         for ip, dev in found_devs.items():
             if ip == host:
                 return dev
     return None
+
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
     """Discover a device identified by its alias."""

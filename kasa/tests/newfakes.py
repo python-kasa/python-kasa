@@ -1,6 +1,6 @@
-from ctypes import sizeof
 import logging
 import re
+from ctypes import sizeof
 
 from voluptuous import (  # type: ignore
     REMOVE_EXTRA,
@@ -341,7 +341,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
                     _LOGGER.info("Found %s, turning to %s", child, x["state"])
                     child["state"] = x["state"]
                     num_toggled += 1
-            if (num_child_ids > num_toggled):
+            if num_child_ids > num_toggled:
                 raise SmartDeviceException("Index not found")
         else:
             self.proto["system"]["get_sysinfo"]["relay_state"] = x["state"]
