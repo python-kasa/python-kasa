@@ -30,7 +30,6 @@ async def test_type_detection_strip(dev: SmartDevice):
     d = Discover._create_device_from_discovery_info(
         "localhost", dev.protocol.discovery_data
     )
-    # d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_strip
     assert d.device_type == DeviceType.Strip
     assert len(d.children) > 0
