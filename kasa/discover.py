@@ -244,16 +244,3 @@ class Discover:
         device = device_class(ip)
         device.update_from_discovery_info(info)
         return device
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    loop = asyncio.get_event_loop()
-
-    async def _on_device(dev):
-        await dev.update()
-        _LOGGER.info("Got device: %s", dev)
-
-    devices = loop.run_until_complete(Discover.discover(on_discovered=_on_device))
-    for ip, dev in devices.items():
-        print(f"[{ip}] {dev}")
