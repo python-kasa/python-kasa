@@ -1,3 +1,4 @@
+from ctypes import sizeof
 import logging
 import re
 
@@ -11,6 +12,8 @@ from voluptuous import (  # type: ignore
     Range,
     Schema,
 )
+
+from kasa import SmartDeviceException
 
 from ..protocol import TPLinkSmartHomeProtocol
 
@@ -331,10 +334,15 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
 
         _LOGGER.info("child_ids: %s", child_ids)
         if child_ids:
+            num_child_ids = len(child_ids)
+            num_toggled = 0
             for child in self.proto["system"]["get_sysinfo"]["children"]:
                 if child["id"] in child_ids:
                     _LOGGER.info("Found %s, turning to %s", child, x["state"])
                     child["state"] = x["state"]
+                    num_toggled += 1
+            if (num_child_ids > num_toggled):
+                raise SmartDeviceException("Index not found")
         else:
             self.proto["system"]["get_sysinfo"]["relay_state"] = x["state"]
 
