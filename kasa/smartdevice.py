@@ -714,6 +714,16 @@ class SmartDevice:
         """Return True if the device supports color temperature."""
         return False
 
+    @property  # type: ignore
+    @requires_update
+    def has_effects(self) -> bool:
+        """Return True if the device supports effects."""
+        # Currently limited to KL430 since other strips
+        # were not available for testing
+        return "lighting_effect_state" in self.sys_info and self.sys_info[
+            "model"
+        ].startswith("KL430")
+
     @property
     def is_color(self) -> bool:
         """Return True if the device supports color changes."""

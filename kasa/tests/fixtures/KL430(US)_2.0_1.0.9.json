@@ -1,0 +1,57 @@
+{
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 11150,
+            "total_wh": 18
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "LEF": 1,
+            "active_mode": "none",
+            "alias": "kl430 updated",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "length": 16,
+            "light_state": {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 194,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 50
+            },
+            "lighting_effect_state": {
+                "brightness": 100,
+                "custom": 0,
+                "enable": 1,
+                "id": "izRhLCQNcDzIKdpMPqSTtBMuAIoreAuT",
+                "name": "Rainbow"
+            },
+            "longitude_i": 0,
+            "mic_mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL430(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [],
+            "rssi": -58,
+            "status": "new",
+            "sw_ver": "1.0.9 Build 210915 Rel.170534"
+        }
+    }
+}

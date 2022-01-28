@@ -1,8 +1,9 @@
 """Module for light strips (KL430)."""
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
+from .effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from .smartbulb import SmartBulb
-from .smartdevice import DeviceType, requires_update
+from .smartdevice import DeviceType, SmartDeviceException, requires_update
 
 
 class SmartLightStrip(SmartBulb):
@@ -66,10 +67,52 @@ class SmartLightStrip(SmartBulb):
 
     @property  # type: ignore
     @requires_update
+    def effect_list(self) -> Optional[List[str]]:
+        """Return built-in effects list.
+
+        Example:
+            ['Aurora', 'Bubbling Cauldron', ...]
+        """
+        return EFFECT_NAMES_V1 if self.has_effects else None
+
+    @property  # type: ignore
+    @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return strip specific state information."""
         info = super().state_information
 
         info["Length"] = self.length
+        if self.has_effects:
+            info["Effect"] = self.effect["name"]
 
         return info
+
+    @requires_update
+    async def set_effect(
+        self,
+        effect: str,
+    ) -> None:
+        """Set an effect on the device.
+
+        :param str effect: The effect to set
+        """
+        if effect not in EFFECT_MAPPING_V1:
+            raise SmartDeviceException(f"The effect {effect} is not a built in effect.")
+        await self.set_custom_effect(EFFECT_MAPPING_V1[effect])
+
+    @requires_update
+    async def set_custom_effect(
+        self,
+        effect_dict: Dict,
+    ) -> None:
+        """Set a custom effect on the device.
+
+        :param str effect_dict: The custom effect dict to set
+        """
+        if not self.has_effects:
+            raise SmartDeviceException("Bulb does not support effects.")
+        await self._query_helper(
+            "smartlife.iot.lighting_effect",
+            "set_lighting_effect",
+            effect_dict,
+        )

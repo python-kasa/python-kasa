@@ -359,6 +359,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             self.proto["system"]["get_sysinfo"]["relay_state"] = 1
             self.proto["system"]["get_sysinfo"]["brightness"] = x["brightness"]
 
+    def set_lighting_effect(self, effect, *args):
+        _LOGGER.debug("Setting light effect to %s", effect)
+        self.proto["system"]["get_sysinfo"]["lighting_effect_state"] = dict(effect)
+
     def transition_light_state(self, state_changes, *args):
         _LOGGER.debug("Setting light state to %s", state_changes)
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
@@ -421,6 +425,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         "smartlife.iot.smartbulb.lightingservice": {
             "get_light_state": light_state,
             "transition_light_state": transition_light_state,
+        },
+        "smartlife.iot.lighting_effect": {
+            "set_lighting_effect": set_lighting_effect,
         },
         # lightstrip follows the same payloads but uses different module & method
         "smartlife.iot.lightStrip": {
