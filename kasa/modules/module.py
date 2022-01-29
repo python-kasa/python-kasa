@@ -1,10 +1,14 @@
 """Base class for all module implementations."""
 import collections
+import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from kasa import SmartDevice
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 # TODO: This is used for query construcing
@@ -45,6 +49,10 @@ class Module(ABC):
     @property
     def is_supported(self) -> bool:
         """Return whether the module is supported by the device."""
+        if self._module not in self._device._last_update:
+            _LOGGER.debug("Initial update, so consider supported: %s", self._module)
+            return True
+
         return "err_code" not in self.data
 
     def call(self, method, params=None):
