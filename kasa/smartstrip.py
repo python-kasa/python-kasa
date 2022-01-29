@@ -13,7 +13,7 @@ from kasa.smartdevice import (
 )
 from kasa.smartplug import SmartPlug
 
-from .modules import Antitheft, Countdown, Schedule, Time, Usage
+from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,6 +87,7 @@ class SmartStrip(SmartDevice):
         self.add_module("usage", Usage(self, "schedule"))
         self.add_module("time", Time(self, "time"))
         self.add_module("countdown", Countdown(self, "countdown"))
+        self.add_module("emeter", Emeter(self, "emeter"))
 
     @property  # type: ignore
     @requires_update
@@ -255,9 +256,31 @@ class SmartStripPlug(SmartPlug):
 
         Needed for properties that are decorated with `requires_update`.
         """
+        # TODO: it needs to be checked if this still works after modularization
         self._last_update = await self.parent.protocol.query(
             self._create_emeter_request()
         )
+
+    def _create_emeter_request(self, year: int = None, month: int = None):
+        """Create a request for requesting all emeter statistics at once."""
+        if year is None:
+            year = datetime.now().year
+        if month is None:
+            month = datetime.now().month
+
+        req: Dict[str, Any] = {}
+        from .smartdevice import merge
+
+        merge(req, self._create_request("emeter", "get_realtime"))
+        merge(req, self._create_request("emeter", "get_monthstat", {"year": year}))
+        merge(
+            req,
+            self._create_request(
+                "emeter", "get_daystat", {"month": month, "year": year}
+            ),
+        )
+
+        return req
 
     def _create_request(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
@@ -325,7 +348,7 @@ class SmartStripPlug(SmartPlug):
         info = self._get_child_info()
         on_time = info["on_time"]
 
-        return datetime.now() - timedelta(seconds=on_time)
+        return self.time - timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update
