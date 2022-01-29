@@ -76,6 +76,8 @@ def cli(host, debug):
         Call(
             module="smartlife.iot.smartbulb.lightingservice", method="get_light_state"
         ),
+        Call(module="smartlife.iot.LAS", method="get_config"),
+        Call(module="smartlife.iot.PIR", method="get_config"),
     ]
 
     successes = []
