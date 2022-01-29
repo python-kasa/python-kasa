@@ -321,6 +321,9 @@ class SmartDevice:
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
         for module in self.modules.values():
+            if not module.is_supported:
+                _LOGGER.info("Module %s not supported, skipping" % module)
+                continue
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
             req = merge(req, module.query())
