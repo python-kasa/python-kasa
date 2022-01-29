@@ -4,6 +4,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
+from ..exceptions import SmartDeviceException
+
 if TYPE_CHECKING:
     from kasa import SmartDevice
 
@@ -44,6 +46,11 @@ class Module(ABC):
     @property
     def data(self):
         """Return the module specific raw data from the last update."""
+        if self._module not in self._device._last_update:
+            raise SmartDeviceException(
+                f"You need to call update() prior accessing module data for '{self._module}'"
+            )
+
         return self._device._last_update[self._module]
 
     @property
