@@ -322,7 +322,7 @@ class SmartDevice:
 
         for module in self.modules.values():
             if not module.is_supported:
-                _LOGGER.info("Module %s not supported, skipping" % module)
+                _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
