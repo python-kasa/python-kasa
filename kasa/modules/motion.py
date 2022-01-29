@@ -2,8 +2,7 @@
 from enum import Enum
 from typing import Optional
 
-from kasa.smartdevice import SmartDeviceException
-
+from ..exceptions import SmartDeviceException
 from .module import Module
 
 

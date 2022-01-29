@@ -186,7 +186,6 @@ class SmartDevice:
 
     """
 
-    TIME_SERVICE = "time"
     emeter_type = "emeter"
 
     def __init__(self, host: str) -> None:
@@ -308,11 +307,6 @@ class SmartDevice:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             self._last_update = await self.protocol.query(req)
             self._sys_info = self._last_update["system"]["get_sysinfo"]
-            # If the device has no emeter, we are done for the initial update
-            # Otherwise we will follow the regular code path to also query
-            # the emeter data also during the initial update
-            if not self.has_emeter:
-                return
 
         if self.has_emeter:
             _LOGGER.debug(
@@ -374,22 +368,17 @@ class SmartDevice:
 
     async def get_time(self) -> Optional[datetime]:
         """Return current time from the device, if available."""
-        try:
-            res = await self._query_helper(self.TIME_SERVICE, "get_time")
-            return datetime(
-                res["year"],
-                res["month"],
-                res["mday"],
-                res["hour"],
-                res["min"],
-                res["sec"],
-            )
-        except SmartDeviceException:
-            return None
+        _LOGGER.warning(
+            "Use `time` property instead, this call will be removed in the future."
+        )
+        return await self.modules["time"].get_time()
 
     async def get_timezone(self) -> Dict:
         """Return timezone information."""
-        return await self._query_helper(self.TIME_SERVICE, "get_timezone")
+        _LOGGER.warning(
+            "Use `timezone` property instead, this call will be removed in the future."
+        )
+        return await self.modules["time"].get_timezone()
 
     @property  # type: ignore
     @requires_update
@@ -427,7 +416,7 @@ class SmartDevice:
             loc["latitude"] = sys_info["latitude_i"] / 10000
             loc["longitude"] = sys_info["longitude_i"] / 10000
         else:
-            _LOGGER.warning("Unsupported device location.")
+            _LOGGER.debug("Unsupported device location.")
 
         return loc
 
@@ -475,29 +464,7 @@ class SmartDevice:
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
         self._verify_emeter()
-        return EmeterStatus(await self._query_helper(self.emeter_type, "get_realtime"))
-
-    def _create_emeter_request(self, year: int = None, month: int = None):
-        """Create a Internal method for building a request for all emeter statistics at once."""
-        # TODO: this is currently only here for smartstrip plug support, move it there?
-        if year is None:
-            year = datetime.now().year
-        if month is None:
-            month = datetime.now().month
-
-        req: Dict[str, Any] = {}
-        merge(req, self._create_request(self.emeter_type, "get_realtime"))
-        merge(
-            req, self._create_request(self.emeter_type, "get_monthstat", {"year": year})
-        )
-        merge(
-            req,
-            self._create_request(
-                self.emeter_type, "get_daystat", {"month": month, "year": year}
-            ),
-        )
-
-        return req
+        return EmeterStatus(await self.modules["emeter"].get_realtime())
 
     @property  # type: ignore
     @requires_update
