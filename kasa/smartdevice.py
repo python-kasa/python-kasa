@@ -607,7 +607,7 @@ class SmartDevice:
 
         on_time = self.sys_info["on_time"]
 
-        return datetime.now() - timedelta(seconds=on_time)
+        return self.time - timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update
