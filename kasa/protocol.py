@@ -156,7 +156,7 @@ class TPLinkSmartHomeProtocol:
 
     def __del__(self) -> None:
         if self.writer and self.loop and self.loop.is_running():
-            self.writer.close()
+            self.loop.call_soon_threadsafe(self.writer.close)
         self._reset()
 
     @staticmethod
