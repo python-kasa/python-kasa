@@ -39,6 +39,10 @@ class Emeter(Usage):
         """
         return await self.call("erase_emeter_stat")
 
+    async def get_realtime(self):
+        """Return real-time statistics."""
+        return await self.call("get_realtime")
+
     async def get_daystat(self, *, year, month, kwh=True):
         """Return daily stats for the given year & month."""
         raw_data = await super().get_daystat(year=year, month=month)

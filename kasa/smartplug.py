@@ -39,7 +39,6 @@ class SmartPlug(SmartDevice):
 
     def __init__(self, host: str) -> None:
         super().__init__(host)
-        self.emeter_type = "emeter"
         self._device_type = DeviceType.Plug
         self.add_module("schedule", Schedule(self, "schedule"))
         self.add_module("usage", Usage(self, "schedule"))
