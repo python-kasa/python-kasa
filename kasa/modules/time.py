@@ -1,6 +1,7 @@
 """Provides the current time and timezone information."""
 from datetime import datetime
 
+from ..exceptions import SmartDeviceException
 from .module import Module, merge
 
 
@@ -32,3 +33,22 @@ class Time(Module):
         """Return current timezone."""
         res = self.data["get_timezone"]
         return res
+
+    async def get_time(self):
+        """Return current device time."""
+        try:
+            res = await self.call("get_time")
+            return datetime(
+                res["year"],
+                res["month"],
+                res["mday"],
+                res["hour"],
+                res["min"],
+                res["sec"],
+            )
+        except SmartDeviceException:
+            return None
+
+    async def get_timezone(self):
+        """Request timezone information from the device."""
+        return await self.call("get_timezone")
