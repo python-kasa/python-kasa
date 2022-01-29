@@ -437,6 +437,8 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             "set_brightness": set_hs220_brightness,
             "set_dimmer_transition": set_hs220_dimmer_transition,
         },
+        "smartlife.iot.LAS": {},
+        "smartlife.iot.PIR": {},
     }
 
     async def query(self, request, port=9999):
