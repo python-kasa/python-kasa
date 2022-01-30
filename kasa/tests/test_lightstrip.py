@@ -3,7 +3,7 @@ import pytest
 from kasa import DeviceType, SmartLightStrip
 from kasa.exceptions import SmartDeviceException
 
-from .conftest import lightstrip, lightstrip_effects, lightstrip_no_effects, pytestmark
+from .conftest import lightstrip, pytestmark
 
 
 @lightstrip
@@ -20,13 +20,7 @@ async def test_lightstrip_effect(dev: SmartLightStrip):
         assert k in dev.effect
 
 
-@lightstrip_no_effects
-async def test_no_effects_lightstrip_set_effect(dev: SmartLightStrip):
-    with pytest.raises(SmartDeviceException):
-        await dev.set_effect("Aurora")
-
-
-@lightstrip_effects
+@lightstrip
 async def test_effects_lightstrip_set_effect(dev: SmartLightStrip):
     with pytest.raises(SmartDeviceException):
         await dev.set_effect("Not real")
@@ -36,13 +30,7 @@ async def test_effects_lightstrip_set_effect(dev: SmartLightStrip):
     assert dev.state_information["Effect"] == "Candy Cane"
 
 
-@lightstrip_no_effects
-async def test_no_effects_lightstrip_has_effects(dev: SmartLightStrip):
-    assert dev.has_effects is False
-    assert dev.effect_list is None
-
-
-@lightstrip_effects
+@lightstrip
 async def test_effects_lightstrip_has_effects(dev: SmartLightStrip):
     assert dev.has_effects is True
     assert dev.effect_list

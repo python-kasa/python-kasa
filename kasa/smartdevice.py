@@ -718,11 +718,7 @@ class SmartDevice:
     @requires_update
     def has_effects(self) -> bool:
         """Return True if the device supports effects."""
-        # Currently limited to KL430 since other strips
-        # were not available for testing
-        return "lighting_effect_state" in self.sys_info and self.sys_info[
-            "model"
-        ].startswith("KL430")
+        return "lighting_effect_state" in self.sys_info
 
     @property
     def is_color(self) -> bool:
