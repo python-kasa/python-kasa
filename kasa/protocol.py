@@ -158,7 +158,7 @@ class TPLinkSmartHomeProtocol:
         if self.writer and self.loop and self.loop.is_running():
             # Since __del__ will be called when python does
             # garbage collection is can happen in the event loop
-            # or in a thread so we need to make sure the call to
+            # or in another thread so we need to make sure the call to
             # close is called safely with call_soon_threadsafe
             self.loop.call_soon_threadsafe(self.writer.close)
         self._reset()
