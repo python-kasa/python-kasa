@@ -24,6 +24,7 @@ SUPPORTED_DEVICES = glob.glob(
     os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
 )
 
+
 LIGHT_STRIPS = {"KL400", "KL430"}
 VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL125", "KL130", "KL135", "KL430"}
 COLOR_BULBS = {"LB130", "KL125", "KL130", "KL135", *LIGHT_STRIPS}
@@ -88,7 +89,6 @@ plug = parametrize("plugs", PLUGS, ids=basename)
 strip = parametrize("strips", STRIPS, ids=basename)
 dimmer = parametrize("dimmers", DIMMERS, ids=basename)
 lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=basename)
-
 
 # bulb types
 dimmable = parametrize("dimmable", DIMMABLE)
