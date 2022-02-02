@@ -1,4 +1,5 @@
 """python-kasa cli tool."""
+import asyncio
 import logging
 from pprint import pformat as pf
 from typing import cast
@@ -145,24 +146,24 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 
 @cli.command()
 @click.option("--timeout", default=3, required=False)
-@click.option("--discover-only", default=False)
 @click.option("--dump-raw", is_flag=True)
 @click.pass_context
-async def discover(ctx, timeout, discover_only, dump_raw):
+async def discover(ctx, timeout, dump_raw):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
     click.echo(f"Discovering devices on {target} for {timeout} seconds")
-    found_devs = await Discover.discover(target=target, timeout=timeout)
-    if not discover_only:
-        for ip, dev in found_devs.items():
-            if dump_raw:
-                click.echo(dev.sys_info)
-                continue
+    sem = asyncio.Semaphore()
+
+    async def print_discovered(dev: SmartDevice):
+        await dev.update()
+        async with sem:
             ctx.obj = dev
             await ctx.invoke(state)
             click.echo()
 
-    return found_devs
+    await Discover.discover(
+        target=target, timeout=timeout, on_discovered=print_discovered
+    )
 
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
@@ -224,7 +225,6 @@ async def state(ctx, dev: SmartDevice):
     click.echo(click.style("\n\t== Device specific information ==", bold=True))
     for k, v in dev.state_information.items():
         click.echo(f"\t{k}: {v}")
-    click.echo()
 
     if dev.has_emeter:
         click.echo(click.style("\n\t== Current State ==", bold=True))
