@@ -134,3 +134,8 @@ async def test_childrens(dev):
         assert len(dev.children) > 0
     else:
         assert len(dev.children) == 0
+
+
+async def test_internal_state(dev):
+    """Make sure the internal state returns the last update results."""
+    assert dev.internal_state == dev._last_update

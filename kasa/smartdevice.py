@@ -721,6 +721,15 @@ class SmartDevice:
         """Return True if the device supports color changes."""
         return False
 
+    @property
+    def internal_state(self) -> Any:
+        """Return the internal state of the instance.
+
+        The returned object contains the raw results from the last update call.
+        This should only be used for debugging purposes.
+        """
+        return self._last_update
+
     def __repr__(self):
         if self._last_update is None:
             return f"<{self._device_type} at {self.host} - update() needed>"
