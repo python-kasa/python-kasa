@@ -45,17 +45,22 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 )
 @click.option(
     "--target",
+    envvar="KASA_TARGET",
     default="255.255.255.255",
     required=False,
+    show_default=True,
     help="The broadcast address to be used for discovery.",
 )
-@click.option("-d", "--debug", default=False, is_flag=True)
+@click.option("-d", "--debug", envvar="KASA_DEBUG", default=False, is_flag=True)
 @click.option("--bulb", default=False, is_flag=True)
 @click.option("--plug", default=False, is_flag=True)
 @click.option("--lightstrip", default=False, is_flag=True)
 @click.option("--strip", default=False, is_flag=True)
 @click.option(
-    "--type", default=None, type=click.Choice(TYPE_TO_CLASS, case_sensitive=False)
+    "--type",
+    envvar="KASA_TYPE",
+    default=None,
+    type=click.Choice(TYPE_TO_CLASS, case_sensitive=False),
 )
 @click.version_option(package_name="python-kasa")
 @click.pass_context
