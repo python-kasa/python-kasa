@@ -139,3 +139,12 @@ async def test_childrens(dev):
 async def test_internal_state(dev):
     """Make sure the internal state returns the last update results."""
     assert dev.internal_state == dev._last_update
+
+
+async def test_features(dev):
+    """Make sure features is always accessible."""
+    sysinfo = dev._last_update["system"]["get_sysinfo"]
+    if "feature" in sysinfo:
+        assert dev.features == set(sysinfo["feature"].split(":"))
+    else:
+        assert dev.features == set()

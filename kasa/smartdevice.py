@@ -262,7 +262,11 @@ class SmartDevice:
     @requires_update
     def features(self) -> Set[str]:
         """Return a set of features that the device supports."""
-        return set(self.sys_info["feature"].split(":"))
+        try:
+            return set(self.sys_info["feature"].split(":"))
+        except KeyError:
+            _LOGGER.debug("Device does not have feature information")
+            return set()
 
     @property  # type: ignore
     @requires_update
