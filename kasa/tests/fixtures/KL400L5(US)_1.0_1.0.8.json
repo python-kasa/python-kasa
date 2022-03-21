@@ -1,0 +1,57 @@
+{
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 10800,
+            "total_wh": 1
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "LEF": 0,
+            "active_mode": "none",
+            "alias": "Kl400",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 0,
+            "latitude_i": 0,
+            "length": 1,
+            "light_state": {
+                "brightness": 100,
+                "color_temp": 6500,
+                "hue": 0,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 100,
+                "custom": 0,
+                "enable": 1,
+                "id": "CdLeIgiKcQrLKMINRPTMbylATulQewLD",
+                "name": "Hanukkah"
+            },
+            "longitude_i": 0,
+            "mic_mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL400L5(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [],
+            "rssi": -44,
+            "status": "new",
+            "sw_ver": "1.0.8 Build 211018 Rel.162056"
+        }
+    }
+}

@@ -372,6 +372,27 @@ async def temperature(dev: SmartBulb, temperature: int, transition: int):
 
 
 @cli.command()
+@click.argument("effect", type=click.STRING, default=None, required=False)
+@click.pass_context
+@pass_dev
+async def effect(dev, ctx, effect):
+    """Set an effect."""
+    if not dev.has_effects:
+        click.echo("Device does not support effects")
+        return
+    if effect is None:
+        raise click.BadArgumentUsage(
+            f"Setting an effect requires a named built-in effect: {dev.effect_list}",
+            ctx,
+        )
+    if effect not in dev.effect_list:
+        raise click.BadArgumentUsage(f"Effect must be one of: {dev.effect_list}", ctx)
+
+    click.echo(f"Setting Effect: {effect}")
+    return await dev.set_effect(effect)
+
+
+@cli.command()
 @click.argument("h", type=click.IntRange(0, 360), default=None, required=False)
 @click.argument("s", type=click.IntRange(0, 100), default=None, required=False)
 @click.argument("v", type=click.IntRange(0, 100), default=None, required=False)
