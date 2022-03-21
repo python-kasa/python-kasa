@@ -377,7 +377,8 @@ async def effect(dev, ctx, effect):
         return
     if effect is None:
         raise click.BadArgumentUsage(
-            "Setting an effect requires a named built-in effect.", ctx
+            f"Setting an effect requires a named built-in effect: {dev.effect_list}",
+            ctx,
         )
     if effect not in dev.effect_list:
         raise click.BadArgumentUsage(f"Effect must be one of: {dev.effect_list}", ctx)
