@@ -36,7 +36,9 @@ async def test_initial_update_no_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 1
+    # 2 calls are necessary as some devices crash on unexpected modules
+    # See #105, #120, #161
+    assert spy.call_count == 2
 
 
 async def test_query_helper(dev):
