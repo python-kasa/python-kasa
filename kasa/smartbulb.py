@@ -34,6 +34,9 @@ TPLINK_KELVIN = {
     r"KL430": ColorTempRange(2500, 9000),
 }
 
+
+NON_COLOR_MODE_FLAGS = {"transition_period", "on_off"}
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -211,8 +214,14 @@ class SmartBulb(SmartDevice):
         if "on_off" not in state:
             state["on_off"] = 1
 
-        # This is necessary to allow turning on into a specific state
-        state["ignore_default"] = 1
+        # If we are turning on without any color mode flags,
+        # we do not want to set ignore_default to ensure
+        # we restore the previous state.
+        if state["on_off"] and NON_COLOR_MODE_FLAGS.issuperset(state):
+            state["ignore_default"] = 0
+        else:
+            # This is necessary to allow turning on into a specific state
+            state["ignore_default"] = 1
 
         light_state = await self._query_helper(
             self.LIGHT_SERVICE, self.SET_LIGHT_METHOD, state
