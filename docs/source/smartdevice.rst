@@ -1,7 +1,7 @@
 .. py:module:: kasa
 
 Common API
-======================
+==========
 
 The basic functionalities of all supported devices are accessible using the common :class:`SmartDevice` base class.
 
@@ -62,7 +62,7 @@ Refer to device type specific classes for more examples:
 :class:`SmartDimmer`, :class:`SmartLightStrip`.
 
 Energy Consumption and Usage Statistics
-=======================================
+***************************************
 
 .. note::
     In order to use the helper methods to calculate the statistics correctly, your devices need to have correct time set.
@@ -92,7 +92,7 @@ You can access this information using through the usage module (:class:`kasa.mod
 
 
 API documentation
-~~~~~~~~~~~~~~~~~
+*****************
 
 .. autoclass:: SmartDevice
     :members:
