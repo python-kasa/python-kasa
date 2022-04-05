@@ -237,8 +237,7 @@ async def test_non_dimmable(dev):
 @bulb
 async def test_ignore_default_not_set_without_color_mode_change_turn_on(dev, mocker):
     query_helper = mocker.patch("kasa.SmartBulb._query_helper")
-    # When turning back ignore do not ignore
-    # default so we restore state
+    # When turning back without settings, ignore default to restore the state
     await dev.turn_on()
     args, kwargs = query_helper.call_args_list[0]
     assert args[2] == {"on_off": 1, "ignore_default": 0}
