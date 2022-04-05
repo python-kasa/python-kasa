@@ -1,9 +1,24 @@
 # Changelog
 
-## [0.4.2](https://github.com/python-kasa/python-kasa/tree/0.4.2) (2022-03-21)
+## [0.4.3](https://github.com/python-kasa/python-kasa/tree/0.4.3) (2022-04-05)
 
-This is the last release prior restructuring the code to enable easier extendability by moving towards more modular architecture.
-The most prominent change in this release is the support for effects on light strips.
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.2...0.4.3)
+
+**Fixed bugs:**
+
+- Divide by zero when HS300 powerstrip is discovered [\#292](https://github.com/python-kasa/python-kasa/issues/292)
+- Ensure bulb state is restored when turning back on [\#330](https://github.com/python-kasa/python-kasa/pull/330) (@bdraco)
+
+**Closed issues:**
+
+- KL420L5 controls [\#327](https://github.com/python-kasa/python-kasa/issues/327)
+
+**Merged pull requests:**
+
+- Update pre-commit hooks to fix black in CI [\#331](https://github.com/python-kasa/python-kasa/pull/331) (@rytilahti)
+- Fix test\_deprecated\_type stalling [\#325](https://github.com/python-kasa/python-kasa/pull/325) (@bdraco)
+
+## [0.4.2](https://github.com/python-kasa/python-kasa/tree/0.4.2) (2022-03-21)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.1...0.4.2)
 
@@ -33,6 +48,7 @@ The most prominent change in this release is the support for effects on light st
 
 **Merged pull requests:**
 
+- Release 0.4.2 [\#321](https://github.com/python-kasa/python-kasa/pull/321) (@rytilahti)
 - Add pyupgrade to CI runs [\#314](https://github.com/python-kasa/python-kasa/pull/314) (@rytilahti)
 - Depend on asyncclick \>= 8 [\#312](https://github.com/python-kasa/python-kasa/pull/312) (@rytilahti)
 - Guard emeter accesses to avoid keyerrors [\#304](https://github.com/python-kasa/python-kasa/pull/304) (@rytilahti)
