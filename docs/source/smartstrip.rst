@@ -1,11 +1,6 @@
 Smart strips
 ============
 
-
-.. note::
-
-    The emeter feature is currently not implemented for smart strips. See https://github.com/python-kasa/python-kasa/issues/64 for details.
-
 .. note::
 
     Feel free to open a pull request to improve the documentation!
