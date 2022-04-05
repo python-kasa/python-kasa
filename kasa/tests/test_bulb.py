@@ -232,3 +232,17 @@ async def test_non_dimmable(dev):
         assert dev.brightness == 0
     with pytest.raises(SmartDeviceException):
         await dev.set_brightness(100)
+
+
+@bulb
+async def test_ignore_default_not_set_without_color_mode_change_turn_on(dev, mocker):
+    query_helper = mocker.patch("kasa.SmartBulb._query_helper")
+    # When turning back ignore do not ignore
+    # default so we restore state
+    await dev.turn_on()
+    args, kwargs = query_helper.call_args_list[0]
+    assert args[2] == {"on_off": 1, "ignore_default": 0}
+
+    await dev.turn_off()
+    args, kwargs = query_helper.call_args_list[1]
+    assert args[2] == {"on_off": 0, "ignore_default": 1}
