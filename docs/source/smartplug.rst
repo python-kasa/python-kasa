@@ -11,4 +11,5 @@ API documentation
 
 .. autoclass:: kasa.SmartPlug
     :members:
+    :inherited-members:
     :undoc-members:

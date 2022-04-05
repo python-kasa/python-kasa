@@ -8,6 +8,7 @@
    cli
    discover
    smartdevice
+   design
    smartbulb
    smartplug
    smartdimmer

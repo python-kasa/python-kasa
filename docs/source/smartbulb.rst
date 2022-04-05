@@ -56,4 +56,5 @@ API documentation
 
 .. autoclass:: kasa.SmartBulb
     :members:
+    :inherited-members:
     :undoc-members:
