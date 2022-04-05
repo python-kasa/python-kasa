@@ -34,4 +34,5 @@ API documentation
 
 .. autoclass:: kasa.SmartStrip
     :members:
+    :inherited-members:
     :undoc-members:

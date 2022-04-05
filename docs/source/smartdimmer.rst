@@ -10,4 +10,5 @@ API documentation
 
 .. autoclass:: kasa.SmartDimmer
     :members:
+    :inherited-members:
     :undoc-members:

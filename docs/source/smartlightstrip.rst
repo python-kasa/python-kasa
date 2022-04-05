@@ -10,4 +10,5 @@ API documentation
 
 .. autoclass:: kasa.SmartLightStrip
     :members:
+    :inherited-members:
     :undoc-members:
