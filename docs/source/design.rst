@@ -45,6 +45,7 @@ API documentation for modules
 *****************************
 
 .. automodule:: kasa.modules
+    :noindex:
     :members:
     :inherited-members:
     :undoc-members:
