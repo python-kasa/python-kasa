@@ -22,7 +22,7 @@ asyncclick = ">=8"
 pydantic = "^1"
 
 # required only for docs
-sphinx = { version = "^3", optional = true }
+sphinx = { version = "^4", optional = true }
 m2r = { version = "^0", optional = true }
 mistune = { version = "<2.0.0", optional = true }
 sphinx_rtd_theme = { version = "^0", optional = true }
@@ -80,6 +80,10 @@ verbose = 2
 markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
+
+[tool.doc8]
+paths = ["docs"]
+ignore = ["D001"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
