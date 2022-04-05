@@ -314,6 +314,11 @@ class SmartDevice:
             self._last_update = await self.protocol.query(req)
             self._sys_info = self._last_update["system"]["get_sysinfo"]
 
+        await self._modular_update(req)
+        self._sys_info = self._last_update["system"]["get_sysinfo"]
+
+    async def _modular_update(self, req: dict) -> None:
+        """Execute an update query."""
         if self.has_emeter:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
@@ -326,10 +331,9 @@ class SmartDevice:
                 continue
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
-            req = merge(req, module.query())
+            req = merge(req, q)
 
         self._last_update = await self.protocol.query(req)
-        self._sys_info = self._last_update["system"]["get_sysinfo"]
 
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""

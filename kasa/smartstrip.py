@@ -3,13 +3,14 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, DefaultDict, Dict, Optional
-
+import asyncio
 from kasa.smartdevice import (
     DeviceType,
     EmeterStatus,
     SmartDevice,
     SmartDeviceException,
     requires_update,
+    merge,
 )
 from kasa.smartplug import SmartPlug
 
@@ -250,16 +251,16 @@ class SmartStripPlug(SmartPlug):
         self._last_update = parent._last_update
         self._sys_info = parent._sys_info
         self._device_type = DeviceType.StripSocket
+        self.modules = {}
+        self.protocol = parent.protocol  # Must use the same connection as the parent
+        self.add_module("time", Time(self, "time"))
 
     async def update(self, update_children: bool = True):
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.
         """
-        # TODO: it needs to be checked if this still works after modularization
-        self._last_update = await self.parent.protocol.query(
-            self._create_emeter_request()
-        )
+        await self._modular_update({})
 
     def _create_emeter_request(self, year: int = None, month: int = None):
         """Create a request for requesting all emeter statistics at once."""
