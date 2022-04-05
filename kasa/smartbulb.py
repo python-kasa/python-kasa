@@ -42,7 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class SmartBulb(SmartDevice):
-    """Representation of a TP-Link Smart Bulb.
+    r"""Representation of a TP-Link Smart Bulb.
 
     To initialize, you have to await :func:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
@@ -50,7 +50,7 @@ class SmartBulb(SmartDevice):
     All changes to the device are done using awaitable methods,
     which will not change the cached values, but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`s,
+    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
     and should be handled by the user of the library.
 
     Examples:
@@ -68,7 +68,7 @@ class SmartBulb(SmartDevice):
         >>> print(bulb.is_on)
         True
 
-        You can use the is_-prefixed properties to check for supported features
+        You can use the ``is_``-prefixed properties to check for supported features
         >>> bulb.is_dimmable
         True
         >>> bulb.is_color

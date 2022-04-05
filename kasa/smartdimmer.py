@@ -7,7 +7,7 @@ from kasa.smartplug import SmartPlug
 
 
 class SmartDimmer(SmartPlug):
-    """Representation of a TP-Link Smart Dimmer.
+    r"""Representation of a TP-Link Smart Dimmer.
 
     Dimmers work similarly to plugs, but provide also support for
     adjusting the brightness. This class extends :class:`SmartPlug` interface.
@@ -18,7 +18,7 @@ class SmartDimmer(SmartPlug):
     All changes to the device are done using awaitable methods,
     which will not change the cached values, but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`s,
+    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
     and should be handled by the user of the library.
 
     Examples:

@@ -29,7 +29,7 @@ def merge_sums(dicts):
 
 
 class SmartStrip(SmartDevice):
-    """Representation of a TP-Link Smart Power Strip.
+    r"""Representation of a TP-Link Smart Power Strip.
 
     A strip consists of the parent device and its children.
     All methods of the parent act on all children, while the child devices
@@ -41,7 +41,7 @@ class SmartStrip(SmartDevice):
     All changes to the device are done using awaitable methods,
     which will not change the cached values, but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`s,
+    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
     and should be handled by the user of the library.
 
     Examples:
