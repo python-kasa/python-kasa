@@ -3,14 +3,14 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, DefaultDict, Dict, Optional
-import asyncio
+
 from kasa.smartdevice import (
     DeviceType,
     EmeterStatus,
     SmartDevice,
     SmartDeviceException,
-    requires_update,
     merge,
+    requires_update,
 )
 from kasa.smartplug import SmartPlug
 
@@ -270,7 +270,6 @@ class SmartStripPlug(SmartPlug):
             month = datetime.now().month
 
         req: Dict[str, Any] = {}
-        from .smartdevice import merge
 
         merge(req, self._create_request("emeter", "get_realtime"))
         merge(req, self._create_request("emeter", "get_monthstat", {"year": year}))
