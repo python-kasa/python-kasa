@@ -53,10 +53,6 @@ pass_dev = click.make_pass_decorator(SmartDevice)
     help="The broadcast address to be used for discovery.",
 )
 @click.option("-d", "--debug", envvar="KASA_DEBUG", default=False, is_flag=True)
-@click.option("--bulb", default=False, is_flag=True)
-@click.option("--plug", default=False, is_flag=True)
-@click.option("--lightstrip", default=False, is_flag=True)
-@click.option("--strip", default=False, is_flag=True)
 @click.option(
     "--type",
     envvar="KASA_TYPE",
@@ -65,7 +61,7 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 )
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, type):
+async def cli(ctx, host, alias, target, debug, type):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -94,19 +90,6 @@ async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, ty
         click.echo("No host name given, trying discovery..")
         await ctx.invoke(discover)
         return
-
-    if bulb or plug or strip or lightstrip:
-        click.echo(
-            "Using --bulb, --plug, --strip, and --lightstrip is deprecated. Use --type instead to define the type"
-        )
-        if bulb:
-            type = "bulb"
-        elif plug:
-            type = "plug"
-        elif strip:
-            type = "strip"
-        elif lightstrip:
-            type = "lightstrip"
 
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
@@ -158,9 +141,8 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 
 @cli.command()
 @click.option("--timeout", default=3, required=False)
-@click.option("--dump-raw", is_flag=True)
 @click.pass_context
-async def discover(ctx, timeout, dump_raw):
+async def discover(ctx, timeout):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
     click.echo(f"Discovering devices on {target} for {timeout} seconds")
@@ -201,8 +183,7 @@ async def sysinfo(dev):
 
 @cli.command()
 @pass_dev
-@click.pass_context
-async def state(ctx, dev: SmartDevice):
+async def state(dev: SmartDevice):
     """Print out device state and versions."""
     click.echo(click.style(f"== {dev.alias} - {dev.model} ==", bold=True))
     click.echo(f"\tHost: {dev.host}")
