@@ -100,6 +100,17 @@ class SmartLightStrip(SmartBulb):
             raise SmartDeviceException(f"The effect {effect} is not a built in effect.")
         await self.set_custom_effect(EFFECT_MAPPING_V1[effect])
 
+    async def _query_helper(
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    ) -> Any:
+        """Override query helper to process the response."""
+        response = await super()._query_helper(target, cmd, arg)
+        if cmd == "set_lighting_effect":
+            assert arg is not None
+            self._merge_sys_info("lighting_effect_state", arg, response)
+            self._update_sys_info_from_last_update()
+        return response
+
     @requires_update
     async def set_custom_effect(
         self,

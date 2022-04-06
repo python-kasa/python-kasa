@@ -1,6 +1,6 @@
 """Module for smart plugs (HS100, HS110, ..)."""
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from kasa.modules import Antitheft, Cloud, Schedule, Time, Usage
 from kasa.smartdevice import DeviceType, SmartDevice, requires_update
@@ -52,6 +52,19 @@ class SmartPlug(SmartDevice):
         """Return whether device is on."""
         sys_info = self.sys_info
         return bool(sys_info["relay_state"])
+
+    async def _query_helper(
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    ) -> Any:
+        """Override query helper to process the response."""
+        response = await super()._query_helper(target, cmd, arg)
+        if cmd == "set_relay_state":
+            assert arg is not None
+            self._set_last_update_sysinfo_key("relay_state", arg["state"])
+        elif cmd == "set_led_off":
+            assert arg is not None
+            self._set_last_update_sysinfo_key("led_off", arg["off"])
+        return response
 
     async def turn_on(self, **kwargs):
         """Turn the switch on."""

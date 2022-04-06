@@ -295,9 +295,20 @@ class SmartStripPlug(SmartPlug):
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
     ) -> Any:
         """Override query helper to include the child_ids."""
-        return await self.parent._query_helper(
+        response = await self.parent._query_helper(
             target, cmd, arg, child_ids=[self.child_id]
         )
+        if cmd == "set_relay_state":
+            assert arg is not None
+            self.parent._set_last_update_sysinfo_key(
+                "relay_state", arg["state"], child_ids=[self.child_id]
+            )
+        elif cmd == "set_led_off":
+            assert arg is not None
+            self.parent._set_last_update_sysinfo_key(
+                "led_off", arg["off"], child_ids=[self.child_id]
+            )
+        return response
 
     @property  # type: ignore
     @requires_update

@@ -1,10 +1,16 @@
 """Module for bulbs (LB*, KL*, KB*)."""
 import logging
 import re
-from typing import Any, Dict, NamedTuple, cast
+from typing import Any, Dict, NamedTuple, Optional, cast
 
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
-from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
+from .smartdevice import (
+    DeviceType,
+    SmartDevice,
+    SmartDeviceException,
+    merge,
+    requires_update,
+)
 
 
 class ColorTempRange(NamedTuple):
@@ -234,6 +240,20 @@ class SmartBulb(SmartDevice):
             self.LIGHT_SERVICE, self.SET_LIGHT_METHOD, state
         )
         return light_state
+
+    async def _query_helper(
+        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    ) -> Any:
+        """Override query helper to process the response."""
+        response = await super()._query_helper(target, cmd, arg)
+        if cmd == self.SET_LIGHT_METHOD:
+            assert arg is not None
+            get_sysinfo = self._merge_sys_info("light_state", arg, response)
+            light_state = get_sysinfo["light_state"]
+            if light_state["on_off"] and "dft_on_state" in light_state:
+                light_state = merge(light_state, light_state.pop("dft_on_state"))
+            self._update_sys_info_from_last_update()
+        return response
 
     @property  # type: ignore
     @requires_update

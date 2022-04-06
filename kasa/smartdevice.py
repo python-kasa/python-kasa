@@ -270,6 +270,27 @@ class SmartDevice:
 
         return result
 
+    def _merge_sys_info(
+        self, target: str, request: Dict[str, Any], response: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Merge a request and response into the cached get_sysinfo."""
+        get_sysinfo = self._last_update["system"]["get_sysinfo"]
+        get_sysinfo[target] = merge(merge(get_sysinfo[target], request), response)
+        return get_sysinfo
+
+    def _set_last_update_sysinfo_key(
+        self, key: str, value: Any, child_ids=None
+    ) -> None:
+        """Update from a query response."""
+        get_sysinfo = self._last_update["system"]["get_sysinfo"]
+        if child_ids:
+            for child in get_sysinfo["children"]:
+                if child["id"] in child_ids:
+                    child[key] = value
+        else:
+            get_sysinfo[key] = value
+        self._update_sys_info_from_last_update()
+
     @property  # type: ignore
     @requires_update
     def features(self) -> Set[str]:
@@ -312,9 +333,12 @@ class SmartDevice:
         if self._last_update is None:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             self._last_update = await self.protocol.query(req)
-            self._sys_info = self._last_update["system"]["get_sysinfo"]
+            self._update_sys_info_from_last_update()
 
         await self._modular_update(req)
+        self._update_sys_info_from_last_update()
+
+    def _update_sys_info_from_last_update(self):
         self._sys_info = self._last_update["system"]["get_sysinfo"]
 
     async def _modular_update(self, req: dict) -> None:
@@ -338,7 +362,7 @@ class SmartDevice:
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
         self._last_update = info
-        self._sys_info = info["system"]["get_sysinfo"]
+        self._update_sys_info_from_last_update()
 
     @property  # type: ignore
     @requires_update
