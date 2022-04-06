@@ -1,6 +1,7 @@
 """python-kasa cli tool."""
 import asyncio
 import logging
+import sys
 from pprint import pformat as pf
 from typing import cast
 
@@ -66,6 +67,12 @@ pass_dev = click.make_pass_decorator(SmartDevice)
 @click.pass_context
 async def cli(ctx, host, alias, target, debug, bulb, plug, lightstrip, strip, type):
     """A tool for controlling TP-Link smart home devices."""  # noqa
+    # no need to perform any checks if we are just displaying the help
+    if sys.argv[-1] == "--help":
+        # Context object is required to avoid crashing on sub-groups
+        ctx.obj = SmartDevice(None)
+        return
+
     if debug:
         logging.basicConfig(level=logging.DEBUG)
     else:
