@@ -11,6 +11,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
 import contextlib
+import errno
 import json
 import logging
 import struct
@@ -20,6 +21,7 @@ from typing import Dict, Generator, Optional, Union
 from .exceptions import SmartDeviceException
 
 _LOGGER = logging.getLogger(__name__)
+_NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
 
 
 class TPLinkSmartHomeProtocol:
@@ -118,6 +120,18 @@ class TPLinkSmartHomeProtocol:
         for retry in range(retry_count + 1):
             try:
                 await self._connect(timeout)
+            except ConnectionRefusedError as ex:
+                await self.close()
+                raise SmartDeviceException(
+                    f"Unable to connect to the device: {self.host}: {ex}"
+                )
+            except OSError as ex:
+                await self.close()
+                if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
+                    raise SmartDeviceException(
+                        f"Unable to connect to the device: {self.host}: {ex}"
+                    )
+                continue
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:
