@@ -11,6 +11,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
 import contextlib
+import errno
 import json
 import logging
 import struct
@@ -20,6 +21,7 @@ from typing import Dict, Generator, Optional, Union
 from .exceptions import SmartDeviceException
 
 _LOGGER = logging.getLogger(__name__)
+_NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
 
 
 class TPLinkSmartHomeProtocol:
@@ -115,9 +117,30 @@ class TPLinkSmartHomeProtocol:
 
     async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
+        #
+        # Most of the time we will already be connected if the device is online
+        # and the connect call will do nothing and return right away
+        #
+        # However, if we get an unrecoverable error (_NO_RETRY_ERRORS and ConnectionRefusedError)
+        # we do not want to keep trying since many connection open/close operations
+        # in the same time frame can block the event loop. This is especially
+        # import when there are multiple tplink devices being polled.
+        #
         for retry in range(retry_count + 1):
             try:
                 await self._connect(timeout)
+            except ConnectionRefusedError as ex:
+                await self.close()
+                raise SmartDeviceException(
+                    f"Unable to connect to the device: {self.host}: {ex}"
+                )
+            except OSError as ex:
+                await self.close()
+                if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
+                    raise SmartDeviceException(
+                        f"Unable to connect to the device: {self.host}: {ex}"
+                    )
+                continue
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:

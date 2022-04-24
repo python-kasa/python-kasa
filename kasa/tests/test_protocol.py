@@ -1,3 +1,4 @@
+import errno
 import json
 import logging
 import struct
@@ -27,6 +28,39 @@ async def test_protocol_retries(mocker, retry_count):
         await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=retry_count)
 
     assert conn.call_count == retry_count + 1
+
+
+async def test_protocol_no_retry_on_unreachable(mocker):
+    conn = mocker.patch(
+        "asyncio.open_connection",
+        side_effect=OSError(errno.EHOSTUNREACH, "No route to host"),
+    )
+    with pytest.raises(SmartDeviceException):
+        await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=5)
+
+    assert conn.call_count == 1
+
+
+async def test_protocol_no_retry_connection_refused(mocker):
+    conn = mocker.patch(
+        "asyncio.open_connection",
+        side_effect=ConnectionRefusedError,
+    )
+    with pytest.raises(SmartDeviceException):
+        await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=5)
+
+    assert conn.call_count == 1
+
+
+async def test_protocol_retry_recoverable_error(mocker):
+    conn = mocker.patch(
+        "asyncio.open_connection",
+        side_effect=OSError(errno.ECONNRESET, "Connection reset by peer"),
+    )
+    with pytest.raises(SmartDeviceException):
+        await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=5)
+
+    assert conn.call_count == 6
 
 
 @pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
