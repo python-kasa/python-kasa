@@ -12,6 +12,12 @@ export NEW_RELEASE=0.4.0.dev4
 poetry version $NEW_RELEASE
 ```
 
+3. Write a short and understandable summary for the release.
+
+* Create a new issue and label it with release-summary
+* Create $NEW_RELEASE milestone in github, and assign the issue to that
+* Close the issue
+
 3. Generate changelog
 
 ```bash
@@ -20,8 +26,6 @@ poetry version $NEW_RELEASE
 export CHANGELOG_GITHUB_TOKEN=token
 github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md
 ```
-
-3. Write a short and understandable summary for the release.
 
 4. Commit the changed files
 
