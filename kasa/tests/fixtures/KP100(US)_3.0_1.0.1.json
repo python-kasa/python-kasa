@@ -1,0 +1,31 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Kasa",
+            "dev_name": "Smart Wi-Fi Plug Mini",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "3.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP100(US)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 523,
+            "relay_state": 1,
+            "rssi": -60,
+            "status": "new",
+            "sw_ver": "1.0.1 Build 200831 Rel.142128",
+            "updating": 0
+        }
+    }
+}
