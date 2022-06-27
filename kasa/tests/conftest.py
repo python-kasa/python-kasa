@@ -49,15 +49,16 @@ PLUGS = {
     "HS210",
     "EP10",
     "KP100",
-    "KP115",
     "KP105",
+    "KP115",
+    "KP125",
     "KP401",
 }
 STRIPS = {"HS107", "HS300", "KP303", "KP400", "EP40"}
 DIMMERS = {"HS220", "KS220M"}
 
 DIMMABLE = {*BULBS, *DIMMERS}
-WITH_EMETER = {"HS110", "HS300", "KP115", *BULBS}
+WITH_EMETER = {"HS110", "HS300", "KP115", "KP125", *BULBS}
 
 ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
