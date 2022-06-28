@@ -135,6 +135,7 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 
 ### Wall switches
 
+* ES20M
 * HS200
 * HS210
 * HS220
