@@ -140,6 +140,7 @@ or the `parse_pcap.py` script contained inside the `devtools` directory.
 * HS210
 * HS220
 * KS220M
+* KS230
 
 ### Bulbs
 

@@ -1,0 +1,64 @@
+{
+    "smartlife.iot.dimmer": {
+        "get_dimmer_parameters": {
+            "bulb_type": 1,
+            "err_code": 0,
+            "fadeOffTime": 1000,
+            "fadeOnTime": 1000,
+            "gentleOffTime": 10000,
+            "gentleOnTime": 3000,
+            "minThreshold": 11,
+            "rampRate": 30
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Test KS230",
+            "brightness": 60,
+            "dc_state": 0,
+            "dev_name": "Wi-Fi Smart 3-Way Dimmer",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KS230(US)",
+            "next_action": {
+                "type": -1
+            },
+            "ntc_state": 0,
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "index": 0
+                },
+                {
+                    "brightness": 75,
+                    "index": 1
+                },
+                {
+                    "brightness": 50,
+                    "index": 2
+                },
+                {
+                    "brightness": 25,
+                    "index": 3
+                }
+            ],
+            "relay_state": 0,
+            "rssi": -52,
+            "status": "new",
+            "sw_ver": "1.0.14 Build 220127 Rel.124555",
+            "updating": 0
+        }
+    }
+}
