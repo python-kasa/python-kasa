@@ -1,0 +1,126 @@
+{
+    "smartlife.iot.LAS": {
+        "get_config": {
+            "devs": [
+                {
+                    "dark_index": 0,
+                    "enable": 1,
+                    "hw_id": 0,
+                    "level_array": [
+                        {
+                            "adc": 367,
+                            "name": "cloudy",
+                            "value": 14
+                        },
+                        {
+                            "adc": 300,
+                            "name": "overcast",
+                            "value": 12
+                        },
+                        {
+                            "adc": 222,
+                            "name": "dawn",
+                            "value": 9
+                        },
+                        {
+                            "adc": 222,
+                            "name": "twilight",
+                            "value": 9
+                        },
+                        {
+                            "adc": 111,
+                            "name": "total darkness",
+                            "value": 4
+                        },
+                        {
+                            "adc": 2400,
+                            "name": "custom",
+                            "value": 97
+                        }
+                    ],
+                    "max_adc": 2450,
+                    "min_adc": 0
+                }
+            ],
+            "err_code": 0,
+            "ver": "1.0"
+        }
+    },
+    "smartlife.iot.PIR": {
+        "get_config": {
+            "array": [
+                80,
+                50,
+                20,
+                0
+            ],
+            "cold_time": 600000,
+            "enable": 1,
+            "err_code": 0,
+            "max_adc": 4095,
+            "min_adc": 0,
+            "trigger_index": 0,
+            "version": "1.0"
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "get_dimmer_parameters": {
+            "bulb_type": 1,
+            "err_code": 0,
+            "fadeOffTime": 2000,
+            "fadeOnTime": 1000,
+            "gentleOffTime": 10000,
+            "gentleOnTime": 3000,
+            "minThreshold": 14,
+            "rampRate": 30
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Test ES20M",
+            "brightness": 35,
+            "dev_name": "Wi-Fi Smart Dimmer with sensor",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "ES20M(US)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "index": 0
+                },
+                {
+                    "brightness": 75,
+                    "index": 1
+                },
+                {
+                    "brightness": 50,
+                    "index": 2
+                },
+                {
+                    "brightness": 25,
+                    "index": 3
+                }
+            ],
+            "relay_state": 0,
+            "rssi": -59,
+            "status": "new",
+            "sw_ver": "1.0.8 Build 211201 Rel.123822",
+            "updating": 0
+        }
+    }
+}
