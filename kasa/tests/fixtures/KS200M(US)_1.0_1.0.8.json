@@ -1,0 +1,95 @@
+{
+    "smartlife.iot.LAS": {
+        "get_config": {
+            "devs": [
+                {
+                    "dark_index": 4,
+                    "enable": 1,
+                    "hw_id": 0,
+                    "level_array": [
+                        {
+                            "adc": 390,
+                            "name": "cloudy",
+                            "value": 15
+                        },
+                        {
+                            "adc": 300,
+                            "name": "overcast",
+                            "value": 12
+                        },
+                        {
+                            "adc": 222,
+                            "name": "dawn",
+                            "value": 9
+                        },
+                        {
+                            "adc": 220,
+                            "name": "twilight",
+                            "value": 8
+                        },
+                        {
+                            "adc": 98,
+                            "name": "total darkness",
+                            "value": 4
+                        },
+                        {
+                            "adc": 2400,
+                            "name": "custom",
+                            "value": 97
+                        }
+                    ],
+                    "max_adc": 2450,
+                    "min_adc": 0
+                }
+            ],
+            "err_code": 0,
+            "ver": "1.0"
+        }
+    },
+    "smartlife.iot.PIR": {
+        "get_config": {
+            "array": [
+                80,
+                50,
+                20,
+                0
+            ],
+            "cold_time": 600000,
+            "enable": 1,
+            "err_code": 0,
+            "max_adc": 4095,
+            "min_adc": 0,
+            "trigger_index": 1,
+            "version": "1.0"
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "Test KS200M",
+            "dev_name": "Smart Light Switch with PIR",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KS200M(US)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -66,
+            "status": "new",
+            "sw_ver": "1.0.8 Build 211201 Rel.125056",
+            "updating": 0
+        }
+    }
+}
