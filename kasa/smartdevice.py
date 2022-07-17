@@ -128,7 +128,7 @@ class SmartDevice:
         >>> dev.mac
         50:C7:BF:01:F8:CD
 
-        Some information can also be changed programatically:
+        Some information can also be changed programmatically:
 
         >>> asyncio.run(dev.set_alias("new alias"))
         >>> asyncio.run(dev.set_mac("01:23:45:67:89:ab"))
@@ -433,7 +433,7 @@ class SmartDevice:
     @property  # type: ignore
     @requires_update
     def rssi(self) -> Optional[int]:
-        """Return WiFi signal strenth (rssi)."""
+        """Return WiFi signal strength (rssi)."""
         rssi = self.sys_info.get("rssi")
         return None if rssi is None else int(rssi)
 
