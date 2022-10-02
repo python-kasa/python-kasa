@@ -77,16 +77,18 @@ async def test_emeter(dev: SmartDevice, mocker):
     assert "== Emeter ==" in res.output
 
     monthly = mocker.patch.object(dev, "get_emeter_monthly")
-    monthly.return_value = []
+    monthly.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
     assert "For year" in res.output
-    monthly.assert_called()
+    assert "1, 1234" in res.output
+    monthly.assert_called_with(year=1900)
 
     daily = mocker.patch.object(dev, "get_emeter_daily")
-    daily.return_value = []
+    daily.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
     assert "For month" in res.output
-    daily.assert_called()
+    assert "1, 1234" in res.output
+    daily.assert_called_with(year=1900, month=12)
 
 
 async def test_brightness(dev):
