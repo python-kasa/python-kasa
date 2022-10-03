@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 from asyncclick.testing import CliRunner
 
@@ -66,6 +68,7 @@ async def test_raw_command(dev):
     assert "Usage" in res.output
 
 
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
 async def test_emeter(dev: SmartDevice, mocker):
     runner = CliRunner()
 
