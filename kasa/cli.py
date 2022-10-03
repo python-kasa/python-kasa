@@ -297,7 +297,7 @@ async def emeter(dev: SmartDevice, year, month, erase):
     if year:
         click.echo(f"== For year {year.year} ==")
         click.echo("Month, usage (kWh)")
-        usage_data = await dev.get_emeter_monthly(year.year)
+        usage_data = await dev.get_emeter_monthly(year=year.year)
     elif month:
         click.echo(f"== For month {month.month} of {month.year} ==")
         click.echo("Day, usage (kWh)")
