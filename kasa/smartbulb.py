@@ -2,8 +2,7 @@
 import logging
 import re
 from typing import Any, Dict, List, NamedTuple, cast
-
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, root_validator
 
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
 from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
@@ -32,6 +31,50 @@ class SmartBulbPreset(BaseModel):
     hue: int
     saturation: int
     color_temp: int
+
+
+class BehaviorMode(str, Enum):
+    """Enum to present type of turn on behavior."""
+    Last = "last_status"
+    Preset = "customize_preset"
+
+
+class TurnOnBehavior(BaseModel):
+    """Model to present a single turn on behavior.
+
+    To change the behavior, it is only necessary to change the ``preset`` field
+    to contain the preset index, or ``None`` for the last known state.
+    """
+
+    preset: Optional[int] = Field(alias="index", default=None)
+    mode: BehaviorMode
+
+    @root_validator
+    def mode_based_on_preset(cls, values):
+        """Set the mode based on the preset value."""
+        if values["preset"] is not None:
+            values["mode"] = BehaviorMode.Preset
+        else:
+            values["mode"] = BehaviorMode.Last
+
+        return values
+
+    class Config:
+        """Configuration to make the validator run when changing the values."""
+
+        validate_assignment = True
+
+
+class TurnOnBehaviors(BaseModel):
+    """Model to contain turn on behaviors.
+
+    Example:
+        {'soft_on': {'mode': 'last_status'},
+        'hard_on': {'mode': 'last_status'}}
+    """
+
+    soft: TurnOnBehavior = Field(alias="soft_on")
+    hard: TurnOnBehavior = Field(alias="hard_on")
 
 
 TPLINK_KELVIN = {
@@ -226,14 +269,21 @@ class SmartBulb(SmartDevice):
         """
         return await self._query_helper(self.LIGHT_SERVICE, "get_light_details")
 
-    async def get_turn_on_behavior(self) -> Dict:
-        """Return the behavior for turning the bulb on.
+    async def get_turn_on_behavior(self) -> TurnOnBehaviors:
+        """Return the behavior for turning the bulb on."""
+        return TurnOnBehaviors.parse_obj(
+            await self._query_helper(self.LIGHT_SERVICE, "get_default_behavior")
+        )
 
-        Example:
-            {'soft_on': {'mode': 'last_status'},
-            'hard_on': {'mode': 'last_status'}}
+    async def set_turn_on_behavior(self, behavior: TurnOnBehaviors):
+        """Set the behavior for turning the bulb on.
+
+        If you do not want to manually construct the behavior object,
+        you should use :func:`get_turn_on_behavior` to get the current settings.
         """
-        return await self._query_helper(self.LIGHT_SERVICE, "get_default_behavior")
+        return await self._query_helper(
+            self.LIGHT_SERVICE, "set_default_behavior", behavior.dict(by_alias=True)
+        )
 
     async def get_light_state(self) -> Dict[str, Dict]:
         """Query the light state."""

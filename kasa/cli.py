@@ -595,5 +595,36 @@ async def presets_modify(
     await dev.save_preset(preset)
 
 
+@cli.command()
+@pass_dev
+@click.option("--type", type=click.Choice(["soft", "hard"], case_sensitive=False))
+@click.option("--last", is_flag=True)
+@click.option("--preset", type=int)
+async def turn_on_behavior(dev: SmartBulb, type, last, preset):
+    """Modify bulb turn-on behavior."""
+    settings = await dev.get_turn_on_behavior()
+    click.echo(f"Current turn on behavior: {settings}")
+
+    # Return if we are not setting the value
+    if not type and not last and not preset:
+        return
+
+    # If we are setting the value, the type has to be specified
+    if (last or preset) and type is None:
+        click.echo("To set the behavior, you need to define --type")
+        return
+
+    behavior = getattr(settings, type)
+
+    if last:
+        click.echo(f"Going to set {type} to last")
+        behavior.preset = None
+    elif preset is not None:
+        click.echo(f"Going to set {type} to preset {preset}")
+        behavior.preset = preset
+
+    await dev.set_turn_on_behavior(settings)
+
+
 if __name__ == "__main__":
     cli()
