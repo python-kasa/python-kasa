@@ -43,7 +43,8 @@ class TurnOnBehavior(BaseModel):
     """Model to present a single turn on behavior.
 
     To change the behavior, it is only necessary to change the ``preset`` field
-    to contain the preset index, or ``None`` for the last known state.
+    to contain either the preset index, or ``None`` for the last known state.
+    The validator (:func:`mode_based_on_preset`) will enforce the mode setting based on the value.
     """
 
     preset: Optional[int] = Field(alias="index", default=None)
@@ -68,9 +69,8 @@ class TurnOnBehavior(BaseModel):
 class TurnOnBehaviors(BaseModel):
     """Model to contain turn on behaviors.
 
-    Example:
-        {'soft_on': {'mode': 'last_status'},
-        'hard_on': {'mode': 'last_status'}}
+    :ref:`soft` defines the default setting to turn the bulb programmatically on.
+    :ref:`hard` defines the default setting for when the bulb has been off from mains power.
     """
 
     soft: TurnOnBehavior = Field(alias="soft_on")
