@@ -149,7 +149,6 @@ If your device is unlisted but working, please open a pull request to update the
 
 ### Bulbs
 
-* EP40
 * LB100
 * LB110
 * LB120
