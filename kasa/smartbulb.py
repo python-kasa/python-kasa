@@ -62,7 +62,7 @@ class SmartBulb(SmartDevice):
     All changes to the device are done using awaitable methods,
     which will not change the cached values, but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
+    Errors reported by the device are raised as :class:`SmartDeviceExceptions <kasa.exceptions.SmartDeviceException>`,
     and should be handled by the user of the library.
 
     Examples:
@@ -80,7 +80,8 @@ class SmartBulb(SmartDevice):
         >>> print(bulb.is_on)
         True
 
-        You can use the ``is_``-prefixed properties to check for supported features
+        You can use the ``is_``-prefixed properties to check for supported features:
+
         >>> bulb.is_dimmable
         True
         >>> bulb.is_color
@@ -114,10 +115,25 @@ class SmartBulb(SmartDevice):
         HSV(hue=180, saturation=100, value=80)
 
         If you don't want to use the default transitions, you can pass `transition` in milliseconds.
-        This applies to all transitions (turn_on, turn_off, set_hsv, set_color_temp, set_brightness).
+        This applies to all transitions (:func:`turn_on`, :func:`turn_off`, :func:`set_hsv`, :func:`set_color_temp`, :func:`set_brightness`).
         The following changes the brightness over a period of 10 seconds:
 
         >>> asyncio.run(bulb.set_brightness(100, transition=10_000))
+
+        Bulb configuration presets can be accessed using the :func:`presets` property:
+
+        >>> bulb.presets
+        [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0)]
+
+        To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset` instance to :func:`save_preset` method:
+
+        >>> preset = bulb.presets[0]
+        >>> preset.brightness
+        50
+        >>> preset.brightness = 100
+        >>> asyncio.run(bulb.save_preset(preset))
+        >>> bulb.presets[0].brightness
+        100
 
     """
 

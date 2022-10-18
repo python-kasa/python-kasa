@@ -268,7 +268,6 @@ async def test_modify_preset(dev: SmartBulb, mocker):
     if not dev.presets:
         pytest.skip("Some strips do not support presets")
 
-    helper = mocker.patch("kasa.SmartBulb._query_helper")
     data = {
         "index": 0,
         "brightness": 10,
@@ -285,7 +284,7 @@ async def test_modify_preset(dev: SmartBulb, mocker):
     assert preset.color_temp == 0
 
     await dev.save_preset(preset)
-    helper.assert_called_with(mocker.ANY, "set_preferred_state", data)
+    assert dev.presets[0].brightness == 10
 
     with pytest.raises(SmartDeviceException):
         await dev.save_preset(
