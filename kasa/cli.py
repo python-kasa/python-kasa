@@ -216,8 +216,13 @@ async def state(dev: SmartDevice):
     click.echo(f"\tLocation:     {dev.location}")
 
     click.echo(click.style("\n\t== Device specific information ==", bold=True))
-    for k, v in dev.state_information.items():
-        click.echo(f"\t{k}: {v}")
+    for info_name, info_data in dev.state_information.items():
+        if isinstance(info_data, list):
+            click.echo(f"\t{info_name}:")
+            for item in info_data:
+                click.echo(f"\t\t{item}")
+        else:
+            click.echo(f"\t{info_name}: {info_data}")
 
     if dev.has_emeter:
         click.echo(click.style("\n\t== Current State ==", bold=True))
@@ -536,6 +541,58 @@ def _schedule_list(dev, type):
         print(rule)
     else:
         click.echo(f"No rules of type {type}")
+
+
+@cli.group(invoke_without_command=True)
+@click.pass_context
+async def presets(ctx):
+    """List and modify bulb setting presets."""
+    if ctx.invoked_subcommand is None:
+        return await ctx.invoke(presets_list)
+
+
+@presets.command(name="list")
+@pass_dev
+def presets_list(dev: SmartBulb):
+    """List presets."""
+    if not dev.is_bulb:
+        click.echo("Presets only supported on bulbs")
+        return
+
+    for preset in dev.presets:
+        print(preset)
+
+
+@presets.command(name="modify")
+@click.argument("index", type=int)
+@click.option("--brightness", type=int)
+@click.option("--hue", type=int)
+@click.option("--saturation", type=int)
+@click.option("--temperature", type=int)
+@pass_dev
+async def presets_modify(
+    dev: SmartBulb, index, brightness, hue, saturation, temperature
+):
+    """Modify a preset."""
+    for preset in dev.presets:
+        if preset.index == index:
+            break
+    else:
+        click.echo(f"No preset found for index {index}")
+        return
+
+    if brightness is not None:
+        preset.brightness = brightness
+    if hue is not None:
+        preset.hue = hue
+    if saturation is not None:
+        preset.saturation = saturation
+    if temperature is not None:
+        preset.color_temp = temperature
+
+    click.echo(f"Going to save preset: {preset}")
+
+    await dev.save_preset(preset)
 
 
 if __name__ == "__main__":
