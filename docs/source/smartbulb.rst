@@ -45,13 +45,13 @@ All command-line commands can be used with transition period for smooth changes.
 
 .. code::
 
-    $ kasa --bulb --host <host> off --transition 15000
+    $ kasa --type bulb --host <host> off --transition 15000
 
 **Example:** Change the bulb to red with 20% brightness over 15 seconds:
 
 .. code::
 
-    $ kasa --bulb --host <host> hsv 0 100 20 --transition 15000
+    $ kasa --type bulb --host <host> hsv 0 100 20 --transition 15000
 
 
 API documentation
