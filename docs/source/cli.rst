@@ -5,7 +5,7 @@ The package is shipped with a console tool named kasa, please refer to ``kasa --
 The device to which the commands are sent is chosen by ``KASA_HOST`` environment variable or passing ``--host <address>`` as an option.
 To see what is being sent to and received from the device, specify option ``--debug``.
 
-To avoid discovering the devices when executing commands its type can be passed as an option (e.g., ``--plug`` for plugs, ``--bulb`` for bulbs, ..).
+To avoid discovering the devices when executing commands its type can be passed as an option (e.g., ``--type plug`` for plugs, ``--type bulb`` for bulbs, ..).
 If no type is manually given, its type will be discovered automatically which causes a short delay.
 
 If no command is given, the ``state`` command will be executed to query the device state.
@@ -13,7 +13,7 @@ If no command is given, the ``state`` command will be executed to query the devi
 .. note::
 
     Some commands (such as reading energy meter values, changing bulb settings, or accessing individual sockets on smart strips) additional parameters are required,
-    which you can find by adding ``--help`` after the command, e.g. ``kasa emeter --help`` or ``kasa hsv --help``.
+    which you can find by adding ``--help`` after the command, e.g. ``kasa --type emeter --help`` or ``kasa --type hsv --help``.
     Refer to the device type specific documentation for more details.
 
 
