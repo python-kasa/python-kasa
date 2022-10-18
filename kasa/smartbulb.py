@@ -42,9 +42,11 @@ class BehaviorMode(str, Enum):
 class TurnOnBehavior(BaseModel):
     """Model to present a single turn on behavior.
 
-    To change the behavior, it is only necessary to change the ``preset`` field
+    :param int preset: the index number of wanted preset.
+    :param BehaviorMode mode: last status or preset mode. If you are changing existing settings, you should not set this manually.
+
+    To change the behavior, it is only necessary to change the :ref:`preset` field
     to contain either the preset index, or ``None`` for the last known state.
-    The validator (:func:`mode_based_on_preset`) will enforce the mode setting based on the value.
     """
 
     preset: Optional[int] = Field(alias="index", default=None)
@@ -69,8 +71,8 @@ class TurnOnBehavior(BaseModel):
 class TurnOnBehaviors(BaseModel):
     """Model to contain turn on behaviors.
 
-    :ref:`soft` defines the default setting to turn the bulb programmatically on.
-    :ref:`hard` defines the default setting for when the bulb has been off from mains power.
+    :param TurnOnBehavior soft: the default setting to turn the bulb programmatically on
+    :param TurnOnBehavior hard: default setting when the bulb has been off from mains power.
     """
 
     soft: TurnOnBehavior = Field(alias="soft_on")

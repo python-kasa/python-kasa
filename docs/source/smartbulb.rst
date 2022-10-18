@@ -66,3 +66,10 @@ API documentation
 .. autoclass:: kasa.SmartBulbPreset
     :members:
     :undoc-members:
+
+.. autoclass:: kasa.TurnOnBehaviors
+    :undoc-members:
+
+
+.. autoclass:: kasa.TurnOnBehavior
+    :undoc-members:

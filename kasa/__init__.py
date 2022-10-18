@@ -17,7 +17,7 @@ from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import SmartDeviceException
 from kasa.protocol import TPLinkSmartHomeProtocol
-from kasa.smartbulb import SmartBulb, SmartBulbPreset
+from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.smartdevice import DeviceType, SmartDevice
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
@@ -32,6 +32,8 @@ __all__ = [
     "TPLinkSmartHomeProtocol",
     "SmartBulb",
     "SmartBulbPreset",
+    "TurnOnBehaviors",
+    "TurnOnBehavior",
     "DeviceType",
     "EmeterStatus",
     "SmartDevice",
