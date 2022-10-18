@@ -9,6 +9,9 @@ This page aims to provide some details on the design and internals of this libra
 You might be interested in this if you want to improve this library,
 or if you are just looking to access some information that is not currently exposed.
 
+.. contents:: Contents
+   :local:
+
 .. _update_cycle:
 
 Update Cycle

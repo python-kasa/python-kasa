@@ -3,6 +3,12 @@
 Common API
 ==========
 
+.. contents:: Contents
+   :local:
+
+SmartDevice class
+*****************
+
 The basic functionalities of all supported devices are accessible using the common :class:`SmartDevice` base class.
 
 The property accesses use the data obtained before by awaiting :func:`SmartDevice.update()`.
