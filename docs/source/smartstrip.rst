@@ -18,13 +18,13 @@ If not specified, the commands will act on the parent device: turning the strip 
 
 .. code::
 
-   $ kasa --strip --host <host> on --index 0
+   $ kasa --type strip --host <host> on --index 0
 
 **Example:** Turn off the socket by name:
 
 .. code::
 
-   $ kasa --strip --host <host> off --name "Maybe Kitchen"
+   $ kasa --type strip --host <host> off --name "Maybe Kitchen"
 
 
 API documentation
