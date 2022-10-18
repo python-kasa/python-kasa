@@ -1,7 +1,7 @@
 Command-line usage
 ==================
 
-The package is shipped with a console tool named kasa, please refer to ``kasa --help`` for detailed usage.
+The package is shipped with a console tool named ``kasa``, refer to ``kasa --help`` for detailed usage.
 The device to which the commands are sent is chosen by ``KASA_HOST`` environment variable or passing ``--host <address>`` as an option.
 To see what is being sent to and received from the device, specify option ``--debug``.
 

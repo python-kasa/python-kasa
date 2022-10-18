@@ -1,6 +1,9 @@
 Bulbs
 ===========
 
+.. contents:: Contents
+   :local:
+
 Supported features
 ******************
 
