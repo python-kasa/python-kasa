@@ -1,7 +1,9 @@
 """Module for bulbs (LB*, KL*, KB*)."""
 import logging
 import re
-from typing import Any, Dict, List, NamedTuple, cast
+from enum import Enum
+from typing import Any, Dict, List, NamedTuple, Optional, cast
+
 from pydantic import BaseModel, Field, root_validator
 
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
@@ -35,6 +37,7 @@ class SmartBulbPreset(BaseModel):
 
 class BehaviorMode(str, Enum):
     """Enum to present type of turn on behavior."""
+
     Last = "last_status"
     Preset = "customize_preset"
 
