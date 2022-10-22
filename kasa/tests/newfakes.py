@@ -391,6 +391,12 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         _LOGGER.debug("New light state: %s", new_state)
         self.proto["system"]["get_sysinfo"]["light_state"] = new_state
 
+    def set_preferred_state(self, new_state, *args):
+        """Implementation of set_preferred_state."""
+        self.proto["system"]["get_sysinfo"]["preferred_state"][
+            new_state["index"]
+        ] = new_state
+
     def light_state(self, x, *args):
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
         # Our tests have light state off, so we simply return the dft_on_state when device is on.
@@ -425,6 +431,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         "smartlife.iot.smartbulb.lightingservice": {
             "get_light_state": light_state,
             "transition_light_state": transition_light_state,
+            "set_preferred_state": set_preferred_state,
         },
         "smartlife.iot.lighting_effect": {
             "set_lighting_effect": set_lighting_effect,
@@ -433,6 +440,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         "smartlife.iot.lightStrip": {
             "set_light_state": transition_light_state,
             "get_light_state": light_state,
+            "set_preferred_state": set_preferred_state,
         },
         "smartlife.iot.common.system": {
             "set_dev_alias": set_alias,

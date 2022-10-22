@@ -1,6 +1,6 @@
 import pytest
 
-from kasa import DeviceType, SmartDeviceException
+from kasa import DeviceType, SmartBulb, SmartBulbPreset, SmartDeviceException
 
 from .conftest import (
     bulb,
@@ -18,7 +18,7 @@ from .newfakes import BULB_SCHEMA, LIGHT_STATE_SCHEMA
 
 
 @bulb
-async def test_bulb_sysinfo(dev):
+async def test_bulb_sysinfo(dev: SmartBulb):
     assert dev.sys_info is not None
     BULB_SCHEMA(dev.sys_info)
 
@@ -31,7 +31,7 @@ async def test_bulb_sysinfo(dev):
 
 
 @bulb
-async def test_state_attributes(dev):
+async def test_state_attributes(dev: SmartBulb):
     assert "Brightness" in dev.state_information
     assert dev.state_information["Brightness"] == dev.brightness
 
@@ -40,7 +40,7 @@ async def test_state_attributes(dev):
 
 
 @bulb
-async def test_light_state_without_update(dev, monkeypatch):
+async def test_light_state_without_update(dev: SmartBulb, monkeypatch):
     with pytest.raises(SmartDeviceException):
         monkeypatch.setitem(
             dev._last_update["system"]["get_sysinfo"], "light_state", None
@@ -49,13 +49,13 @@ async def test_light_state_without_update(dev, monkeypatch):
 
 
 @bulb
-async def test_get_light_state(dev):
+async def test_get_light_state(dev: SmartBulb):
     LIGHT_STATE_SCHEMA(await dev.get_light_state())
 
 
 @color_bulb
 @turn_on
-async def test_hsv(dev, turn_on):
+async def test_hsv(dev: SmartBulb, turn_on):
     await handle_turn_on(dev, turn_on)
     assert dev.is_color
 
@@ -74,7 +74,7 @@ async def test_hsv(dev, turn_on):
 
 
 @color_bulb
-async def test_set_hsv_transition(dev, mocker):
+async def test_set_hsv_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.set_hsv(10, 10, 100, transition=1000)
 
@@ -86,7 +86,7 @@ async def test_set_hsv_transition(dev, mocker):
 
 @color_bulb
 @turn_on
-async def test_invalid_hsv(dev, turn_on):
+async def test_invalid_hsv(dev: SmartBulb, turn_on):
     await handle_turn_on(dev, turn_on)
     assert dev.is_color
 
@@ -104,13 +104,13 @@ async def test_invalid_hsv(dev, turn_on):
 
 
 @color_bulb
-async def test_color_state_information(dev):
+async def test_color_state_information(dev: SmartBulb):
     assert "HSV" in dev.state_information
     assert dev.state_information["HSV"] == dev.hsv
 
 
 @non_color_bulb
-async def test_hsv_on_non_color(dev):
+async def test_hsv_on_non_color(dev: SmartBulb):
     assert not dev.is_color
 
     with pytest.raises(SmartDeviceException):
@@ -120,7 +120,7 @@ async def test_hsv_on_non_color(dev):
 
 
 @variable_temp
-async def test_variable_temp_state_information(dev):
+async def test_variable_temp_state_information(dev: SmartBulb):
     assert "Color temperature" in dev.state_information
     assert dev.state_information["Color temperature"] == dev.color_temp
 
@@ -132,7 +132,7 @@ async def test_variable_temp_state_information(dev):
 
 @variable_temp
 @turn_on
-async def test_try_set_colortemp(dev, turn_on):
+async def test_try_set_colortemp(dev: SmartBulb, turn_on):
     await handle_turn_on(dev, turn_on)
     await dev.set_color_temp(2700)
     await dev.update()
@@ -140,7 +140,7 @@ async def test_try_set_colortemp(dev, turn_on):
 
 
 @variable_temp
-async def test_set_color_temp_transition(dev, mocker):
+async def test_set_color_temp_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.set_color_temp(2700, transition=100)
 
@@ -148,7 +148,7 @@ async def test_set_color_temp_transition(dev, mocker):
 
 
 @variable_temp
-async def test_unknown_temp_range(dev, monkeypatch, caplog):
+async def test_unknown_temp_range(dev: SmartBulb, monkeypatch, caplog):
     monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
 
     assert dev.valid_temperature_range == (2700, 5000)
@@ -156,7 +156,7 @@ async def test_unknown_temp_range(dev, monkeypatch, caplog):
 
 
 @variable_temp
-async def test_out_of_range_temperature(dev):
+async def test_out_of_range_temperature(dev: SmartBulb):
     with pytest.raises(ValueError):
         await dev.set_color_temp(1000)
     with pytest.raises(ValueError):
@@ -164,7 +164,7 @@ async def test_out_of_range_temperature(dev):
 
 
 @non_variable_temp
-async def test_non_variable_temp(dev):
+async def test_non_variable_temp(dev: SmartBulb):
     with pytest.raises(SmartDeviceException):
         await dev.set_color_temp(2700)
 
@@ -177,7 +177,7 @@ async def test_non_variable_temp(dev):
 
 @dimmable
 @turn_on
-async def test_dimmable_brightness(dev, turn_on):
+async def test_dimmable_brightness(dev: SmartBulb, turn_on):
     await handle_turn_on(dev, turn_on)
     assert dev.is_dimmable
 
@@ -194,7 +194,7 @@ async def test_dimmable_brightness(dev, turn_on):
 
 
 @bulb
-async def test_turn_on_transition(dev, mocker):
+async def test_turn_on_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.turn_on(transition=1000)
 
@@ -206,7 +206,7 @@ async def test_turn_on_transition(dev, mocker):
 
 
 @bulb
-async def test_dimmable_brightness_transition(dev, mocker):
+async def test_dimmable_brightness_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.set_brightness(10, transition=1000)
 
@@ -214,7 +214,7 @@ async def test_dimmable_brightness_transition(dev, mocker):
 
 
 @dimmable
-async def test_invalid_brightness(dev):
+async def test_invalid_brightness(dev: SmartBulb):
     assert dev.is_dimmable
 
     with pytest.raises(ValueError):
@@ -225,7 +225,7 @@ async def test_invalid_brightness(dev):
 
 
 @non_dimmable
-async def test_non_dimmable(dev):
+async def test_non_dimmable(dev: SmartBulb):
     assert not dev.is_dimmable
 
     with pytest.raises(SmartDeviceException):
@@ -235,7 +235,9 @@ async def test_non_dimmable(dev):
 
 
 @bulb
-async def test_ignore_default_not_set_without_color_mode_change_turn_on(dev, mocker):
+async def test_ignore_default_not_set_without_color_mode_change_turn_on(
+    dev: SmartBulb, mocker
+):
     query_helper = mocker.patch("kasa.SmartBulb._query_helper")
     # When turning back without settings, ignore default to restore the state
     await dev.turn_on()
@@ -245,3 +247,46 @@ async def test_ignore_default_not_set_without_color_mode_change_turn_on(dev, moc
     await dev.turn_off()
     args, kwargs = query_helper.call_args_list[1]
     assert args[2] == {"on_off": 0, "ignore_default": 1}
+
+
+@bulb
+async def test_list_presets(dev: SmartBulb):
+    presets = dev.presets
+    assert len(presets) == len(dev.sys_info["preferred_state"])
+
+    for preset, raw in zip(presets, dev.sys_info["preferred_state"]):
+        assert preset.index == raw["index"]
+        assert preset.hue == raw["hue"]
+        assert preset.brightness == raw["brightness"]
+        assert preset.saturation == raw["saturation"]
+        assert preset.color_temp == raw["color_temp"]
+
+
+@bulb
+async def test_modify_preset(dev: SmartBulb, mocker):
+    """Verify that modifying preset calls the  and exceptions are raised properly."""
+    if not dev.presets:
+        pytest.skip("Some strips do not support presets")
+
+    data = {
+        "index": 0,
+        "brightness": 10,
+        "hue": 0,
+        "saturation": 0,
+        "color_temp": 0,
+    }
+    preset = SmartBulbPreset(**data)
+
+    assert preset.index == 0
+    assert preset.brightness == 10
+    assert preset.hue == 0
+    assert preset.saturation == 0
+    assert preset.color_temp == 0
+
+    await dev.save_preset(preset)
+    assert dev.presets[0].brightness == 10
+
+    with pytest.raises(SmartDeviceException):
+        await dev.save_preset(
+            SmartBulbPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)
+        )

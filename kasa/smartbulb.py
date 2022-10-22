@@ -1,7 +1,9 @@
 """Module for bulbs (LB*, KL*, KB*)."""
 import logging
 import re
-from typing import Any, Dict, NamedTuple, cast
+from typing import Any, Dict, List, NamedTuple, cast
+
+from pydantic import BaseModel
 
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
 from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
@@ -20,6 +22,16 @@ class HSV(NamedTuple):
     hue: int
     saturation: int
     value: int
+
+
+class SmartBulbPreset(BaseModel):
+    """Bulb configuration preset."""
+
+    index: int
+    brightness: int
+    hue: int
+    saturation: int
+    color_temp: int
 
 
 TPLINK_KELVIN = {
@@ -50,7 +62,7 @@ class SmartBulb(SmartDevice):
     All changes to the device are done using awaitable methods,
     which will not change the cached values, but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
+    Errors reported by the device are raised as :class:`SmartDeviceExceptions <kasa.exceptions.SmartDeviceException>`,
     and should be handled by the user of the library.
 
     Examples:
@@ -68,7 +80,8 @@ class SmartBulb(SmartDevice):
         >>> print(bulb.is_on)
         True
 
-        You can use the ``is_``-prefixed properties to check for supported features
+        You can use the ``is_``-prefixed properties to check for supported features:
+
         >>> bulb.is_dimmable
         True
         >>> bulb.is_color
@@ -102,10 +115,25 @@ class SmartBulb(SmartDevice):
         HSV(hue=180, saturation=100, value=80)
 
         If you don't want to use the default transitions, you can pass `transition` in milliseconds.
-        This applies to all transitions (turn_on, turn_off, set_hsv, set_color_temp, set_brightness).
+        This applies to all transitions (:func:`turn_on`, :func:`turn_off`, :func:`set_hsv`, :func:`set_color_temp`, :func:`set_brightness`).
         The following changes the brightness over a period of 10 seconds:
 
         >>> asyncio.run(bulb.set_brightness(100, transition=10_000))
+
+        Bulb configuration presets can be accessed using the :func:`presets` property:
+
+        >>> bulb.presets
+        [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0)]
+
+        To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset` instance to :func:`save_preset` method:
+
+        >>> preset = bulb.presets[0]
+        >>> preset.brightness
+        50
+        >>> preset.brightness = 100
+        >>> asyncio.run(bulb.save_preset(preset))
+        >>> bulb.presets[0].brightness
+        100
 
     """
 
@@ -167,7 +195,7 @@ class SmartBulb(SmartDevice):
     @requires_update
     def light_state(self) -> Dict[str, str]:
         """Query the light state."""
-        light_state = self._last_update["system"]["get_sysinfo"]["light_state"]
+        light_state = self.sys_info["light_state"]
         if light_state is None:
             raise SmartDeviceException(
                 "The device has no light_state or you have not called update()"
@@ -369,6 +397,7 @@ class SmartBulb(SmartDevice):
             info["Valid temperature range"] = self.valid_temperature_range
         if self.is_color:
             info["HSV"] = self.hsv
+        info["Presets"] = self.presets
 
         return info
 
@@ -406,4 +435,26 @@ class SmartBulb(SmartDevice):
         """
         return await self._query_helper(
             "smartlife.iot.common.system", "set_dev_alias", {"alias": alias}
+        )
+
+    @property  # type: ignore
+    @requires_update
+    def presets(self) -> List[SmartBulbPreset]:
+        """Return a list of available bulb setting presets."""
+        return [SmartBulbPreset(**vals) for vals in self.sys_info["preferred_state"]]
+
+    async def save_preset(self, preset: SmartBulbPreset):
+        """Save a setting preset.
+
+        You can either construct a preset object manually, or pass an existing one obtained
+        obtained using :func:`presets`.
+        """
+        if len(self.presets) == 0:
+            raise SmartDeviceException("Device does not supported saving presets")
+
+        if preset.index >= len(self.presets):
+            raise SmartDeviceException("Invalid preset index")
+
+        return await self._query_helper(
+            self.LIGHT_SERVICE, "set_preferred_state", preset.dict()
         )

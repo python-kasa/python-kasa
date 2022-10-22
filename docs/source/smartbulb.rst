@@ -11,6 +11,7 @@ Supported features
 * Setting brightness, color temperature, and color (in HSV)
 * Querying emeter information
 * Transitions
+* Presets
 
 Currently unsupported
 *********************
@@ -60,4 +61,8 @@ API documentation
 .. autoclass:: kasa.SmartBulb
     :members:
     :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.SmartBulbPreset
+    :members:
     :undoc-members:
