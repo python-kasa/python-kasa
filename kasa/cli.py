@@ -57,7 +57,7 @@ pass_dev = click.make_pass_decorator(SmartDevice)
     "--type",
     envvar="KASA_TYPE",
     default=None,
-    type=click.Choice(list(TYPE_TO_CLASS.keys()), case_sensitive=False),
+    type=click.Choice(list(TYPE_TO_CLASS), case_sensitive=False),
 )
 @click.version_option(package_name="python-kasa")
 @click.pass_context
