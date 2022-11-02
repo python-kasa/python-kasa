@@ -543,7 +543,7 @@ def _schedule_list(dev, type):
         click.echo(f"No rules of type {type}")
 
 
-@schedule.command(name="delete_rule")
+@schedule.command(name="delete")
 @pass_dev
 @click.option("--id", type=str, required=True)
 async def delete_rule(dev, id):
