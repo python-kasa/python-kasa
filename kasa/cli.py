@@ -549,7 +549,7 @@ def _schedule_list(dev, type):
 async def delete_rule(dev, id):
     """Delete rule from device."""
     schedule = dev.modules["schedule"]
-    rule_to_delete = ''
+    rule_to_delete = ""
     for rule in schedule.rules:
         if rule.id == id:
             rule_to_delete = rule
