@@ -543,6 +543,20 @@ def _schedule_list(dev, type):
         click.echo(f"No rules of type {type}")
 
 
+@schedule.command(name="delete")
+@pass_dev
+@click.option("--id", type=str, required=True)
+async def delete_rule(dev, id):
+    """Delete rule from device."""
+    schedule = dev.modules["schedule"]
+    rule_to_delete = next(filter(lambda rule: (rule.id == id), schedule.rules), None)
+    if rule_to_delete:
+        click.echo(f"Deleting rule id {id}")
+        await schedule.delete_rule(rule_to_delete)
+    else:
+        click.echo(f"No rule with id {id} was found")
+
+
 @cli.group(invoke_without_command=True)
 @click.pass_context
 async def presets(ctx):
