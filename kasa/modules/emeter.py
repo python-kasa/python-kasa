@@ -80,12 +80,12 @@ class Emeter(Usage):
         if "energy_wh" in data[0]:
             value_key = "energy_wh"
             if kwh:
-                scale = 1/1000
+                scale = 1 / 1000
         else:
             value_key = "energy"
             if not kwh:
-                scale = 1000 
-    
+                scale = 1000
+
         data = {entry[entry_key]: entry[value_key] * scale for entry in data}
 
         return data

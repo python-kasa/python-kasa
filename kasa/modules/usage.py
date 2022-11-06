@@ -96,7 +96,7 @@ class Usage(Module):
         """
         if not data:
             return {}
-    
+
         data = {entry[entry_key]: entry["time"] for entry in data}
 
         return data
