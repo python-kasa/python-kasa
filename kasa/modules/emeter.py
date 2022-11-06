@@ -44,20 +44,19 @@ class Emeter(Usage):
         return await self.call("get_realtime")
 
     async def get_daystat(self, *, year=None, month=None, kwh=True) -> Dict:
-        """Return daily stats for the given year & month as a dictionary of {day: energy, ...}"""
+        """Return daily stats for the given year & month as a dictionary of {day: energy, ...}."""
         data = await self.get_raw_daystat(year=year, month=month)
         data = self._convert_stat_data(data["day_list"], entry_key="day", kwh=kwh)
         return data
 
     async def get_monthstat(self, *, year=None, kwh=True) -> Dict:
-        """Return monthly stats for the given year as a dictionary of {month: energy, ...}"""
+        """Return monthly stats for the given year as a dictionary of {month: energy, ...}."""
         data = await self.get_raw_monthstat(year=year)
         data = self._convert_stat_data(data["month_list"], entry_key="month", kwh=kwh)
         return data
 
     def _convert_stat_data(self, data, entry_key, kwh=True) -> Dict:
-        """Return emeter information keyed with the day/month.."""
-
+        """Return emeter information keyed with the day/month."""
         """
             The incoming data is a list of dictionaries:
                 [{'year':      int,
@@ -66,7 +65,7 @@ class Emeter(Usage):
                   'energy_wh': int,     <-- for emeter in some versions (wh)
                   'energy':    float    <-- for emeter in other versions (kwh)
                 }, ...]
-            
+
             We determine what we're doing by checking for the presence of the energy_wh/energy keys
 
             We return a dictionary keyed by day or month with time or energy as the value.

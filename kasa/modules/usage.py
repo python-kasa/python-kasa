@@ -67,13 +67,13 @@ class Usage(Module):
         return await self.call("get_monthstat", {"year": year})
 
     async def get_daystat(self, *, year=None, month=None) -> Dict:
-        """Return daily stats for the given year & month as a dictionary of {day: time, ...}"""
+        """Return daily stats for the given year & month as a dictionary of {day: time, ...}."""
         data = await self.get_raw_daystat(year=year, month=month)
         data = self._convert_stat_data(data["day_list"], entry_key="day")
         return data
 
     async def get_monthstat(self, *, year=None) -> Dict:
-        """Return monthly stats for the given year as a dictionary of {month: time, ...}"""
+        """Return monthly stats for the given year as a dictionary of {month: time, ...}."""
         data = await self.get_raw_monthstat(year=year)
         data = self._convert_stat_data(data["month_list"], entry_key="month")
         return data
@@ -83,15 +83,14 @@ class Usage(Module):
         return await self.call("erase_runtime_stat")
 
     def _convert_stat_data(self, data, entry_key) -> Dict:
-        """Return usage information keyed with the day/month.."""
-
+        """Return usage information keyed with the day/month."""
         """ The incoming data is a list of dictionaries:
                 [{'year':      int,
                   'month':     int,
                   'day':       int,     <-- for get_daystat not get_monthstat
                   'time':      int,     <-- for usage (mins)
                 }, ...]
-            
+
             We return a dictionary keyed by day or month with time as the value.
         """
         if not data:
