@@ -1,6 +1,6 @@
 """Implementation of the usage interface."""
 from datetime import datetime
-
+from typing import Dict
 from .module import Module, merge
 
 
@@ -50,8 +50,8 @@ class Usage(Module):
 
         return converted.pop()
 
-    async def get_daystat(self, *, year=None, month=None):
-        """Return daily stats for the given year & month."""
+    async def get_raw_daystat(self, *, year=None, month=None) -> Dict:
+        """Return raw daily stats for the given year & month."""
         if year is None:
             year = datetime.now().year
         if month is None:
@@ -59,13 +59,44 @@ class Usage(Module):
 
         return await self.call("get_daystat", {"year": year, "month": month})
 
-    async def get_monthstat(self, *, year=None):
-        """Return monthly stats for the given year."""
+    async def get_raw_monthstat(self, *, year=None) -> Dict:
+        """Return raw monthly stats for the given year."""
         if year is None:
             year = datetime.now().year
 
         return await self.call("get_monthstat", {"year": year})
 
+    async def get_daystat(self, *, year=None, month=None) -> Dict:
+        """Return daily stats for the given year & month as a dictionary of {day: time, ...}"""
+        data = await self.get_raw_daystat(year=year, month=month)
+        data = self._convert_stat_data(data["day_list"], entry_key="day")
+        return data
+
+    async def get_monthstat(self, *, year=None) -> Dict:
+        """Return monthly stats for the given year as a dictionary of {month: time, ...}"""
+        data = await self.get_raw_monthstat(year=year)
+        data = self._convert_stat_data(data["month_list"], entry_key="month")
+        return data
+
     async def erase_stats(self):
         """Erase all stats."""
         return await self.call("erase_runtime_stat")
+
+    def _convert_stat_data(self, data, entry_key) -> Dict:
+        """Return usage information keyed with the day/month.."""
+
+        """ The incoming data is a list of dictionaries:
+                [{'year':      int,
+                  'month':     int,
+                  'day':       int,     <-- for get_daystat not get_monthstat
+                  'time':      int,     <-- for usage (mins)
+                }, ...]
+            
+            We return a dictionary keyed by day or month with time as the value.
+        """
+        if not data:
+            return {}
+    
+        data = {entry[entry_key]: entry["time"] for entry in data}
+
+        return data
