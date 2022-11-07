@@ -43,31 +43,49 @@ class Emeter(Usage):
         """Return real-time statistics."""
         return await self.call("get_realtime")
 
-    async def get_daystat(self, *, year, month, kwh=True):
-        """Return daily stats for the given year & month."""
-        raw_data = await super().get_daystat(year=year, month=month)
-        return self._emeter_convert_emeter_data(raw_data["day_list"], kwh)
+    async def get_daystat(self, *, year=None, month=None, kwh=True) -> Dict:
+        """Return daily stats for the given year & month as a dictionary of {day: energy, ...}."""
+        data = await self.get_raw_daystat(year=year, month=month)
+        data = self._convert_stat_data(data["day_list"], entry_key="day", kwh=kwh)
+        return data
 
-    async def get_monthstat(self, *, year, kwh=True):
-        """Return monthly stats for the given year."""
-        raw_data = await super().get_monthstat(year=year)
-        return self._emeter_convert_emeter_data(raw_data["month_list"], kwh)
+    async def get_monthstat(self, *, year=None, kwh=True) -> Dict:
+        """Return monthly stats for the given year as a dictionary of {month: energy, ...}."""
+        data = await self.get_raw_monthstat(year=year)
+        data = self._convert_stat_data(data["month_list"], entry_key="month", kwh=kwh)
+        return data
 
-    def _emeter_convert_emeter_data(self, data, kwh=True) -> Dict:
-        """Return emeter information keyed with the day/month.."""
-        response = [EmeterStatus(**x) for x in data]
+    def _convert_stat_data(self, data, entry_key, kwh=True) -> Dict:
+        """Return emeter information keyed with the day/month."""
+        """
+            The incoming data is a list of dictionaries:
+                [{'year':      int,
+                  'month':     int,
+                  'day':       int,     <-- for get_daystat not get_monthstat
+                  'energy_wh': int,     <-- for emeter in some versions (wh)
+                  'energy':    float    <-- for emeter in other versions (kwh)
+                }, ...]
 
-        if not response:
+            We determine what we're doing by checking for the presence of the energy_wh/energy keys
+
+            We return a dictionary keyed by day or month with time or energy as the value.
+            When energy is returned it is returned in the units requested (kwh or wh)
+        """
+        if not data:
             return {}
 
-        energy_key = "energy_wh"
-        if kwh:
-            energy_key = "energy"
+        scale = 1
 
-        entry_key = "month"
-        if "day" in response[0]:
-            entry_key = "day"
+        if "energy_wh" in data[0]:
+            value_key = "energy_wh"
+            if kwh:
+                scale = 1 / 1000
+        else:
+            value_key = "energy"
+            if not kwh:
+                scale = 1000
 
-        data = {entry[entry_key]: entry[energy_key] for entry in response}
+        data = {entry[entry_key]: entry[value_key] * scale for entry in data}
 
         return data
+
