@@ -1,6 +1,7 @@
 """Implementation of the usage interface."""
 from datetime import datetime
 from typing import Dict
+
 from .module import Module, merge
 
 
@@ -99,4 +100,3 @@ class Usage(Module):
         data = {entry[entry_key]: entry["time"] for entry in data}
 
         return data
-        

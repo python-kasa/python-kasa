@@ -19,7 +19,7 @@ class Emeter(Usage):
         """Return today's energy consumption in kWh."""
         raw_data = self.daily_data
         today = datetime.now().day
-        data = self._emeter_convert_emeter_data(raw_data)
+        data = self._convert_stat_data(raw_data, entry_key="day")
 
         return data.get(today)
 
@@ -28,7 +28,7 @@ class Emeter(Usage):
         """Return this month's energy consumption in kWh."""
         raw_data = self.monthly_data
         current_month = datetime.now().month
-        data = self._emeter_convert_emeter_data(raw_data)
+        data = self._convert_stat_data(raw_data, entry_key="month")
 
         return data.get(current_month)
 
@@ -74,7 +74,7 @@ class Emeter(Usage):
         if not data:
             return {}
 
-        scale = 1
+        scale: float = 1
 
         if "energy_wh" in data[0]:
             value_key = "energy_wh"
@@ -88,4 +88,3 @@ class Emeter(Usage):
         data = {entry[entry_key]: entry[value_key] * scale for entry in data}
 
         return data
-
