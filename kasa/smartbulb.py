@@ -163,7 +163,8 @@ class SmartBulb(SmartDevice):
         HSV(hue=180, saturation=100, value=80)
 
         If you don't want to use the default transitions, you can pass `transition` in milliseconds.
-        This applies to all transitions (:func:`turn_on`, :func:`turn_off`, :func:`set_hsv`, :func:`set_color_temp`, :func:`set_brightness`).
+        This applies to all transitions (:func:`turn_on`, :func:`turn_off`, :func:`set_hsv`, :func:`set_color_temp`, :func:`set_brightness`) if supported by the device.
+        Light strips (e.g., KL420L5) do not support this feature, but silently ignore the parameter.
         The following changes the brightness over a period of 10 seconds:
 
         >>> asyncio.run(bulb.set_brightness(100, transition=10_000))
