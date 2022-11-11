@@ -1,6 +1,6 @@
 from kasa import DeviceType
 
-from .conftest import plug, pytestmark
+from .conftest import plug
 from .newfakes import PLUG_SCHEMA
 
 

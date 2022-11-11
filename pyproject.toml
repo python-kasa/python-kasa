@@ -80,6 +80,7 @@ verbose = 2
 markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
+asyncio_mode = "auto"
 
 [tool.doc8]
 paths = ["docs"]

@@ -6,7 +6,7 @@ import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol
 from kasa.discover import _DiscoverProtocol
 
-from .conftest import bulb, dimmer, lightstrip, plug, pytestmark, strip
+from .conftest import bulb, dimmer, lightstrip, plug, strip
 
 
 @plug

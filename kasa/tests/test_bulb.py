@@ -10,7 +10,6 @@ from .conftest import (
     non_color_bulb,
     non_dimmable,
     non_variable_temp,
-    pytestmark,
     turn_on,
     variable_temp,
 )

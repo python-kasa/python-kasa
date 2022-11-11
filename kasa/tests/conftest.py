@@ -134,10 +134,6 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
-# to avoid adding this for each async function separately
-pytestmark = pytest.mark.asyncio
-
-
 def device_for_file(model):
     for d in STRIPS:
         if d in model:
