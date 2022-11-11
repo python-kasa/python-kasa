@@ -1,4 +1,4 @@
-"""Wrappers class for stats returned from Usage module get_daystat and get_monthstat."""
+"""Wrappers class for stats returned from Usage and Emeter modules get_daystat and get_monthstat."""
 import logging
 from typing import Any, List, Optional
 
@@ -72,7 +72,7 @@ class EmeterStat(DayMonthStat):
     def datekv(self, *, kwh: bool = True):
         """Return key,value pair for period index, energy."""
         k = self.day if self.is_daily else self.month
-        v = self.energy if kwh else int(self.energy * 1000)
+        v = self.energy if kwh else self.energy * 1000
         return k, v
 
     def __repr__(self):

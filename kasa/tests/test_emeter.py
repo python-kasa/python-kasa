@@ -2,6 +2,7 @@ import pytest
 
 from kasa import EmeterStatus, SmartDeviceException
 
+from ..modules import Emeter
 from .conftest import has_emeter, no_emeter, pytestmark
 from .newfakes import CURRENT_CONSUMPTION_SCHEMA
 
@@ -116,3 +117,32 @@ async def test_emeterstatus_missing_current():
 
     missing_current = EmeterStatus({"err_code": 0, "power_mw": 0, "total_wh": 13})
     assert missing_current["current"] is None
+
+
+def test_emeter_convert_stat_data():
+    emeter = Emeter(None, module="emeter")
+
+    test_data = []
+    assert emeter._convert_stat_data(test_data) == {}
+
+    test_data = [
+        {"year": 2016, "month": 5, "day": 2, "energy": 2.5},
+        {"year": 2016, "month": 5, "day": 4, "energy": 3.5},
+    ]
+    d = emeter._convert_stat_data(test_data)
+    assert len(d) == len(test_data)
+    assert isinstance(d, dict)
+    k, v = d.popitem()
+    assert isinstance(k, int) and k == 4
+    assert isinstance(v, float) and v == 3.5
+
+    test_data = [
+        {"year": 2016, "month": 5, "energy_wh": 2500},
+        {"year": 2016, "month": 6, "energy_wh": 3500},
+    ]
+    d = emeter._convert_stat_data(test_data, kwh=False)
+    assert len(d) == len(test_data)
+    assert isinstance(d, dict)
+    k, v = d.popitem()
+    assert isinstance(k, int) and k == 6
+    assert isinstance(v, float) and v == 3500
