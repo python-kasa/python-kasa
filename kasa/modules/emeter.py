@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Dict, Optional
 
+from ..daymonthstat import EmeterStat
 from ..emeterstatus import EmeterStatus
 from .usage import Usage
 
@@ -19,7 +20,7 @@ class Emeter(Usage):
         """Return today's energy consumption in kWh."""
         raw_data = self.daily_data
         today = datetime.now().day
-        data = self._emeter_convert_emeter_data(raw_data)
+        data = self._convert_stat_data(raw_data)
 
         return data.get(today)
 
@@ -28,7 +29,7 @@ class Emeter(Usage):
         """Return this month's energy consumption in kWh."""
         raw_data = self.monthly_data
         current_month = datetime.now().month
-        data = self._emeter_convert_emeter_data(raw_data)
+        data = self._convert_stat_data(raw_data)
 
         return data.get(current_month)
 
@@ -43,31 +44,18 @@ class Emeter(Usage):
         """Return real-time statistics."""
         return await self.call("get_realtime")
 
-    async def get_daystat(self, *, year, month, kwh=True):
-        """Return daily stats for the given year & month."""
-        raw_data = await super().get_daystat(year=year, month=month)
-        return self._emeter_convert_emeter_data(raw_data["day_list"], kwh)
-
-    async def get_monthstat(self, *, year, kwh=True):
-        """Return monthly stats for the given year."""
-        raw_data = await super().get_monthstat(year=year)
-        return self._emeter_convert_emeter_data(raw_data["month_list"], kwh)
-
-    def _emeter_convert_emeter_data(self, data, kwh=True) -> Dict:
-        """Return emeter information keyed with the day/month.."""
-        response = [EmeterStatus(**x) for x in data]
-
-        if not response:
-            return {}
-
-        energy_key = "energy_wh"
-        if kwh:
-            energy_key = "energy"
-
-        entry_key = "month"
-        if "day" in response[0]:
-            entry_key = "day"
-
-        data = {entry[entry_key]: entry[energy_key] for entry in response}
-
+    async def get_daystat(self, *, year=None, month=None, kwh=True) -> Dict:
+        """Return daily stats for the given year & month as a dictionary of {day: energy, ...}."""
+        data = await self.get_raw_daystat(year=year, month=month)
+        data = self._convert_stat_data(data["day_list"], kwh=kwh)
         return data
+
+    async def get_monthstat(self, *, year=None, kwh=True) -> Dict:
+        """Return monthly stats for the given year as a dictionary of {month: energy, ...}."""
+        data = await self.get_raw_monthstat(year=year)
+        data = self._convert_stat_data(data["month_list"], kwh=kwh)
+        return data
+
+    def _convert_stat_data(self, data, kwh=True) -> Dict:
+        """Return emeter energy information keyed with the day/month."""
+        return dict(EmeterStat(**entry).datekv(kwh=kwh) for entry in data)
