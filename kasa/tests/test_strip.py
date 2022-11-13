@@ -4,7 +4,7 @@ import pytest
 
 from kasa import SmartDeviceException, SmartStrip
 
-from .conftest import handle_turn_on, pytestmark, strip, turn_on
+from .conftest import handle_turn_on, strip, turn_on
 
 
 @strip

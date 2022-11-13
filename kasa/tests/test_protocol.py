@@ -8,7 +8,6 @@ import pytest
 
 from ..exceptions import SmartDeviceException
 from ..protocol import TPLinkSmartHomeProtocol
-from .conftest import pytestmark
 
 
 @pytest.mark.parametrize("retry_count", [1, 3, 5])

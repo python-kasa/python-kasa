@@ -3,7 +3,7 @@ import pytest
 from kasa import DeviceType, SmartLightStrip
 from kasa.exceptions import SmartDeviceException
 
-from .conftest import lightstrip, pytestmark
+from .conftest import lightstrip
 
 
 @lightstrip

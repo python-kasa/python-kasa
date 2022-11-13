@@ -2,7 +2,7 @@ import pytest
 
 from kasa import SmartDimmer
 
-from .conftest import dimmer, handle_turn_on, pytestmark, turn_on
+from .conftest import dimmer, handle_turn_on, turn_on
 
 
 @dimmer

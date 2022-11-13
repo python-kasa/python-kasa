@@ -15,7 +15,7 @@ from kasa.cli import (
     sysinfo,
 )
 
-from .conftest import handle_turn_on, pytestmark, turn_on
+from .conftest import handle_turn_on, turn_on
 
 
 async def test_sysinfo(dev):
