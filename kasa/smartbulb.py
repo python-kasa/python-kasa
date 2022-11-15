@@ -296,7 +296,9 @@ class SmartBulb(SmartDevice):
         # TODO: add warning and refer to use light.state?
         return await self._query_helper(self.LIGHT_SERVICE, "get_light_state")
 
-    async def set_light_state(self, state: Dict, *, transition: int = None) -> Dict:
+    async def set_light_state(
+        self, state: Dict, *, transition: Optional[int] = None
+    ) -> Dict:
         """Set the light state."""
         if transition is not None:
             state["transition_period"] = transition
@@ -345,7 +347,12 @@ class SmartBulb(SmartDevice):
 
     @requires_update
     async def set_hsv(
-        self, hue: int, saturation: int, value: int = None, *, transition: int = None
+        self,
+        hue: int,
+        saturation: int,
+        value: Optional[int] = None,
+        *,
+        transition: Optional[int] = None
     ) -> Dict:
         """Set new HSV.
 
@@ -392,7 +399,7 @@ class SmartBulb(SmartDevice):
 
     @requires_update
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: int = None
+        self, temp: int, *, brightness=None, transition: Optional[int] = None
     ) -> Dict:
         """Set the color temperature of the device in kelvin.
 
@@ -426,7 +433,9 @@ class SmartBulb(SmartDevice):
         return int(light_state["brightness"])
 
     @requires_update
-    async def set_brightness(self, brightness: int, *, transition: int = None) -> Dict:
+    async def set_brightness(
+        self, brightness: int, *, transition: Optional[int] = None
+    ) -> Dict:
         """Set the brightness in percentage.
 
         :param int brightness: brightness in percent
@@ -464,14 +473,14 @@ class SmartBulb(SmartDevice):
         light_state = self.light_state
         return bool(light_state["on_off"])
 
-    async def turn_off(self, *, transition: int = None, **kwargs) -> Dict:
+    async def turn_off(self, *, transition: Optional[int] = None, **kwargs) -> Dict:
         """Turn the bulb off.
 
         :param int transition: transition in milliseconds.
         """
         return await self.set_light_state({"on_off": 0}, transition=transition)
 
-    async def turn_on(self, *, transition: int = None, **kwargs) -> Dict:
+    async def turn_on(self, *, transition: Optional[int] = None, **kwargs) -> Dict:
         """Turn the bulb on.
 
         :param int transition: transition in milliseconds.

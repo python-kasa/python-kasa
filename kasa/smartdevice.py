@@ -510,7 +510,7 @@ class SmartDevice:
         return data
 
     async def get_emeter_daily(
-        self, year: int = None, month: int = None, kwh: bool = True
+        self, year: Optional[int] = None, month: Optional[int] = None, kwh: bool = True
     ) -> Dict:
         """Retrieve daily statistics for a given month.
 
@@ -524,7 +524,9 @@ class SmartDevice:
         return await self.modules["emeter"].get_daystat(year=year, month=month, kwh=kwh)
 
     @requires_update
-    async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
+    async def get_emeter_monthly(
+        self, year: Optional[int] = None, kwh: bool = True
+    ) -> Dict:
         """Retrieve monthly statistics for a given year.
 
         :param year: year for which to retrieve statistics (default: this year)

@@ -1,5 +1,5 @@
 """Module for dimmers (currently only HS220)."""
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from kasa.modules import AmbientLight, Motion
 from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
@@ -60,7 +60,9 @@ class SmartDimmer(SmartPlug):
         return int(sys_info["brightness"])
 
     @requires_update
-    async def set_brightness(self, brightness: int, *, transition: int = None):
+    async def set_brightness(
+        self, brightness: int, *, transition: Optional[int] = None
+    ):
         """Set the new dimmer brightness level in percentage.
 
         :param int transition: transition duration in milliseconds.
@@ -89,7 +91,7 @@ class SmartDimmer(SmartPlug):
             self.DIMMER_SERVICE, "set_brightness", {"brightness": brightness}
         )
 
-    async def turn_off(self, *, transition: int = None, **kwargs):
+    async def turn_off(self, *, transition: Optional[int] = None, **kwargs):
         """Turn the bulb off.
 
         :param int transition: transition duration in milliseconds.
@@ -100,7 +102,7 @@ class SmartDimmer(SmartPlug):
         return await super().turn_off()
 
     @requires_update
-    async def turn_on(self, *, transition: int = None, **kwargs):
+    async def turn_on(self, *, transition: Optional[int] = None, **kwargs):
         """Turn the bulb on.
 
         :param int transition: transition duration in milliseconds.
