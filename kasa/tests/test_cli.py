@@ -33,9 +33,9 @@ async def test_state(dev, turn_on):
     await dev.update()
 
     if dev.is_on:
-        assert "Device state: ON" in res.output
+        assert "Device state: True" in res.output
     else:
-        assert "Device state: OFF" in res.output
+        assert "Device state: False" in res.output
 
 
 async def test_alias(dev):

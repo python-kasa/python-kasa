@@ -219,7 +219,7 @@ async def state(dev: SmartDevice):
     """Print out device state and versions."""
     echo(f"[bold]== {dev.alias} - {dev.model} ==[/bold]")
     echo(f"\tHost: {dev.host}")
-    echo(f"\tDevice on: {dev.is_on}")
+    echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
         echo("\t[bold]== Plugs ==[/bold]")
         for plug in dev.children:  # type: ignore
