@@ -172,7 +172,7 @@ class SmartStrip(SmartDevice):
 
     @requires_update
     async def get_emeter_daily(
-        self, year: int = None, month: int = None, kwh: bool = True
+        self, year: Optional[int] = None, month: Optional[int] = None, kwh: bool = True
     ) -> Dict:
         """Retrieve daily statistics for a given month.
 
@@ -187,7 +187,9 @@ class SmartStrip(SmartDevice):
         )
 
     @requires_update
-    async def get_emeter_monthly(self, year: int = None, kwh: bool = True) -> Dict:
+    async def get_emeter_monthly(
+        self, year: Optional[int] = None, kwh: bool = True
+    ) -> Dict:
         """Retrieve monthly statistics for a given year.
 
         :param year: year for which to retrieve statistics (default: this year)
@@ -262,7 +264,9 @@ class SmartStripPlug(SmartPlug):
         """
         await self._modular_update({})
 
-    def _create_emeter_request(self, year: int = None, month: int = None):
+    def _create_emeter_request(
+        self, year: Optional[int] = None, month: Optional[int] = None
+    ):
         """Create a request for requesting all emeter statistics at once."""
         if year is None:
             year = datetime.now().year

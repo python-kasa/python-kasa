@@ -31,7 +31,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     def __init__(
         self,
         *,
-        on_discovered: OnDiscoveredCallable = None,
+        on_discovered: Optional[OnDiscoveredCallable] = None,
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
