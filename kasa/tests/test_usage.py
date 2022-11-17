@@ -19,3 +19,4 @@ def test_usage_convert_stat_data():
     k, v = d.popitem()
     assert isinstance(k, int)
     assert isinstance(v, int)
+    assert k == 4 and v == 30

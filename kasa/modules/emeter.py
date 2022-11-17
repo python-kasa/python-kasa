@@ -56,20 +56,20 @@ class Emeter(Usage):
         return data
 
     def _convert_stat_data(self, data, entry_key, kwh=True) -> Dict:
-        """Return emeter information keyed with the day/month."""
-        """
-            The incoming data is a list of dictionaries:
-                [{'year':      int,
-                  'month':     int,
-                  'day':       int,     <-- for get_daystat not get_monthstat
-                  'energy_wh': int,     <-- for emeter in some versions (wh)
-                  'energy':    float    <-- for emeter in other versions (kwh)
-                }, ...]
+        """Return emeter information keyed with the day/month.
 
-            We determine what we're doing by checking for the presence of the energy_wh/energy keys
+        The incoming data is a list of dictionaries:
+            [{'year':      int,
+              'month':     int,
+              'day':       int,     <-- for get_daystat not get_monthstat
+              'energy_wh': int,     <-- for emeter in some versions (wh)
+              'energy':    float    <-- for emeter in other versions (kwh)
+            }, ...]
 
-            We return a dictionary keyed by day or month with time or energy as the value.
-            When energy is returned it is returned in the units requested (kwh or wh)
+        We determine what we're doing by checking for the presence of the energy_wh/energy keys
+
+        We return a dictionary keyed by day or month with time or energy as the value.
+        When energy is returned it is returned in the units requested (kwh or wh)
         """
         if not data:
             return {}

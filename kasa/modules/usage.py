@@ -84,15 +84,16 @@ class Usage(Module):
         return await self.call("erase_runtime_stat")
 
     def _convert_stat_data(self, data, entry_key) -> Dict:
-        """Return usage information keyed with the day/month."""
-        """ The incoming data is a list of dictionaries:
-                [{'year':      int,
-                  'month':     int,
-                  'day':       int,     <-- for get_daystat not get_monthstat
-                  'time':      int,     <-- for usage (mins)
-                }, ...]
+        """Return usage information keyed with the day/month.
 
-            We return a dictionary keyed by day or month with time as the value.
+        The incoming data is a list of dictionaries:
+               [{'year':      int,
+                 'month':     int,
+                 'day':       int,     <-- for get_daystat not get_monthstat
+                 'time':      int,     <-- for usage (mins)
+               }, ...]
+
+           We return a dictionary keyed by day or month with time as the value.
         """
         if not data:
             return {}
