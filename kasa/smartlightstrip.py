@@ -88,17 +88,17 @@ class SmartLightStrip(SmartBulb):
         return info
 
     @requires_update
-    async def set_effect(
-        self,
-        effect: str,
-    ) -> None:
+    async def set_effect(self, effect: str, *, brightness: int = 100) -> None:
         """Set an effect on the device.
 
         :param str effect: The effect to set
+        :param int brightness: The wanted brightness
         """
         if effect not in EFFECT_MAPPING_V1:
             raise SmartDeviceException(f"The effect {effect} is not a built in effect.")
-        await self.set_custom_effect(EFFECT_MAPPING_V1[effect])
+        effect_dict = EFFECT_MAPPING_V1[effect]
+        effect_dict["brightness"] = brightness
+        await self.set_custom_effect(effect_dict)
 
     @requires_update
     async def set_custom_effect(
