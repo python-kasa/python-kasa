@@ -37,7 +37,8 @@ async def test_effects_lightstrip_set_effect_brightness(
 ):
     query_helper = mocker.patch("kasa.SmartLightStrip._query_helper")
 
-    if brightness == 100:  # test that default brightness works
+    # test that default brightness works (100 for candy cane)
+    if brightness == 100:
         await dev.set_effect("Candy Cane")
     else:
         await dev.set_effect("Candy Cane", brightness=brightness)
@@ -45,6 +46,24 @@ async def test_effects_lightstrip_set_effect_brightness(
     args, kwargs = query_helper.call_args_list[0]
     payload = args[2]
     assert payload["brightness"] == brightness
+
+
+@lightstrip
+@pytest.mark.parametrize("transition", [500, 1000])
+async def test_effects_lightstrip_set_effect_transition(
+    dev: SmartLightStrip, transition, mocker
+):
+    query_helper = mocker.patch("kasa.SmartLightStrip._query_helper")
+
+    # test that default (500 for candy cane) transition works
+    if transition == 500:
+        await dev.set_effect("Candy Cane")
+    else:
+        await dev.set_effect("Candy Cane", transition=transition)
+
+    args, kwargs = query_helper.call_args_list[0]
+    payload = args[2]
+    assert payload["transition"] == transition
 
 
 @lightstrip
