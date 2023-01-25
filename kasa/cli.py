@@ -88,7 +88,7 @@ async def cli(ctx, host, alias, target, debug, type):
 
     if host is None:
         click.echo("No host name given, trying discovery..")
-        await ctx.invoke(discover)
+        await ctx.invoke(discover, target=target, command=ctx.invoked_subcommand)
         return
 
     if type is not None:
@@ -141,18 +141,22 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 
 @cli.command()
 @click.option("--timeout", default=3, required=False)
+@click.option("--target", default="255.255.255.255", required=False)
+@click.argument("command", required=False)
 @click.pass_context
-async def discover(ctx, timeout):
+async def discover(ctx, timeout, target, command):
     """Discover devices in the network."""
-    target = ctx.parent.params["target"]
+    target = target or ctx.parent.params["target"]
     click.echo(f"Discovering devices on {target} for {timeout} seconds")
     sem = asyncio.Semaphore()
 
     async def print_discovered(dev: SmartDevice):
-        await dev.update()
         async with sem:
+            await dev.update()
             ctx.obj = dev
-            await ctx.invoke(state)
+            cmd = command or "state"
+            click.echo(f"Calling {cmd} for {dev}")
+            await ctx.invoke(globals()[cmd])
             click.echo()
 
     await Discover.discover(
