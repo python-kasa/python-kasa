@@ -86,14 +86,15 @@ class Usage(Module):
     def _convert_stat_data(self, data, entry_key) -> Dict:
         """Return usage information keyed with the day/month.
 
-        The incoming data is a list of dictionaries:
+        The incoming data is a list of dictionaries::
+
                [{'year':      int,
                  'month':     int,
                  'day':       int,     <-- for get_daystat not get_monthstat
                  'time':      int,     <-- for usage (mins)
                }, ...]
 
-           We return a dictionary keyed by day or month with time as the value.
+        :return: return a dictionary keyed by day or month with time as the value.
         """
         if not data:
             return {}
