@@ -103,7 +103,9 @@ async def test_brightness(dev):
     assert "Brightness: 12" in res.output
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="just testing why ci fails")
+# Invoke fails when run on py3.7 with the following error:
+# E        +  where 1 = <Result TypeError("object list can't be used in 'await' expression")>.exit_code
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="fails on python3.7")
 async def test_json_output(dev: SmartDevice, mocker):
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover", return_value=[dev])
