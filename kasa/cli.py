@@ -4,7 +4,7 @@ import json
 import logging
 import re
 import sys
-from functools import wraps
+from functools import singledispatch, wraps
 from pprint import pformat as pf
 from typing import Any, Dict, cast
 
@@ -63,10 +63,36 @@ class ExceptionHandlerGroup(click.Group):
         try:
             asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
         except Exception as ex:
-            click.echo(f"Got error: {ex!r}")
+            echo(f"Got error: {ex!r}")
 
 
-@click.group(invoke_without_command=True, cls=ExceptionHandlerGroup)
+def json_formatter_cb(result, **kwargs):
+    """Format and output the result as JSON, if requested."""
+    if not kwargs.get("json"):
+        return
+
+    @singledispatch
+    def to_serializable(val):
+        """Regular obj-to-string for json serialization.
+
+        The singledispatch trick is from hynek: https://hynek.me/articles/serialization/
+        """
+        return str(val)
+
+    @to_serializable.register(SmartDevice)
+    def _device_to_serializable(val: SmartDevice):
+        """Serialize smart device data, just using the last update raw payload."""
+        return val.internal_state
+
+    json_content = json.dumps(result, indent=4, default=to_serializable)
+    print(json_content)
+
+
+@click.group(
+    invoke_without_command=True,
+    cls=ExceptionHandlerGroup,
+    result_callback=json_formatter_cb,
+)
 @click.option(
     "--host",
     envvar="KASA_HOST",
@@ -94,15 +120,27 @@ class ExceptionHandlerGroup(click.Group):
     default=None,
     type=click.Choice(list(TYPE_TO_CLASS), case_sensitive=False),
 )
+@click.option(
+    "--json", default=False, is_flag=True, help="Output raw device response as JSON."
+)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, type):
+async def cli(ctx, host, alias, target, debug, type, json):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
         # Context object is required to avoid crashing on sub-groups
         ctx.obj = SmartDevice(None)
         return
+
+    # If JSON output is requested, disable echo
+    if json:
+        global echo
+
+        def _nop_echo(*args, **kwargs):
+            pass
+
+        echo = _nop_echo
 
     logging_config: Dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -202,7 +240,7 @@ async def discover(ctx, timeout):
             await ctx.invoke(state)
             echo()
 
-    await Discover.discover(
+    return await Discover.discover(
         target=target, timeout=timeout, on_discovered=print_discovered
     )
 
@@ -269,6 +307,8 @@ async def state(dev: SmartDevice):
         else:
             echo(f"\t[red]- {module}[/red]")
 
+    return dev.internal_state
+
 
 @cli.command()
 @pass_dev
@@ -292,6 +332,8 @@ async def alias(dev, new_alias, index):
     if dev.is_strip:
         for plug in dev.children:
             echo(f"  * {plug.alias}")
+
+    return dev.alias
 
 
 @cli.command()
@@ -328,8 +370,7 @@ async def emeter(dev: SmartDevice, year, month, erase):
 
     if erase:
         echo("Erasing emeter statistics..")
-        echo(await dev.erase_emeter_stats())
-        return
+        return await dev.erase_emeter_stats()
 
     if year:
         echo(f"== For year {year.year} ==")
@@ -351,11 +392,13 @@ async def emeter(dev: SmartDevice, year, month, erase):
         echo("Today: %s kWh" % dev.emeter_today)
         echo("This month: %s kWh" % dev.emeter_this_month)
 
-        return
+        return emeter_status
 
     # output any detailed usage data
     for index, usage in usage_data.items():
         echo(f"{index}, {usage}")
+
+    return usage_data
 
 
 @cli.command()
@@ -373,8 +416,7 @@ async def usage(dev: SmartDevice, year, month, erase):
 
     if erase:
         echo("Erasing usage statistics..")
-        echo(await usage.erase_stats())
-        return
+        return await usage.erase_stats()
 
     if year:
         echo(f"== For year {year.year} ==")
@@ -389,11 +431,13 @@ async def usage(dev: SmartDevice, year, month, erase):
         echo("Today: %s minutes" % usage.usage_today)
         echo("This month: %s minutes" % usage.usage_this_month)
 
-        return
+        return usage
 
     # output any detailed usage data
     for index, usage in usage_data.items():
         echo(f"{index}, {usage}")
+
+    return usage_data
 
 
 @cli.command()
@@ -408,6 +452,7 @@ async def brightness(dev: SmartBulb, brightness: int, transition: int):
 
     if brightness is None:
         echo(f"Brightness: {dev.brightness}")
+        return dev.brightness
     else:
         echo(f"Setting brightness to {brightness}")
         return await dev.set_brightness(brightness, transition=transition)
@@ -435,6 +480,7 @@ async def temperature(dev: SmartBulb, temperature: int, transition: int):
                 "Temperature range unknown, please open a github issue"
                 f" or a pull request for model '{dev.model}'"
             )
+        return dev.valid_temperature_range
     else:
         echo(f"Setting color temperature to {temperature}")
         return await dev.set_color_temp(temperature, transition=transition)
@@ -476,6 +522,7 @@ async def hsv(dev, ctx, h, s, v, transition):
 
     if h is None or s is None or v is None:
         echo(f"Current HSV: {dev.hsv}")
+        return dev.hsv
     elif s is None or v is None:
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
@@ -493,6 +540,7 @@ async def led(dev, state):
         return await dev.set_led(state)
     else:
         echo(f"LED state: {dev.led}")
+        return dev.led
 
 
 @cli.command()
@@ -574,6 +622,8 @@ def _schedule_list(dev, type):
     else:
         echo(f"No rules of type {type}")
 
+    return sched.rules
+
 
 @schedule.command(name="delete")
 @pass_dev
@@ -584,7 +634,7 @@ async def delete_rule(dev, id):
     rule_to_delete = next(filter(lambda rule: (rule.id == id), schedule.rules), None)
     if rule_to_delete:
         echo(f"Deleting rule id {id}")
-        await schedule.delete_rule(rule_to_delete)
+        return await schedule.delete_rule(rule_to_delete)
     else:
         echo(f"No rule with id {id} was found")
 
@@ -606,7 +656,9 @@ def presets_list(dev: SmartBulb):
         return
 
     for preset in dev.presets:
-        print(preset)
+        echo(preset)
+
+    return dev.presets
 
 
 @presets.command(name="modify")
@@ -638,7 +690,7 @@ async def presets_modify(
 
     echo(f"Going to save preset: {preset}")
 
-    await dev.save_preset(preset)
+    return await dev.save_preset(preset)
 
 
 @cli.command()
@@ -653,7 +705,7 @@ async def turn_on_behavior(dev: SmartBulb, type, last, preset):
 
     # Return if we are not setting the value
     if not type and not last and not preset:
-        return
+        return settings
 
     # If we are setting the value, the type has to be specified
     if (last or preset) and type is None:
@@ -669,7 +721,7 @@ async def turn_on_behavior(dev: SmartBulb, type, last, preset):
         echo(f"Going to set {type} to preset {preset}")
         behavior.preset = preset
 
-    await dev.set_turn_on_behavior(settings)
+    return await dev.set_turn_on_behavior(settings)
 
 
 if __name__ == "__main__":
