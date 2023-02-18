@@ -33,6 +33,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinxcontrib.programoutput",
+    "myst_parser",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -62,12 +63,3 @@ todo_include_todos = True
 def setup(app):
     # add copybutton to hide the >>> prompts, see https://github.com/readthedocs/sphinx_rtd_theme/issues/167
     app.add_js_file("copybutton.js")
-
-    # see https://github.com/readthedocs/recommonmark/issues/191#issuecomment-622369992
-    from m2r import MdInclude
-
-    app.add_config_value("no_underscore_emphasis", False, "env")
-    app.add_config_value("m2r_parse_relative_links", False, "env")
-    app.add_config_value("m2r_anonymous_references", False, "env")
-    app.add_config_value("m2r_disable_inline_math", False, "env")
-    app.add_directive("mdinclude", MdInclude)
