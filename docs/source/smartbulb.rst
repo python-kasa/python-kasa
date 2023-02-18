@@ -67,9 +67,13 @@ API documentation
     :members:
     :undoc-members:
 
+.. autoclass:: kasa.BehaviorMode
+    :members:
+
 .. autoclass:: kasa.TurnOnBehaviors
-    :undoc-members:
+    :members:
 
 
 .. autoclass:: kasa.TurnOnBehavior
     :undoc-members:
+    :members:

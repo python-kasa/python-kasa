@@ -38,7 +38,9 @@ class SmartBulbPreset(BaseModel):
 class BehaviorMode(str, Enum):
     """Enum to present type of turn on behavior."""
 
+    #: Return to the last state known state.
     Last = "last_status"
+    #: Use chosen preset.
     Preset = "customize_preset"
 
 
@@ -48,15 +50,17 @@ class TurnOnBehavior(BaseModel):
     :param int preset: the index number of wanted preset.
     :param BehaviorMode mode: last status or preset mode. If you are changing existing settings, you should not set this manually.
 
-    To change the behavior, it is only necessary to change the :ref:`preset` field
+    To change the behavior, it is only necessary to change the :attr:`preset` field
     to contain either the preset index, or ``None`` for the last known state.
     """
 
+    #: Index of preset to use, or ``None`` for the last known state.
     preset: Optional[int] = Field(alias="index", default=None)
+    #: Wanted behavior
     mode: BehaviorMode
 
     @root_validator
-    def mode_based_on_preset(cls, values):
+    def _mode_based_on_preset(cls, values):
         """Set the mode based on the preset value."""
         if values["preset"] is not None:
             values["mode"] = BehaviorMode.Preset
@@ -72,13 +76,11 @@ class TurnOnBehavior(BaseModel):
 
 
 class TurnOnBehaviors(BaseModel):
-    """Model to contain turn on behaviors.
+    """Model to contain turn on behaviors."""
 
-    :param TurnOnBehavior soft: the default setting to turn the bulb programmatically on
-    :param TurnOnBehavior hard: default setting when the bulb has been off from mains power.
-    """
-
+    #: The behavior when the bulb is turned on programmatically.
     soft: TurnOnBehavior = Field(alias="soft_on")
+    #: The behavior when the bulb has been off from mains power.
     hard: TurnOnBehavior = Field(alias="hard_on")
 
 
@@ -268,7 +270,8 @@ class SmartBulb(SmartDevice):
     async def get_light_details(self) -> Dict[str, int]:
         """Return light details.
 
-        Example:
+        Example::
+
             {'lamp_beam_angle': 290, 'min_voltage': 220, 'max_voltage': 240,
              'wattage': 5, 'incandescent_equivalent': 40, 'max_lumens': 450,
               'color_rendering_index': 80}
