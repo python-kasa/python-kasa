@@ -490,25 +490,6 @@ class SmartDevice:
         self._verify_emeter()
         return self.modules["emeter"].emeter_this_month
 
-    def _emeter_convert_emeter_data(self, data, kwh=True) -> Dict:
-        """Return emeter information keyed with the day/month.."""
-        response = [EmeterStatus(**x) for x in data]
-
-        if not response:
-            return {}
-
-        energy_key = "energy_wh"
-        if kwh:
-            energy_key = "energy"
-
-        entry_key = "month"
-        if "day" in response[0]:
-            entry_key = "day"
-
-        data = {entry[entry_key]: entry[energy_key] for entry in response}
-
-        return data
-
     async def get_emeter_daily(
         self, year: Optional[int] = None, month: Optional[int] = None, kwh: bool = True
     ) -> Dict:
