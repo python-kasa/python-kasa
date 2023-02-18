@@ -1,12 +1,15 @@
-# python-kasa
+<h2 align="center">python-kasa</h2>
 
 [![PyPI version](https://badge.fury.io/py/python-kasa.svg)](https://badge.fury.io/py/python-kasa)
 [![Build Status](https://github.com/python-kasa/python-kasa/actions/workflows/ci.yml/badge.svg)](https://github.com/python-kasa/python-kasa/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/python-kasa/python-kasa/branch/master/graph/badge.svg?token=5K7rtN5OmS)](https://codecov.io/gh/python-kasa/python-kasa)
 [![Documentation Status](https://readthedocs.org/projects/python-kasa/badge/?version=latest)](https://python-kasa.readthedocs.io/en/latest/?badge=latest)
 
-python-kasa is a Python library to control TPLink smart home devices (plugs, wall switches, power strips, and bulbs) using asyncio.
-This project is a maintainer-made fork of [pyHS100](https://github.com/GadgetReactor/pyHS100) project.
+python-kasa is a Python library to control TPLink's kasa-branded smart home devices (plugs, wall switches, power strips, and bulbs) using asyncio.
+
+This is a voluntary, community-driven effort and is not affiliated, sponsored, or endorsed by TPLink.
+
+---
 
 ## Getting started
 
@@ -174,6 +177,7 @@ If your device is unlisted but working, please open a pull request to update the
 
 ### Links
 
+* [pyHS100](https://github.com/GadgetReactor/pyHS100) provides synchronous interface and is the unmaintained predecessor of this library.
 * [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
 * [TP-Link Smart Home Device Simulator](https://github.com/plasticrake/tplink-smarthome-simulator)
 * [Unofficial API documentation](https://github.com/plasticrake/tplink-smarthome-api)
