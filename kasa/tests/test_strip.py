@@ -108,7 +108,6 @@ async def test_all_binary_states(dev):
 
         # toggle each outlet with state map applied
         for plug_index in range(len(dev.children)):
-
             # toggle state
             if state_map[plug_index]:
                 await dev.turn_off(index=plug_index)

@@ -11,6 +11,10 @@ packages = [
 ]
 include = ["CHANGELOG.md"]
 
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/python-kasa/python-kasa/issues"
+"Documentation" = "https://python-kasa.readthedocs.io"
+
 [tool.poetry.scripts]
 kasa = "kasa.cli:cli"
 
@@ -23,27 +27,27 @@ pydantic = "^1"
 
 # required only for docs
 sphinx = { version = "^4", optional = true }
-m2r = { version = "^0", optional = true }
-mistune = { version = "<2.0.0", optional = true }
 sphinx_rtd_theme = { version = "^0", optional = true }
 sphinxcontrib-programoutput = { version = "^0", optional = true }
+myst-parser = { version = "*", optional = true }
+docutils = { version = ">=0.17", optional = true }
 
 [tool.poetry.dev-dependencies]
-pytest = ">=6.2.5"
-pytest-cov = "^2"
-pytest-asyncio = "^0"
+pytest = "*"
+pytest-cov = "*"
+pytest-asyncio = "*"
 pytest-sugar = "*"
 pre-commit = "*"
 voluptuous = "*"
 toml = "*"
 tox = "*"
-pytest-mock = "^3"
-codecov = "^2"
-xdoctest = "^0"
-coverage = {version = "^6", extras = ["toml"]}
+pytest-mock = "*"
+codecov = "*"
+xdoctest = "*"
+coverage = {version = "*", extras = ["toml"]}
 
 [tool.poetry.extras]
-docs = ["sphinx", "sphinx_rtd_theme", "m2r", "mistune", "sphinxcontrib-programoutput"]
+docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]
 
 
 [tool.isort]
@@ -85,6 +89,7 @@ asyncio_mode = "auto"
 [tool.doc8]
 paths = ["docs"]
 ignore = ["D001"]
+ignore-path-errors = ["docs/source/index.rst;D000"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
