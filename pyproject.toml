@@ -11,6 +11,10 @@ packages = [
 ]
 include = ["CHANGELOG.md"]
 
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/python-kasa/python-kasa/issues"
+"Documentation" = "https://python-kasa.readthedocs.io"
+
 [tool.poetry.scripts]
 kasa = "kasa.cli:cli"
 
