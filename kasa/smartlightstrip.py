@@ -89,18 +89,30 @@ class SmartLightStrip(SmartBulb):
 
     @requires_update
     async def set_effect(
-        self, effect: str, *, brightness: Optional[int] = None
+        self,
+        effect: str,
+        *,
+        brightness: Optional[int] = None,
+        transition: Optional[int] = None,
     ) -> None:
         """Set an effect on the device.
 
+        If brightness or transition is defined, its value will be used instead of the effect-specific default.
+
+        See :meth:`effect_list` for available effects, or use :meth:`set_custom_effect` for custom effects.
+
         :param str effect: The effect to set
         :param int brightness: The wanted brightness
+        :param int transition: The wanted transition time
         """
         if effect not in EFFECT_MAPPING_V1:
             raise SmartDeviceException(f"The effect {effect} is not a built in effect.")
         effect_dict = EFFECT_MAPPING_V1[effect]
         if brightness is not None:
             effect_dict["brightness"] = brightness
+        if transition is not None:
+            effect_dict["transition"] = transition
+
         await self.set_custom_effect(effect_dict)
 
     @requires_update
