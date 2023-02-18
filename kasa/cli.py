@@ -31,7 +31,21 @@ click.anyio_backend = "asyncio"
 pass_dev = click.make_pass_decorator(SmartDevice)
 
 
-@click.group(invoke_without_command=True)
+class ExceptionHandlerGroup(click.Group):
+    """Group to capture all exceptions and print them nicely.
+
+    Idea from https://stackoverflow.com/a/44347763
+    """
+
+    def __call__(self, *args, **kwargs):
+        """Run the coroutine in the event loop and print any exceptions."""
+        try:
+            asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
+        except Exception as ex:
+            click.echo(f"Got error: {ex!r}")
+
+
+@click.group(invoke_without_command=True, cls=ExceptionHandlerGroup)
 @click.option(
     "--host",
     envvar="KASA_HOST",
