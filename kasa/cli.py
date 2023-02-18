@@ -1,7 +1,10 @@
 """python-kasa cli tool."""
 import asyncio
+import json
 import logging
+import re
 import sys
+from functools import wraps
 from pprint import pformat as pf
 from typing import Any, Dict, cast
 
@@ -13,13 +16,11 @@ except ImportError:
 
     def _strip_rich_formatting(echo_func):
         """Strip rich formatting from messages."""
-        import re
-        from functools import wraps
 
         @wraps(echo_func)
         def wrapper(message=None, *args, **kwargs):
             if message is not None:
-                message = re.sub(r"\[/?.+?\]", "", message)
+                message = re.sub(r"\[/?.+?]", "", message)
             echo_func(message, *args, **kwargs)
 
         return wrapper
@@ -292,8 +293,7 @@ async def raw_command(dev: SmartDevice, module, command, parameters):
         parameters = ast.literal_eval(parameters)
 
     res = await dev._query_helper(module, command, parameters)
-
-    echo(res)
+    echo(json.dumps(res))
     return res
 
 
