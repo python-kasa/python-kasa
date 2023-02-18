@@ -29,18 +29,18 @@ myst-parser = { version = "*", optional = true }
 docutils = { version = ">=0.17", optional = true }
 
 [tool.poetry.dev-dependencies]
-pytest = ">=6.2.5"
-pytest-cov = "^2"
-pytest-asyncio = "^0"
+pytest = "*"
+pytest-cov = "*"
+pytest-asyncio = "*"
 pytest-sugar = "*"
 pre-commit = "*"
 voluptuous = "*"
 toml = "*"
 tox = "*"
-pytest-mock = "^3"
-codecov = "^2"
-xdoctest = "^0"
-coverage = {version = "^6", extras = ["toml"]}
+pytest-mock = "*"
+codecov = "*"
+xdoctest = "*"
+coverage = {version = "*", extras = ["toml"]}
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]
