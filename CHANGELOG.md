@@ -1,5 +1,97 @@
 # Changelog
 
+## [0.5.1](https://github.com/python-kasa/python-kasa/tree/0.5.1) (2023-02-18)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.0...0.5.1)
+
+This minor release contains mostly small UX fine-tuning and documentation improvements alongside with bug fixes:
+* Improved console tool (JSON output, colorized output if rich is installed)
+* Pretty, colorized console output, if `rich` is installed
+* Support for configuring bulb presets
+* Usage data is now reported in the expected format
+* Dependency pinning is relaxed to give downstreams more control
+
+**Breaking changes:**
+
+- Implement changing the bulb turn-on behavior [\#381](https://github.com/python-kasa/python-kasa/pull/381) (@rytilahti)
+
+**Implemented enhancements:**
+
+- Add support for json output [\#430](https://github.com/python-kasa/python-kasa/pull/430) (@rytilahti)
+- Pretty-print all exceptions from cli commands [\#428](https://github.com/python-kasa/python-kasa/pull/428) (@rytilahti)
+- Add transition parameter to lightstrip's set\_effect [\#416](https://github.com/python-kasa/python-kasa/pull/416) (@rytilahti)
+- Add brightness to lightstrip's set\_effect [\#415](https://github.com/python-kasa/python-kasa/pull/415) (@rytilahti)
+- Use rich for prettier output, if available [\#403](https://github.com/python-kasa/python-kasa/pull/403) (@rytilahti)
+- Adding cli command to delete a schedule rule [\#391](https://github.com/python-kasa/python-kasa/pull/391) (@aricforrest)
+- Add support for bulb presets [\#379](https://github.com/python-kasa/python-kasa/pull/379) (@rytilahti)
+
+**Fixed bugs:**
+
+- cli.py usage year and month options do not output data as expected [\#373](https://github.com/python-kasa/python-kasa/issues/373)
+- cli.py usage --year command passes year argument incorrectly [\#371](https://github.com/python-kasa/python-kasa/issues/371)
+- KP303 reporting as device off [\#319](https://github.com/python-kasa/python-kasa/issues/319)
+- HS210 not updating the state correctly [\#193](https://github.com/python-kasa/python-kasa/issues/193)
+- Return usage.get\_{monthstat,daystat} in expected format  [\#394](https://github.com/python-kasa/python-kasa/pull/394) (@jules43)
+- Fix year emeter for cli by using kwarg for year parameter [\#372](https://github.com/python-kasa/python-kasa/pull/372) (@rytilahti)
+
+**Documentation updates:**
+
+- Update misleading docs about supported devices \(was: add support for EP25 plug\) [\#367](https://github.com/python-kasa/python-kasa/issues/367)
+- Minor fixes to smartbulb docs [\#431](https://github.com/python-kasa/python-kasa/pull/431) (@rytilahti)
+- Add a note that transition is not supported by all devices [\#398](https://github.com/python-kasa/python-kasa/pull/398) (@rytilahti)
+- fix more outdated CLI examples, remove EP40 from bulb list [\#383](https://github.com/python-kasa/python-kasa/pull/383) (@HankB)
+- Fix outdated smartstrip cli examples [\#382](https://github.com/python-kasa/python-kasa/pull/382) (@HankB)
+- Add ToCs for doc pages [\#380](https://github.com/python-kasa/python-kasa/pull/380) (@rytilahti)
+- Clarify information about supported devices [\#377](https://github.com/python-kasa/python-kasa/pull/377) (@rytilahti)
+- Update README to add missing models and fix a link [\#351](https://github.com/python-kasa/python-kasa/pull/351) (@rytilahti)
+- Add KP125 test fixture and support note. [\#350](https://github.com/python-kasa/python-kasa/pull/350) (@jalseth)
+
+**Closed issues:**
+
+- detecting when a switch changes state [\#427](https://github.com/python-kasa/python-kasa/issues/427)
+- discovery fails for aliases [\#426](https://github.com/python-kasa/python-kasa/issues/426)
+- traceback when no devices exist [\#425](https://github.com/python-kasa/python-kasa/issues/425)
+- Discover.discover\(\) in a cron that runs every 1 min [\#421](https://github.com/python-kasa/python-kasa/issues/421)
+- add Schedule rule? [\#418](https://github.com/python-kasa/python-kasa/issues/418)
+- Cannot find EP10 using kasa discover [\#417](https://github.com/python-kasa/python-kasa/issues/417)
+- modulenotfound error [\#414](https://github.com/python-kasa/python-kasa/issues/414)
+- Issue enabling motion sensor, ES20M\(US\) [\#408](https://github.com/python-kasa/python-kasa/issues/408)
+- HS103 not discovered by kasa CLI [\#406](https://github.com/python-kasa/python-kasa/issues/406)
+- Multiple warnings from running pytest due to asyncio issues [\#396](https://github.com/python-kasa/python-kasa/issues/396)
+- Transition ignored with KL420L5 light strips [\#389](https://github.com/python-kasa/python-kasa/issues/389)
+- cli.py passes a dictionary \(TYPE\_TO\_CLASS\) to click.Choice which takes a Sequence\[str\]  [\#384](https://github.com/python-kasa/python-kasa/issues/384)
+- Error running `kasa wifi scan` [\#376](https://github.com/python-kasa/python-kasa/issues/376)
+- Unable to connect to brand new EP40 v1.8 [\#366](https://github.com/python-kasa/python-kasa/issues/366)
+- Add support for setting default behaviors for a soft or hard power on of the bulb [\#365](https://github.com/python-kasa/python-kasa/issues/365)
+- Set bulb hue using variable [\#361](https://github.com/python-kasa/python-kasa/issues/361)
+- Help with SmartLightStrip set\_custom\_effect [\#360](https://github.com/python-kasa/python-kasa/issues/360)
+- Import "kasa" could not be resolved [\#357](https://github.com/python-kasa/python-kasa/issues/357)
+- Wall switch ES20M \(--type dimmer\) is working [\#353](https://github.com/python-kasa/python-kasa/issues/353)
+- HS107 reports `state` not `relay_state` throwing a `KeyError` [\#349](https://github.com/python-kasa/python-kasa/issues/349)
+- Error Installing On Windows 10 [\#347](https://github.com/python-kasa/python-kasa/issues/347)
+- Error using Kasa [\#346](https://github.com/python-kasa/python-kasa/issues/346)
+- KS220M\(US\) support [\#268](https://github.com/python-kasa/python-kasa/issues/268)
+- Add machine-readable output [\#209](https://github.com/python-kasa/python-kasa/issues/209)
+- Can we donate? [\#77](https://github.com/python-kasa/python-kasa/issues/77)
+
+**Merged pull requests:**
+
+- Some release preparation janitoring [\#432](https://github.com/python-kasa/python-kasa/pull/432) (@rytilahti)
+- Bump certifi from 2021.10.8 to 2022.12.7 [\#409](https://github.com/python-kasa/python-kasa/pull/409) (@dependabot[bot])
+- Add FUNDING.yml [\#402](https://github.com/python-kasa/python-kasa/pull/402) (@rytilahti)
+- Update pre-commit hooks [\#401](https://github.com/python-kasa/python-kasa/pull/401) (@rytilahti)
+- Update pre-commit url for flake8 [\#400](https://github.com/python-kasa/python-kasa/pull/400) (@rytilahti)
+- Added .gitattributes file to retain LF only EOL markers when checking out on Windows [\#399](https://github.com/python-kasa/python-kasa/pull/399) (@jules43)
+- Fix pytest warnings about asyncio [\#397](https://github.com/python-kasa/python-kasa/pull/397) (@jules43)
+- Fix type hinting issue with call to click.Choice  [\#387](https://github.com/python-kasa/python-kasa/pull/387) (@jules43)
+- Manually pass the codecov token in CI [\#378](https://github.com/python-kasa/python-kasa/pull/378) (@rytilahti)
+- Correct typos in smartdevice.py [\#358](https://github.com/python-kasa/python-kasa/pull/358) (@felixonmars)
+- Add fixtures for KS200M [\#356](https://github.com/python-kasa/python-kasa/pull/356) (@gritstub)
+- Add fixtures for KS230 [\#355](https://github.com/python-kasa/python-kasa/pull/355) (@gritstub)
+- Add fixtures for ES20M \(\#353\) [\#354](https://github.com/python-kasa/python-kasa/pull/354) (@gritstub)
+- Add fixtures for KP100 [\#343](https://github.com/python-kasa/python-kasa/pull/343) (@bdraco)
+- Add codeql checks [\#338](https://github.com/python-kasa/python-kasa/pull/338) (@rytilahti)
+
 ## [0.5.0](https://github.com/python-kasa/python-kasa/tree/0.5.0) (2022-04-24)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.3...0.5.0)
@@ -56,6 +148,7 @@ Pull requests improving the functionality of modules as well as adding better in
 
 **Merged pull requests:**
 
+- Prepare 0.5.0 [\#342](https://github.com/python-kasa/python-kasa/pull/342) (@rytilahti)
 - Add fixtures for kl420 [\#339](https://github.com/python-kasa/python-kasa/pull/339) (@bdraco)
 
 ## [0.4.3](https://github.com/python-kasa/python-kasa/tree/0.4.3) (2022-04-05)
