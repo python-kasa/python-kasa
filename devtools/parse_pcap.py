@@ -3,12 +3,12 @@
 import json
 from collections import Counter, defaultdict
 from pprint import pformat as pf
-from pprint import pprint as pp
 
 import click
 import dpkt
 from dpkt.ethernet import ETH_TYPE_IP, Ethernet
 
+from kasa.cli import echo
 from kasa.protocol import TPLinkSmartHomeProtocol
 
 
@@ -36,21 +36,20 @@ def read_payloads_from_file(file):
         try:
             decrypted = TPLinkSmartHomeProtocol.decrypt(data[4:])
         except Exception as ex:
-            click.echo(
-                click.style(f"Unable to decrypt the data, ignoring: {ex}", fg="red")
-            )
+            echo(f"[red]Unable to decrypt the data, ignoring: {ex}[/red]")
+            continue
+
+        if not decrypted:  # skip empty payloads
             continue
 
         try:
             json_payload = json.loads(decrypted)
-        except Exception as ex:
-            click.echo(
-                click.style(f"Unable to parse payload, ignoring: {ex}", fg="red")
-            )
+        except Exception as ex:  # this can happen when the response is split into multiple tcp segments
+            echo(f"[red]Unable to parse payload '{decrypted}', ignoring: {ex}[/red]")
             continue
 
         if not json_payload:  # ignore empty payloads
-            click.echo(click.style("Got empty payload, ignoring", fg="red"))
+            echo("[red]Got empty payload, ignoring[/red]")
             continue
 
         yield json_payload
@@ -67,7 +66,7 @@ def parse_pcap(file):
         for module, cmds in json_payload.items():
             seen_items["modules"][module] += 1
             if "err_code" in cmds:
-                click.echo(click.style("Got error for module: %s" % cmds, fg="red"))
+                echo("[red]Got error for module: %s[/red]" % cmds)
                 continue
 
             for cmd, response in cmds.items():
@@ -76,30 +75,24 @@ def parse_pcap(file):
                 if response is None:
                     continue
                 direction = ">>"
-                style = {}
                 if response is None:
-                    print("got none as response for %s, weird?" % (cmd))
+                    echo(f"got none as response for {cmd} %s, weird?")
                     continue
+                is_success = "[green]+[/green]"
                 if "err_code" in response:
                     direction = "<<"
                     if response["err_code"] != 0:
                         seen_items["errorcodes"][response["err_code"]] += 1
                         seen_items["errors"][response["err_msg"]] += 1
-                        print(response)
-                        style = {"bold": True, "fg": "red"}
-                    else:
-                        style = {"fg": "green"}
+                        is_success = "[red]![/red]"
 
                 context_str = f" [ctx: {context}]" if context else ""
 
-                click.echo(
-                    click.style(
-                        f"{direction}{context_str} {module}.{cmd}: {pf(response)}",
-                        **style,
-                    )
+                echo(
+                    f"[{is_success}] {direction}{context_str} {module}.{cmd}: {pf(response)}"
                 )
 
-    pp(seen_items)
+    echo(pf(seen_items))
 
 
 if __name__ == "__main__":
