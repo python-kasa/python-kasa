@@ -1,16 +1,8 @@
 import logging
 import re
 
-from voluptuous import (  # type: ignore
-    REMOVE_EXTRA,
-    All,
-    Any,
-    Coerce,
-    Invalid,
-    Optional,
-    Range,
-    Schema,
-)
+from voluptuous import Coerce  # type: ignore
+from voluptuous import REMOVE_EXTRA, All, Any, Invalid, Optional, Range, Schema
 
 from ..protocol import TPLinkSmartHomeProtocol
 
@@ -467,7 +459,6 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             child_ids = []
 
         def get_response_for_module(target):
-
             if target not in proto.keys():
                 return error(msg="target not found")
 
