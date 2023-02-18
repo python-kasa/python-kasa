@@ -1,19 +1,11 @@
+import json
 import sys
 
 import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice
-from kasa.cli import (
-    TYPE_TO_CLASS,
-    alias,
-    brightness,
-    cli,
-    emeter,
-    raw_command,
-    state,
-    sysinfo,
-)
+from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo
 
 from .conftest import handle_turn_on, turn_on
 
@@ -111,25 +103,13 @@ async def test_brightness(dev):
     assert "Brightness: 12" in res.output
 
 
-async def test_temperature(dev):
-    pass
-
-
-async def test_hsv(dev):
-    pass
-
-
-async def test_led(dev):
-    pass
-
-
-async def test_on(dev):
-    pass
-
-
-async def test_off(dev):
-    pass
-
-
-async def test_reboot(dev):
-    pass
+# Invoke fails when run on py3.7 with the following error:
+# E        +  where 1 = <Result TypeError("object list can't be used in 'await' expression")>.exit_code
+@pytest.mark.skipif(sys.version_info < (3, 8), reason="fails on python3.7")
+async def test_json_output(dev: SmartDevice, mocker):
+    """Test that the json output produces correct output."""
+    mocker.patch("kasa.Discover.discover", return_value=[dev])
+    runner = CliRunner()
+    res = await runner.invoke(cli, ["--json", "state"], obj=dev)
+    assert res.exit_code == 0
+    assert json.loads(res.output) == dev.internal_state
