@@ -30,9 +30,9 @@ class SmartBulbPreset(BaseModel):
 
     index: int
     brightness: int
-    hue: int
-    saturation: int
-    color_temp: int
+    hue: Optional[int]
+    saturation: Optional[int]
+    color_temp: Optional[int]
 
 
 class BehaviorMode(str, Enum):
