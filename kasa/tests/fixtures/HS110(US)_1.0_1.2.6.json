@@ -1,0 +1,37 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current": 0.128037,
+            "err_code": 0,
+            "power": 7.677094,
+            "total": 30.404,
+            "voltage": 118.917389
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "Home Google WiFi HS110",
+            "dev_name": "Wi-Fi Smart Plug With Energy Monitoring",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "fwId": "00000000000000000000000000000000",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude": 0,
+            "led_off": 0,
+            "longitude": 0,
+            "mac": "00:00:00:00:00:00",
+            "model": "HS110(US)",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 14048150,
+            "relay_state": 1,
+            "rssi": -38,
+            "sw_ver": "1.2.6 Build 200727 Rel.121701",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}
