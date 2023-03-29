@@ -173,8 +173,7 @@ async def cli(ctx, host, alias, target, debug, type, json):
 
     if host is None:
         echo("No host name given, trying discovery..")
-        await ctx.invoke(discover)
-        return
+        return await ctx.invoke(discover)
 
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
@@ -186,7 +185,7 @@ async def cli(ctx, host, alias, target, debug, type, json):
     ctx.obj = dev
 
     if ctx.invoked_subcommand is None:
-        await ctx.invoke(state)
+        return await ctx.invoke(state)
 
 
 @cli.group()
@@ -232,17 +231,21 @@ async def discover(ctx, timeout):
     target = ctx.parent.params["target"]
     echo(f"Discovering devices on {target} for {timeout} seconds")
     sem = asyncio.Semaphore()
+    discovered = dict()
 
     async def print_discovered(dev: SmartDevice):
         await dev.update()
         async with sem:
+            discovered[dev.host] = dev.internal_state
             ctx.obj = dev
             await ctx.invoke(state)
             echo()
 
-    return await Discover.discover(
+    await Discover.discover(
         target=target, timeout=timeout, on_discovered=print_discovered
     )
+
+    return discovered
 
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
