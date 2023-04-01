@@ -181,7 +181,7 @@ class SmartBulb(SmartDevice):
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
         >>> bulb.presets
-        [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0)]
+        [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
         To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset` instance to :func:`save_preset` method:
 
@@ -531,5 +531,5 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Invalid preset index")
 
         return await self._query_helper(
-            self.LIGHT_SERVICE, "set_preferred_state", preset.dict()
+            self.LIGHT_SERVICE, "set_preferred_state", preset.dict(exclude_none=True)
         )
