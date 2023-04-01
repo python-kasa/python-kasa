@@ -1,0 +1,89 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 544,
+            "err_code": 0,
+            "power_mw": 62430,
+            "total_wh": 26889,
+            "voltage_mv": 118389
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "TP-LINK_Power Strip_2CA9",
+            "child_num": 6,
+            "children": [
+                {
+                    "alias": "Home CameraPC",
+                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED00",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 1449897,
+                    "state": 1
+                },
+                {
+                    "alias": "Home Firewalla",
+                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 1449897,
+                    "state": 1
+                },
+                {
+                    "alias": "Home Cox modem",
+                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED02",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 1449897,
+                    "state": 1
+                },
+                {
+                    "alias": "Home rpi3-2",
+                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED03",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 1449897,
+                    "state": 1
+                },
+                {
+                    "alias": "Home Camera Switch",
+                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED05",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 1449897,
+                    "state": 1
+                },
+                {
+                    "alias": "Home Network Switch",
+                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED04",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 1449897,
+                    "state": 1
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS300(US)",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -39,
+            "status": "new",
+            "sw_ver": "1.0.21 Build 210524 Rel.161309",
+            "updating": 0
+        }
+    }
+}

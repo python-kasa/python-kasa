@@ -1,0 +1,97 @@
+{
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "current_ma": 0,
+            "err_code": 0,
+            "power_mw": 2725,
+            "total_wh": 1193,
+            "voltage_mv": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "Home Master Bed Strip",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "length": 14,
+            "light_state": {
+                "brightness": 15,
+                "color_temp": 2500,
+                "hue": 0,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 100,
+                "custom": 0,
+                "enable": 0,
+                "id": "bCTItKETDFfrKANolgldxfgOakaarARs",
+                "name": "Flicker"
+            },
+            "longitude_i": 0,
+            "mic_mac": "000000000000",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL430(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "custom": 0,
+                    "id": "QglBhMShPHUAuxLqzNEefFrGiJwahOmz",
+                    "index": 0,
+                    "mode": 2
+                },
+                {
+                    "brightness": 100,
+                    "custom": 0,
+                    "id": "bCTItKETDFfrKANolgldxfgOakaarARs",
+                    "index": 1,
+                    "mode": 2
+                },
+                {
+                    "brightness": 34,
+                    "color_temp": 0,
+                    "hue": 7,
+                    "index": 2,
+                    "mode": 1,
+                    "saturation": 49
+                },
+                {
+                    "brightness": 25,
+                    "color_temp": 0,
+                    "hue": 4,
+                    "index": 3,
+                    "mode": 1,
+                    "saturation": 100
+                },
+                {
+                    "brightness": 15,
+                    "color_temp": 2500,
+                    "hue": 0,
+                    "index": 4,
+                    "mode": 1,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -44,
+            "status": "new",
+            "sw_ver": "1.0.10 Build 200522 Rel.104340"
+        }
+    }
+}
