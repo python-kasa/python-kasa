@@ -30,9 +30,16 @@ class SmartBulbPreset(BaseModel):
 
     index: int
     brightness: int
-    hue: int
-    saturation: int
-    color_temp: int
+
+    # These are not available for effect mode presets on light strips
+    hue: Optional[int]
+    saturation: Optional[int]
+    color_temp: Optional[int]
+
+    # Variables for effect mode presets
+    custom: Optional[int]
+    id: Optional[str]
+    mode: Optional[int]
 
 
 class BehaviorMode(str, Enum):
@@ -174,7 +181,7 @@ class SmartBulb(SmartDevice):
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
         >>> bulb.presets
-        [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0)]
+        [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
         To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset` instance to :func:`save_preset` method:
 
@@ -514,7 +521,7 @@ class SmartBulb(SmartDevice):
     async def save_preset(self, preset: SmartBulbPreset):
         """Save a setting preset.
 
-        You can either construct a preset object manually, or pass an existing one obtained
+        You can either construct a preset object manually, or pass an existing one
         obtained using :func:`presets`.
         """
         if len(self.presets) == 0:
@@ -524,5 +531,5 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Invalid preset index")
 
         return await self._query_helper(
-            self.LIGHT_SERVICE, "set_preferred_state", preset.dict()
+            self.LIGHT_SERVICE, "set_preferred_state", preset.dict(exclude_none=True)
         )

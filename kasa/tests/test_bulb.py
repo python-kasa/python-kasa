@@ -263,7 +263,7 @@ async def test_list_presets(dev: SmartBulb):
 
 @bulb
 async def test_modify_preset(dev: SmartBulb, mocker):
-    """Verify that modifying preset calls the  and exceptions are raised properly."""
+    """Verify that modifying preset calls the and exceptions are raised properly."""
     if not dev.presets:
         pytest.skip("Some strips do not support presets")
 
@@ -289,3 +289,27 @@ async def test_modify_preset(dev: SmartBulb, mocker):
         await dev.save_preset(
             SmartBulbPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)
         )
+
+
+@bulb
+@pytest.mark.parametrize(
+    ("preset", "payload"),
+    [
+        (
+            SmartBulbPreset(index=0, hue=0, brightness=1, saturation=0),
+            {"index": 0, "hue": 0, "brightness": 1, "saturation": 0},
+        ),
+        (
+            SmartBulbPreset(index=0, brightness=1, id="testid", mode=2, custom=0),
+            {"index": 0, "brightness": 1, "id": "testid", "mode": 2, "custom": 0},
+        ),
+    ],
+)
+async def test_modify_preset_payloads(dev: SmartBulb, preset, payload, mocker):
+    """Test that modify preset payloads ignore none values."""
+    if not dev.presets:
+        pytest.skip("Some strips do not support presets")
+
+    query_helper = mocker.patch("kasa.SmartBulb._query_helper")
+    await dev.save_preset(preset)
+    query_helper.assert_called_with(dev.LIGHT_SERVICE, "set_preferred_state", payload)
