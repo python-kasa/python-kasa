@@ -127,7 +127,7 @@ class SmartBulb(SmartDevice):
         >>> bulb = SmartBulb("127.0.0.1")
         >>> asyncio.run(bulb.update())
         >>> print(bulb.alias)
-        KL130 office bulb
+        Bulb2
 
         Bulbs, like any other supported devices, can be turned on and off:
 
