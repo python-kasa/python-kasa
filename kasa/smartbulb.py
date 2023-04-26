@@ -204,11 +204,11 @@ class SmartBulb(SmartDevice):
         self._device_type = DeviceType.Bulb
         self.add_module("schedule", Schedule(self, "smartlife.iot.common.schedule"))
         self.add_module("usage", Usage(self, "smartlife.iot.common.schedule"))
-        # self.add_module("antitheft", Antitheft(self, "smartlife.iot.common.anti_theft"))
+        self.add_module("antitheft", Antitheft(self, "smartlife.iot.common.anti_theft"))
         self.add_module("time", Time(self, "smartlife.iot.common.timesetting"))
         self.add_module("emeter", Emeter(self, self.emeter_type))
-        # self.add_module("countdown", Countdown(self, "countdown"))
-        # self.add_module("cloud", Cloud(self, "smartlife.iot.common.cloud"))
+        self.add_module("countdown", Countdown(self, "countdown"))
+        self.add_module("cloud", Cloud(self, "smartlife.iot.common.cloud"))
 
     @property  # type: ignore
     @requires_update
