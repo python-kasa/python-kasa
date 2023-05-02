@@ -30,7 +30,8 @@ _LOGGER = logging.getLogger(__name__)
 # Certain module queries will crash devices; this list skips those queries
 # https://github.com/python-kasa/python-kasa/issues/345
 MODEL_MODULE_SKIPLIST = {
-    "KL125(US)": ["antitheft", "cloud", "countdown"]
+    # "KL125(US)": ["antitheft", "cloud", "countdown"]
+    # "KL125(US)": ["cloud"]
 }
 
 class DeviceType(Enum):
