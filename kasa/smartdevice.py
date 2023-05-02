@@ -330,13 +330,12 @@ class SmartDevice:
             )
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
-
         for module_name, module in self.modules.items():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue
             modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
-            if self.model in modules_to_skip:
+            if module_name in modules_to_skip:
                 _LOGGER.debug("Module %s is excluded for %s, skipping" % (module, self.model))
                 continue
 
