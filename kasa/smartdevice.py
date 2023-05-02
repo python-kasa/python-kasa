@@ -28,7 +28,8 @@ from .protocol import TPLinkSmartHomeProtocol
 _LOGGER = logging.getLogger(__name__)
 
 # Certain module queries will crash devices; this list skips those queries
-MODULE_EXCLUSIONS = {
+# https://github.com/python-kasa/python-kasa/issues/345
+MODEL_MODULE_SKIPLIST = {
     "KL125(US)": ["antitheft", "cloud", "countdown"]
 }
 
@@ -330,12 +331,12 @@ class SmartDevice:
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
 
-        for module_key in self.modules:
-            module = self.modules[module_key]
+        for module_name, module in self.modules.items():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue
-            elif self.model in MODULE_EXCLUSIONS and ( module_key in MODULE_EXCLUSIONS[self.model] ):
+            modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
+            if self.model in modules_to_skip:
                 _LOGGER.debug("Module %s is excluded for %s, skipping" % (module, self.model))
                 continue
 
