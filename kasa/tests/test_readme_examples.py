@@ -61,9 +61,6 @@ def test_lightstrip_examples(mocker):
     assert not res["failed"]
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 8), reason="3.7 handles asyncio.run differently"
-)
 def test_discovery_examples(mocker):
     """Test discovery examples."""
     p = asyncio.run(get_device_for_file("KP303(UK)_1.0_1.0.3.json"))

@@ -62,7 +62,6 @@ async def test_protocol_retry_recoverable_error(mocker):
     assert conn.call_count == 6
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
 async def test_protocol_reconnect(mocker, retry_count):
     remaining = retry_count
@@ -98,7 +97,6 @@ async def test_protocol_reconnect(mocker, retry_count):
     assert response == {"great": "success"}
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
 @pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])
 async def test_protocol_logging(mocker, caplog, log_level):
     caplog.set_level(log_level)
