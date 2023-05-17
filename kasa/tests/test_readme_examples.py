@@ -65,8 +65,6 @@ def test_discovery_examples(mocker):
     """Test discovery examples."""
     p = asyncio.run(get_device_for_file("KP303(UK)_1.0_1.0.3.json"))
 
-    # This succeeds on python 3.8 but fails on 3.7
-    # ValueError: a coroutine was expected, got [<DeviceType.Strip model KP303(UK) ...
     mocker.patch("kasa.discover.Discover.discover", return_value=[p])
     res = xdoctest.doctest_module("kasa.discover", "all")
     assert not res["failed"]
