@@ -71,4 +71,4 @@ class Motion(Module):
         Note, that you need to delete the default rule to avoid reverting this
         back to 60 seconds after a period of time.
         """
-        return await self.call("set_cold_time", timeout)
+        return await self.call("set_cold_time", {"cold_time": timeout})
