@@ -59,3 +59,16 @@ class Motion(Module):
             )
 
         return await self.call("set_trigger_sens", payload)
+
+    @property
+    def inactivity_timeout(self) -> int:
+        """Return inactivity timeout in milliseconds."""
+        return self.data["cold_time"]
+
+    async def set_inactivity_timeout(self, timeout: int):
+        """Set inactivity timeout in milliseconds.
+
+        Note, that you need to delete the default "Smart Control" rule in the app
+        to avoid reverting this back to 60 seconds after a period of time.
+        """
+        return await self.call("set_cold_time", {"cold_time": timeout})

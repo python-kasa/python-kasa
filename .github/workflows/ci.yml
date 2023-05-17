@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
 
     steps:
       - uses: "actions/checkout@v2"
@@ -64,14 +64,14 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "pypy-3.7"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "pypy-3.8"]
         os: [ubuntu-latest, macos-latest, windows-latest]
         # exclude pypy on windows, as the poetry install seems to be very flaky:
         # PermissionError(13, 'The process cannot access the file because it is being used by another process'))
         # at C:\hostedtoolcache\windows\PyPy\3.7.10\x86\site-packages\requests\models.py:761 in generate
-        exclude:
-        - python-version: pypy-3.7
-          os: windows-latest
+        # exclude:
+        # - python-version: pypy-3.8
+        #  os: windows-latest
 
     steps:
       - uses: "actions/checkout@v2"

@@ -1,9 +1,33 @@
 """Module for dimmers (currently only HS220)."""
+from enum import Enum
 from typing import Any, Dict, Optional
 
 from kasa.modules import AmbientLight, Motion
 from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
 from kasa.smartplug import SmartPlug
+
+
+class ButtonAction(Enum):
+    """Button action."""
+
+    NoAction = "none"
+    Instant = "instant_on_off"
+    Gentle = "gentle_on_off"
+    Preset = "customize_preset"
+
+
+class ActionType(Enum):
+    """Button action."""
+
+    DoubleClick = "double_click_action"
+    LongPress = "long_press_action"
+
+
+class FadeType(Enum):
+    """Fade on/off setting."""
+
+    FadeOn = "fade_on"
+    FadeOff = "fade_off"
 
 
 class SmartDimmer(SmartPlug):
@@ -139,6 +163,40 @@ class SmartDimmer(SmartPlug):
             "set_dimmer_transition",
             {"brightness": brightness, "duration": transition},
         )
+
+    @requires_update
+    async def get_behaviors(self):
+        """Return button behavior settings."""
+        behaviors = await self._query_helper(
+            self.DIMMER_SERVICE, "get_default_behavior", {}
+        )
+        return behaviors
+
+    @requires_update
+    async def set_button_action(
+        self, action_type: ActionType, action: ButtonAction, index: Optional[int] = None
+    ):
+        """Set action to perform on button click/hold.
+
+        :param action_type ActionType: whether to control double click or hold action.
+        :param action ButtonAction: what should the button do (nothing, instant, gentle, change preset)
+        :param index int: in case of preset change, the preset to select
+        """
+        action_type_setter = f"set_{action_type}"
+
+        payload: Dict[str, Any] = {"mode": str(action)}
+        if index is not None:
+            payload["index"] = index
+
+        await self._query_helper(self.DIMMER_SERVICE, action_type_setter, payload)
+
+    @requires_update
+    async def set_fade_time(self, fade_type: FadeType, time: int):
+        """Set time for fade in / fade out."""
+        fade_type_setter = f"set_{fade_type}_time"
+        payload = {"fadeTime": time}
+
+        await self._query_helper(self.DIMMER_SERVICE, fade_type_setter, payload)
 
     @property  # type: ignore
     @requires_update

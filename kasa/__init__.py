@@ -11,7 +11,7 @@ For device type specific actions `SmartBulb`, `SmartPlug`, or `SmartStrip`
 Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
-from importlib_metadata import version  # type: ignore
+from importlib.metadata import version
 
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus

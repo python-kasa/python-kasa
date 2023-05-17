@@ -52,7 +52,6 @@ async def test_type_unknown():
         Discover._get_device_class(invalid_info)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
 async def test_discover_single(discovery_data: dict, mocker):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
@@ -71,7 +70,6 @@ INVALIDS = [
 ]
 
 
-@pytest.mark.skipif(sys.version_info < (3, 8), reason="3.8 is first one with asyncmock")
 @pytest.mark.parametrize("msg, data", INVALIDS)
 async def test_discover_invalid_info(msg, data, mocker):
     """Make sure that invalid discovery information raises an exception."""
