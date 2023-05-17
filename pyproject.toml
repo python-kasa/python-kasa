@@ -21,7 +21,6 @@ kasa = "kasa.cli:cli"
 [tool.poetry.dependencies]
 python = "^3.8"
 anyio = "*"  # see https://github.com/python-trio/asyncclick/issues/18
-importlib-metadata = "*"
 asyncclick = ">=8"
 pydantic = "^1"
 
