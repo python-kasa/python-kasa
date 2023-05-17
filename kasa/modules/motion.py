@@ -68,7 +68,7 @@ class Motion(Module):
     async def set_inactivity_timeout(self, timeout: int):
         """Set inactivity timeout in milliseconds.
 
-        Note, that you need to delete the default rule to avoid reverting this
-        back to 60 seconds after a period of time.
+        Note, that you need to delete the default "Smart Control" rule in the app
+        to avoid reverting this back to 60 seconds after a period of time.
         """
         return await self.call("set_cold_time", {"cold_time": timeout})
