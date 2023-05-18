@@ -28,9 +28,8 @@ from .protocol import TPLinkSmartHomeProtocol
 _LOGGER = logging.getLogger(__name__)
 
 # Certain module queries will crash devices; this list skips those queries
-MODEL_MODULE_SKIPLIST = {
-    "KL125(US)": ["cloud"]  # Issue #345
-}
+MODEL_MODULE_SKIPLIST = {"KL125(US)": ["cloud"]}  # Issue #345
+
 
 class DeviceType(Enum):
     """Device type enum."""
@@ -335,7 +334,7 @@ class SmartDevice:
                 continue
             modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
             if module_name in modules_to_skip:
-                _LOGGER.debug("Module %s is excluded for %s, skipping" % (module, self.model))
+                _LOGGER.debug(f"Module {module} is excluded for {self.model}, skipping")
                 continue
 
             q = module.query()
