@@ -27,6 +27,9 @@ from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
+# Certain module queries will crash devices; this list skips those queries
+MODEL_MODULE_SKIPLIST = {"KL125(US)": ["cloud"]}  # Issue #345
+
 
 class DeviceType(Enum):
     """Device type enum."""
@@ -325,10 +328,15 @@ class SmartDevice:
             )
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
-        for module in self.modules.values():
+        for module_name, module in self.modules.items():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue
+            modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
+            if module_name in modules_to_skip:
+                _LOGGER.debug(f"Module {module} is excluded for {self.model}, skipping")
+                continue
+
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
             req = merge(req, q)
