@@ -437,28 +437,14 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "kasa-crypt"
-version = "0.1.4"
+version = "0.1.5"
 description = "Fast kasa crypt"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "kasa_crypt-0.1.4-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:1b5510ed115049e04594dd74ba9008dc3d53d942dda7be284747e97d5a24a68d"},
-    {file = "kasa_crypt-0.1.4-cp310-cp310-manylinux_2_17_i686.manylinux_2_5_i686.manylinux1_i686.manylinux2014_i686.whl", hash = "sha256:c837473170ee699cde290a618bd7e00fede76add7d73b509813e1e719e9dd60a"},
-    {file = "kasa_crypt-0.1.4-cp310-cp310-manylinux_2_17_x86_64.manylinux_2_5_x86_64.manylinux1_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d80506f83bf6c933e78c08d40516a1b8134683c2085f53f058ee1099dcf41ef2"},
-    {file = "kasa_crypt-0.1.4-cp310-cp310-manylinux_2_31_x86_64.whl", hash = "sha256:5cb61c127ade1d91cee7676fafa0a00b564195140ea9fc276f932946f8f143c8"},
-    {file = "kasa_crypt-0.1.4-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:5004787c1d6cb387da04a1bf06f01299881b43e8580744e5e49a284ee4137208"},
-    {file = "kasa_crypt-0.1.4-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:714011fef95f88c20d24da65065d7b9e47f3a8786989f0ee9a860438b767e7a3"},
-    {file = "kasa_crypt-0.1.4-cp310-cp310-win32.whl", hash = "sha256:a1f45fc1b9e6624ef508806fbfca319cd567281da7dede305032add145659995"},
-    {file = "kasa_crypt-0.1.4-cp310-cp310-win_amd64.whl", hash = "sha256:824b4c0c22274dc6777ec15c0c35d9eacf80be4ef1f3c9368ba77dc1e1a5f8ba"},
-    {file = "kasa_crypt-0.1.4-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:0f346e3748d36a5310c09f76da5eb8155a7bf48ef751ee4b85ce402a90ae948f"},
-    {file = "kasa_crypt-0.1.4-cp311-cp311-manylinux_2_17_i686.manylinux_2_5_i686.manylinux1_i686.manylinux2014_i686.whl", hash = "sha256:91a258c1a47378b1c8ab33a57aae9fdcc89b0cdcc1549b36e380322a46472fdd"},
-    {file = "kasa_crypt-0.1.4-cp311-cp311-manylinux_2_17_x86_64.manylinux_2_5_x86_64.manylinux1_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4dfb5f53f3bd88b49da288e6022ad9a468e9036d24c547a95fef88baa5a50030"},
-    {file = "kasa_crypt-0.1.4-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:3c3ab62696b639bf56efd0693f1cc4d712bdfad3ced002146247ee68c1ddb1f6"},
-    {file = "kasa_crypt-0.1.4-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:8ebf8355153b05c0fdd0baa1e09b7d4c39004988def771b78d9e1d9f68fda4f7"},
-    {file = "kasa_crypt-0.1.4-cp311-cp311-win32.whl", hash = "sha256:e5e9fdbfae401f54c0378e4222fba1035d06f1e43356ce4bcef3b79fe068adb6"},
-    {file = "kasa_crypt-0.1.4-cp311-cp311-win_amd64.whl", hash = "sha256:a3b6d7947e36d342a26b3e1d51f4a33fcffa21283ad37a498176a4126b3ca7c2"},
-    {file = "kasa_crypt-0.1.4.tar.gz", hash = "sha256:f6d231b419180a78d7fa95f9d1d90f32751b98fa68dad01559a5e978dd3de26a"},
+    {file = "kasa_crypt-0.1.5-cp310-cp310-manylinux_2_31_x86_64.whl", hash = "sha256:e89d15df09c7ed21262ba0b84e1e95e4ff849226dc2fe3378d68badc99021b50"},
+    {file = "kasa_crypt-0.1.5.tar.gz", hash = "sha256:c99dd5db02fce5a9a95da83916a9c65ab6d6c4f3b1635ff4b0edb82426a44d78"},
 ]
 
 [[package]]
@@ -1351,4 +1337,4 @@ docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parse
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "8f63ae8271683843859c12032bbb5371e138694f72b8b36b18cad4fd43962497"
+content-hash = "763574a8a7da1a3f9649c59a442d16d27a3b16311fafdf56e53d3a8909a44c91"
