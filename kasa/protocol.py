@@ -16,7 +16,7 @@ import json
 import logging
 import struct
 from pprint import pformat as pf
-from typing import Dict, Generator, Optional, Union
+from typing import Dict, Optional, Union
 from kasa_crypt import encrypt, decrypt
 
 from .exceptions import SmartDeviceException
