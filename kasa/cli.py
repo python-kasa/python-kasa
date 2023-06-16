@@ -1,6 +1,5 @@
 """python-kasa cli tool."""
 import asyncio
-import json
 import logging
 import re
 import sys
@@ -37,6 +36,7 @@ from kasa import (
     SmartPlug,
     SmartStrip,
 )
+from kasa.json import dumps as json_dumps
 
 TYPE_TO_CLASS = {
     "plug": SmartPlug,
@@ -84,7 +84,7 @@ def json_formatter_cb(result, **kwargs):
         """Serialize smart device data, just using the last update raw payload."""
         return val.internal_state
 
-    json_content = json.dumps(result, indent=4, default=to_serializable)
+    json_content = json_dumps(result, indent=4, default=to_serializable)
     print(json_content)
 
 
@@ -352,7 +352,7 @@ async def raw_command(dev: SmartDevice, module, command, parameters):
         parameters = ast.literal_eval(parameters)
 
     res = await dev._query_helper(module, command, parameters)
-    echo(json.dumps(res))
+    echo(json_dumps(res))
     return res
 
 

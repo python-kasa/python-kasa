@@ -91,7 +91,7 @@ async def test_discover_send(mocker):
 async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
     proto = _DiscoverProtocol()
-    mocker.patch("json.loads", return_value=discovery_data)
+    mocker.patch("kasa.json_loads", return_value=discovery_data)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
@@ -109,7 +109,7 @@ async def test_discover_datagram_received(mocker, discovery_data):
 async def test_discover_invalid_responses(msg, data, mocker):
     """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
     proto = _DiscoverProtocol()
-    mocker.patch("json.loads", return_value=data)
+    mocker.patch("kasa.json_loads", return_value=data)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
