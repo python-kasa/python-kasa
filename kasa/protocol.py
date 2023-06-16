@@ -17,6 +17,7 @@ import logging
 import struct
 from pprint import pformat as pf
 from typing import Dict, Generator, Optional, Union
+from kasa_crypt import encrypt, decrypt
 
 from .exceptions import SmartDeviceException
 
@@ -182,31 +183,13 @@ class TPLinkSmartHomeProtocol:
         self._reset()
 
     @staticmethod
-    def _xor_payload(unencrypted: bytes) -> Generator[int, None, None]:
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        for unencryptedbyte in unencrypted:
-            key = key ^ unencryptedbyte
-            yield key
-
-    @staticmethod
     def encrypt(request: str) -> bytes:
         """Encrypt a request for a TP-Link Smart Home Device.
 
         :param request: plaintext request data
         :return: ciphertext to be send over wire, in bytes
         """
-        plainbytes = request.encode()
-        return struct.pack(">I", len(plainbytes)) + bytes(
-            TPLinkSmartHomeProtocol._xor_payload(plainbytes)
-        )
-
-    @staticmethod
-    def _xor_encrypted_payload(ciphertext: bytes) -> Generator[int, None, None]:
-        key = TPLinkSmartHomeProtocol.INITIALIZATION_VECTOR
-        for cipherbyte in ciphertext:
-            plainbyte = key ^ cipherbyte
-            key = cipherbyte
-            yield plainbyte
+        return encrypt(request)
 
     @staticmethod
     def decrypt(ciphertext: bytes) -> str:
@@ -215,6 +198,4 @@ class TPLinkSmartHomeProtocol:
         :param ciphertext: encrypted response data
         :return: plaintext response
         """
-        return bytes(
-            TPLinkSmartHomeProtocol._xor_encrypted_payload(ciphertext)
-        ).decode()
+        return decrypt(ciphertext)
