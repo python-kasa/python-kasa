@@ -30,7 +30,7 @@ sphinx_rtd_theme = { version = "^0", optional = true }
 sphinxcontrib-programoutput = { version = "^0", optional = true }
 myst-parser = { version = "*", optional = true }
 docutils = { version = ">=0.17", optional = true }
-kasa-crypt = ">=0.1.5"
+kasa-crypt = ">=0.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

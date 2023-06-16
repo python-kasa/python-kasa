@@ -437,14 +437,14 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "kasa-crypt"
-version = "0.1.5"
+version = "0.2.0"
 description = "Fast kasa crypt"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "kasa_crypt-0.1.5-cp310-cp310-manylinux_2_31_x86_64.whl", hash = "sha256:e89d15df09c7ed21262ba0b84e1e95e4ff849226dc2fe3378d68badc99021b50"},
-    {file = "kasa_crypt-0.1.5.tar.gz", hash = "sha256:c99dd5db02fce5a9a95da83916a9c65ab6d6c4f3b1635ff4b0edb82426a44d78"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-manylinux_2_31_x86_64.whl", hash = "sha256:9676ac702aa62252fb4de3d5c9ee4895dd93610b9c37e732213b0914fbc0e255"},
+    {file = "kasa_crypt-0.2.0.tar.gz", hash = "sha256:ad2e73276f09ed035d53006985b08eb78869f73e60ac5d66547d9ddc35cb8cc4"},
 ]
 
 [[package]]
@@ -1337,4 +1337,4 @@ docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parse
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "763574a8a7da1a3f9649c59a442d16d27a3b16311fafdf56e53d3a8909a44c91"
+content-hash = "715811132295a644edb1755a3669d8aebec36ede4e00f6b067c2b22ecb53d78a"
