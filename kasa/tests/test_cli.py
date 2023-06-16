@@ -1,6 +1,6 @@
-import json
 import sys
 
+import orjson
 import pytest
 from asyncclick.testing import CliRunner
 
@@ -108,4 +108,4 @@ async def test_json_output(dev: SmartDevice, mocker):
     runner = CliRunner()
     res = await runner.invoke(cli, ["--json", "state"], obj=dev)
     assert res.exit_code == 0
-    assert json.loads(res.output) == dev.internal_state
+    assert orjson.loads(res.output) == dev.internal_state

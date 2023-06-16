@@ -1,9 +1,9 @@
 import errno
-import json
 import logging
 import struct
 import sys
 
+import orjson
 import pytest
 
 from ..exceptions import SmartDeviceException
@@ -130,7 +130,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
 
 
 def test_encrypt():
-    d = json.dumps({"foo": 1, "bar": 2})
+    d = orjson.dumps({"foo": 1, "bar": 2}).decode("utf-8")
     encrypted = TPLinkSmartHomeProtocol.encrypt(d)
     # encrypt adds a 4 byte header
     encrypted = encrypted[4:]
