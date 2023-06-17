@@ -1,10 +1,11 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
-import json
 import logging
 import socket
 from typing import Awaitable, Callable, Dict, Optional, Type, cast
 
+from kasa.json import dumps as json_dumps
+from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
@@ -63,7 +64,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
     def do_discover(self) -> None:
         """Send number of discovery datagrams."""
-        req = json.dumps(Discover.DISCOVERY_QUERY)
+        req = json_dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
         for i in range(self.discovery_packets):
@@ -75,7 +76,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         if ip in self.discovered_devices:
             return
 
-        info = json.loads(TPLinkSmartHomeProtocol.decrypt(data))
+        info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
         try:
