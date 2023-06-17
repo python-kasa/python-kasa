@@ -18,7 +18,7 @@ You can install the most recent release using pip:
 pip install python-kasa
 ```
 
-If you are using cython, it is recommended to install with to enable orjson (faster json support):
+If you are using cpython, it is recommended to install with to enable orjson (faster json support):
 ```
 pip install python-kasa[speedups]
 ```
