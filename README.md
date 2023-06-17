@@ -18,6 +18,11 @@ You can install the most recent release using pip:
 pip install python-kasa
 ```
 
+If you are using cython, it is recommended to install with to enable orjson (faster json support):
+```
+pip install python-kasa[speedups]
+```
+
 Alternatively, you can clone this repository and use poetry to install the development version:
 ```
 git clone https://github.com/python-kasa/python-kasa.git
