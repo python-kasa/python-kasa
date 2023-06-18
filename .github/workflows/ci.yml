@@ -58,7 +58,7 @@ jobs:
           poetry run pre-commit run check-ast --all-files
 
   tests:
-    name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('["", " (extras)"]')[matrix.extras == ''] }}
+    name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
     needs: linting
     runs-on: ${{ matrix.os }}
 
