@@ -1399,8 +1399,9 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 
 [extras]
 docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]
+speedups = ["orjson", "kasa-crypt"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "509c8b9b0646f2aa1bd53d86676083d6d6aec3e5bf2282fa3c6b4b019f0a1550"
+content-hash = "b85f55f0ca928b1f3510da37196c21f40eb07cd4d07b3a9c3dd29215ba9777fe"
