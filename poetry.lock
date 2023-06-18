@@ -450,7 +450,7 @@ name = "kasa-crypt"
 version = "0.2.0"
 description = "Fast kasa crypt"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7,<4.0"
 files = [
     {file = "kasa_crypt-0.2.0-cp310-cp310-manylinux_2_31_x86_64.whl", hash = "sha256:9676ac702aa62252fb4de3d5c9ee4895dd93610b9c37e732213b0914fbc0e255"},
@@ -1403,4 +1403,4 @@ docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parse
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "3ef1c1eb598a1229d397669cb3c5c118d8bb0aebf5abff5d47422abba05418ae"
+content-hash = "509c8b9b0646f2aa1bd53d86676083d6d6aec3e5bf2282fa3c6b4b019f0a1550"
