@@ -66,7 +66,7 @@ jobs:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11", "pypy-3.8"]
         os: [ubuntu-latest, macos-latest, windows-latest]
-        extras: ["speedups", ""]
+        extras: ["speedups", "none"]
         exclude:
           - os: macos-latest
             extras: "speedups"
@@ -97,15 +97,15 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
       - name: "Install dependencies (no speedups)"
-        if: matrix.extras == ""
+        if: matrix.extras == "none"
         run: |
           python -m pip install --upgrade pip poetry
           poetry install
       - name: "Install dependencies (with speedups)"
-        if: matrix.extras == "speedups"
+        if: matrix.extras != "none"
         run: |
           python -m pip install --upgrade pip poetry
-          poetry install --extras speedups
+          poetry install --extras ${{ matrix.extras }}
       - name: "Run tests"
         run: |
           poetry run pytest --cov kasa --cov-report xml
