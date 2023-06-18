@@ -12,7 +12,6 @@ http://www.apache.org/licenses/LICENSE-2.0
 import asyncio
 import contextlib
 import errno
-import json
 import logging
 import struct
 from pprint import pformat as pf
@@ -21,6 +20,8 @@ from typing import Dict, Optional, Union
 from kasa_crypt import decrypt, encrypt
 
 from .exceptions import SmartDeviceException
+from .json import dumps as json_dumps
+from .json import loads as json_loads
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
@@ -66,7 +67,7 @@ class TPLinkSmartHomeProtocol:
             self.query_lock = asyncio.Lock()
 
         if isinstance(request, dict):
-            request = json.dumps(request)
+            request = json_dumps(request)
             assert isinstance(request, str)
 
         timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
@@ -98,7 +99,7 @@ class TPLinkSmartHomeProtocol:
 
         buffer = await self.reader.readexactly(length)
         response = TPLinkSmartHomeProtocol.decrypt(buffer)
-        json_payload = json.loads(response)
+        json_payload = json_loads(response)
         if debug_log:
             _LOGGER.debug("%s << %s", self.host, pf(json_payload))
 
