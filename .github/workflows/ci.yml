@@ -58,7 +58,7 @@ jobs:
           poetry run pre-commit run check-ast --all-files
 
   tests:
-    name: "Python ${{ matrix.python-version}} on ${{ matrix.os }}"
+    name: "Python ${{ matrix.python-version}} on ${{ matrix.os }} (${{ matrix.extras }})"
     needs: linting
     runs-on: ${{ matrix.os }}
 
