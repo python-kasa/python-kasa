@@ -144,6 +144,7 @@ If your device is unlisted but working, please open a pull request to update the
 * HS300
 * KP303
 * KP400
+* KP405 (dimmer)
 
 ### Wall switches
 
