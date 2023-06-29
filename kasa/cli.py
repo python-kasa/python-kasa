@@ -126,7 +126,7 @@ def json_formatter_cb(result, **kwargs):
 )
 @click.option("--klap", default=False, is_flag=True)
 @click.option(
-    "--user",
+    "--username",
     default="",
     required=False,
     help="Username/email address to authenticate to device.",
@@ -147,7 +147,7 @@ def json_formatter_cb(result, **kwargs):
 
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, type, json, klap, user, password, discoverytimeout):
+async def cli(ctx, host, alias, target, debug, type, json, klap, username, password, discoverytimeout):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -193,14 +193,14 @@ async def cli(ctx, host, alias, target, debug, type, json, klap, user, password,
             echo(f"No device with name {alias} found")
             return
 
-    if password != "" and user == "":
+    if password != "" and username == "":
         click.echo("Using a password requires a username")
         return
 
-    if klap or user != "":
-        authentication = Auth(user=user, password=password)
+    if username != "":
+        authentication = Auth(username=username, password=password)
     else:
-        authentication = None
+        authentication = Auth()
 
     if host is None:
         echo("No host name given, trying discovery..")
@@ -272,11 +272,11 @@ async def discover(ctx, timeout):
             await ctx.invoke(state)
             echo()
 
-    user = ctx.parent.params["user"]
+    username = ctx.parent.params["username"]
     password = ctx.parent.params["password"]
 
-    if user:
-        auth = Auth(user=user, password=password)
+    if username:
+        auth = Auth(username=username, password=password)
     else:
         auth = None
 

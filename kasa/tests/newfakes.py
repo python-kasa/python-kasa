@@ -504,8 +504,8 @@ class FakeKLAPEndpoint():
         self.device_username = device_username
         self.device_password = device_password
         self.authentication = Auth(device_username, device_password)
-        self.server_challenge = secrets.token_bytes(16)
-        self.client_challenge = secrets.token_bytes(16)
+        self.remote_seed = secrets.token_bytes(16)
+        self.local_seed = secrets.token_bytes(16)
         self.FakeResponse = namedtuple("FakeResponse", ["status"])
         self.response_status = response_status
         self.request_response = "{}"
@@ -529,19 +529,29 @@ class FakeKLAPEndpoint():
         self.simulated_failure_count = count
 
 
+    @staticmethod
+    def _generate_auth_hash(auth: Auth):
+        return hashlib.md5(hashlib.md5(auth.username.encode()).digest() + hashlib.md5(auth.password.encode()).digest()).digest()
+    
+    @staticmethod
+    def _generate_owner_hash(auth: Auth):
+        """Return the MD5 hash of the username in this object."""
+        return hashlib.md5(auth.username.encode()).digest()
+
+
     async def post_handshake1(self, session, url, params = None, data = None):
         
-        self.client_challenge = data
+        self.local_seed = data
 
-        server_hash = hashlib.sha256(self.client_challenge + self.authentication.authenticator()).digest()
+        server_hash = hashlib.sha256(self.local_seed + self._generate_auth_hash(self.authentication)).digest()
         
-        response = self.server_challenge + server_hash
+        response = self.remote_seed + server_hash
         
         return self._FakeResponse(response, self.response_status)
 
     async def post_handshake2(self, session, url, params = None, data = None):
 
-        expected_data = hashlib.sha256(self.server_challenge + self.authentication.authenticator()).digest()
+        expected_data = hashlib.sha256(self.remote_seed + self._generate_auth_hash(self.authentication)).digest()
         response_status = 200 if expected_data == data else 403
         return self._FakeResponse(None, response_status)
         

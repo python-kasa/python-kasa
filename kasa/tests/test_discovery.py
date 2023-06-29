@@ -83,9 +83,9 @@ async def test_discover_send(mocker):
     proto = _DiscoverProtocol()
     assert proto.discovery_packets == 3
     assert protocolconfig.TPLinkProtocolConfig.enabled_protocols()[0] == protocol.TPLinkSmartHomeProtocol
-    assert protocolconfig.TPLinkProtocolConfig.enabled_protocols()[1] == klapprotocol.TPLinkKLAP
+    assert protocolconfig.TPLinkProtocolConfig.enabled_protocols()[1] == klapprotocol.TPLinkKlap
     assert protocol.TPLinkSmartHomeProtocol.get_discovery_targets() == [("255.255.255.255", 9999)]
-    assert klapprotocol.TPLinkKLAP.get_discovery_targets() == [("255.255.255.255", 20002)]
+    assert klapprotocol.TPLinkKlap.get_discovery_targets() == [("255.255.255.255", 20002)]
 
     transport = mocker.patch.object(proto, "transport")
 

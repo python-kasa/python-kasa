@@ -80,7 +80,10 @@ class UnauthenticatedDevice(SmartDevice):
         try:            
             #self.wrapped_sys_info = await super().get_sys_info(True)
             self.wrapped_sys_info = await self.protocol.try_query_discovery_info()
-            self.isauthenticated = True
+            if self.wrapped_sys_info is not None:
+                self.isauthenticated = True
+            else:
+                self.isauthenticated = False
 
         except SmartDeviceAuthenticationException as ex:            
             self.isauthenticated = False
@@ -110,7 +113,7 @@ class UnauthenticatedDevice(SmartDevice):
 
         stateinfo = {
             "device_owner": self.unauthenticated_info["result"]["owner"],
-            "auth_owner": self.protocol.authentication.owner(),
+            "auth_owner": self.protocol.local_auth_owner,
             "mgt_encrypt_schm": self.unauthenticated_info["result"]["mgt_encrypt_schm"],
             "device_type": self.unauthenticated_info["result"]["device_type"],
             "device_model": self.unauthenticated_info["result"]["device_model"],

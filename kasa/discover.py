@@ -10,7 +10,7 @@ from typing import Awaitable, Callable, Dict, Optional, Type, cast
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
-from kasa.klapprotocol import TPLinkKLAP
+from kasa.klapprotocol import TPLinkKlap
 from kasa.protocolconfig import TPLinkProtocolConfig
 from kasa.auth import Auth
 from kasa.smartbulb import SmartBulb
@@ -112,6 +112,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
         ip, port = addr
+
 
         # Devices can respond multiple times due to multiple packets sent
         if ip in self.discovered_devices:
@@ -239,7 +240,6 @@ class Discover:
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol(host)
 
         for proto_class in TPLinkProtocolConfig.enabled_protocols():
             if proto_class.requires_authentication() and authentication is not None:

@@ -34,13 +34,7 @@ class TPLinkProtocol:
         """Create a protocol object."""
         self.host = host
         self.port = port
-        self.reader: Optional[asyncio.StreamReader] = None
-        self.writer: Optional[asyncio.StreamWriter] = None
-        self.query_lock: Optional[asyncio.Lock] = None
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
-
-
-  
+        self.timeout = self.DEFAULT_TIMEOUT
     
     @staticmethod
     def get_discovery_targets():
@@ -56,8 +50,7 @@ class TPLinkProtocol:
     
     async def try_query_discovery_info(self):
         raise SmartDeviceException("try_query_discovery_info should be overridden")
-       
-    
+           
     @staticmethod
     def requires_authentication():
         raise SmartDeviceException("requires_authentication should be overridden")
@@ -66,6 +59,70 @@ class TPLinkProtocol:
     def authentication_failed(self):
         raise SmartDeviceException("authentication_failed should be overridden")
     
+    async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
+        raise SmartDeviceException("query should be overridden")
+    
+    async def close(self) -> None:
+        raise SmartDeviceException("close should be overridden")
+    
+
+class TPLinkSmartHomeProtocol(TPLinkProtocol):
+    """Implementation of the TP-Link Smart Home protocol."""
+
+    INITIALIZATION_VECTOR = 171
+    DEFAULT_PORT = 9999
+    BLOCK_SIZE = 4
+    DISCOVERY_QUERY = { "system": {"get_sysinfo": None}, }
+
+    def __init__(self, host: str):
+        super().__init__(host=host, port=self.DEFAULT_PORT)
+
+        self.reader: Optional[asyncio.StreamReader] = None
+        self.writer: Optional[asyncio.StreamWriter] = None
+        self.query_lock: Optional[asyncio.Lock] = None
+        self.loop: Optional[asyncio.AbstractEventLoop] = None
+
+    @staticmethod
+    def get_discovery_targets():
+        return [("255.255.255.255", TPLinkSmartHomeProtocol.DEFAULT_PORT)]
+
+    @staticmethod
+    def get_discovery_payload():
+
+        req = json_dumps(TPLinkSmartHomeProtocol.DISCOVERY_QUERY)
+        encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
+        return encrypted_req[4:]
+
+    @staticmethod
+    def try_get_discovery_info(port, data):
+        """Returns discovery info if the ports match and we can decrypt the data"""
+        if port == TPLinkSmartHomeProtocol.DEFAULT_PORT:
+            try:
+                info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
+                if "system" in info and "get_sysinfo" in info["system"]:
+                    return info
+            except Exception as ex:
+                print(ex)
+                return None
+        else:
+            return None
+        
+    async def try_query_discovery_info(self):
+        """Returns discovery info if the ports match and we can decrypt the data"""
+        try:
+            info = await self.query(TPLinkSmartHomeProtocol.DISCOVERY_QUERY)
+            return info
+        except SmartDeviceException:
+            _LOGGER.debug("Unable to query discovery for %s with TPLinkSmartHomeProtocol", self.host)
+            return None
+
+    @staticmethod
+    def requires_authentication():
+        return False
+    
+    def authentication_failed(self):
+        return False
+
     def _detect_event_loop_change(self) -> None:
         """Check if this object has been reused betwen event loops."""
         loop = asyncio.get_running_loop()
@@ -93,11 +150,9 @@ class TPLinkProtocol:
             request = json_dumps(request)
             assert isinstance(request, str)
 
-        timeout = self.DEFAULT_TIMEOUT
-
         async with self.query_lock:
-            return await self._query(request, retry_count, timeout)
-
+            return await self._query(request, retry_count, self.timeout)
+        
     async def _connect(self, timeout: int) -> None:
         """Try to connect or reconnect to the device."""
         if self.writer:
@@ -106,8 +161,28 @@ class TPLinkProtocol:
         task = asyncio.open_connection(self.host, self.port)
         self.reader, self.writer = await asyncio.wait_for(task, timeout=timeout)
 
-  
+    async def _execute_query(self, request: str) -> Dict:
+        """Execute a query on the device and wait for the response."""
+        assert self.writer is not None
+        assert self.reader is not None
+        debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
 
+        if debug_log:
+            _LOGGER.debug("%s >> %s", self.host, request)
+        self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
+        await self.writer.drain()
+
+        packed_block_size = await self.reader.readexactly(self.BLOCK_SIZE)
+        length = struct.unpack(">I", packed_block_size)[0]
+
+        buffer = await self.reader.readexactly(length)
+        response = TPLinkSmartHomeProtocol.decrypt(buffer)
+        json_payload = json_loads(response)
+        if debug_log:
+            _LOGGER.debug("%s << %s", self.host, pf(json_payload))
+
+        return json_payload
+  
     async def close(self) -> None:
         """Close the connection."""
         writer = self.writer
@@ -162,8 +237,6 @@ class TPLinkProtocol:
                 return await asyncio.wait_for(
                     self._execute_query(request), timeout=timeout
                 )
-            except SmartDeviceAuthenticationException as auex:
-                raise auex
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:
@@ -188,88 +261,6 @@ class TPLinkProtocol:
             # close is called safely with call_soon_threadsafe
             self.loop.call_soon_threadsafe(self.writer.close)
         self._reset()
-
-      
-    async def _execute_query(self, request: str) -> str:
-        raise SmartDeviceException("_execute_query should be overridden")
-    
-
-
-class TPLinkSmartHomeProtocol(TPLinkProtocol):
-    """Implementation of the TP-Link Smart Home protocol."""
-
-    INITIALIZATION_VECTOR = 171
-    DEFAULT_PORT = 9999
-    BLOCK_SIZE = 4
-    DISCOVERY_QUERY = { "system": {"get_sysinfo": None}, }
-
-    def __init__(self, host: str):
-        super().__init__(host=host, port=self.DEFAULT_PORT)
-
-    @staticmethod
-    def get_discovery_targets():
-        return [("255.255.255.255", TPLinkSmartHomeProtocol.DEFAULT_PORT)]
-
-    @staticmethod
-    def get_discovery_payload():
-
-        req = json_dumps(TPLinkSmartHomeProtocol.DISCOVERY_QUERY)
-        encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
-        return encrypted_req[4:]
-
-
-    @staticmethod
-    def try_get_discovery_info(port, data):
-        """Returns discovery info if the ports match and we can decrypt the data"""
-        if port == TPLinkSmartHomeProtocol.DEFAULT_PORT:
-            try:
-                info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
-                if "system" in info and "get_sysinfo" in info["system"]:
-                    return info
-            except Exception as ex:
-                print(ex)
-                return None
-        else:
-            return None
-        
-    
-    async def try_query_discovery_info(self):
-        """Returns discovery info if the ports match and we can decrypt the data"""
-        try:
-            info = await self.query(TPLinkSmartHomeProtocol.DISCOVERY_QUERY)
-            return info
-        except SmartDeviceException:
-            _LOGGER.debug("Unable to query discovery for %s with TPLinkSmartHomeProtocol", self.host)
-            return None
-
-    @staticmethod
-    def requires_authentication():
-        return False
-    
-    def authentication_failed(self):
-        return False
-
-    async def _execute_query(self, request: str) -> Dict:
-        """Execute a query on the device and wait for the response."""
-        assert self.writer is not None
-        assert self.reader is not None
-        debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
-
-        if debug_log:
-            _LOGGER.debug("%s >> %s", self.host, request)
-        self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
-        await self.writer.drain()
-
-        packed_block_size = await self.reader.readexactly(self.BLOCK_SIZE)
-        length = struct.unpack(">I", packed_block_size)[0]
-
-        buffer = await self.reader.readexactly(length)
-        response = TPLinkSmartHomeProtocol.decrypt(buffer)
-        json_payload = json_loads(response)
-        if debug_log:
-            _LOGGER.debug("%s << %s", self.host, pf(json_payload))
-
-        return json_payload
 
     @staticmethod
     def _xor_payload(unencrypted: bytes) -> Generator[int, None, None]:

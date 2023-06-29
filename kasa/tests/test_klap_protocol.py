@@ -8,7 +8,7 @@ import secrets
 import pytest
 
 from ..exceptions import SmartDeviceException
-from ..klapprotocol import TPLinkKLAP
+from ..klapprotocol import TPLinkKlap, KlapEncryptionSession
 
 
 from ..auth import Auth
@@ -16,22 +16,23 @@ import hashlib
 
 
 def get_klap_proto_with_fake_endpoint(mocker, klap_endpoint):
-    proto = TPLinkKLAP("127.0.0.1", Auth(klap_endpoint.device_username, klap_endpoint.device_password))
+    proto = TPLinkKlap("127.0.0.1", Auth(klap_endpoint.device_username, klap_endpoint.device_password))
 
-    mocker.patch.object(TPLinkKLAP, "handle_cookies")
-    mocker.patch.object(TPLinkKLAP, "session_post", klap_endpoint.session_post) 
-    mocker.patch.object(proto, "get_client_challenge", return_value=klap_endpoint.client_challenge)
+    mocker.patch.object(TPLinkKlap, "handle_cookies")
+    mocker.patch.object(proto, "clear_cookies")
+    mocker.patch.object(TPLinkKlap, "session_post", klap_endpoint.session_post) 
+    mocker.patch.object(proto, "get_local_seed", return_value=klap_endpoint.local_seed)
 
     return proto
 
 async def test_protocol_handshake(mocker, klap_endpoint):
     proto = get_klap_proto_with_fake_endpoint(mocker, klap_endpoint)
         
-    await proto._handshake1(None)
+    await proto.perform_handshake1(None)
 
     assert proto.handshake_done == False
 
-    await proto._handshake2(None)
+    await proto.perform_handshake2(None)
 
     assert proto.handshake_done
 
@@ -42,11 +43,18 @@ async def test_protocol_retries(mocker, retry_count, klap_endpoint):
     
     protocol = get_klap_proto_with_fake_endpoint(mocker, klap_endpoint)
     gs = '{"great":"success"}'
-    encrypted = TPLinkKLAP.encrypt(gs, klap_endpoint.client_challenge, klap_endpoint.server_challenge, klap_endpoint.authentication.authenticator())
+
+   # await protocol.perform_handshake(None, new_local_seed = klap_endpoint.local_seed)
+    
+    es = KlapEncryptionSession(klap_endpoint.local_seed, klap_endpoint.remote_seed, TPLinkKlap.generate_auth_hash(klap_endpoint.authentication))
+
+    # Call the encryption function multiple times so the internal sequence number increments according to the retries
+    for i in range(0,retry_count):
+        encrypted = es.encrypt(gs)[0]
+
     klap_endpoint.set_request_response(encrypted)
     klap_endpoint.set_simulated_failure_count(retry_count - 1)
     
-
     response = await protocol.query({}, retry_count=retry_count)
     assert response == {"great": "success"}
 
@@ -55,14 +63,16 @@ async def test_protocol_retries(mocker, retry_count, klap_endpoint):
 async def test_protocol_logging(mocker, caplog, log_level, klap_endpoint):
 
     protocol = get_klap_proto_with_fake_endpoint(mocker, klap_endpoint)
-    encrypted = TPLinkKLAP.encrypt('{"great":"success"}', klap_endpoint.client_challenge, klap_endpoint.server_challenge, klap_endpoint.authentication.authenticator())
-
+    
+    gs = '{"great":"success"}'
+    es = KlapEncryptionSession(klap_endpoint.local_seed, klap_endpoint.remote_seed, TPLinkKlap.generate_auth_hash(klap_endpoint.authentication))
+    encrypted = es.encrypt(gs)[0]
+    
     caplog.set_level(log_level)
     
 
     logging.getLogger("kasa").setLevel(log_level)
 
-    
     klap_endpoint.set_request_response(encrypted)
 
     response = await protocol.query({})
@@ -75,14 +85,21 @@ async def test_protocol_logging(mocker, caplog, log_level, klap_endpoint):
 
 async def test_encrypt():
 
-    client_challenge = secrets.token_bytes(16)
-    server_challenge = secrets.token_bytes(16)
-    authenticator = Auth().authenticator()
+    local_seed = secrets.token_bytes(16)
+    remote_seed = secrets.token_bytes(16)
+    auth = Auth()
     
     d = json.dumps({"foo": 1, "bar": 2})
-    encrypted = TPLinkKLAP.encrypt(d, client_challenge, server_challenge, authenticator)
+       
+    es = KlapEncryptionSession(local_seed, remote_seed, TPLinkKlap.generate_auth_hash(auth))
+    
+    encrypted = es.encrypt(d)[0]
+    decrypted = es.decrypt(encrypted)
+    assert d == decrypted
 
-    decrypted = TPLinkKLAP.decrypt(encrypted,  client_challenge, server_challenge, authenticator)
+    #Repeate encryption to ensure that the sequence numbering is working
+    encrypted = es.encrypt(d)[0]
+    decrypted = es.decrypt(encrypted)
     assert d == decrypted
 
 
@@ -90,13 +107,14 @@ def test_encrypt_unicode():
     d = "{'snowman': '\u2603'}"
 
    
-    client_challenge = secrets.token_bytes(16)
-    server_challenge = secrets.token_bytes(16)
-    authenticator = Auth().authenticator()
+    local_seed = secrets.token_bytes(16)
+    remote_seed = secrets.token_bytes(16)
+    auth = Auth()
     
-    encrypted = TPLinkKLAP.encrypt(d, client_challenge, server_challenge, authenticator)
+    es = KlapEncryptionSession(local_seed, remote_seed, TPLinkKlap.generate_auth_hash(auth))
+    encrypted = es.encrypt(d)[0]
 
-    decrypted = TPLinkKLAP.decrypt(encrypted,  client_challenge, server_challenge, authenticator)
+    decrypted = es.decrypt(encrypted)
     assert d == decrypted
 
 
