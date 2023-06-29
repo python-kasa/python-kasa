@@ -1,18 +1,25 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
+import binascii
 import logging
 import socket
+import traceback
+import sys
 from typing import Awaitable, Callable, Dict, Optional, Type, cast
 
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.klapprotocol import TPLinkKLAP
+from kasa.protocolconfig import TPLinkProtocolConfig
+from kasa.auth import Auth
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
+from kasa.unauthenticateddevice import UnauthenticatedDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,12 +43,15 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
+        authentication: Optional[Auth] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
-        self.target = (target, Discover.DISCOVERY_PORT)
+
+        self.authentication = authentication
+
         self.discovered_devices = {}
 
     def connection_made(self, transport) -> None:
@@ -64,28 +74,33 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
     def do_discover(self) -> None:
         """Send number of discovery datagrams."""
-        req = json_dumps(Discover.DISCOVERY_QUERY)
-        _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
-        encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
-        for i in range(self.discovery_packets):
-            self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
+            
+        for proto in TPLinkProtocolConfig.enabled_protocols():
+            for target in proto.get_discovery_targets():
+                payload = proto.get_discovery_payload()
+                _LOGGER.debug("[DISCOVERY] %s >> %s", target, payload)
+                for i in range(self.discovery_packets):
+                    self.transport.sendto(payload, target)
 
-    def datagram_received(self, data, addr) -> None:
-        """Handle discovery responses."""
-        ip, port = addr
-        if ip in self.discovered_devices:
-            return
-
-        info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
-        _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
-
+    
+    async def authentication_attempted_callback(self, unauthenticated_device):
+        """Callback used for updating the device list once the authentication attempt is complete"""
+        if unauthenticated_device.isauthenticated:        
+            self.get_device_and_add_to_list(unauthenticated_device.host, unauthenticated_device.wrapped_sys_info, unauthenticated_device.protocol)
+        else:
+            if self.on_discovered is not None:
+                asyncio.ensure_future(self.on_discovered(unauthenticated_device))
+        
+ 
+    def get_device_and_add_to_list(self, ip, info, protocol = None):
+        
         try:
             device_class = Discover._get_device_class(info)
         except SmartDeviceException as ex:
             _LOGGER.debug("Unable to find device type from %s: %s", info, ex)
             return
 
-        device = device_class(ip)
+        device = device_class(ip, protocol)
         device.update_from_discover_info(info)
 
         self.discovered_devices[ip] = device
@@ -93,8 +108,34 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         if self.on_discovered is not None:
             asyncio.ensure_future(self.on_discovered(device))
 
+
+    def datagram_received(self, data, addr) -> None:
+        """Handle discovery responses."""
+        ip, port = addr
+
+        # Devices can respond multiple times due to multiple packets sent
+        if ip in self.discovered_devices:
+            return
+        
+        proto = info = None
+        for proto_class in TPLinkProtocolConfig.enabled_protocols():
+            info = proto_class.try_get_discovery_info(port, data)
+            if info is not None:
+                if proto_class.requires_authentication():
+                    proto = proto_class(ip, self.authentication)
+                    unauthenticated_device = UnauthenticatedDevice(ip, proto, info)
+                    self.discovered_devices[ip] = unauthenticated_device
+                    unauthenticated_device.try_authenticate(self.authentication_attempted_callback)
+                else:
+                    proto = proto_class(ip)
+                    self.get_device_and_add_to_list(ip, info, proto)
+                break
+
+
+
     def error_received(self, ex):
         """Handle asyncio.Protocol errors."""
+        traceback.print_stack(file=sys.stdout)
         _LOGGER.error("Got error: %s", ex)
 
     def connection_lost(self, ex):
@@ -136,11 +177,7 @@ class Discover:
 
     """
 
-    DISCOVERY_PORT = 9999
-
-    DISCOVERY_QUERY = {
-        "system": {"get_sysinfo": None},
-    }
+    
 
     @staticmethod
     async def discover(
@@ -150,6 +187,7 @@ class Discover:
         timeout=5,
         discovery_packets=3,
         interface=None,
+        authentication=None
     ) -> DeviceDict:
         """Discover supported devices.
 
@@ -177,6 +215,7 @@ class Discover:
                 on_discovered=on_discovered,
                 discovery_packets=discovery_packets,
                 interface=interface,
+                authentication=authentication
             ),
             local_addr=("0.0.0.0", 0),
         )
@@ -193,7 +232,7 @@ class Discover:
         return protocol.discovered_devices
 
     @staticmethod
-    async def discover_single(host: str) -> SmartDevice:
+    async def discover_single(host: str, authentication = None) -> SmartDevice:
         """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
@@ -202,21 +241,33 @@ class Discover:
         """
         protocol = TPLinkSmartHomeProtocol(host)
 
-        info = await protocol.query(Discover.DISCOVERY_QUERY)
+        for proto_class in TPLinkProtocolConfig.enabled_protocols():
+            if proto_class.requires_authentication() and authentication is not None:
+                proto = proto_class(host, authentication)
+            else:
+                proto = proto_class(host)
+        
+            info = await proto.try_query_discovery_info()
+            
+            if (info is not None):
 
-        device_class = Discover._get_device_class(info)
-        dev = device_class(host)
-        await dev.update()
+                device_class = Discover._get_device_class(info)
+                dev = device_class(host, proto)
+                await dev.update()
 
-        return dev
+                return dev
+
+        _LOGGER.info("Unable to query discovery info for host {}", host)
 
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:
         """Find SmartDevice subclass for device described by passed data."""
+
         if "system" not in info or "get_sysinfo" not in info["system"]:
             raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
-
+        
         sysinfo = info["system"]["get_sysinfo"]
+    
         type_ = sysinfo.get("type", sysinfo.get("mic_type"))
         if type_ is None:
             raise SmartDeviceException("Unable to find the device type field!")

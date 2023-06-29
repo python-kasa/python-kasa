@@ -13,23 +13,28 @@ to be handled by the user of the library.
 """
 from importlib.metadata import version
 
+from kasa.auth import Auth
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import SmartDeviceException
 from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.klapprotocol import TPLinkKLAP
 from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.smartdevice import DeviceType, SmartDevice
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
+from kasa.unauthenticateddevice import UnauthenticatedDevice
 
-__version__ = version("python-kasa")
+#__version__ = version("python-kasa")
 
 
 __all__ = [
+    "Auth",
     "Discover",
     "TPLinkSmartHomeProtocol",
+    "TPLinkKLAP",
     "SmartBulb",
     "SmartBulbPreset",
     "TurnOnBehaviors",
@@ -42,4 +47,5 @@ __all__ = [
     "SmartStrip",
     "SmartDimmer",
     "SmartLightStrip",
+    "UnauthenticatedDevice",
 ]

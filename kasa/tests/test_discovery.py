@@ -3,7 +3,7 @@ import sys
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol
+from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol, klapprotocol, protocolconfig
 from kasa.discover import _DiscoverProtocol
 
 from .conftest import bulb, dimmer, lightstrip, plug, strip
@@ -82,21 +82,28 @@ async def test_discover_send(mocker):
     """Test discovery parameters."""
     proto = _DiscoverProtocol()
     assert proto.discovery_packets == 3
-    assert proto.target == ("255.255.255.255", 9999)
+    assert protocolconfig.TPLinkProtocolConfig.enabled_protocols()[0] == protocol.TPLinkSmartHomeProtocol
+    assert protocolconfig.TPLinkProtocolConfig.enabled_protocols()[1] == klapprotocol.TPLinkKLAP
+    assert protocol.TPLinkSmartHomeProtocol.get_discovery_targets() == [("255.255.255.255", 9999)]
+    assert klapprotocol.TPLinkKLAP.get_discovery_targets() == [("255.255.255.255", 20002)]
+
     transport = mocker.patch.object(proto, "transport")
+
     proto.do_discover()
-    assert transport.sendto.call_count == proto.discovery_packets
+    
+    assert transport.sendto.call_count == proto.discovery_packets * 2
 
 
 async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
     proto = _DiscoverProtocol()
-    mocker.patch("kasa.discover.json_loads", return_value=discovery_data)
+    mocker.patch("kasa.protocol.json_loads", return_value=discovery_data)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
     addr = "127.0.0.1"
-    proto.datagram_received("<placeholder data>", (addr, 1234))
+
+    proto.datagram_received("<Placeholder data>", (addr, protocol.TPLinkSmartHomeProtocol.DEFAULT_PORT))
 
     # Check that device in discovered_devices is initialized correctly
     assert len(proto.discovered_devices) == 1

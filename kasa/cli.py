@@ -29,6 +29,7 @@ except ImportError:
 
 
 from kasa import (
+    Auth,
     Discover,
     SmartBulb,
     SmartDevice,
@@ -123,9 +124,30 @@ def json_formatter_cb(result, **kwargs):
 @click.option(
     "--json", default=False, is_flag=True, help="Output raw device response as JSON."
 )
+@click.option("--klap", default=False, is_flag=True)
+@click.option(
+    "--user",
+    default="",
+    required=False,
+    help="Username/email address to authenticate to device.",
+)
+@click.option(
+    "--password",
+    default="",
+    required=False,
+    help="Password to use to authenticate to device.",
+)
+
+@click.option(
+    "--discoverytimeout",
+    default=3,
+    required=False,
+    help="Timeout for discovery.",
+)
+
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, type, json):
+async def cli(ctx, host, alias, target, debug, type, json, klap, user, password, discoverytimeout):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -171,15 +193,24 @@ async def cli(ctx, host, alias, target, debug, type, json):
             echo(f"No device with name {alias} found")
             return
 
+    if password != "" and user == "":
+        click.echo("Using a password requires a username")
+        return
+
+    if klap or user != "":
+        authentication = Auth(user=user, password=password)
+    else:
+        authentication = None
+
     if host is None:
         echo("No host name given, trying discovery..")
-        return await ctx.invoke(discover)
+        return await ctx.invoke(discover, timeout=discoverytimeout)
 
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
     else:
         echo("No --type defined, discovering..")
-        dev = await Discover.discover_single(host)
+        dev = await Discover.discover_single(host, authentication)
 
     await dev.update()
     ctx.obj = dev
@@ -241,8 +272,16 @@ async def discover(ctx, timeout):
             await ctx.invoke(state)
             echo()
 
+    user = ctx.parent.params["user"]
+    password = ctx.parent.params["password"]
+
+    if user:
+        auth = Auth(user=user, password=password)
+    else:
+        auth = None
+
     await Discover.discover(
-        target=target, timeout=timeout, on_discovered=print_discovered
+        target=target, timeout=timeout, on_discovered=print_discovered, authentication=auth
     )
 
     return discovered
