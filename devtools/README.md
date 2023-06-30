@@ -65,7 +65,6 @@ id
 * Benchmark the protocol
 
 ```shell
-# bench/benchmark.py
 % python3 devtools/bench/benchmark.py
 New parser, parsing 100000 messages took 0.6339647499989951 seconds
 Old parser, parsing 100000 messages took 9.473990250000497 seconds
