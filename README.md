@@ -23,12 +23,7 @@ If you are using cpython, it is recommended to install with `[speedups]` to enab
 pip install python-kasa[speedups]
 ```
 
-With `[speedups]`, the protocol overhead is roughly an order of magnitude lower (benchmarks available in bench)
-
-```
-# python3 bench/benchmark.py
-New parser, parsing 100000 messages took 0.6212750830018194 seconds
-Old parser, parsing 100000 messages took 9.37843908299692 seconds
+With `[speedups]`, the protocol overhead is roughly an order of magnitude lower (benchmarks available in devtools).
 ```
 
 Alternatively, you can clone this repository and use poetry to install the development version:
