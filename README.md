@@ -24,7 +24,6 @@ pip install python-kasa[speedups]
 ```
 
 With `[speedups]`, the protocol overhead is roughly an order of magnitude lower (benchmarks available in devtools).
-```
 
 Alternatively, you can clone this repository and use poetry to install the development version:
 ```
