@@ -219,3 +219,13 @@ class TPLinkSmartHomeProtocol:
         return bytes(
             TPLinkSmartHomeProtocol._xor_encrypted_payload(ciphertext)
         ).decode()
+
+
+# Try to load the kasa_crypt module and if it is available
+try:
+    from kasa_crypt import decrypt, encrypt
+
+    TPLinkSmartHomeProtocol.decrypt = decrypt  # type: ignore[method-assign]
+    TPLinkSmartHomeProtocol.encrypt = encrypt  # type: ignore[method-assign]
+except ImportError:
+    pass
