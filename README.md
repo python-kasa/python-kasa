@@ -23,7 +23,7 @@ If you are using cpython, it is recommended to install with `[speedups]` to enab
 pip install python-kasa[speedups]
 ```
 
-With `[speedups]`, the protocol overhead is roughtly an order of magnitude lower (benchmarks available in bench)
+With `[speedups]`, the protocol overhead is roughly an order of magnitude lower (benchmarks available in bench)
 
 ```
 # python3 bench/benchmark.py
