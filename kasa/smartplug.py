@@ -37,8 +37,8 @@ class SmartPlug(SmartDevice):
     For more examples, see the :class:`SmartDevice` class.
     """
 
-    def __init__(self, host: str) -> None:
-        super().__init__(host)
+    def __init__(self, host: str, protocol=None) -> None:
+        super().__init__(host, protocol)
         self._device_type = DeviceType.Plug
         self.add_module("schedule", Schedule(self, "schedule"))
         self.add_module("usage", Usage(self, "schedule"))

@@ -5,6 +5,10 @@ from voluptuous import Coerce  # type: ignore
 from voluptuous import REMOVE_EXTRA, All, Any, Invalid, Optional, Range, Schema
 
 from ..protocol import TPLinkSmartHomeProtocol
+from ..auth import AuthCredentials
+from collections import namedtuple
+import hashlib
+import secrets
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -493,3 +497,70 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             response.update(get_response_for_module(target))
 
         return response
+
+
+class FakeKLAPEndpoint:
+    def __init__(self, device_username, device_password, response_status=200):
+        self.device_username = device_username
+        self.device_password = device_password
+        self.authentication = AuthCredentials(device_username, device_password)
+        self.remote_seed = secrets.token_bytes(16)
+        self.local_seed = secrets.token_bytes(16)
+        self.FakeResponse = namedtuple("FakeResponse", ["status"])
+        self.response_status = response_status
+        self.request_response = "{}"
+        self.simulated_failure_count = 0
+
+    def set_response_status(self, status):
+        self.response_status = status
+
+    def set_request_response(self, response):
+        self.request_response = response
+
+    def set_simulated_failure_count(self, count):
+        self.simulated_failure_count = count
+
+    @staticmethod
+    def _generate_auth_hash(auth: AuthCredentials):
+        return hashlib.md5(
+            hashlib.md5(auth.username.encode()).digest()
+            + hashlib.md5(auth.password.encode()).digest()
+        ).digest()
+
+    @staticmethod
+    def _generate_owner_hash(auth: AuthCredentials):
+        """Return the MD5 hash of the username in this object."""
+        return hashlib.md5(auth.username.encode()).digest()
+
+    async def post_handshake1(self, session, url, params=None, data=None):
+        self.local_seed = data
+
+        server_hash = hashlib.sha256(
+            self.local_seed + self._generate_auth_hash(self.authentication)
+        ).digest()
+
+        response = self.remote_seed + server_hash
+
+        return self.response_status, response
+
+    async def post_handshake2(self, session, url, params=None, data=None):
+        expected_data = hashlib.sha256(
+            self.remote_seed + self._generate_auth_hash(self.authentication)
+        ).digest()
+        response_status = 200 if expected_data == data else 403
+        return response_status, None
+
+    async def session_post(self, session, url, params=None, data=None):
+        request_app = url.split("/")[-1]
+        if request_app == "handshake1":
+            return await self.post_handshake1(session, url, params, data)
+        elif request_app == "handshake2":
+            return await self.post_handshake2(session, url, params, data)
+        elif request_app == "request":
+            return await self.post_request(session, url, params, data)
+
+    async def post_request(self, session, url, params=None, data=None):
+        if self.simulated_failure_count > 0:
+            self.simulated_failure_count -= 1
+            raise Exception("Simulated post failure")
+        return self.response_status, self.request_response

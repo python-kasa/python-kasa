@@ -16,9 +16,11 @@ from kasa import (
     SmartLightStrip,
     SmartPlug,
     SmartStrip,
+    AuthCredentials,
 )
 
 from .newfakes import FakeTransportProtocol
+from .newfakes import FakeKLAPEndpoint
 
 SUPPORTED_DEVICES = glob.glob(
     os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
@@ -165,8 +167,9 @@ async def _update_and_close(d):
     return d
 
 
-async def _discover_update_and_close(ip):
-    d = await Discover.discover_single(ip)
+async def _discover_update_and_close(ip, authentication=None):
+    d = await Discover.discover_single(ip, authentication)
+    assert d is not None
     return await _update_and_close(d)
 
 
@@ -200,17 +203,29 @@ async def dev(request):
     file = request.param
 
     ip = request.config.getoption("--ip")
+    username = request.config.getoption("--username")
+    password = request.config.getoption("--password")
+
     if ip:
         model = IP_MODEL_CACHE.get(ip)
         d = None
+        if username and password:
+            auth = AuthCredentials(username, password)
+        else:
+            auth = AuthCredentials()
         if not model:
-            d = await _discover_update_and_close(ip)
+            d = await _discover_update_and_close(ip, auth)
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        return d if d else await _discover_update_and_close(ip)
+        return d if d else await _discover_update_and_close(ip, auth)
 
     return await get_device_for_file(file)
+
+
+@pytest.fixture()
+async def klap_endpoint(request):
+    return FakeKLAPEndpoint("me@mail.com", "foobar")
 
 
 @pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
@@ -228,6 +243,18 @@ def discovery_data(request):
 def pytest_addoption(parser):
     parser.addoption(
         "--ip", action="store", default=None, help="run against device on given ip"
+    )
+    parser.addoption(
+        "--username",
+        action="store",
+        default=None,
+        help="username to authenticate with a physical device",
+    )
+    parser.addoption(
+        "--password",
+        action="store",
+        default=None,
+        help="password to authenticate with a physical device",
     )
 
 

@@ -21,7 +21,7 @@ from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set
 
 from .emeterstatus import EmeterStatus
-from .exceptions import SmartDeviceException
+from .exceptions import SmartDeviceException, SmartDeviceAuthenticationException
 from .modules import Emeter, Module
 from .protocol import TPLinkSmartHomeProtocol
 
@@ -191,14 +191,17 @@ class SmartDevice:
 
     emeter_type = "emeter"
 
-    def __init__(self, host: str) -> None:
+    def __init__(self, host: str, protocol=None) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
         """
         self.host = host
+        if protocol is None:
+            self.protocol = TPLinkSmartHomeProtocol(host)
+        else:
+            self.protocol = protocol
 
-        self.protocol = TPLinkSmartHomeProtocol(host)
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate checks in
@@ -252,6 +255,8 @@ class SmartDevice:
 
         try:
             response = await self.protocol.query(request=request)
+        except SmartDeviceAuthenticationException as auex:
+            raise auex
         except Exception as ex:
             raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
