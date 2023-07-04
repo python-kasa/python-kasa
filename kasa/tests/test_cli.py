@@ -21,16 +21,14 @@ async def test_sysinfo(dev):
 
 @turn_on
 async def test_state(dev, turn_on):
-
-    
     await handle_turn_on(dev, turn_on)
     runner = CliRunner()
-    
+
     await dev.update()
-    #sdb moved the state query to after the dev update because a real device will need to be requeried before 
+    # sdb moved the state query to after the dev update because a real device will need to be requeried before
     # getting the state to be checked
     res = await runner.invoke(state, obj=dev)
-    
+
     if dev.is_on:
         assert "Device state: True" in res.output
     else:
@@ -49,7 +47,7 @@ async def test_alias(dev):
     res = await runner.invoke(alias, [new_alias], obj=dev)
     assert f"Setting alias to {new_alias}" in res.output
 
-    #sdb Adding an update call for a physical device to requery the state
+    # sdb Adding an update call for a physical device to requery the state
     await dev.update()
 
     res = await runner.invoke(alias, obj=dev)
@@ -118,7 +116,6 @@ async def test_json_output(dev: SmartDevice, mocker):
     runner = CliRunner()
     res = await runner.invoke(cli, ["--json", "state"], obj=dev)
     assert res.exit_code == 0
-
 
     res_json = json.loads(res.output)
 

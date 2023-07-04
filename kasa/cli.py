@@ -136,17 +136,17 @@ def json_formatter_cb(result, **kwargs):
     required=False,
     help="Password to use to authenticate to device.",
 )
-
 @click.option(
     "--discoverytimeout",
     default=3,
     required=False,
     help="Timeout for discovery.",
 )
-
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, type, json, username, password, discoverytimeout):
+async def cli(
+    ctx, host, alias, target, debug, type, json, username, password, discoverytimeout
+):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -280,7 +280,10 @@ async def discover(ctx, timeout):
         auth = AuthCredentials()
 
     await Discover.discover(
-        targetip=target, timeout=timeout, on_discovered=print_discovered, auth_credentials=auth
+        targetip=target,
+        timeout=timeout,
+        on_discovered=print_discovered,
+        auth_credentials=auth,
     )
 
     return discovered

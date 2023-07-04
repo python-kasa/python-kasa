@@ -62,7 +62,7 @@ class SmartDimmer(SmartPlug):
 
     DIMMER_SERVICE = "smartlife.iot.dimmer"
 
-    def __init__(self, host: str, protocol = None) -> None:
+    def __init__(self, host: str, protocol=None) -> None:
         super().__init__(host, protocol)
         self._device_type = DeviceType.Dimmer
         # TODO: need to be verified if it's okay to call these on HS220 w/o these

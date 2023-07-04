@@ -12,8 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class UnauthenticatedDevice(SmartDevice):
-    r"""Representation of an UnauthenticatedDevice, i.e. where initial discovery information is available but a call to get_sysinfo failed.
-    """
+    r"""Representation of an UnauthenticatedDevice, i.e. where initial discovery information is available but a call to get_sysinfo failed."""
 
     UNKNOWN_VALUE_STRING = "Unknown"
 
@@ -26,14 +25,11 @@ class UnauthenticatedDevice(SmartDevice):
         self.authentication_callback = None
         self.wrapped_sys_info = None
         self.unauthenticated_info = unauthenticated_info
-        
 
     @property  # type: ignore
     def is_on(self) -> bool:
         """Return whether device is on."""
         return True
-
-    
 
     @property
     def internal_state(self) -> Any:
@@ -43,23 +39,21 @@ class UnauthenticatedDevice(SmartDevice):
         This should only be used for debugging purposes.
         """
         return self.unauthenticated_info
-    
-    async def add_success_callback(self, task, callback, authenticating_device):
 
+    async def add_success_callback(self, task, callback, authenticating_device):
         result = await task
         await callback(authenticating_device)
-        return result 
+        return result
 
     async def _try_authenticate(self):
-
-        try:            
+        try:
             self.wrapped_sys_info = await self.protocol.try_query_discovery_info()
             if self.wrapped_sys_info is not None:
                 self.isauthenticated = True
             else:
                 self.isauthenticated = False
 
-        except SmartDeviceAuthenticationException as ex:            
+        except SmartDeviceAuthenticationException as ex:
             self.isauthenticated = False
         finally:
             self.triedauthentication = True
@@ -69,8 +63,9 @@ class UnauthenticatedDevice(SmartDevice):
         self.authentication_callback = authentication_callback
 
         task = asyncio.create_task(self._try_authenticate())
-        done_task = asyncio.create_task(self.add_success_callback(task, self.authentication_callback, self))
-        
+        done_task = asyncio.create_task(
+            self.add_success_callback(task, self.authentication_callback, self)
+        )
 
     async def update(self, update_children: bool = True):
         """Does nothing"""
@@ -80,7 +75,6 @@ class UnauthenticatedDevice(SmartDevice):
     def led(self) -> bool:
         """Return the state of the led."""
         return self.UNKNOWN_VALUE_STRING
-
 
     @property  # type: ignore
     def state_information(self) -> Dict[str, Any]:
@@ -94,7 +88,6 @@ class UnauthenticatedDevice(SmartDevice):
             "device_model": self.unauthenticated_info["result"]["device_model"],
         }
         return stateinfo
-    
 
     @property  # type: ignore
     def features(self) -> Set[str]:
@@ -112,30 +105,26 @@ class UnauthenticatedDevice(SmartDevice):
     def has_emeter(self) -> bool:
         return False
 
-
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
         pass
 
-   
     @property  # type: ignore
     def sys_info(self) -> Dict[str, Any]:
         """Return system information."""
         return self.UNKNOWN_VALUE_STRING
-    
+
     @property  # type: ignore
     def model(self) -> str:
         """Return device model."""
         return str(self.unauthenticated_info["result"]["device_model"])
 
     @property  # type: ignore
-    
     def alias(self) -> str:
         """Return device name (alias)."""
         return "Unauthenticated Device"
 
     @property  # type: ignore
-    
     def time(self) -> Any:
         """Return current time from the device."""
         return None
@@ -145,16 +134,14 @@ class UnauthenticatedDevice(SmartDevice):
         """Return the current timezone."""
         return None
 
-  
     @property  # type: ignore
-    
     def hw_info(self) -> Dict:
         """Return hardware information.
 
         This returns just a selection of sysinfo keys that are related to hardware.
         """
         keyvals = {
-            "sw_ver": self.UNKNOWN_VALUE_STRING, 
+            "sw_ver": self.UNKNOWN_VALUE_STRING,
             "hw_ver": self.unauthenticated_info["result"]["hw_ver"],
             "mac": self.unauthenticated_info["result"]["mac"],
             "mic_mac": self.UNKNOWN_VALUE_STRING,
@@ -165,7 +152,7 @@ class UnauthenticatedDevice(SmartDevice):
             "oemId": self.UNKNOWN_VALUE_STRING,
             "dev_name": self.UNKNOWN_VALUE_STRING,
         }
-        
+
         return keyvals
 
     @property  # type: ignore
@@ -191,18 +178,16 @@ class UnauthenticatedDevice(SmartDevice):
             )
 
         if ":" not in mac:
-            mac = str.replace(mac,"-","")
+            mac = str.replace(mac, "-", "")
             mac = ":".join(format(s, "02x") for s in bytes.fromhex(mac))
 
         return mac
 
- 
     @property  # type: ignore
     def device_id(self) -> str:
         """Return unique ID for the device."""
         return self.unauthenticated_info["result"]["device_id"]
 
-    
     @property
     def device_type(self) -> DeviceType:
         """Return the device type."""

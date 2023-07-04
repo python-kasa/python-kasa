@@ -35,7 +35,7 @@ class TPLinkProtocol:
         self.host = host
         self.port = port
         self.timeout = self.DEFAULT_TIMEOUT
-    
+
     @staticmethod
     def get_discovery_targets(targetip: str = "255.255.255.255"):
         raise SmartDeviceException("get_discovery_targets should be overridden")
@@ -48,17 +48,17 @@ class TPLinkProtocol:
     def try_get_discovery_info(port, data):
         """Used after a discovery broadcast has resulted in a received datagram"""
         raise SmartDeviceException("try_get_discovery_info should be overridden")
-    
+
     async def try_query_discovery_info(self):
         """Used for a discovery query to a single device"""
         raise SmartDeviceException("try_query_discovery_info should be overridden")
-    
+
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         raise SmartDeviceException("query should be overridden")
-    
+
     async def close(self) -> None:
         raise SmartDeviceException("close should be overridden")
-    
+
 
 class TPLinkSmartHomeProtocol(TPLinkProtocol):
     """Implementation of the TP-Link Smart Home protocol."""
@@ -66,7 +66,9 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
     INITIALIZATION_VECTOR = 171
     DEFAULT_PORT = 9999
     BLOCK_SIZE = 4
-    DISCOVERY_QUERY = { "system": {"get_sysinfo": None}, }
+    DISCOVERY_QUERY = {
+        "system": {"get_sysinfo": None},
+    }
 
     def __init__(self, host: str):
         super().__init__(host=host, port=self.DEFAULT_PORT)
@@ -82,7 +84,6 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
 
     @staticmethod
     def get_discovery_payload():
-
         req = json_dumps(TPLinkSmartHomeProtocol.DISCOVERY_QUERY)
         encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
         return encrypted_req[4:]
@@ -100,20 +101,23 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
                 return None
         else:
             return None
-        
+
     async def try_query_discovery_info(self):
         """Returns discovery info if the ports match and we can decrypt the data"""
         try:
             info = await self.query(TPLinkSmartHomeProtocol.DISCOVERY_QUERY)
             return info
         except SmartDeviceException:
-            _LOGGER.debug("Unable to query discovery for %s with TPLinkSmartHomeProtocol", self.host)
+            _LOGGER.debug(
+                "Unable to query discovery for %s with TPLinkSmartHomeProtocol",
+                self.host,
+            )
             return None
 
     @staticmethod
     def requires_authentication():
         return False
-    
+
     def authentication_failed(self):
         return False
 
@@ -146,7 +150,7 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
 
         async with self.query_lock:
             return await self._query(request, retry_count, self.timeout)
-        
+
     async def _connect(self, timeout: int) -> None:
         """Try to connect or reconnect to the device."""
         if self.writer:
@@ -176,7 +180,7 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
             _LOGGER.debug("%s << %s", self.host, pf(json_payload))
 
         return json_payload
-  
+
     async def close(self) -> None:
         """Close the connection."""
         writer = self.writer

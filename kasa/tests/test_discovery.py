@@ -3,14 +3,23 @@ import sys
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import DeviceType, Discover, SmartDevice, UnauthenticatedDevice, SmartDeviceException, protocol, klapprotocol, protocolconfig, auth
+from kasa import (
+    DeviceType,
+    Discover,
+    SmartDevice,
+    UnauthenticatedDevice,
+    SmartDeviceException,
+    protocol,
+    klapprotocol,
+    protocolconfig,
+    auth,
+)
 from kasa.discover import _DiscoverProtocol
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 
 from .conftest import bulb, dimmer, lightstrip, plug, strip
 import asyncio
-
 
 
 @plug
@@ -63,18 +72,25 @@ async def test_discover_single(discovery_data: dict, mocker):
     assert issubclass(x.__class__, SmartDevice)
     assert x._sys_info is not None
 
-    
     # Succesful klap discovery
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.try_query_discovery_info", return_value=None)
+    mocker.patch(
+        "kasa.TPLinkSmartHomeProtocol.try_query_discovery_info", return_value=None
+    )
     mocker.patch("kasa.klapprotocol.TPLinkKlap.query", return_value=discovery_data)
     x = await Discover.discover_single("127.0.0.1")
     assert issubclass(x.__class__, SmartDevice)
     assert x._sys_info is not None
-    
+
     #  Unauthenticated klap discovery
     klap_result = get_klap_datagram_data("127.0.0.1")
-    found_devs = {"127.0.0.1": UnauthenticatedDevice("127.0.0.1", klapprotocol.TPLinkKlap(host="127.0.0.1"), klap_result)}
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.try_query_discovery_info", return_value=None)
+    found_devs = {
+        "127.0.0.1": UnauthenticatedDevice(
+            "127.0.0.1", klapprotocol.TPLinkKlap(host="127.0.0.1"), klap_result
+        )
+    }
+    mocker.patch(
+        "kasa.TPLinkSmartHomeProtocol.try_query_discovery_info", return_value=None
+    )
     mocker.patch("kasa.TPLinkKlap.query", return_value=None)
     mocker.patch("kasa.TPLinkKlap.authentication_failed", return_value=True)
     mocker.patch("kasa.Discover.discover", return_value=found_devs)
@@ -105,34 +121,56 @@ async def test_discover_send(mocker):
     """Test discovery parameters."""
     proto = _DiscoverProtocol()
     assert proto.discovery_packets == 3
-    assert protocolconfig.TPLinkProtocolConfig.enabled_protocols()[0] == protocol.TPLinkSmartHomeProtocol
-    assert protocolconfig.TPLinkProtocolConfig.enabled_protocols()[1] == klapprotocol.TPLinkKlap
-    assert protocol.TPLinkSmartHomeProtocol.get_discovery_targets() == [("255.255.255.255", 9999)]
-    assert klapprotocol.TPLinkKlap.get_discovery_targets() == [("255.255.255.255", 20002)]
-    assert protocol.TPLinkSmartHomeProtocol.get_discovery_targets("192.168.255.255") == [("192.168.255.255", 9999)]
-    assert klapprotocol.TPLinkKlap.get_discovery_targets("192.168.255.255") == [("192.168.255.255", 20002)]
+    assert (
+        protocolconfig.TPLinkProtocolConfig.enabled_protocols()[0]
+        == protocol.TPLinkSmartHomeProtocol
+    )
+    assert (
+        protocolconfig.TPLinkProtocolConfig.enabled_protocols()[1]
+        == klapprotocol.TPLinkKlap
+    )
+    assert protocol.TPLinkSmartHomeProtocol.get_discovery_targets() == [
+        ("255.255.255.255", 9999)
+    ]
+    assert klapprotocol.TPLinkKlap.get_discovery_targets() == [
+        ("255.255.255.255", 20002)
+    ]
+    assert protocol.TPLinkSmartHomeProtocol.get_discovery_targets(
+        "192.168.255.255"
+    ) == [("192.168.255.255", 9999)]
+    assert klapprotocol.TPLinkKlap.get_discovery_targets("192.168.255.255") == [
+        ("192.168.255.255", 20002)
+    ]
 
     transport = mocker.patch.object(proto, "transport")
 
     proto.do_discover()
-    
+
     assert transport.sendto.call_count == proto.discovery_packets * 2
 
 
 def get_klap_datagram_data(host):
-    klap_result = {"result": {"ip": host, 
-                "mac": "12-34-56-78-9A-BC", 
-                "device_id": "00000000000000000000000000000000", 
-                "owner": "11111111111111111111111111111111", 
-                "device_type": "IOT.SMARTPLUGSWITCH", 
-                "device_model": "HS100(UK)", 
-                "hw_ver": "4.1", 
-                "factory_default": True, 
-                "mgt_encrypt_schm": {"is_support_https": False, "encrypt_type": "KLAP", "http_port": 80}, 
-                "error_code": 0}
+    klap_result = {
+        "result": {
+            "ip": host,
+            "mac": "12-34-56-78-9A-BC",
+            "device_id": "00000000000000000000000000000000",
+            "owner": "11111111111111111111111111111111",
+            "device_type": "IOT.SMARTPLUGSWITCH",
+            "device_model": "HS100(UK)",
+            "hw_ver": "4.1",
+            "factory_default": True,
+            "mgt_encrypt_schm": {
+                "is_support_https": False,
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+            },
+            "error_code": 0,
+        }
     }
-    klap_result = b'0123456789ABCDEF' + json_dumps(klap_result).encode()
+    klap_result = b"0123456789ABCDEF" + json_dumps(klap_result).encode()
     return klap_result
+
 
 async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
@@ -140,24 +178,35 @@ async def test_discover_datagram_received(mocker, discovery_data):
     addr1 = "127.0.0.1"
     addr2 = "127.0.0.2"
     addr3 = "127.0.0.3"
-    
+
     proto = _DiscoverProtocol()
     mocker.patch("kasa.protocol.json_loads", return_value=discovery_data)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
-    mocker.patch("kasa.klapprotocol.TPLinkKlap.try_query_discovery_info", return_value=discovery_data)
+    mocker.patch(
+        "kasa.klapprotocol.TPLinkKlap.try_query_discovery_info",
+        return_value=discovery_data,
+    )
 
     # TPLinkSmartHomeProtocol received
-    proto.datagram_received("<Placeholder data>", (addr1, protocol.TPLinkSmartHomeProtocol.DEFAULT_PORT))
+    proto.datagram_received(
+        "<Placeholder data>", (addr1, protocol.TPLinkSmartHomeProtocol.DEFAULT_PORT)
+    )
 
     # Succesful TPLinkKlap received
-    proto.datagram_received(get_klap_datagram_data(addr2), (addr2, klapprotocol.TPLinkKlap.DISCOVERY_PORT))
+    proto.datagram_received(
+        get_klap_datagram_data(addr2), (addr2, klapprotocol.TPLinkKlap.DISCOVERY_PORT)
+    )
     # Let the authentication callback run
     await asyncio.sleep(0.01)
 
     # Simulate TPLinkKlap unable to authenticate
-    mocker.patch("kasa.klapprotocol.TPLinkKlap.try_query_discovery_info", return_value=None)
-    proto.datagram_received(get_klap_datagram_data(addr3), (addr3, klapprotocol.TPLinkKlap.DISCOVERY_PORT))
+    mocker.patch(
+        "kasa.klapprotocol.TPLinkKlap.try_query_discovery_info", return_value=None
+    )
+    proto.datagram_received(
+        get_klap_datagram_data(addr3), (addr3, klapprotocol.TPLinkKlap.DISCOVERY_PORT)
+    )
     # Let the authentication callback run
     await asyncio.sleep(0.01)
 
@@ -168,7 +217,9 @@ async def test_discover_datagram_received(mocker, discovery_data):
     assert dev.host == addr1
 
     dev = proto.discovered_devices[addr2]
-    assert issubclass(dev.__class__, SmartDevice) and not isinstance(dev, UnauthenticatedDevice)
+    assert issubclass(dev.__class__, SmartDevice) and not isinstance(
+        dev, UnauthenticatedDevice
+    )
     assert dev.host == addr2
 
     dev = proto.discovered_devices[addr3]

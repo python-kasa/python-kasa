@@ -41,7 +41,7 @@ class SmartLightStrip(SmartBulb):
     LIGHT_SERVICE = "smartlife.iot.lightStrip"
     SET_LIGHT_METHOD = "set_light_state"
 
-    def __init__(self, host: str, protocol = None) -> None:
+    def __init__(self, host: str, protocol=None) -> None:
         super().__init__(host, protocol)
         self._device_type = DeviceType.LightStrip
 

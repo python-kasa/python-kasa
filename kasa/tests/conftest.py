@@ -209,7 +209,7 @@ async def dev(request):
     if ip:
         model = IP_MODEL_CACHE.get(ip)
         d = None
-        if (username and password):
+        if username and password:
             auth = AuthCredentials(username, password)
         else:
             auth = AuthCredentials()
@@ -222,9 +222,11 @@ async def dev(request):
 
     return await get_device_for_file(file)
 
+
 @pytest.fixture()
 async def klap_endpoint(request):
     return FakeKLAPEndpoint("me@mail.com", "foobar")
+
 
 @pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
 def discovery_data(request):
@@ -243,10 +245,16 @@ def pytest_addoption(parser):
         "--ip", action="store", default=None, help="run against device on given ip"
     )
     parser.addoption(
-        "--username", action="store", default=None, help="username to authenticate with a physical device"
+        "--username",
+        action="store",
+        default=None,
+        help="username to authenticate with a physical device",
     )
     parser.addoption(
-        "--password", action="store", default=None, help="password to authenticate with a physical device"
+        "--password",
+        action="store",
+        default=None,
+        help="password to authenticate with a physical device",
     )
 
 

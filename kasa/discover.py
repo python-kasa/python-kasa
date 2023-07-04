@@ -73,7 +73,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
     def do_discover(self) -> None:
         """Send number of discovery datagrams."""
-            
+
         for proto_class in TPLinkProtocolConfig.enabled_protocols():
             # If a discover_single is attempted for an device requiring authentication and authentication fails
             # then it will set self.protocol and trigger a datagram discovery to get other useful info
@@ -84,7 +84,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                     for i in range(self.discovery_packets):
                         self.transport.sendto(payload, target)
 
-
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
         ip, port = addr
@@ -92,7 +91,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         # Devices can respond multiple times due to multiple packets sent
         if ip in self.discovered_devices:
             return
-        
+
         proto = info = None
         for proto_class in TPLinkProtocolConfig.enabled_protocols():
             # If a discover_single is attempted for an device requiring authentication and authentication fails
@@ -109,22 +108,29 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                         unauthenticated_device = UnauthenticatedDevice(ip, proto, info)
                         self.discovered_devices[ip] = unauthenticated_device
                         if not proto.authentication_failed:
-                            unauthenticated_device.try_authenticate(self._authentication_attempted_callback)
+                            unauthenticated_device.try_authenticate(
+                                self._authentication_attempted_callback
+                            )
                     else:
                         proto = proto_class(ip)
                         self._get_device_and_add_to_list(ip, info, proto)
                     break
 
-    async def _authentication_attempted_callback(self, unauthenticated_device: UnauthenticatedDevice):
+    async def _authentication_attempted_callback(
+        self, unauthenticated_device: UnauthenticatedDevice
+    ):
         """Callback used for updating the device list once the authentication attempt is complete"""
-        if unauthenticated_device.isauthenticated:        
-            self._get_device_and_add_to_list(unauthenticated_device.host, unauthenticated_device.wrapped_sys_info, unauthenticated_device.protocol)
+        if unauthenticated_device.isauthenticated:
+            self._get_device_and_add_to_list(
+                unauthenticated_device.host,
+                unauthenticated_device.wrapped_sys_info,
+                unauthenticated_device.protocol,
+            )
         else:
             if self.on_discovered is not None:
                 asyncio.ensure_future(self.on_discovered(unauthenticated_device))
-        
- 
-    def _get_device_and_add_to_list(self, ip, info, protocol = None):
+
+    def _get_device_and_add_to_list(self, ip, info, protocol=None):
         """Instantiates the class and adds to discovered devices"""
         try:
             device_class = Discover._get_device_class(info)
@@ -139,7 +145,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         if self.on_discovered is not None:
             asyncio.ensure_future(self.on_discovered(device))
-
 
     def error_received(self, ex):
         """Handle asyncio.Protocol errors."""
@@ -184,8 +189,6 @@ class Discover:
 
     """
 
-    
-
     @staticmethod
     async def discover(
         *,
@@ -195,7 +198,7 @@ class Discover:
         discovery_packets=3,
         interface=None,
         auth_credentials=None,
-        protocol=None
+        protocol=None,
     ) -> DeviceDict:
         """Discover supported devices.
 
@@ -237,12 +240,16 @@ class Discover:
         finally:
             transport.close()
 
-        _LOGGER.debug("Discovered %s devices", len(datagram_protocol.discovered_devices))
+        _LOGGER.debug(
+            "Discovered %s devices", len(datagram_protocol.discovered_devices)
+        )
 
         return datagram_protocol.discovered_devices
 
     @staticmethod
-    async def discover_single(host: str, auth_credentials: AuthCredentials = AuthCredentials()) -> SmartDevice:
+    async def discover_single(
+        host: str, auth_credentials: AuthCredentials = AuthCredentials()
+    ) -> SmartDevice:
         """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
@@ -257,12 +264,11 @@ class Discover:
                 proto = proto_class(host, auth_credentials)
             else:
                 proto = proto_class(host)
-        
+
             # try and do a discovery query starting with the older protocol.  None is returned if not succesful
             info = await proto.try_query_discovery_info()
-            
-            if (info is not None):
 
+            if info is not None:
                 device_class = Discover._get_device_class(info)
                 dev = device_class(host, proto)
                 await dev.update()
@@ -281,9 +287,9 @@ class Discover:
 
         if "system" not in info or "get_sysinfo" not in info["system"]:
             raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
-        
+
         sysinfo = info["system"]["get_sysinfo"]
-    
+
         type_ = sysinfo.get("type", sysinfo.get("mic_type"))
         if type_ is None:
             raise SmartDeviceException("Unable to find the device type field!")

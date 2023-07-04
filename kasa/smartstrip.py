@@ -79,7 +79,7 @@ class SmartStrip(SmartDevice):
     For more examples, see the :class:`SmartDevice` class.
     """
 
-    def __init__(self, host: str, protocol = None) -> None:
+    def __init__(self, host: str, protocol=None) -> None:
         super().__init__(host=host, protocol=protocol)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
