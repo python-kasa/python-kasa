@@ -161,7 +161,7 @@ class Discover:
     IP address. If the type of the device and its IP address is already known,
     you can initialize the corresponding device class directly without this.
 
-    The protocol uses UDP broadcast datagrams on ports configured in the protocl class (currently 9999 and 20002) for discovery.
+    The protocol uses UDP broadcast datagrams on ports configured in the protocol class (currently 9999 and 20002) for discovery.
 
     Examples:
         Discovery returns a list of discovered devices:

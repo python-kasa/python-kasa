@@ -27,7 +27,7 @@ from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
 from kasa.unauthenticateddevice import UnauthenticatedDevice
 
-#__version__ = version("python-kasa")
+__version__ = version("python-kasa")
 
 
 __all__ = [

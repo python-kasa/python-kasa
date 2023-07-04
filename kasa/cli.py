@@ -280,7 +280,7 @@ async def discover(ctx, timeout):
         auth = AuthCredentials()
 
     await Discover.discover(
-        target=target, timeout=timeout, on_discovered=print_discovered, auth_credentials=auth
+        targetip=target, timeout=timeout, on_discovered=print_discovered, auth_credentials=auth
     )
 
     return discovered

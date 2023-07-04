@@ -90,7 +90,7 @@ class TPLinkKlap(TPLinkAuthProtocol):
         if port == TPLinkKlap.DISCOVERY_PORT:
             try:
                 unauthenticated_info = json_loads(data[16:])
-            except:
+            except Exception as ex:
                 return None
             
             isklap =    (
@@ -217,7 +217,7 @@ class TPLinkKlap(TPLinkAuthProtocol):
             else:
                 self.authentication_failed = True
                 msg = "Server response doesn't match our challenge on ip {}".format(self.host)
-                _LOGGER.error(msg)
+                _LOGGER.debug(msg)
                 raise SmartDeviceAuthenticationException(msg)
         else:
             _LOGGER.debug("handshake1 hashes match")
@@ -293,10 +293,8 @@ class TPLinkKlap(TPLinkAuthProtocol):
                     f"Unable to connect to the device, timed out: {self.host}: {ex}"
                 )
             except SmartDeviceAuthenticationException as auex:
-                if retry >= retry_count:
-                    _LOGGER.error("Giving up on %s after %s retries", self.host, retry)
-                    raise SmartDeviceAuthenticationException("Unable to authenticate with device %s", self.host)
-                continue
+                _LOGGER.error("Unable to authenticate with %s, not retrying", self.host)
+                raise auex
             except Exception as ex:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
@@ -317,7 +315,7 @@ class TPLinkKlap(TPLinkAuthProtocol):
                     await self.perform_handshake(session)
                 
                 except SmartDeviceAuthenticationException as auex:
-                    _LOGGER.error(f"Unable to complete handshake for device {self.host}, authentication failed")
+                    _LOGGER.debug(f"Unable to complete handshake for device {self.host}, authentication failed")
                     raise auex
                 
             payload, seq = self.encryption_session.encrypt(request.encode())
@@ -329,7 +327,7 @@ class TPLinkKlap(TPLinkAuthProtocol):
             response_status, response_data = await self.session_post(session, url, params={"seq": seq}, data=payload)
                            
             if response_status != 200:
-                _LOGGER.error(f"Query posted at {datetime.datetime.now()}.  Host is {self.host}, Session cookie is {cookie}, Retry count is {retry_count}, Sequence is {seq}, Response status is {response_status}, Request was {request}")
+                _LOGGER.error(f"Query failed after succesful authentication at {datetime.datetime.now()}.  Host is {self.host}, Session cookie is {cookie}, Retry count is {retry_count}, Sequence is {seq}, Response status is {response_status}, Request was {request}")
                 # If we failed with a security error, force a new handshake next time.
                 if response_status == 403:
                     self.handshake_done = False

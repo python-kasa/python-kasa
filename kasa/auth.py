@@ -12,7 +12,10 @@ class TPLinkAuthProtocol(TPLinkProtocol):
     """Base class for authenticating protocol"""
     def __init__(self, host: str, port:str, auth_credentials: AuthCredentials = AuthCredentials()):
         super().__init__(host=host, port=port)
-        self.auth_credentials = auth_credentials
+        if auth_credentials is None:
+            self.auth_credentials = AuthCredentials()
+        else:    
+            self.auth_credentials = auth_credentials
         self._authentication_failed = False
 
     @property

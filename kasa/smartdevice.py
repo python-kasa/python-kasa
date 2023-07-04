@@ -302,9 +302,9 @@ class SmartDevice:
         """Return True if device has an energy meter."""
         return "ENE" in self.features
 
-    async def get_sys_info(self, return_wrapped: bool = False) -> Dict[str, Any]:
+    async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information."""
-        return await self._query_helper("system", "get_sysinfo", return_wrapped=return_wrapped)
+        return await self._query_helper("system", "get_sysinfo")
 
     async def update(self, update_children: bool = True):
         """Query the device to update the data.
