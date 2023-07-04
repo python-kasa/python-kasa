@@ -658,6 +658,31 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "kasa-crypt"
+version = "0.2.0"
+description = "Fast kasa crypt"
+optional = true
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "kasa_crypt-0.2.0-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:62e9f1e7b8c1cb420522ddfd752a81d387a7097f640fa752d848360680f926e3"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-manylinux_2_17_i686.manylinux_2_5_i686.manylinux1_i686.manylinux2014_i686.whl", hash = "sha256:a9708ee85bc7a2978fe70170de6e6210f9e913c601c14baa2ce61955b0fa24e0"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-manylinux_2_17_x86_64.manylinux_2_5_x86_64.manylinux1_x86_64.manylinux2014_x86_64.whl", hash = "sha256:27aece9fb1b8b52ccb3e73a54a3e5236bfd6aec4bc3699215dcc546f2ddf8e26"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-manylinux_2_31_x86_64.whl", hash = "sha256:9676ac702aa62252fb4de3d5c9ee4895dd93610b9c37e732213b0914fbc0e255"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:d7851e34e3216c6b3c982fb864fc166056476179d8ceea0b06138f7f86b8a657"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:ea5ed45e6c78f4b486dc2dfa04f4c82da1b836a8b1e244787a885f13c7f89cca"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-win32.whl", hash = "sha256:5417fa89664918625e0b949fdee30247a944274e61451f24789f2245b3b403d2"},
+    {file = "kasa_crypt-0.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:462f7dbca8eab86507158bcd73005f8953f23f2bf5717f8cea1becd1e237b890"},
+    {file = "kasa_crypt-0.2.0-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:21c02f3d502adf7394bc4b306588b1d6f62d371c1218673b6fa22df158fc8b2b"},
+    {file = "kasa_crypt-0.2.0-cp311-cp311-manylinux_2_17_i686.manylinux_2_5_i686.manylinux1_i686.manylinux2014_i686.whl", hash = "sha256:3b8c6a3c544e5f947892858807862f036eada4974a20e73f627de75ea23d53a8"},
+    {file = "kasa_crypt-0.2.0-cp311-cp311-manylinux_2_17_x86_64.manylinux_2_5_x86_64.manylinux1_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cf9725613f3512eb35d4ac517afe2128157a3becfae1e663b8f6e2fa027bd891"},
+    {file = "kasa_crypt-0.2.0-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:4ff483c0bd9dd6a7b504c0d57669653941a8b1bcdcfeaba504fc02b40fa4057e"},
+    {file = "kasa_crypt-0.2.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:e2e60330baebb14ead03af156e2f22a88bdc06f879e5876f31a6940d9b51b333"},
+    {file = "kasa_crypt-0.2.0-cp311-cp311-win32.whl", hash = "sha256:4ba8c6661232204dabe60cd3d592b702d43359a4a4947cf805f5d8cbec5164ae"},
+    {file = "kasa_crypt-0.2.0-cp311-cp311-win_amd64.whl", hash = "sha256:7db9b111c76838e518fb040f1d6cc87a1aba4bf6cab44e834dadc924587ff199"},
+    {file = "kasa_crypt-0.2.0.tar.gz", hash = "sha256:ad2e73276f09ed035d53006985b08eb78869f73e60ac5d66547d9ddc35cb8cc4"},
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "2.2.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
@@ -1765,8 +1790,10 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 
 [extras]
 docs = ["docutils", "myst-parser", "sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput"]
+speedups = ["kasa-crypt", "orjson"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
 content-hash = "fbea751ca7cd5b190e4bb54e11bf03a44713b237345ee5ecfc813623c7a6a739"
+

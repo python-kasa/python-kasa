@@ -23,6 +23,8 @@ If you are using cpython, it is recommended to install with `[speedups]` to enab
 pip install python-kasa[speedups]
 ```
 
+With `[speedups]`, the protocol overhead is roughly an order of magnitude lower (benchmarks available in devtools).
+
 Alternatively, you can clone this repository and use poetry to install the development version:
 ```
 git clone https://github.com/python-kasa/python-kasa.git
@@ -144,6 +146,7 @@ If your device is unlisted but working, please open a pull request to update the
 * HS300
 * KP303
 * KP400
+* KP405 (dimmer)
 
 ### Wall switches
 

@@ -59,3 +59,13 @@ id
 <id>-HS110(EU)   5.0  0.055700  0.016174  0.042086  0.045578  0.048905  0.059869  0.082064
 <id>-KP303(UK)   5.0  0.010298  0.003765  0.007773  0.007968  0.008546  0.010439  0.016763
 ```
+
+## benchmark
+
+* Benchmark the protocol
+
+```shell
+% python3 devtools/bench/benchmark.py
+New parser, parsing 100000 messages took 0.6339647499989951 seconds
+Old parser, parsing 100000 messages took 9.473990250000497 seconds
+```
