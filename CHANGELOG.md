@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.5.2](https://github.com/python-kasa/python-kasa/tree/0.5.2) (2023-07-02)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.1...0.5.2)
+
+Besides some small improvements, this release:
+* Adds optional dependency for for `orjson` and `kasa-crypt` to speed-up protocol handling by an order of magnitude.
+* Drops Python 3.7 support as it is no longer maintained.
+
+**Breaking changes:**
+
+- Drop python 3.7 support [\#455](https://github.com/python-kasa/python-kasa/pull/455) (@rytilahti)
+
+**Implemented enhancements:**
+
+- Use orjson when already installed or with speedups extra [\#466](https://github.com/python-kasa/python-kasa/pull/466) (@bdraco)
+- Add optional kasa-crypt dependency for speedups [\#464](https://github.com/python-kasa/python-kasa/pull/464) (@bdraco)
+- Add inactivity setting for the motion module [\#453](https://github.com/python-kasa/python-kasa/pull/453) (@rytilahti)
+- Add methods to configure dimmer settings [\#429](https://github.com/python-kasa/python-kasa/pull/429) (@rytilahti)
+
+**Fixed bugs:**
+
+- Request for KP405 Support - Dimmable Plug [\#469](https://github.com/python-kasa/python-kasa/issues/469)
+- Issue printing device in on\_discovered: pydantic.error\_wrappers.ValidationError: 3 validation errors for SmartBulbPreset [\#439](https://github.com/python-kasa/python-kasa/issues/439)
+- Possible firmware issue with KL125 \(1.0.7 Build 211009 Rel.172044\) [\#345](https://github.com/python-kasa/python-kasa/issues/345)
+- Exclude querying certain modules for KL125\(US\) which cause crashes  [\#451](https://github.com/python-kasa/python-kasa/pull/451) (@brianthedavis)
+- Return result objects for cli discover and implicit 'state' [\#446](https://github.com/python-kasa/python-kasa/pull/446) (@rytilahti)
+- Allow effect presets seen on light strips [\#440](https://github.com/python-kasa/python-kasa/pull/440) (@rytilahti)
+
+**Closed issues:**
+
+- Powershell version? [\#461](https://github.com/python-kasa/python-kasa/issues/461)
+- Add `set_cold_time` to Motion module [\#452](https://github.com/python-kasa/python-kasa/issues/452)
+- Discover.discover\(\) only returning ip adress on ep10 outlet [\#447](https://github.com/python-kasa/python-kasa/issues/447)
+- Query current wifi config? [\#445](https://github.com/python-kasa/python-kasa/issues/445)
+- bulb.turn\_off making device undiscoverable [\#444](https://github.com/python-kasa/python-kasa/issues/444)
+- best privacy practices for Kasa devices [\#438](https://github.com/python-kasa/python-kasa/issues/438)
+- Access device from different network [\#424](https://github.com/python-kasa/python-kasa/issues/424)
+- Lots of test failure with 0.5.0 [\#411](https://github.com/python-kasa/python-kasa/issues/411)
+
+**Merged pull requests:**
+
+- Add benchmarks for speedups [\#473](https://github.com/python-kasa/python-kasa/pull/473) (@bdraco)
+- Add fixture for KP405 Smart Dimmer Plug [\#470](https://github.com/python-kasa/python-kasa/pull/470) (@xinud190)
+- Remove importlib-metadata dependency [\#457](https://github.com/python-kasa/python-kasa/pull/457) (@rytilahti)
+- Update dependencies to fix CI [\#454](https://github.com/python-kasa/python-kasa/pull/454) (@rytilahti)
+- Cleanup fixture filenames [\#448](https://github.com/python-kasa/python-kasa/pull/448) (@rytilahti)
+
 ## [0.5.1](https://github.com/python-kasa/python-kasa/tree/0.5.1) (2023-02-18)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.0...0.5.1)
@@ -17,13 +64,13 @@ This minor release contains mostly small UX fine-tuning and documentation improv
 
 **Implemented enhancements:**
 
-- Add support for json output [\#430](https://github.com/python-kasa/python-kasa/pull/430) (@rytilahti)
 - Pretty-print all exceptions from cli commands [\#428](https://github.com/python-kasa/python-kasa/pull/428) (@rytilahti)
 - Add transition parameter to lightstrip's set\_effect [\#416](https://github.com/python-kasa/python-kasa/pull/416) (@rytilahti)
 - Add brightness to lightstrip's set\_effect [\#415](https://github.com/python-kasa/python-kasa/pull/415) (@rytilahti)
 - Use rich for prettier output, if available [\#403](https://github.com/python-kasa/python-kasa/pull/403) (@rytilahti)
 - Adding cli command to delete a schedule rule [\#391](https://github.com/python-kasa/python-kasa/pull/391) (@aricforrest)
 - Add support for bulb presets [\#379](https://github.com/python-kasa/python-kasa/pull/379) (@rytilahti)
+- Add support for json output [\#430](https://github.com/python-kasa/python-kasa/pull/430) (@rytilahti)
 
 **Fixed bugs:**
 
@@ -31,8 +78,8 @@ This minor release contains mostly small UX fine-tuning and documentation improv
 - cli.py usage --year command passes year argument incorrectly [\#371](https://github.com/python-kasa/python-kasa/issues/371)
 - KP303 reporting as device off [\#319](https://github.com/python-kasa/python-kasa/issues/319)
 - HS210 not updating the state correctly [\#193](https://github.com/python-kasa/python-kasa/issues/193)
-- Return usage.get\_{monthstat,daystat} in expected format  [\#394](https://github.com/python-kasa/python-kasa/pull/394) (@jules43)
 - Fix year emeter for cli by using kwarg for year parameter [\#372](https://github.com/python-kasa/python-kasa/pull/372) (@rytilahti)
+- Return usage.get\_{monthstat,daystat} in expected format  [\#394](https://github.com/python-kasa/python-kasa/pull/394) (@jules43)
 
 **Documentation updates:**
 
@@ -76,6 +123,7 @@ This minor release contains mostly small UX fine-tuning and documentation improv
 
 **Merged pull requests:**
 
+- Prepare 0.5.1 [\#434](https://github.com/python-kasa/python-kasa/pull/434) (@rytilahti)
 - Some release preparation janitoring [\#432](https://github.com/python-kasa/python-kasa/pull/432) (@rytilahti)
 - Bump certifi from 2021.10.8 to 2022.12.7 [\#409](https://github.com/python-kasa/python-kasa/pull/409) (@dependabot[bot])
 - Add FUNDING.yml [\#402](https://github.com/python-kasa/python-kasa/pull/402) (@rytilahti)
