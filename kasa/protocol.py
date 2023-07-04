@@ -37,7 +37,7 @@ class TPLinkProtocol:
         self.timeout = self.DEFAULT_TIMEOUT
     
     @staticmethod
-    def get_discovery_targets():
+    def get_discovery_targets(targetip: str = "255.255.255.255"):
         raise SmartDeviceException("get_discovery_targets should be overridden")
 
     @staticmethod
@@ -46,18 +46,12 @@ class TPLinkProtocol:
 
     @staticmethod
     def try_get_discovery_info(port, data):
+        """Used after a discovery broadcast has resulted in a received datagram"""
         raise SmartDeviceException("try_get_discovery_info should be overridden")
     
     async def try_query_discovery_info(self):
+        """Used for a discovery query to a single device"""
         raise SmartDeviceException("try_query_discovery_info should be overridden")
-           
-    @staticmethod
-    def requires_authentication():
-        raise SmartDeviceException("requires_authentication should be overridden")
-    
-
-    def authentication_failed(self):
-        raise SmartDeviceException("authentication_failed should be overridden")
     
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         raise SmartDeviceException("query should be overridden")
@@ -83,8 +77,8 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
         self.loop: Optional[asyncio.AbstractEventLoop] = None
 
     @staticmethod
-    def get_discovery_targets():
-        return [("255.255.255.255", TPLinkSmartHomeProtocol.DEFAULT_PORT)]
+    def get_discovery_targets(targetip: str = "255.255.255.255"):
+        return [(targetip, TPLinkSmartHomeProtocol.DEFAULT_PORT)]
 
     @staticmethod
     def get_discovery_payload():

@@ -12,32 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class UnauthenticatedDevice(SmartDevice):
-    r"""Representation of a TP-Link Smart Switch.
-
-    To initialize, you have to await :func:`update()` at least once.
-    This will allow accessing the properties using the exposed properties.
-
-    All changes to the device are done using awaitable methods,
-    which will not change the cached values, but you must await :func:`update()` separately.
-
-    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
-    and should be handled by the user of the library.
-
-    Examples:
-        >>> import asyncio
-        >>> plug = SmartPlug("127.0.0.1")
-        >>> asyncio.run(plug.update())
-        >>> plug.alias
-        Kitchen
-
-        Setting the LED state:
-
-        >>> asyncio.run(plug.set_led(True))
-        >>> asyncio.run(plug.update())
-        >>> plug.led
-        True
-
-    For more examples, see the :class:`SmartDevice` class.
+    r"""Representation of an UnauthenticatedDevice, i.e. where initial discovery information is available but a call to get_sysinfo failed.
     """
 
     UNKNOWN_VALUE_STRING = "Unknown"
@@ -78,7 +53,6 @@ class UnauthenticatedDevice(SmartDevice):
     async def _try_authenticate(self):
 
         try:            
-            #self.wrapped_sys_info = await super().get_sys_info(True)
             self.wrapped_sys_info = await self.protocol.try_query_discovery_info()
             if self.wrapped_sys_info is not None:
                 self.isauthenticated = True
@@ -91,7 +65,7 @@ class UnauthenticatedDevice(SmartDevice):
             self.triedauthentication = True
 
     def try_authenticate(self, authentication_callback):
-        
+        """Attempt to authenticate and callback on a authentication_callback with self instance as the parameter"""
         self.authentication_callback = authentication_callback
 
         task = asyncio.create_task(self._try_authenticate())
@@ -99,6 +73,7 @@ class UnauthenticatedDevice(SmartDevice):
         
 
     async def update(self, update_children: bool = True):
+        """Does nothing"""
         pass
 
     @property  # type: ignore

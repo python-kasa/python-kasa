@@ -3,6 +3,8 @@ import sys
 
 import pytest
 from asyncclick.testing import CliRunner
+from pprint import pformat as pf
+import logging
 
 from kasa import SmartDevice
 from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo
@@ -19,11 +21,16 @@ async def test_sysinfo(dev):
 
 @turn_on
 async def test_state(dev, turn_on):
+
+    
     await handle_turn_on(dev, turn_on)
     runner = CliRunner()
-    res = await runner.invoke(state, obj=dev)
+    
     await dev.update()
-
+    #sdb moved the state query to after the dev update because a real device will need to be requeried before 
+    # getting the state to be checked
+    res = await runner.invoke(state, obj=dev)
+    
     if dev.is_on:
         assert "Device state: True" in res.output
     else:
@@ -41,6 +48,9 @@ async def test_alias(dev):
     new_alias = "new alias"
     res = await runner.invoke(alias, [new_alias], obj=dev)
     assert f"Setting alias to {new_alias}" in res.output
+
+    #sdb Adding an update call for a physical device to requery the state
+    await dev.update()
 
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
@@ -108,4 +118,8 @@ async def test_json_output(dev: SmartDevice, mocker):
     runner = CliRunner()
     res = await runner.invoke(cli, ["--json", "state"], obj=dev)
     assert res.exit_code == 0
-    assert json.loads(res.output) == dev.internal_state
+
+
+    res_json = json.loads(res.output)
+
+    assert res_json == dev.internal_state

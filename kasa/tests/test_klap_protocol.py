@@ -7,16 +7,18 @@ import secrets
 
 import pytest
 
+from kasa import SmartDevice
 from ..exceptions import SmartDeviceException
 from ..klapprotocol import TPLinkKlap, KlapEncryptionSession
 
 
-from ..auth import Auth
+from ..auth import AuthCredentials
 import hashlib
 
 
+
 def get_klap_proto_with_fake_endpoint(mocker, klap_endpoint):
-    proto = TPLinkKlap("127.0.0.1", Auth(klap_endpoint.device_username, klap_endpoint.device_password))
+    proto = TPLinkKlap("127.0.0.1", AuthCredentials(klap_endpoint.device_username, klap_endpoint.device_password))
 
     mocker.patch.object(TPLinkKlap, "handle_cookies")
     mocker.patch.object(proto, "clear_cookies")
@@ -24,6 +26,18 @@ def get_klap_proto_with_fake_endpoint(mocker, klap_endpoint):
     mocker.patch.object(proto, "get_local_seed", return_value=klap_endpoint.local_seed)
 
     return proto
+
+async def test_protocol_query_physical_device(dev):
+
+    if not isinstance(dev.protocol, TPLinkKlap):
+        pytest.skip(f"skipping klap test for non-klap device")
+    else:
+        for rng in range(10):
+            dev.protocol.handshake_done = False
+            for rng2 in range(5):
+                res = await dev.protocol.query(dev.protocol.DISCOVERY_QUERY, 3)
+                assert res is not None
+
 
 async def test_protocol_handshake(mocker, klap_endpoint):
     proto = get_klap_proto_with_fake_endpoint(mocker, klap_endpoint)
@@ -87,7 +101,7 @@ async def test_encrypt():
 
     local_seed = secrets.token_bytes(16)
     remote_seed = secrets.token_bytes(16)
-    auth = Auth()
+    auth = AuthCredentials()
     
     d = json.dumps({"foo": 1, "bar": 2})
        
@@ -109,7 +123,7 @@ def test_encrypt_unicode():
    
     local_seed = secrets.token_bytes(16)
     remote_seed = secrets.token_bytes(16)
-    auth = Auth()
+    auth = AuthCredentials()
     
     es = KlapEncryptionSession(local_seed, remote_seed, TPLinkKlap.generate_auth_hash(auth))
     encrypted = es.encrypt(d)[0]

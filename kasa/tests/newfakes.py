@@ -4,8 +4,8 @@ import re
 from voluptuous import Coerce  # type: ignore
 from voluptuous import REMOVE_EXTRA, All, Any, Invalid, Optional, Range, Schema
 
-from ..protocol import TPLinkSmartHomeProtocol, TPLinkProtocol
-from ..auth import Auth
+from ..protocol import TPLinkSmartHomeProtocol
+from ..auth import AuthCredentials
 from collections import namedtuple
 import hashlib
 import secrets
@@ -280,7 +280,7 @@ TIME_MODULE = {
 }
 
 
-class FakeTransportProtocol(TPLinkProtocol):
+class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):
         self.discovery_data = info
         self.writer = None
@@ -503,7 +503,7 @@ class FakeKLAPEndpoint():
     def __init__(self, device_username, device_password, response_status=200):
         self.device_username = device_username
         self.device_password = device_password
-        self.authentication = Auth(device_username, device_password)
+        self.authentication = AuthCredentials(device_username, device_password)
         self.remote_seed = secrets.token_bytes(16)
         self.local_seed = secrets.token_bytes(16)
         self.FakeResponse = namedtuple("FakeResponse", ["status"])
@@ -511,14 +511,6 @@ class FakeKLAPEndpoint():
         self.request_response = "{}"
         self.simulated_failure_count = 0
         
-    class _FakeResponse():
-        def __init__(self, response_data, status):
-            self.status = status
-            self._response_data = response_data
-
-        async def read(self):
-            return self._response_data
-
     def set_response_status(self, status):
         self.response_status=status
 
@@ -530,11 +522,11 @@ class FakeKLAPEndpoint():
 
 
     @staticmethod
-    def _generate_auth_hash(auth: Auth):
+    def _generate_auth_hash(auth: AuthCredentials):
         return hashlib.md5(hashlib.md5(auth.username.encode()).digest() + hashlib.md5(auth.password.encode()).digest()).digest()
     
     @staticmethod
-    def _generate_owner_hash(auth: Auth):
+    def _generate_owner_hash(auth: AuthCredentials):
         """Return the MD5 hash of the username in this object."""
         return hashlib.md5(auth.username.encode()).digest()
 
@@ -547,13 +539,13 @@ class FakeKLAPEndpoint():
         
         response = self.remote_seed + server_hash
         
-        return self._FakeResponse(response, self.response_status)
+        return self.response_status, response
 
     async def post_handshake2(self, session, url, params = None, data = None):
 
         expected_data = hashlib.sha256(self.remote_seed + self._generate_auth_hash(self.authentication)).digest()
         response_status = 200 if expected_data == data else 403
-        return self._FakeResponse(None, response_status)
+        return response_status, None
         
     async def session_post(self, session, url, params = None, data = None):
         request_app = url.split("/")[-1]
@@ -568,4 +560,4 @@ class FakeKLAPEndpoint():
         if self.simulated_failure_count > 0:
             self.simulated_failure_count -= 1
             raise Exception("Simulated post failure")
-        return self._FakeResponse(self.request_response, self.response_status )
+        return self.response_status, self.request_response

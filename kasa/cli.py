@@ -29,7 +29,7 @@ except ImportError:
 
 
 from kasa import (
-    Auth,
+    AuthCredentials,
     Discover,
     SmartBulb,
     SmartDevice,
@@ -124,7 +124,6 @@ def json_formatter_cb(result, **kwargs):
 @click.option(
     "--json", default=False, is_flag=True, help="Output raw device response as JSON."
 )
-@click.option("--klap", default=False, is_flag=True)
 @click.option(
     "--username",
     default="",
@@ -147,7 +146,7 @@ def json_formatter_cb(result, **kwargs):
 
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, type, json, klap, username, password, discoverytimeout):
+async def cli(ctx, host, alias, target, debug, type, json, username, password, discoverytimeout):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -198,9 +197,9 @@ async def cli(ctx, host, alias, target, debug, type, json, klap, username, passw
         return
 
     if username != "":
-        authentication = Auth(username=username, password=password)
+        authentication = AuthCredentials(username=username, password=password)
     else:
-        authentication = Auth()
+        authentication = AuthCredentials()
 
     if host is None:
         echo("No host name given, trying discovery..")
@@ -276,12 +275,12 @@ async def discover(ctx, timeout):
     password = ctx.parent.params["password"]
 
     if username:
-        auth = Auth(username=username, password=password)
+        auth = AuthCredentials(username=username, password=password)
     else:
-        auth = None
+        auth = AuthCredentials()
 
     await Discover.discover(
-        target=target, timeout=timeout, on_discovered=print_discovered, authentication=auth
+        target=target, timeout=timeout, on_discovered=print_discovered, auth_credentials=auth
     )
 
     return discovered

@@ -16,7 +16,7 @@ from kasa import (
     SmartLightStrip,
     SmartPlug,
     SmartStrip,
-    Auth,
+    AuthCredentials,
 )
 
 from .newfakes import FakeTransportProtocol
@@ -169,6 +169,7 @@ async def _update_and_close(d):
 
 async def _discover_update_and_close(ip, authentication=None):
     d = await Discover.discover_single(ip, authentication)
+    assert d is not None
     return await _update_and_close(d)
 
 
@@ -209,9 +210,9 @@ async def dev(request):
         model = IP_MODEL_CACHE.get(ip)
         d = None
         if (username and password):
-            auth = Auth(username, password)
+            auth = AuthCredentials(username, password)
         else:
-            auth = Auth()
+            auth = AuthCredentials()
         if not model:
             d = await _discover_update_and_close(ip, auth)
             IP_MODEL_CACHE[ip] = model = d.model

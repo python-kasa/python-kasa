@@ -13,7 +13,7 @@ to be handled by the user of the library.
 """
 from importlib.metadata import version
 
-from kasa.auth import Auth
+from kasa.auth import AuthCredentials, TPLinkAuthProtocol
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import SmartDeviceException
@@ -31,7 +31,8 @@ from kasa.unauthenticateddevice import UnauthenticatedDevice
 
 
 __all__ = [
-    "Auth",
+    "AuthCredentials",
+    "TPLinkAuthProtocol",
     "Discover",
     "TPLinkSmartHomeProtocol",
     "TPLinkKlap",
