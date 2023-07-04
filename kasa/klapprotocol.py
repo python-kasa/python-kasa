@@ -1,15 +1,23 @@
 """Implementation of the TP-Link Smart Home Protocol.
 
+Comment by sdb - 4-Jul-2023
+
 Encryption/Decryption methods based on the works of
-Lubomir Stroetmann and Tobias Esser
+Simon Wilkinson and Chris Weeldon
 
-#994661e5222b8e5e3e1d90e73a322315
+While working on these changes I discovered my HS100 devices would periodically change their device owner to something that produces the following
+md5 owner hash: 994661e5222b8e5e3e1d90e73a322315.  It seems to be after an update to the on/off state that was scheduled via the app.  Switching the device on and off manually via the 
+Kasa app would revert to the correct owner.
 
-https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/
-https://github.com/softScheck/tplink-smartplug/
+For devices that have not been connected to the kasa cloud the theory is that blank username and password md5 hashes will succesfully authenticate but
+at this point I have been unable to verify.
 
-which are licensed under the Apache License, Version 2.0
-http://www.apache.org/licenses/LICENSE-2.0
+https://gist.github.com/chriswheeldon/3b17d974db3817613c69191c0480fe55
+https://github.com/python-kasa/python-kasa/pull/117
+
+N.B. chrisweeldon implementation had a bug in the encryption logic for determining the initial seq number and Simon Wilkinson's implementation did not seem to support 
+incrementing the sequence number for subsequent encryption requests
+
 """
 import asyncio
 import hashlib
