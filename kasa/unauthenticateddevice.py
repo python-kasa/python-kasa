@@ -7,6 +7,7 @@ import asyncio
 from kasa.modules import Antitheft, Cloud, Schedule, Time, Usage
 from kasa.smartdevice import DeviceType, SmartDevice
 from kasa.exceptions import SmartDeviceAuthenticationException, SmartDeviceException
+from kasa.auth import TPLinkAuthProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +17,9 @@ class UnauthenticatedDevice(SmartDevice):
 
     UNKNOWN_VALUE_STRING = "Unknown"
 
-    def __init__(self, host: str, protocol, unauthenticated_info) -> None:
+    def __init__(
+        self, host: str, protocol: TPLinkAuthProtocol, unauthenticated_info
+    ) -> None:
         super().__init__(host, protocol)
 
         self._device_type = DeviceType.Unknown
@@ -24,7 +27,9 @@ class UnauthenticatedDevice(SmartDevice):
         self.triedauthentication = False
         self.authentication_callback = None
         self.wrapped_sys_info = None
-        self.unauthenticated_info = unauthenticated_info
+        self.unauthenticated_info_parsed = protocol.parse_unauthenticated_info(
+            unauthenticated_info
+        )
 
     @property  # type: ignore
     def is_on(self) -> bool:
@@ -38,7 +43,7 @@ class UnauthenticatedDevice(SmartDevice):
         The returned object contains the raw results from the last update call.
         This should only be used for debugging purposes.
         """
-        return self.unauthenticated_info
+        return self.unauthenticated_info_raw
 
     async def add_success_callback(self, task, callback, authenticating_device):
         result = await task
@@ -76,18 +81,18 @@ class UnauthenticatedDevice(SmartDevice):
         """Return the state of the led."""
         return self.UNKNOWN_VALUE_STRING
 
+    def _try_get_state_value(self, value: str) -> Any:
+        return (
+            self.UNKNOWN_VALUE_STRING
+            if value not in self.unauthenticated_info_parsed
+            else self.unauthenticated_info_parsed[value]
+        )
+
     @property  # type: ignore
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information."""
 
-        stateinfo = {
-            "device_owner": self.unauthenticated_info["result"]["owner"],
-            "auth_owner": self.protocol.local_auth_owner,
-            "mgt_encrypt_schm": self.unauthenticated_info["result"]["mgt_encrypt_schm"],
-            "device_type": self.unauthenticated_info["result"]["device_type"],
-            "device_model": self.unauthenticated_info["result"]["device_model"],
-        }
-        return stateinfo
+        return self.unauthenticated_info_parsed
 
     @property  # type: ignore
     def features(self) -> Set[str]:
@@ -117,12 +122,12 @@ class UnauthenticatedDevice(SmartDevice):
     @property  # type: ignore
     def model(self) -> str:
         """Return device model."""
-        return str(self.unauthenticated_info["result"]["device_model"])
+        return str(self._try_get_state_value("device_model"))
 
     @property  # type: ignore
     def alias(self) -> str:
         """Return device name (alias)."""
-        return "Unauthenticated Device"
+        return str(self._try_get_state_value("alias"))
 
     @property  # type: ignore
     def time(self) -> Any:
@@ -141,16 +146,16 @@ class UnauthenticatedDevice(SmartDevice):
         This returns just a selection of sysinfo keys that are related to hardware.
         """
         keyvals = {
-            "sw_ver": self.UNKNOWN_VALUE_STRING,
-            "hw_ver": self.unauthenticated_info["result"]["hw_ver"],
-            "mac": self.unauthenticated_info["result"]["mac"],
-            "mic_mac": self.UNKNOWN_VALUE_STRING,
-            "type": self.UNKNOWN_VALUE_STRING,
-            "mic_type": self.UNKNOWN_VALUE_STRING,
-            "hwId": self.UNKNOWN_VALUE_STRING,
-            "fwId": self.UNKNOWN_VALUE_STRING,
-            "oemId": self.UNKNOWN_VALUE_STRING,
-            "dev_name": self.UNKNOWN_VALUE_STRING,
+            "sw_ver": self._try_get_state_value("sw_ver"),
+            "hw_ver": self._try_get_state_value("hw_ver"),
+            "mac": self._try_get_state_value("mac"),
+            "mic_mac": self._try_get_state_value("mic_mac"),
+            "type": self._try_get_state_value("type"),
+            "mic_type": self._try_get_state_value("mic_type"),
+            "hwId": self._try_get_state_value("hwId"),
+            "fwId": self._try_get_state_value("fwId"),
+            "oemId": self._try_get_state_value("oemId"),
+            "dev_name": self._try_get_state_value("dev_name"),
         }
 
         return keyvals
@@ -170,14 +175,9 @@ class UnauthenticatedDevice(SmartDevice):
 
         :return: mac address in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         """
+        mac = self._try_get_state_value("mac")
 
-        mac = self.unauthenticated_info["result"]["mac"]
-        if not mac:
-            raise SmartDeviceException(
-                "Unknown mac, please submit a bug report with sys_info output."
-            )
-
-        if ":" not in mac:
+        if mac != self.UNKNOWN_VALUE_STRING and ":" not in mac:
             mac = str.replace(mac, "-", "")
             mac = ":".join(format(s, "02x") for s in bytes.fromhex(mac))
 
@@ -186,7 +186,7 @@ class UnauthenticatedDevice(SmartDevice):
     @property  # type: ignore
     def device_id(self) -> str:
         """Return unique ID for the device."""
-        return self.unauthenticated_info["result"]["device_id"]
+        return self._try_get_state_value("device_id")
 
     @property
     def device_type(self) -> DeviceType:
@@ -245,4 +245,4 @@ class UnauthenticatedDevice(SmartDevice):
         The returned object contains the raw results from the discovery call.
         This should only be used for debugging purposes.
         """
-        return self.unauthenticated_info
+        return self.unauthenticated_info_parsed

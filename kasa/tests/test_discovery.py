@@ -96,7 +96,7 @@ async def test_discover_single(discovery_data: dict, mocker):
     mocker.patch("kasa.Discover.discover", return_value=found_devs)
     x = await Discover.discover_single("127.0.0.1")
     assert isinstance(x, UnauthenticatedDevice)
-    assert x.unauthenticated_info is not None
+    assert x.unauthenticated_info_raw is not None
 
 
 INVALIDS = [

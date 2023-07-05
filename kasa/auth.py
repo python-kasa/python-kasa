@@ -1,5 +1,7 @@
 """Authentication class for username / passwords."""
 from kasa.protocol import TPLinkProtocol
+from kasa.exceptions import SmartDeviceException
+from typing import Any, Dict
 
 
 class AuthCredentials:
@@ -34,3 +36,6 @@ class TPLinkAuthProtocol(TPLinkProtocol):
     @authentication_failed.setter
     def authentication_failed(self, value):
         self._authentication_failed = value
+
+    def parse_unauthenticated_info(self, unauthenticated_info) -> Dict[str, str]:
+        raise SmartDeviceException("parse_unauthenticated_info should be overridden")

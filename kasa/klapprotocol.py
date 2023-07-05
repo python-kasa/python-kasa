@@ -394,37 +394,50 @@ class TPLinkKlap(TPLinkAuthProtocol):
                 return json_payload
 
     async def close(self) -> None:
-        """Close the connection."""
+        """Does nothing for this implementation"""
         pass
 
-    @staticmethod
-    def _get_klap_owner(info: dict) -> Optional[str]:
-        """Find owner given new-style discovery payload."""
-        if "result" not in info:
-            raise SmartDeviceAuthenticationException(
-                "No 'result' in discovery response"
+    def parse_unauthenticated_info(self, unauthenticated_info) -> Dict[str, str]:
+        if "result" not in unauthenticated_info:
+            raise SmartDeviceException(
+                f"Received unexpected unauthenticated_info for {self.host}"
             )
 
-        if "owner" not in info["result"]:
-            return None
+        result = unauthenticated_info["result"]
 
-        return info["result"]["owner"]
+        if unauthenticated_info["result"]["owner"] != self.local_auth_owner:
+            pad = 8 + len("python-kasa.tplinkklap.auth_message") + 2
+            msg = "The owner hashes do not match, if you expected authentication\n"
+            msg += f"{' ':>{pad}}to work try switching the device on and off via the Kasa app\n"
+            msg += f"{' ':>{pad}}to see if the device owner gets corrected."
+        else:
+            msg = "The owner hashed match, do you have the wrong password?"
 
-    def _check_owners_match(self, info: dict):
-        device_owner = self._get_klap_owner(info)
-        if device_owner is not None:
-            device_owner_bin = bytes.fromhex(device_owner)
-        auth_owner = self.generate_owner_hash(self.auth_credentials)
+        def _get_value(thedict, value):
+            return "" if thedict == "" or value not in thedict else thedict[value]
 
-        if device_owner != auth_owner:
-            _LOGGER.debug(
-                "Device {host} has owner {device_owner} and owner_bin {device_owner_bin} whereas the auth_owner is {auth_owner}.  Authentication will probably fail.".format(
-                    host=self.host,
-                    device_owner=device_owner,
-                    device_owner_bin=device_owner_bin,
-                    auth_owner=auth_owner.hex(),
-                )
-            )
+        return {
+            "ip": _get_value(result, "ip"),
+            "mac": _get_value(result, "mac"),
+            "device_id": _get_value(result, "device_id"),
+            "owner": _get_value(result, "owner"),
+            "device_type": _get_value(result, "device_type"),
+            "device_model": _get_value(result, "device_model"),
+            "hw_ver": _get_value(result, "hw_ver"),
+            "factory_default": _get_value(result, "factory_default"),
+            "mgt_encrypt_schm.is_support_https": _get_value(
+                _get_value(result, "mgt_encrypt_schm"), "is_support_https"
+            ),
+            "mgt_encrypt_schm.encrypt_type": _get_value(
+                _get_value(result, "mgt_encrypt_schm"), "encrypt_type"
+            ),
+            "mgt_encrypt_schm.http_port": _get_value(
+                _get_value(result, "mgt_encrypt_schm"), "http_port"
+            ),
+            "error_code": _get_value(unauthenticated_info, "error_code"),
+            "python-kasa.tplinkklap.auth_owner_hash": self.local_auth_owner,
+            "python-kasa.tplinkklap.auth_message": msg,
+        }
 
 
 class KlapEncryptionSession:
