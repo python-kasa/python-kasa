@@ -193,19 +193,19 @@ class Discover:
         return protocol.discovered_devices
 
     @staticmethod
-    async def discover_single(host: str) -> SmartDevice:
+    async def discover_single(host: str, *, port: Optional[int] = None) -> SmartDevice:
         """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol(host)
+        protocol = TPLinkSmartHomeProtocol(host, port=port)
 
         info = await protocol.query(Discover.DISCOVERY_QUERY)
 
         device_class = Discover._get_device_class(info)
-        dev = device_class(host)
+        dev = device_class(host, port=port)
         await dev.update()
 
         return dev

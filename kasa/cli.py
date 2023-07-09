@@ -100,6 +100,12 @@ def json_formatter_cb(result, **kwargs):
     help="The host name or IP address of the device to connect to.",
 )
 @click.option(
+    "--port",
+    envvar="KASA_PORT",
+    required=False,
+    help="The port of the device to connect to.",
+)
+@click.option(
     "--alias",
     envvar="KASA_NAME",
     required=False,
@@ -125,7 +131,7 @@ def json_formatter_cb(result, **kwargs):
 )
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, alias, target, debug, type, json):
+async def cli(ctx, host, port, alias, target, debug, type, json):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -179,7 +185,7 @@ async def cli(ctx, host, alias, target, debug, type, json):
         dev = TYPE_TO_CLASS[type](host)
     else:
         echo("No --type defined, discovering..")
-        dev = await Discover.discover_single(host)
+        dev = await Discover.discover_single(host, port=port)
 
     await dev.update()
     ctx.obj = dev
@@ -275,6 +281,7 @@ async def state(dev: SmartDevice):
     """Print out device state and versions."""
     echo(f"[bold]== {dev.alias} - {dev.model} ==[/bold]")
     echo(f"\tHost: {dev.host}")
+    echo(f"\tPort: {dev.port}")
     echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
         echo("\t[bold]== Plugs ==[/bold]")

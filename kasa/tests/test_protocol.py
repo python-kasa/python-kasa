@@ -129,6 +129,36 @@ async def test_protocol_logging(mocker, caplog, log_level):
         assert "success" not in caplog.text
 
 
+@pytest.mark.parametrize("custom_port", [123, None])
+async def test_protocol_custom_port(mocker, custom_port):
+    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
+        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    ]
+
+    async def _mock_read(byte_count):
+        nonlocal encrypted
+        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+            return struct.pack(">I", len(encrypted))
+        if byte_count == len(encrypted):
+            return encrypted
+        raise ValueError(f"No mock for {byte_count}")
+
+    def aio_mock_writer(_, port):
+        reader = mocker.patch("asyncio.StreamReader")
+        writer = mocker.patch("asyncio.StreamWriter")
+        if custom_port is None:
+            assert port == 9999
+        else:
+            assert port == custom_port
+        mocker.patch.object(reader, "readexactly", _mock_read)
+        return reader, writer
+
+    protocol = TPLinkSmartHomeProtocol("127.0.0.1", port=custom_port)
+    mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
+    response = await protocol.query({})
+    assert response == {"great": "success"}
+
+
 def test_encrypt():
     d = json.dumps({"foo": 1, "bar": 2})
     encrypted = TPLinkSmartHomeProtocol.encrypt(d)

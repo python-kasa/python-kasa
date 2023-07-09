@@ -199,8 +199,8 @@ class SmartBulb(SmartDevice):
     SET_LIGHT_METHOD = "transition_light_state"
     emeter_type = "smartlife.iot.common.emeter"
 
-    def __init__(self, host: str) -> None:
-        super().__init__(host=host)
+    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
+        super().__init__(host=host, port=port)
         self._device_type = DeviceType.Bulb
         self.add_module("schedule", Schedule(self, "smartlife.iot.common.schedule"))
         self.add_module("usage", Usage(self, "smartlife.iot.common.schedule"))
