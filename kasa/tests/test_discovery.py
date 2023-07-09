@@ -52,12 +52,14 @@ async def test_type_unknown():
         Discover._get_device_class(invalid_info)
 
 
-async def test_discover_single(discovery_data: dict, mocker):
+@pytest.mark.parametrize("custom_port", [123, None])
+async def test_discover_single(discovery_data: dict, mocker, custom_port):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
-    x = await Discover.discover_single("127.0.0.1")
+    x = await Discover.discover_single("127.0.0.1", port=custom_port)
     assert issubclass(x.__class__, SmartDevice)
     assert x._sys_info is not None
+    assert x.port == custom_port
 
 
 INVALIDS = [

@@ -33,9 +33,10 @@ class TPLinkSmartHomeProtocol:
     DEFAULT_TIMEOUT = 5
     BLOCK_SIZE = 4
 
-    def __init__(self, host: str) -> None:
+    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
         """Create a protocol object."""
         self.host = host
+        self.port = port or TPLinkSmartHomeProtocol.DEFAULT_PORT
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None
         self.query_lock: Optional[asyncio.Lock] = None
@@ -78,7 +79,7 @@ class TPLinkSmartHomeProtocol:
         if self.writer:
             return
         self.reader = self.writer = None
-        task = asyncio.open_connection(self.host, TPLinkSmartHomeProtocol.DEFAULT_PORT)
+        task = asyncio.open_connection(self.host, self.port)
         self.reader, self.writer = await asyncio.wait_for(task, timeout=timeout)
 
     async def _execute_query(self, request: str) -> Dict:
@@ -133,13 +134,13 @@ class TPLinkSmartHomeProtocol:
             except ConnectionRefusedError as ex:
                 await self.close()
                 raise SmartDeviceException(
-                    f"Unable to connect to the device: {self.host}: {ex}"
+                    f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
                 )
             except OSError as ex:
                 await self.close()
                 if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}: {ex}"
+                        f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
                     )
                 continue
             except Exception as ex:
@@ -147,7 +148,7 @@ class TPLinkSmartHomeProtocol:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}: {ex}"
+                        f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
                     )
                 continue
 
@@ -162,7 +163,7 @@ class TPLinkSmartHomeProtocol:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
-                        f"Unable to query the device {self.host}: {ex}"
+                        f"Unable to query the device {self.host}:{self.port}: {ex}"
                     ) from ex
 
                 _LOGGER.debug(

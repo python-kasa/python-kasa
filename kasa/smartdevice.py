@@ -191,14 +191,15 @@ class SmartDevice:
 
     emeter_type = "emeter"
 
-    def __init__(self, host: str) -> None:
+    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
         """
         self.host = host
+        self.port = port
 
-        self.protocol = TPLinkSmartHomeProtocol(host)
+        self.protocol = TPLinkSmartHomeProtocol(host, port=port)
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate checks in
