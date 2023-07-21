@@ -165,7 +165,7 @@ class TPLinkSmartHomeProtocol:
                 assert self.reader is not None
                 assert self.writer is not None
                 async with asyncio_timeout(timeout):
-                    await self._execute_query(request)
+                    return await self._execute_query(request)
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:
