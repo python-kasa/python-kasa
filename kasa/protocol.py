@@ -14,12 +14,19 @@ import contextlib
 import errno
 import logging
 import struct
+import sys
 from pprint import pformat as pf
 from typing import Dict, Generator, Optional, Union
 
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
 from .json import loads as json_loads
+
+if sys.version_info[:2] < (3, 11):
+    from async_timeout import timeout as asyncio_timeout
+else:
+    from asyncio import timeout as asyncio_timeout
+
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
@@ -79,8 +86,10 @@ class TPLinkSmartHomeProtocol:
         if self.writer:
             return
         self.reader = self.writer = None
+
         task = asyncio.open_connection(self.host, self.port)
-        self.reader, self.writer = await asyncio.wait_for(task, timeout=timeout)
+        async with asyncio_timeout(timeout):
+            self.reader, self.writer = await task
 
     async def _execute_query(self, request: str) -> Dict:
         """Execute a query on the device and wait for the response."""
@@ -155,9 +164,8 @@ class TPLinkSmartHomeProtocol:
             try:
                 assert self.reader is not None
                 assert self.writer is not None
-                return await asyncio.wait_for(
-                    self._execute_query(request), timeout=timeout
-                )
+                async with asyncio_timeout(timeout):
+                    await self._execute_query(request)
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:

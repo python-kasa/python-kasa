@@ -35,6 +35,18 @@ test = ["anyio[trio]", "coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "mock (>=
 trio = ["trio (<0.22)"]
 
 [[package]]
+name = "async-timeout"
+version = "4.0.2"
+description = "Timeout context manager for asyncio programs"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "async-timeout-4.0.2.tar.gz", hash = "sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15"},
+    {file = "async_timeout-4.0.2-py3-none-any.whl", hash = "sha256:8ca1e4fcf50d07413d66d1a5e416e42cfdf5851c981d679a09851a6853383b3c"},
+]
+
+[[package]]
 name = "asyncclick"
 version = "8.1.3.4"
 description = "Composable command line interface toolkit, async version"
@@ -1404,4 +1416,4 @@ speedups = ["orjson", "kasa-crypt"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "b85f55f0ca928b1f3510da37196c21f40eb07cd4d07b3a9c3dd29215ba9777fe"
+content-hash = "fcb657fbabe28548021f5f6a1fcb7b60aa82d60f3de015b4b0c7b37260a6a29f"
