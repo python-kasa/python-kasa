@@ -17,7 +17,7 @@ import struct
 from pprint import pformat as pf
 from typing import Dict, Generator, Optional, Union
 
-# When support for cpython older than 3.12 is dropped
+# When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
