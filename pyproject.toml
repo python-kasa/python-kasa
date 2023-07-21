@@ -34,6 +34,7 @@ sphinx_rtd_theme = { version = "^0", optional = true }
 sphinxcontrib-programoutput = { version = "^0", optional = true }
 myst-parser = { version = "*", optional = true }
 docutils = { version = ">=0.17", optional = true }
+async-timeout = ">=3.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

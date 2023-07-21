@@ -17,6 +17,10 @@ import struct
 from pprint import pformat as pf
 from typing import Dict, Generator, Optional, Union
 
+# When support for cpython older than 3.11 is dropped
+# async_timeout can be replaced with asyncio.timeout
+from async_timeout import timeout as asyncio_timeout
+
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
 from .json import loads as json_loads
@@ -79,8 +83,10 @@ class TPLinkSmartHomeProtocol:
         if self.writer:
             return
         self.reader = self.writer = None
+
         task = asyncio.open_connection(self.host, self.port)
-        self.reader, self.writer = await asyncio.wait_for(task, timeout=timeout)
+        async with asyncio_timeout(timeout):
+            self.reader, self.writer = await task
 
     async def _execute_query(self, request: str) -> Dict:
         """Execute a query on the device and wait for the response."""
@@ -155,9 +161,8 @@ class TPLinkSmartHomeProtocol:
             try:
                 assert self.reader is not None
                 assert self.writer is not None
-                return await asyncio.wait_for(
-                    self._execute_query(request), timeout=timeout
-                )
+                async with asyncio_timeout(timeout):
+                    return await self._execute_query(request)
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:
