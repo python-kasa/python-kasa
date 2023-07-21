@@ -14,19 +14,16 @@ import contextlib
 import errno
 import logging
 import struct
-import sys
 from pprint import pformat as pf
 from typing import Dict, Generator, Optional, Union
+
+# When support for cpython older than 3.12 is dropped
+# async_timeout can be replaced with asyncio.timeout
+from async_timeout import timeout as asyncio_timeout
 
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
 from .json import loads as json_loads
-
-if sys.version_info[:2] < (3, 11):
-    from async_timeout import timeout as asyncio_timeout
-else:
-    from asyncio import timeout as asyncio_timeout
-
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
