@@ -137,6 +137,7 @@ If your device is unlisted but working, please open a pull request to update the
 * KP105
 * KP115
 * KP125
+* KP200
 * KP401
 * EP10
 

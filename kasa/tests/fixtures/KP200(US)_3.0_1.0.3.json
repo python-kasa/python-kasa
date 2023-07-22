@@ -1,0 +1,46 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "alias": "TP-LINK_Smart Plug_C2D6",
+            "child_num": 2,
+            "children": [
+                {
+                    "alias": "One ",
+                    "id": "80066788DFFFD572D9F2E4A5A6847669213E039F00",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 43,
+                    "state": 1
+                },
+                {
+                    "alias": "Two ",
+                    "id": "80066788DFFFD572D9F2E4A5A6847669213E039F01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 44,
+                    "state": 1
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "3.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP200(US)",
+            "ntc_state": 0,
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -50,
+            "status": "new",
+            "sw_ver": "1.0.3 Build 221021 Rel.183354",
+            "updating": 0
+        }
+    }
+}
