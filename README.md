@@ -137,7 +137,6 @@ If your device is unlisted but working, please open a pull request to update the
 * KP105
 * KP115
 * KP125
-* KP200
 * KP401
 * EP10
 
@@ -146,6 +145,7 @@ If your device is unlisted but working, please open a pull request to update the
 * EP40
 * HS300
 * KP303
+* KP200 (in wall)
 * KP400
 * KP405 (dimmer)
 

@@ -52,11 +52,10 @@ PLUGS = {
     "KP105",
     "KP115",
     "KP125",
-    "KP200",
     "KP401",
     "KS200M",
 }
-STRIPS = {"HS107", "HS300", "KP303", "KP400", "EP40"}
+STRIPS = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
 DIMMERS = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
 
 DIMMABLE = {*BULBS, *DIMMERS}
