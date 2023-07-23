@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.3](https://github.com/python-kasa/python-kasa/tree/0.5.3) (2023-07-23)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.2...0.5.3)
+
+This release adds support for defining the device port and introduces dependency on async-timeout which improves timeout handling.
+
+**Implemented enhancements:**
+
+- Make device port configurable [\#471](https://github.com/python-kasa/python-kasa/pull/471) (@karpach)
+
+**Fixed bugs:**
+
+- Replace asyncio.wait\_for with async-timeout [\#480](https://github.com/python-kasa/python-kasa/pull/480) (@bdraco)
+
+**Merged pull requests:**
+
+- Add tests for KP200 [\#483](https://github.com/python-kasa/python-kasa/pull/483) (@bdraco)
+- Update pyyaml to fix CI [\#482](https://github.com/python-kasa/python-kasa/pull/482) (@bdraco)
+
 ## [0.5.2](https://github.com/python-kasa/python-kasa/tree/0.5.2) (2023-07-02)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.1...0.5.2)
@@ -41,6 +60,7 @@ Besides some small improvements, this release:
 
 **Merged pull requests:**
 
+- Release 0.5.2 [\#475](https://github.com/python-kasa/python-kasa/pull/475) (@rytilahti)
 - Add benchmarks for speedups [\#473](https://github.com/python-kasa/python-kasa/pull/473) (@bdraco)
 - Add fixture for KP405 Smart Dimmer Plug [\#470](https://github.com/python-kasa/python-kasa/pull/470) (@xinud190)
 - Remove importlib-metadata dependency [\#457](https://github.com/python-kasa/python-kasa/pull/457) (@rytilahti)
