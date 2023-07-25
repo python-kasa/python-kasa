@@ -138,7 +138,17 @@ def json_formatter_cb(result, **kwargs):
 )
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, port, alias, target, debug, type, json, discovery_timeout):
+async def cli(
+    ctx,
+    host,
+    port,
+    alias,
+    target,
+    debug,
+    type,
+    json,
+    discovery_timeout,
+):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -238,13 +248,29 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 
 @cli.command()
 @click.option("--timeout", default=3, required=False)
+@click.option(
+    "--show-unsupported",
+    envvar="KASA_SHOW_UNSUPPORTED",
+    required=False,
+    default=False,
+    is_flag=True,
+    help="Print out discovered unsupported devices",
+)
 @click.pass_context
-async def discover(ctx, timeout):
+async def discover(ctx, timeout, show_unsupported):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
-    echo(f"Discovering devices on {target} for {timeout} seconds")
     sem = asyncio.Semaphore()
     discovered = dict()
+    unsupported = []
+
+    async def print_unsupported(data: Dict):
+        unsupported.append(data)
+        if show_unsupported:
+            echo(f"Found unsupported device (tapo/unknown encryption): {data}")
+            echo()
+
+    echo(f"Discovering devices on {target} for {timeout} seconds")
 
     async def print_discovered(dev: SmartDevice):
         await dev.update()
@@ -255,8 +281,22 @@ async def discover(ctx, timeout):
             echo()
 
     await Discover.discover(
-        target=target, timeout=timeout, on_discovered=print_discovered
+        target=target,
+        timeout=timeout,
+        on_discovered=print_discovered,
+        on_unsupported=print_unsupported,
     )
+
+    echo(f"Found {len(discovered)} devices")
+    if unsupported:
+        echo(
+            f"Found {len(unsupported)} unsupported devices"
+            + (
+                ""
+                if show_unsupported
+                else ", to show them use: kasa discover --show-unsupported"
+            )
+        )
 
     return discovered
 

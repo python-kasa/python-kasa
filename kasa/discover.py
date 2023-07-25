@@ -1,5 +1,6 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
+import binascii
 import logging
 import socket
 from typing import Awaitable, Callable, Dict, Optional, Type, cast
@@ -36,13 +37,17 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
+        on_unsupported: Optional[Callable[[Dict], Awaitable[None]]] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
         self.target = (target, Discover.DISCOVERY_PORT)
+        self.target_2 = (target, Discover.DISCOVERY_PORT_2)
         self.discovered_devices = {}
+        self.unsupported_devices: Dict = {}
+        self.on_unsupported = on_unsupported
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -69,15 +74,25 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
         for i in range(self.discovery_packets):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
+            self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
         ip, port = addr
-        if ip in self.discovered_devices:
+        if ip in self.discovered_devices or ip in self.unsupported_devices:
             return
 
-        info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
-        _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
+        if port == Discover.DISCOVERY_PORT:
+            info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
+            _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
+
+        elif port == Discover.DISCOVERY_PORT_2:
+            info = json_loads(data[16:])
+            self.unsupported_devices[ip] = info
+            if self.on_unsupported is not None:
+                asyncio.ensure_future(self.on_unsupported(info))
+            _LOGGER.debug("[DISCOVERY] Unsupported device found at %s << %s", ip, info)
+            return
 
         try:
             device_class = Discover._get_device_class(info)
@@ -142,6 +157,9 @@ class Discover:
         "system": {"get_sysinfo": None},
     }
 
+    DISCOVERY_PORT_2 = 20002
+    DISCOVERY_QUERY_2 = binascii.unhexlify("020000010000000000000000463cb5d3")
+
     @staticmethod
     async def discover(
         *,
@@ -150,6 +168,7 @@ class Discover:
         timeout=5,
         discovery_packets=3,
         interface=None,
+        on_unsupported=None,
     ) -> DeviceDict:
         """Discover supported devices.
 
@@ -177,6 +196,7 @@ class Discover:
                 on_discovered=on_discovered,
                 discovery_packets=discovery_packets,
                 interface=interface,
+                on_unsupported=on_unsupported,
             ),
             local_addr=("0.0.0.0", 0),
         )

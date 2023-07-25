@@ -87,7 +87,7 @@ async def test_discover_send(mocker):
     assert proto.target == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
     proto.do_discover()
-    assert transport.sendto.call_count == proto.discovery_packets
+    assert transport.sendto.call_count == proto.discovery_packets * 2
 
 
 async def test_discover_datagram_received(mocker, discovery_data):
@@ -98,10 +98,14 @@ async def test_discover_datagram_received(mocker, discovery_data):
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
     addr = "127.0.0.1"
-    proto.datagram_received("<placeholder data>", (addr, 1234))
+    proto.datagram_received("<placeholder data>", (addr, 9999))
+    addr2 = "127.0.0.2"
+    proto.datagram_received("<placeholder data>", (addr2, 20002))
 
     # Check that device in discovered_devices is initialized correctly
     assert len(proto.discovered_devices) == 1
+    # Check that unsupported device is 1
+    assert len(proto.unsupported_devices) == 1
     dev = proto.discovered_devices[addr]
     assert issubclass(dev.__class__, SmartDevice)
     assert dev.host == addr
@@ -115,5 +119,5 @@ async def test_discover_invalid_responses(msg, data, mocker):
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
-    proto.datagram_received(data, ("127.0.0.1", 1234))
+    proto.datagram_received(data, ("127.0.0.1", 9999))
     assert len(proto.discovered_devices) == 0
