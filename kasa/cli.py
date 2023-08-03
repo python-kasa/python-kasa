@@ -129,9 +129,16 @@ def json_formatter_cb(result, **kwargs):
 @click.option(
     "--json", default=False, is_flag=True, help="Output raw device response as JSON."
 )
+@click.option(
+    "--discovery-timeout",
+    envvar="KASA_DISCOVERY_TIMEOUT",
+    default=3,
+    required=False,
+    help="Timeout for discovery.",
+)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
-async def cli(ctx, host, port, alias, target, debug, type, json):
+async def cli(ctx, host, port, alias, target, debug, type, json, discovery_timeout):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
     if sys.argv[-1] == "--help":
@@ -179,7 +186,7 @@ async def cli(ctx, host, port, alias, target, debug, type, json):
 
     if host is None:
         echo("No host name given, trying discovery..")
-        return await ctx.invoke(discover)
+        return await ctx.invoke(discover, timeout=discovery_timeout)
 
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
