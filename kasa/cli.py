@@ -614,6 +614,32 @@ async def off(dev: SmartDevice, index: int, name: str, transition: int):
 
 
 @cli.command()
+@click.option("--index", type=int, required=False)
+@click.option("--name", type=str, required=False)
+@click.option("--transition", type=int, required=False)
+@pass_dev
+async def toggle(dev: SmartDevice, index: int, name: str, transition: int):
+    """Toggle the device on/off."""
+    if index is not None or name is not None:
+        if not dev.is_strip:
+            echo("Index and name are only for power strips!")
+            return
+
+        dev = cast(SmartStrip, dev)
+        if index is not None:
+            dev = dev.get_plug_by_index(index)
+        elif name:
+            dev = dev.get_plug_by_name(name)
+
+    if dev.is_on:
+        echo(f"Turning off {dev.alias}")
+        return await dev.turn_off(transition=transition)
+
+    echo(f"Turning on {dev.alias}")
+    return await dev.turn_on(transition=transition)
+
+
+@cli.command()
 @click.option("--delay", default=1)
 @pass_dev
 async def reboot(plug, delay):

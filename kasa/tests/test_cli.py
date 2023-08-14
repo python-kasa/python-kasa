@@ -5,7 +5,7 @@ import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice
-from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo
+from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
 
 from .conftest import handle_turn_on, turn_on
 
@@ -28,6 +28,18 @@ async def test_state(dev, turn_on):
         assert "Device state: True" in res.output
     else:
         assert "Device state: False" in res.output
+
+
+@turn_on
+async def test_toggle(dev, turn_on, mocker):
+    await handle_turn_on(dev, turn_on)
+    runner = CliRunner()
+    await runner.invoke(toggle, obj=dev)
+
+    if turn_on:
+        assert not dev.is_on
+    else:
+        assert dev.is_on
 
 
 async def test_alias(dev):
