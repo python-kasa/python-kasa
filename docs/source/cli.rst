@@ -16,6 +16,18 @@ If no command is given, the ``state`` command will be executed to query the devi
     which you can find by adding ``--help`` after the command, e.g. ``kasa --type emeter --help`` or ``kasa --type hsv --help``.
     Refer to the device type specific documentation for more details.
 
+Discovery
+*********
+
+The tool can automatically discover supported devices using a broadcast-based discovery protocol.
+This works by sending an UDP datagram on port 9999 to the broadcast address (defaulting to ``255.255.255.255``).
+
+On multihomed systems, you can use ``--target`` option to specify the broadcsat target.
+For example, if your devices reside in network ``10.0.0.0/24`` you can use ``kasa --target 10.0.0.255 discover`` to discover them.
+
+.. note::
+
+    When no command is specified when invoking ``kasa``, a discovery is performed and the ``state`` command is executed on each discovered device.
 
 Provisioning
 ************
