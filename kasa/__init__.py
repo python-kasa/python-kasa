@@ -28,6 +28,7 @@ from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
+from kasa.tapoplug import TapoPlug
 
 __version__ = version("python-kasa")
 

@@ -41,8 +41,10 @@ except ImportError:
 # echo is set to _do_echo so that it can be reset to _do_echo later after
 # --json has set it to _nop_echo
 echo = _do_echo
+    TapoPlug,
 
 TYPE_TO_CLASS = {
+    "tapoplug": TapoPlug,
     "plug": SmartPlug,
     "bulb": SmartBulb,
     "dimmer": SmartDimmer,
