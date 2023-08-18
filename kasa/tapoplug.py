@@ -9,6 +9,7 @@ from plugp100.responses.device_state import DeviceInfo, PlugDeviceState
 from plugp100.responses.device_usage_info import DeviceUsageInfo
 from plugp100.responses.energy_info import EnergyInfo
 from plugp100.responses.power_info import PowerInfo
+from plugp100.responses.time_info import TimeInfo
 
 from . import EmeterStatus
 from .smartdevice import DeviceType, SmartDevice
@@ -44,12 +45,14 @@ class TapoPlug(SmartPlug):
         ).value
         self._energy: EnergyInfo = (await self._tapo_device.get_energy_usage()).value
         self._emeter: PowerInfo = (await self._tapo_device.get_current_power()).value
+        self._time: TimeInfo = (await self._tapo_device.get_device_time()).value
 
         self._last_update = self._data = {
             "state": self._state,
             "usage": self._usage,
             "emeter": self._emeter,
             "energy": self._energy,
+            "time": self._time,
         }
 
         _LOGGER.debug("Got an update: %s", self._data)
@@ -68,7 +71,7 @@ class TapoPlug(SmartPlug):
 
     @property
     def time(self) -> datetime:
-        return None  # TODO: make return value optional
+        return self._time.local_time()
 
     @property
     def timezone(self) -> Dict:
