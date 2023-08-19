@@ -46,7 +46,6 @@ class TapoPlug(SmartPlug):
         self._energy: EnergyInfo = (await self._tapo_device.get_energy_usage()).value
         self._emeter: PowerInfo = (await self._tapo_device.get_current_power()).value
         self._time: TimeInfo = (await self._tapo_device.get_device_time()).value
-
         self._last_update = self._data = {
             "state": self._state,
             "usage": self._usage,
@@ -156,7 +155,7 @@ class TapoPlug(SmartPlug):
 
     @property
     def on_since(self) -> Optional[datetime]:
-        on_time = self._info.on_time
+        on_time = self._state.on_time
         return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     @property
@@ -165,8 +164,8 @@ class TapoPlug(SmartPlug):
             "is_hw_v2": self._info.is_hardware_v2,
             "overheated": self._info.overheated,
             "signal_level": self._info.signal_level,
-            "auto_off": self._info.auto_off,
-            "auto_off_remaining": self._info.auto_off_time_remaining,
+            "auto_off": self._state.auto_off,
+            "auto_off_remaining": self._state.auto_off_time_remaining,
             "On since": self.on_since,
             "SSID": self._info.ssid,
         }
