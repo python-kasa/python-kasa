@@ -5,6 +5,11 @@ import logging
 import socket
 from typing import Awaitable, Callable, Dict, Optional, Type, cast
 
+# When support for cpython older than 3.11 is dropped
+# async_timeout can be replaced with asyncio.timeout
+from async_timeout import timeout as asyncio_timeout
+
+from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
@@ -38,16 +43,21 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         discovery_packets: int = 3,
         interface: Optional[str] = None,
         on_unsupported: Optional[Callable[[Dict], Awaitable[None]]] = None,
+        port: Optional[int] = None,
+        discovered_event: Optional[asyncio.Event] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
-        self.target = (target, Discover.DISCOVERY_PORT)
+        self.discovery_port = port or Discover.DISCOVERY_PORT
+        self.target = (target, self.discovery_port)
         self.target_2 = (target, Discover.DISCOVERY_PORT_2)
         self.discovered_devices = {}
         self.unsupported_devices: Dict = {}
+        self.invalid_device_exceptions: Dict = {}
         self.on_unsupported = on_unsupported
+        self.discovered_event = discovered_event
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -79,10 +89,14 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
         ip, port = addr
-        if ip in self.discovered_devices or ip in self.unsupported_devices:
+        if (
+            ip in self.discovered_devices
+            or ip in self.unsupported_devices
+            or ip in self.invalid_device_exceptions
+        ):
             return
 
-        if port == Discover.DISCOVERY_PORT:
+        if port == self.discovery_port:
             info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
             _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
 
@@ -92,21 +106,35 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             if self.on_unsupported is not None:
                 asyncio.ensure_future(self.on_unsupported(info))
             _LOGGER.debug("[DISCOVERY] Unsupported device found at %s << %s", ip, info)
+            if self.discovered_event is not None and "255" not in self.target[0].split(
+                "."
+            ):
+                self.discovered_event.set()
             return
 
         try:
             device_class = Discover._get_device_class(info)
         except SmartDeviceException as ex:
-            _LOGGER.debug("Unable to find device type from %s: %s", info, ex)
+            _LOGGER.debug(
+                "[DISCOVERY] Unable to find device type from %s: %s", info, ex
+            )
+            self.invalid_device_exceptions[ip] = ex
+            if self.discovered_event is not None and "255" not in self.target[0].split(
+                "."
+            ):
+                self.discovered_event.set()
             return
 
-        device = device_class(ip)
+        device = device_class(ip, port=port)
         device.update_from_discover_info(info)
 
         self.discovered_devices[ip] = device
 
         if self.on_discovered is not None:
             asyncio.ensure_future(self.on_discovered(device))
+
+        if self.discovered_event is not None and "255" not in self.target[0].split("."):
+            self.discovered_event.set()
 
     def error_received(self, ex):
         """Handle asyncio.Protocol errors."""
@@ -213,22 +241,47 @@ class Discover:
         return protocol.discovered_devices
 
     @staticmethod
-    async def discover_single(host: str, *, port: Optional[int] = None) -> SmartDevice:
+    async def discover_single(
+        host: str, *, port: Optional[int] = None, timeout=5
+    ) -> SmartDevice:
         """Discover a single device by the given IP address.
 
         :param host: Hostname of device to query
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        protocol = TPLinkSmartHomeProtocol(host, port=port)
+        loop = asyncio.get_event_loop()
+        event = asyncio.Event()
+        transport, protocol = await loop.create_datagram_endpoint(
+            lambda: _DiscoverProtocol(target=host, port=port, discovered_event=event),
+            local_addr=("0.0.0.0", 0),
+        )
+        protocol = cast(_DiscoverProtocol, protocol)
 
-        info = await protocol.query(Discover.DISCOVERY_QUERY)
+        try:
+            _LOGGER.debug("Waiting a total of %s seconds for responses...", timeout)
 
-        device_class = Discover._get_device_class(info)
-        dev = device_class(host, port=port)
-        await dev.update()
+            async with asyncio_timeout(timeout):
+                await event.wait()
+        except asyncio.TimeoutError:
+            raise SmartDeviceException(
+                f"Timed out getting discovery response for {host}"
+            )
+        finally:
+            transport.close()
 
-        return dev
+        if host in protocol.discovered_devices:
+            dev = protocol.discovered_devices[host]
+            await dev.update()
+            return dev
+        elif host in protocol.unsupported_devices:
+            raise UnsupportedDeviceException(
+                f"Unsupported device {host}: {protocol.unsupported_devices[host]}"
+            )
+        elif host in protocol.invalid_device_exceptions:
+            raise protocol.invalid_device_exceptions[host]
+        else:
+            raise SmartDeviceException(f"Unable to get discovery response for {host}")
 
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:

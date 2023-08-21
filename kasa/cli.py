@@ -103,6 +103,7 @@ def json_formatter_cb(result, **kwargs):
     "--port",
     envvar="KASA_PORT",
     required=False,
+    type=int,
     help="The port of the device to connect to.",
 )
 @click.option(
