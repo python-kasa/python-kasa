@@ -24,7 +24,7 @@ from .credentials import Credentials
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
-from .protocol import TPLinkSmartHomeProtocol
+from .protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -205,7 +205,6 @@ class SmartDevice:
         """
         self.host = host
         self.port = port
-
         self.protocol = TPLinkSmartHomeProtocol(host, port=port)
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
@@ -218,6 +217,10 @@ class SmartDevice:
         self.modules: Dict[str, Any] = {}
 
         self.children: List["SmartDevice"] = []
+
+    def override_protocol(self, protocol: TPLinkProtocol):
+        """Override the default protocol for device communication."""
+        self.protocol = protocol
 
     def add_module(self, name: str, module: Module):
         """Register a module."""

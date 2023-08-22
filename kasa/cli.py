@@ -6,7 +6,7 @@ import re
 import sys
 from functools import singledispatch, wraps
 from pprint import pformat as pf
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional, cast
 
 import asyncclick as click
 
@@ -302,12 +302,18 @@ async def discover(ctx, timeout, show_unsupported):
     sem = asyncio.Semaphore()
     discovered = dict()
     unsupported = []
+    auth_failed = []
 
     async def print_unsupported(data: Dict):
         unsupported.append(data)
         if show_unsupported:
             echo(f"Found unsupported device (tapo/unknown encryption): {data}")
             echo()
+
+    async def print_auth_failed(data: Dict):
+        auth_failed.append(data)
+        echo(f"Authentication failed for device: {data}")
+        echo()
 
     echo(f"Discovering devices on {target} for {timeout} seconds")
 
@@ -325,6 +331,7 @@ async def discover(ctx, timeout, show_unsupported):
         on_discovered=print_discovered,
         on_unsupported=print_unsupported,
         credentials=credentials,
+        on_auth_failed=print_auth_failed,
     )
 
     echo(f"Found {len(discovered)} devices")
@@ -337,6 +344,8 @@ async def discover(ctx, timeout, show_unsupported):
                 else ", to show them use: kasa discover --show-unsupported"
             )
         )
+    if auth_failed:
+        echo(f"Found {len(auth_failed)} devices that failed to authenticate")
 
     return discovered
 

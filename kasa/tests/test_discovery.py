@@ -170,9 +170,9 @@ async def test_discover_datagram_received(mocker, discovery_data):
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
     addr = "127.0.0.1"
-    proto.datagram_received("<placeholder data>", (addr, 9999))
     addr2 = "127.0.0.2"
-    proto.datagram_received("<placeholder data>", (addr2, 20002))
+    await proto.datagram_received_async("<placeholder data>", (addr, 9999))
+    await proto.datagram_received_async("<placeholder data>", (addr2, 20002))
 
     # Check that device in discovered_devices is initialized correctly
     assert len(proto.discovered_devices) == 1

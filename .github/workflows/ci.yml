@@ -87,9 +87,10 @@ jobs:
         # exclude pypy on windows, as the poetry install seems to be very flaky:
         # PermissionError(13, 'The process cannot access the file because it is being used by another process'))
         # at C:\hostedtoolcache\windows\PyPy\3.7.10\x86\site-packages\requests\models.py:761 in generate
-        # exclude:
-        # - python-version: pypy-3.8
-        #  os: windows-latest
+        # and with pypy3.8 trying to use setuptools to build frozenlist which is a dependency of aiohttp
+        # ChefBuildError: Backend 'setuptools.build_meta' is not available.
+          - os: windows-latest
+            python-version: pypy-3.8
 
     steps:
       - uses: "actions/checkout@v2"
