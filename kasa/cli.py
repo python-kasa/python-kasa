@@ -630,14 +630,18 @@ async def schedule(dev):
 
 @schedule.command(name="list")
 @pass_dev
+@click.option("--json", is_flag=True)
 @click.argument("type", default="schedule")
-def _schedule_list(dev, type):
+def _schedule_list(dev, json, type):
     """Return the list of schedule actions for the given type."""
     sched = dev.modules[type]
-    for rule in sched.rules:
-        print(rule)
-    else:
+    if sched.rules == []:
         echo(f"No rules of type {type}")
+    for rule in sched.rules:
+        if json:
+            print(rule.json())
+        else:
+            print(rule)
 
     return sched.rules
 
