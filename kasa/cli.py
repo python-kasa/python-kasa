@@ -674,6 +674,7 @@ async def delete_rule(dev, id):
 async def delete_all(dev):
     """Delete all rules from device."""
     schedule = dev.modules["schedule"]
+    echo(f"Deleting all rules")
     return await schedule.delete_all_rules()
 
 
