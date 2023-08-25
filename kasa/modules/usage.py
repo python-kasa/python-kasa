@@ -22,6 +22,11 @@ class Usage(Module):
         return req
 
     @property
+    def query_response_size(self):
+        """ Estimated maximum requery response size """
+        return 2048
+
+    @property
     def daily_data(self):
         """Return statistics on daily basis."""
         return self.data["get_daystat"]["day_list"]

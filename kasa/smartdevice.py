@@ -337,20 +337,33 @@ class SmartDevice:
             )
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
+        request_list = []
+        est_response_size = 0
+        modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
         for module_name, module in self.modules.items():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue
-            modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
             if module_name in modules_to_skip:
                 _LOGGER.debug(f"Module {module} is excluded for {self.model}, skipping")
                 continue
 
+            est_response_size += module.query_response_size
+            if est_response_size > TPLinkSmartHomeProtocol.MAX_RESPONSE_SIZE:
+                request_list.append( req )
+                req = {}
+                est_response_size = module.query_response_size
+
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
             req = merge(req, q)
+        request_list.append(req)
 
-        self._last_update = await self.protocol.query(req)
+        responses = [await self.protocol.query(request) for request in request_list]
+        update = {}
+        for response in responses:
+            update = merge(update, response)
+        self._last_update = update
 
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
