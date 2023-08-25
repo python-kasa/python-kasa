@@ -642,6 +642,15 @@ def _schedule_list(dev, type):
     return sched.rules
 
 
+@schedule.command(name="enable")
+@pass_dev
+@click.argument("enable", type=click.BOOL)
+async def _schedule_enable(dev, enable):
+    """Enable or disable schedule."""
+    schedule = dev.modules["schedule"]
+    return await schedule.set_enabled(enable)
+
+
 @schedule.command(name="delete")
 @pass_dev
 @click.option("--id", type=str, required=True)

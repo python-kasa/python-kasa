@@ -72,7 +72,7 @@ class RuleModule(Module):
 
     async def set_enabled(self, state: bool):
         """Enable or disable the service."""
-        return await self.call("set_overall_enable", state)
+        return await self.call("set_overall_enable", {"enable": 1 if state else 0})
 
     async def delete_rule(self, rule: Rule):
         """Delete the given rule."""
