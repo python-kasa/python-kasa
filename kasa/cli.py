@@ -38,6 +38,8 @@ from kasa import (
     SmartStrip,
 )
 
+from kasa.modules import Rule
+
 TYPE_TO_CLASS = {
     "plug": SmartPlug,
     "bulb": SmartBulb,
@@ -652,7 +654,79 @@ def _schedule_list(dev, json, type):
 async def _schedule_enable(dev, enable):
     """Enable or disable schedule."""
     schedule = dev.modules["schedule"]
-    return await schedule.set_enabled(enable)
+    return await schedule.set_enabled(1 if state else 0)
+
+
+@schedule.command(name="add")
+@pass_dev
+@click.option("--name", type=str, required=True)
+@click.option("--enable", type=click.BOOL, default=True, show_default=True)
+@click.option("--repeat", type=click.BOOL, default=True, show_default=True)
+@click.option("--wday", type=str, required=True)
+@click.option("--sact", type=click.IntRange(-1, 2), default=None, required=True)
+@click.option("--stime_opt", type=click.IntRange(-1, 2), default=None, required=True)
+@click.option("--smin", type=click.IntRange(0, 1440), default=None, required=True)
+@click.option("--eact", type=click.IntRange(-1, 2), default=-1)
+@click.option("--etime_opt", type=click.IntRange(-1, 2), default=-1)
+@click.option("--emin", type=click.IntRange(0, 1440), default=None)
+async def add_rule(dev,
+    name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
+):
+    """Add rule to device."""
+    schedule = dev.modules["schedule"]
+    #rule_to_add = Rule.parse_raw(rule)
+    rule_to_add = Rule(name=name, enable=enable, repeat=repeat, wday=list(map(int, wday.split(","))), sact=sact, stime_opt=stime_opt, smin=smin, eact=eact, etime_opt=etime_opt, emin=emin)
+    if rule_to_add:
+        echo(f"Adding rule")
+        return await schedule.add_rule(rule_to_add)
+    else:
+        echo(f"Invalid rule")
+
+
+@schedule.command(name="edit")
+@pass_dev
+@click.option("--id", type=str, required=True)
+@click.option("--name", type=str)
+@click.option("--enable", type=click.BOOL)
+@click.option("--repeat", type=click.BOOL)
+@click.option("--wday", type=str)
+@click.option("--sact", type=click.IntRange(-1, 2))
+@click.option("--stime_opt", type=click.IntRange(-1, 2))
+@click.option("--smin", type=click.IntRange(0, 1440))
+@click.option("--eact", type=click.IntRange(-1, 2))
+@click.option("--etime_opt", type=click.IntRange(-1, 2))
+@click.option("--emin", type=click.IntRange(0, 1440))
+async def edit_rule(dev,
+    id, name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
+):
+    """Edit rule from device."""
+    schedule = dev.modules["schedule"]
+    rule_to_edit = next(filter(lambda rule: (rule.id == id), schedule.rules), None)
+    if rule_to_edit:
+        echo(f"Editing rule id {id}")
+        if name != None:
+            rule_to_edit.name = name
+        if enable != None:
+            rule_to_edit.enable = 1 if enable else 0
+        if repeat != None:
+            rule_to_edit.repeat = 1 if repeat else 0
+        if wday!= None:
+            rule_to_edit.wday = list(map(int, wday.split(",")))
+        if sact != None:
+            rule_to_edit.sact = sact
+        if stime_opt != None:
+            rule_to_edit.stime_opt = stime_opt
+        if smin != None:
+            rule_to_edit.smin = smin
+        if eact != None:
+            rule_to_edit.eact = eact
+        if etime_opt != None:
+            rule_to_edit.etime_opt = etime_opt
+        if emin != None:
+            rule_to_edit.emin = emin
+        return await schedule.edit_rule(rule_to_edit)
+    else:
+        echo(f"No rule with id {id} was found")
 
 
 @schedule.command(name="delete")
