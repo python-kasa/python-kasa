@@ -1,5 +1,6 @@
 """Base implementation for all rule-based modules."""
-import logging, json
+import json
+import logging
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -26,7 +27,7 @@ class TimeOption(Enum):
     AtSunset = 2
 
 
-class Rule(BaseModel, validate_assignment=True):
+class Rule(BaseModel):
     """Representation of a rule."""
 
     # not used when adding a rule
@@ -49,6 +50,11 @@ class Rule(BaseModel, validate_assignment=True):
 
     # Only on bulbs
     s_light: Optional[Dict]
+
+    class Config:
+        """Rule Config."""
+
+        validate_assignment = True
 
 
 _LOGGER = logging.getLogger(__name__)

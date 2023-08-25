@@ -37,7 +37,6 @@ from kasa import (
     SmartPlug,
     SmartStrip,
 )
-
 from kasa.modules import Rule
 
 TYPE_TO_CLASS = {
@@ -669,18 +668,28 @@ async def _schedule_enable(dev, enable):
 @click.option("--eact", type=click.IntRange(-1, 2), default=-1)
 @click.option("--etime_opt", type=click.IntRange(-1, 2), default=-1)
 @click.option("--emin", type=click.IntRange(0, 1440), default=None)
-async def add_rule(dev,
-    name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
+async def add_rule(
+    dev, name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
 ):
     """Add rule to device."""
     schedule = dev.modules["schedule"]
-    #rule_to_add = Rule.parse_raw(rule)
-    rule_to_add = Rule(name=name, enable=enable, repeat=repeat, wday=list(map(int, wday.split(","))), sact=sact, stime_opt=stime_opt, smin=smin, eact=eact, etime_opt=etime_opt, emin=emin)
+    rule_to_add = Rule(
+        name=name,
+        enable=enable,
+        repeat=repeat,
+        wday=list(map(int, wday.split(","))),
+        sact=sact,
+        stime_opt=stime_opt,
+        smin=smin,
+        eact=eact,
+        etime_opt=etime_opt,
+        emin=emin,
+    )
     if rule_to_add:
-        echo(f"Adding rule")
+        echo("Adding rule")
         return await schedule.add_rule(rule_to_add)
     else:
-        echo(f"Invalid rule")
+        echo("Invalid rule")
 
 
 @schedule.command(name="edit")
@@ -696,33 +705,33 @@ async def add_rule(dev,
 @click.option("--eact", type=click.IntRange(-1, 2))
 @click.option("--etime_opt", type=click.IntRange(-1, 2))
 @click.option("--emin", type=click.IntRange(0, 1440))
-async def edit_rule(dev,
-    id, name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
+async def edit_rule(
+    dev, id, name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
 ):
     """Edit rule from device."""
     schedule = dev.modules["schedule"]
     rule_to_edit = next(filter(lambda rule: (rule.id == id), schedule.rules), None)
     if rule_to_edit:
         echo(f"Editing rule id {id}")
-        if name != None:
+        if name is not None:
             rule_to_edit.name = name
-        if enable != None:
+        if enable is not None:
             rule_to_edit.enable = 1 if enable else 0
-        if repeat != None:
+        if repeat is not None:
             rule_to_edit.repeat = 1 if repeat else 0
-        if wday!= None:
+        if wday is not None:
             rule_to_edit.wday = list(map(int, wday.split(",")))
-        if sact != None:
+        if sact is not None:
             rule_to_edit.sact = sact
-        if stime_opt != None:
+        if stime_opt is not None:
             rule_to_edit.stime_opt = stime_opt
-        if smin != None:
+        if smin is not None:
             rule_to_edit.smin = smin
-        if eact != None:
+        if eact is not None:
             rule_to_edit.eact = eact
-        if etime_opt != None:
+        if etime_opt is not None:
             rule_to_edit.etime_opt = etime_opt
-        if emin != None:
+        if emin is not None:
             rule_to_edit.emin = emin
         return await schedule.edit_rule(rule_to_edit)
     else:
@@ -748,7 +757,7 @@ async def delete_rule(dev, id):
 async def delete_all(dev):
     """Delete all rules from device."""
     schedule = dev.modules["schedule"]
-    echo(f"Deleting all rules")
+    echo("Deleting all rules")
     return await schedule.delete_all_rules()
 
 
