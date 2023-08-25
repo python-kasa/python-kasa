@@ -41,8 +41,8 @@ class Rule(BaseModel):
     smin: int
 
     eact: Optional[Action]
-    etime_opt: TimeOption
-    emin: int
+    etime_opt: Optional[TimeOption]
+    emin: Optional[int]
 
     # Only on bulbs
     s_light: Optional[Dict]
