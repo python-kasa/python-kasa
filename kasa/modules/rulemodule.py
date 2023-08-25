@@ -29,7 +29,8 @@ class TimeOption(Enum):
 class Rule(BaseModel):
     """Representation of a rule."""
 
-    id: str
+    # not used when adding a rule
+    id: Optional[str]
     name: str
     enable: bool
     wday: List[int]
@@ -40,7 +41,9 @@ class Rule(BaseModel):
     stime_opt: TimeOption
     smin: int
 
+    # end action
     eact: Optional[Action]
+    # will be None if the rule was created with etime_opt: -1
     etime_opt: Optional[TimeOption]
     emin: Optional[int]
 
