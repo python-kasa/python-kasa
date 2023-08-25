@@ -665,6 +665,14 @@ async def delete_rule(dev, id):
         echo(f"No rule with id {id} was found")
 
 
+@schedule.command(name="delete_all")
+@pass_dev
+async def delete_all(dev):
+    """Delete all rules from device."""
+    schedule = dev.modules["schedule"]
+    return await schedule.delete_all_rules()
+
+
 @cli.group(invoke_without_command=True)
 @click.pass_context
 async def presets(ctx):
