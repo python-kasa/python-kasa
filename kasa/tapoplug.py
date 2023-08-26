@@ -10,6 +10,8 @@ from plugp100.responses.device_usage_info import DeviceUsageInfo
 from plugp100.responses.energy_info import EnergyInfo
 from plugp100.responses.power_info import PowerInfo
 from plugp100.responses.time_info import TimeInfo
+from plugp100.common.credentials import AuthCredential
+
 
 from . import EmeterStatus
 from .smartdevice import DeviceType, SmartDevice
@@ -27,15 +29,12 @@ class TapoPlug(SmartPlug):
         self._device_type = DeviceType.Plug
         env = os.environ
         self._tapo_client = TapoClient(
-            env["KASA_TAPO_EMAIL"], env["KASA_TAPO_PASSWORD"]
+            AuthCredential(username=env["KASA_TAPO_EMAIL"], password=env["KASA_TAPO_PASSWORD"]), self.host
         )
-        self._tapo_device = PlugDevice(self._tapo_client, self.host)
+        self._tapo_device = PlugDevice(self._tapo_client)
         self._state = None
 
     async def update(self, update_children: bool = True):
-        if self._state is None:
-            await self._tapo_device.login()
-
         # TODO: check for success as
         self._state = (await self._tapo_device.get_state()).value
         self._info: DeviceInfo = self._state.info
