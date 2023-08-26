@@ -13,7 +13,7 @@ from plugp100.responses.time_info import TimeInfo
 from plugp100.common.credentials import AuthCredential
 
 
-from . import EmeterStatus
+from .emeterstatus import EmeterStatus
 from .smartdevice import DeviceType, SmartDevice
 from .smartplug import SmartPlug
 
@@ -173,3 +173,9 @@ class TapoPlug(SmartPlug):
     def features(self) -> Set[str]:
         # TODO:
         return set()
+
+    def update_from_discover_info(self, info):
+        """This can be used to update the state from discovery responses.
+
+        As this works only on the unauthenticated discovery responses, we do nothing here.
+        """

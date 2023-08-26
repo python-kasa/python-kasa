@@ -21,6 +21,7 @@ from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
 from kasa.smartstrip import SmartStrip
+from kasa.tapoplug import TapoPlug
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,10 +105,15 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         if port == self.discovery_port:
             info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
-            _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
-
         elif port == Discover.DISCOVERY_PORT_2:
             info = json_loads(data[16:])
+        else:
+            raise SmartDeviceException("Received response from unexpected port %s" % port)
+
+        _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
+        try:
+            device_class = Discover._get_device_class(info)
+        except UnsupportDeviceException as ex:
             self.unsupported_devices[ip] = info
             if self.on_unsupported is not None:
                 asyncio.ensure_future(self.on_unsupported(info))
@@ -115,9 +121,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             if self.discovered_event is not None:
                 self.discovered_event.set()
             return
-
-        try:
-            device_class = Discover._get_device_class(info)
         except SmartDeviceException as ex:
             _LOGGER.debug(
                 "[DISCOVERY] Unable to find device type from %s: %s", info, ex
@@ -131,6 +134,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             ip, port=port, credentials=self.credentials, timeout=self.timeout
         )
         device.update_from_discover_info(info)
+        # TODO: hack to force update on non-authenticated discoveries
+        #       this is not optimal, and needs rewiring when authentication parts are in-place
+        asyncio.ensure_future(device.update())
 
         self.discovered_devices[ip] = device
 
@@ -377,6 +383,17 @@ class Discover:
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:
         """Find SmartDevice subclass for device described by passed data."""
+        # 1. Check for the discovery payloads from port 20002/udp
+        if "result" in info:
+            supported_device_types = {
+                "SMART.TAPOPLUG": TapoPlug,
+            }
+            if (device_type := info["result"].get("device_type")) in supported_device_types:
+                return supported_device_types[device_type]
+            else:
+                raise UnsupportDeviceException("Found unsupported device: %s" % info)
+
+        # 2. Fallback to old 9999/udp discovery
         if "system" not in info or "get_sysinfo" not in info["system"]:
             raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
 
