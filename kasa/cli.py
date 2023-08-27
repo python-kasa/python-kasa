@@ -763,13 +763,15 @@ async def delete_rule(dev, id):
         echo(f"No rule with id {id} was found")
 
 
-@schedule.command(name="delete_all")
+@schedule.command()
 @pass_dev
-async def delete_all(dev):
+@click.option("--prompt", type=click.BOOL, prompt=True, help="Are you sure?")
+async def delete_all(dev, prompt):
     """Delete all rules from device."""
     schedule = dev.modules["schedule"]
-    echo("Deleting all rules")
-    return await schedule.delete_all_rules()
+    if prompt:
+        echo("Deleting all rules")
+        return await schedule.delete_all_rules()
 
 
 @cli.group(invoke_without_command=True)
