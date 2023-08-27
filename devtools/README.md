@@ -15,6 +15,28 @@ Options:
   --help       Show this message and exit.
 ```
 
+## create_module_fixtures
+
+* Queries the device for all supported modules and outputs module-based fixture files for each device.
+* This could be used to create fixture files for module-specific tests, but it might also be useful for other use-cases.
+
+```shell
+Usage: create_module_fixtures.py [OPTIONS] OUTPUTDIR
+
+  Create module fixtures for given host/network.
+
+Arguments:
+  OUTPUTDIR  [required]
+
+Options:
+  --host TEXT
+  --network TEXT
+  --install-completion  Install completion for the current shell.
+  --show-completion     Show completion for the current shell, to copy it or
+                        customize the installation.
+  --help                Show this message and exit.
+```
+
 ## parse_pcap
 
 * Requires dpkt (pip install dpkt)
