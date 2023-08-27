@@ -9,6 +9,13 @@ from pydantic import BaseModel
 from .module import Module, merge
 
 
+class EnabledOption(Enum):
+    """Integer enabled option."""
+
+    TurnOff = 0
+    Enabled = 1
+
+
 class Action(Enum):
     """Action to perform."""
 
@@ -33,9 +40,9 @@ class Rule(BaseModel):
     # not used when adding a rule
     id: Optional[str]
     name: str
-    enable: int
+    enable: EnabledOption
     wday: List[int]
-    repeat: int
+    repeat: EnabledOption
 
     # start action
     sact: Optional[Action]
