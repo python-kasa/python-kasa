@@ -103,10 +103,11 @@ class TPLinkSmartHomeProtocol:
         length = struct.unpack(">I", packed_block_size)[0]
 
         buffer = await self.reader.readexactly(length)
+        _LOGGER.debug(f"{self.reader.at_eof()=}")
         response = TPLinkSmartHomeProtocol.decrypt(buffer)
         json_payload = json_loads(response)
         if debug_log:
-            _LOGGER.debug("%s << %s", self.host, pf(json_payload))
+            _LOGGER.debug("%s [%s of %s] << %s", self.host, len(buffer), length, pf(json_payload))
 
         return json_payload
 
