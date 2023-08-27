@@ -349,7 +349,7 @@ class SmartDevice:
                 continue
 
             est_response_size += module.query_response_size
-            if est_response_size > TPLinkSmartHomeProtocol.MAX_RESPONSE_SIZE:
+            if est_response_size > self.max_response_payload_size:
                 request_list.append( req )
                 req = {}
                 est_response_size = module.query_response_size
@@ -359,7 +359,7 @@ class SmartDevice:
             req = merge(req, q)
         request_list.append(req)
 
-        responses = [await self.protocol.query(request) for request in request_list]
+        responses = [await self.protocol.query(request) for request in request_list if request]
         update = {}
         for response in responses:
             update = merge(update, response)
@@ -670,6 +670,11 @@ class SmartDevice:
                 f"Invalid index {index}, device has {len(self.children)} plugs"
             )
         return self.children[index]
+
+    @property
+    def max_response_payload_size(self) -> int:
+        """Returns the maximum response size the device can safely construct"""
+        return 16*1024
 
     @property
     def device_type(self) -> DeviceType:
