@@ -574,7 +574,10 @@ async def time(dev):
 @click.argument("tz_index", type=int)
 @pass_dev
 async def set_timezone(dev, tz_index):
-    """Set the device timezone."""
+    """Set the device timezone.
+
+    See https://github.com/GadgetReactor/pyHS100/issues/53#issuecomment-296875129 for valid timezones
+    """
     return await dev.modules["time"].set_timezone(tz_index)
 
 
