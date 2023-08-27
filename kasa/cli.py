@@ -571,6 +571,14 @@ async def time(dev):
 
 
 @cli.command()
+@click.argument("tz_index", type=int)
+@pass_dev
+async def set_timezone(dev, tz_index):
+    """Set the device timezone."""
+    return await dev.modules["time"].set_timezone(tz_index)
+
+
+@cli.command()
 @click.option("--index", type=int, required=False)
 @click.option("--name", type=str, required=False)
 @click.option("--transition", type=int, required=False)

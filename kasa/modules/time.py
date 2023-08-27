@@ -52,3 +52,7 @@ class Time(Module):
     async def get_timezone(self):
         """Request timezone information from the device."""
         return await self.call("get_timezone")
+
+    async def set_timezone(self, tz_index):
+        """Request timezone information from the device."""
+        return await self.call("set_timezone", {"index": tz_index})
