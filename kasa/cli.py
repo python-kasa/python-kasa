@@ -673,12 +673,12 @@ async def _schedule_enable(dev, enable):
 @click.option("--repeat", type=click.BOOL, default=True, show_default=True)
 @click.option("--days", type=str, required=True)
 @click.option("--start-action", type=click.IntRange(-1, 2), default=None, required=True)
-@click.option("--stime_opt", type=click.IntRange(-1, 2), default=None, required=True)
+@click.option("--start-sun", type=click.IntRange(-1, 2), default=None, required=True)
 @click.option(
     "--start-minutes", type=click.IntRange(0, 1440), default=None, required=True
 )
 @click.option("--end-action", type=click.IntRange(-1, 2), default=-1)
-@click.option("--etime_opt", type=click.IntRange(-1, 2), default=-1)
+@click.option("--end-sun", type=click.IntRange(-1, 2), default=-1)
 @click.option("--end-minutes", type=click.IntRange(0, 1440), default=None)
 async def add_rule(
     dev,
@@ -687,10 +687,10 @@ async def add_rule(
     repeat,
     days,
     start_action,
-    stime_opt,
+    start_sun,
     start_minutes,
     end_action,
-    etime_opt,
+    end_sun,
     end_minutes,
 ):
     """Add rule to device."""
@@ -701,10 +701,10 @@ async def add_rule(
         repeat=repeat,
         days=list(map(int, days.split(","))),
         start_action=start_action,
-        stime_opt=stime_opt,
+        start_sun=start_sun,
         start_minutes=start_minutes,
         end_action=end_action,
-        etime_opt=etime_opt,
+        end_sun=end_sun,
         end_minutes=end_minutes,
     )
     if rule_to_add:
@@ -722,10 +722,10 @@ async def add_rule(
 @click.option("--repeat", type=click.BOOL)
 @click.option("--days", type=str)
 @click.option("--start-action", type=click.IntRange(-1, 2))
-@click.option("--stime_opt", type=click.IntRange(-1, 2))
+@click.option("--start-sun", type=click.IntRange(-1, 2))
 @click.option("--start-minutes", type=click.IntRange(0, 1440))
 @click.option("--end-action", type=click.IntRange(-1, 2))
-@click.option("--etime_opt", type=click.IntRange(-1, 2))
+@click.option("--end-sun", type=click.IntRange(-1, 2))
 @click.option("--end-minutes", type=click.IntRange(0, 1440))
 async def edit_rule(
     dev,
@@ -735,10 +735,10 @@ async def edit_rule(
     repeat,
     days,
     start_action,
-    stime_opt,
+    start_sun,
     start_minutes,
     end_action,
-    etime_opt,
+    end_sun,
     end_minutes,
 ):
     """Edit rule from device."""
@@ -756,14 +756,14 @@ async def edit_rule(
             rule_to_edit.wday = list(map(int, days.split(",")))
         if start_action is not None:
             rule_to_edit.sact = start_action
-        if stime_opt is not None:
-            rule_to_edit.stime_opt = stime_opt
+        if start_sun is not None:
+            rule_to_edit.stime_opt = start_sun
         if start_minutes is not None:
             rule_to_edit.smin = start_minutes
         if end_action is not None:
             rule_to_edit.eact = end_action
-        if etime_opt is not None:
-            rule_to_edit.etime_opt = etime_opt
+        if end_sun is not None:
+            rule_to_edit.etime_opt = end_sun
         if end_minutes is not None:
             rule_to_edit.emin = end_minutes
         return await schedule.edit_rule(rule_to_edit)

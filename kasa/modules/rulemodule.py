@@ -71,13 +71,13 @@ class ScheduleRule(BaseRule):
 
     # start action
     sact: Optional[Action] = Field(alias="start_action")
-    stime_opt: TimeOption = Field(alias="start?")
+    stime_opt: TimeOption = Field(alias="start_sun")
     smin: int = Field(alias="start_minutes", ge=0, le=1440)
 
     # end action
     eact: Optional[Action] = Field(alias="end_action")
     # Required to submit, but the device will not return it if set to -1
-    etime_opt: TimeOption = Field(default=TimeOption.Disabled, alias="end?")
+    etime_opt: TimeOption = Field(default=TimeOption.Disabled, alias="end_sun")
     emin: Optional[int] = Field(alias="end_minutes", ge=0, le=1440)
 
 
