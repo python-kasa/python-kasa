@@ -37,7 +37,6 @@ from kasa import (
     SmartPlug,
     SmartStrip,
 )
-from kasa.modules import Rule
 
 TYPE_TO_CLASS = {
     "plug": SmartPlug,
@@ -576,7 +575,7 @@ async def time(dev):
 async def set_timezone(dev, tz_index):
     """Set the device timezone.
 
-    See https://github.com/GadgetReactor/pyHS100/issues/53#issuecomment-296875129 for valid timezones
+    See https://github.com/GadgetRend_actionor/pyHS100/issues/53#issuecomment-296875129 for valid timezones
     """
     return await dev.modules["time"].set_timezone(tz_index)
 
@@ -672,29 +671,41 @@ async def _schedule_enable(dev, enable):
 @click.option("--name", type=str, required=True)
 @click.option("--enable", type=click.BOOL, default=True, show_default=True)
 @click.option("--repeat", type=click.BOOL, default=True, show_default=True)
-@click.option("--wday", type=str, required=True)
-@click.option("--sact", type=click.IntRange(-1, 2), default=None, required=True)
+@click.option("--days", type=str, required=True)
+@click.option("--start-action", type=click.IntRange(-1, 2), default=None, required=True)
 @click.option("--stime_opt", type=click.IntRange(-1, 2), default=None, required=True)
-@click.option("--smin", type=click.IntRange(0, 1440), default=None, required=True)
-@click.option("--eact", type=click.IntRange(-1, 2), default=-1)
+@click.option(
+    "--start-minutes", type=click.IntRange(0, 1440), default=None, required=True
+)
+@click.option("--end-action", type=click.IntRange(-1, 2), default=-1)
 @click.option("--etime_opt", type=click.IntRange(-1, 2), default=-1)
-@click.option("--emin", type=click.IntRange(0, 1440), default=None)
+@click.option("--end-minutes", type=click.IntRange(0, 1440), default=None)
 async def add_rule(
-    dev, name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
+    dev,
+    name,
+    enable,
+    repeat,
+    days,
+    start_action,
+    stime_opt,
+    start_minutes,
+    end_action,
+    etime_opt,
+    end_minutes,
 ):
     """Add rule to device."""
     schedule = dev.modules["schedule"]
-    rule_to_add = Rule(
+    rule_to_add = schedule.Rule(
         name=name,
         enable=enable,
         repeat=repeat,
-        wday=list(map(int, wday.split(","))),
-        sact=sact,
+        days=list(map(int, days.split(","))),
+        start_action=start_action,
         stime_opt=stime_opt,
-        smin=smin,
-        eact=eact,
+        start_minutes=start_minutes,
+        end_action=end_action,
         etime_opt=etime_opt,
-        emin=emin,
+        end_minutes=end_minutes,
     )
     if rule_to_add:
         echo("Adding rule")
@@ -709,15 +720,26 @@ async def add_rule(
 @click.option("--name", type=str)
 @click.option("--enable", type=click.BOOL)
 @click.option("--repeat", type=click.BOOL)
-@click.option("--wday", type=str)
-@click.option("--sact", type=click.IntRange(-1, 2))
+@click.option("--days", type=str)
+@click.option("--start-action", type=click.IntRange(-1, 2))
 @click.option("--stime_opt", type=click.IntRange(-1, 2))
-@click.option("--smin", type=click.IntRange(0, 1440))
-@click.option("--eact", type=click.IntRange(-1, 2))
+@click.option("--start-minutes", type=click.IntRange(0, 1440))
+@click.option("--end-action", type=click.IntRange(-1, 2))
 @click.option("--etime_opt", type=click.IntRange(-1, 2))
-@click.option("--emin", type=click.IntRange(0, 1440))
+@click.option("--end-minutes", type=click.IntRange(0, 1440))
 async def edit_rule(
-    dev, id, name, enable, repeat, wday, sact, stime_opt, smin, eact, etime_opt, emin
+    dev,
+    id,
+    name,
+    enable,
+    repeat,
+    days,
+    start_action,
+    stime_opt,
+    start_minutes,
+    end_action,
+    etime_opt,
+    end_minutes,
 ):
     """Edit rule from device."""
     schedule = dev.modules["schedule"]
@@ -730,20 +752,20 @@ async def edit_rule(
             rule_to_edit.enable = 1 if enable else 0
         if repeat is not None:
             rule_to_edit.repeat = 1 if repeat else 0
-        if wday is not None:
-            rule_to_edit.wday = list(map(int, wday.split(",")))
-        if sact is not None:
-            rule_to_edit.sact = sact
+        if days is not None:
+            rule_to_edit.wday = list(map(int, days.split(",")))
+        if start_action is not None:
+            rule_to_edit.sact = start_action
         if stime_opt is not None:
             rule_to_edit.stime_opt = stime_opt
-        if smin is not None:
-            rule_to_edit.smin = smin
-        if eact is not None:
-            rule_to_edit.eact = eact
+        if start_minutes is not None:
+            rule_to_edit.smin = start_minutes
+        if end_action is not None:
+            rule_to_edit.eact = end_action
         if etime_opt is not None:
             rule_to_edit.etime_opt = etime_opt
-        if emin is not None:
-            rule_to_edit.emin = emin
+        if end_minutes is not None:
+            rule_to_edit.emin = end_minutes
         return await schedule.edit_rule(rule_to_edit)
     else:
         echo(f"No rule with id {id} was found")

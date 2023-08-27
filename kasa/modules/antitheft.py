@@ -1,5 +1,5 @@
 """Implementation of the antitheft module."""
-from .rulemodule import RuleModule
+from .rulemodule import RuleModule, ScheduleRule
 
 
 class Antitheft(RuleModule):
@@ -7,3 +7,5 @@ class Antitheft(RuleModule):
 
     This shares the functionality among other rule-based modules.
     """
+
+    Rule = ScheduleRule
