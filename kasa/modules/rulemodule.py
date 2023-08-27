@@ -2,7 +2,7 @@
 import json
 import logging
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -32,6 +32,13 @@ class TimeOption(Enum):
     Enabled = 0
     AtSunrise = 1
     AtSunset = 2
+
+
+class BulbModeOption(Enum):
+    """Bulb mode."""
+
+    Customize = "customize_preset"
+    Last = "last_status"
 
 
 class BaseRule(BaseModel):
@@ -74,10 +81,27 @@ class ScheduleRule(BaseRule):
     emin: Optional[int] = Field(alias="end_minutes", ge=0, le=1440)
 
 
+class BulbRule(BaseRule):
+    """Representation of a bulb schedule rule."""
+
+    saturation: int = Field(ge=0, le=100)
+    hue: int = Field(ge=0, le=360)
+    brightness: int = Field(ge=0, le=100)
+    color_temp: int = Field(ge=2500, le=9000)
+    mode: BulbModeOption
+    on_off: EnabledOption
+
+
 class BulbScheduleRule(BaseRule):
     """Representation of a bulb schedule rule."""
 
-    s_light: Optional[Dict] = Field(alias="lights")
+    s_light: BulbRule = Field(alias="lights")
+
+
+class AntitheftRule(BaseRule):
+    """Representation of a antitheft rule."""
+
+    frequency: int = Field(ge=1, le=10)
 
 
 _LOGGER = logging.getLogger(__name__)
