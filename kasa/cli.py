@@ -570,6 +570,26 @@ async def time(dev):
 
 
 @cli.command()
+@click.option("--list", is_flag=True)
+@click.argument("index", type=int, required=False)
+@pass_dev
+async def set_timezone(dev, list, index):
+    """Set the device timezone.
+
+    pass --list to see valid timezones
+    """
+    time = dev.modules["time"]
+    if list:
+        for timezone in time.get_timezones():
+            echo(
+                f"Index: {timezone['index']:3}\tName: {timezone['zone_str']:65}\tRule: {timezone['tz_str']}"
+            )
+        return
+    if index:
+        return await time.set_timezone(index)
+
+
+@cli.command()
 @click.option("--index", type=int, required=False)
 @click.option("--name", type=str, required=False)
 @click.option("--transition", type=int, required=False)
@@ -656,16 +676,134 @@ async def schedule(dev):
 
 @schedule.command(name="list")
 @pass_dev
+@click.option("--json", is_flag=True)
 @click.argument("type", default="schedule")
-def _schedule_list(dev, type):
+def _schedule_list(dev, json, type):
     """Return the list of schedule actions for the given type."""
     sched = dev.modules[type]
-    for rule in sched.rules:
-        print(rule)
-    else:
+    if sched.rules == []:
         echo(f"No rules of type {type}")
+    for rule in sched.rules:
+        if json:
+            print(rule.json())
+        else:
+            print(rule)
 
     return sched.rules
+
+
+@schedule.command(name="enable")
+@pass_dev
+@click.argument("enable", type=click.BOOL)
+async def _schedule_enable(dev, enable):
+    """Enable or disable schedule."""
+    schedule = dev.modules["schedule"]
+    return await schedule.set_enabled(1 if state else 0)
+
+
+@schedule.command(name="add")
+@pass_dev
+@click.option("--name", type=str, required=True)
+@click.option("--enable", type=click.BOOL, default=True, show_default=True)
+@click.option("--repeat", type=click.BOOL, default=True, show_default=True)
+@click.option("--days", type=str, required=True)
+@click.option("--start-action", type=click.IntRange(-1, 2), default=None, required=True)
+@click.option("--start-sun", type=click.IntRange(-1, 2), default=None, required=True)
+@click.option(
+    "--start-minutes", type=click.IntRange(0, 1440), default=None, required=True
+)
+@click.option("--end-action", type=click.IntRange(-1, 2), default=-1)
+@click.option("--end-sun", type=click.IntRange(-1, 2), default=-1)
+@click.option("--end-minutes", type=click.IntRange(0, 1440), default=None)
+async def add_rule(
+    dev,
+    name,
+    enable,
+    repeat,
+    days,
+    start_action,
+    start_sun,
+    start_minutes,
+    end_action,
+    end_sun,
+    end_minutes,
+):
+    """Add rule to device."""
+    schedule = dev.modules["schedule"]
+    rule_to_add = schedule.Rule(
+        name=name,
+        enable=enable,
+        repeat=repeat,
+        days=list(map(int, days.split(","))),
+        start_action=start_action,
+        start_sun=start_sun,
+        start_minutes=start_minutes,
+        end_action=end_action,
+        end_sun=end_sun,
+        end_minutes=end_minutes,
+    )
+    if rule_to_add:
+        echo("Adding rule")
+        return await schedule.add_rule(rule_to_add)
+    else:
+        echo("Invalid rule")
+
+
+@schedule.command(name="edit")
+@pass_dev
+@click.option("--id", type=str, required=True)
+@click.option("--name", type=str)
+@click.option("--enable", type=click.BOOL)
+@click.option("--repeat", type=click.BOOL)
+@click.option("--days", type=str)
+@click.option("--start-action", type=click.IntRange(-1, 2))
+@click.option("--start-sun", type=click.IntRange(-1, 2))
+@click.option("--start-minutes", type=click.IntRange(0, 1440))
+@click.option("--end-action", type=click.IntRange(-1, 2))
+@click.option("--end-sun", type=click.IntRange(-1, 2))
+@click.option("--end-minutes", type=click.IntRange(0, 1440))
+async def edit_rule(
+    dev,
+    id,
+    name,
+    enable,
+    repeat,
+    days,
+    start_action,
+    start_sun,
+    start_minutes,
+    end_action,
+    end_sun,
+    end_minutes,
+):
+    """Edit rule from device."""
+    schedule = dev.modules["schedule"]
+    rule_to_edit = next(filter(lambda rule: (rule.id == id), schedule.rules), None)
+    if rule_to_edit:
+        echo(f"Editing rule id {id}")
+        if name is not None:
+            rule_to_edit.name = name
+        if enable is not None:
+            rule_to_edit.enable = 1 if enable else 0
+        if repeat is not None:
+            rule_to_edit.repeat = 1 if repeat else 0
+        if days is not None:
+            rule_to_edit.wday = list(map(int, days.split(",")))
+        if start_action is not None:
+            rule_to_edit.sact = start_action
+        if start_sun is not None:
+            rule_to_edit.stime_opt = start_sun
+        if start_minutes is not None:
+            rule_to_edit.smin = start_minutes
+        if end_action is not None:
+            rule_to_edit.eact = end_action
+        if end_sun is not None:
+            rule_to_edit.etime_opt = end_sun
+        if end_minutes is not None:
+            rule_to_edit.emin = end_minutes
+        return await schedule.edit_rule(rule_to_edit)
+    else:
+        echo(f"No rule with id {id} was found")
 
 
 @schedule.command(name="delete")
@@ -680,6 +818,17 @@ async def delete_rule(dev, id):
         return await schedule.delete_rule(rule_to_delete)
     else:
         echo(f"No rule with id {id} was found")
+
+
+@schedule.command()
+@pass_dev
+@click.option("--prompt", type=click.BOOL, prompt=True, help="Are you sure?")
+async def delete_all(dev, prompt):
+    """Delete all rules from device."""
+    schedule = dev.modules["schedule"]
+    if prompt:
+        echo("Deleting all rules")
+        return await schedule.delete_all_rules()
 
 
 @cli.group(invoke_without_command=True)

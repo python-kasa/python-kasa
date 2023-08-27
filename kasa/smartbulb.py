@@ -6,7 +6,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, cast
 
 from pydantic import BaseModel, Field, root_validator
 
-from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
+from .modules import Antitheft, BulbSchedule, Cloud, Countdown, Emeter, Time, Usage
 from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
 
 
@@ -202,7 +202,7 @@ class SmartBulb(SmartDevice):
     def __init__(self, host: str, *, port: Optional[int] = None) -> None:
         super().__init__(host=host, port=port)
         self._device_type = DeviceType.Bulb
-        self.add_module("schedule", Schedule(self, "smartlife.iot.common.schedule"))
+        self.add_module("schedule", BulbSchedule(self, "smartlife.iot.common.schedule"))
         self.add_module("usage", Usage(self, "smartlife.iot.common.schedule"))
         self.add_module("antitheft", Antitheft(self, "smartlife.iot.common.anti_theft"))
         self.add_module("time", Time(self, "smartlife.iot.common.timesetting"))

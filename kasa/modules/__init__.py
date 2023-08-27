@@ -6,8 +6,14 @@ from .countdown import Countdown
 from .emeter import Emeter
 from .module import Module
 from .motion import Motion
-from .rulemodule import Rule, RuleModule
-from .schedule import Schedule
+from .rulemodule import (
+    AntitheftRule,
+    BulbScheduleRule,
+    CountdownRule,
+    RuleModule,
+    ScheduleRule,
+)
+from .schedule import BulbSchedule, Schedule
 from .time import Time
 from .usage import Usage
 
@@ -19,9 +25,13 @@ __all__ = [
     "Emeter",
     "Module",
     "Motion",
-    "Rule",
+    "AntitheftRule",
+    "CountdownRule",
+    "ScheduleRule",
+    "BulbScheduleRule",
     "RuleModule",
     "Schedule",
+    "BulbSchedule",
     "Time",
     "Usage",
 ]
