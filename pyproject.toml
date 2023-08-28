@@ -22,7 +22,7 @@ kasa = "kasa.cli:cli"
 python = "^3.8"
 anyio = "*"  # see https://github.com/python-trio/asyncclick/issues/18
 asyncclick = ">=8"
-pydantic = "^1"
+pydantic = ">=1"
 
 # speed ups
 orjson = { "version" = ">=3.9.1", optional = true }

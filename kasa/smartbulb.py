@@ -4,7 +4,10 @@ import re
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional, cast
 
-from pydantic import BaseModel, Field, root_validator
+try:
+    from pydantic.v1 import BaseModel, Field, root_validator
+except ImportError:
+    from pydantic import BaseModel, Field, root_validator
 
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
 from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
