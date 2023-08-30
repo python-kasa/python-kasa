@@ -338,7 +338,7 @@ class SmartDevice:
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
         request_list = []
-        est_response_size = 0
+        est_response_size = 1024 if "system" in req else 0
         modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
         for module_name, module in self.modules.items():
             if not module.is_supported:
