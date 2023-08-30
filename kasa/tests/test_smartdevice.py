@@ -39,7 +39,9 @@ async def test_initial_update_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 2 + len(dev.children)
+    # Devices with small buffers may require 3 queries
+    expected_queries = 2 if dev.max_response_payload_size > 4096 else 3
+    assert spy.call_count == expected_queries + len(dev.children)
 
 
 @no_emeter

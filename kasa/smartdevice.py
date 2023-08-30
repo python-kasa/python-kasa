@@ -350,7 +350,7 @@ class SmartDevice:
 
             est_response_size += module.query_response_size
             if est_response_size > self.max_response_payload_size:
-                request_list.append( req )
+                request_list.append(req)
                 req = {}
                 est_response_size = module.query_response_size
 
@@ -359,10 +359,13 @@ class SmartDevice:
             req = merge(req, q)
         request_list.append(req)
 
-        responses = [await self.protocol.query(request) for request in request_list if request]
-        update = {}
+        responses = [
+            await self.protocol.query(request) for request in request_list if request
+        ]
+
+        update: Dict = {}
         for response in responses:
-            update = merge(update, response)
+            update = {**update, **response}
         self._last_update = update
 
     def update_from_discover_info(self, info):
@@ -673,8 +676,8 @@ class SmartDevice:
 
     @property
     def max_response_payload_size(self) -> int:
-        """Returns the maximum response size the device can safely construct"""
-        return 16*1024
+        """Returns the maximum response size the device can safely construct."""
+        return 16 * 1024
 
     @property
     def device_type(self) -> DeviceType:
