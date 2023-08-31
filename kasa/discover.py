@@ -9,6 +9,7 @@ from typing import Awaitable, Callable, Dict, Optional, Type, cast
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
+from kasa.credentials import Credentials
 from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -45,6 +46,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         on_unsupported: Optional[Callable[[Dict], Awaitable[None]]] = None,
         port: Optional[int] = None,
         discovered_event: Optional[asyncio.Event] = None,
+        credentials: Optional[Credentials] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
@@ -58,6 +60,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.invalid_device_exceptions: Dict = {}
         self.on_unsupported = on_unsupported
         self.discovered_event = discovered_event
+        self.credentials = credentials
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -197,6 +200,7 @@ class Discover:
         discovery_packets=3,
         interface=None,
         on_unsupported=None,
+        credentials=None,
     ) -> DeviceDict:
         """Discover supported devices.
 
@@ -225,6 +229,7 @@ class Discover:
                 discovery_packets=discovery_packets,
                 interface=interface,
                 on_unsupported=on_unsupported,
+                credentials=credentials,
             ),
             local_addr=("0.0.0.0", 0),
         )
@@ -242,7 +247,11 @@ class Discover:
 
     @staticmethod
     async def discover_single(
-        host: str, *, port: Optional[int] = None, timeout=5
+        host: str,
+        *,
+        port: Optional[int] = None,
+        timeout=5,
+        credentials: Optional[Credentials] = None,
     ) -> SmartDevice:
         """Discover a single device by the given IP address.
 
@@ -253,7 +262,9 @@ class Discover:
         loop = asyncio.get_event_loop()
         event = asyncio.Event()
         transport, protocol = await loop.create_datagram_endpoint(
-            lambda: _DiscoverProtocol(target=host, port=port, discovered_event=event),
+            lambda: _DiscoverProtocol(
+                target=host, port=port, discovered_event=event, credentials=credentials
+            ),
             local_addr=("0.0.0.0", 0),
         )
         protocol = cast(_DiscoverProtocol, protocol)

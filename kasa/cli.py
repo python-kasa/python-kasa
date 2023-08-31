@@ -29,6 +29,7 @@ except ImportError:
 
 
 from kasa import (
+    Credentials,
     Discover,
     SmartBulb,
     SmartDevice,
@@ -137,6 +138,20 @@ def json_formatter_cb(result, **kwargs):
     required=False,
     help="Timeout for discovery.",
 )
+@click.option(
+    "--username",
+    default="",
+    required=False,
+    envvar="TPLINK_CLOUD_USERNAME",
+    help="Username/email address to authenticate to device.",
+)
+@click.option(
+    "--password",
+    default="",
+    required=False,
+    envvar="TPLINK_CLOUD_PASSWORD",
+    help="Password to use to authenticate to device.",
+)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(
@@ -149,6 +164,8 @@ async def cli(
     type,
     json,
     discovery_timeout,
+    username,
+    password,
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
@@ -195,6 +212,8 @@ async def cli(
             echo(f"No device with name {alias} found")
             return
 
+    credentials = Credentials(username=username, password=password)
+
     if host is None:
         echo("No host name given, trying discovery..")
         return await ctx.invoke(discover, timeout=discovery_timeout)
@@ -203,7 +222,11 @@ async def cli(
         dev = TYPE_TO_CLASS[type](host)
     else:
         echo("No --type defined, discovering..")
-        dev = await Discover.discover_single(host, port=port)
+        dev = await Discover.discover_single(
+            host,
+            port=port,
+            credentials=credentials,
+        )
 
     await dev.update()
     ctx.obj = dev
@@ -261,6 +284,11 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 async def discover(ctx, timeout, show_unsupported):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
+    username = ctx.parent.params["username"]
+    password = ctx.parent.params["password"]
+
+    credentials = Credentials(username, password)
+
     sem = asyncio.Semaphore()
     discovered = dict()
     unsupported = []
@@ -286,6 +314,7 @@ async def discover(ctx, timeout, show_unsupported):
         timeout=timeout,
         on_discovered=print_discovered,
         on_unsupported=print_unsupported,
+        credentials=credentials,
     )
 
     echo(f"Found {len(discovered)} devices")

@@ -7,3 +7,7 @@ class SmartDeviceException(Exception):
 
 class UnsupportedDeviceException(SmartDeviceException):
     """Exception for trying to connect to unsupported devices."""
+
+
+class SmartDeviceAuthenticationException(SmartDeviceException):
+    """Base exception for device authentication errors."""
