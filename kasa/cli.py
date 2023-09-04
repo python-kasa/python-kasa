@@ -182,6 +182,9 @@ async def cli(
             pass
 
         echo = _nop_echo
+    else:
+        # Set back to default is required if running tests with CliRunner
+        echo = _strip_rich_formatting(click.echo)
 
     logging_config: Dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
