@@ -175,8 +175,8 @@ async def cli(
         return
 
     # If JSON output is requested, disable echo
+    global echo
     if json:
-        global echo
 
         def _nop_echo(*args, **kwargs):
             pass
@@ -226,7 +226,7 @@ async def cli(
         return await ctx.invoke(discover, timeout=discovery_timeout)
 
     if type is not None:
-        dev = TYPE_TO_CLASS[type](host, credentials)
+        dev = TYPE_TO_CLASS[type](host, credentials=credentials)
     else:
         echo("No --type defined, discovering..")
         dev = await Discover.discover_single(

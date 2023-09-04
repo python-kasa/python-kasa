@@ -4,10 +4,11 @@ import sys
 import pytest
 from asyncclick.testing import CliRunner
 
-from kasa import SmartDevice
+from kasa import SmartDevice, TPLinkSmartHomeProtocol
 from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
 
 from .conftest import handle_turn_on, turn_on
+from .newfakes import FakeTransportProtocol
 
 
 async def test_sysinfo(dev):
@@ -123,22 +124,71 @@ async def test_json_output(dev: SmartDevice, mocker):
     assert json.loads(res.output) == dev.internal_state
 
 
-async def test_credentials():
+async def test_credentials(discovery_data: dict, mocker):
     """Test credentials are passed correctly."""
+    # As this is testing the device constructor need to explicitly wire in
+    # the FakeTransportProtocol
+    ftp = FakeTransportProtocol(discovery_data)
+    mocker.patch.object(TPLinkSmartHomeProtocol, "query", ftp.query)
+
+    def discovery_info_to_type(info):
+        sysinfo = info["system"]["get_sysinfo"]
+        type_ = sysinfo.get("type", sysinfo.get("mic_type"))
+        if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
+            return "dimmer"
+        if "smartplug" in type_.lower():
+            if "children" in sysinfo:
+                return "strip"
+            return "plug"
+        if "smartbulb" in type_.lower():
+            if "length" in sysinfo:  # strips have length
+                return "lightstrip"
+            return "bulb"
+
     runner = CliRunner()
     res = await runner.invoke(
-        cli, ["--type", "plug", "--username", "foo", "--password", "bar"]
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--type",
+            discovery_info_to_type(discovery_data),
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+        ],
     )
     assert res.exit_code == 0
     assert "Username: foo" in res.output and "Password: bar" in res.output
 
     # Test for handling only one of username or passowrd supplied.
-    res = await runner.invoke(cli, ["--type", "plug", "--username", "foo"])
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--type",
+            discovery_info_to_type(discovery_data),
+            "--username",
+            "foo",
+        ],
+    )
     assert res.exit_code == 0
     assert (
         res.output == "Using authentication requires both --username and --password\n"
     )
-    res = await runner.invoke(cli, ["--type", "plug", "--password", "bar"])
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--type",
+            discovery_info_to_type(discovery_data),
+            "--password",
+            "bar",
+        ],
+    )
     assert res.exit_code == 0
     assert (
         res.output == "Using authentication requires both --username and --password\n"
