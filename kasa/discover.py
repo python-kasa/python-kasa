@@ -109,9 +109,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             if self.on_unsupported is not None:
                 asyncio.ensure_future(self.on_unsupported(info))
             _LOGGER.debug("[DISCOVERY] Unsupported device found at %s << %s", ip, info)
-            if self.discovered_event is not None and "255" not in self.target[0].split(
-                "."
-            ):
+            if self.discovered_event is not None:
                 self.discovered_event.set()
             return
 
@@ -122,13 +120,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 "[DISCOVERY] Unable to find device type from %s: %s", info, ex
             )
             self.invalid_device_exceptions[ip] = ex
-            if self.discovered_event is not None and "255" not in self.target[0].split(
-                "."
-            ):
+            if self.discovered_event is not None:
                 self.discovered_event.set()
             return
 
-        device = device_class(ip, port=port)
+        device = device_class(ip, port=port, credentials=self.credentials)
         device.update_from_discover_info(info)
 
         self.discovered_devices[ip] = device
@@ -136,7 +132,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         if self.on_discovered is not None:
             asyncio.ensure_future(self.on_discovered(device))
 
-        if self.discovered_event is not None and "255" not in self.target[0].split("."):
+        if self.discovered_event is not None:
             self.discovered_event.set()
 
     def error_received(self, ex):

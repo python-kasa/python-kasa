@@ -1,11 +1,12 @@
 """Credentials class for username / passwords."""
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
 class Credentials:
     """Credentials for authentication."""
 
-    username: str = field(default="", repr=False)
-    password: str = field(default="", repr=False)
+    username: Optional[str] = field(default=None, repr=False)
+    password: Optional[str] = field(default=None, repr=False)

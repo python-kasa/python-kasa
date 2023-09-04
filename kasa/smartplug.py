@@ -2,6 +2,7 @@
 import logging
 from typing import Any, Dict, Optional
 
+from kasa.credentials import Credentials
 from kasa.modules import Antitheft, Cloud, Schedule, Time, Usage
 from kasa.smartdevice import DeviceType, SmartDevice, requires_update
 
@@ -37,8 +38,14 @@ class SmartPlug(SmartDevice):
     For more examples, see the :class:`SmartDevice` class.
     """
 
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
-        super().__init__(host, port=port)
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        credentials: Optional[Credentials] = None
+    ) -> None:
+        super().__init__(host, port=port, credentials=credentials)
         self._device_type = DeviceType.Plug
         self.add_module("schedule", Schedule(self, "schedule"))
         self.add_module("usage", Usage(self, "schedule"))

@@ -140,14 +140,14 @@ def json_formatter_cb(result, **kwargs):
 )
 @click.option(
     "--username",
-    default="",
+    default=None,
     required=False,
     envvar="TPLINK_CLOUD_USERNAME",
     help="Username/email address to authenticate to device.",
 )
 @click.option(
     "--password",
-    default="",
+    default=None,
     required=False,
     envvar="TPLINK_CLOUD_PASSWORD",
     help="Password to use to authenticate to device.",
@@ -212,6 +212,10 @@ async def cli(
             echo(f"No device with name {alias} found")
             return
 
+    if bool(password) != bool(username):
+        echo("Using authentication requires both --username and --password")
+        return
+
     credentials = Credentials(username=username, password=password)
 
     if host is None:
@@ -219,7 +223,7 @@ async def cli(
         return await ctx.invoke(discover, timeout=discovery_timeout)
 
     if type is not None:
-        dev = TYPE_TO_CLASS[type](host)
+        dev = TYPE_TO_CLASS[type](host, credentials)
     else:
         echo("No --type defined, discovering..")
         dev = await Discover.discover_single(
@@ -359,6 +363,11 @@ async def state(dev: SmartDevice):
     echo(f"[bold]== {dev.alias} - {dev.model} ==[/bold]")
     echo(f"\tHost: {dev.host}")
     echo(f"\tPort: {dev.port}")
+    if dev.credentials is not None:
+        if dev.credentials.username is not None:
+            echo(f"\tUsername: {dev.credentials.username}")
+        if dev.credentials.password is not None:
+            echo(f"\tPassword: {dev.credentials.password}")
     echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
         echo("\t[bold]== Plugs ==[/bold]")

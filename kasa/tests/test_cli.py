@@ -121,3 +121,25 @@ async def test_json_output(dev: SmartDevice, mocker):
     res = await runner.invoke(cli, ["--json", "state"], obj=dev)
     assert res.exit_code == 0
     assert json.loads(res.output) == dev.internal_state
+
+
+async def test_credentials():
+    """Test credentials are passed correctly."""
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli, ["--type", "plug", "--username", "foo", "--password", "bar"]
+    )
+    assert res.exit_code == 0
+    assert "Username: foo" in res.output and "Password: bar" in res.output
+
+    # Test for handling only one of username or passowrd supplied.
+    res = await runner.invoke(cli, ["--type", "plug", "--username", "foo"])
+    assert res.exit_code == 0
+    assert (
+        res.output == "Using authentication requires both --username and --password\n"
+    )
+    res = await runner.invoke(cli, ["--type", "plug", "--password", "bar"])
+    assert res.exit_code == 0
+    assert (
+        res.output == "Using authentication requires both --username and --password\n"
+    )

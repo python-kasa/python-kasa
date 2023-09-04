@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set
 
+from .credentials import Credentials
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
@@ -191,7 +192,13 @@ class SmartDevice:
 
     emeter_type = "emeter"
 
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        credentials: Optional[Credentials] = None,
+    ) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
@@ -200,6 +207,7 @@ class SmartDevice:
         self.port = port
 
         self.protocol = TPLinkSmartHomeProtocol(host, port=port)
+        self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate checks in

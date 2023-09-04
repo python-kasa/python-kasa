@@ -1,6 +1,7 @@
 """Module for light strips (KL430)."""
 from typing import Any, Dict, List, Optional
 
+from .credentials import Credentials
 from .effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from .smartbulb import SmartBulb
 from .smartdevice import DeviceType, SmartDeviceException, requires_update
@@ -41,8 +42,14 @@ class SmartLightStrip(SmartBulb):
     LIGHT_SERVICE = "smartlife.iot.lightStrip"
     SET_LIGHT_METHOD = "set_light_state"
 
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
-        super().__init__(host, port=port)
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        credentials: Optional[Credentials] = None,
+    ) -> None:
+        super().__init__(host, port=port, credentials=credentials)
         self._device_type = DeviceType.LightStrip
 
     @property  # type: ignore
