@@ -17,7 +17,7 @@ from kasa.credentials import Credentials
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (
-    SmartDeviceAuthenticationException,
+    AuthenticationException,
     SmartDeviceException,
     UnsupportedDeviceException,
 )
@@ -47,7 +47,7 @@ __all__ = [
     "SmartStrip",
     "SmartDimmer",
     "SmartLightStrip",
-    "SmartDeviceAuthenticationException",
+    "AuthenticationException",
     "UnsupportedDeviceException",
     "Credentials",
 ]
