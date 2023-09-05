@@ -155,8 +155,8 @@ If your device is unlisted but working, please open a pull request to update the
 * HS200
 * HS210
 * HS220
-* KS200M
-* KS220M
+* KS200M - Partial support, no motion, no daylight detection
+* KS220M - Partial support, no motion, no daylight detection
 * KS230
 
 ### Bulbs
