@@ -10,11 +10,11 @@ from typing import Awaitable, Callable, Dict, Optional, Set, Type, cast
 from async_timeout import timeout as asyncio_timeout
 
 from kasa.credentials import Credentials
-from kasa.exceptions import UnsupportedDeviceException, AuthenticationException
+from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.klapprotocol import TPLinkKlap
-from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
+from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
@@ -44,11 +44,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
-        on_unsupported: Optional[Callable[[Dict], Awaitable[None]]] = None,
+        on_unsupported: Optional[Callable[[str], Awaitable[None]]] = None,
         port: Optional[int] = None,
         discovered_event: Optional[asyncio.Event] = None,
         credentials: Optional[Credentials] = None,
-        on_auth_failed: Optional[Callable[[Dict], Awaitable[None]]] = None,
     ):
         self.transport = None
         self.discovery_packets = discovery_packets
@@ -60,12 +59,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovered_devices = {}
         self.unsupported_devices: Dict = {}
         self.invalid_device_exceptions: Dict = {}
-        self.auth_failed_devices: Dict = {}
         self.on_unsupported = on_unsupported
         self.discovered_event = discovered_event
         self.credentials = credentials
-        self.on_auth_failed = on_auth_failed
-        self.ip_sem = asyncio.Semaphore()
         self.ip_set: Set[str] = set()
 
     def connection_made(self, transport) -> None:
@@ -97,79 +93,36 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
-        asyncio.create_task(self.datagram_received_async(data, addr))
-
-    async def datagram_received_async(self, data, addr) -> None:
-        """Handle discovery responses."""
         ip, port = addr
         # Prevent multiple entries due multiple broadcasts
-        async with self.ip_sem:
-            if ip in self.ip_set:
-                return
-            self.ip_set.add(ip)
+        if ip in self.ip_set:
+            return
+        self.ip_set.add(ip)
 
-        protocol: Optional[TPLinkProtocol] = None
-        info: Dict
-        if port == self.discovery_port:
-            info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
-            _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
-        elif port == Discover.DISCOVERY_PORT_2:
-            info = json_loads(data[16:])
-            if not (
-                self.credentials is not None
-                and Discover._is_klap_discovery_info(info)
-            ):
-                _LOGGER.debug("Unsupported device found at %s << %s", ip, info)
-                self.unsupported_devices[ip] = info
-                if self.on_unsupported is not None:
-                    asyncio.ensure_future(self.on_unsupported(info))
-                if self.discovered_event is not None and "255" not in self.target[
-                    0
-                ].split("."):
-                    self.discovered_event.set()
-                return
-            else:
-                _LOGGER.debug(
-                    "[DISCOVERY] Initialising klap protocol for device %s (%s) with owner %s",
-                    ip,
-                    info["result"]["mac"],
-                    info["result"]["owner"],
-                )
-                protocol = TPLinkKlap(ip, credentials=self.credentials)
-                try:
-                    info = await protocol.get_sysinfo_info()
-                except AuthenticationException:
-                    _LOGGER.debug(
-                        "Authentication failed for device found at %s << %s", ip, info
-                    )
-                    self.auth_failed_devices[ip] = info
-                    if self.on_auth_failed is not None:
-                        asyncio.ensure_future(self.on_auth_failed(info))
-                    if self.discovered_event is not None and "255" not in self.target[
-                        0
-                    ].split("."):
-                        self.discovered_event.set()
-                    return
-
-        _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
-
+        device = None
         try:
-            device_class = Discover._get_device_class(info)
+            if port == self.discovery_port:
+                device = Discover._get_device_instance_legacy(data, ip, port)
+            elif port == Discover.DISCOVERY_PORT_2:
+                device = Discover._get_device_instance(
+                    data, ip, port, self.credentials or Credentials()
+                )
+            else:
+                return
+        except UnsupportedDeviceException as udex:
+            _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
+            self.unsupported_devices[ip] = str(udex)
+            if self.on_unsupported is not None:
+                asyncio.ensure_future(self.on_unsupported(str(udex)))
+            if self.discovered_event is not None:
+                self.discovered_event.set()
+            return
         except SmartDeviceException as ex:
-            _LOGGER.debug(
-                "[DISCOVERY] Unable to find device type from %s: %s", info, ex
-            )
+            _LOGGER.debug(f"[DISCOVERY] Unable to find device type for {ip}: {ex}")
             self.invalid_device_exceptions[ip] = ex
             if self.discovered_event is not None:
                 self.discovered_event.set()
             return
-
-        device = device_class(ip, port=port, credentials=self.credentials)
-        device.update_from_discover_info(info)
-
-        # Override protocol if klap created and used succesfully
-        if protocol:
-            device.override_protocol(protocol)
 
         self.discovered_devices[ip] = device
 
@@ -241,7 +194,6 @@ class Discover:
         interface=None,
         on_unsupported=None,
         credentials=None,
-        on_auth_failed=None,
     ) -> DeviceDict:
         """Discover supported devices.
 
@@ -271,7 +223,6 @@ class Discover:
                 interface=interface,
                 on_unsupported=on_unsupported,
                 credentials=credentials,
-                on_auth_failed=on_auth_failed,
             ),
             local_addr=("0.0.0.0", 0),
         )
@@ -333,10 +284,6 @@ class Discover:
             )
         elif host in protocol.invalid_device_exceptions:
             raise protocol.invalid_device_exceptions[host]
-        elif host in protocol.auth_failed_devices:
-            raise AuthenticationException(
-                f"Authentication failed for {host}"
-            )
         else:
             raise SmartDeviceException(f"Unable to get discovery response for {host}")
 
@@ -365,15 +312,58 @@ class Discover:
                 return SmartLightStrip
 
             return SmartBulb
-
-        raise SmartDeviceException("Unknown device type: %s" % type_)
+        raise UnsupportedDeviceException("Unknown device type: %s" % type_)
 
     @staticmethod
-    def _is_klap_discovery_info(info: dict) -> bool:
-        return (
+    def _get_device_instance_legacy(data: bytes, ip: str, port: int) -> SmartDevice:
+        """Get SmartDevice for device described by passed data from legacy 9999 response."""
+        try:
+            info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
+        except Exception as ex:
+            raise SmartDeviceException(
+                f"Unable to read response from device: {ip}: {ex}"
+            )
+
+        _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
+
+        device_class = Discover._get_device_class(info)
+        device = device_class(ip, port=port)
+        device.update_from_discover_info(info)
+        return device
+
+    @staticmethod
+    def _get_device_instance(
+        data: bytes, ip: str, port: int, credentials: Credentials
+    ) -> SmartDevice:
+        """Get SmartDevice for device described by passed data from new 20002 response."""
+        try:
+            info = json_loads(data[16:])
+        except Exception as ex:
+            raise SmartDeviceException(
+                f"Unable to read response from device: {ip}: {ex}"
+            )
+
+        if (
             "result" in info
             and "mgt_encrypt_schm" in info["result"]
             and "encrypt_type" in info["result"]["mgt_encrypt_schm"]
             and info["result"]["mgt_encrypt_schm"]["encrypt_type"] == "KLAP"
             and "lv" not in info["result"]["mgt_encrypt_schm"]
-        )
+            and "device_type" in info["result"]
+        ):
+            type_ = info["result"]["device_type"]
+            device_class = None
+            if type_.upper() == "IOT.SMARTPLUGSWITCH":
+                device_class = SmartPlug
+
+            if device_class:
+                _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
+                device = device_class(ip, port=port, credentials=credentials)
+                device.protocol = TPLinkKlap(ip, credentials, info)
+                return device
+            else:
+                raise UnsupportedDeviceException(
+                    f"Unsupported device {ip} of type {type_}: {info}"
+                )
+        else:
+            raise UnsupportedDeviceException(f"Unsupported device {ip}: {info}")

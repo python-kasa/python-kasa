@@ -205,7 +205,7 @@ class SmartDevice:
         """
         self.host = host
         self.port = port
-        self.protocol = TPLinkSmartHomeProtocol(host, port=port)
+        self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(host, port=port)
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
@@ -217,10 +217,6 @@ class SmartDevice:
         self.modules: Dict[str, Any] = {}
 
         self.children: List["SmartDevice"] = []
-
-    def override_protocol(self, protocol: TPLinkProtocol):
-        """Override the default protocol for device communication."""
-        self.protocol = protocol
 
     def add_module(self, name: str, module: Module):
         """Register a module."""

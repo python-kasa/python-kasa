@@ -6,7 +6,7 @@ import re
 import sys
 from functools import singledispatch, wraps
 from pprint import pformat as pf
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, cast
 
 import asyncclick as click
 
@@ -20,6 +20,8 @@ from kasa import (
     SmartPlug,
     SmartStrip,
 )
+
+from .exceptions import AuthenticationException
 
 try:
     from rich import print as _do_echo
@@ -304,26 +306,24 @@ async def discover(ctx, timeout, show_unsupported):
     unsupported = []
     auth_failed = []
 
-    async def print_unsupported(data: Dict):
+    async def print_unsupported(data: str):
         unsupported.append(data)
         if show_unsupported:
             echo(f"Found unsupported device (tapo/unknown encryption): {data}")
             echo()
 
-    async def print_auth_failed(data: Dict):
-        auth_failed.append(data)
-        echo(f"Authentication failed for device: {data}")
-        echo()
-
     echo(f"Discovering devices on {target} for {timeout} seconds")
 
     async def print_discovered(dev: SmartDevice):
-        await dev.update()
-        async with sem:
-            discovered[dev.host] = dev.internal_state
-            ctx.obj = dev
-            await ctx.invoke(state)
-            echo()
+        try:
+            await dev.update()
+            async with sem:
+                discovered[dev.host] = dev.internal_state
+                ctx.obj = dev
+                await ctx.invoke(state)
+                echo()
+        except AuthenticationException as aex:
+            auth_failed.append(str(aex))
 
     await Discover.discover(
         target=target,
@@ -331,7 +331,6 @@ async def discover(ctx, timeout, show_unsupported):
         on_discovered=print_discovered,
         on_unsupported=print_unsupported,
         credentials=credentials,
-        on_auth_failed=print_auth_failed,
     )
 
     echo(f"Found {len(discovered)} devices")
@@ -346,6 +345,8 @@ async def discover(ctx, timeout, show_unsupported):
         )
     if auth_failed:
         echo(f"Found {len(auth_failed)} devices that failed to authenticate")
+        for fail in auth_failed:
+            echo(fail)
 
     return discovered
 

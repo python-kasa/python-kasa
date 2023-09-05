@@ -57,11 +57,19 @@ class TPLinkKlap(TPLinkProtocol):
     KASA_SETUP_PASSWORD = "kasaSetup"
 
     def __init__(
-        self, host: str, credentials: Credentials = Credentials()
+        self,
+        host: str,
+        credentials: Credentials = Credentials(),
+        discovery_data: Dict = {},
     ) -> None:
         super().__init__(host=host, port=self.DEFAULT_PORT)
 
-        self.credentials = credentials if credentials.username is not None and credentials.password is not None else Credentials(username="",password="")
+        self.credentials = (
+            credentials
+            if credentials.username is not None and credentials.password is not None
+            else Credentials(username="", password="")
+        )
+        self.discovery_data = discovery_data
         self.jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
 
         self._local_seed: Optional[bytes] = None
@@ -160,8 +168,7 @@ class TPLinkKlap(TPLinkProtocol):
 
         if response_status != 200:
             raise AuthenticationException(
-                "Device %s responded with %d to handshake1, this is probably not a klap device"
-                % (self.host, response_status)
+                f"Device {self.host} responded with {response_status} to handshake1 {self.discovery_data}"
             )
         self.handle_cookies(session, url)
 
@@ -218,9 +225,7 @@ class TPLinkKlap(TPLinkProtocol):
                     return remote_seed, kasa_setup_auth_hash
                 else:
                     self.authentication_failed = True
-                    msg = "Server response doesn't match our challenge on ip {}".format(
-                        self.host
-                    )
+                    msg = f"Server response doesn't match our challenge on ip {self.host} {self.discovery_data}"
                     _LOGGER.debug(msg)
                     raise AuthenticationException(msg)
 
@@ -246,7 +251,7 @@ class TPLinkKlap(TPLinkProtocol):
             self.authentication_failed = True
             self.handshake_done = False
             raise AuthenticationException(
-                "Device responded with %d to handshake2" % response_status
+                f"Device {self.host} responded with {response_status} to handshake2 {self.discovery_data}"
             )
         else:
             self.authentication_failed = False
@@ -270,17 +275,19 @@ class TPLinkKlap(TPLinkProtocol):
         _LOGGER.debug("[KLAP] Handshake with %s complete", self.host)
 
     @staticmethod
-    def generate_auth_hash(auth: Credentials):
+    def generate_auth_hash(creds: Credentials):
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
+        un = creds.username or ""
+        pw = creds.password or ""
         return TPLinkKlap._md5(
-            TPLinkKlap._md5(auth.username.encode())
-            + TPLinkKlap._md5(auth.password.encode())
+            TPLinkKlap._md5(un.encode()) + TPLinkKlap._md5(pw.encode())
         )
 
     @staticmethod
-    def generate_owner_hash(auth: Credentials):
+    def generate_owner_hash(creds: Credentials):
         """Return the MD5 hash of the username in this object."""
-        return TPLinkKlap._md5(auth.username.encode())
+        un = creds.username or ""
+        return TPLinkKlap._md5(un.encode())
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Query the device retrying for retry_count on failure."""
@@ -354,7 +361,7 @@ class TPLinkKlap(TPLinkProtocol):
                     self.handshake_done = False
                     self.authentication_failed = True
                     raise AuthenticationException(
-                        "Got a security error after handshake completed"
+                        f"Got a security error from {self.host} after handshake completed {self.discovery_data}"
                     )
                 else:
                     raise SmartDeviceException(

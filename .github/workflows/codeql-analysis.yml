@@ -2,7 +2,7 @@ name: "CodeQL checks"
 
 on:
   push:
-    branches: [ master, add_klap_protocol ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
   schedule:
