@@ -74,6 +74,8 @@ def requires_update(f):
         @functools.wraps(f)
         async def wrapped(*args, **kwargs):
             self = args[0]
+            if f.__name__ in self._requires_update_overrides:
+                return self._requires_update_overrides.get(f.__name__)
             if self._last_update is None:
                 raise SmartDeviceException(
                     "You need to await update() to access the data"
@@ -85,6 +87,8 @@ def requires_update(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             self = args[0]
+            if f.__name__ in self._requires_update_overrides:
+                return self._requires_update_overrides.get(f.__name__)
             if self._last_update is None:
                 raise SmartDeviceException(
                     "You need to await update() to access the data"
@@ -213,6 +217,11 @@ class SmartDevice:
         #       accessors. the @updated_required decorator does not ensure mypy that these
         #       are not accessed incorrectly.
         self._last_update: Any = None
+
+        # Homeassistant uses the mac for storing devices and alias for display so this property allows updating of
+        # some properties from the new discovery info even if the device can't authenticate
+        self._requires_update_overrides: dict = {}
+
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self.modules: Dict[str, Any] = {}
 
@@ -323,6 +332,7 @@ class SmartDevice:
         if self._last_update is None:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             self._last_update = await self.protocol.query(req)
+            self._requires_update_overrides = {}
             self._sys_info = self._last_update["system"]["get_sysinfo"]
 
         await self._modular_update(req)
@@ -461,7 +471,6 @@ class SmartDevice:
         :return: mac address in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         """
         sys_info = self.sys_info
-
         mac = sys_info.get("mac", sys_info.get("mic_mac"))
         if not mac:
             raise SmartDeviceException(

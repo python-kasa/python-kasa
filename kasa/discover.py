@@ -359,6 +359,12 @@ class Discover:
             if device_class:
                 _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
                 device = device_class(ip, port=port, credentials=credentials)
+                # Set the MAC so HA can add the device and try authentication later
+                device._requires_update_overrides = {
+                    "mac": info["result"].get("mac"),
+                    "alias": ip,
+                    "model": info["result"].get("device_model"),
+                }
                 device.protocol = TPLinkKlap(ip, credentials, info)
                 return device
             else:
