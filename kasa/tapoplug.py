@@ -22,14 +22,14 @@ _LOGGER = logging.getLogger(__name__)
 
 # TODO: there should be a baseclass for plugs that does not initialize modules etc. that are related only to some implementations
 class TapoPlug(SmartPlug):
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
+    def __init__(self, host: str, *, port: Optional[int] = None, credentials) -> None:
         # TODO: we are calling smartdevice here to avoid smartplug internal handling
-        SmartDevice.__init__(self, host, port=port)
+        SmartDevice.__init__(self, host, port=port, credentials=credentials)
         # TODO: this is needed as we don't call smartplug ctor
         self._device_type = DeviceType.Plug
         env = os.environ
         self._tapo_client = TapoClient(
-            AuthCredential(username=env["KASA_TAPO_EMAIL"], password=env["KASA_TAPO_PASSWORD"]), self.host
+            AuthCredential(username=credentials.username, password=credentials.password), self.host
         )
         self._tapo_device = PlugDevice(self._tapo_client)
         self._state = None
