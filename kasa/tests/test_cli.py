@@ -1,11 +1,23 @@
 import json
 import sys
 
+import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice, TPLinkSmartHomeProtocol
-from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
+from kasa.cli import (
+    TYPE_TO_CLASS,
+    alias,
+    brightness,
+    cli,
+    emeter,
+    raw_command,
+    state,
+    sysinfo,
+    toggle,
+)
+from kasa.discover import Discover
 
 from .conftest import handle_turn_on, turn_on
 from .newfakes import FakeTransportProtocol
@@ -131,19 +143,25 @@ async def test_credentials(discovery_data: dict, mocker):
     ftp = FakeTransportProtocol(discovery_data)
     mocker.patch.object(TPLinkSmartHomeProtocol, "query", ftp.query)
 
-    def discovery_info_to_type(info):
-        sysinfo = info["system"]["get_sysinfo"]
-        type_ = sysinfo.get("type", sysinfo.get("mic_type"))
-        if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
-            return "dimmer"
-        if "smartplug" in type_.lower():
-            if "children" in sysinfo:
-                return "strip"
-            return "plug"
-        if "smartbulb" in type_.lower():
-            if "length" in sysinfo:  # strips have length
-                return "lightstrip"
-            return "bulb"
+    # Patch state to echo username and password
+    pass_dev = click.make_pass_decorator(SmartDevice)
+
+    @pass_dev
+    async def _state(dev: SmartDevice):
+        if dev.credentials:
+            click.echo(
+                f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
+            )
+
+    mocker.patch("kasa.cli.state", new=_state)
+
+    # Get the type string parameter from the discovery_info
+    for cli_device_type in {
+        i
+        for i in TYPE_TO_CLASS
+        if TYPE_TO_CLASS[i] == Discover._get_device_class(discovery_data)
+    }:
+        break
 
     runner = CliRunner()
     res = await runner.invoke(
@@ -152,7 +170,7 @@ async def test_credentials(discovery_data: dict, mocker):
             "--host",
             "127.0.0.1",
             "--type",
-            discovery_info_to_type(discovery_data),
+            cli_device_type,
             "--username",
             "foo",
             "--password",
@@ -160,7 +178,12 @@ async def test_credentials(discovery_data: dict, mocker):
         ],
     )
     assert res.exit_code == 0
-    assert "Username: foo" in res.output and "Password: bar" in res.output
+    assert res.output == "Username:foo Password:bar\n"
+
+
+@pytest.mark.parametrize("auth_param", ["--username", "--password"])
+async def test_invalid_credential_params(auth_param):
+    runner = CliRunner()
 
     # Test for handling only one of username or passowrd supplied.
     res = await runner.invoke(
@@ -169,24 +192,9 @@ async def test_credentials(discovery_data: dict, mocker):
             "--host",
             "127.0.0.1",
             "--type",
-            discovery_info_to_type(discovery_data),
-            "--username",
+            "plug",
+            auth_param,
             "foo",
-        ],
-    )
-    assert res.exit_code == 0
-    assert (
-        res.output == "Using authentication requires both --username and --password\n"
-    )
-    res = await runner.invoke(
-        cli,
-        [
-            "--host",
-            "127.0.0.1",
-            "--type",
-            discovery_info_to_type(discovery_data),
-            "--password",
-            "bar",
         ],
     )
     assert res.exit_code == 0

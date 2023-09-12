@@ -11,7 +11,7 @@ from typing import Any, Dict, cast
 import asyncclick as click
 
 try:
-    from rich import print as echo
+    from rich import print as _do_echo
 except ImportError:
 
     def _strip_rich_formatting(echo_func):
@@ -25,8 +25,7 @@ except ImportError:
 
         return wrapper
 
-    echo = _strip_rich_formatting(click.echo)
-
+    _do_echo = _strip_rich_formatting(click.echo)
 
 from kasa import (
     Credentials,
@@ -51,6 +50,8 @@ click.anyio_backend = "asyncio"
 
 
 pass_dev = click.make_pass_decorator(SmartDevice)
+
+echo = _do_echo
 
 
 class ExceptionHandlerGroup(click.Group):
@@ -184,7 +185,8 @@ async def cli(
         echo = _nop_echo
     else:
         # Set back to default is required if running tests with CliRunner
-        echo = _strip_rich_formatting(click.echo)
+        global _do_echo
+        echo = _do_echo
 
     logging_config: Dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -366,11 +368,6 @@ async def state(dev: SmartDevice):
     echo(f"[bold]== {dev.alias} - {dev.model} ==[/bold]")
     echo(f"\tHost: {dev.host}")
     echo(f"\tPort: {dev.port}")
-    if dev.credentials is not None:
-        if dev.credentials.username is not None:
-            echo(f"\tUsername: {dev.credentials.username}")
-        if dev.credentials.password is not None:
-            echo(f"\tPassword: {dev.credentials.password}")
     echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
         echo("\t[bold]== Plugs ==[/bold]")
