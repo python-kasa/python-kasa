@@ -137,7 +137,7 @@ async def test_json_output(dev: SmartDevice, mocker):
 
 
 async def test_credentials(discovery_data: dict, mocker):
-    """Test credentials are passed correctly."""
+    """Test credentials are passed correctly from cli to device."""
     # As this is testing the device constructor need to explicitly wire in
     # the FakeTransportProtocol
     ftp = FakeTransportProtocol(discovery_data)

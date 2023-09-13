@@ -10,6 +10,17 @@ from typing import Any, Dict, cast
 
 import asyncclick as click
 
+from kasa import (
+    Credentials,
+    Discover,
+    SmartBulb,
+    SmartDevice,
+    SmartDimmer,
+    SmartLightStrip,
+    SmartPlug,
+    SmartStrip,
+)
+
 try:
     from rich import print as _do_echo
 except ImportError:
@@ -27,16 +38,9 @@ except ImportError:
 
     _do_echo = _strip_rich_formatting(click.echo)
 
-from kasa import (
-    Credentials,
-    Discover,
-    SmartBulb,
-    SmartDevice,
-    SmartDimmer,
-    SmartLightStrip,
-    SmartPlug,
-    SmartStrip,
-)
+# echo is set to _do_echo so that it can be reset to _do_echo later after
+# --json has set it to _nop_echo
+echo = _do_echo
 
 TYPE_TO_CLASS = {
     "plug": SmartPlug,
@@ -48,10 +52,7 @@ TYPE_TO_CLASS = {
 
 click.anyio_backend = "asyncio"
 
-
 pass_dev = click.make_pass_decorator(SmartDevice)
-
-echo = _do_echo
 
 
 class ExceptionHandlerGroup(click.Group):
