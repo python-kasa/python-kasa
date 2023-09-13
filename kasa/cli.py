@@ -10,8 +10,19 @@ from typing import Any, Dict, cast
 
 import asyncclick as click
 
+from kasa import (
+    Credentials,
+    Discover,
+    SmartBulb,
+    SmartDevice,
+    SmartDimmer,
+    SmartLightStrip,
+    SmartPlug,
+    SmartStrip,
+)
+
 try:
-    from rich import print as echo
+    from rich import print as _do_echo
 except ImportError:
 
     def _strip_rich_formatting(echo_func):
@@ -25,18 +36,11 @@ except ImportError:
 
         return wrapper
 
-    echo = _strip_rich_formatting(click.echo)
+    _do_echo = _strip_rich_formatting(click.echo)
 
-
-from kasa import (
-    Discover,
-    SmartBulb,
-    SmartDevice,
-    SmartDimmer,
-    SmartLightStrip,
-    SmartPlug,
-    SmartStrip,
-)
+# echo is set to _do_echo so that it can be reset to _do_echo later after
+# --json has set it to _nop_echo
+echo = _do_echo
 
 TYPE_TO_CLASS = {
     "plug": SmartPlug,
@@ -47,7 +51,6 @@ TYPE_TO_CLASS = {
 }
 
 click.anyio_backend = "asyncio"
-
 
 pass_dev = click.make_pass_decorator(SmartDevice)
 
@@ -137,6 +140,20 @@ def json_formatter_cb(result, **kwargs):
     required=False,
     help="Timeout for discovery.",
 )
+@click.option(
+    "--username",
+    default=None,
+    required=False,
+    envvar="TPLINK_CLOUD_USERNAME",
+    help="Username/email address to authenticate to device.",
+)
+@click.option(
+    "--password",
+    default=None,
+    required=False,
+    envvar="TPLINK_CLOUD_PASSWORD",
+    help="Password to use to authenticate to device.",
+)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(
@@ -149,6 +166,8 @@ async def cli(
     type,
     json,
     discovery_timeout,
+    username,
+    password,
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
@@ -158,13 +177,17 @@ async def cli(
         return
 
     # If JSON output is requested, disable echo
+    global echo
     if json:
-        global echo
 
         def _nop_echo(*args, **kwargs):
             pass
 
         echo = _nop_echo
+    else:
+        # Set back to default is required if running tests with CliRunner
+        global _do_echo
+        echo = _do_echo
 
     logging_config: Dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -195,15 +218,25 @@ async def cli(
             echo(f"No device with name {alias} found")
             return
 
+    if bool(password) != bool(username):
+        echo("Using authentication requires both --username and --password")
+        return
+
+    credentials = Credentials(username=username, password=password)
+
     if host is None:
         echo("No host name given, trying discovery..")
         return await ctx.invoke(discover, timeout=discovery_timeout)
 
     if type is not None:
-        dev = TYPE_TO_CLASS[type](host)
+        dev = TYPE_TO_CLASS[type](host, credentials=credentials)
     else:
         echo("No --type defined, discovering..")
-        dev = await Discover.discover_single(host, port=port)
+        dev = await Discover.discover_single(
+            host,
+            port=port,
+            credentials=credentials,
+        )
 
     await dev.update()
     ctx.obj = dev
@@ -261,6 +294,11 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 async def discover(ctx, timeout, show_unsupported):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
+    username = ctx.parent.params["username"]
+    password = ctx.parent.params["password"]
+
+    credentials = Credentials(username, password)
+
     sem = asyncio.Semaphore()
     discovered = dict()
     unsupported = []
@@ -286,6 +324,7 @@ async def discover(ctx, timeout, show_unsupported):
         timeout=timeout,
         on_discovered=print_discovered,
         on_unsupported=print_unsupported,
+        credentials=credentials,
     )
 
     echo(f"Found {len(discovered)} devices")

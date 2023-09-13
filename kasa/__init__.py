@@ -13,9 +13,14 @@ to be handled by the user of the library.
 """
 from importlib.metadata import version
 
+from kasa.credentials import Credentials
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
-from kasa.exceptions import SmartDeviceException
+from kasa.exceptions import (
+    AuthenticationException,
+    SmartDeviceException,
+    UnsupportedDeviceException,
+)
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.smartdevice import DeviceType, SmartDevice
@@ -42,4 +47,7 @@ __all__ = [
     "SmartStrip",
     "SmartDimmer",
     "SmartLightStrip",
+    "AuthenticationException",
+    "UnsupportedDeviceException",
+    "Credentials",
 ]

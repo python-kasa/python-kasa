@@ -1,13 +1,25 @@
+import inspect
 from datetime import datetime
 from unittest.mock import patch
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import SmartDeviceException
+import kasa
+from kasa import Credentials, SmartDevice, SmartDeviceException
 from kasa.smartstrip import SmartStripPlug
 
 from .conftest import handle_turn_on, has_emeter, no_emeter, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
+
+# List of all SmartXXX classes including the SmartDevice base class
+smart_device_classes = [
+    dc
+    for (mn, dc) in inspect.getmembers(
+        kasa,
+        lambda member: inspect.isclass(member)
+        and (member == SmartDevice or issubclass(member, SmartDevice)),
+    )
+]
 
 
 async def test_state_info(dev):
@@ -150,3 +162,15 @@ async def test_features(dev):
         assert dev.features == set(sysinfo["feature"].split(":"))
     else:
         assert dev.features == set()
+
+
+@pytest.mark.parametrize("device_class", smart_device_classes)
+def test_device_class_ctors(device_class):
+    """Make sure constructor api not broken for new and existing SmartDevices."""
+    host = "127.0.0.2"
+    port = 1234
+    credentials = Credentials("foo", "bar")
+    dev = device_class(host, port=port, credentials=credentials)
+    assert dev.host == host
+    assert dev.port == port
+    assert dev.credentials == credentials

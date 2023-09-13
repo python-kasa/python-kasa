@@ -14,6 +14,7 @@ from kasa.smartdevice import (
 )
 from kasa.smartplug import SmartPlug
 
+from .credentials import Credentials
 from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
@@ -79,8 +80,14 @@ class SmartStrip(SmartDevice):
     For more examples, see the :class:`SmartDevice` class.
     """
 
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
-        super().__init__(host=host, port=port)
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        credentials: Optional[Credentials] = None,
+    ) -> None:
+        super().__init__(host=host, port=port, credentials=credentials)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
         self.add_module("antitheft", Antitheft(self, "anti_theft"))

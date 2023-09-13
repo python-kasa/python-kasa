@@ -2,6 +2,7 @@
 from enum import Enum
 from typing import Any, Dict, Optional
 
+from kasa.credentials import Credentials
 from kasa.modules import AmbientLight, Motion
 from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
 from kasa.smartplug import SmartPlug
@@ -62,8 +63,14 @@ class SmartDimmer(SmartPlug):
 
     DIMMER_SERVICE = "smartlife.iot.dimmer"
 
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
-        super().__init__(host, port=port)
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        credentials: Optional[Credentials] = None,
+    ) -> None:
+        super().__init__(host, port=port, credentials=credentials)
         self._device_type = DeviceType.Dimmer
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
         # TODO: need to be figured out what's the best approach to detect support for these
