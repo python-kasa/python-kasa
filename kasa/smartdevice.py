@@ -336,13 +336,9 @@ class SmartDevice:
 
         request_list = []
         est_response_size = 1024 if "system" in req else 0
-        modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
         for module_name, module in self.modules.items():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
-                continue
-            if module_name in modules_to_skip:
-                _LOGGER.debug(f"Module {module} is excluded for {self.model}, skipping")
                 continue
 
             est_response_size += module.estimated_query_response_size
