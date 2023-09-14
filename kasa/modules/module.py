@@ -44,7 +44,7 @@ class Module(ABC):
         """
 
     @property
-    def query_response_size(self):
+    def estimated_query_response_size(self):
         """Estimated maximum size of query response.
 
         The inheriting modules implement this to estimate how large a query response

@@ -22,7 +22,7 @@ class Usage(Module):
         return req
 
     @property
-    def query_response_size(self):
+    def estimated_query_response_size(self):
         """Estimated maximum query response size."""
         return 2048
 

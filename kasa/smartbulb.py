@@ -545,6 +545,6 @@ class SmartBulb(SmartDevice):
         )
 
     @property
-    def max_response_payload_size(self) -> int:
+    def max_device_response_size(self) -> int:
         """Returns the maximum response size the device can safely construct."""
         return 4096

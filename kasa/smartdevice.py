@@ -28,9 +28,6 @@ from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
-# Certain module queries will crash devices; this list skips those queries
-MODEL_MODULE_SKIPLIST = {"KL125(US)": ["cloud"]}  # Issue #345
-
 
 class DeviceType(Enum):
     """Device type enum."""
@@ -348,11 +345,11 @@ class SmartDevice:
                 _LOGGER.debug(f"Module {module} is excluded for {self.model}, skipping")
                 continue
 
-            est_response_size += module.query_response_size
-            if est_response_size > self.max_response_payload_size:
+            est_response_size += module.estimated_query_response_size
+            if est_response_size > self.max_device_response_size:
                 request_list.append(req)
                 req = {}
-                est_response_size = module.query_response_size
+                est_response_size = module.estimated_query_response_size
 
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
@@ -675,7 +672,7 @@ class SmartDevice:
         return self.children[index]
 
     @property
-    def max_response_payload_size(self) -> int:
+    def max_device_response_size(self) -> int:
         """Returns the maximum response size the device can safely construct."""
         return 16 * 1024
 
