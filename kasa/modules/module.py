@@ -44,6 +44,15 @@ class Module(ABC):
         """
 
     @property
+    def estimated_query_response_size(self):
+        """Estimated maximum size of query response.
+
+        The inheriting modules implement this to estimate how large a query response
+        will be so that queries can be split should an estimated response be too large
+        """
+        return 256  # Estimate for modules that don't specify
+
+    @property
     def data(self):
         """Return the module specific raw data from the last update."""
         if self._module not in self._device._last_update:

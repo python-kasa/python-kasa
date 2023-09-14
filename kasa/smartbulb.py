@@ -543,3 +543,8 @@ class SmartBulb(SmartDevice):
         return await self._query_helper(
             self.LIGHT_SERVICE, "set_preferred_state", preset.dict(exclude_none=True)
         )
+
+    @property
+    def max_device_response_size(self) -> int:
+        """Returns the maximum response size the device can safely construct."""
+        return 4096

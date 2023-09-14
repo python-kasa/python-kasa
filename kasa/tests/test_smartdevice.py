@@ -39,7 +39,9 @@ async def test_initial_update_emeter(dev, mocker):
     dev._last_update = None
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    assert spy.call_count == 2 + len(dev.children)
+    # Devices with small buffers may require 3 queries
+    expected_queries = 2 if dev.max_device_response_size > 4096 else 3
+    assert spy.call_count == expected_queries + len(dev.children)
 
 
 @no_emeter
@@ -162,6 +164,17 @@ async def test_features(dev):
         assert dev.features == set(sysinfo["feature"].split(":"))
     else:
         assert dev.features == set()
+
+
+async def test_max_device_response_size(dev):
+    """Make sure every device return has a set max response size."""
+    assert dev.max_device_response_size > 0
+
+
+async def test_estimated_response_sizes(dev):
+    """Make sure every module has an estimated response size set."""
+    for mod in dev.modules.values():
+        assert mod.estimated_query_response_size > 0
 
 
 @pytest.mark.parametrize("device_class", smart_device_classes)

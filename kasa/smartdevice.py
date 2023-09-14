@@ -28,9 +28,6 @@ from .protocol import TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
-# Certain module queries will crash devices; this list skips those queries
-MODEL_MODULE_SKIPLIST = {"KL125(US)": ["cloud"]}  # Issue #345
-
 
 class DeviceType(Enum):
     """Device type enum."""
@@ -337,20 +334,32 @@ class SmartDevice:
             )
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
+        request_list = []
+        est_response_size = 1024 if "system" in req else 0
         for module_name, module in self.modules.items():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue
-            modules_to_skip = MODEL_MODULE_SKIPLIST.get(self.model, [])
-            if module_name in modules_to_skip:
-                _LOGGER.debug(f"Module {module} is excluded for {self.model}, skipping")
-                continue
+
+            est_response_size += module.estimated_query_response_size
+            if est_response_size > self.max_device_response_size:
+                request_list.append(req)
+                req = {}
+                est_response_size = module.estimated_query_response_size
 
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
             req = merge(req, q)
+        request_list.append(req)
 
-        self._last_update = await self.protocol.query(req)
+        responses = [
+            await self.protocol.query(request) for request in request_list if request
+        ]
+
+        update: Dict = {}
+        for response in responses:
+            update = {**update, **response}
+        self._last_update = update
 
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
@@ -657,6 +666,11 @@ class SmartDevice:
                 f"Invalid index {index}, device has {len(self.children)} plugs"
             )
         return self.children[index]
+
+    @property
+    def max_device_response_size(self) -> int:
+        """Returns the maximum response size the device can safely construct."""
+        return 16 * 1024
 
     @property
     def device_type(self) -> DeviceType:
