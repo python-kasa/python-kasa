@@ -108,7 +108,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         elif port == Discover.DISCOVERY_PORT_2:
             info = json_loads(data[16:])
         else:
-            raise SmartDeviceException("Received response from unexpected port %s" % port)
+            raise SmartDeviceException(
+                "Received response from unexpected port %s" % port
+            )
 
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
         try:
@@ -388,7 +390,9 @@ class Discover:
             supported_device_types = {
                 "SMART.TAPOPLUG": TapoPlug,
             }
-            if (device_type := info["result"].get("device_type")) in supported_device_types:
+            if (
+                device_type := info["result"].get("device_type")
+            ) in supported_device_types:
                 return supported_device_types[device_type]
             else:
                 raise UnsupportDeviceException("Found unsupported device: %s" % info)

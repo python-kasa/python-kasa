@@ -5,15 +5,15 @@ from typing import Any, Dict, Optional, Set
 
 from plugp100.api.plug_device import PlugDevice
 from plugp100.api.tapo_client import TapoClient
+from plugp100.common.credentials import AuthCredential
 from plugp100.responses.device_state import DeviceInfo, PlugDeviceState
 from plugp100.responses.device_usage_info import DeviceUsageInfo
 from plugp100.responses.energy_info import EnergyInfo
 from plugp100.responses.power_info import PowerInfo
 from plugp100.responses.time_info import TimeInfo
-from plugp100.common.credentials import AuthCredential
-
 
 from .emeterstatus import EmeterStatus
+from .exceptions import AuthenticationException
 from .smartdevice import DeviceType, SmartDevice
 from .smartplug import SmartPlug
 
@@ -27,15 +27,22 @@ class TapoPlug(SmartPlug):
         SmartDevice.__init__(self, host, port=port, credentials=credentials)
         # TODO: this is needed as we don't call smartplug ctor
         self._device_type = DeviceType.Plug
-        env = os.environ
-        self._tapo_client = TapoClient(
-            AuthCredential(username=credentials.username, password=credentials.password), self.host
-        )
-        self._tapo_device = PlugDevice(self._tapo_client)
+        self._tapo_client = None
+        self._tapo_device = None
         self._state = None
 
     async def update(self, update_children: bool = True):
-        # TODO: check for success as
+        if self.credentials is None or self.credentials.username is None:
+            raise AuthenticationException("Tapo plug requires authentication.")
+
+        if self._tapo_client is None:
+            user = self.credentials.username
+            pw = self.credentials.password
+            self._tapo_client = TapoClient(
+                AuthCredential(username=user, password=pw), self.host
+            )
+        self._tapo_device = PlugDevice(self._tapo_client)
+
         self._state = (await self._tapo_device.get_state()).value
         self._info: DeviceInfo = self._state.info
 
