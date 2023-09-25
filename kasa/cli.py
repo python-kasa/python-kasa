@@ -222,7 +222,9 @@ async def cli(
             return
 
     if bool(password) != bool(username):
-        raise click.BadOptionUsage("username", "Using authentication requires both --username and --password")
+        raise click.BadOptionUsage(
+            "username", "Using authentication requires both --username and --password"
+        )
 
     credentials = Credentials(username=username, password=password)
 
