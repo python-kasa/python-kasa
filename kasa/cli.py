@@ -209,6 +209,9 @@ async def cli(
     if ctx.invoked_subcommand == "discover":
         return
 
+    if alias is not None and host is not None:
+        raise click.BadOptionUsage("alias", "Use either --alias or --host, not both.")
+
     if alias is not None and host is None:
         echo(f"Alias is given, using discovery to find host {alias}")
         host = await find_host_from_alias(alias=alias, target=target)
@@ -219,7 +222,7 @@ async def cli(
             return
 
     if bool(password) != bool(username):
-        echo("Using authentication requires both --username and --password")
+        raise click.BadOptionUsage("username", "Using authentication requires both --username and --password")
         return
 
     credentials = Credentials(username=username, password=password)
