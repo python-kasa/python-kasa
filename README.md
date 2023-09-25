@@ -32,6 +32,11 @@ cd python-kasa/
 poetry install
 ```
 
+For devices that have both Python 2 and 3 installed, but version 2 is the default (like on Raspberry Pi devices), install using the following command:
+```
+pip3 install python-kasa
+```
+
 ## Discovering devices
 
 After installation, the devices can be discovered either by using `kasa discover` or by calling `kasa` without any parameters.
