@@ -185,7 +185,7 @@ async def test_credentials(discovery_data: dict, mocker):
 async def test_invalid_credential_params(auth_param):
     runner = CliRunner()
 
-    # Test for handling only one of username or passowrd supplied.
+    # Test for handling only one of username or password supplied.
     res = await runner.invoke(
         cli,
         [
@@ -197,7 +197,5 @@ async def test_invalid_credential_params(auth_param):
             "foo",
         ],
     )
-    assert res.exit_code == 0
-    assert (
-        res.output == "Using authentication requires both --username and --password\n"
-    )
+    assert res.exit_code == 2
+    assert "Error: Using authentication requires both --username and --password" in res.output
