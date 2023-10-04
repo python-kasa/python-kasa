@@ -198,4 +198,7 @@ async def test_invalid_credential_params(auth_param):
         ],
     )
     assert res.exit_code == 2
-    assert "Error: Using authentication requires both --username and --password" in res.output
+    assert (
+        "Error: Using authentication requires both --username and --password"
+        in res.output
+    )
