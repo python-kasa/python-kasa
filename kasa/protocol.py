@@ -162,6 +162,7 @@ class TPLinkSmartHomeProtocol:
                 async with asyncio_timeout(timeout):
                     return await self._execute_query(request)
             except Exception as ex:
+                _LOGGER.debug("Exception while querying %s: %s", self.host, ex)
                 await self.close()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
