@@ -70,3 +70,8 @@ async def test_effects_lightstrip_set_effect_transition(
 async def test_effects_lightstrip_has_effects(dev: SmartLightStrip):
     assert dev.has_effects is True
     assert dev.effect_list
+
+
+@lightstrip
+async def test_antitheft_not_supported(dev: SmartLightStrip):
+    assert dev.modules["antitheft"].is_supported is False

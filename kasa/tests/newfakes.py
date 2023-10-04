@@ -414,6 +414,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             "get_monthstat": None,
             "erase_emeter_state": None,
         },
+        "smartlife.iot.common.anti_theft": {
+            "get_next_action": {"err_code": -2, "err_msg": "member not support"}
+        },
         "smartlife.iot.common.emeter": {
             "get_realtime": None,
             "get_daystat": None,
