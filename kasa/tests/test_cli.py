@@ -183,9 +183,9 @@ async def test_credentials(discovery_data: dict, mocker):
 
 @pytest.mark.parametrize("auth_param", ["--username", "--password"])
 async def test_invalid_credential_params(auth_param):
+    """Test for handling only one of username or password supplied."""
     runner = CliRunner()
 
-    # Test for handling only one of username or passowrd supplied.
     res = await runner.invoke(
         cli,
         [
@@ -197,7 +197,25 @@ async def test_invalid_credential_params(auth_param):
             "foo",
         ],
     )
-    assert res.exit_code == 0
+    assert res.exit_code == 2
     assert (
-        res.output == "Using authentication requires both --username and --password\n"
+        "Error: Using authentication requires both --username and --password"
+        in res.output
     )
+
+
+async def test_duplicate_target_device():
+    """Test that defining both --host or --alias gives an error."""
+    runner = CliRunner()
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--alias",
+            "foo",
+        ],
+    )
+    assert res.exit_code == 2
+    assert "Error: Use either --alias or --host, not both." in res.output
