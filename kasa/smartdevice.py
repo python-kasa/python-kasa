@@ -336,7 +336,7 @@ class SmartDevice:
 
         request_list = []
         est_response_size = 1024 if "system" in req else 0
-        for module_name, module in self.modules.items():
+        for module in self.modules.values():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue
@@ -356,7 +356,11 @@ class SmartDevice:
             await self.protocol.query(request) for request in request_list if request
         ]
 
-        update: Dict = {}
+        # Preserve the last update and merge
+        # responses on top of it so we remember
+        # which modules are not supported, otherwise
+        # every other update will query for them
+        update: Dict = self._last_update.copy() if self._last_update else {}
         for response in responses:
             update = {**update, **response}
         self._last_update = update
