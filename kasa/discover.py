@@ -28,7 +28,7 @@ OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
 DeviceDict = Dict[str, SmartDevice]
 
 
-class _DiscoverProtocol(asyncio.DatagramProtocol):
+class DiscoveryProtocol(asyncio.DatagramProtocol):
     """Implementation of the discovery protocol handler.
 
     This is internal class, use :func:`Discover.discover`: instead.
@@ -40,7 +40,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self,
         *,
         on_discovered: Optional[OnDiscoveredCallable] = None,
-        target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
         on_unsupported: Optional[Callable[[Dict], Awaitable[None]]] = None,
@@ -53,8 +52,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.interface = interface
         self.on_discovered = on_discovered
         self.discovery_port = port or Discover.DISCOVERY_PORT
-        self.target = (target, self.discovery_port)
-        self.target_2 = (target, Discover.DISCOVERY_PORT_2)
         self.discovered_devices = {}
         self.unsupported_devices: Dict = {}
         self.invalid_device_exceptions: Dict = {}
@@ -78,16 +75,16 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.interface.encode()
             )
 
-        self.do_discover()
-
-    def do_discover(self) -> None:
+    def do_discover(self, host: str) -> None:
         """Send number of discovery datagrams."""
         req = json_dumps(Discover.DISCOVERY_QUERY)
-        _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
+        target = (host, self.discovery_port)
+        target_2 = (host, Discover.DISCOVERY_PORT_2)
+        _LOGGER.debug("[DISCOVERY] %s >> %s", host, Discover.DISCOVERY_QUERY)
         encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
         for i in range(self.discovery_packets):
-            self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
-            self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
+            self.transport.sendto(encrypted_req[4:], target)  # type: ignore
+            self.transport.sendto(Discover.DISCOVERY_QUERY_2, target_2)  # type: ignore
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
@@ -219,8 +216,7 @@ class Discover:
         """
         loop = asyncio.get_event_loop()
         transport, protocol = await loop.create_datagram_endpoint(
-            lambda: _DiscoverProtocol(
-                target=target,
+            lambda: DiscoveryProtocol(
                 on_discovered=on_discovered,
                 discovery_packets=discovery_packets,
                 interface=interface,
@@ -229,7 +225,8 @@ class Discover:
             ),
             local_addr=("0.0.0.0", 0),
         )
-        protocol = cast(_DiscoverProtocol, protocol)
+        protocol = cast(DiscoveryProtocol, protocol)
+        protocol.do_discover(target)
 
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", timeout)
@@ -258,12 +255,13 @@ class Discover:
         loop = asyncio.get_event_loop()
         event = asyncio.Event()
         transport, protocol = await loop.create_datagram_endpoint(
-            lambda: _DiscoverProtocol(
-                target=host, port=port, discovered_event=event, credentials=credentials
+            lambda: DiscoveryProtocol(
+                port=port, discovered_event=event, credentials=credentials
             ),
             local_addr=("0.0.0.0", 0),
         )
-        protocol = cast(_DiscoverProtocol, protocol)
+        protocol = cast(DiscoveryProtocol, protocol)
+        protocol.do_discover(host)
 
         try:
             _LOGGER.debug("Waiting a total of %s seconds for responses...", timeout)

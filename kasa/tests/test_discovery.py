@@ -5,7 +5,7 @@ import sys
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol
-from kasa.discover import _DiscoverProtocol, json_dumps
+from kasa.discover import DiscoveryProtocol, json_dumps
 from kasa.exceptions import UnsupportedDeviceException
 
 from .conftest import bulb, dimmer, lightstrip, plug, strip
@@ -59,13 +59,13 @@ async def test_discover_single(discovery_data: dict, mocker, custom_port):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
 
-    def mock_discover(self):
+    def mock_discover(self, host):
         self.datagram_received(
             protocol.TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:],
             (host, custom_port or 9999),
         )
 
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(DiscoveryProtocol, "do_discover", mock_discover)
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
 
     x = await Discover.discover_single(host, port=custom_port)
@@ -100,7 +100,7 @@ async def test_discover_single_unsupported(mocker):
     """Make sure that discover_single handles unsupported devices correctly."""
     host = "127.0.0.1"
 
-    def mock_discover(self):
+    def mock_discover(self, host):
         if discovery_data:
             data = (
                 b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
@@ -108,7 +108,7 @@ async def test_discover_single_unsupported(mocker):
             )
             self.datagram_received(data, (host, 20002))
 
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(DiscoveryProtocol, "do_discover", mock_discover)
 
     # Test with a valid unsupported response
     discovery_data = UNSUPPORTED
@@ -141,12 +141,12 @@ async def test_discover_invalid_info(msg, data, mocker):
     """Make sure that invalid discovery information raises an exception."""
     host = "127.0.0.1"
 
-    def mock_discover(self):
+    def mock_discover(self, host):
         self.datagram_received(
             protocol.TPLinkSmartHomeProtocol.encrypt(json_dumps(data))[4:], (host, 9999)
         )
 
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(DiscoveryProtocol, "do_discover", mock_discover)
 
     with pytest.raises(SmartDeviceException, match=msg):
         await Discover.discover_single(host)
@@ -154,17 +154,16 @@ async def test_discover_invalid_info(msg, data, mocker):
 
 async def test_discover_send(mocker):
     """Test discovery parameters."""
-    proto = _DiscoverProtocol()
+    proto = DiscoveryProtocol(port=9999)
     assert proto.discovery_packets == 3
-    assert proto.target == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
-    proto.do_discover()
+    proto.do_discover("255.255.255.255")
     assert transport.sendto.call_count == proto.discovery_packets * 2
 
 
 async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
-    proto = _DiscoverProtocol()
+    proto = DiscoveryProtocol()
     mocker.patch("kasa.discover.json_loads", return_value=discovery_data)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
@@ -186,7 +185,7 @@ async def test_discover_datagram_received(mocker, discovery_data):
 @pytest.mark.parametrize("msg, data", INVALIDS)
 async def test_discover_invalid_responses(msg, data, mocker):
     """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
-    proto = _DiscoverProtocol()
+    proto = DiscoveryProtocol()
     mocker.patch("kasa.discover.json_loads", return_value=data)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
