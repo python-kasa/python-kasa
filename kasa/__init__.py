@@ -14,7 +14,7 @@ to be handled by the user of the library.
 from importlib.metadata import version
 
 from kasa.credentials import Credentials
-from kasa.discover import Discover
+from kasa.discover import Discover, DiscoveryProtocol
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (
     AuthenticationException,
@@ -34,6 +34,7 @@ __version__ = version("python-kasa")
 
 __all__ = [
     "Discover",
+    "DiscoveryProtocol",
     "TPLinkSmartHomeProtocol",
     "SmartBulb",
     "SmartBulbPreset",
