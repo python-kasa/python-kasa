@@ -187,3 +187,10 @@ def test_device_class_ctors(device_class):
     assert dev.host == host
     assert dev.port == port
     assert dev.credentials == credentials
+
+
+async def test_modules_preserved(dev: SmartDevice):
+    """Make modules that are not being updated are preserved between updates."""
+    dev._last_update["some_module_not_being_updated"] = "should_be_kept"
+    await dev.update()
+    assert dev._last_update["some_module_not_being_updated"] == "should_be_kept"
