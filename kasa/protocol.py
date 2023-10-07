@@ -45,18 +45,9 @@ class TPLinkSmartHomeProtocol:
         self.port = port or TPLinkSmartHomeProtocol.DEFAULT_PORT
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None
-        self.query_lock: Optional[asyncio.Lock] = None
+        self.query_lock = asyncio.Lock()
         self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.timeout = timeout or TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
-
-    def _detect_event_loop_change(self) -> None:
-        """Check if this object has been reused betwen event loops."""
-        loop = asyncio.get_running_loop()
-        if not self.loop:
-            self.loop = loop
-        elif self.loop != loop:
-            _LOGGER.warning("Detected protocol reuse between different event loop")
-            self._reset()
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Request information from a TP-Link SmartHome Device.
@@ -67,11 +58,6 @@ class TPLinkSmartHomeProtocol:
         :param retry_count: how many retries to do in case of failure
         :return: response dict
         """
-        self._detect_event_loop_change()
-
-        if not self.query_lock:
-            self.query_lock = asyncio.Lock()
-
         if isinstance(request, dict):
             request = json_dumps(request)
             assert isinstance(request, str)
@@ -122,7 +108,7 @@ class TPLinkSmartHomeProtocol:
 
     def _reset(self) -> None:
         """Clear any varibles that should not survive between loops."""
-        self.reader = self.writer = self.loop = self.query_lock = None
+        self.reader = self.writer = None
 
     async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
