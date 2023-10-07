@@ -43,9 +43,10 @@ class SmartPlug(SmartDevice):
         host: str,
         *,
         port: Optional[int] = None,
-        credentials: Optional[Credentials] = None
+        credentials: Optional[Credentials] = None,
+        timeout: Optional[int] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials)
+        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
         self._device_type = DeviceType.Plug
         self.add_module("schedule", Schedule(self, "schedule"))
         self.add_module("usage", Usage(self, "schedule"))
