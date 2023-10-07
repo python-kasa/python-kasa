@@ -256,6 +256,11 @@ class Discover:
     ) -> SmartDevice:
         """Discover a single device by the given IP address.
 
+        It is generally preferred to avoid :func:`discover_single()` and
+        use :func:`connect_single()` instead as it should perform better when
+        the WiFi network is congested or the device is not responding
+        to discovery requests.
+
         :param host: Hostname of device to query
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
@@ -309,7 +314,19 @@ class Discover:
     ) -> SmartDevice:
         """Connect to a single device by the given IP address.
 
+        This method avoids the UDP based discovery process and
+        will connect directly to the device to query its type.
+
+        It is generally preferred to avoid :func:`discover_single()` and
+        use this function instead as it should perform better when
+        the WiFi network is congested or the device is not responding
+        to discovery requests.
+
         The device type is discovered by querying the device.
+
+        :param host: Hostname of device to query
+        :rtype: SmartDevice
+        :return: Object for querying/controlling found device.
         """
         unknown_dev = SmartDevice(
             host=host, port=port, credentials=credentials, timeout=timeout
