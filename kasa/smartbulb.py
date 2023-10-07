@@ -208,9 +208,10 @@ class SmartBulb(SmartDevice):
         host: str,
         *,
         port: Optional[int] = None,
-        credentials: Optional[Credentials] = None
+        credentials: Optional[Credentials] = None,
+        timeout: Optional[int] = None,
     ) -> None:
-        super().__init__(host=host, port=port, credentials=credentials)
+        super().__init__(host=host, port=port, credentials=credentials, timeout=timeout)
         self._device_type = DeviceType.Bulb
         self.add_module("schedule", Schedule(self, "smartlife.iot.common.schedule"))
         self.add_module("usage", Usage(self, "smartlife.iot.common.schedule"))
@@ -372,7 +373,7 @@ class SmartBulb(SmartDevice):
         saturation: int,
         value: Optional[int] = None,
         *,
-        transition: Optional[int] = None
+        transition: Optional[int] = None,
     ) -> Dict:
         """Set new HSV.
 

@@ -48,8 +48,9 @@ class SmartLightStrip(SmartBulb):
         *,
         port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
+        timeout: Optional[int] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials)
+        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
         self._device_type = DeviceType.LightStrip
 
     @property  # type: ignore

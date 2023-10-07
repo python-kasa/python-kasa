@@ -166,7 +166,7 @@ async def _update_and_close(d):
 
 
 async def _discover_update_and_close(ip):
-    d = await Discover.discover_single(ip)
+    d = await Discover.discover_single(ip, timeout=10)
     return await _update_and_close(d)
 
 
