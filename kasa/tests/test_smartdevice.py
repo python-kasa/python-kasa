@@ -37,6 +37,7 @@ async def test_invalid_connection(dev):
 async def test_initial_update_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = None
+    dev._features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
     # Devices with small buffers may require 3 queries
@@ -48,6 +49,7 @@ async def test_initial_update_emeter(dev, mocker):
 async def test_initial_update_no_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = None
+    dev._features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
     # 2 calls are necessary as some devices crash on unexpected modules
