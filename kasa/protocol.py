@@ -37,7 +37,9 @@ class TPLinkSmartHomeProtocol:
     DEFAULT_TIMEOUT = 5
     BLOCK_SIZE = 4
 
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
+    def __init__(
+        self, host: str, *, port: Optional[int] = None, timeout: Optional[int] = None
+    ) -> None:
         """Create a protocol object."""
         self.host = host
         self.port = port or TPLinkSmartHomeProtocol.DEFAULT_PORT
@@ -45,6 +47,7 @@ class TPLinkSmartHomeProtocol:
         self.writer: Optional[asyncio.StreamWriter] = None
         self.query_lock: Optional[asyncio.Lock] = None
         self.loop: Optional[asyncio.AbstractEventLoop] = None
+        self.timeout = timeout or TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
 
     def _detect_event_loop_change(self) -> None:
         """Check if this object has been reused betwen event loops."""
@@ -73,10 +76,8 @@ class TPLinkSmartHomeProtocol:
             request = json_dumps(request)
             assert isinstance(request, str)
 
-        timeout = TPLinkSmartHomeProtocol.DEFAULT_TIMEOUT
-
         async with self.query_lock:
-            return await self._query(request, retry_count, timeout)
+            return await self._query(request, retry_count, self.timeout)
 
     async def _connect(self, timeout: int) -> None:
         """Try to connect or reconnect to the device."""

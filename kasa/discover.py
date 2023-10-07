@@ -47,7 +47,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         port: Optional[int] = None,
         discovered_event: Optional[asyncio.Event] = None,
         credentials: Optional[Credentials] = None,
-    ):
+        timeout: Optional[int] = None,
+    ) -> None:
         self.transport = None
         self.discovery_packets = discovery_packets
         self.interface = interface
@@ -61,6 +62,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.on_unsupported = on_unsupported
         self.discovered_event = discovered_event
         self.credentials = credentials
+        self.timeout = timeout
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -124,7 +126,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 self.discovered_event.set()
             return
 
-        device = device_class(ip, port=port, credentials=self.credentials)
+        device = device_class(
+            ip, port=port, credentials=self.credentials, timeout=self.timeout
+        )
         device.update_from_discover_info(info)
 
         self.discovered_devices[ip] = device
@@ -226,6 +230,7 @@ class Discover:
                 interface=interface,
                 on_unsupported=on_unsupported,
                 credentials=credentials,
+                timeout=timeout,
             ),
             local_addr=("0.0.0.0", 0),
         )
@@ -259,7 +264,11 @@ class Discover:
         event = asyncio.Event()
         transport, protocol = await loop.create_datagram_endpoint(
             lambda: _DiscoverProtocol(
-                target=host, port=port, discovered_event=event, credentials=credentials
+                target=host,
+                port=port,
+                discovered_event=event,
+                credentials=credentials,
+                timeout=timeout,
             ),
             local_addr=("0.0.0.0", 0),
         )

@@ -69,8 +69,9 @@ class SmartDimmer(SmartPlug):
         *,
         port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
+        timeout: Optional[int] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials)
+        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
         self._device_type = DeviceType.Dimmer
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
         # TODO: need to be figured out what's the best approach to detect support for these

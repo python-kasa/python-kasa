@@ -86,8 +86,9 @@ class SmartStrip(SmartDevice):
         *,
         port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
+        timeout: Optional[int] = None,
     ) -> None:
-        super().__init__(host=host, port=port, credentials=credentials)
+        super().__init__(host=host, port=port, credentials=credentials, timeout=timeout)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
         self.add_module("antitheft", Antitheft(self, "anti_theft"))

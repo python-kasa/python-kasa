@@ -194,3 +194,9 @@ async def test_modules_preserved(dev: SmartDevice):
     dev._last_update["some_module_not_being_updated"] = "should_be_kept"
     await dev.update()
     assert dev._last_update["some_module_not_being_updated"] == "should_be_kept"
+
+
+async def test_create_smart_device_with_timeout():
+    """Make sure timeout is passed to the protocol."""
+    dev = SmartDevice(host="127.0.0.1", timeout=100)
+    assert dev.protocol.timeout == 100
