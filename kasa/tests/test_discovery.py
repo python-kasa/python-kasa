@@ -74,6 +74,26 @@ async def test_discover_single(discovery_data: dict, mocker, custom_port):
     assert x.port == custom_port or 9999
 
 
+@pytest.mark.parametrize("custom_port", [123, None])
+async def test_connect_single(discovery_data: dict, mocker, custom_port):
+    """Make sure that connect_single returns an initialized SmartDevice instance."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
+
+    dev = await Discover.connect_single(host, port=custom_port)
+    assert issubclass(dev.__class__, SmartDevice)
+    assert dev.port == custom_port or 9999
+
+
+async def test_connect_single_query_fails(discovery_data: dict, mocker):
+    """Make sure that connect_single fails when query fails."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", side_effect=SmartDeviceException)
+
+    with pytest.raises(SmartDeviceException):
+        await Discover.connect_single(host)
+
+
 UNSUPPORTED = {
     "result": {
         "device_id": "xx",
