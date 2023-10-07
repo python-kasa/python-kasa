@@ -259,7 +259,7 @@ class SmartStripPlug(SmartPlug):
         self.parent = parent
         self.child_id = child_id
         self._last_update = parent._last_update
-        self._sys_info = parent._sys_info
+        self._set_sys_info(parent.sys_info)
         self._device_type = DeviceType.StripSocket
         self.modules = {}
         self.protocol = parent.protocol  # Must use the same connection as the parent
