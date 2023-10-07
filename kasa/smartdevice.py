@@ -324,12 +324,10 @@ class SmartDevice:
         if self._last_update is None:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             self._last_update = await self.protocol.query(req)
-            self._sys_info = self._last_update["system"]["get_sysinfo"]
-            self._features = _parse_features(self._sys_info.get("feature", ""))
+            self._set_sys_info(self._last_update["system"]["get_sysinfo"])
 
         await self._modular_update(req)
-        self._sys_info = self._last_update["system"]["get_sysinfo"]
-        self._features = _parse_features(self._sys_info.get("feature", ""))
+        self._set_sys_info(self._last_update["system"]["get_sysinfo"])
 
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
@@ -373,7 +371,12 @@ class SmartDevice:
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
         self._last_update = info
-        self._sys_info = info["system"]["get_sysinfo"]
+        self._set_sys_info(info["system"]["get_sysinfo"])
+
+    def _set_sys_info(self, sys_info: Dict[str, Any]) -> None:
+        """Set sys_info."""
+        self._sys_info = sys_info
+        self._features = _parse_features(sys_info.get("feature", ""))
 
     @property  # type: ignore
     @requires_update
