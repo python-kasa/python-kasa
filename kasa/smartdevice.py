@@ -92,6 +92,12 @@ def requires_update(f):
     return wrapped
 
 
+@functools.lru_cache
+def _parse_features(features: str) -> Set[str]:
+    """Parse features string."""
+    return set(features.split(":"))
+
+
 class SmartDevice:
     """Base class for all supported device types.
 
@@ -213,6 +219,7 @@ class SmartDevice:
         #       are not accessed incorrectly.
         self._last_update: Any = None
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
+        self._features: Set[str] = set()
         self.modules: Dict[str, Any] = {}
 
         self.children: List["SmartDevice"] = []
@@ -284,11 +291,7 @@ class SmartDevice:
     @requires_update
     def features(self) -> Set[str]:
         """Return a set of features that the device supports."""
-        try:
-            return set(self.sys_info["feature"].split(":"))
-        except KeyError:
-            _LOGGER.debug("Device does not have feature information")
-            return set()
+        return self._features
 
     @property  # type: ignore
     @requires_update
@@ -321,11 +324,12 @@ class SmartDevice:
         # See #105, #120, #161
         if self._last_update is None:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
-            self._last_update = await self.protocol.query(req)
-            self._sys_info = self._last_update["system"]["get_sysinfo"]
+            response = await self.protocol.query(req)
+            self._last_update = response
+            self._set_sys_info(response["system"]["get_sysinfo"])
 
         await self._modular_update(req)
-        self._sys_info = self._last_update["system"]["get_sysinfo"]
+        self._set_sys_info(self._last_update["system"]["get_sysinfo"])
 
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
@@ -366,10 +370,18 @@ class SmartDevice:
             update = {**update, **response}
         self._last_update = update
 
-    def update_from_discover_info(self, info):
+    def update_from_discover_info(self, info: Dict[str, Any]) -> None:
         """Update state from info from the discover call."""
         self._last_update = info
-        self._sys_info = info["system"]["get_sysinfo"]
+        self._set_sys_info(info["system"]["get_sysinfo"])
+
+    def _set_sys_info(self, sys_info: Dict[str, Any]) -> None:
+        """Set sys_info."""
+        self._sys_info = sys_info
+        if features := sys_info.get("feature"):
+            self._features = _parse_features(features)
+        else:
+            self._features = set()
 
     @property  # type: ignore
     @requires_update
