@@ -92,6 +92,12 @@ def requires_update(f):
     return wrapped
 
 
+@functools.lru_cache
+def _parse_features(features: str) -> Set[str]:
+    """Parse features string."""
+    return set(features.split(":"))
+
+
 class SmartDevice:
     """Base class for all supported device types.
 
@@ -212,6 +218,7 @@ class SmartDevice:
         #       are not accessed incorrectly.
         self._last_update: Any = None
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
+        self._features: Set[str] = set()
         self.modules: Dict[str, Any] = {}
 
         self.children: List["SmartDevice"] = []
@@ -283,11 +290,7 @@ class SmartDevice:
     @requires_update
     def features(self) -> Set[str]:
         """Return a set of features that the device supports."""
-        try:
-            return set(self.sys_info["feature"].split(":"))
-        except KeyError:
-            _LOGGER.debug("Device does not have feature information")
-            return set()
+        return self._features
 
     @property  # type: ignore
     @requires_update
@@ -322,9 +325,11 @@ class SmartDevice:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             self._last_update = await self.protocol.query(req)
             self._sys_info = self._last_update["system"]["get_sysinfo"]
+            self._features = _parse_features(self._sys_info.get("feature", ""))
 
         await self._modular_update(req)
         self._sys_info = self._last_update["system"]["get_sysinfo"]
+        self._features = _parse_features(self._sys_info.get("feature", ""))
 
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
