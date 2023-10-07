@@ -323,8 +323,9 @@ class SmartDevice:
         # See #105, #120, #161
         if self._last_update is None:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
-            self._last_update = await self.protocol.query(req)
-            self._set_sys_info(self._last_update["system"]["get_sysinfo"])
+            response = await self.protocol.query(req)
+            self._last_update = response
+            self._set_sys_info(response)
 
         await self._modular_update(req)
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
