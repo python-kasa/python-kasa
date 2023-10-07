@@ -11,11 +11,10 @@ class Antitheft(RuleModule):
     @property
     def is_supported(self) -> bool:
         """Return whether the module is supported by the device."""
-        if (
-            (is_supported := super().is_supported)
-            and (module_data := self._device._last_update.get(self._module))
-            and (get_next_action := module_data.get("get_next_action"))
-            and "err_code" in get_next_action
-        ):
+        if not super().is_supported:
             return False
-        return is_supported
+        return (
+            not (module_data := self._device._last_update.get(self._module))
+            or not (get_next_action := module_data.get("get_next_action"))
+            or "err_code" not in get_next_action
+        )
