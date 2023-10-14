@@ -360,7 +360,7 @@ class SmartStripPlug(SmartPlug):
         info = self._get_child_info()
         on_time = info["on_time"]
 
-        return self.time - timedelta(seconds=on_time)
+        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update
