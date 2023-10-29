@@ -212,12 +212,12 @@ class Discover:
         you can use *target* parameter to specify the network for discovery.
 
         If given, `on_discovered` coroutine will get awaited with
-         a :class:`SmartDevice`-derived object as parameter.
+        a :class:`SmartDevice`-derived object as parameter.
 
         The results of the discovery are returned as a dict of
-         :class:`SmartDevice`-derived objects keyed with IP addresses.
+        :class:`SmartDevice`-derived objects keyed with IP addresses.
         The devices are already initialized and all but emeter-related properties
-         can be accessed directly.
+        can be accessed directly.
 
         :param target: The target address where to send the broadcast discovery
          queries if multi-homing (e.g. 192.168.xxx.255).
