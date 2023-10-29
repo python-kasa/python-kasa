@@ -44,9 +44,7 @@ def read_payloads_from_file(file):
 
         try:
             json_payload = json.loads(decrypted)
-        except (
-            Exception
-        ) as ex:  # this can happen when the response is split into multiple tcp segments
+        except Exception as ex:  # this can happen when the response is split into multiple tcp segments
             echo(f"[red]Unable to parse payload '{decrypted}', ignoring: {ex}[/red]")
             continue
 

@@ -87,7 +87,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         req = json_dumps(Discover.DISCOVERY_QUERY)
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
-        for i in range(self.discovery_packets):
+        for _i in range(self.discovery_packets):
             self.transport.sendto(encrypted_req[4:], self.target)  # type: ignore
             self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
 

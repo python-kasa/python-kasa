@@ -1,8 +1,16 @@
 import logging
 import re
 
-from voluptuous import Coerce  # type: ignore
-from voluptuous import REMOVE_EXTRA, All, Any, Invalid, Optional, Range, Schema
+from voluptuous import (
+    REMOVE_EXTRA,
+    All,
+    Any,
+    Coerce,  # type: ignore
+    Invalid,
+    Optional,
+    Range,
+    Schema,
+)
 
 from ..protocol import TPLinkSmartHomeProtocol
 
@@ -305,7 +313,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
 
         self.proto = proto
 
-    def set_alias(self, x, child_ids=[]):
+    def set_alias(self, x, child_ids=None):
+        if child_ids is None:
+            child_ids = []
         _LOGGER.debug("Setting alias to %s, child_ids: %s", x["alias"], child_ids)
         if child_ids:
             for child in self.proto["system"]["get_sysinfo"]["children"]:
@@ -314,7 +324,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         else:
             self.proto["system"]["get_sysinfo"]["alias"] = x["alias"]
 
-    def set_relay_state(self, x, child_ids=[]):
+    def set_relay_state(self, x, child_ids=None):
+        if child_ids is None:
+            child_ids = []
         _LOGGER.debug("Setting relay state to %s", x["state"])
 
         if not child_ids and "children" in self.proto["system"]["get_sysinfo"]:
@@ -459,11 +471,11 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
             child_ids = []
 
         def get_response_for_module(target):
-            if target not in proto.keys():
+            if target not in proto:
                 return error(msg="target not found")
 
             def get_response_for_command(cmd):
-                if cmd not in proto[target].keys():
+                if cmd not in proto[target]:
                     return error(msg=f"command {cmd} not found")
 
                 params = request[target][cmd]

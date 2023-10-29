@@ -347,9 +347,9 @@ async def discover(ctx, timeout, show_unsupported):
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
     """Discover a device identified by its alias."""
-    for attempt in range(1, attempts):
+    for _attempt in range(1, attempts):
         found_devs = await Discover.discover(target=target, timeout=timeout)
-        for ip, dev in found_devs.items():
+        for _ip, dev in found_devs.items():
             if dev.alias.lower() == alias.lower():
                 host = dev.host
                 return host

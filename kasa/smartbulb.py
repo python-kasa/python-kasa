@@ -362,9 +362,7 @@ class SmartBulb(SmartDevice):
 
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int) or not (0 <= value <= 100):
-            raise ValueError(
-                "Invalid brightness value: {} " "(valid range: 0-100%)".format(value)
-            )
+            raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     @requires_update
     async def set_hsv(
@@ -386,14 +384,11 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Bulb does not support color.")
 
         if not isinstance(hue, int) or not (0 <= hue <= 360):
-            raise ValueError(
-                "Invalid hue value: {} " "(valid range: 0-360)".format(hue)
-            )
+            raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
 
         if not isinstance(saturation, int) or not (0 <= saturation <= 100):
             raise ValueError(
-                "Invalid saturation value: {} "
-                "(valid range: 0-100%)".format(saturation)
+                f"Invalid saturation value: {saturation} (valid range: 0-100%)"
             )
 
         light_state = {
@@ -433,8 +428,9 @@ class SmartBulb(SmartDevice):
         valid_temperature_range = self.valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
-                "Temperature should be between {} "
-                "and {}, was {}".format(*valid_temperature_range, temp)
+                "Temperature should be between {} and {}, was {}".format(
+                    *valid_temperature_range, temp
+                )
             )
 
         light_state = {"color_temp": temp}
