@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.5.4](https://github.com/python-kasa/python-kasa/tree/0.5.4) (2023-10-29)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.3...0.5.4)
+
+The highlights of this maintenance release:
+
+* Support to the alternative discovery protocol and foundational work to support other communication protocols, thanks to @sdb9696.
+* Reliability improvements by avoiding overflowing device buffers, thanks to @cobryan05.
+* Optimizations for downstream device accesses, thanks to @bdraco.
+* Support for both pydantic v1 and v2.
+
+As always, see the full changelog for details.
+
+**Implemented enhancements:**
+
+- Add a connect\_single method to Discover to avoid the need for UDP [\#528](https://github.com/python-kasa/python-kasa/pull/528) (@bdraco)
+- Parse features only during updates [\#527](https://github.com/python-kasa/python-kasa/pull/527) (@bdraco)
+- Show an error if both --alias and --host are defined [\#513](https://github.com/python-kasa/python-kasa/pull/513) (@rytilahti)
+- Add plumbing for passing credentials to devices [\#507](https://github.com/python-kasa/python-kasa/pull/507) (@sdb9696)
+- Add support for pydantic v2 using v1 shims [\#504](https://github.com/python-kasa/python-kasa/pull/504) (@rytilahti)
+- Split queries to avoid overflowing device buffers [\#502](https://github.com/python-kasa/python-kasa/pull/502) (@cobryan05)
+- Add toggle command to cli [\#498](https://github.com/python-kasa/python-kasa/pull/498) (@normanr)
+- Make timeout adjustable [\#494](https://github.com/python-kasa/python-kasa/pull/494) (@bdraco)
+- Add support for alternative discovery protocol \(20002/udp\) [\#488](https://github.com/python-kasa/python-kasa/pull/488) (@sdb9696)
+- Add discovery timeout parameter [\#486](https://github.com/python-kasa/python-kasa/pull/486) (@sdb9696)
+- Add devtools script to create module fixtures [\#404](https://github.com/python-kasa/python-kasa/pull/404) (@rytilahti)
+
+**Fixed bugs:**
+
+- Fix on\_since for smartstrip sockets [\#529](https://github.com/python-kasa/python-kasa/pull/529) (@rytilahti)
+- Fix every other query tries to fetch known unsupported features [\#520](https://github.com/python-kasa/python-kasa/pull/520) (@bdraco)
+
+**Documentation updates:**
+
+- Mark KS2{20}M as partially supported [\#508](https://github.com/python-kasa/python-kasa/pull/508) (@lschweiss)
+- Document cli tool --target for discovery [\#497](https://github.com/python-kasa/python-kasa/pull/497) (@rytilahti)
+
+**Closed issues:**
+
+- Error running kasa command on the Raspberry PI [\#525](https://github.com/python-kasa/python-kasa/issues/525)
+- Installation Problems \(Python Version?\) [\#523](https://github.com/python-kasa/python-kasa/issues/523)
+- What are the units in the emeter readings? [\#514](https://github.com/python-kasa/python-kasa/issues/514)
+- Set Alias via Command Line [\#511](https://github.com/python-kasa/python-kasa/issues/511)
+- How do I know if my device supports emeter? [\#510](https://github.com/python-kasa/python-kasa/issues/510)
+- Getting Invalid KeyError when getting sysinfo on an EP40 device [\#500](https://github.com/python-kasa/python-kasa/issues/500)
+- Running kasa discover on subnet broadcasts only [\#496](https://github.com/python-kasa/python-kasa/issues/496)
+- Failed to discover kasa switchs on the network [\#495](https://github.com/python-kasa/python-kasa/issues/495)
+- \[Feature Request\] Add a toggle command [\#492](https://github.com/python-kasa/python-kasa/issues/492)
+- \[Feature Request\] Pydantic 2.0+ Support [\#491](https://github.com/python-kasa/python-kasa/issues/491)
+- Support for EP10 Plug [\#170](https://github.com/python-kasa/python-kasa/issues/170)
+
+**Merged pull requests:**
+
+- Use ruff and ruff format [\#534](https://github.com/python-kasa/python-kasa/pull/534) (@rytilahti)
+- Add python3.12 and pypy-3.10 to CI [\#532](https://github.com/python-kasa/python-kasa/pull/532) (@rytilahti)
+- Use trusted publisher for publishing to pypi [\#531](https://github.com/python-kasa/python-kasa/pull/531) (@rytilahti)
+- Remove code to detect event loop change [\#526](https://github.com/python-kasa/python-kasa/pull/526) (@bdraco)
+- Convert readthedocs config to v2 [\#505](https://github.com/python-kasa/python-kasa/pull/505) (@rytilahti)
+- Add new HS100\(UK\) fixture [\#489](https://github.com/python-kasa/python-kasa/pull/489) (@sdb9696)
+- Update pyproject.toml isort profile, dev group header and poetry.lock [\#487](https://github.com/python-kasa/python-kasa/pull/487) (@sdb9696)
+
 ## [0.5.3](https://github.com/python-kasa/python-kasa/tree/0.5.3) (2023-07-23)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.2...0.5.3)
@@ -16,6 +77,7 @@ This release adds support for defining the device port and introduces dependency
 
 **Merged pull requests:**
 
+- Release 0.5.3 [\#485](https://github.com/python-kasa/python-kasa/pull/485) (@rytilahti)
 - Add tests for KP200 [\#483](https://github.com/python-kasa/python-kasa/pull/483) (@bdraco)
 - Update pyyaml to fix CI [\#482](https://github.com/python-kasa/python-kasa/pull/482) (@bdraco)
 
