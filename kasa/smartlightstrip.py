@@ -105,9 +105,11 @@ class SmartLightStrip(SmartBulb):
     ) -> None:
         """Set an effect on the device.
 
-        If brightness or transition is defined, its value will be used instead of the effect-specific default.
+        If brightness or transition is defined,
+         its value will be used instead of the effect-specific default.
 
-        See :meth:`effect_list` for available effects, or use :meth:`set_custom_effect` for custom effects.
+        See :meth:`effect_list` for available effects,
+         or use :meth:`set_custom_effect` for custom effects.
 
         :param str effect: The effect to set
         :param int brightness: The wanted brightness

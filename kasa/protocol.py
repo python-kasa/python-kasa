@@ -116,11 +116,11 @@ class TPLinkSmartHomeProtocol:
         # Most of the time we will already be connected if the device is online
         # and the connect call will do nothing and return right away
         #
-        # However, if we get an unrecoverable error (_NO_RETRY_ERRORS and ConnectionRefusedError)
-        # we do not want to keep trying since many connection open/close operations
-        # in the same time frame can block the event loop. This is especially
-        # import when there are multiple tplink devices being polled.
-        #
+        # However, if we get an unrecoverable error (_NO_RETRY_ERRORS and
+        # ConnectionRefusedError) we do not want to keep trying since many
+        # connection open/close operations in the same time frame can block
+        # the event loop.
+        # This is especially import when there are multiple tplink devices being polled.
         for retry in range(retry_count + 1):
             try:
                 await self._connect(timeout)
@@ -133,7 +133,8 @@ class TPLinkSmartHomeProtocol:
                 await self.close()
                 if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
+                        f"Unable to connect to the device:"
+                        f" {self.host}:{self.port}: {ex}"
                     ) from ex
                 continue
             except Exception as ex:
@@ -141,7 +142,8 @@ class TPLinkSmartHomeProtocol:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
+                        f"Unable to connect to the device:"
+                        f" {self.host}:{self.port}: {ex}"
                     ) from ex
                 continue
 

@@ -101,8 +101,8 @@ def _parse_features(features: str) -> Set[str]:
 class SmartDevice:
     """Base class for all supported device types.
 
-    You don't usually want to construct this class which implements the shared common interfaces.
-    The recommended way is to either use the discovery functionality, or construct one of the subclasses:
+    You don't usually want to initialize this class manually,
+     but either use :class:`Discover` class, or use one of the subclasses:
 
     * :class:`SmartPlug`
     * :class:`SmartBulb`
@@ -145,7 +145,8 @@ class SmartDevice:
         >>> dev.mac
         01:23:45:67:89:ab
 
-        When initialized using discovery or using a subclass, you can check the type of the device:
+        When initialized using discovery or using a subclass,
+         you can check the type of the device:
 
         >>> dev.is_bulb
         False
@@ -154,7 +155,8 @@ class SmartDevice:
         >>> dev.is_plug
         True
 
-        You can also get the hardware and software as a dict, or access the full device response:
+        You can also get the hardware and software as a dict,
+         or access the full device response:
 
         >>> dev.hw_info
         {'sw_ver': '1.2.5 Build 171213 Rel.101523',
@@ -175,7 +177,8 @@ class SmartDevice:
         >>> dev.is_on
         True
 
-        Some devices provide energy consumption meter, and regular update will already fetch some information:
+        Some devices provide energy consumption meter,
+         and regular update will already fetch some information:
 
         >>> dev.has_emeter
         True
@@ -184,7 +187,8 @@ class SmartDevice:
         >>> dev.emeter_today
         >>> dev.emeter_this_month
 
-        You can also query the historical data (note that these needs to be awaited), keyed with month/day:
+        You can also query the historical data (note that these needs to be awaited),
+         keyed with month/day:
 
         >>> asyncio.run(dev.get_emeter_monthly(year=2016))
         {11: 1.089, 12: 1.582}
@@ -214,9 +218,9 @@ class SmartDevice:
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
-        # TODO: typing Any is just as using Optional[Dict] would require separate checks in
-        #       accessors. the @updated_required decorator does not ensure mypy that these
-        #       are not accessed incorrectly.
+        # TODO: typing Any is just as using Optional[Dict] would require separate
+        #       checks in accessors. the @updated_required decorator does not ensure
+        #       mypy that these are not accessed incorrectly.
         self._last_update: Any = None
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self._features: Set[str] = set()
@@ -751,4 +755,6 @@ class SmartDevice:
     def __repr__(self):
         if self._last_update is None:
             return f"<{self._device_type} at {self.host} - update() needed>"
-        return f"<{self._device_type} model {self.model} at {self.host} ({self.alias}), is_on: {self.is_on} - dev specific: {self.state_information}>"
+        return f"<{self._device_type} model {self.model} at {self.host}" \
+               f" ({self.alias}), is_on: {self.is_on}" \
+               f" - dev specific: {self.state_information}>"

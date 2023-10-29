@@ -40,7 +40,8 @@ class SmartStrip(SmartDevice):
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
-    which will not change the cached values, but you must await :func:`update()` separately.
+    which will not change the cached values,
+     but you must await :func:`update()` separately.
 
     Errors reported by the device are raised as :class:`SmartDeviceException`\s,
     and should be handled by the user of the library.

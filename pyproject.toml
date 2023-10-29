@@ -110,6 +110,7 @@ convention = "pep257"
     "D104",
     "F401",
     "S101", # allow asserts
+    "E501", # ignore line-too-longs
 ]
 "docs/source/conf.py" = [
     "D100",

@@ -48,7 +48,8 @@ class EmeterStatus(dict):
             return None
 
     def __repr__(self):
-        return f"<EmeterStatus power={self.power} voltage={self.voltage} current={self.current} total={self.total}>"
+        return f"<EmeterStatus power={self.power} voltage={self.voltage}" \
+               f" current={self.current} total={self.total}>"
 
     def __getitem__(self, item):
         """Return value in wanted units."""

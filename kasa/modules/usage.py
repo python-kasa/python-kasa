@@ -73,13 +73,19 @@ class Usage(Module):
         return await self.call("get_monthstat", {"year": year})
 
     async def get_daystat(self, *, year=None, month=None) -> Dict:
-        """Return daily stats for the given year & month as a dictionary of {day: time, ...}."""
+        """Return daily stats for the given year & month.
+
+        The return value is a dictionary of {day: time, ...}.
+        """
         data = await self.get_raw_daystat(year=year, month=month)
         data = self._convert_stat_data(data["day_list"], entry_key="day")
         return data
 
     async def get_monthstat(self, *, year=None) -> Dict:
-        """Return monthly stats for the given year as a dictionary of {month: time, ...}."""
+        """Return monthly stats for the given year.
+
+        The return value is a dictionary of {month: time, ...}.
+        """
         data = await self.get_raw_monthstat(year=year)
         data = self._convert_stat_data(data["month_list"], entry_key="month")
         return data

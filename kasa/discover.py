@@ -169,7 +169,8 @@ class Discover:
         >>> [dev.alias for dev in found_devices]
         ['TP-LINK_Power Strip_CF69']
 
-        Discovery can also be targeted to a specific broadcast address instead of the 255.255.255.255:
+        Discovery can also be targeted to a specific broadcast address instead of
+        the default 255.255.255.255:
 
         >>> asyncio.run(Discover.discover(target="192.168.8.255"))
 
@@ -207,14 +208,19 @@ class Discover:
         Sends discovery message to 255.255.255.255:9999 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.
-        If you have multiple interfaces, you can use target parameter to specify the network for discovery.
+        If you have multiple interfaces,
+        you can use *target* parameter to specify the network for discovery.
 
-        If given, `on_discovered` coroutine will get awaited with a :class:`SmartDevice`-derived object as parameter.
+        If given, `on_discovered` coroutine will get awaited with
+         a :class:`SmartDevice`-derived object as parameter.
 
-        The results of the discovery are returned as a dict of :class:`SmartDevice`-derived objects keyed with IP addresses.
-        The devices are already initialized and all but emeter-related properties can be accessed directly.
+        The results of the discovery are returned as a dict of
+         :class:`SmartDevice`-derived objects keyed with IP addresses.
+        The devices are already initialized and all but emeter-related properties
+         can be accessed directly.
 
-        :param target: The target address where to send the broadcast discovery queries if multi-homing (e.g. 192.168.xxx.255).
+        :param target: The target address where to send the broadcast discovery
+         queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
         :param timeout: How long to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets to broadcast
