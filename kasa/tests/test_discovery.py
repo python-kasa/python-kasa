@@ -71,7 +71,7 @@ async def test_discover_single(discovery_data: dict, mocker, custom_port):
     x = await Discover.discover_single(host, port=custom_port)
     assert issubclass(x.__class__, SmartDevice)
     assert x._sys_info is not None
-    assert x.port == custom_port or 9999
+    assert x.port == custom_port or x.port == 9999
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
@@ -82,7 +82,7 @@ async def test_connect_single(discovery_data: dict, mocker, custom_port):
 
     dev = await Discover.connect_single(host, port=custom_port)
     assert issubclass(dev.__class__, SmartDevice)
-    assert dev.port == custom_port or 9999
+    assert dev.port == custom_port or x.port == 9999
 
 
 async def test_connect_single_query_fails(discovery_data: dict, mocker):
