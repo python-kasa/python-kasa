@@ -60,7 +60,7 @@ class TPLinkSmartHomeProtocol:
         """
         if isinstance(request, dict):
             request = json_dumps(request)
-            assert isinstance(request, str)
+            assert isinstance(request, str)  # noqa: S101
 
         async with self.query_lock:
             return await self._query(request, retry_count, self.timeout)
@@ -77,8 +77,8 @@ class TPLinkSmartHomeProtocol:
 
     async def _execute_query(self, request: str) -> Dict:
         """Execute a query on the device and wait for the response."""
-        assert self.writer is not None
-        assert self.reader is not None
+        assert self.writer is not None  # noqa: S101
+        assert self.reader is not None  # noqa: S101
         debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if debug_log:
@@ -116,11 +116,11 @@ class TPLinkSmartHomeProtocol:
         # Most of the time we will already be connected if the device is online
         # and the connect call will do nothing and return right away
         #
-        # However, if we get an unrecoverable error (_NO_RETRY_ERRORS and ConnectionRefusedError)
-        # we do not want to keep trying since many connection open/close operations
-        # in the same time frame can block the event loop. This is especially
-        # import when there are multiple tplink devices being polled.
-        #
+        # However, if we get an unrecoverable error (_NO_RETRY_ERRORS and
+        # ConnectionRefusedError) we do not want to keep trying since many
+        # connection open/close operations in the same time frame can block
+        # the event loop.
+        # This is especially import when there are multiple tplink devices being polled.
         for retry in range(retry_count + 1):
             try:
                 await self._connect(timeout)
@@ -128,26 +128,28 @@ class TPLinkSmartHomeProtocol:
                 await self.close()
                 raise SmartDeviceException(
                     f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
-                )
+                ) from ex
             except OSError as ex:
                 await self.close()
                 if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
-                    )
+                        f"Unable to connect to the device:"
+                        f" {self.host}:{self.port}: {ex}"
+                    ) from ex
                 continue
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
-                    )
+                        f"Unable to connect to the device:"
+                        f" {self.host}:{self.port}: {ex}"
+                    ) from ex
                 continue
 
             try:
-                assert self.reader is not None
-                assert self.writer is not None
+                assert self.reader is not None  # noqa: S101
+                assert self.writer is not None  # noqa: S101
                 async with asyncio_timeout(timeout):
                     return await self._execute_query(request)
             except Exception as ex:

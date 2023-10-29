@@ -59,13 +59,13 @@ async def main(addrs, rounds):
 
     if test_gathered:
         print("=== Testing using gather on all devices ===")
-        for i in range(rounds):
+        for _i in range(rounds):
             data.append(await _update_concurrently(devs))
             await asyncio.sleep(2)
 
         await asyncio.sleep(5)
 
-        for i in range(rounds):
+        for _i in range(rounds):
             data.append(await _update_sequentially(devs))
             await asyncio.sleep(2)
 
@@ -77,7 +77,7 @@ async def main(addrs, rounds):
     futs = []
     data = []
     locks = {dev: asyncio.Lock() for dev in devs}
-    for i in range(rounds):
+    for _i in range(rounds):
         for dev in devs:
             futs.append(asyncio.ensure_future(_update(dev, locks[dev])))
 

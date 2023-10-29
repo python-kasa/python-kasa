@@ -57,7 +57,8 @@ class Module(ABC):
         """Return the module specific raw data from the last update."""
         if self._module not in self._device._last_update:
             raise SmartDeviceException(
-                f"You need to call update() prior accessing module data for '{self._module}'"
+                f"You need to call update() prior accessing module data"
+                f" for '{self._module}'"
             )
 
         return self._device._last_update[self._module]
@@ -80,4 +81,7 @@ class Module(ABC):
         return self._device._create_request(self._module, query, params)
 
     def __repr__(self) -> str:
-        return f"<Module {self.__class__.__name__} ({self._module}) for {self._device.host}>"
+        return (
+            f"<Module {self.__class__.__name__} ({self._module})"
+            f" for {self._device.host}>"
+        )

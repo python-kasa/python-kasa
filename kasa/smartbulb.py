@@ -59,7 +59,8 @@ class TurnOnBehavior(BaseModel):
     """Model to present a single turn on behavior.
 
     :param int preset: the index number of wanted preset.
-    :param BehaviorMode mode: last status or preset mode. If you are changing existing settings, you should not set this manually.
+    :param BehaviorMode mode: last status or preset mode.
+     If you are changing existing settings, you should not set this manually.
 
     To change the behavior, it is only necessary to change the :attr:`preset` field
     to contain either the preset index, or ``None`` for the last known state.
@@ -121,9 +122,11 @@ class SmartBulb(SmartDevice):
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
-    which will not change the cached values, but you must await :func:`update()` separately.
+    which will not change the cached values,
+    so you must await :func:`update()` to fetch updates values from the device.
 
-    Errors reported by the device are raised as :class:`SmartDeviceExceptions <kasa.exceptions.SmartDeviceException>`,
+    Errors reported by the device are raised as
+    :class:`SmartDeviceExceptions <kasa.exceptions.SmartDeviceException>`,
     and should be handled by the user of the library.
 
     Examples:
@@ -159,7 +162,7 @@ class SmartBulb(SmartDevice):
         >>> bulb.brightness
         50
 
-        Bulbs supporting color temperature can be queried to know which range is accepted:
+        Bulbs supporting color temperature can be queried for the supported range:
 
         >>> bulb.valid_temperature_range
         ColorTempRange(min=2500, max=9000)
@@ -175,9 +178,18 @@ class SmartBulb(SmartDevice):
         >>> bulb.hsv
         HSV(hue=180, saturation=100, value=80)
 
-        If you don't want to use the default transitions, you can pass `transition` in milliseconds.
-        This applies to all transitions (:func:`turn_on`, :func:`turn_off`, :func:`set_hsv`, :func:`set_color_temp`, :func:`set_brightness`) if supported by the device.
-        Light strips (e.g., KL420L5) do not support this feature, but silently ignore the parameter.
+        If you don't want to use the default transitions,
+        you can pass `transition` in milliseconds.
+        All methods changing the state of the device support this parameter:
+
+        * :func:`turn_on`
+        * :func:`turn_off`
+        * :func:`set_hsv`
+        * :func:`set_color_temp`
+        * :func:`set_brightness`
+
+        Light strips (e.g., KL420L5) do not support this feature,
+        but silently ignore the parameter.
         The following changes the brightness over a period of 10 seconds:
 
         >>> asyncio.run(bulb.set_brightness(100, transition=10_000))
@@ -187,7 +199,8 @@ class SmartBulb(SmartDevice):
         >>> bulb.presets
         [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
-        To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset` instance to :func:`save_preset` method:
+        To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset`
+        instance to :func:`save_preset` method:
 
         >>> preset = bulb.presets[0]
         >>> preset.brightness
@@ -197,7 +210,7 @@ class SmartBulb(SmartDevice):
         >>> bulb.presets[0].brightness
         100
 
-    """
+    """  # noqa: E501
 
     LIGHT_SERVICE = "smartlife.iot.smartbulb.lightingservice"
     SET_LIGHT_METHOD = "transition_light_state"
@@ -362,9 +375,7 @@ class SmartBulb(SmartDevice):
 
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int) or not (0 <= value <= 100):
-            raise ValueError(
-                "Invalid brightness value: {} " "(valid range: 0-100%)".format(value)
-            )
+            raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     @requires_update
     async def set_hsv(
@@ -386,14 +397,11 @@ class SmartBulb(SmartDevice):
             raise SmartDeviceException("Bulb does not support color.")
 
         if not isinstance(hue, int) or not (0 <= hue <= 360):
-            raise ValueError(
-                "Invalid hue value: {} " "(valid range: 0-360)".format(hue)
-            )
+            raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
 
         if not isinstance(saturation, int) or not (0 <= saturation <= 100):
             raise ValueError(
-                "Invalid saturation value: {} "
-                "(valid range: 0-100%)".format(saturation)
+                f"Invalid saturation value: {saturation} (valid range: 0-100%)"
             )
 
         light_state = {
@@ -433,8 +441,9 @@ class SmartBulb(SmartDevice):
         valid_temperature_range = self.valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
-                "Temperature should be between {} "
-                "and {}, was {}".format(*valid_temperature_range, temp)
+                "Temperature should be between {} and {}, was {}".format(
+                    *valid_temperature_range, temp
+                )
             )
 
         light_state = {"color_temp": temp}

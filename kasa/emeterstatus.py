@@ -48,9 +48,13 @@ class EmeterStatus(dict):
             return None
 
     def __repr__(self):
-        return f"<EmeterStatus power={self.power} voltage={self.voltage} current={self.current} total={self.total}>"
+        return (
+            f"<EmeterStatus power={self.power} voltage={self.voltage}"
+            f" current={self.current} total={self.total}>"
+        )
 
     def __getitem__(self, item):
+        """Return value in wanted units."""
         valid_keys = [
             "voltage_mv",
             "power_mw",
@@ -65,7 +69,7 @@ class EmeterStatus(dict):
         ]
 
         # 1. if requested data is available, return it
-        if item in super().keys():
+        if item in super().keys():  # noqa: SIM118
             return super().__getitem__(item)
         # otherwise decide how to convert it
         else:
@@ -74,7 +78,7 @@ class EmeterStatus(dict):
             if "_" in item:  # upscale
                 return super().__getitem__(item[: item.find("_")]) * 1000
             else:  # downscale
-                for i in super().keys():
+                for i in super().keys():  # noqa: SIM118
                     if i.startswith(item):
                         return self.__getitem__(i) / 1000
 

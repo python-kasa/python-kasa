@@ -11,10 +11,10 @@ class SmartLightStrip(SmartBulb):
     """Representation of a TP-Link Smart light strip.
 
     Light strips work similarly to bulbs, but use a different service for controlling,
-     and expose some extra information (such as length and active effect).
-     This class extends :class:`SmartBulb` interface.
+    and expose some extra information (such as length and active effect).
+    This class extends :class:`SmartBulb` interface.
 
-     Examples:
+    Examples:
         >>> import asyncio
         >>> strip = SmartLightStrip("127.0.0.1")
         >>> asyncio.run(strip.update())
@@ -105,9 +105,11 @@ class SmartLightStrip(SmartBulb):
     ) -> None:
         """Set an effect on the device.
 
-        If brightness or transition is defined, its value will be used instead of the effect-specific default.
+        If brightness or transition is defined,
+        its value will be used instead of the effect-specific default.
 
-        See :meth:`effect_list` for available effects, or use :meth:`set_custom_effect` for custom effects.
+        See :meth:`effect_list` for available effects,
+        or use :meth:`set_custom_effect` for custom effects.
 
         :param str effect: The effect to set
         :param int brightness: The wanted brightness

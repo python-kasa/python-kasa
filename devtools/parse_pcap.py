@@ -15,7 +15,7 @@ from kasa.protocol import TPLinkSmartHomeProtocol
 def read_payloads_from_file(file):
     """Read the given pcap file and yield json payloads."""
     pcap = dpkt.pcap.Reader(file)
-    for ts, pkt in pcap:
+    for _ts, pkt in pcap:
         eth = Ethernet(pkt)
         if eth.type != ETH_TYPE_IP:
             continue
@@ -44,9 +44,8 @@ def read_payloads_from_file(file):
 
         try:
             json_payload = json.loads(decrypted)
-        except (
-            Exception
-        ) as ex:  # this can happen when the response is split into multiple tcp segments
+        except Exception as ex:
+            # this can happen when the response is split into multiple tcp segments
             echo(f"[red]Unable to parse payload '{decrypted}', ignoring: {ex}[/red]")
             continue
 
@@ -91,7 +90,8 @@ def parse_pcap(file):
                 context_str = f" [ctx: {context}]" if context else ""
 
                 echo(
-                    f"[{is_success}] {direction}{context_str} {module}.{cmd}: {pf(response)}"
+                    f"[{is_success}] {direction}{context_str} {module}.{cmd}:"
+                    f" {pf(response)}"
                 )
 
     echo(pf(seen_items))

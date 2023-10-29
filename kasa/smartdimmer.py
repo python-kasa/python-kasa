@@ -41,7 +41,8 @@ class SmartDimmer(SmartPlug):
     This will allow accessing the properties using the exposed properties.
 
     All changes to the device are done using awaitable methods,
-    which will not change the cached values, but you must await :func:`update()` separately.
+    which will not change the cached values,
+    but you must await :func:`update()` separately.
 
     Errors reported by the device are raised as :class:`SmartDeviceException`\s,
     and should be handled by the user of the library.
@@ -74,7 +75,7 @@ class SmartDimmer(SmartPlug):
         super().__init__(host, port=port, credentials=credentials, timeout=timeout)
         self._device_type = DeviceType.Dimmer
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
-        # TODO: need to be figured out what's the best approach to detect support for these
+        # TODO: need to be figured out what's the best approach to detect support
         self.add_module("motion", Motion(self, "smartlife.iot.PIR"))
         self.add_module("ambient", AmbientLight(self, "smartlife.iot.LAS"))
 
@@ -187,7 +188,8 @@ class SmartDimmer(SmartPlug):
         """Set action to perform on button click/hold.
 
         :param action_type ActionType: whether to control double click or hold action.
-        :param action ButtonAction: what should the button do (nothing, instant, gentle, change preset)
+        :param action ButtonAction: what should the button do
+         (nothing, instant, gentle, change preset)
         :param index int: in case of preset change, the preset to select
         """
         action_type_setter = f"set_{action_type}"

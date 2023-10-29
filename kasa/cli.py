@@ -203,7 +203,8 @@ async def cli(
     except ImportError:
         pass
 
-    # The configuration should be converted to use dictConfig, but this keeps mypy happy for now
+    # The configuration should be converted to use dictConfig,
+    # but this keeps mypy happy for now
     logging.basicConfig(**logging_config)  # type: ignore
 
     if ctx.invoked_subcommand == "discover":
@@ -278,7 +279,8 @@ async def join(dev: SmartDevice, ssid, password, keytype):
     echo(f"Asking the device to connect to {ssid}..")
     res = await dev.wifi_join(ssid, password, keytype=keytype)
     echo(
-        f"Response: {res} - if the device is not able to join the network, it will revert back to its previous state."
+        f"Response: {res} - if the device is not able to join the network, "
+        f"it will revert back to its previous state."
     )
 
     return res
@@ -347,9 +349,9 @@ async def discover(ctx, timeout, show_unsupported):
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
     """Discover a device identified by its alias."""
-    for attempt in range(1, attempts):
+    for _attempt in range(1, attempts):
         found_devs = await Discover.discover(target=target, timeout=timeout)
-        for ip, dev in found_devs.items():
+        for _ip, dev in found_devs.items():
             if dev.alias.lower() == alias.lower():
                 host = dev.host
                 return host

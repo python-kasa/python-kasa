@@ -156,7 +156,7 @@ async def test_credentials(discovery_data: dict, mocker):
     mocker.patch("kasa.cli.state", new=_state)
 
     # Get the type string parameter from the discovery_info
-    for cli_device_type in {
+    for cli_device_type in {  # noqa: B007
         i
         for i in TYPE_TO_CLASS
         if TYPE_TO_CLASS[i] == Discover._get_device_class(discovery_data)

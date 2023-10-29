@@ -26,18 +26,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip poetry
           poetry install
-      - name: "Run pyupgrade"
+      - name: "Linting and code formating (ruff)"
         run: |
-          poetry run pre-commit run pyupgrade --all-files
-      - name: "Code formating (black)"
-        run: |
-          poetry run pre-commit run black --all-files
-      - name: "Code formating (flake8)"
-        run: |
-          poetry run pre-commit run flake8 --all-files
-      - name: "Order of imports (isort)"
-        run: |
-          poetry run pre-commit run isort --all-files
+          poetry run pre-commit run ruff --all-files
       - name: "Typing checks (mypy)"
         run: |
           poetry run pre-commit run mypy --all-files
