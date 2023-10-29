@@ -1,7 +1,8 @@
 """This script generates devinfo files for the test suite.
 
-If you have new, yet unsupported device or a device with no devinfo file under kasa/tests/fixtures,
-feel free to run this script and create a PR to add the file to the repository.
+If you have new, yet unsupported device or a device with no devinfo file under
+ kasa/tests/fixtures, feel free to run this script and create a PR to add the file
+ to the repository.
 
 Executing this script will several modules and methods one by one,
 and finally execute a query to query all of them at once.
@@ -84,13 +85,13 @@ def cli(host, debug):
 
     for test_call in items:
 
-        async def _run_query():
+        async def _run_query(test_call):
             protocol = TPLinkSmartHomeProtocol(host)
             return await protocol.query({test_call.module: {test_call.method: None}})
 
         try:
             click.echo(f"Testing {test_call}..", nl=False)
-            info = asyncio.run(_run_query())
+            info = asyncio.run(_run_query(test_call))
             resp = info[test_call.module]
         except Exception as ex:
             click.echo(click.style(f"FAIL {ex}", fg="red"))
