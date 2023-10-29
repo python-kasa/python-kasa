@@ -54,12 +54,6 @@ coverage = {version = "*", extras = ["toml"]}
 docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]
 speedups = ["orjson", "kasa-crypt"]
 
-
-[tool.isort]
-profile = "black"
-known_first_party = "kasa"
-known_third_party = ["asyncclick", "pytest", "setuptools", "voluptuous"]
-
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
@@ -71,15 +65,6 @@ exclude_lines = [
   "raise NotImplementedError",
   "def __repr__"
 ]
-
-[tool.interrogate]
-ignore-init-method = true
-ignore-magic = true
-ignore-private = true
-ignore-semiprivate = true
-fail-under = 100
-exclude = ['kasa/tests/*']
-verbose = 2
 
 [tool.pytest.ini_options]
 markers = [
@@ -95,3 +80,34 @@ ignore-path-errors = ["docs/source/index.rst;D000"]
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py38"
+select = [
+  "E",  # pycodestyle
+  "D",  # pydocstyle
+  "F",  # pyflakes
+  "UP",  # pyupgrade
+  "B",  # flake8-bugbear
+  "SIM",  # flake8-simplify
+  "I",  # isort
+  "S",  # bandit
+]
+
+[tool.ruff.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.per-file-ignores]
+"kasa/tests/*.py" = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "F401",
+    "S101", # allow asserts
+]
+"docs/source/conf.py" = [
+    "D100",
+    "D103",
+]
