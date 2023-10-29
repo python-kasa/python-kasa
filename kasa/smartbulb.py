@@ -126,7 +126,7 @@ class SmartBulb(SmartDevice):
     so you must await :func:`update()` to fetch updates values from the device.
 
     Errors reported by the device are raised as
-     :class:`SmartDeviceExceptions <kasa.exceptions.SmartDeviceException>`,
+    :class:`SmartDeviceExceptions <kasa.exceptions.SmartDeviceException>`,
     and should be handled by the user of the library.
 
     Examples:
@@ -179,8 +179,9 @@ class SmartBulb(SmartDevice):
         HSV(hue=180, saturation=100, value=80)
 
         If you don't want to use the default transitions,
-         you can pass `transition` in milliseconds.
+        you can pass `transition` in milliseconds.
         All methods changing the state of the device support this parameter:
+        
         * :func:`turn_on`
         * :func:`turn_off`
         * :func:`set_hsv`
@@ -188,7 +189,7 @@ class SmartBulb(SmartDevice):
         * :func:`set_brightness`
 
         Light strips (e.g., KL420L5) do not support this feature,
-         but silently ignore the parameter.
+        but silently ignore the parameter.
         The following changes the brightness over a period of 10 seconds:
 
         >>> asyncio.run(bulb.set_brightness(100, transition=10_000))
@@ -199,7 +200,7 @@ class SmartBulb(SmartDevice):
         [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
         To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset`
-         instance to :func:`save_preset` method:
+        instance to :func:`save_preset` method:
 
         >>> preset = bulb.presets[0]
         >>> preset.brightness
