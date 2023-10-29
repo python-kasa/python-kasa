@@ -102,7 +102,7 @@ class SmartDevice:
     """Base class for all supported device types.
 
     You don't usually want to initialize this class manually,
-     but either use :class:`Discover` class, or use one of the subclasses:
+    but either use :class:`Discover` class, or use one of the subclasses:
 
     * :class:`SmartPlug`
     * :class:`SmartBulb`
@@ -146,7 +146,7 @@ class SmartDevice:
         01:23:45:67:89:ab
 
         When initialized using discovery or using a subclass,
-         you can check the type of the device:
+        you can check the type of the device:
 
         >>> dev.is_bulb
         False
@@ -156,7 +156,7 @@ class SmartDevice:
         True
 
         You can also get the hardware and software as a dict,
-         or access the full device response:
+        or access the full device response:
 
         >>> dev.hw_info
         {'sw_ver': '1.2.5 Build 171213 Rel.101523',
@@ -178,7 +178,7 @@ class SmartDevice:
         True
 
         Some devices provide energy consumption meter,
-         and regular update will already fetch some information:
+        and regular update will already fetch some information:
 
         >>> dev.has_emeter
         True
@@ -188,7 +188,7 @@ class SmartDevice:
         >>> dev.emeter_this_month
 
         You can also query the historical data (note that these needs to be awaited),
-         keyed with month/day:
+        keyed with month/day:
 
         >>> asyncio.run(dev.get_emeter_monthly(year=2016))
         {11: 1.089, 12: 1.582}

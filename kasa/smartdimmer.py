@@ -42,7 +42,7 @@ class SmartDimmer(SmartPlug):
 
     All changes to the device are done using awaitable methods,
     which will not change the cached values,
-     but you must await :func:`update()` separately.
+    but you must await :func:`update()` separately.
 
     Errors reported by the device are raised as :class:`SmartDeviceException`\s,
     and should be handled by the user of the library.
