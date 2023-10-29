@@ -232,7 +232,7 @@ class Discover:
                 credentials=credentials,
                 timeout=timeout,
             ),
-            local_addr=("0.0.0.0", 0),
+            local_addr=("0.0.0.0", 0),  # noqa: S104
         )
         protocol = cast(_DiscoverProtocol, protocol)
 
@@ -275,7 +275,7 @@ class Discover:
                 credentials=credentials,
                 timeout=timeout,
             ),
-            local_addr=("0.0.0.0", 0),
+            local_addr=("0.0.0.0", 0),  # noqa: S104
         )
         protocol = cast(_DiscoverProtocol, protocol)
 
