@@ -82,7 +82,7 @@ async def test_connect_single(discovery_data: dict, mocker, custom_port):
 
     dev = await Discover.connect_single(host, port=custom_port)
     assert issubclass(dev.__class__, SmartDevice)
-    assert dev.port == custom_port or x.port == 9999
+    assert dev.port == custom_port or dev.port == 9999
 
 
 async def test_connect_single_query_fails(discovery_data: dict, mocker):
