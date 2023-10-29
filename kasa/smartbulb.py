@@ -181,7 +181,7 @@ class SmartBulb(SmartDevice):
         If you don't want to use the default transitions,
         you can pass `transition` in milliseconds.
         All methods changing the state of the device support this parameter:
-        
+
         * :func:`turn_on`
         * :func:`turn_off`
         * :func:`set_hsv`
