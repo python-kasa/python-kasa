@@ -128,13 +128,13 @@ class TPLinkSmartHomeProtocol:
                 await self.close()
                 raise SmartDeviceException(
                     f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
-                )
+                ) from ex
             except OSError as ex:
                 await self.close()
                 if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
                     raise SmartDeviceException(
                         f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
-                    )
+                    ) from ex
                 continue
             except Exception as ex:
                 await self.close()
@@ -142,7 +142,7 @@ class TPLinkSmartHomeProtocol:
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
                         f"Unable to connect to the device: {self.host}:{self.port}: {ex}"
-                    )
+                    ) from ex
                 continue
 
             try:

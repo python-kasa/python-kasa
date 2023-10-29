@@ -284,10 +284,10 @@ class Discover:
 
             async with asyncio_timeout(timeout):
                 await event.wait()
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as ex:
             raise SmartDeviceException(
                 f"Timed out getting discovery response for {host}"
-            )
+            ) from ex
         finally:
             transport.close()
 
