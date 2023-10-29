@@ -394,7 +394,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         self.proto["system"]["get_sysinfo"]["light_state"] = new_state
 
     def set_preferred_state(self, new_state, *args):
-        """Implementation of set_preferred_state."""
+        """Implement set_preferred_state."""
         self.proto["system"]["get_sysinfo"]["preferred_state"][
             new_state["index"]
         ] = new_state

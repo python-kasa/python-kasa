@@ -51,6 +51,7 @@ class EmeterStatus(dict):
         return f"<EmeterStatus power={self.power} voltage={self.voltage} current={self.current} total={self.total}>"
 
     def __getitem__(self, item):
+        """Return value in wanted units."""
         valid_keys = [
             "voltage_mv",
             "power_mw",

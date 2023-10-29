@@ -93,6 +93,10 @@ select = [
   "I",  # isort
   "S",  # bandit
 ]
+ignore = [
+  "D105",  # Missing docstring in magic method
+  "D107",  # Missing docstring in `__init__`
+]
 
 [tool.ruff.pydocstyle]
 convention = "pep257"
