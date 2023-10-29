@@ -234,8 +234,6 @@ class SmartDevice:
             _LOGGER.debug("Module %s already registered, ignoring..." % name)
             return
 
-        assert name not in self.modules
-
         _LOGGER.debug("Adding module %s", module)
         self.modules[name] = module
 
@@ -755,6 +753,8 @@ class SmartDevice:
     def __repr__(self):
         if self._last_update is None:
             return f"<{self._device_type} at {self.host} - update() needed>"
-        return f"<{self._device_type} model {self.model} at {self.host}" \
-               f" ({self.alias}), is_on: {self.is_on}" \
-               f" - dev specific: {self.state_information}>"
+        return (
+            f"<{self._device_type} model {self.model} at {self.host}"
+            f" ({self.alias}), is_on: {self.is_on}"
+            f" - dev specific: {self.state_information}>"
+        )

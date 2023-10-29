@@ -60,7 +60,7 @@ class TPLinkSmartHomeProtocol:
         """
         if isinstance(request, dict):
             request = json_dumps(request)
-            assert isinstance(request, str)
+            assert isinstance(request, str)  # noqa: S101
 
         async with self.query_lock:
             return await self._query(request, retry_count, self.timeout)
@@ -77,8 +77,8 @@ class TPLinkSmartHomeProtocol:
 
     async def _execute_query(self, request: str) -> Dict:
         """Execute a query on the device and wait for the response."""
-        assert self.writer is not None
-        assert self.reader is not None
+        assert self.writer is not None  # noqa: S101
+        assert self.reader is not None  # noqa: S101
         debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if debug_log:
@@ -148,8 +148,8 @@ class TPLinkSmartHomeProtocol:
                 continue
 
             try:
-                assert self.reader is not None
-                assert self.writer is not None
+                assert self.reader is not None  # noqa: S101
+                assert self.writer is not None  # noqa: S101
                 async with asyncio_timeout(timeout):
                     return await self._execute_query(request)
             except Exception as ex:
