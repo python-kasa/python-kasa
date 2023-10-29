@@ -374,12 +374,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         _LOGGER.debug("Current light state: %s", light_state)
         new_state = light_state
 
-        if state_changes["on_off"] == 1:  # turn on requested
-            if not light_state[
-                "on_off"
-            ]:  # if we were off, use the dft_on_state as a base
-                _LOGGER.debug("Bulb was off, using dft_on_state")
-                new_state = light_state["dft_on_state"]
+        # turn on requested, if we were off, use the dft_on_state as a base
+        if state_changes["on_off"] == 1 and not light_state["on_off"]:
+            _LOGGER.debug("Bulb was off, using dft_on_state")
+            new_state = light_state["dft_on_state"]
 
         # override the existing settings
         new_state.update(state_changes)

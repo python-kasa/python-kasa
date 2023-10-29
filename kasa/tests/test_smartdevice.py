@@ -28,9 +28,8 @@ async def test_state_info(dev):
 
 @pytest.mark.requires_dummy
 async def test_invalid_connection(dev):
-    with patch.object(FakeTransportProtocol, "query", side_effect=SmartDeviceException):
-        with pytest.raises(SmartDeviceException):
-            await dev.update()
+    with patch.object(FakeTransportProtocol, "query", side_effect=SmartDeviceException), pytest.raises(SmartDeviceException):
+        await dev.update()
 
 
 @has_emeter
