@@ -4,7 +4,14 @@ import sys
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol
+from kasa import (
+    Credentials,
+    DeviceType,
+    Discover,
+    SmartDevice,
+    SmartDeviceException,
+    protocol,
+)
 from kasa.discover import _DiscoverProtocol, json_dumps
 from kasa.exceptions import UnsupportedDeviceException
 
@@ -68,7 +75,9 @@ async def test_discover_single(discovery_data: dict, mocker, custom_port):
     mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
 
-    x = await Discover.discover_single(host, port=custom_port)
+    x = await Discover.discover_single(
+        host, port=custom_port, credentials=Credentials("user", "pass")
+    )
     assert issubclass(x.__class__, SmartDevice)
     assert x._sys_info is not None
     assert x.port == custom_port or x.port == 9999
@@ -80,7 +89,9 @@ async def test_connect_single(discovery_data: dict, mocker, custom_port):
     host = "127.0.0.1"
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
 
-    dev = await Discover.connect_single(host, port=custom_port)
+    dev = await Discover.connect_single(
+        host, port=custom_port, credentials=Credentials("user", "pass")
+    )
     assert issubclass(dev.__class__, SmartDevice)
     assert dev.port == custom_port or dev.port == 9999
 
@@ -184,7 +195,7 @@ async def test_discover_send(mocker):
 
 async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
-    proto = _DiscoverProtocol()
+    proto = _DiscoverProtocol(credentials=Credentials("user", "pass"))
     mocker.patch("kasa.discover.json_loads", return_value=discovery_data)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")

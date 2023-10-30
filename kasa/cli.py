@@ -14,6 +14,7 @@ from kasa import (
     Credentials,
     Discover,
     SmartBulb,
+    SmartCamera,
     SmartDevice,
     SmartDimmer,
     SmartLightStrip,
@@ -47,6 +48,7 @@ TYPE_TO_CLASS = {
     "bulb": SmartBulb,
     "dimmer": SmartDimmer,
     "strip": SmartStrip,
+    "kasacam": SmartCamera,
     "lightstrip": SmartLightStrip,
 }
 

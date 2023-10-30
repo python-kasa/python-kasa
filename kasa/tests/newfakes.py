@@ -310,6 +310,9 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
                     proto[module][etype] = dummy_data
 
             # print("initialized: %s" % proto[module])
+        # TODO: Hack to work around KasaCam devices returning sysinfo in a nested "system" key
+        if "model" not in proto["system"]["get_sysinfo"]:
+            proto["system"]["get_sysinfo"] = proto["system"]["get_sysinfo"]["system"]
 
         self.proto = proto
 
@@ -409,6 +412,52 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         else:
             return light_state
 
+    def set_camera_switch(self, x, *args):
+        _LOGGER.debug("Setting camera switch to %s", x)
+        self.proto["system"]["get_sysinfo"]["camera_switch"] = x["value"]
+
+    def set_camera_position(self, x, *args):
+        _LOGGER.debug("Setting camera position to %s", x)
+        self.proto["system"]["get_sysinfo"]["camera_position"] = {
+            "x": x["x"],
+            "y": x["y"],
+        }
+
+    def get_camera_position(self, x, *args):
+        _LOGGER.debug("Setting camera position to %s", x)
+        if "camera_position" not in self.proto["system"]["get_sysinfo"]:
+            self.proto["system"]["get_sysinfo"]["camera_position"] = {"x": 0, "y": 0}
+        return self.proto["system"]["get_sysinfo"]["camera_position"]
+
+    def move_camera_relative(self, x, *args):
+        _LOGGER.debug("Moving camera %s", x)
+        if "camera_position" not in self.proto["system"]["get_sysinfo"]:
+            self.proto["system"]["get_sysinfo"]["camera_position"] = {"x": 0, "y": 0}
+        position = self.proto["system"]["get_sysinfo"]["camera_position"]
+        if x["direction"] == "up":
+            position["y"] += x["speed"]
+        if x["direction"] == "down":
+            position["y"] -= x["speed"]
+        if x["direction"] == "right":
+            position["x"] += x["speed"]
+        if x["direction"] == "left":
+            position["x"] -= x["speed"]
+
+        self.proto["system"]["get_sysinfo"]["camera_position"] = position
+
+    def set_is_patrolling(self, x, *args):
+        _LOGGER.debug("Setting patrolling to %s", x["value"])
+        self.proto["system"]["get_sysinfo"]["get_patrol_is_enable"] = {
+            "value": x["value"]
+        }
+
+    def get_is_patrolling(self, x, *args):
+        patrol_state = self.proto["system"]["get_sysinfo"].get(
+            "get_patrol_is_enable", {"value": "on"}
+        )
+        _LOGGER.debug("Reporting patrolling is enabled: %s", patrol_state)
+        return patrol_state
+
     baseproto = {
         "system": {
             "set_relay_state": set_relay_state,
@@ -449,6 +498,15 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         },
         "time": TIME_MODULE,
         "smartlife.iot.common.timesetting": TIME_MODULE,
+        "smartlife.cam.ipcamera.dateTime": {
+            "get_time": {"err_code": 0, "epoch_sec": 0},
+            "get_timezone": {},
+            "get_time_zone": {
+                "timezone": "UTC-05:00",
+                "area": "America/New_York",
+                "err_code": 0,
+            },
+        },
         # HS220 brightness, different setter and getter
         "smartlife.iot.dimmer": {
             "set_brightness": set_hs220_brightness,
@@ -456,6 +514,17 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         },
         "smartlife.iot.LAS": {},
         "smartlife.iot.PIR": {},
+        "smartlife.cam.ipcamera.switch": {
+            "set_is_enable": set_camera_switch,
+        },
+        "smartlife.cam.ipcamera.ptz": {
+            "set_target": move_camera_relative,
+            "set_move": set_camera_position,
+            "get_position": get_camera_position,
+            "set_stop": {},
+            "set_patrol_is_enable": set_is_patrolling,
+            "get_patrol_is_enable": get_is_patrolling,
+        },
     }
 
     async def query(self, request, port=9999):

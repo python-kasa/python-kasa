@@ -36,6 +36,9 @@ myst-parser = { version = "*", optional = true }
 docutils = { version = ">=0.17", optional = true }
 async-timeout = ">=3.0.0"
 
+# KasaCam
+httpx = ">=0.25"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-cov = "*"

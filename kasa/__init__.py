@@ -23,6 +23,7 @@ from kasa.exceptions import (
 )
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
+from kasa.smartcamera import SmartCamera
 from kasa.smartdevice import DeviceType, SmartDevice
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
@@ -34,6 +35,7 @@ __version__ = version("python-kasa")
 
 __all__ = [
     "Discover",
+    "SmartCamera",
     "TPLinkSmartHomeProtocol",
     "SmartBulb",
     "SmartBulbPreset",

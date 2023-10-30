@@ -24,7 +24,7 @@ from .credentials import Credentials
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
-from .protocol import TPLinkSmartHomeProtocol
+from .protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class DeviceType(Enum):
     StripSocket = auto()
     Dimmer = auto()
     LightStrip = auto()
+    Camera = auto()
     Unknown = -1
 
 
@@ -214,7 +215,9 @@ class SmartDevice:
         self.host = host
         self.port = port
 
-        self.protocol = TPLinkSmartHomeProtocol(host, port=port, timeout=timeout)
+        self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(
+            host, port=port, timeout=timeout
+        )
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
@@ -254,7 +257,11 @@ class SmartDevice:
             raise SmartDeviceException("update() required prior accessing emeter")
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+        self,
+        target: str,
+        cmd: str,
+        arg: Optional[Dict] = None,
+        child_ids=None,
     ) -> Any:
         """Query device, return results or raise an exception.
 
@@ -379,7 +386,10 @@ class SmartDevice:
 
     def _set_sys_info(self, sys_info: Dict[str, Any]) -> None:
         """Set sys_info."""
-        self._sys_info = sys_info
+        # Most devices return sys_info as a root key in the dict. Kasa Cameras return
+        # it one level lower in a nested "system" key. We detect this by looking for the
+        # "model" key at the top level.
+        self._sys_info = sys_info if "model" in sys_info else sys_info["system"]
         if features := sys_info.get("feature"):
             self._features = _parse_features(features)
         else:
@@ -725,6 +735,11 @@ class SmartDevice:
     def is_dimmer(self) -> bool:
         """Return True if the device is a dimmer."""
         return self._device_type == DeviceType.Dimmer
+
+    @property  # type: ignore
+    def is_camera(self) -> bool:
+        """Return whether this device is a camera."""
+        return self._device_type == DeviceType.Camera
 
     @property
     def is_dimmable(self) -> bool:

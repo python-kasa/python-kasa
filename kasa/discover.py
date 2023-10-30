@@ -15,6 +15,7 @@ from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
+from kasa.smartcamera import SmartCamera
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
@@ -354,9 +355,13 @@ class Discover:
             raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
 
         sysinfo = info["system"]["get_sysinfo"]
+        if "system" in sysinfo:
+            sysinfo = sysinfo["system"]
         type_ = sysinfo.get("type", sysinfo.get("mic_type"))
         if type_ is None:
-            raise SmartDeviceException("Unable to find the device type field!")
+            raise SmartDeviceException(
+                f"Unable to find the device type field in {sysinfo}"
+            )
 
         if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
             return SmartDimmer
@@ -372,5 +377,8 @@ class Discover:
                 return SmartLightStrip
 
             return SmartBulb
+
+        if "ipcamera" in type_.lower():
+            return SmartCamera
 
         raise SmartDeviceException("Unknown device type: %s" % type_)

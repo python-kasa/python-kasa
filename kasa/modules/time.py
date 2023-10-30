@@ -13,12 +13,16 @@ class Time(Module):
         q = self.query_for_command("get_time")
 
         merge(q, self.query_for_command("get_timezone"))
+        merge(q, self.query_for_command("get_time_zone"))
         return q
 
     @property
     def time(self) -> datetime:
         """Return current device time."""
         res = self.data["get_time"]
+        if "epoch_sec" in res:
+            return datetime.fromtimestamp(res["epoch_sec"])
+
         return datetime(
             res["year"],
             res["month"],
@@ -38,6 +42,8 @@ class Time(Module):
         """Return current device time."""
         try:
             res = await self.call("get_time")
+            if "epoch_sec" in res:
+                return datetime.fromtimestamp(res["epoch_sec"])
             return datetime(
                 res["year"],
                 res["month"],

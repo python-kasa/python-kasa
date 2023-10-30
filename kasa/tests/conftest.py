@@ -10,8 +10,10 @@ from unittest.mock import MagicMock
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
+    Credentials,
     Discover,
     SmartBulb,
+    SmartCamera,
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
@@ -26,6 +28,7 @@ SUPPORTED_DEVICES = glob.glob(
 
 
 LIGHT_STRIPS = {"KL400", "KL430", "KL420"}
+CAMERAS = {"EC70(US)"}
 VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL125", "KL130", "KL135", "KL430"}
 COLOR_BULBS = {"LB130", "KL125", "KL130", "KL135", *LIGHT_STRIPS}
 BULBS = {
@@ -61,7 +64,7 @@ DIMMERS = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
 DIMMABLE = {*BULBS, *DIMMERS}
 WITH_EMETER = {"HS110", "HS300", "KP115", "KP125", *BULBS}
 
-ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
+ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS).union(CAMERAS)
 
 IP_MODEL_CACHE: Dict[str, str] = {}
 
@@ -91,6 +94,7 @@ bulb = parametrize("bulbs", BULBS, ids=basename)
 plug = parametrize("plugs", PLUGS, ids=basename)
 strip = parametrize("strips", STRIPS, ids=basename)
 dimmer = parametrize("dimmers", DIMMERS, ids=basename)
+camera = parametrize("cameras", CAMERAS, ids=basename)
 lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=basename)
 
 # bulb types
@@ -110,6 +114,7 @@ def check_categories():
         + plug.args[1]
         + bulb.args[1]
         + lightstrip.args[1]
+        + camera.args[1]
     )
     diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
     if diff:
@@ -156,6 +161,9 @@ def device_for_file(model):
         if d in model:
             return SmartDimmer
 
+    for d in CAMERAS:
+        if d in model:
+            return SmartCamera
     raise Exception("Unable to find type for %s", model)
 
 
@@ -184,7 +192,9 @@ async def get_device_for_file(file):
     sysinfo = await loop.run_in_executor(None, load_file)
 
     model = basename(file)
-    d = device_for_file(model)(host="127.0.0.123")
+    d = device_for_file(model)(
+        host="127.0.0.123", credentials=Credentials("user", "pass")
+    )
     d.protocol = FakeTransportProtocol(sysinfo)
     await _update_and_close(d)
     return d

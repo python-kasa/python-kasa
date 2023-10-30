@@ -6,6 +6,7 @@ from .countdown import Countdown
 from .emeter import Emeter
 from .module import Module
 from .motion import Motion
+from .ptz import PTZ
 from .rulemodule import Rule, RuleModule
 from .schedule import Schedule
 from .time import Time
@@ -19,6 +20,7 @@ __all__ = [
     "Emeter",
     "Module",
     "Motion",
+    "PTZ",
     "Rule",
     "RuleModule",
     "Schedule",
