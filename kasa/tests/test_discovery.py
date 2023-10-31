@@ -4,7 +4,18 @@ import sys
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol
+from kasa import (
+    DeviceType,
+    Discover,
+    SmartBulb,
+    SmartDevice,
+    SmartDeviceException,
+    SmartDimmer,
+    SmartLightStrip,
+    SmartPlug,
+    SmartStrip,
+    protocol,
+)
 from kasa.discover import _DiscoverProtocol, json_dumps
 from kasa.exceptions import UnsupportedDeviceException
 
@@ -82,6 +93,33 @@ async def test_connect_single(discovery_data: dict, mocker, custom_port):
 
     dev = await Discover.connect_single(host, port=custom_port)
     assert issubclass(dev.__class__, SmartDevice)
+    assert dev.port == custom_port or dev.port == 9999
+
+
+@pytest.mark.parametrize("custom_port", [123, None])
+@pytest.mark.parametrize(
+    ("device_type", "klass"),
+    (
+        (DeviceType.Plug, SmartPlug),
+        (DeviceType.Bulb, SmartBulb),
+        (DeviceType.Dimmer, SmartDimmer),
+        (DeviceType.LightStrip, SmartLightStrip),
+        (DeviceType.Unknown, SmartDevice),
+    ),
+)
+async def test_connect_single_passed_device_type(
+    discovery_data: dict,
+    mocker,
+    device_type: DeviceType,
+    klass: type[SmartDevice],
+    custom_port,
+):
+    """Make sure that connect_single with a passed device type."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
+
+    dev = await Discover.connect_single(host, port=custom_port, device_type=device_type)
+    assert isinstance(dev, klass)
     assert dev.port == custom_port or dev.port == 9999
 
 

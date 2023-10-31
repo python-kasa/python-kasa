@@ -15,7 +15,7 @@ from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
-from kasa.smartdevice import SmartDevice, SmartDeviceException
+from kasa.smartdevice import DeviceType, SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
@@ -26,6 +26,14 @@ _LOGGER = logging.getLogger(__name__)
 
 OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
 DeviceDict = Dict[str, SmartDevice]
+
+DEVICE_TYPE_TO_CLASS = {
+    DeviceType.Plug: SmartPlug,
+    DeviceType.Bulb: SmartBulb,
+    DeviceType.Strip: SmartStrip,
+    DeviceType.Dimmer: SmartDimmer,
+    DeviceType.LightStrip: SmartLightStrip,
+}
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -317,6 +325,7 @@ class Discover:
         port: Optional[int] = None,
         timeout=5,
         credentials: Optional[Credentials] = None,
+        device_type: Optional[DeviceType] = None,
     ) -> SmartDevice:
         """Connect to a single device by the given IP address.
 
@@ -334,17 +343,21 @@ class Discover:
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        unknown_dev = SmartDevice(
-            host=host, port=port, credentials=credentials, timeout=timeout
-        )
-        await unknown_dev.update()
-        device_class = Discover._get_device_class(unknown_dev.internal_state)
-        dev = device_class(
-            host=host, port=port, credentials=credentials, timeout=timeout
-        )
-        # Reuse the connection from the unknown device
-        # so we don't have to reconnect
-        dev.protocol = unknown_dev.protocol
+        if device_type and (klass := DEVICE_TYPE_TO_CLASS.get(device_type)):
+            dev = klass(host=host, port=port, credentials=credentials, timeout=timeout)
+        else:
+            unknown_dev = SmartDevice(
+                host=host, port=port, credentials=credentials, timeout=timeout
+            )
+            await unknown_dev.update()
+            device_class = Discover._get_device_class(unknown_dev.internal_state)
+            dev = device_class(
+                host=host, port=port, credentials=credentials, timeout=timeout
+            )
+            # Reuse the connection from the unknown device
+            # so we don't have to reconnect
+            dev.protocol = unknown_dev.protocol
+        await dev.update()
         return dev
 
     @staticmethod

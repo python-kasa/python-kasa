@@ -17,7 +17,7 @@ import inspect
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
 from .credentials import Credentials
@@ -32,13 +32,21 @@ _LOGGER = logging.getLogger(__name__)
 class DeviceType(Enum):
     """Device type enum."""
 
-    Plug = auto()
-    Bulb = auto()
-    Strip = auto()
-    StripSocket = auto()
-    Dimmer = auto()
-    LightStrip = auto()
-    Unknown = -1
+    Plug = "Plug"
+    Bulb = "Bulb"
+    Strip = "Strip"
+    StripSocket = "StripSocket"
+    Dimmer = "Dimmer"
+    LightStrip = "LightStrip"
+    Unknown = "Unknown"
+
+    @staticmethod
+    def from_value(name: str) -> "DeviceType":
+        """Return device type from string value."""
+        for device_type in DeviceType:
+            if device_type.value == name:
+                return device_type
+        return DeviceType.Unknown
 
 
 @dataclass
