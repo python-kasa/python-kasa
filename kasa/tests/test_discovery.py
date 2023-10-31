@@ -1,6 +1,6 @@
 # type: ignore
 import re
-import sys
+from typing import Type
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
@@ -13,7 +13,6 @@ from kasa import (
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
-    SmartStrip,
     protocol,
 )
 from kasa.discover import _DiscoverProtocol, json_dumps
@@ -111,7 +110,7 @@ async def test_connect_single_passed_device_type(
     discovery_data: dict,
     mocker,
     device_type: DeviceType,
-    klass: type[SmartDevice],
+    klass: Type[SmartDevice],
     custom_port,
 ):
     """Make sure that connect_single with a passed device type."""
