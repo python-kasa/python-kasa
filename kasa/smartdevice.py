@@ -33,7 +33,6 @@ class DeviceType(Enum):
     """Device type enum."""
 
     # The values match what the cli has historically used
-    
     Plug = "plug"
     Bulb = "bulb"
     Strip = "strip"
