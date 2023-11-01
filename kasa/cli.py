@@ -12,14 +12,13 @@ import asyncclick as click
 
 from kasa import (
     Credentials,
+    DeviceType,
     Discover,
     SmartBulb,
     SmartDevice,
-    SmartDimmer,
-    SmartLightStrip,
-    SmartPlug,
     SmartStrip,
 )
+from kasa.discover import DEVICE_TYPE_TO_CLASS
 
 try:
     from rich import print as _do_echo
@@ -43,11 +42,9 @@ except ImportError:
 echo = _do_echo
 
 TYPE_TO_CLASS = {
-    "plug": SmartPlug,
-    "bulb": SmartBulb,
-    "dimmer": SmartDimmer,
-    "strip": SmartStrip,
-    "lightstrip": SmartLightStrip,
+    device_type.value: DEVICE_TYPE_TO_CLASS[device_type]
+    for device_type in DeviceType
+    if device_type in DEVICE_TYPE_TO_CLASS
 }
 
 click.anyio_backend = "asyncio"

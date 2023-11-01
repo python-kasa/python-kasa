@@ -340,6 +340,7 @@ class Discover:
         The device type is discovered by querying the device.
 
         :param host: Hostname of device to query
+        :param device_type: Device type to use for the device.
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """

@@ -32,13 +32,13 @@ _LOGGER = logging.getLogger(__name__)
 class DeviceType(Enum):
     """Device type enum."""
 
-    Plug = "Plug"
-    Bulb = "Bulb"
-    Strip = "Strip"
-    StripSocket = "StripSocket"
-    Dimmer = "Dimmer"
-    LightStrip = "LightStrip"
-    Unknown = "Unknown"
+    Plug = "plug"
+    Bulb = "bulb"
+    Strip = "strip"
+    StripSocket = "stripsocket"
+    Dimmer = "dimmer"
+    LightStrip = "lightstrip"
+    Unknown = "unknown"
 
     @staticmethod
     def from_value(name: str) -> "DeviceType":
