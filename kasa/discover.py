@@ -341,23 +341,30 @@ class Discover:
 
         :param host: Hostname of device to query
         :param device_type: Device type to use for the device.
+            If not given, the device type is discovered by querying the device.
+            If the device type is already known, it is preferred to pass it
+            to avoid the extra query to the device to discover its type.
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
         if device_type and (klass := DEVICE_TYPE_TO_CLASS.get(device_type)):
-            dev = klass(host=host, port=port, credentials=credentials, timeout=timeout)
-        else:
-            unknown_dev = SmartDevice(
+            dev: SmartDevice = klass(
                 host=host, port=port, credentials=credentials, timeout=timeout
             )
-            await unknown_dev.update()
-            device_class = Discover._get_device_class(unknown_dev.internal_state)
-            dev = device_class(
-                host=host, port=port, credentials=credentials, timeout=timeout
-            )
-            # Reuse the connection from the unknown device
-            # so we don't have to reconnect
-            dev.protocol = unknown_dev.protocol
+            await dev.update()
+            return dev
+
+        unknown_dev = SmartDevice(
+            host=host, port=port, credentials=credentials, timeout=timeout
+        )
+        await unknown_dev.update()
+        device_class = Discover._get_device_class(unknown_dev.internal_state)
+        dev = device_class(
+            host=host, port=port, credentials=credentials, timeout=timeout
+        )
+        # Reuse the connection from the unknown device
+        # so we don't have to reconnect
+        dev.protocol = unknown_dev.protocol
         await dev.update()
         return dev
 
