@@ -28,11 +28,6 @@ pydantic = ">=1"
 orjson = { "version" = ">=3.9.1", optional = true }
 kasa-crypt = { "version" = ">=0.2.0", optional = true }
 
-# Klap
-aiohttp = [
-  { version = ">=3.9.0b0", python = ">=3.12" },
-  { version = "^3", python = "<3.12" }
-]
 cryptography = ">=1.9"
 
 # required only for docs
@@ -42,6 +37,7 @@ sphinxcontrib-programoutput = { version = "^0", optional = true }
 myst-parser = { version = "*", optional = true }
 docutils = { version = ">=0.17", optional = true }
 async-timeout = ">=3.0.0"
+httpx = ">=0.25.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

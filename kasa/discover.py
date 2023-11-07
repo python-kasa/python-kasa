@@ -20,7 +20,7 @@ from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.klapprotocol import TPLinkKlap
-from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartdimmer import SmartDimmer
@@ -71,6 +71,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.credentials = credentials
         self.timeout = timeout
         self.seen_hosts: Set[str] = set()
+        # self.seen_hosts_lock = asyncio.Lock()
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -344,7 +345,7 @@ class Discover:
         port: Optional[int] = None,
         timeout=5,
         credentials: Optional[Credentials] = None,
-        protocol_id: int = 1,
+        protocol_class: Optional[TPLinkProtocol] = None,
     ) -> SmartDevice:
         """Connect to a single device by the given IP address.
 
@@ -370,7 +371,7 @@ class Discover:
         unknown_dev = SmartDevice(
             host=host, port=port, credentials=credentials, timeout=timeout
         )
-        if protocol_id == 2:
+        if isinstance(protocol_class, TPLinkKlap):
             unknown_dev.protocol = TPLinkKlap(host, credentials)
         await unknown_dev.update()
         device_class = Discover._get_device_class(unknown_dev.internal_state)
@@ -452,7 +453,7 @@ class Discover:
                 _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
                 device = device_class(ip, port=port, credentials=credentials)
                 device.update_from_discover_info(discovery_result.get_dict())
-                device.protocol = TPLinkKlap(ip, credentials, info)
+                device.protocol = TPLinkKlap(ip, credentials)
                 return device
             else:
                 raise UnsupportedDeviceException(

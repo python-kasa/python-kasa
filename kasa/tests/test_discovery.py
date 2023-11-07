@@ -241,7 +241,7 @@ async def test_discover_invalid_responses(msg, data, mocker):
     assert len(proto.discovered_devices) == 0
 
 
-AUTHENTICATION_DATA = {
+AUTHENTICATION_DATA_KLAP = {
     "result": {
         "device_id": "xx",
         "owner": "xx",
@@ -282,7 +282,7 @@ async def test_discover_single_authentication(mocker):
     )
 
     # Test with a valid unsupported response
-    discovery_data = AUTHENTICATION_DATA
+    discovery_data = AUTHENTICATION_DATA_KLAP
     with pytest.raises(
         AuthenticationException,
         match="Failed to authenticate",
@@ -296,7 +296,7 @@ async def test_discover_single_authentication(mocker):
 
 async def test_device_update_from_new_discovery_info():
     device = SmartDevice("127.0.0.7")
-    discover_info = DiscoveryResult(**AUTHENTICATION_DATA["result"])
+    discover_info = DiscoveryResult(**AUTHENTICATION_DATA_KLAP["result"])
     discover_dump = discover_info.get_dict()
     device.update_from_discover_info(discover_dump)
 
