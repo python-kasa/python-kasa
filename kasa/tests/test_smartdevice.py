@@ -247,6 +247,6 @@ async def test_create_thin_wrapper():
         host="test_host",
         port=1234,
         timeout=100,
-        credentials=None,
-        device_type=DeviceType.Unknown,
+        credentials=Credentials("username", "password"),
+        device_type=DeviceType.Strip,
     )
