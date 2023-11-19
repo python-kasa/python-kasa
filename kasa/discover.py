@@ -71,7 +71,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.credentials = credentials
         self.timeout = timeout
         self.seen_hosts: Set[str] = set()
-        # self.seen_hosts_lock = asyncio.Lock()
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -270,6 +269,10 @@ class Discover:
         to discovery requests.
 
         :param host: Hostname of device to query
+        :param port: Optionally set a different port for the device
+        :param timeout: Timeout for discovery
+        :param credentials: Optionally provide credentials for
+            devices requiring them
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
@@ -345,7 +348,7 @@ class Discover:
         port: Optional[int] = None,
         timeout=5,
         credentials: Optional[Credentials] = None,
-        protocol_class: Optional[TPLinkProtocol] = None,
+        protocol_class: Optional[Type[TPLinkProtocol]] = None,
     ) -> SmartDevice:
         """Connect to a single device by the given IP address.
 
@@ -361,18 +364,19 @@ class Discover:
 
         :param host: Hostname of device to query
         :param port: Optionally set a different port for the device
+        :param timeout: Timeout for discovery
         :param credentials: Optionally provide credentials for
             devices requiring them
-        :param port: Optionally provide an id identifying the protocol
-            to use.  1 is for legacy/original, 2 is for klap
+        :param protocol_class: Optionally provide the protocol class
+            to use.
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
         unknown_dev = SmartDevice(
             host=host, port=port, credentials=credentials, timeout=timeout
         )
-        if isinstance(protocol_class, TPLinkKlap):
-            unknown_dev.protocol = TPLinkKlap(host, credentials)
+        if protocol_class is not None:
+            unknown_dev.protocol = protocol_class(host, credentials=credentials)
         await unknown_dev.update()
         device_class = Discover._get_device_class(unknown_dev.internal_state)
         dev = device_class(
@@ -453,7 +457,7 @@ class Discover:
                 _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
                 device = device_class(ip, port=port, credentials=credentials)
                 device.update_from_discover_info(discovery_result.get_dict())
-                device.protocol = TPLinkKlap(ip, credentials)
+                device.protocol = TPLinkKlap(ip, credentials=credentials)
                 return device
             else:
                 raise UnsupportedDeviceException(
@@ -471,7 +475,7 @@ class DiscoveryResult(BaseModel):
 
         allow_population_by_field_name = True
 
-    class MgtEncryptSchm(BaseModel):
+    class EncryptionScheme(BaseModel):
         """Base model for encryption scheme of discovery result."""
 
         is_support_https: Optional[bool] = None
@@ -483,7 +487,7 @@ class DiscoveryResult(BaseModel):
     device_model: str = Field(alias="model")
     ip: str = Field(alias="alias")
     mac: str
-    mgt_encrypt_schm: MgtEncryptSchm
+    mgt_encrypt_schm: EncryptionScheme
 
     device_id: Optional[str] = Field(default=None, alias="device_type_hash")
     owner: Optional[str] = Field(default=None, alias="device_owner_hash")

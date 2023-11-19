@@ -12,19 +12,13 @@ import pytest
 
 from ..credentials import Credentials
 from ..exceptions import AuthenticationException, SmartDeviceException
-from ..klapprotocol import KlapEncryptionSession, TPLinkKlap
+from ..klapprotocol import KlapEncryptionSession, TPLinkKlap, _sha256
 
 
 class _mock_response:
     def __init__(self, status_code, content: bytes):
         self.status_code = status_code
         self.content = content
-
-    def __aenter(self):
-        return self
-
-    async def __aexit__(self, exc_t, exc_v, exc_tb):
-        pass
 
 
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
@@ -166,7 +160,7 @@ async def test_handshake1(mocker, device_credentials, expectation):
         nonlocal client_seed, server_seed, device_auth_hash
 
         client_seed = data
-        client_seed_auth_hash = TPLinkKlap._sha256(data + device_auth_hash)
+        client_seed_auth_hash = _sha256(data + device_auth_hash)
 
         return _mock_response(200, server_seed + client_seed_auth_hash)
 
@@ -201,7 +195,7 @@ async def test_handshake(mocker):
 
         if url == "http://127.0.0.1/app/handshake1":
             client_seed = data
-            client_seed_auth_hash = TPLinkKlap._sha256(data + device_auth_hash)
+            client_seed_auth_hash = _sha256(data + device_auth_hash)
 
             return _mock_response(200, server_seed + client_seed_auth_hash)
         elif url == "http://127.0.0.1/app/handshake2":
@@ -236,7 +230,7 @@ async def test_query(mocker):
 
         if url == "http://127.0.0.1/app/handshake1":
             client_seed = data
-            client_seed_auth_hash = TPLinkKlap._sha256(data + device_auth_hash)
+            client_seed_auth_hash = _sha256(data + device_auth_hash)
 
             return _mock_response(200, server_seed + client_seed_auth_hash)
         elif url == "http://127.0.0.1/app/handshake2":
@@ -288,7 +282,7 @@ async def test_authentication_failures(mocker, response_status, expectation):
 
         if url == "http://127.0.0.1/app/handshake1":
             client_seed = data
-            client_seed_auth_hash = TPLinkKlap._sha256(data + device_auth_hash)
+            client_seed_auth_hash = _sha256(data + device_auth_hash)
 
             return _mock_response(
                 response_status[0], server_seed + client_seed_auth_hash

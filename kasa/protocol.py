@@ -22,6 +22,7 @@ from typing import Dict, Generator, Optional, Union
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
+from .credentials import Credentials
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
 from .json import loads as json_loads
@@ -33,10 +34,17 @@ _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
 class TPLinkProtocol(ABC):
     """Base class for all TP-Link Smart Home communication."""
 
-    def __init__(self, host: str, *, port: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        credentials: Optional[Credentials] = None,
+    ) -> None:
         """Create a protocol object."""
         self.host = host
         self.port = port
+        self.credentials = credentials
 
     @abstractmethod
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
@@ -56,10 +64,17 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
     BLOCK_SIZE = 4
 
     def __init__(
-        self, host: str, *, port: Optional[int] = None, timeout: Optional[int] = None
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        timeout: Optional[int] = None,
+        credentials: Optional[Credentials] = None,
     ) -> None:
         """Create a protocol object."""
-        super().__init__(host=host, port=port or self.DEFAULT_PORT)
+        super().__init__(
+            host=host, port=port or self.DEFAULT_PORT, credentials=credentials
+        )
 
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None

@@ -288,7 +288,7 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 
 
 @cli.command()
-@click.option("--timeout", default=30, required=False)
+@click.option("--timeout", default=3, required=False)
 @click.option(
     "--show-unsupported",
     envvar="KASA_SHOW_UNSUPPORTED",
