@@ -18,7 +18,7 @@ from kasa import (
     SmartDevice,
     SmartStrip,
 )
-from kasa.discover import DEVICE_TYPE_TO_CLASS
+from kasa.device_factory import DEVICE_TYPE_TO_CLASS
 
 try:
     from rich import print as _do_echo
