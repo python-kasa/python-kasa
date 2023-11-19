@@ -10,14 +10,7 @@ from typing import Any, Dict, cast
 
 import asyncclick as click
 
-from kasa import (
-    Credentials,
-    DeviceType,
-    Discover,
-    SmartBulb,
-    SmartDevice,
-    SmartStrip,
-)
+from kasa import Credentials, DeviceType, Discover, SmartBulb, SmartDevice, SmartStrip
 from kasa.device_factory import DEVICE_TYPE_TO_CLASS
 
 try:
@@ -41,11 +34,11 @@ except ImportError:
 # --json has set it to _nop_echo
 echo = _do_echo
 
-TYPE_TO_CLASS = {
-    device_type.value: DEVICE_TYPE_TO_CLASS[device_type]
+DEVICE_TYPES = [
+    device_type.value
     for device_type in DeviceType
     if device_type in DEVICE_TYPE_TO_CLASS
-}
+]
 
 click.anyio_backend = "asyncio"
 
@@ -125,7 +118,7 @@ def json_formatter_cb(result, **kwargs):
     "--type",
     envvar="KASA_TYPE",
     default=None,
-    type=click.Choice(list(TYPE_TO_CLASS), case_sensitive=False),
+    type=click.Choice(DEVICE_TYPES, case_sensitive=False),
 )
 @click.option(
     "--json", default=False, is_flag=True, help="Output raw device response as JSON."
@@ -231,7 +224,10 @@ async def cli(
         return await ctx.invoke(discover, timeout=discovery_timeout)
 
     if type is not None:
-        dev = TYPE_TO_CLASS[type](host, credentials=credentials)
+        device_type = DeviceType.from_value(type)
+        dev = SmartDevice.connect(
+            host, credentials=credentials, device_type=device_type
+        )
     else:
         echo("No --type defined, discovering..")
         dev = await Discover.discover_single(
