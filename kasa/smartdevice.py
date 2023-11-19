@@ -393,6 +393,12 @@ class SmartDevice:
         sys_info = self.sys_info
         return str(sys_info["alias"])
 
+    @property  # type: ignore
+    @requires_update
+    def has_children(self) -> bool:
+        """Check if the device has children devices."""
+        return bool(self._sys_info.get("child_num"))
+
     async def set_alias(self, alias: str) -> None:
         """Set the device name (alias)."""
         return await self._query_helper("system", "set_dev_alias", {"alias": alias})

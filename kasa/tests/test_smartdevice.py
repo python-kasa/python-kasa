@@ -170,12 +170,14 @@ async def test_representation(dev):
     assert pattern.match(str(dev))
 
 
-async def test_childrens(dev):
+async def test_children(dev):
     """Make sure that children property is exposed by every device."""
     if dev.is_strip:
         assert len(dev.children) > 0
+        assert dev.has_children is True
     else:
         assert len(dev.children) == 0
+        assert dev.has_children is False
 
 
 async def test_internal_state(dev):
