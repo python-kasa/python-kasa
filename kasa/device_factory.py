@@ -1,6 +1,6 @@
 """Device creation by type."""
 
-from typing import Optional, Type
+from typing import Any, Dict, Optional, Type
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -68,12 +68,12 @@ async def connect(
     return dev
 
 
-def get_device_class_from_info(info: dict) -> Type[SmartDevice]:
+def get_device_class_from_info(info: Dict[str, Any]) -> Type[SmartDevice]:
     """Find SmartDevice subclass for device described by passed data."""
     if "system" not in info or "get_sysinfo" not in info["system"]:
         raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
 
-    sysinfo = info["system"]["get_sysinfo"]
+    sysinfo: Dict[str, Any] = info["system"]["get_sysinfo"]
     type_ = sysinfo.get("type", sysinfo.get("mic_type"))
     if type_ is None:
         raise SmartDeviceException("Unable to find the device type field!")
