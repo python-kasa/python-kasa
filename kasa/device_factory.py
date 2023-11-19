@@ -74,7 +74,7 @@ def get_device_class_from_info(info: Dict[str, Any]) -> Type[SmartDevice]:
         raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
 
     sysinfo: Dict[str, Any] = info["system"]["get_sysinfo"]
-    type_ = sysinfo.get("type", sysinfo.get("mic_type"))
+    type_: Optional[str] = sysinfo.get("type", sysinfo.get("mic_type"))
     if type_ is None:
         raise SmartDeviceException("Unable to find the device type field!")
 
