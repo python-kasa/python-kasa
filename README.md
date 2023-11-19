@@ -184,15 +184,24 @@ If your device is unlisted but working, please open a pull request to update the
 
 ## Resources
 
-### Links
+### Developer Resources
 
-* [pyHS100](https://github.com/GadgetReactor/pyHS100) provides synchronous interface and is the unmaintained predecessor of this library.
 * [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
 * [TP-Link Smart Home Device Simulator](https://github.com/plasticrake/tplink-smarthome-simulator)
 * [Unofficial API documentation](https://github.com/plasticrake/tplink-smarthome-api)
+* [Another unofficial API documentation](https://github.com/whitslack/kasa)
+* [pyHS100](https://github.com/GadgetReactor/pyHS100) provides synchronous interface and is the unmaintained predecessor of this library.
+
+
+### Library Users
+
+* [Home Assistant](https://www.home-assistant.io/integrations/tplink/)
 * [MQTT access to TP-Link devices, using python-kasa](https://github.com/flavio-fernandes/mqtt2kasa)
 
 ### TP-Link Tapo support
 
+* [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
 * [Tapo P100 (Tapo P105/P100 plugs, Tapo L510E bulbs)](https://github.com/fishbigger/TapoP100)
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
+* [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)
+  * [Home Assistant integration](https://github.com/petretiandrea/home-assistant-tapo-p100)

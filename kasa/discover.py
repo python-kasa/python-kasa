@@ -1,6 +1,7 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
 import binascii
+import ipaddress
 import logging
 import socket
 from typing import Awaitable, Callable, Dict, Optional, Type, cast
@@ -281,9 +282,34 @@ class Discover:
         """
         loop = asyncio.get_event_loop()
         event = asyncio.Event()
+
+        try:
+            ipaddress.ip_address(host)
+            ip = host
+        except ValueError:
+            try:
+                adrrinfo = await loop.getaddrinfo(
+                    host,
+                    0,
+                    type=socket.SOCK_DGRAM,
+                    family=socket.AF_INET,
+                )
+                # getaddrinfo returns a list of 5 tuples with the following structure:
+                # (family, type, proto, canonname, sockaddr)
+                # where sockaddr is 2 tuple (ip, port).
+                # hence [0][4][0] is a stable array access because if no socket
+                # address matches the host for SOCK_DGRAM AF_INET the gaierror
+                # would be raised.
+                # https://docs.python.org/3/library/socket.html#socket.getaddrinfo
+                ip = adrrinfo[0][4][0]
+            except socket.gaierror as gex:
+                raise SmartDeviceException(
+                    f"Could not resolve hostname {host}"
+                ) from gex
+
         transport, protocol = await loop.create_datagram_endpoint(
             lambda: _DiscoverProtocol(
-                target=host,
+                target=ip,
                 port=port,
                 discovered_event=event,
                 credentials=credentials,
@@ -305,16 +331,17 @@ class Discover:
         finally:
             transport.close()
 
-        if host in protocol.discovered_devices:
-            dev = protocol.discovered_devices[host]
+        if ip in protocol.discovered_devices:
+            dev = protocol.discovered_devices[ip]
+            dev.host = host
             await dev.update()
             return dev
-        elif host in protocol.unsupported_devices:
+        elif ip in protocol.unsupported_devices:
             raise UnsupportedDeviceException(
-                f"Unsupported device {host}: {protocol.unsupported_devices[host]}"
+                f"Unsupported device {host}: {protocol.unsupported_devices[ip]}"
             )
-        elif host in protocol.invalid_device_exceptions:
-            raise protocol.invalid_device_exceptions[host]
+        elif ip in protocol.invalid_device_exceptions:
+            raise protocol.invalid_device_exceptions[ip]
         else:
             raise SmartDeviceException(f"Unable to get discovery response for {host}")
 
