@@ -1,6 +1,6 @@
 import inspect
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
@@ -228,3 +228,25 @@ async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
     dev = SmartDevice(host="127.0.0.1", timeout=100)
     assert dev.protocol.timeout == 100
+
+
+async def test_create_thin_wrapper():
+    """Make sure thin wrapper is created with the correct device type."""
+    mock = Mock()
+    with patch("kasa.device_factory.connect", return_value=mock) as connect:
+        dev = await SmartDevice.connect(
+            host="test_host",
+            port=1234,
+            timeout=100,
+            credentials=Credentials("username", "password"),
+            device_type=DeviceType.Strip,
+        )
+        assert dev is mock
+
+    connect.assert_called_once_with(
+        host="test_host",
+        port=1234,
+        timeout=100,
+        credentials=None,
+        device_type=DeviceType.Unknown,
+    )
