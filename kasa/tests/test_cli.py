@@ -1,5 +1,4 @@
 import json
-import sys
 
 import asyncclick as click
 import pytest
@@ -16,8 +15,6 @@ from kasa.cli import (
     sysinfo,
     toggle,
 )
-from kasa.device_factory import DEVICE_TYPE_TO_CLASS
-from kasa.device_type import DeviceType
 from kasa.discover import Discover
 
 from .conftest import handle_turn_on, turn_on
@@ -175,6 +172,24 @@ async def test_credentials(discovery_data: dict, mocker):
     )
     assert res.exit_code == 0
     assert res.output == "Username:foo Password:bar\n"
+
+
+async def test_without_device_type(discovery_data: dict, dev, mocker):
+    """Test connecting without the device type."""
+    runner = CliRunner()
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+        ],
+    )
+    assert res.exit_code == 0
 
 
 @pytest.mark.parametrize("auth_param", ["--username", "--password"])
