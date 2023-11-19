@@ -225,7 +225,7 @@ async def cli(
 
     if type is not None:
         device_type = DeviceType.from_value(type)
-        dev = SmartDevice.connect(
+        dev = await SmartDevice.connect(
             host, credentials=credentials, device_type=device_type
         )
     else:
@@ -235,8 +235,8 @@ async def cli(
             port=port,
             credentials=credentials,
         )
+        await dev.update()
 
-    await dev.update()
     ctx.obj = dev
 
     if ctx.invoked_subcommand is None:
