@@ -20,11 +20,6 @@ DEVICE_TYPE_TO_CLASS = {
 }
 
 
-def get_device_class_from_type(device_type: DeviceType) -> Type[SmartDevice]:
-    """Find SmartDevice subclass for device described by passed data."""
-    return DEVICE_TYPE_TO_CLASS[device_type]
-
-
 async def connect(
     host: str,
     *,
