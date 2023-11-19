@@ -1,32 +1,24 @@
 # type: ignore
-import re
-import socket
-import sys
+import logging
 from typing import Type
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
     DeviceType,
-    Discover,
     SmartBulb,
     SmartDevice,
     SmartDeviceException,
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
-    protocol,
 )
-from kasa.device_factory import DEVICE_TYPE_TO_CLASS, connect
-from kasa.discover import _DiscoverProtocol, json_dumps
-from kasa.exceptions import UnsupportedDeviceException
-
-from .conftest import bulb, dimmer, lightstrip, plug, strip
+from kasa.device_factory import connect
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
 async def test_connect(discovery_data: dict, mocker, custom_port):
-    """Make sure that connect_single returns an initialized SmartDevice instance."""
+    """Make sure that connect returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
 
@@ -53,7 +45,7 @@ async def test_connect_passed_device_type(
     klass: Type[SmartDevice],
     custom_port,
 ):
-    """Make sure that connect_single with a passed device type."""
+    """Make sure that connect with a passed device type."""
     host = "127.0.0.1"
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
 
@@ -63,9 +55,20 @@ async def test_connect_passed_device_type(
 
 
 async def test_connect_query_fails(discovery_data: dict, mocker):
-    """Make sure that connect_single fails when query fails."""
+    """Make sure that connect fails when query fails."""
     host = "127.0.0.1"
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", side_effect=SmartDeviceException)
 
     with pytest.raises(SmartDeviceException):
         await connect(host)
+
+
+async def test_connect_logs_connect_time(
+    discovery_data: dict, caplog: pytest.LogCaptureFixture, mocker
+):
+    """Test that the connect time is logged when debug logging is enabled."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
+    logging.getLogger("kasa").setLevel(logging.DEBUG)
+    await connect(host)
+    assert "seconds to connect" in caplog.text

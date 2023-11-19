@@ -1,16 +1,4 @@
-import inspect
-from datetime import datetime
-from unittest.mock import patch
-
-import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
-
-import kasa
-from kasa import Credentials, SmartDevice, SmartDeviceException
 from kasa.smartdevice import DeviceType
-from kasa.smartstrip import SmartStripPlug
-
-from .conftest import handle_turn_on, has_emeter, no_emeter, turn_on
-from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
 
 
 async def test_device_type_from_value():

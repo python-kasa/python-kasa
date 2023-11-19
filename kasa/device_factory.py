@@ -1,5 +1,7 @@
 """Device creation by type."""
 
+import logging
+import time
 from typing import Any, Dict, Optional, Type
 
 from .credentials import Credentials
@@ -18,6 +20,8 @@ DEVICE_TYPE_TO_CLASS = {
     DeviceType.Dimmer: SmartDimmer,
     DeviceType.LightStrip: SmartLightStrip,
 }
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def connect(
@@ -48,11 +52,24 @@ async def connect(
     :rtype: SmartDevice
     :return: Object for querying/controlling found device.
     """
+    debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+
+    if debug_enabled:
+        start_time = time.perf_counter()
+
     if device_type and (klass := DEVICE_TYPE_TO_CLASS.get(device_type)):
         dev: SmartDevice = klass(
             host=host, port=port, credentials=credentials, timeout=timeout
         )
         await dev.update()
+        if debug_enabled:
+            end_time = time.perf_counter()
+            _LOGGER.debug(
+                "Device %s with known type (%s) took %.2f seconds to connect",
+                host,
+                device_type.value,
+                end_time - start_time,
+            )
         return dev
 
     unknown_dev = SmartDevice(
@@ -65,6 +82,14 @@ async def connect(
     # so we don't have to reconnect
     dev.protocol = unknown_dev.protocol
     await dev.update()
+    if debug_enabled:
+        end_time = time.perf_counter()
+        _LOGGER.debug(
+            "Device %s with unknown type (%s) took %.2f seconds to connect",
+            host,
+            dev.device_type.value,
+            end_time - start_time,
+        )
     return dev
 
 
