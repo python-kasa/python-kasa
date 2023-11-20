@@ -413,6 +413,12 @@ class SmartDevice:
 
     @property  # type: ignore
     @requires_update
+    def has_children(self) -> bool:
+        """Check if the device has children devices."""
+        return bool(self._sys_info.get("child_num"))
+
+    @property  # type: ignore
+    @requires_update
     def alias(self) -> str:
         """Return device name (alias)."""
         sys_info = self._sys_info

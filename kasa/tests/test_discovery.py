@@ -301,11 +301,9 @@ async def test_discover_single_authentication(mocker):
         match="Failed to authenticate",
     ):
         device = await Discover.discover_single(host)
-        await device.update()
 
     mocker.patch.object(SmartDevice, "update")
     device = await Discover.discover_single(host)
-    await device.update()
     assert device.device_type == DeviceType.Plug
 
 
