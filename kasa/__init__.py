@@ -21,7 +21,8 @@ from kasa.exceptions import (
     SmartDeviceException,
     UnsupportedDeviceException,
 )
-from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.klapprotocol import TPLinkKlap
+from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.smartdevice import DeviceType, SmartDevice
 from kasa.smartdimmer import SmartDimmer
@@ -35,6 +36,8 @@ __version__ = version("python-kasa")
 __all__ = [
     "Discover",
     "TPLinkSmartHomeProtocol",
+    "TPLinkProtocol",
+    "TPLinkKlap",
     "SmartBulb",
     "SmartBulbPreset",
     "TurnOnBehaviors",

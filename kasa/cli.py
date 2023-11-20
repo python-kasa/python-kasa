@@ -11,6 +11,7 @@ from typing import Any, Dict, cast
 import asyncclick as click
 
 from kasa import (
+    AuthenticationException,
     Credentials,
     Discover,
     SmartBulb,
@@ -308,8 +309,9 @@ async def discover(ctx, timeout, show_unsupported):
     sem = asyncio.Semaphore()
     discovered = dict()
     unsupported = []
+    auth_failed = []
 
-    async def print_unsupported(data: Dict):
+    async def print_unsupported(data: str):
         unsupported.append(data)
         if show_unsupported:
             echo(f"Found unsupported device (tapo/unknown encryption): {data}")
@@ -318,12 +320,15 @@ async def discover(ctx, timeout, show_unsupported):
     echo(f"Discovering devices on {target} for {timeout} seconds")
 
     async def print_discovered(dev: SmartDevice):
-        await dev.update()
-        async with sem:
-            discovered[dev.host] = dev.internal_state
-            ctx.obj = dev
-            await ctx.invoke(state)
-            echo()
+        try:
+            await dev.update()
+            async with sem:
+                discovered[dev.host] = dev.internal_state
+                ctx.obj = dev
+                await ctx.invoke(state)
+                echo()
+        except AuthenticationException as aex:
+            auth_failed.append(str(aex))
 
     await Discover.discover(
         target=target,
@@ -343,6 +348,10 @@ async def discover(ctx, timeout, show_unsupported):
                 else ", to show them use: kasa discover --show-unsupported"
             )
         )
+    if auth_failed:
+        echo(f"Found {len(auth_failed)} devices that failed to authenticate")
+        for fail in auth_failed:
+            echo(fail)
 
     return discovered
 
