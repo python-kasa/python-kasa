@@ -12,6 +12,18 @@ or if you are just looking to access some information that is not currently expo
 .. contents:: Contents
    :local:
 
+.. _initialization:
+
+Initialization
+**************
+
+When the IP Address of a device is known, it can be connected with :meth:`~kasa.SmartDevice.connect()`.
+If the IP Address is not known, it can be discovered using :func:`~kasa.Discover.discover_devices`.
+
+When connecting a device with the :meth:`~kasa.SmartDevice.connect()` method, it is recommended to
+pass the device type as well as this allows the library to use the correct device class for the
+device without having to query the device.
+
 .. _update_cycle:
 
 Update Cycle
