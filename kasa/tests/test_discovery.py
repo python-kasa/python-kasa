@@ -1,24 +1,12 @@
 # type: ignore
 import re
 import socket
-import sys
-from typing import Type
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import (
-    DeviceType,
-    Discover,
-    SmartBulb,
-    SmartDevice,
-    SmartDeviceException,
-    SmartDimmer,
-    SmartLightStrip,
-    SmartPlug,
-    protocol,
-)
-from kasa.discover import _DiscoverProtocol, json_dumps
-from kasa.exceptions import UnsupportedDeviceException
+from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol
+from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
+from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
 
 from .conftest import bulb, dimmer, lightstrip, plug, strip
 
@@ -62,7 +50,7 @@ async def test_type_detection_lightstrip(dev: SmartDevice):
 
 async def test_type_unknown():
     invalid_info = {"system": {"get_sysinfo": {"type": "nosuchtype"}}}
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(UnsupportedDeviceException):
         Discover._get_device_class(invalid_info)
 
 
@@ -230,3 +218,73 @@ async def test_discover_invalid_responses(msg, data, mocker):
 
     proto.datagram_received(data, ("127.0.0.1", 9999))
     assert len(proto.discovered_devices) == 0
+
+
+AUTHENTICATION_DATA_KLAP = {
+    "result": {
+        "device_id": "xx",
+        "owner": "xx",
+        "device_type": "IOT.SMARTPLUGSWITCH",
+        "device_model": "HS100(UK)",
+        "ip": "127.0.0.1",
+        "mac": "12-34-56-78-90-AB",
+        "is_support_iot_cloud": True,
+        "obd_src": "tplink",
+        "factory_default": False,
+        "mgt_encrypt_schm": {
+            "is_support_https": False,
+            "encrypt_type": "KLAP",
+            "http_port": 80,
+        },
+    },
+    "error_code": 0,
+}
+
+
+async def test_discover_single_authentication(mocker):
+    """Make sure that discover_single handles authenticating devices correctly."""
+    host = "127.0.0.1"
+
+    def mock_discover(self):
+        if discovery_data:
+            data = (
+                b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
+                + json_dumps(discovery_data).encode()
+            )
+            self.datagram_received(data, (host, 20002))
+
+    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(
+        SmartDevice,
+        "update",
+        side_effect=AuthenticationException("Failed to authenticate"),
+    )
+
+    # Test with a valid unsupported response
+    discovery_data = AUTHENTICATION_DATA_KLAP
+    with pytest.raises(
+        AuthenticationException,
+        match="Failed to authenticate",
+    ):
+        await Discover.discover_single(host)
+
+    mocker.patch.object(SmartDevice, "update")
+    device = await Discover.discover_single(host)
+    assert device.device_type == DeviceType.Plug
+
+
+async def test_device_update_from_new_discovery_info():
+    device = SmartDevice("127.0.0.7")
+    discover_info = DiscoveryResult(**AUTHENTICATION_DATA_KLAP["result"])
+    discover_dump = discover_info.get_dict()
+    device.update_from_discover_info(discover_dump)
+
+    assert device.alias == discover_dump["alias"]
+    assert device.mac == discover_dump["mac"].replace("-", ":")
+    assert device.model == discover_dump["model"]
+
+    with pytest.raises(
+        SmartDeviceException,
+        match=re.escape("You need to await update() to access the data"),
+    ):
+        assert device.supported_modules

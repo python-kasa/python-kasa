@@ -5,16 +5,7 @@ import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice, TPLinkSmartHomeProtocol
-from kasa.cli import (
-    alias,
-    brightness,
-    cli,
-    emeter,
-    raw_command,
-    state,
-    sysinfo,
-    toggle,
-)
+from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
 from kasa.discover import Discover
 
 from .conftest import handle_turn_on, turn_on

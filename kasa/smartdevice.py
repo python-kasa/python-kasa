@@ -24,7 +24,7 @@ from .device_type import DeviceType
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
-from .protocol import TPLinkSmartHomeProtocol
+from .protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def requires_update(f):
         @functools.wraps(f)
         async def wrapped(*args, **kwargs):
             self = args[0]
-            if self._last_update is None:
+            if self._last_update is None and f.__name__ not in self._sys_info:
                 raise SmartDeviceException(
                     "You need to await update() to access the data"
                 )
@@ -70,7 +70,7 @@ def requires_update(f):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             self = args[0]
-            if self._last_update is None:
+            if self._last_update is None and f.__name__ not in self._sys_info:
                 raise SmartDeviceException(
                     "You need to await update() to access the data"
                 )
@@ -201,8 +201,9 @@ class SmartDevice:
         """
         self.host = host
         self.port = port
-
-        self.protocol = TPLinkSmartHomeProtocol(host, port=port, timeout=timeout)
+        self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(
+            host, port=port, timeout=timeout
+        )
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
@@ -210,6 +211,7 @@ class SmartDevice:
         #       checks in accessors. the @updated_required decorator does not ensure
         #       mypy that these are not accessed incorrectly.
         self._last_update: Any = None
+
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self._features: Set[str] = set()
         self.modules: Dict[str, Any] = {}
@@ -362,8 +364,14 @@ class SmartDevice:
 
     def update_from_discover_info(self, info: Dict[str, Any]) -> None:
         """Update state from info from the discover call."""
-        self._last_update = info
-        self._set_sys_info(info["system"]["get_sysinfo"])
+        if "system" in info and (sys_info := info["system"].get("get_sysinfo")):
+            self._last_update = info
+            self._set_sys_info(sys_info)
+        else:
+            # This allows setting of some info properties directly
+            # from partial discovery info that will then be found
+            # by the requires_update decorator
+            self._set_sys_info(info)
 
     def _set_sys_info(self, sys_info: Dict[str, Any]) -> None:
         """Set sys_info."""
@@ -376,21 +384,26 @@ class SmartDevice:
     @property  # type: ignore
     @requires_update
     def sys_info(self) -> Dict[str, Any]:
-        """Return system information."""
+        """
+        Return system information.
+
+        Do not call this function from within the SmartDevice
+        class itself as @requires_update will be affected for other properties.
+        """
         return self._sys_info  # type: ignore
 
     @property  # type: ignore
     @requires_update
     def model(self) -> str:
         """Return device model."""
-        sys_info = self.sys_info
+        sys_info = self._sys_info
         return str(sys_info["model"])
 
     @property  # type: ignore
     @requires_update
     def alias(self) -> str:
         """Return device name (alias)."""
-        sys_info = self.sys_info
+        sys_info = self._sys_info
         return str(sys_info["alias"])
 
     async def set_alias(self, alias: str) -> None:
@@ -442,14 +455,14 @@ class SmartDevice:
             "oemId",
             "dev_name",
         ]
-        sys_info = self.sys_info
+        sys_info = self._sys_info
         return {key: sys_info[key] for key in keys if key in sys_info}
 
     @property  # type: ignore
     @requires_update
     def location(self) -> Dict:
         """Return geographical location."""
-        sys_info = self.sys_info
+        sys_info = self._sys_info
         loc = {"latitude": None, "longitude": None}
 
         if "latitude" in sys_info and "longitude" in sys_info:
@@ -467,7 +480,7 @@ class SmartDevice:
     @requires_update
     def rssi(self) -> Optional[int]:
         """Return WiFi signal strength (rssi)."""
-        rssi = self.sys_info.get("rssi")
+        rssi = self._sys_info.get("rssi")
         return None if rssi is None else int(rssi)
 
     @property  # type: ignore
@@ -477,14 +490,14 @@ class SmartDevice:
 
         :return: mac address in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         """
-        sys_info = self.sys_info
-
+        sys_info = self._sys_info
         mac = sys_info.get("mac", sys_info.get("mic_mac"))
         if not mac:
             raise SmartDeviceException(
                 "Unknown mac, please submit a bug report with sys_info output."
             )
-
+        mac = mac.replace("-", ":")
+        # Format a mac that has no colons (usually from mic_mac field)
         if ":" not in mac:
             mac = ":".join(format(s, "02x") for s in bytes.fromhex(mac))
 
@@ -595,13 +608,13 @@ class SmartDevice:
     @requires_update
     def on_since(self) -> Optional[datetime]:
         """Return pretty-printed on-time, or None if not available."""
-        if "on_time" not in self.sys_info:
+        if "on_time" not in self._sys_info:
             return None
 
         if self.is_off:
             return None
 
-        on_time = self.sys_info["on_time"]
+        on_time = self._sys_info["on_time"]
 
         return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
