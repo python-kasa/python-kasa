@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional, Type
 
 from .credentials import Credentials
 from .device_type import DeviceType
+from .exceptions import UnsupportedDeviceException
 from .smartbulb import SmartBulb
 from .smartdevice import SmartDevice, SmartDeviceException
 from .smartdimmer import SmartDimmer
@@ -117,5 +118,4 @@ def get_device_class_from_info(info: Dict[str, Any]) -> Type[SmartDevice]:
             return SmartLightStrip
 
         return SmartBulb
-
-    raise SmartDeviceException("Unknown device type: %s" % type_)
+    raise UnsupportedDeviceException("Unknown device type: %s" % type_)
