@@ -399,6 +399,15 @@ class SmartDevice:
         sys_info = self._sys_info
         return str(sys_info["model"])
 
+    @property
+    def has_children(self) -> bool:
+        """Return true if the device has children devices."""
+        # Ideally we would check for the 'child_num' key in sys_info,
+        # but devices that speak klap do not populate this key via
+        # update_from_discover_info so we check for the devices
+        # we know have children instead.
+        return self.is_strip
+
     @property  # type: ignore
     @requires_update
     def alias(self) -> str:

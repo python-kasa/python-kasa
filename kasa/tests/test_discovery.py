@@ -4,7 +4,14 @@ import socket
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
-from kasa import DeviceType, Discover, SmartDevice, SmartDeviceException, protocol
+from kasa import (
+    DeviceType,
+    Discover,
+    SmartDevice,
+    SmartDeviceException,
+    SmartStrip,
+    protocol,
+)
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
 
@@ -58,41 +65,45 @@ async def test_type_unknown():
 async def test_discover_single(discovery_data: dict, mocker, custom_port):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
+    info = {"system": {"get_sysinfo": discovery_data["system"]["get_sysinfo"]}}
+    query_mock = mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=info)
 
     def mock_discover(self):
         self.datagram_received(
-            protocol.TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:],
+            protocol.TPLinkSmartHomeProtocol.encrypt(json_dumps(info))[4:],
             (host, custom_port or 9999),
         )
 
     mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
 
     x = await Discover.discover_single(host, port=custom_port)
     assert issubclass(x.__class__, SmartDevice)
     assert x._sys_info is not None
     assert x.port == custom_port or x.port == 9999
+    assert (query_mock.call_count > 0) == isinstance(x, SmartStrip)
 
 
 async def test_discover_single_hostname(discovery_data: dict, mocker):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "foobar"
     ip = "127.0.0.1"
+    info = {"system": {"get_sysinfo": discovery_data["system"]["get_sysinfo"]}}
+    query_mock = mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=info)
 
     def mock_discover(self):
         self.datagram_received(
-            protocol.TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:],
+            protocol.TPLinkSmartHomeProtocol.encrypt(json_dumps(info))[4:],
             (ip, 9999),
         )
 
     mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
     mocker.patch("socket.getaddrinfo", return_value=[(None, None, None, None, (ip, 0))])
 
     x = await Discover.discover_single(host)
     assert issubclass(x.__class__, SmartDevice)
     assert x._sys_info is not None
     assert x.host == host
+    assert (query_mock.call_count > 0) == isinstance(x, SmartStrip)
 
     mocker.patch("socket.getaddrinfo", side_effect=socket.gaierror())
     with pytest.raises(SmartDeviceException):
@@ -190,7 +201,8 @@ async def test_discover_send(mocker):
 async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
     proto = _DiscoverProtocol()
-    mocker.patch("kasa.discover.json_loads", return_value=discovery_data)
+    info = {"system": {"get_sysinfo": discovery_data["system"]["get_sysinfo"]}}
+    mocker.patch("kasa.discover.json_loads", return_value=info)
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
     mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
 
@@ -266,10 +278,12 @@ async def test_discover_single_authentication(mocker):
         AuthenticationException,
         match="Failed to authenticate",
     ):
-        await Discover.discover_single(host)
+        device = await Discover.discover_single(host)
+        await device.update()
 
     mocker.patch.object(SmartDevice, "update")
     device = await Discover.discover_single(host)
+    await device.update()
     assert device.device_type == DeviceType.Plug
 
 

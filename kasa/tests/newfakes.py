@@ -1,3 +1,4 @@
+import copy
 import logging
 import re
 
@@ -289,7 +290,7 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         self.discovery_data = info
         self.writer = None
         self.reader = None
-        proto = FakeTransportProtocol.baseproto
+        proto = copy.deepcopy(FakeTransportProtocol.baseproto)
 
         for target in info:
             # print("target %s" % target)
@@ -298,16 +299,23 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
                 proto[target][cmd] = info[target][cmd]
         # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
-            for etype in ["get_realtime", "get_daystat", "get_monthstat"]:
-                if (
-                    module in info and etype in info[module]
-                ):  # if the fixture has the data, use it
-                    # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
-                    proto[module][etype] = info[module][etype]
-                else:  # otherwise fall back to the static one
-                    dummy_data = emeter_commands[module][etype]
-                    # print("got %s %s from dummy: %s" % (module, etype, dummy_data))
-                    proto[module][etype] = dummy_data
+            if (
+                module in info
+                and "err_code" in info[module]
+                and info[module]["err_code"] != 0
+            ):
+                proto[module] = info[module]
+            else:
+                for etype in ["get_realtime", "get_daystat", "get_monthstat"]:
+                    if (
+                        module in info and etype in info[module]
+                    ):  # if the fixture has the data, use it
+                        # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
+                        proto[module][etype] = info[module][etype]
+                    else:  # otherwise fall back to the static one
+                        dummy_data = emeter_commands[module][etype]
+                        # print("got %s %s from dummy: %s" % (module, etype, dummy_data))
+                        proto[module][etype] = dummy_data
 
             # print("initialized: %s" % proto[module])
 
@@ -471,6 +479,8 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
         def get_response_for_module(target):
             if target not in proto:
                 return error(msg="target not found")
+            if "err_code" in proto[target] and proto[target]["err_code"] != 0:
+                return {target: proto[target]}
 
             def get_response_for_command(cmd):
                 if cmd not in proto[target]:
