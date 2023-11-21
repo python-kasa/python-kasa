@@ -155,6 +155,16 @@ async def test_childrens(dev):
         assert len(dev.children) == 0
 
 
+async def test_children(dev):
+    """Make sure that children property is exposed by every device."""
+    if dev.is_strip:
+        assert len(dev.children) > 0
+        assert dev.has_children is True
+    else:
+        assert len(dev.children) == 0
+        assert dev.has_children is False
+
+
 async def test_internal_state(dev):
     """Make sure the internal state returns the last update results."""
     assert dev.internal_state == dev._last_update
@@ -203,3 +213,12 @@ async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
     dev = SmartDevice(host="127.0.0.1", timeout=100)
     assert dev.protocol.timeout == 100
+
+
+async def test_modules_not_supported(dev: SmartDevice):
+    """Test that unsupported modules do not break the device."""
+    for module in dev.modules.values():
+        assert module.is_supported is not None
+    await dev.update()
+    for module in dev.modules.values():
+        assert module.is_supported is not None
