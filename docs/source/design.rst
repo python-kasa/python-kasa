@@ -17,8 +17,11 @@ or if you are just looking to access some information that is not currently expo
 Initialization
 **************
 
-When the IP Address of a device is known, it can be connected with :meth:`~kasa.SmartDevice.connect()`.
-If the IP Address is not known, it can be discovered using :func:`~kasa.Discover.discover`.
+Use :func:`~kasa.Discover.discover` to perform udp-based broadcast discovery on the network.
+This will return you a list of device instances based on the discovery replies.
+
+If the device's host is already known, you can use to construct a device instance with
+:meth:`~kasa.SmartDevice.connect()`.
 
 When connecting a device with the :meth:`~kasa.SmartDevice.connect()` method, it is recommended to
 pass the device type as well as this allows the library to use the correct device class for the
