@@ -41,6 +41,7 @@ class TapoPlug(SmartPlug):
             self._tapo_client = TapoClient(
                 AuthCredential(username=user, password=pw), self.host
             )
+            await self._tapo_client.initialize()
         self._tapo_device = PlugDevice(self._tapo_client)
 
         self._state = (await self._tapo_device.get_state()).value
