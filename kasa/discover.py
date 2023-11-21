@@ -332,11 +332,8 @@ class Discover:
         if ip in protocol.discovered_devices:
             dev = protocol.discovered_devices[ip]
             dev.host = host
-            # Call device update on devices that have children or do not use
-            # the default protocol instance which will have only partial discovery info
-            if not isinstance(dev.protocol, TPLinkSmartHomeProtocol) or (
-                update_parent_devices and dev.has_children
-            ):
+            # Call device update on devices that have children
+            if update_parent_devices and dev.has_children:
                 await dev.update()
             return dev
         elif ip in protocol.unsupported_devices:
