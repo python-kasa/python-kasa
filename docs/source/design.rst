@@ -12,6 +12,21 @@ or if you are just looking to access some information that is not currently expo
 .. contents:: Contents
    :local:
 
+.. _initialization:
+
+Initialization
+**************
+
+Use :func:`~kasa.Discover.discover` to perform udp-based broadcast discovery on the network.
+This will return you a list of device instances based on the discovery replies.
+
+If the device's host is already known, you can use to construct a device instance with
+:meth:`~kasa.SmartDevice.connect()`.
+
+When connecting a device with the :meth:`~kasa.SmartDevice.connect()` method, it is recommended to
+pass the device type as well as this allows the library to use the correct device class for the
+device without having to query the device.
+
 .. _update_cycle:
 
 Update Cycle

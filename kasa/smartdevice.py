@@ -17,28 +17,16 @@ import inspect
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum, auto
 from typing import Any, Dict, List, Optional, Set
 
 from .credentials import Credentials
+from .device_type import DeviceType
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
 from .protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class DeviceType(Enum):
-    """Device type enum."""
-
-    Plug = auto()
-    Bulb = auto()
-    Strip = auto()
-    StripSocket = auto()
-    Dimmer = auto()
-    LightStrip = auto()
-    Unknown = -1
 
 
 @dataclass
@@ -779,4 +767,43 @@ class SmartDevice:
             f"<{self._device_type} model {self.model} at {self.host}"
             f" ({self.alias}), is_on: {self.is_on}"
             f" - dev specific: {self.state_information}>"
+        )
+
+    @staticmethod
+    async def connect(
+        host: str,
+        *,
+        port: Optional[int] = None,
+        timeout=5,
+        credentials: Optional[Credentials] = None,
+        device_type: Optional[DeviceType] = None,
+    ) -> "SmartDevice":
+        """Connect to a single device by the given IP address.
+
+        This method avoids the UDP based discovery process and
+        will connect directly to the device to query its type.
+
+        It is generally preferred to avoid :func:`discover_single()` and
+        use this function instead as it should perform better when
+        the WiFi network is congested or the device is not responding
+        to discovery requests.
+
+        The device type is discovered by querying the device.
+
+        :param host: Hostname of device to query
+        :param device_type: Device type to use for the device.
+            If not given, the device type is discovered by querying the device.
+            If the device type is already known, it is preferred to pass it
+            to avoid the extra query to the device to discover its type.
+        :rtype: SmartDevice
+        :return: Object for querying/controlling found device.
+        """
+        from .device_factory import connect  # pylint: disable=import-outside-toplevel
+
+        return await connect(
+            host=host,
+            port=port,
+            timeout=timeout,
+            credentials=credentials,
+            device_type=device_type,
         )

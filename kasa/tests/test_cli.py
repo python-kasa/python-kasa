@@ -1,22 +1,11 @@
 import json
-import sys
 
 import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice, TPLinkSmartHomeProtocol
-from kasa.cli import (
-    TYPE_TO_CLASS,
-    alias,
-    brightness,
-    cli,
-    emeter,
-    raw_command,
-    state,
-    sysinfo,
-    toggle,
-)
+from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
 from kasa.discover import Discover
 
 from .conftest import handle_turn_on, turn_on
@@ -154,14 +143,9 @@ async def test_credentials(discovery_data: dict, mocker):
             )
 
     mocker.patch("kasa.cli.state", new=_state)
-
-    # Get the type string parameter from the discovery_info
-    for cli_device_type in {  # noqa: B007
-        i
-        for i in TYPE_TO_CLASS
-        if TYPE_TO_CLASS[i] == Discover._get_device_class(discovery_data)
-    }:
-        break
+    cli_device_type = Discover._get_device_class(discovery_data)(
+        "any"
+    ).device_type.value
 
     runner = CliRunner()
     res = await runner.invoke(
@@ -179,6 +163,24 @@ async def test_credentials(discovery_data: dict, mocker):
     )
     assert res.exit_code == 0
     assert res.output == "Username:foo Password:bar\n"
+
+
+async def test_without_device_type(discovery_data: dict, dev, mocker):
+    """Test connecting without the device type."""
+    runner = CliRunner()
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+        ],
+    )
+    assert res.exit_code == 0
 
 
 @pytest.mark.parametrize("auth_param", ["--username", "--password"])
