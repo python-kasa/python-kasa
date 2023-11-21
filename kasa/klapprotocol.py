@@ -64,7 +64,10 @@ logging.getLogger("httpx").propagate = False
 
 
 def _sha256(payload: bytes) -> bytes:
-    return hashlib.sha256(payload).digest()
+    digest = hashes.Hash(hashes.SHA256())  # noqa: S303
+    digest.update(payload)
+    hash = digest.finalize()
+    return hash
 
 
 def _md5(payload: bytes) -> bytes:
@@ -72,6 +75,12 @@ def _md5(payload: bytes) -> bytes:
     digest.update(payload)
     hash = digest.finalize()
     return hash
+
+
+def _sha1(payload: bytes) -> bytes:
+    digest = hashes.Hash(hashes.SHA1())  # noqa: S303
+    digest.update(payload)
+    return digest.finalize()
 
 
 class TPLinkKlap(TPLinkProtocol):
@@ -94,6 +103,7 @@ class TPLinkKlap(TPLinkProtocol):
         *,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
+        lv: Optional[int] = None,
     ) -> None:
         super().__init__(host=host, port=self.DEFAULT_PORT)
 
@@ -103,8 +113,9 @@ class TPLinkKlap(TPLinkProtocol):
             else Credentials(username="", password="")
         )
 
+        self.lv = lv
         self._local_seed: Optional[bytes] = None
-        self.local_auth_hash = self.generate_auth_hash(self.credentials)
+        self.local_auth_hash = self.generate_auth_hash(self.credentials, self.lv)
         self.local_auth_owner = self.generate_owner_hash(self.credentials).hex()
         self.kasa_setup_auth_hash = None
         self.blank_auth_hash = None
@@ -183,7 +194,12 @@ class TPLinkKlap(TPLinkProtocol):
                 server_hash.hex(),
             )
 
-        local_seed_auth_hash = _sha256(local_seed + self.local_auth_hash)
+        if self.lv == 2:
+            local_seed_auth_hash = _sha256(
+                local_seed + remote_seed + self.local_auth_hash
+            )
+        else:
+            local_seed_auth_hash = _sha256(local_seed + self.local_auth_hash)
 
         # Check the response from the device with local credentials
         if local_seed_auth_hash == server_hash:
@@ -196,11 +212,18 @@ class TPLinkKlap(TPLinkProtocol):
                 username=TPLinkKlap.KASA_SETUP_EMAIL,
                 password=TPLinkKlap.KASA_SETUP_PASSWORD,
             )
-            self.kasa_setup_auth_hash = TPLinkKlap.generate_auth_hash(kasa_setup_creds)
+            self.kasa_setup_auth_hash = TPLinkKlap.generate_auth_hash(
+                kasa_setup_creds, self.lv
+            )
 
-        kasa_setup_seed_auth_hash = _sha256(
-            local_seed + self.kasa_setup_auth_hash  # type: ignore
-        )
+        if self.lv == 2:
+            kasa_setup_seed_auth_hash = _sha256(
+                local_seed + remote_seed + self.kasa_setup_auth_hash  # type: ignore
+            )
+        else:
+            kasa_setup_seed_auth_hash = _sha256(
+                local_seed + self.kasa_setup_auth_hash  # type: ignore
+            )
         if kasa_setup_seed_auth_hash == server_hash:
             _LOGGER.debug(
                 "Server response doesn't match our expected hash on ip %s"
@@ -212,8 +235,15 @@ class TPLinkKlap(TPLinkProtocol):
         # Finally check against blank credentials if not already blank
         if self.credentials != (blank_creds := Credentials(username="", password="")):
             if not self.blank_auth_hash:
-                self.blank_auth_hash = TPLinkKlap.generate_auth_hash(blank_creds)
-            blank_seed_auth_hash = _sha256(local_seed + self.blank_auth_hash)  # type: ignore
+                self.blank_auth_hash = TPLinkKlap.generate_auth_hash(
+                    blank_creds, self.lv
+                )
+            if self.lv == 2:
+                blank_seed_auth_hash = _sha256(
+                    local_seed + remote_seed + self.blank_auth_hash  # type: ignore
+                )
+            else:
+                blank_seed_auth_hash = _sha256(local_seed + self.blank_auth_hash)  # type: ignore
             if blank_seed_auth_hash == server_hash:
                 _LOGGER.debug(
                     "Server response doesn't match our expected hash on ip %s"
@@ -235,7 +265,10 @@ class TPLinkKlap(TPLinkProtocol):
 
         url = f"http://{self.host}/app/handshake2"
 
-        payload = _sha256(remote_seed + auth_hash)
+        if self.lv == 2:
+            payload = _sha256(remote_seed + local_seed + auth_hash)
+        else:
+            payload = _sha256(remote_seed + auth_hash)
 
         response_status, response_data = await self.client_post(url, data=payload)
 
@@ -288,10 +321,13 @@ class TPLinkKlap(TPLinkProtocol):
         )
 
     @staticmethod
-    def generate_auth_hash(creds: Credentials):
+    def generate_auth_hash(creds: Credentials, lv: Optional[int] = None):
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
         un = creds.username or ""
         pw = creds.password or ""
+        if lv == 2:
+            return _sha256(_sha1(un.encode()) + _sha1(pw.encode()))
+
         return _md5(_md5(un.encode()) + _md5(pw.encode()))
 
     @staticmethod

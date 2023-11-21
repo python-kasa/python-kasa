@@ -444,20 +444,23 @@ class Discover:
                 f"Unable to read response from device: {ip}: {ex}"
             ) from ex
 
-        if (
-            discovery_result.mgt_encrypt_schm.encrypt_type == "KLAP"
-            and discovery_result.mgt_encrypt_schm.lv is None
+        # AES only included here to test whether an EP25 might use klap lv2.  Unlikely.
+        if discovery_result.mgt_encrypt_schm.encrypt_type in ("KLAP", "AES") and (
+            discovery_result.mgt_encrypt_schm.lv is None
+            or discovery_result.mgt_encrypt_schm.lv == 2
         ):
             type_ = discovery_result.device_type
             device_class = None
-            if type_.upper() == "IOT.SMARTPLUGSWITCH":
+            if type_.upper() in ("IOT.SMARTPLUGSWITCH", "SMART.KASAPLUG"):
                 device_class = SmartPlug
 
             if device_class:
                 _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
                 device = device_class(ip, port=port, credentials=credentials)
                 device.update_from_discover_info(discovery_result.get_dict())
-                device.protocol = TPLinkKlap(ip, credentials=credentials)
+                device.protocol = TPLinkKlap(
+                    ip, credentials=credentials, lv=discovery_result.mgt_encrypt_schm.lv
+                )
                 return device
             else:
                 raise UnsupportedDeviceException(
