@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Type
 from .credentials import Credentials
 from .device_type import DeviceType
 from .exceptions import UnsupportedDeviceException
+from .protocol import TPLinkProtocol
 from .smartbulb import SmartBulb
 from .smartdevice import SmartDevice, SmartDeviceException
 from .smartdimmer import SmartDimmer
@@ -32,6 +33,7 @@ async def connect(
     timeout=5,
     credentials: Optional[Credentials] = None,
     device_type: Optional[DeviceType] = None,
+    protocol_class: Optional[Type[TPLinkProtocol]] = None,
 ) -> "SmartDevice":
     """Connect to a single device by the given IP address.
 
@@ -50,6 +52,8 @@ async def connect(
         If not given, the device type is discovered by querying the device.
         If the device type is already known, it is preferred to pass it
         to avoid the extra query to the device to discover its type.
+    :param protocol_class: Optionally provide the protocol class
+            to use.
     :rtype: SmartDevice
     :return: Object for querying/controlling found device.
     """
@@ -62,6 +66,8 @@ async def connect(
         dev: SmartDevice = klass(
             host=host, port=port, credentials=credentials, timeout=timeout
         )
+        if protocol_class is not None:
+            dev.protocol = protocol_class(host, credentials=credentials)
         await dev.update()
         if debug_enabled:
             end_time = time.perf_counter()
@@ -76,6 +82,8 @@ async def connect(
     unknown_dev = SmartDevice(
         host=host, port=port, credentials=credentials, timeout=timeout
     )
+    if protocol_class is not None:
+        unknown_dev.protocol = protocol_class(host, credentials=credentials)
     await unknown_dev.update()
     device_class = get_device_class_from_info(unknown_dev.internal_state)
     dev = device_class(host=host, port=port, credentials=credentials, timeout=timeout)

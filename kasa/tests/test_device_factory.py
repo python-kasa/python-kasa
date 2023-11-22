@@ -14,6 +14,8 @@ from kasa import (
     SmartPlug,
 )
 from kasa.device_factory import connect
+from kasa.klapprotocol import TPLinkKlap
+from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
@@ -72,3 +74,28 @@ async def test_connect_logs_connect_time(
     logging.getLogger("kasa").setLevel(logging.DEBUG)
     await connect(host)
     assert "seconds to connect" in caplog.text
+
+
+@pytest.mark.parametrize("device_type", [DeviceType.Plug, None])
+@pytest.mark.parametrize(
+    ("protocol_in", "protocol_result"),
+    (
+        (None, TPLinkSmartHomeProtocol),
+        (TPLinkKlap, TPLinkKlap),
+        (TPLinkSmartHomeProtocol, TPLinkSmartHomeProtocol),
+    ),
+)
+async def test_connect_pass_protocol(
+    discovery_data: dict,
+    mocker,
+    device_type: DeviceType,
+    protocol_in: Type[TPLinkProtocol],
+    protocol_result: Type[TPLinkProtocol],
+):
+    """Test that if the protocol is passed in it's gets set correctly."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
+    mocker.patch("kasa.TPLinkKlap.query", return_value=discovery_data)
+
+    dev = await connect(host, device_type=device_type, protocol_class=protocol_in)
+    assert isinstance(dev.protocol, protocol_result)
