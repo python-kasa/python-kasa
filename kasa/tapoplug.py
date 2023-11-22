@@ -77,10 +77,28 @@ class TapoPlug(SmartPlug):
 
     @property
     def time(self) -> datetime:
+        """Disabled as 'region' is '' on my test device
+        File "/x/python-kasa/kasa/tapoplug.py", line 80, in time
+            return self._time.local_time()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+        File "x/plugp100/responses/time_info.py", line 19, in local_time
+            return datetime.fromtimestamp(self.timestamp, tz=ZoneInfo(self.region))
+                                                          ^^^^^^^^^^^^^^^^^^^^^
+        """
+        return None
         return self._time.local_time()
 
     @property
     def timezone(self) -> Dict:
+        """Disabled as 'region' is '' on my test device
+        File "/x/python-kasa/kasa/tapoplug.py", line 80, in time
+            return self._time.local_time()
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+        File "x/plugp100/responses/time_info.py", line 19, in local_time
+            return datetime.fromtimestamp(self.timestamp, tz=ZoneInfo(self.region))
+                                                          ^^^^^^^^^^^^^^^^^^^^^
+        """
+        return None
         return {"timezone": self._info.timezone, "timediff": self._info.time_difference}
 
     def has_emeter(self) -> bool:
