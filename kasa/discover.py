@@ -15,6 +15,7 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field
 
+from kasa.aesprotocol import TPLinkAes
 from kasa.credentials import Credentials
 from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
@@ -23,6 +24,7 @@ from kasa.klapprotocol import TPLinkKlap
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartplug import SmartPlug
+from kasa.tapo.tapoplug import TapoPlug
 
 from .device_factory import get_device_class_from_info
 
@@ -378,20 +380,30 @@ class Discover:
                 f"Unable to read response from device: {ip}: {ex}"
             ) from ex
 
-        if (
-            discovery_result.mgt_encrypt_schm.encrypt_type == "KLAP"
-            and discovery_result.mgt_encrypt_schm.lv is None
-        ):
+        if discovery_result.mgt_encrypt_schm.encrypt_type in ("KLAP", "AES"):
             type_ = discovery_result.device_type
             device_class = None
-            if type_.upper() == "IOT.SMARTPLUGSWITCH":
-                device_class = SmartPlug
+            supported_device_types: dict[str, Type[SmartDevice]] = {
+                "SMART.TAPOPLUG": TapoPlug,
+                "SMART.KASAPLUG": TapoPlug,
+                "IOT.SMARTPLUGSWITCH": SmartPlug,
+            }
+
+            if discovery_result.device_type in supported_device_types:
+                device_class = supported_device_types[discovery_result.device_type]
 
             if device_class:
                 _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
                 device = device_class(ip, port=port, credentials=credentials)
                 device.update_from_discover_info(discovery_result.get_dict())
-                device.protocol = TPLinkKlap(ip, credentials=credentials)
+                if discovery_result.mgt_encrypt_schm.encrypt_type == "KLAP":
+                    device.protocol = TPLinkKlap(ip, credentials=credentials)
+                else:
+                    device.protocol = TPLinkAes(
+                        ip,
+                        credentials=credentials,
+                        login_version=discovery_result.mgt_encrypt_schm.lv,
+                    )
                 return device
             else:
                 raise UnsupportedDeviceException(
@@ -415,7 +427,7 @@ class DiscoveryResult(BaseModel):
         is_support_https: Optional[bool] = None
         encrypt_type: Optional[str] = None
         http_port: Optional[int] = None
-        lv: Optional[int] = None
+        lv: Optional[int] = 1
 
     device_type: str = Field(alias="device_type_text")
     device_model: str = Field(alias="model")

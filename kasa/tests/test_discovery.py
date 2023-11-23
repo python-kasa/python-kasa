@@ -114,7 +114,7 @@ UNSUPPORTED = {
     "result": {
         "device_id": "xx",
         "owner": "xx",
-        "device_type": "SMART.TAPOPLUG",
+        "device_type": "SMART.TAPOBULB",
         "device_model": "P110(EU)",
         "ip": "127.0.0.1",
         "mac": "48-22xxx",
@@ -150,7 +150,7 @@ async def test_discover_single_unsupported(mocker):
     discovery_data = UNSUPPORTED
     with pytest.raises(
         UnsupportedDeviceException,
-        match=f"Unsupported device {host}: {re.escape(str(UNSUPPORTED))}",
+        match=f"Unsupported device {host} of type SMART.TAPOBULB: {re.escape(str(UNSUPPORTED))}",
     ):
         await Discover.discover_single(host)
 
