@@ -13,6 +13,7 @@ import asyncio
 import contextlib
 import errno
 import logging
+import socket
 import struct
 from abc import ABC, abstractmethod
 from pprint import pformat as pf
@@ -107,6 +108,12 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
         task = asyncio.open_connection(self.host, self.port)
         async with asyncio_timeout(timeout):
             self.reader, self.writer = await task
+            sock: socket.socket = self.writer.get_extra_info("socket")
+            # Ensure our packets get sent without delay as we do all
+            # our writes in a single go and we do not want any buffering
+            # which would needlessly delay the request or risk overloading
+            # the buffer on the device
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
     async def _execute_query(self, request: str) -> Dict:
         """Execute a query on the device and wait for the response."""
