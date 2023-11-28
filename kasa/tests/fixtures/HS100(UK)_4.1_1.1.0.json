@@ -1,43 +1,46 @@
 {
-    "emeter": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
-    "smartlife.iot.common.emeter": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
-    "smartlife.iot.dimmer": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
-    "smartlife.iot.smartbulb.lightingservice": {
-        "err_code": -1,
-        "err_msg": "module not support"
+    "discovery_result": {
+        "alias": "192.168.1.84",
+        "device_id_hash": "00000000000000000000000000000000",
+        "device_owner_hash": "00000000000000000000000000000000",
+        "device_type_text": "IOT.SMARTPLUGSWITCH",
+        "factory_default": true,
+        "hw_ver": "4.1",
+        "mac": "00-00-00-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "KLAP",
+            "http_port": 80,
+            "is_support_https": false
+        },
+        "model": "HS100(UK)"
     },
     "system": {
         "get_sysinfo": {
-            "active_mode": "schedule",
-            "alias": "Unused 3",
+            "active_mode": "none",
+            "alias": "Bedroom Lamp 2",
             "dev_name": "Smart Wi-Fi Plug",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,
             "feature": "TIM",
-            "fwId": "00000000000000000000000000000000",
             "hwId": "00000000000000000000000000000000",
             "hw_ver": "4.1",
             "icon_hash": "",
-            "latitude": 0,
+            "latitude_i": 0,
             "led_off": 0,
-            "longitude": 0,
+            "longitude_i": 0,
             "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
             "model": "HS100(UK)",
+            "next_action": {
+                "type": -1
+            },
+            "ntc_state": 0,
             "oemId": "00000000000000000000000000000000",
-            "on_time": 0,
-            "relay_state": 0,
+            "on_time": 3115,
+            "relay_state": 1,
             "rssi": -63,
+            "status": "new",
             "sw_ver": "1.1.0 Build 201016 Rel.175121",
-            "type": "IOT.SMARTPLUGSWITCH",
             "updating": 0
         }
     }

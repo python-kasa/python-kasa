@@ -423,7 +423,7 @@ class DiscoveryResult(BaseModel):
     mac: str
     mgt_encrypt_schm: EncryptionScheme
 
-    device_id: Optional[str] = Field(default=None, alias="device_type_hash")
+    device_id: Optional[str] = Field(default=None, alias="device_id_hash")
     owner: Optional[str] = Field(default=None, alias="device_owner_hash")
     hw_ver: Optional[str] = None
     is_support_iot_cloud: Optional[bool] = None
