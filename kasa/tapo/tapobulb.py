@@ -12,18 +12,26 @@ AVAILABLE_EFFECTS = {
 
 
 class TapoBulb(TapoDevice, SmartBulb):
+    """Representation of a TP-Link Tapo Bulb.
+
+    Documentation TBD. See :class:`~kasa.smartbulb.SmartBulb` for now.
+    """
+
     @property
     def is_color(self) -> bool:
+        """Whether the bulb supports color changes."""
         # TODO: this makes an assumption that only color bulbs report this
         return "hue" in self._info
 
     @property
     def is_dimmable(self) -> bool:
+        """Whether the bulb supports brightness changes."""
         # TODO: this makes an assumption that only dimmables report this
         return "brightness" in self._info
 
     @property
     def is_variable_color_temp(self) -> bool:
+        """Whether the bulb supports color temperature changes."""
         # TODO: this makes an assumption, that only ct bulbs report this
         return bool(self._info.get("color_temp_range", False))
 
@@ -115,6 +123,15 @@ class TapoBulb(TapoDevice, SmartBulb):
         *,
         transition: Optional[int] = None,
     ) -> Dict:
+        """Set new HSV.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int hue: hue in degrees
+        :param int saturation: saturation in percentage [0,100]
+        :param int value: value in percentage [0, 100]
+        :param int transition: transition in milliseconds.
+        """
         if not self.is_color:
             raise SmartDeviceException("Bulb does not support color.")
 
@@ -131,7 +148,13 @@ class TapoBulb(TapoDevice, SmartBulb):
     async def set_color_temp(
         self, temp: int, *, brightness=None, transition: Optional[int] = None
     ) -> Dict:
-        # TODO: Decide how to handle brightness and transition
+        """Set the color temperature of the device in kelvin.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int temp: The new color temperature, in Kelvin
+        :param int transition: transition in milliseconds.
+        """
         # TODO: Note, trying to set brightness at the same time
         #  with color_temp causes error -1008
         if not self.is_variable_color_temp:
@@ -142,7 +165,13 @@ class TapoBulb(TapoDevice, SmartBulb):
     async def set_brightness(
         self, brightness: int, *, transition: Optional[int] = None
     ) -> Dict:
-        # TODO: Decide how to handle transitions
+        """Set the brightness in percentage.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int brightness: brightness in percent
+        :param int transition: transition in milliseconds.
+        """
         if not self.is_dimmable:  # pragma: no cover
             raise SmartDeviceException("Bulb is not dimmable.")
 
@@ -186,4 +215,5 @@ class TapoBulb(TapoDevice, SmartBulb):
 
     @property
     def presets(self) -> List[SmartBulbPreset]:
-        return []
+        """Return a list of available bulb setting presets."""
+        raise NotImplementedError()
