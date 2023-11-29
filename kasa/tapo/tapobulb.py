@@ -4,7 +4,7 @@ from .tapodevice import TapoDevice
 from ..smartbulb import SmartBulb, HSV, ColorTempRange, SmartBulbPreset
 
 
-class TapoBulb(SmartBulb, TapoDevice):
+class TapoBulb(TapoDevice, SmartBulb):
 
     @property
     def is_color(self) -> bool:
@@ -50,11 +50,6 @@ class TapoBulb(SmartBulb, TapoDevice):
     def brightness(self) -> int:
         return self._info.get("brightness")
 
-    @property
-    def is_on(self) -> bool:
-        """This seems to be shared among tapo devices, move to TapoDevice class."""
-        return self._info.get("device_on")
-
     async def set_hsv(self, hue: int, saturation: int, value: Optional[int] = None, *,
                       transition: Optional[int] = None) -> Dict:
         return await self.protocol.query({"set_device_info": {
@@ -88,18 +83,6 @@ class TapoBulb(SmartBulb, TapoDevice):
         },
     },
     """
-
-    def _update_state_information(self):
-        """Overridden to add bulb infos."""
-        # NOTE: overridden to avoid crashing on unavailable keys like auto_off_status
-
-    async def turn_on(self, **kwargs):
-        """Turn on the device."""
-        return await self.protocol.query({"set_device_info": {"device_on": True}})
-
-    async def turn_off(self, **kwargs):
-        """Turn off the device."""
-        return await self.protocol.query({"set_device_info": {"device_on": False}})
 
     @property
     def presets(self) -> List[SmartBulbPreset]:
