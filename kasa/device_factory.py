@@ -140,6 +140,7 @@ def get_device_class_from_type_name(device_type: str) -> Optional[Type[SmartDevi
     """Return the device class from the type name."""
     supported_device_types: dict[str, Type[SmartDevice]] = {
         "SMART.TAPOPLUG": TapoPlug,
+        "SMART.TAPOBULB": TapoBulb,
         "SMART.KASAPLUG": TapoPlug,
         "IOT.SMARTPLUGSWITCH": SmartPlug,
     }
