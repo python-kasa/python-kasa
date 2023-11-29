@@ -17,6 +17,7 @@ from pprint import pprint
 import asyncclick as click
 
 from kasa import Credentials, Discover
+from kasa.discover import DiscoveryResult
 
 Call = namedtuple("Call", "module method")
 
@@ -34,8 +35,13 @@ def scrub(res):
         "longitude_i",
         "latitude",
         "longitude",
-        "device_owner_hash",
-        "device_id_hash",
+        "owner",
+        "device_id",
+        "ip",
+        "ssid",
+        "hw_id",
+        "fw_id",
+        "oem_id",
     ]
 
     for k, v in res.items():
@@ -45,6 +51,8 @@ def scrub(res):
             if k in keys_to_scrub:
                 if k in ["latitude", "latitude_i", "longitude", "longitude_i"]:
                     v = 0
+                elif k in ["ip"]:
+                    v = "127.0.0.123"
                 else:
                     v = re.sub(r"\w", "0", v)
 
@@ -135,8 +143,13 @@ async def cli(host, debug, username, password):
             )
         )
 
-    if device.discovery_info:
-        final["discovery_result"] = device.discovery_info
+    if device._discovery_info:
+        # Need to recreate a DiscoverResult here because we don't want the aliases
+        # in the fixture, we want the actual field names as returned by the device.
+        dr = DiscoveryResult(**device._discovery_info)
+        final["discovery_result"] = dr.dict(
+            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
+        )
 
     click.echo("Got %s successes" % len(successes))
     click.echo(click.style("## device info file ##", bold=True))

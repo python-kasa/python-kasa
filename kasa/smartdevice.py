@@ -211,7 +211,7 @@ class SmartDevice:
         #       checks in accessors. the @updated_required decorator does not ensure
         #       mypy that these are not accessed incorrectly.
         self._last_update: Any = None
-        self.discovery_info: Optional[Dict[str, Any]] = None
+        self._discovery_info: Optional[Dict[str, Any]] = None
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self._features: Set[str] = set()
@@ -372,7 +372,7 @@ class SmartDevice:
             # This allows setting of some info properties directly
             # from partial discovery info that will then be found
             # by the requires_update decorator
-            self.discovery_info = info
+            self._discovery_info = info
             self._set_sys_info(info)
 
     def _set_sys_info(self, sys_info: Dict[str, Any]) -> None:

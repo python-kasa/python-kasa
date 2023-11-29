@@ -1,18 +1,18 @@
 {
     "discovery_result": {
-        "alias": "192.168.1.84",
-        "device_id_hash": "00000000000000000000000000000000",
-        "device_owner_hash": "00000000000000000000000000000000",
-        "device_type_text": "IOT.SMARTPLUGSWITCH",
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "HS100(UK)",
+        "device_type": "IOT.SMARTPLUGSWITCH",
         "factory_default": true,
         "hw_ver": "4.1",
+        "ip": "127.0.0.123",
         "mac": "00-00-00-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "KLAP",
             "http_port": 80,
             "is_support_https": false
         },
-        "model": "HS100(UK)"
+        "owner": "00000000000000000000000000000000"
     },
     "system": {
         "get_sysinfo": {
@@ -36,9 +36,9 @@
             },
             "ntc_state": 0,
             "oemId": "00000000000000000000000000000000",
-            "on_time": 3115,
-            "relay_state": 1,
-            "rssi": -63,
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -66,
             "status": "new",
             "sw_ver": "1.1.0 Build 201016 Rel.175121",
             "updating": 0
