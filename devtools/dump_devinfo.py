@@ -7,7 +7,6 @@ If you have new, yet unsupported device or a device with no devinfo file under
 Executing this script will several modules and methods one by one,
 and finally execute a query to query all of them at once.
 """
-import asyncio
 import collections.abc
 import json
 import logging
@@ -15,9 +14,10 @@ import re
 from collections import defaultdict, namedtuple
 from pprint import pprint
 
-import click
+import asyncclick as click
 
-from kasa import TPLinkSmartHomeProtocol
+from kasa import Credentials, Discover
+from kasa.discover import DiscoveryResult
 
 Call = namedtuple("Call", "module method")
 
@@ -35,6 +35,13 @@ def scrub(res):
         "longitude_i",
         "latitude",
         "longitude",
+        "owner",
+        "device_id",
+        "ip",
+        "ssid",
+        "hw_id",
+        "fw_id",
+        "oem_id",
     ]
 
     for k, v in res.items():
@@ -44,6 +51,8 @@ def scrub(res):
             if k in keys_to_scrub:
                 if k in ["latitude", "latitude_i", "longitude", "longitude_i"]:
                     v = 0
+                elif k in ["ip"]:
+                    v = "127.0.0.123"
                 else:
                     v = re.sub(r"\w", "0", v)
 
@@ -63,8 +72,22 @@ def default_to_regular(d):
 
 @click.command()
 @click.argument("host")
+@click.option(
+    "--username",
+    default=None,
+    required=False,
+    envvar="TPLINK_CLOUD_USERNAME",
+    help="Username/email address to authenticate to device.",
+)
+@click.option(
+    "--password",
+    default=None,
+    required=False,
+    envvar="TPLINK_CLOUD_PASSWORD",
+    help="Password to use to authenticate to device.",
+)
 @click.option("-d", "--debug", is_flag=True)
-def cli(host, debug):
+async def cli(host, debug, username, password):
     """Generate devinfo file for given device."""
     if debug:
         logging.basicConfig(level=logging.DEBUG)
@@ -83,15 +106,15 @@ def cli(host, debug):
 
     successes = []
 
+    credentials = Credentials(username=username, password=password)
+    device = await Discover.discover_single(host, credentials=credentials)
+
     for test_call in items:
-
-        async def _run_query(test_call):
-            protocol = TPLinkSmartHomeProtocol(host)
-            return await protocol.query({test_call.module: {test_call.method: None}})
-
         try:
             click.echo(f"Testing {test_call}..", nl=False)
-            info = asyncio.run(_run_query(test_call))
+            info = await device.protocol.query(
+                {test_call.module: {test_call.method: None}}
+            )
             resp = info[test_call.module]
         except Exception as ex:
             click.echo(click.style(f"FAIL {ex}", fg="red"))
@@ -111,17 +134,21 @@ def cli(host, debug):
 
     final = default_to_regular(final)
 
-    async def _run_final_query():
-        protocol = TPLinkSmartHomeProtocol(host)
-        return await protocol.query(final_query)
-
     try:
-        final = asyncio.run(_run_final_query())
+        final = await device.protocol.query(final_query)
     except Exception as ex:
         click.echo(
             click.style(
                 f"Unable to query all successes at once: {ex}", bold=True, fg="red"
             )
+        )
+
+    if device._discovery_info:
+        # Need to recreate a DiscoverResult here because we don't want the aliases
+        # in the fixture, we want the actual field names as returned by the device.
+        dr = DiscoveryResult(**device._discovery_info)
+        final["discovery_result"] = dr.dict(
+            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
         )
 
     click.echo("Got %s successes" % len(successes))

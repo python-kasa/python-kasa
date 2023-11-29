@@ -294,9 +294,10 @@ class FakeTransportProtocol(TPLinkSmartHomeProtocol):
 
         for target in info:
             # print("target %s" % target)
-            for cmd in info[target]:
-                # print("initializing tgt %s cmd %s" % (target, cmd))
-                proto[target][cmd] = info[target][cmd]
+            if target != "discovery_result":
+                for cmd in info[target]:
+                    # print("initializing tgt %s cmd %s" % (target, cmd))
+                    proto[target][cmd] = info[target][cmd]
         # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
             if (
