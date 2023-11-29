@@ -1,8 +1,12 @@
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
+from ..smartbulb import HSV, ColorTempRange, SmartBulb, SmartBulbPreset
 from .tapodevice import TapoDevice
-from ..smartbulb import SmartBulb, HSV, ColorTempRange, SmartBulbPreset
 
+AVAILABLE_EFFECTS = {
+    'L1': "Party",
+    "L2": "Relax",
+}
 
 class TapoBulb(TapoDevice, SmartBulb):
 
@@ -30,11 +34,39 @@ class TapoBulb(TapoDevice, SmartBulb):
     def has_effects(self) -> bool:
         return "dynamic_light_effect_enable" in self._info
 
-    # Effects
-    # * If no effect is active, dynamic_light_effect_id does not appear in the status report
-    # * Find out how to stop the effect
-    # 'dynamic_light_effect_id': 'L1', => party
-    # 'dynamic_light_effect_id': 'L2', => relax
+    @property
+    def effect(self) -> Dict:
+        """Return effect state.
+
+        This follows the format used by SmartLightStrip.
+
+        Example:
+            {'brightness': 50,
+             'custom': 0,
+             'enable': 0,
+             'id': '',
+             'name': ''}
+        """
+        # If no effect is active, dynamic_light_effect_id does not appear in info
+        current_effect = self._info.get("dynamic_light_effect_id", "")
+        data = {
+            "brightness": self.brightness,
+            "enable": current_effect != "",
+            "id": current_effect,
+            "name": AVAILABLE_EFFECTS.get(current_effect, ""),
+        }
+
+        return data
+
+    @property
+    def effect_list(self) -> Optional[List[str]]:
+        """Return built-in effects list.
+
+        Example:
+            ['Party', 'Relax', ...]
+        """
+        return AVAILABLE_EFFECTS.keys() if self.has_effects else None
+
 
     @property
     def hsv(self) -> HSV:
@@ -57,7 +89,6 @@ class TapoBulb(TapoDevice, SmartBulb):
             "saturation": saturation,
             "brightness": value,
         }})
-
 
     async def set_color_temp(self, temp: int, *, brightness=None, transition: Optional[int] = None) -> Dict:
         # TODO: Decide how to handle brightness and transition
@@ -83,6 +114,19 @@ class TapoBulb(TapoDevice, SmartBulb):
         },
     },
     """
+
+    async def set_effect(
+        self,
+        effect: str,
+        *,
+        brightness: Optional[int] = None,
+        transition: Optional[int] = None,
+    ) -> None:
+        """Set an effect on the device."""
+        raise NotImplementedError()  # TODO: the code above does not seem to activate the effect
+        return await self.protocol.query({"set_device_info": {"dynamic_light_effect_enable": 1,
+                                                              "dynamic_light_effect_id": effect}})
+
 
     @property
     def presets(self) -> List[SmartBulbPreset]:
