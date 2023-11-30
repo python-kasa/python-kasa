@@ -63,19 +63,23 @@ class TapoDevice(SmartDevice):
     @property
     def time(self) -> datetime:
         """Return the time."""
+        td = timedelta(minutes=cast(float, self._time.get("time_diff")))
+        if self._time.get("region"):
+            tz = timezone(td, str(self._time.get("region")))
+        else:
+            # in case the device returns a blank region this will result in the
+            # tzname being a UTC offset
+            tz = timezone(td)
         return datetime.fromtimestamp(
             cast(float, self._time.get("timestamp")),
-            tz=timezone(timedelta(minutes=cast(float, self._time.get("time_diff")))),
+            tz=tz,
         )
 
     @property
     def timezone(self) -> Dict:
         """Return the timezone and time_difference."""
-        return {
-            "timezone": timezone(
-                timedelta(minutes=cast(float, self._time.get("time_diff")))
-            )
-        }
+        ti = self.time
+        return {"timezone": ti.tzname()}
 
     @property
     def hw_info(self) -> Dict:

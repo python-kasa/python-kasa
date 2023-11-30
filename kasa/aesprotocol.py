@@ -64,7 +64,6 @@ class TPLinkAes(TPLinkProtocol):
         *,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
-        login_version: Optional[int] = 1,
     ) -> None:
         super().__init__(host=host, port=self.DEFAULT_PORT)
 
@@ -91,7 +90,6 @@ class TPLinkAes(TPLinkProtocol):
         self.terminal_uuid = None
         self.http_client: Optional[httpx.AsyncClient] = None
         self.request_id_generator = SnowflakeId(1, 1)
-        self.login_version = login_version
         self.login_token = None
 
         _LOGGER.debug("Created AES object for %s", self.host)
