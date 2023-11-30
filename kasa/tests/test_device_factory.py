@@ -14,7 +14,7 @@ from kasa import (
     SmartPlug,
 )
 from kasa.device_factory import connect
-from kasa.klapprotocol import TPLinkKlap
+from kasa.iotprotocol import TPLinkIotProtocol
 from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 
 
@@ -81,7 +81,7 @@ async def test_connect_logs_connect_time(
     ("protocol_in", "protocol_result"),
     (
         (None, TPLinkSmartHomeProtocol),
-        (TPLinkKlap, TPLinkKlap),
+        (TPLinkIotProtocol, TPLinkIotProtocol),
         (TPLinkSmartHomeProtocol, TPLinkSmartHomeProtocol),
     ),
 )
@@ -95,7 +95,7 @@ async def test_connect_pass_protocol(
     """Test that if the protocol is passed in it's gets set correctly."""
     host = "127.0.0.1"
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=discovery_data)
-    mocker.patch("kasa.TPLinkKlap.query", return_value=discovery_data)
+    mocker.patch("kasa.TPLinkIotProtocol.query", return_value=discovery_data)
 
     dev = await connect(host, device_type=device_type, protocol_class=protocol_in)
     assert isinstance(dev.protocol, protocol_result)

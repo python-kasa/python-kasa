@@ -4,7 +4,7 @@ import binascii
 import ipaddress
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Optional, Set, Type, cast
+from typing import Awaitable, Callable, Dict, Optional, Set, Tuple, Type, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -15,15 +15,16 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field
 
-from kasa.aesprotocol import TPLinkAes
 from kasa.credentials import Credentials
 from kasa.exceptions import UnsupportedDeviceException
+from kasa.iotprotocol import TPLinkIotProtocol
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
-from kasa.klapprotocol import TPLinkKlap
-from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
+from kasa.klaptransport import TPLinkKlapTransport, TPlinkKlapTransportV2
+from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol, TPLinkTransport
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartplug import SmartPlug
+from kasa.smartprotocol import TPLinkAesTransport, TPLinkSmartProtocol
 from kasa.tapo.tapoplug import TapoPlug
 
 from .device_factory import get_device_class_from_info
@@ -391,9 +392,12 @@ class Discover:
             "SMART.KASAPLUG": TapoPlug,
             "IOT.SMARTPLUGSWITCH": SmartPlug,
         }
-        supported_device_protocols: dict[str, Type[TPLinkProtocol]] = {
-            "IOT.KLAP": TPLinkKlap,
-            "SMART.AES": TPLinkAes,
+        supported_device_protocols: dict[
+            str, Tuple[Type[TPLinkProtocol], Type[TPLinkTransport]]
+        ] = {
+            "IOT.KLAP": (TPLinkIotProtocol, TPLinkKlapTransport),
+            "SMART.AES": (TPLinkSmartProtocol, TPLinkAesTransport),
+            "SMART.KLAP": (TPLinkSmartProtocol, TPlinkKlapTransportV2),
         }
 
         if (device_class := supported_device_types.get(type_)) is None:
@@ -401,7 +405,9 @@ class Discover:
             raise UnsupportedDeviceException(
                 f"Unsupported device {ip} of type {type_}: {info}"
             )
-        if (protocol_class := supported_device_protocols.get(encrypt_type_)) is None:
+        if (
+            protocol_transport_tuple := supported_device_protocols.get(encrypt_type_)
+        ) is None:
             _LOGGER.warning("Got unsupported device type: %s", encrypt_type_)
             raise UnsupportedDeviceException(
                 f"Unsupported encryption scheme {ip} of type {encrypt_type_}: {info}"
@@ -409,7 +415,10 @@ class Discover:
 
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
         device = device_class(ip, port=port, credentials=credentials)
-        device.protocol = protocol_class(ip, credentials=credentials)
+        transport = protocol_transport_tuple[1](ip, credentials=credentials)
+        device.protocol = protocol_transport_tuple[0](
+            ip, credentials=credentials, transport=transport
+        )
         device.update_from_discover_info(discovery_result.get_dict())
         return device
 

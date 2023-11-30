@@ -12,7 +12,8 @@ import pytest
 
 from ..credentials import Credentials
 from ..exceptions import AuthenticationException, SmartDeviceException
-from ..klapprotocol import KlapEncryptionSession, TPLinkKlap, _sha256
+from ..iotprotocol import TPLinkIotProtocol
+from ..klaptransport import KlapEncryptionSession, TPLinkKlapTransport, _sha256
 
 
 class _mock_response:
@@ -24,34 +25,34 @@ class _mock_response:
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
 async def test_protocol_retries(mocker, retry_count):
     conn = mocker.patch.object(
-        TPLinkKlap, "client_post", side_effect=Exception("dummy exception")
+        TPLinkKlapTransport, "client_post", side_effect=Exception("dummy exception")
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkKlap("127.0.0.1").query({}, retry_count=retry_count)
+        await TPLinkIotProtocol("127.0.0.1").query({}, retry_count=retry_count)
 
     assert conn.call_count == retry_count + 1
 
 
 async def test_protocol_no_retry_on_connection_error(mocker):
     conn = mocker.patch.object(
-        TPLinkKlap,
+        TPLinkKlapTransport,
         "client_post",
         side_effect=httpx.ConnectError("foo"),
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkKlap("127.0.0.1").query({}, retry_count=5)
+        await TPLinkIotProtocol("127.0.0.1").query({}, retry_count=5)
 
     assert conn.call_count == 1
 
 
 async def test_protocol_retry_recoverable_error(mocker):
     conn = mocker.patch.object(
-        TPLinkKlap,
+        TPLinkKlapTransport,
         "client_post",
         side_effect=httpx.CloseError("foo"),
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkKlap("127.0.0.1").query({}, retry_count=5)
+        await TPLinkIotProtocol("127.0.0.1").query({}, retry_count=5)
 
     assert conn.call_count == 6
 
@@ -70,14 +71,14 @@ async def test_protocol_reconnect(mocker, retry_count):
         return 200, encrypted
 
     seed = secrets.token_bytes(16)
-    auth_hash = TPLinkKlap.generate_auth_hash(Credentials("foo", "bar"))
+    auth_hash = TPLinkKlapTransport.generate_auth_hash(Credentials("foo", "bar"))
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
-    protocol = TPLinkKlap("127.0.0.1")
-    protocol.handshake_done = True
-    protocol.session_expire_at = time.time() + 86400
-    protocol.encryption_session = encryption_session
+    protocol = TPLinkIotProtocol("127.0.0.1")
+    protocol.transport.handshake_done = True
+    protocol.transport.session_expire_at = time.time() + 86400
+    protocol.transport.encryption_session = encryption_session
     mocker.patch.object(
-        TPLinkKlap, "client_post", side_effect=_fail_one_less_than_retry_count
+        TPLinkKlapTransport, "client_post", side_effect=_fail_one_less_than_retry_count
     )
 
     response = await protocol.query({}, retry_count=retry_count)
@@ -96,14 +97,16 @@ async def test_protocol_logging(mocker, caplog, log_level):
         return 200, encrypted
 
     seed = secrets.token_bytes(16)
-    auth_hash = TPLinkKlap.generate_auth_hash(Credentials("foo", "bar"))
+    auth_hash = TPLinkKlapTransport.generate_auth_hash(Credentials("foo", "bar"))
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
-    protocol = TPLinkKlap("127.0.0.1")
+    protocol = TPLinkIotProtocol("127.0.0.1")
 
-    protocol.handshake_done = True
-    protocol.session_expire_at = time.time() + 86400
-    protocol.encryption_session = encryption_session
-    mocker.patch.object(TPLinkKlap, "client_post", side_effect=_return_encrypted)
+    protocol.transport.handshake_done = True
+    protocol.transport.session_expire_at = time.time() + 86400
+    protocol.transport.encryption_session = encryption_session
+    mocker.patch.object(
+        TPLinkKlapTransport, "client_post", side_effect=_return_encrypted
+    )
 
     response = await protocol.query({})
     assert response == {"great": "success"}
@@ -117,7 +120,7 @@ def test_encrypt():
     d = json.dumps({"foo": 1, "bar": 2})
 
     seed = secrets.token_bytes(16)
-    auth_hash = TPLinkKlap.generate_auth_hash(Credentials("foo", "bar"))
+    auth_hash = TPLinkKlapTransport.generate_auth_hash(Credentials("foo", "bar"))
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
 
     encrypted, seq = encryption_session.encrypt(d)
@@ -129,7 +132,7 @@ def test_encrypt_unicode():
     d = "{'snowman': '\u2603'}"
 
     seed = secrets.token_bytes(16)
-    auth_hash = TPLinkKlap.generate_auth_hash(Credentials("foo", "bar"))
+    auth_hash = TPLinkKlapTransport.generate_auth_hash(Credentials("foo", "bar"))
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
 
     encrypted, seq = encryption_session.encrypt(d)
@@ -145,7 +148,10 @@ def test_encrypt_unicode():
         (Credentials("foo", "bar"), does_not_raise()),
         (Credentials("", ""), does_not_raise()),
         (
-            Credentials(TPLinkKlap.KASA_SETUP_EMAIL, TPLinkKlap.KASA_SETUP_PASSWORD),
+            Credentials(
+                TPLinkKlapTransport.KASA_SETUP_EMAIL,
+                TPLinkKlapTransport.KASA_SETUP_PASSWORD,
+            ),
             does_not_raise(),
         ),
         (
@@ -167,21 +173,21 @@ async def test_handshake1(mocker, device_credentials, expectation):
     client_seed = None
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
-    device_auth_hash = TPLinkKlap.generate_auth_hash(device_credentials)
+    device_auth_hash = TPLinkKlapTransport.generate_auth_hash(device_credentials)
 
     mocker.patch.object(
         httpx.AsyncClient, "post", side_effect=_return_handshake1_response
     )
 
-    protocol = TPLinkKlap("127.0.0.1", credentials=client_credentials)
+    protocol = TPLinkIotProtocol("127.0.0.1", credentials=client_credentials)
 
-    protocol.http_client = httpx.AsyncClient()
+    protocol.transport.http_client = httpx.AsyncClient()
     with expectation:
         (
             local_seed,
             device_remote_seed,
             auth_hash,
-        ) = await protocol.perform_handshake1()
+        ) = await protocol.transport.perform_handshake1()
 
         assert local_seed == client_seed
         assert device_remote_seed == server_seed
@@ -204,23 +210,23 @@ async def test_handshake(mocker):
     client_seed = None
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
-    device_auth_hash = TPLinkKlap.generate_auth_hash(client_credentials)
+    device_auth_hash = TPLinkKlapTransport.generate_auth_hash(client_credentials)
 
     mocker.patch.object(
         httpx.AsyncClient, "post", side_effect=_return_handshake_response
     )
 
-    protocol = TPLinkKlap("127.0.0.1", credentials=client_credentials)
-    protocol.http_client = httpx.AsyncClient()
+    protocol = TPLinkIotProtocol("127.0.0.1", credentials=client_credentials)
+    protocol.transport.http_client = httpx.AsyncClient()
 
     response_status = 200
-    await protocol.perform_handshake()
-    assert protocol.handshake_done is True
+    await protocol.transport.perform_handshake()
+    assert protocol.transport.handshake_done is True
 
     response_status = 403
     with pytest.raises(AuthenticationException):
-        await protocol.perform_handshake()
-    assert protocol.handshake_done is False
+        await protocol.transport.perform_handshake()
+    assert protocol.transport.handshake_done is False
     await protocol.close()
 
 
@@ -237,9 +243,9 @@ async def test_query(mocker):
             return _mock_response(200, b"")
         elif url == "http://127.0.0.1/app/request":
             encryption_session = KlapEncryptionSession(
-                protocol.encryption_session.local_seed,
-                protocol.encryption_session.remote_seed,
-                protocol.encryption_session.user_hash,
+                protocol.transport.encryption_session.local_seed,
+                protocol.transport.encryption_session.remote_seed,
+                protocol.transport.encryption_session.user_hash,
             )
             seq = params.get("seq")
             encryption_session._seq = seq - 1
@@ -252,11 +258,11 @@ async def test_query(mocker):
     seq = None
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
-    device_auth_hash = TPLinkKlap.generate_auth_hash(client_credentials)
+    device_auth_hash = TPLinkKlapTransport.generate_auth_hash(client_credentials)
 
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
 
-    protocol = TPLinkKlap("127.0.0.1", credentials=client_credentials)
+    protocol = TPLinkIotProtocol("127.0.0.1", credentials=client_credentials)
 
     for _ in range(10):
         resp = await protocol.query({})
@@ -296,11 +302,11 @@ async def test_authentication_failures(mocker, response_status, expectation):
 
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
-    device_auth_hash = TPLinkKlap.generate_auth_hash(client_credentials)
+    device_auth_hash = TPLinkKlapTransport.generate_auth_hash(client_credentials)
 
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
 
-    protocol = TPLinkKlap("127.0.0.1", credentials=client_credentials)
+    protocol = TPLinkIotProtocol("127.0.0.1", credentials=client_credentials)
 
     with expectation:
         await protocol.query({})
