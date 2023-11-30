@@ -14,6 +14,7 @@ from .smartdimmer import SmartDimmer
 from .smartlightstrip import SmartLightStrip
 from .smartplug import SmartPlug
 from .smartstrip import SmartStrip
+from .tapo.tapoplug import TapoPlug
 
 DEVICE_TYPE_TO_CLASS = {
     DeviceType.Plug: SmartPlug,
@@ -21,6 +22,7 @@ DEVICE_TYPE_TO_CLASS = {
     DeviceType.Strip: SmartStrip,
     DeviceType.Dimmer: SmartDimmer,
     DeviceType.LightStrip: SmartLightStrip,
+    DeviceType.TapoPlug: TapoPlug,
 }
 
 _LOGGER = logging.getLogger(__name__)

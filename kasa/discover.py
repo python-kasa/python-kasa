@@ -15,14 +15,16 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field
 
+from kasa.aesprotocol import TPLinkAes
 from kasa.credentials import Credentials
 from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.klapprotocol import TPLinkKlap
-from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.smartplug import SmartPlug
+from kasa.tapo.tapoplug import TapoPlug
 
 from .device_factory import get_device_class_from_info
 
@@ -378,27 +380,38 @@ class Discover:
                 f"Unable to read response from device: {ip}: {ex}"
             ) from ex
 
-        if (
-            discovery_result.mgt_encrypt_schm.encrypt_type == "KLAP"
-            and discovery_result.mgt_encrypt_schm.lv is None
-        ):
-            type_ = discovery_result.device_type
-            device_class = None
-            if type_.upper() == "IOT.SMARTPLUGSWITCH":
-                device_class = SmartPlug
+        type_ = discovery_result.device_type
+        encrypt_type_ = (
+            f"{type_.split('.')[0]}.{discovery_result.mgt_encrypt_schm.encrypt_type}"
+        )
+        device_class = None
 
-            if device_class:
-                _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
-                device = device_class(ip, port=port, credentials=credentials)
-                device.update_from_discover_info(discovery_result.get_dict())
-                device.protocol = TPLinkKlap(ip, credentials=credentials)
-                return device
-            else:
-                raise UnsupportedDeviceException(
-                    f"Unsupported device {ip} of type {type_}: {info}"
-                )
-        else:
-            raise UnsupportedDeviceException(f"Unsupported device {ip}: {info}")
+        supported_device_types: dict[str, Type[SmartDevice]] = {
+            "SMART.TAPOPLUG": TapoPlug,
+            "SMART.KASAPLUG": TapoPlug,
+            "IOT.SMARTPLUGSWITCH": SmartPlug,
+        }
+        supported_device_protocols: dict[str, Type[TPLinkProtocol]] = {
+            "IOT.KLAP": TPLinkKlap,
+            "SMART.AES": TPLinkAes,
+        }
+
+        if (device_class := supported_device_types.get(type_)) is None:
+            _LOGGER.warning("Got unsupported device type: %s", type_)
+            raise UnsupportedDeviceException(
+                f"Unsupported device {ip} of type {type_}: {info}"
+            )
+        if (protocol_class := supported_device_protocols.get(encrypt_type_)) is None:
+            _LOGGER.warning("Got unsupported device type: %s", encrypt_type_)
+            raise UnsupportedDeviceException(
+                f"Unsupported encryption scheme {ip} of type {encrypt_type_}: {info}"
+            )
+
+        _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
+        device = device_class(ip, port=port, credentials=credentials)
+        device.protocol = protocol_class(ip, credentials=credentials)
+        device.update_from_discover_info(discovery_result.get_dict())
+        return device
 
 
 class DiscoveryResult(BaseModel):
@@ -415,7 +428,7 @@ class DiscoveryResult(BaseModel):
         is_support_https: Optional[bool] = None
         encrypt_type: Optional[str] = None
         http_port: Optional[int] = None
-        lv: Optional[int] = None
+        lv: Optional[int] = 1
 
     device_type: str = Field(alias="device_type_text")
     device_model: str = Field(alias="model")
