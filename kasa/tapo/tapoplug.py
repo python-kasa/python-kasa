@@ -85,4 +85,3 @@ class TapoPlug(TapoDevice):
             return None
         on_time = cast(float, self._info.get("on_time"))
         return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
-
