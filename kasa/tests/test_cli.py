@@ -6,12 +6,15 @@ from asyncclick.testing import CliRunner
 
 from kasa import SmartDevice, TPLinkSmartHomeProtocol
 from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
+from kasa.device_factory import DEVICE_TYPE_TO_CLASS
 from kasa.discover import Discover
+from kasa.smartprotocol import TPLinkSmartProtocol
 
-from .conftest import handle_turn_on, turn_on
-from .newfakes import FakeTransportProtocol
+from .conftest import device_iot, handle_turn_on, new_discovery, turn_on
+from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
 
+@device_iot
 async def test_sysinfo(dev):
     runner = CliRunner()
     res = await runner.invoke(sysinfo, obj=dev)
@@ -19,6 +22,7 @@ async def test_sysinfo(dev):
     assert dev.alias in res.output
 
 
+@device_iot
 @turn_on
 async def test_state(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -32,6 +36,7 @@ async def test_state(dev, turn_on):
         assert "Device state: False" in res.output
 
 
+@device_iot
 @turn_on
 async def test_toggle(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
@@ -44,6 +49,7 @@ async def test_toggle(dev, turn_on, mocker):
         assert dev.is_on
 
 
+@device_iot
 async def test_alias(dev):
     runner = CliRunner()
 
@@ -62,6 +68,7 @@ async def test_alias(dev):
     await dev.set_alias(old_alias)
 
 
+@device_iot
 async def test_raw_command(dev):
     runner = CliRunner()
     res = await runner.invoke(raw_command, ["system", "get_sysinfo"], obj=dev)
@@ -74,6 +81,7 @@ async def test_raw_command(dev):
     assert "Usage" in res.output
 
 
+@device_iot
 async def test_emeter(dev: SmartDevice, mocker):
     runner = CliRunner()
 
@@ -99,6 +107,7 @@ async def test_emeter(dev: SmartDevice, mocker):
     daily.assert_called_with(year=1900, month=12)
 
 
+@device_iot
 async def test_brightness(dev):
     runner = CliRunner()
     res = await runner.invoke(brightness, obj=dev)
@@ -116,6 +125,7 @@ async def test_brightness(dev):
     assert "Brightness: 12" in res.output
 
 
+@device_iot
 async def test_json_output(dev: SmartDevice, mocker):
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover", return_value=[dev])
@@ -125,13 +135,9 @@ async def test_json_output(dev: SmartDevice, mocker):
     assert json.loads(res.output) == dev.internal_state
 
 
-async def test_credentials(discovery_data: dict, mocker):
+@new_discovery
+async def test_credentials(discovery_mock, mocker):
     """Test credentials are passed correctly from cli to device."""
-    # As this is testing the device constructor need to explicitly wire in
-    # the FakeTransportProtocol
-    ftp = FakeTransportProtocol(discovery_data)
-    mocker.patch.object(TPLinkSmartHomeProtocol, "query", ftp.query)
-
     # Patch state to echo username and password
     pass_dev = click.make_pass_decorator(SmartDevice)
 
@@ -143,18 +149,15 @@ async def test_credentials(discovery_data: dict, mocker):
             )
 
     mocker.patch("kasa.cli.state", new=_state)
-    cli_device_type = Discover._get_device_class(discovery_data)(
-        "any"
-    ).device_type.value
+    for subclass in DEVICE_TYPE_TO_CLASS.values():
+        mocker.patch.object(subclass, "update")
 
     runner = CliRunner()
     res = await runner.invoke(
         cli,
         [
             "--host",
-            "127.0.0.1",
-            "--type",
-            cli_device_type,
+            "127.0.0.123",
             "--username",
             "foo",
             "--password",
@@ -162,9 +165,11 @@ async def test_credentials(discovery_data: dict, mocker):
         ],
     )
     assert res.exit_code == 0
-    assert res.output == "Username:foo Password:bar\n"
+
+    assert "Username:foo Password:bar\n" in res.output
 
 
+@device_iot
 async def test_without_device_type(discovery_data: dict, dev, mocker):
     """Test connecting without the device type."""
     runner = CliRunner()

@@ -2,17 +2,21 @@
 
 import logging
 import time
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Tuple, Type
 
+from .aestransport import TPLinkAesTransport
 from .credentials import Credentials
 from .device_type import DeviceType
 from .exceptions import UnsupportedDeviceException
-from .protocol import TPLinkProtocol
+from .iotprotocol import TPLinkIotProtocol
+from .klaptransport import TPLinkKlapTransport, TPlinkKlapTransportV2
+from .protocol import TPLinkProtocol, TPLinkTransport
 from .smartbulb import SmartBulb
 from .smartdevice import SmartDevice, SmartDeviceException
 from .smartdimmer import SmartDimmer
 from .smartlightstrip import SmartLightStrip
 from .smartplug import SmartPlug
+from .smartprotocol import TPLinkSmartProtocol
 from .smartstrip import SmartStrip
 from .tapo.tapoplug import TapoPlug
 
@@ -87,7 +91,7 @@ async def connect(
     if protocol_class is not None:
         unknown_dev.protocol = protocol_class(host, credentials=credentials)
     await unknown_dev.update()
-    device_class = get_device_class_from_info(unknown_dev.internal_state)
+    device_class = get_device_class_from_sys_info(unknown_dev.internal_state)
     dev = device_class(host=host, port=port, credentials=credentials, timeout=timeout)
     # Reuse the connection from the unknown device
     # so we don't have to reconnect
@@ -104,7 +108,7 @@ async def connect(
     return dev
 
 
-def get_device_class_from_info(info: Dict[str, Any]) -> Type[SmartDevice]:
+def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[SmartDevice]:
     """Find SmartDevice subclass for device described by passed data."""
     if "system" not in info or "get_sysinfo" not in info["system"]:
         raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
@@ -129,3 +133,37 @@ def get_device_class_from_info(info: Dict[str, Any]) -> Type[SmartDevice]:
 
         return SmartBulb
     raise UnsupportedDeviceException("Unknown device type: %s" % type_)
+
+
+def get_device_class_from_type_name(device_type: str) -> Optional[Type[SmartDevice]]:
+    """Return the device class from the type name."""
+    supported_device_types: dict[str, Type[SmartDevice]] = {
+        "SMART.TAPOPLUG": TapoPlug,
+        "SMART.KASAPLUG": TapoPlug,
+        "IOT.SMARTPLUGSWITCH": SmartPlug,
+    }
+    return supported_device_types.get(device_type)
+
+
+def get_protocol_from_connection_name(
+    connection_name: str, host: str, credentials: Optional[Credentials] = None
+) -> Optional[TPLinkProtocol]:
+    """Return the protocol from the connection name."""
+    supported_device_protocols: dict[
+        str, Tuple[Type[TPLinkProtocol], Type[TPLinkTransport]]
+    ] = {
+        "IOT.KLAP": (TPLinkIotProtocol, TPLinkKlapTransport),
+        "SMART.AES": (TPLinkSmartProtocol, TPLinkAesTransport),
+        "SMART.KLAP": (TPLinkSmartProtocol, TPlinkKlapTransportV2),
+    }
+    if connection_name not in supported_device_protocols:
+        return None
+
+    protocol_transport_tuple = supported_device_protocols.get(connection_name)
+    transport: TPLinkTransport = protocol_transport_tuple[1](  # type: ignore
+        host, credentials=credentials
+    )
+    protocol: TPLinkProtocol = protocol_transport_tuple[0](  # type: ignore
+        host, credentials=credentials, transport=transport
+    )
+    return protocol

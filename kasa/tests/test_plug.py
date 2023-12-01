@@ -1,6 +1,6 @@
 from kasa import DeviceType
 
-from .conftest import plug
+from .conftest import plug, plug_smart
 from .newfakes import PLUG_SCHEMA
 
 
@@ -28,3 +28,14 @@ async def test_led(dev):
     assert dev.led
 
     await dev.set_led(original)
+
+
+@plug_smart
+async def test_plug_device_info(dev):
+    assert dev._info is not None
+    # PLUG_SCHEMA(dev.sys_info)
+
+    assert dev.model is not None
+
+    assert dev.device_type == DeviceType.Plug or dev.device_type == DeviceType.Strip
+    # assert dev.is_plug or dev.is_strip

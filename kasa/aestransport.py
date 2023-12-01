@@ -26,7 +26,7 @@ from .protocol import TPLinkTransport
 _LOGGER = logging.getLogger(__name__)
 
 
-def _sha1_hex(payload: bytes) -> str:
+def _sha1(payload: bytes) -> str:
     sha1_algo = hashlib.sha1()  # noqa: S324
     sha1_algo.update(payload)
     return sha1_algo.hexdigest()
@@ -84,14 +84,14 @@ class TPLinkAesTransport(TPLinkTransport):
         """Hash the credentials."""
         if try_login_version2:
             un = base64.b64encode(
-                _sha1_hex(credentials.username.encode()).encode()
+                _sha1(credentials.username.encode()).encode()
             ).decode()
             pw = base64.b64encode(
-                _sha1_hex(credentials.password.encode()).encode()
+                _sha1(credentials.password.encode()).encode()
             ).decode()
         else:
             un = base64.b64encode(
-                _sha1_hex(credentials.username.encode()).encode()
+                _sha1(credentials.username.encode()).encode()
             ).decode()
             pw = base64.b64encode(credentials.password.encode()).decode()
         return un, pw

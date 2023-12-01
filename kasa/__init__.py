@@ -28,6 +28,7 @@ from kasa.smartdevice import DeviceType, SmartDevice
 from kasa.smartdimmer import SmartDimmer
 from kasa.smartlightstrip import SmartLightStrip
 from kasa.smartplug import SmartPlug
+from kasa.smartprotocol import TPLinkSmartProtocol
 from kasa.smartstrip import SmartStrip
 
 __version__ = version("python-kasa")
@@ -38,6 +39,7 @@ __all__ = [
     "TPLinkSmartHomeProtocol",
     "TPLinkProtocol",
     "TPLinkIotProtocol",
+    "TPLinkSmartProtocol",
     "SmartBulb",
     "SmartBulbPreset",
     "TurnOnBehaviors",

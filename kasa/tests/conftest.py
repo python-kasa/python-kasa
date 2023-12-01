@@ -2,23 +2,28 @@ import asyncio
 import glob
 import json
 import os
+from dataclasses import dataclass
+from json import dumps as json_dumps
 from os.path import basename
 from pathlib import Path, PurePath
-from typing import Dict
+from typing import Dict, Optional
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
+    Credentials,
     Discover,
     SmartBulb,
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
     SmartStrip,
+    TPLinkSmartHomeProtocol,
 )
+from kasa.tapo import TapoPlug
 
-from .newfakes import FakeTransportProtocol
+from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
 SUPPORTED_DEVICES = glob.glob(
     os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
@@ -55,22 +60,31 @@ PLUGS = {
     "KP401",
     "KS200M",
 }
+
 STRIPS = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
 DIMMERS = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
 
 DIMMABLE = {*BULBS, *DIMMERS}
 WITH_EMETER = {"HS110", "HS300", "KP115", "KP125", *BULBS}
 
-ALL_DEVICES = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
+ALL_DEVICES_IOT = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
+
+PLUGS_SMART = {"P110"}
+ALL_DEVICES_SMART = PLUGS_SMART
+
+ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
 IP_MODEL_CACHE: Dict[str, str] = {}
 
 
-def filter_model(desc, filter):
+def filter_model(desc, filter, is_smart_protocol=False):
     filtered = list()
     for dev in SUPPORTED_DEVICES:
         for filt in filter:
-            if filt in basename(dev):
+            model_name = filt
+            if is_smart_protocol:
+                model_name = model_name + ".smart"
+            if model_name in basename(dev).split("_")[0]:
                 filtered.append(dev)
 
     filtered_basenames = [basename(f) for f in filtered]
@@ -78,14 +92,14 @@ def filter_model(desc, filter):
     return filtered
 
 
-def parametrize(desc, devices, ids=None):
+def parametrize(desc, devices, ids=None, is_smart_protocol=False):
     return pytest.mark.parametrize(
         "dev", filter_model(desc, devices), indirect=True, ids=ids
     )
 
 
 has_emeter = parametrize("has emeter", WITH_EMETER)
-no_emeter = parametrize("no emeter", ALL_DEVICES - WITH_EMETER)
+no_emeter = parametrize("no emeter", ALL_DEVICES_IOT - WITH_EMETER)
 
 bulb = parametrize("bulbs", BULBS, ids=basename)
 plug = parametrize("plugs", PLUGS, ids=basename)
@@ -101,6 +115,55 @@ non_variable_temp = parametrize("non-variable color temp", BULBS - VARIABLE_TEMP
 color_bulb = parametrize("color bulbs", COLOR_BULBS)
 non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
 
+plug_smart = parametrize(
+    "plug devices smart", PLUGS_SMART, ids=basename, is_smart_protocol=True
+)
+device_smart = parametrize(
+    "devices smart", ALL_DEVICES_SMART, ids=basename, is_smart_protocol=True
+)
+device_iot = parametrize(
+    "devices iot", ALL_DEVICES_IOT, ids=basename, is_smart_protocol=False
+)
+
+
+def get_fixture_data():
+    """Return raw discovery file contents as JSON. Used for discovery tests."""
+    fixture_data = {}
+    for file in SUPPORTED_DEVICES:
+        p = Path(file)
+        if not p.is_absolute():
+            p = Path(__file__).parent / "fixtures" / file
+
+        with open(p) as f:
+            fixture_data[basename(p)] = json.load(f)
+    return fixture_data
+
+
+FIXTURE_DATA = get_fixture_data()
+
+
+def filter_fixtures(desc, root_filter):
+    filtered = {}
+    for key, val in FIXTURE_DATA.items():
+        if root_filter in val:
+            filtered[key] = val
+
+    print(f"{desc}: {filtered.keys()}")
+    return filtered
+
+
+def parametrize_discovery(desc, root_key):
+    filtered_fixtures = filter_fixtures(desc, root_key)
+    return pytest.mark.parametrize(
+        "discovery_data",
+        filtered_fixtures.values(),
+        indirect=True,
+        ids=filtered_fixtures.keys(),
+    )
+
+
+new_discovery = parametrize_discovery("new discovery", "discovery_result")
+
 
 def check_categories():
     """Check that every fixture file is categorized."""
@@ -110,6 +173,7 @@ def check_categories():
         + plug.args[1]
         + bulb.args[1]
         + lightstrip.args[1]
+        + plug_smart.args[1]
     )
     diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
     if diff:
@@ -118,7 +182,7 @@ def check_categories():
                 "No category for file %s, add to the corresponding set (BULBS, PLUGS, ..)"
                 % file
             )
-        raise Exception("Missing category for %s" % diff)
+        raise Exception(f"Missing category for {diff}")
 
 
 check_categories()
@@ -156,6 +220,10 @@ def device_for_file(model):
         if d in model:
             return SmartDimmer
 
+    for d in PLUGS_SMART:
+        if d + ".smart" in model:
+            return TapoPlug
+
     raise Exception("Unable to find type for %s", model)
 
 
@@ -185,7 +253,11 @@ async def get_device_for_file(file):
 
     model = basename(file)
     d = device_for_file(model)(host="127.0.0.123")
-    d.protocol = FakeTransportProtocol(sysinfo)
+    if ".smart" in model.split("_")[0]:
+        d.protocol = FakeSmartProtocol(sysinfo)
+        d.credentials = Credentials("", "")
+    else:
+        d.protocol = FakeTransportProtocol(sysinfo)
     await _update_and_close(d)
     return d
 
@@ -213,16 +285,59 @@ async def dev(request):
     return await get_device_for_file(file)
 
 
-@pytest.fixture(params=SUPPORTED_DEVICES, scope="session")
+@pytest.fixture
+def discovery_mock(discovery_data, mocker):
+    @dataclass
+    class _DiscoveryMock:
+        ip: str
+        default_port: int
+        discovery_data: dict
+        port_override: Optional[int] = None
+
+    if "result" in discovery_data:
+        datagram = (
+            b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
+            + json_dumps(discovery_data).encode()
+        )
+        dm = _DiscoveryMock("127.0.0.123", 20002, discovery_data)
+    else:
+        datagram = TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:]
+        dm = _DiscoveryMock("127.0.0.123", 9999, discovery_data)
+
+    def mock_discover(self):
+        port = (
+            dm.port_override
+            if dm.port_override and dm.default_port != 20002
+            else dm.default_port
+        )
+        self.datagram_received(
+            datagram,
+            (dm.ip, port),
+        )
+
+    mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
+    mocker.patch(
+        "socket.getaddrinfo",
+        side_effect=lambda *_, **__: [(None, None, None, None, (dm.ip, 0))],
+    )
+    yield dm
+
+
+@pytest.fixture(params=FIXTURE_DATA.values(), ids=FIXTURE_DATA.keys(), scope="session")
 def discovery_data(request):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
-    file = request.param
-    p = Path(file)
-    if not p.is_absolute():
-        p = Path(__file__).parent / "fixtures" / file
+    fixture_data = request.param
+    if "discovery_result" in fixture_data:
+        return {"result": fixture_data["discovery_result"]}
+    else:
+        return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
 
-    with open(p) as f:
-        return json.load(f)
+
+@pytest.fixture(params=FIXTURE_DATA.values(), ids=FIXTURE_DATA.keys(), scope="session")
+def all_fixture_data(request):
+    """Return raw fixture file contents as JSON. Used for discovery tests."""
+    fixture_data = request.param
+    return fixture_data
 
 
 def pytest_addoption(parser):

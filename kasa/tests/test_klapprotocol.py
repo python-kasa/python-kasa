@@ -10,10 +10,14 @@ from contextlib import nullcontext as does_not_raise
 import httpx
 import pytest
 
+from ..aestransport import TPLinkAesTransport
 from ..credentials import Credentials
 from ..exceptions import AuthenticationException, SmartDeviceException
 from ..iotprotocol import TPLinkIotProtocol
 from ..klaptransport import KlapEncryptionSession, TPLinkKlapTransport, _sha256
+from ..smartprotocol import TPLinkSmartProtocol
+
+DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
 
 class _mock_response:
@@ -22,67 +26,89 @@ class _mock_response:
         self.content = content
 
 
+@pytest.mark.parametrize("transport_class", [TPLinkAesTransport, TPLinkKlapTransport])
+@pytest.mark.parametrize("protocol_class", [TPLinkIotProtocol, TPLinkSmartProtocol])
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_retries(mocker, retry_count):
+async def test_protocol_retries(mocker, retry_count, protocol_class, transport_class):
+    host = "127.0.0.1"
     conn = mocker.patch.object(
-        TPLinkKlapTransport, "client_post", side_effect=Exception("dummy exception")
+        transport_class, "client_post", side_effect=Exception("dummy exception")
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkIotProtocol("127.0.0.1").query({}, retry_count=retry_count)
+        await protocol_class(host, transport=transport_class(host)).query(
+            DUMMY_QUERY, retry_count=retry_count
+        )
 
     assert conn.call_count == retry_count + 1
 
 
-async def test_protocol_no_retry_on_connection_error(mocker):
+@pytest.mark.parametrize("transport_class", [TPLinkAesTransport, TPLinkKlapTransport])
+@pytest.mark.parametrize("protocol_class", [TPLinkIotProtocol, TPLinkSmartProtocol])
+async def test_protocol_no_retry_on_connection_error(
+    mocker, protocol_class, transport_class
+):
+    host = "127.0.0.1"
     conn = mocker.patch.object(
-        TPLinkKlapTransport,
+        transport_class,
         "client_post",
         side_effect=httpx.ConnectError("foo"),
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkIotProtocol("127.0.0.1").query({}, retry_count=5)
+        await protocol_class(host, transport=transport_class(host)).query(
+            DUMMY_QUERY, retry_count=5
+        )
 
     assert conn.call_count == 1
 
 
-async def test_protocol_retry_recoverable_error(mocker):
+@pytest.mark.parametrize("transport_class", [TPLinkAesTransport, TPLinkKlapTransport])
+@pytest.mark.parametrize("protocol_class", [TPLinkIotProtocol, TPLinkSmartProtocol])
+async def test_protocol_retry_recoverable_error(
+    mocker, protocol_class, transport_class
+):
+    host = "127.0.0.1"
     conn = mocker.patch.object(
-        TPLinkKlapTransport,
+        transport_class,
         "client_post",
         side_effect=httpx.CloseError("foo"),
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkIotProtocol("127.0.0.1").query({}, retry_count=5)
+        await protocol_class(host, transport=transport_class(host)).query(
+            DUMMY_QUERY, retry_count=5
+        )
 
     assert conn.call_count == 6
 
 
+@pytest.mark.parametrize("transport_class", [TPLinkAesTransport, TPLinkKlapTransport])
+@pytest.mark.parametrize("protocol_class", [TPLinkIotProtocol, TPLinkSmartProtocol])
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_reconnect(mocker, retry_count):
+async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport_class):
+    host = "127.0.0.1"
     remaining = retry_count
+    mock_response = {"result": {"great": "success"}}
 
     def _fail_one_less_than_retry_count(*_, **__):
-        nonlocal remaining, encryption_session
+        nonlocal remaining
         remaining -= 1
         if remaining:
             raise Exception("Simulated post failure")
-        # Do the encrypt just before returning the value so the incrementing sequence number is correct
-        encrypted, seq = encryption_session.encrypt('{"great":"success"}')
-        return 200, encrypted
 
-    seed = secrets.token_bytes(16)
-    auth_hash = TPLinkKlapTransport.generate_auth_hash(Credentials("foo", "bar"))
-    encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
-    protocol = TPLinkIotProtocol("127.0.0.1")
-    protocol.transport.handshake_done = True
-    protocol.transport.session_expire_at = time.time() + 86400
-    protocol.transport.encryption_session = encryption_session
-    mocker.patch.object(
-        TPLinkKlapTransport, "client_post", side_effect=_fail_one_less_than_retry_count
+        return mock_response
+
+    mocker.patch.object(transport_class, "needs_handshake", return_value=False)
+    mocker.patch.object(transport_class, "needs_login", return_value=False)
+    send_mock = mocker.patch.object(
+        transport_class,
+        "send",
+        side_effect=_fail_one_less_than_retry_count,
     )
 
-    response = await protocol.query({}, retry_count=retry_count)
-    assert response == {"great": "success"}
+    response = await protocol_class(host, transport=transport_class(host)).query(
+        DUMMY_QUERY, retry_count=retry_count
+    )
+    assert "result" in response or "great" in response
+    assert send_mock.call_count == retry_count
 
 
 @pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])

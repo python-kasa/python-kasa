@@ -189,12 +189,16 @@ async def get_legacy_fixture(device):
 async def get_smart_fixture(device: SmartDevice):
     """Get fixture for new TAPO style protocol."""
     items = [
+        Call(module="component_nego", method="component_nego"),
+        Call(module="device_info", method="get_device_info"),
+        Call(module="device_usage", method="get_device_usage"),
+        Call(module="device_time", method="get_device_time"),
+        Call(module="energy_usage", method="get_energy_usage"),
+        Call(module="current_power", method="get_current_power"),
         Call(
             module="child_device_component_list",
             method="get_child_device_component_list",
         ),
-        Call(module="device_info", method="get_device_info"),
-        Call(module="device_usage", method="get_device_usage"),
     ]
 
     successes = []
@@ -246,7 +250,7 @@ async def get_smart_fixture(device: SmartDevice):
     model = final["get_device_info"]["model"]
     sw_version = sw_version.split(" ", maxsplit=1)[0]
 
-    return f"{model}_{hw_version}_{sw_version}.json", final
+    return f"{model}.smart_{hw_version}_{sw_version}.json", final
 
 
 if __name__ == "__main__":

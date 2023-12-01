@@ -4,7 +4,7 @@ import binascii
 import ipaddress
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Optional, Set, Tuple, Type, cast
+from typing import Awaitable, Callable, Dict, Optional, Set, Type, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -17,17 +17,16 @@ except ImportError:
 
 from kasa.credentials import Credentials
 from kasa.exceptions import UnsupportedDeviceException
-from kasa.iotprotocol import TPLinkIotProtocol
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
-from kasa.klaptransport import TPLinkKlapTransport, TPlinkKlapTransportV2
-from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol, TPLinkTransport
+from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartdevice import SmartDevice, SmartDeviceException
-from kasa.smartplug import SmartPlug
-from kasa.smartprotocol import TPLinkAesTransport, TPLinkSmartProtocol
-from kasa.tapo.tapoplug import TapoPlug
 
-from .device_factory import get_device_class_from_info
+from .device_factory import (
+    get_device_class_from_sys_info,
+    get_device_class_from_type_name,
+    get_protocol_from_connection_name,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -349,7 +348,16 @@ class Discover:
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:
         """Find SmartDevice subclass for device described by passed data."""
-        return get_device_class_from_info(info)
+        if "result" in info:
+            discovery_result = DiscoveryResult(**info["result"])
+            dev_class = get_device_class_from_type_name(discovery_result.device_type)
+            if not dev_class:
+                raise UnsupportedDeviceException(
+                    "Unknown device type: %s" % discovery_result.device_type
+                )
+            return dev_class
+        else:
+            return get_device_class_from_sys_info(info)
 
     @staticmethod
     def _get_device_instance_legacy(data: bytes, ip: str, port: int) -> SmartDevice:
@@ -385,28 +393,16 @@ class Discover:
         encrypt_type_ = (
             f"{type_.split('.')[0]}.{discovery_result.mgt_encrypt_schm.encrypt_type}"
         )
-        device_class = None
 
-        supported_device_types: dict[str, Type[SmartDevice]] = {
-            "SMART.TAPOPLUG": TapoPlug,
-            "SMART.KASAPLUG": TapoPlug,
-            "IOT.SMARTPLUGSWITCH": SmartPlug,
-        }
-        supported_device_protocols: dict[
-            str, Tuple[Type[TPLinkProtocol], Type[TPLinkTransport]]
-        ] = {
-            "IOT.KLAP": (TPLinkIotProtocol, TPLinkKlapTransport),
-            "SMART.AES": (TPLinkSmartProtocol, TPLinkAesTransport),
-            "SMART.KLAP": (TPLinkSmartProtocol, TPlinkKlapTransportV2),
-        }
-
-        if (device_class := supported_device_types.get(type_)) is None:
+        if (device_class := get_device_class_from_type_name(type_)) is None:
             _LOGGER.warning("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceException(
                 f"Unsupported device {ip} of type {type_}: {info}"
             )
         if (
-            protocol_transport_tuple := supported_device_protocols.get(encrypt_type_)
+            protocol := get_protocol_from_connection_name(
+                encrypt_type_, ip, credentials=credentials
+            )
         ) is None:
             _LOGGER.warning("Got unsupported device type: %s", encrypt_type_)
             raise UnsupportedDeviceException(
@@ -415,10 +411,7 @@ class Discover:
 
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)
         device = device_class(ip, port=port, credentials=credentials)
-        transport = protocol_transport_tuple[1](ip, credentials=credentials)
-        device.protocol = protocol_transport_tuple[0](
-            ip, credentials=credentials, transport=transport
-        )
+        device.protocol = protocol
         device.update_from_discover_info(discovery_result.get_dict())
         return device
 
