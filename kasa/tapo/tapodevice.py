@@ -33,11 +33,13 @@ class TapoDevice(SmartDevice):
         if self.credentials is None or self.credentials.username is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
+        self._components = await self.protocol.query("component_nego")
         self._info = await self.protocol.query("get_device_info")
         self._usage = await self.protocol.query("get_device_usage")
         self._time = await self.protocol.query("get_device_time")
 
         self._last_update = self._data = {
+            "components": self._components,
             "info": self._info,
             "usage": self._usage,
             "time": self._time,
