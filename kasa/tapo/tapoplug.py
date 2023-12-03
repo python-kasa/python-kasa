@@ -5,9 +5,9 @@ from typing import Any, Dict, Optional, cast
 
 from ..credentials import Credentials
 from ..emeterstatus import EmeterStatus
-from ..smartdevice import DeviceType
+from ..modules import Emeter
+from ..smartdevice import DeviceType, requires_update
 from .tapodevice import TapoDevice
-from ..modules import Emeter, Module
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class TapoPlug(TapoDevice):
         self.modules["emeter"] = Emeter(self, self.emeter_type)
 
     @property  # type: ignore
-    #@requires_update
+    @requires_update
     def has_emeter(self) -> bool:
         """Return that the plug has an emeter."""
         return True
@@ -47,9 +47,6 @@ class TapoPlug(TapoDevice):
 
         _LOGGER.debug("Got an update: %s %s", self._energy, self._emeter)
 
-        # Example of what a KP125M reports;
-        # Got an update: {'today_runtime': 1327, 'month_runtime': 13511, 'today_energy': 537, 'month_energy': 5692, 'local_time': '2023-11-30 22:07:02', 'electricity_charge': [0, 0, 0], 'current_power': 1339} {'current_power': 1}
-
     @property
     def state_information(self) -> Dict[str, Any]:
         """Return the key state information."""
@@ -65,18 +62,24 @@ class TapoPlug(TapoDevice):
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        return EmeterStatus({"power_mw": self._energy.get("current_power"),
-                             "total": self._energy.get("today_energy") / 1000})
+        return EmeterStatus(
+            {
+                "power_mw": self._energy.get("current_power"),
+                "total": self._convert_energy_data(
+                    self._energy.get("today_energy"), 1 / 1000
+                ),
+            }
+        )
 
     @property
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
-        return self._energy.get("today_energy") / 1000
+        return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
 
     @property
     def emeter_this_month(self) -> Optional[float]:
         """Get the emeter value for this month."""
-        return self._energy.get("month_energy") / 1000
+        return self._convert_energy_data(self._energy.get("month_energy"), 1 / 1000)
 
     @property
     def on_since(self) -> Optional[datetime]:
@@ -85,3 +88,7 @@ class TapoPlug(TapoDevice):
             return None
         on_time = cast(float, self._info.get("on_time"))
         return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
+
+    def _convert_energy_data(self, data, scale) -> Optional[float]:
+        """Return adjusted emeter information."""
+        return data if not data else data * scale
