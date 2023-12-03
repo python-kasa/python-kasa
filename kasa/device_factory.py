@@ -4,19 +4,19 @@ import logging
 import time
 from typing import Any, Dict, Optional, Tuple, Type
 
-from .aestransport import TPLinkAesTransport
+from .aestransport import AesTransport
 from .credentials import Credentials
 from .device_type import DeviceType
 from .exceptions import UnsupportedDeviceException
-from .iotprotocol import TPLinkIotProtocol
-from .klaptransport import TPLinkKlapTransport, TPlinkKlapTransportV2
-from .protocol import TPLinkProtocol, TPLinkTransport
+from .iotprotocol import IotProtocol
+from .klaptransport import KlapTransport, TPlinkKlapTransportV2
+from .protocol import BaseTransport, TPLinkProtocol
 from .smartbulb import SmartBulb
 from .smartdevice import SmartDevice, SmartDeviceException
 from .smartdimmer import SmartDimmer
 from .smartlightstrip import SmartLightStrip
 from .smartplug import SmartPlug
-from .smartprotocol import TPLinkSmartProtocol
+from .smartprotocol import SmartProtocol
 from .smartstrip import SmartStrip
 from .tapo.tapoplug import TapoPlug
 
@@ -150,20 +150,18 @@ def get_protocol_from_connection_name(
 ) -> Optional[TPLinkProtocol]:
     """Return the protocol from the connection name."""
     supported_device_protocols: dict[
-        str, Tuple[Type[TPLinkProtocol], Type[TPLinkTransport]]
+        str, Tuple[Type[TPLinkProtocol], Type[BaseTransport]]
     ] = {
-        "IOT.KLAP": (TPLinkIotProtocol, TPLinkKlapTransport),
-        "SMART.AES": (TPLinkSmartProtocol, TPLinkAesTransport),
-        "SMART.KLAP": (TPLinkSmartProtocol, TPlinkKlapTransportV2),
+        "IOT.KLAP": (IotProtocol, KlapTransport),
+        "SMART.AES": (SmartProtocol, AesTransport),
+        "SMART.KLAP": (SmartProtocol, TPlinkKlapTransportV2),
     }
     if connection_name not in supported_device_protocols:
         return None
 
-    protocol_transport_tuple = supported_device_protocols.get(connection_name)
-    transport: TPLinkTransport = protocol_transport_tuple[1](  # type: ignore
-        host, credentials=credentials
-    )
-    protocol: TPLinkProtocol = protocol_transport_tuple[0](  # type: ignore
+    protocol_class, transport_class = supported_device_protocols.get(connection_name)  # type: ignore
+    transport: BaseTransport = transport_class(host, credentials=credentials)
+    protocol: TPLinkProtocol = protocol_class(
         host, credentials=credentials, transport=transport
     )
     return protocol

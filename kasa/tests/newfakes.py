@@ -14,8 +14,8 @@ from voluptuous import (
     Schema,
 )
 
-from ..protocol import TPLinkSmartHomeProtocol, TPLinkTransport
-from ..smartprotocol import TPLinkSmartProtocol
+from ..protocol import BaseTransport, TPLinkSmartHomeProtocol
+from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -287,12 +287,12 @@ TIME_MODULE = {
 }
 
 
-class FakeSmartProtocol(TPLinkSmartProtocol):
+class FakeSmartProtocol(SmartProtocol):
     def __init__(self, info):
         super().__init__("127.0.0.123", transport=FakeSmartTransport(info))
 
 
-class FakeSmartTransport(TPLinkTransport):
+class FakeSmartTransport(BaseTransport):
     def __init__(self, info):
         self.info = info
 

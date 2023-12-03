@@ -8,7 +8,7 @@ from kasa import SmartDevice, TPLinkSmartHomeProtocol
 from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
 from kasa.device_factory import DEVICE_TYPE_TO_CLASS
 from kasa.discover import Discover
-from kasa.smartprotocol import TPLinkSmartProtocol
+from kasa.smartprotocol import SmartProtocol
 
 from .conftest import device_iot, handle_turn_on, new_discovery, turn_on
 from .newfakes import FakeSmartProtocol, FakeTransportProtocol

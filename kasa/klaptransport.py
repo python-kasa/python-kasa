@@ -56,7 +56,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from .credentials import Credentials
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import loads as json_loads
-from .protocol import TPLinkTransport, md5
+from .protocol import BaseTransport, md5
 
 _LOGGER = logging.getLogger(__name__)
 logging.getLogger("httpx").propagate = False
@@ -75,7 +75,7 @@ def _sha1(payload: bytes) -> bytes:
     return digest.finalize()
 
 
-class TPLinkKlapTransport(TPLinkTransport):
+class KlapTransport(BaseTransport):
     """Implementation of the KLAP encryption protocol.
 
     KLAP is the name used in device discovery for TP-Link's new encryption
@@ -408,7 +408,7 @@ class TPLinkKlapTransport(TPLinkTransport):
         return md5(un.encode())
 
 
-class TPlinkKlapTransportV2(TPLinkKlapTransport):
+class TPlinkKlapTransportV2(KlapTransport):
     """Implementation of the KLAP encryption protocol with v2 hanshake hashes."""
 
     @staticmethod

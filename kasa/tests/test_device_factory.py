@@ -21,7 +21,7 @@ from kasa.device_factory import (
     get_protocol_from_connection_name,
 )
 from kasa.discover import DiscoveryResult
-from kasa.iotprotocol import TPLinkIotProtocol
+from kasa.iotprotocol import IotProtocol
 from kasa.protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
 
 
@@ -111,8 +111,8 @@ async def test_connect_pass_protocol(
     ]
     host = "127.0.0.1"
     if "discovery_result" in all_fixture_data:
-        mocker.patch("kasa.TPLinkIotProtocol.query", return_value=all_fixture_data)
-        mocker.patch("kasa.TPLinkSmartProtocol.query", return_value=all_fixture_data)
+        mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
+        mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
 
         dr = DiscoveryResult(**discovery_info["result"])
         connection_name = (

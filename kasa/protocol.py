@@ -41,7 +41,7 @@ def md5(payload: bytes) -> bytes:
     return hash
 
 
-class TPLinkTransport(ABC):
+class BaseTransport(ABC):
     """Base class for all TP-Link KASA-KLAP and TAPO transports."""
 
     def __init__(
@@ -90,7 +90,7 @@ class TPLinkProtocol(ABC):
         *,
         port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
-        transport: Optional[TPLinkTransport] = None,
+        transport: Optional[BaseTransport] = None,
     ) -> None:
         """Create a protocol object."""
         self.host = host

@@ -14,17 +14,17 @@ from typing import Dict, Optional, Union
 
 import httpx
 
-from .aestransport import TPLinkAesTransport
+from .aestransport import AesTransport
 from .credentials import Credentials
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import dumps as json_dumps
-from .protocol import TPLinkProtocol, TPLinkTransport, md5
+from .protocol import BaseTransport, TPLinkProtocol, md5
 
 _LOGGER = logging.getLogger(__name__)
 logging.getLogger("httpx").propagate = False
 
 
-class TPLinkSmartProtocol(TPLinkProtocol):
+class SmartProtocol(TPLinkProtocol):
     """Class for the new TPLink SMART protocol."""
 
     DEFAULT_PORT = 80
@@ -33,7 +33,7 @@ class TPLinkSmartProtocol(TPLinkProtocol):
         self,
         host: str,
         *,
-        transport: Optional[TPLinkTransport] = None,
+        transport: Optional[BaseTransport] = None,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
     ) -> None:
@@ -44,10 +44,8 @@ class TPLinkSmartProtocol(TPLinkProtocol):
             if credentials and credentials.username and credentials.password
             else Credentials(username="", password="")
         )
-        self.transport: TPLinkTransport = (
-            transport
-            if transport
-            else TPLinkAesTransport(host, credentials=self.credentials, timeout=timeout)
+        self.transport: BaseTransport = transport or AesTransport(
+            host, credentials=self.credentials, timeout=timeout
         )
         self.terminal_uuid: Optional[str] = None
         self.request_id_generator = SnowflakeId(1, 1)

@@ -21,7 +21,7 @@ from .credentials import Credentials
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import dumps as json_dumps
 from .json import loads as json_loads
-from .protocol import TPLinkTransport
+from .protocol import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def _sha1(payload: bytes) -> str:
     return sha1_algo.hexdigest()
 
 
-class TPLinkAesTransport(TPLinkTransport):
+class AesTransport(BaseTransport):
     """Implementation of the AES encryption protocol.
 
     AES is the name used in device discovery for TP-Link's TAPO encryption

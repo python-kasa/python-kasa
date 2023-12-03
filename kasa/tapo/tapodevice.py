@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional, Set, cast
 from ..credentials import Credentials
 from ..exceptions import AuthenticationException
 from ..smartdevice import SmartDevice
-from ..smartprotocol import TPLinkSmartProtocol
+from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,9 +26,7 @@ class TapoDevice(SmartDevice):
         super().__init__(host, port=port, credentials=credentials, timeout=timeout)
         self._state_information: Dict[str, Any] = {}
         self._discovery_info: Optional[Dict[str, Any]] = None
-        self.protocol = TPLinkSmartProtocol(
-            host, credentials=credentials, timeout=timeout
-        )
+        self.protocol = SmartProtocol(host, credentials=credentials, timeout=timeout)
 
     async def update(self, update_children: bool = True):
         """Update the device."""

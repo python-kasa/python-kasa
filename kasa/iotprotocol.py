@@ -8,13 +8,13 @@ import httpx
 from .credentials import Credentials
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import dumps as json_dumps
-from .klaptransport import TPLinkKlapTransport
-from .protocol import TPLinkProtocol, TPLinkTransport
+from .klaptransport import KlapTransport
+from .protocol import BaseTransport, TPLinkProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TPLinkIotProtocol(TPLinkProtocol):
+class IotProtocol(TPLinkProtocol):
     """Class for the legacy TPLink IOT KASA Protocol."""
 
     DEFAULT_PORT = 80
@@ -23,7 +23,7 @@ class TPLinkIotProtocol(TPLinkProtocol):
         self,
         host: str,
         *,
-        transport: Optional[TPLinkTransport] = None,
+        transport: Optional[BaseTransport] = None,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
     ) -> None:
@@ -34,12 +34,8 @@ class TPLinkIotProtocol(TPLinkProtocol):
             if credentials and credentials.username and credentials.password
             else Credentials(username="", password="")
         )
-        self.transport: TPLinkTransport = (
-            transport
-            if transport
-            else TPLinkKlapTransport(
-                host, credentials=self.credentials, timeout=timeout
-            )
+        self.transport: BaseTransport = transport or KlapTransport(
+            host, credentials=self.credentials, timeout=timeout
         )
 
         self.query_lock = asyncio.Lock()

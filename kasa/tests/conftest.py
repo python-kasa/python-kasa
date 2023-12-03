@@ -21,13 +21,26 @@ from kasa import (
     SmartStrip,
     TPLinkSmartHomeProtocol,
 )
-from kasa.tapo import TapoPlug
+from kasa.tapo import TapoDevice, TapoPlug
 
 from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
-SUPPORTED_DEVICES = glob.glob(
-    os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
-)
+SUPPORTED_IOT_DEVICES = [
+    (device, "IOT")
+    for device in glob.glob(
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
+    )
+]
+
+SUPPORTED_SMART_DEVICES = [
+    (device, "SMART")
+    for device in glob.glob(
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/smart/*.json"
+    )
+]
+
+
+SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
 
 
 LIGHT_STRIPS = {"KL400", "KL430", "KL420"}
@@ -77,35 +90,42 @@ ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 IP_MODEL_CACHE: Dict[str, str] = {}
 
 
-def filter_model(desc, filter, is_smart_protocol=False):
-    filtered = list()
-    for dev in SUPPORTED_DEVICES:
-        for filt in filter:
-            model_name = filt
-            if is_smart_protocol:
-                model_name = model_name + ".smart"
-            if model_name in basename(dev).split("_")[0]:
-                filtered.append(dev)
+def idgenerator(paramtuple):
+    return basename(paramtuple[0]) + (
+        "" if paramtuple[1] == "IOT" else "-" + paramtuple[1]
+    )
 
-    filtered_basenames = [basename(f) for f in filtered]
+
+def filter_model(desc, model_filter, protocol_filter=None):
+    if not protocol_filter:
+        protocol_filter = {"IOT"}
+    filtered = list()
+    for file, protocol in SUPPORTED_DEVICES:
+        if protocol in protocol_filter:
+            file_model = basename(file).split("_")[0]
+            for model in model_filter:
+                if model in file_model:
+                    filtered.append((file, protocol))
+
+    filtered_basenames = [basename(f) + "-" + p for f, p in filtered]
     print(f"{desc}: {filtered_basenames}")
     return filtered
 
 
-def parametrize(desc, devices, ids=None, is_smart_protocol=False):
+def parametrize(desc, devices, protocol_filter=None, ids=None):
     return pytest.mark.parametrize(
-        "dev", filter_model(desc, devices), indirect=True, ids=ids
+        "dev", filter_model(desc, devices, protocol_filter), indirect=True, ids=ids
     )
 
 
 has_emeter = parametrize("has emeter", WITH_EMETER)
 no_emeter = parametrize("no emeter", ALL_DEVICES_IOT - WITH_EMETER)
 
-bulb = parametrize("bulbs", BULBS, ids=basename)
-plug = parametrize("plugs", PLUGS, ids=basename)
-strip = parametrize("strips", STRIPS, ids=basename)
-dimmer = parametrize("dimmers", DIMMERS, ids=basename)
-lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=basename)
+bulb = parametrize("bulbs", BULBS, ids=idgenerator)
+plug = parametrize("plugs", PLUGS, ids=idgenerator)
+strip = parametrize("strips", STRIPS, ids=idgenerator)
+dimmer = parametrize("dimmers", DIMMERS, ids=idgenerator)
+lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=idgenerator)
 
 # bulb types
 dimmable = parametrize("dimmable", DIMMABLE)
@@ -116,23 +136,26 @@ color_bulb = parametrize("color bulbs", COLOR_BULBS)
 non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
 
 plug_smart = parametrize(
-    "plug devices smart", PLUGS_SMART, ids=basename, is_smart_protocol=True
+    "plug devices smart", PLUGS_SMART, protocol_filter={"SMART"}, ids=idgenerator
 )
 device_smart = parametrize(
-    "devices smart", ALL_DEVICES_SMART, ids=basename, is_smart_protocol=True
+    "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}, ids=idgenerator
 )
 device_iot = parametrize(
-    "devices iot", ALL_DEVICES_IOT, ids=basename, is_smart_protocol=False
+    "devices iot", ALL_DEVICES_IOT, protocol_filter={"IOT"}, ids=idgenerator
 )
 
 
 def get_fixture_data():
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_data = {}
-    for file in SUPPORTED_DEVICES:
+    for file, protocol in SUPPORTED_DEVICES:
         p = Path(file)
         if not p.is_absolute():
-            p = Path(__file__).parent / "fixtures" / file
+            folder = Path(__file__).parent / "fixtures"
+            if protocol == "SMART":
+                folder = folder / "smart"
+            p = folder / file
 
         with open(p) as f:
             fixture_data[basename(p)] = json.load(f)
@@ -177,10 +200,9 @@ def check_categories():
     )
     diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
     if diff:
-        for file in diff:
+        for file, protocol in diff:
             print(
-                "No category for file %s, add to the corresponding set (BULBS, PLUGS, ..)"
-                % file
+                f"No category for file {file} protocol {protocol}, add to the corresponding set (BULBS, PLUGS, ..)"
             )
         raise Exception(f"Missing category for {diff}")
 
@@ -198,31 +220,32 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
-def device_for_file(model):
-    for d in STRIPS:
-        if d in model:
-            return SmartStrip
+def device_for_file(model, protocol):
+    if protocol == "SMART":
+        for d in PLUGS_SMART:
+            if d in model:
+                return TapoPlug
+    else:
+        for d in STRIPS:
+            if d in model:
+                return SmartStrip
 
-    for d in PLUGS:
-        if d in model:
-            return SmartPlug
+        for d in PLUGS:
+            if d in model:
+                return SmartPlug
 
-    # Light strips are recognized also as bulbs, so this has to go first
-    for d in LIGHT_STRIPS:
-        if d in model:
-            return SmartLightStrip
+        # Light strips are recognized also as bulbs, so this has to go first
+        for d in LIGHT_STRIPS:
+            if d in model:
+                return SmartLightStrip
 
-    for d in BULBS:
-        if d in model:
-            return SmartBulb
+        for d in BULBS:
+            if d in model:
+                return SmartBulb
 
-    for d in DIMMERS:
-        if d in model:
-            return SmartDimmer
-
-    for d in PLUGS_SMART:
-        if d + ".smart" in model:
-            return TapoPlug
+        for d in DIMMERS:
+            if d in model:
+                return SmartDimmer
 
     raise Exception("Unable to find type for %s", model)
 
@@ -238,11 +261,14 @@ async def _discover_update_and_close(ip):
     return await _update_and_close(d)
 
 
-async def get_device_for_file(file):
+async def get_device_for_file(file, protocol):
     # if the wanted file is not an absolute path, prepend the fixtures directory
     p = Path(file)
     if not p.is_absolute():
-        p = Path(__file__).parent / "fixtures" / file
+        folder = Path(__file__).parent / "fixtures"
+        if protocol == "SMART":
+            folder = folder / "smart"
+        p = folder / file
 
     def load_file():
         with open(p) as f:
@@ -252,8 +278,8 @@ async def get_device_for_file(file):
     sysinfo = await loop.run_in_executor(None, load_file)
 
     model = basename(file)
-    d = device_for_file(model)(host="127.0.0.123")
-    if ".smart" in model.split("_")[0]:
+    d = device_for_file(model, protocol)(host="127.0.0.123")
+    if protocol == "SMART":
         d.protocol = FakeSmartProtocol(sysinfo)
         d.credentials = Credentials("", "")
     else:
@@ -269,7 +295,7 @@ async def dev(request):
     Provides a device (given --ip) or parametrized fixture for the supported devices.
     The initial update is called automatically before returning the device.
     """
-    file = request.param
+    file, protocol = request.param
 
     ip = request.config.getoption("--ip")
     if ip:
@@ -282,7 +308,7 @@ async def dev(request):
             pytest.skip(f"skipping file {file}")
         return d if d else await _discover_update_and_close(ip)
 
-    return await get_device_for_file(file)
+    return await get_device_for_file(file, protocol)
 
 
 @pytest.fixture
