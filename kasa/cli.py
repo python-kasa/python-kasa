@@ -132,6 +132,13 @@ def json_formatter_cb(result, **kwargs):
     "--json", default=False, is_flag=True, help="Output raw device response as JSON."
 )
 @click.option(
+    "--timeout",
+    envvar="KASA_TIMEOUT",
+    default=5,
+    required=False,
+    help="Timeout for device communications.",
+)
+@click.option(
     "--discovery-timeout",
     envvar="KASA_DISCOVERY_TIMEOUT",
     default=3,
@@ -163,6 +170,7 @@ async def cli(
     debug,
     type,
     json,
+    timeout,
     discovery_timeout,
     username,
     password,
@@ -234,7 +242,7 @@ async def cli(
     if type is not None:
         device_type = DeviceType.from_value(type)
         dev = await SmartDevice.connect(
-            host, credentials=credentials, device_type=device_type
+            host, credentials=credentials, device_type=device_type, timeout=timeout
         )
     else:
         echo("No --type defined, discovering..")
