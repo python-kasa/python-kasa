@@ -1,5 +1,5 @@
 """Module for tapo-branded smart bulbs (L5**)."""
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..exceptions import SmartDeviceException
 from ..smartbulb import HSV, ColorTempRange, SmartBulb, SmartBulbPreset
@@ -16,6 +16,17 @@ class TapoBulb(TapoDevice, SmartBulb):
 
     Documentation TBD. See :class:`~kasa.smartbulb.SmartBulb` for now.
     """
+
+    @property
+    def has_emeter(self) -> bool:
+        """Bulbs have only historical emeter.
+
+        {'usage':
+        'power_usage': {'today': 6, 'past7': 106, 'past30': 106},
+        'saved_power': {'today': 35, 'past7': 529, 'past30': 529},
+        }
+        """
+        return False
 
     @property
     def is_color(self) -> bool:
@@ -213,7 +224,25 @@ class TapoBulb(TapoDevice, SmartBulb):
             }
         )
 
+    @property  # type: ignore
+    def state_information(self) -> Dict[str, Any]:
+        """Return bulb-specific state information."""
+        info: Dict[str, Any] = {
+            # TODO: re-enable after we don't inherit from smartbulb
+            # **super().state_information
+            "Brightness": self.brightness,
+            "Is dimmable": self.is_dimmable,
+        }
+        if self.is_variable_color_temp:
+            info["Color temperature"] = self.color_temp
+            info["Valid temperature range"] = self.valid_temperature_range
+        if self.is_color:
+            info["HSV"] = self.hsv
+        info["Presets"] = self.presets
+
+        return info
+
     @property
     def presets(self) -> List[SmartBulbPreset]:
         """Return a list of available bulb setting presets."""
-        raise NotImplementedError()
+        return []
