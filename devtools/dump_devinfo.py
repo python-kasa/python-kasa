@@ -101,18 +101,25 @@ async def cli(host, debug, username, password):
     device = await Discover.discover_single(host, credentials=credentials)
 
     if isinstance(device, TapoDevice):
-        save_to, final = await get_smart_fixture(device)
+        save_filename, copy_folder, final = await get_smart_fixture(device)
     else:
-        save_to, final = await get_legacy_fixture(device)
+        save_filename, copy_folder, final = await get_legacy_fixture(device)
 
     pprint(scrub(final))
-    save = click.prompt(f"Do you want to save the above content to {save_to} (y/n)")
+    save = click.prompt(
+        f"Do you want to save the above content to {save_filename} (y/n)"
+    )
     if save == "y":
-        click.echo(f"Saving info to {save_to}")
+        click.echo(f"Saving info to {save_filename}")
 
-        with open(save_to, "w") as f:
+        with open(save_filename, "w") as f:
             json.dump(final, f, sort_keys=True, indent=4)
             f.write("\n")
+
+        click.echo(
+            f"Saved. Copy/Move {save_filename} to "
+            + f"{copy_folder} to add it to the test suite"
+        )
     else:
         click.echo("Not saving.")
 
@@ -182,8 +189,9 @@ async def get_legacy_fixture(device):
     hw_version = sysinfo["hw_ver"]
     sw_version = sysinfo["sw_ver"]
     sw_version = sw_version.split(" ", maxsplit=1)[0]
-    save_to = f"{model}_{hw_version}_{sw_version}.json"
-    return save_to, final
+    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    copy_folder = "kasa/tests/fixtures/"
+    return save_filename, copy_folder, final
 
 
 async def get_smart_fixture(device: SmartDevice):
@@ -234,23 +242,24 @@ async def get_smart_fixture(device: SmartDevice):
     for response in responses["responses"]:
         final[response["method"]] = response["result"]
 
-    if device._discovery_info:
-        # Need to recreate a DiscoverResult here because we don't want the aliases
-        # in the fixture, we want the actual field names as returned by the device.
-        dr = DiscoveryResult(**device._discovery_info)
-        final["discovery_result"] = dr.dict(
-            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
-        )
+    # Need to recreate a DiscoverResult here because we don't want the aliases
+    # in the fixture, we want the actual field names as returned by the device.
+    dr = DiscoveryResult(**device._discovery_info)  # type: ignore
+    final["discovery_result"] = dr.dict(
+        by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
+    )
 
     click.echo("Got %s successes" % len(successes))
     click.echo(click.style("## device info file ##", bold=True))
 
     hw_version = final["get_device_info"]["hw_ver"]
     sw_version = final["get_device_info"]["fw_ver"]
-    model = final["get_device_info"]["model"]
+    model = final["discovery_result"]["device_model"]
     sw_version = sw_version.split(" ", maxsplit=1)[0]
 
-    return f"{model}.smart_{hw_version}_{sw_version}.json", final
+    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    copy_folder = "kasa/tests/fixtures/smart/"
+    return save_filename, copy_folder, final
 
 
 if __name__ == "__main__":
