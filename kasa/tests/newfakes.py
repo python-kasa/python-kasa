@@ -1,6 +1,7 @@
 import copy
 import logging
 import re
+from json import loads as json_loads
 
 from voluptuous import (
     REMOVE_EXTRA,
@@ -13,7 +14,8 @@ from voluptuous import (
     Schema,
 )
 
-from ..protocol import TPLinkSmartHomeProtocol
+from ..protocol import BaseTransport, TPLinkSmartHomeProtocol
+from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -283,6 +285,41 @@ TIME_MODULE = {
     },
     "set_timezone": None,
 }
+
+
+class FakeSmartProtocol(SmartProtocol):
+    def __init__(self, info):
+        super().__init__("127.0.0.123", transport=FakeSmartTransport(info))
+
+
+class FakeSmartTransport(BaseTransport):
+    def __init__(self, info):
+        self.info = info
+
+    @property
+    def needs_handshake(self) -> bool:
+        return False
+
+    @property
+    def needs_login(self) -> bool:
+        return False
+
+    async def login(self, request: str) -> None:
+        pass
+
+    async def handshake(self) -> None:
+        pass
+
+    async def send(self, request: str):
+        request_dict = json_loads(request)
+        method = request_dict["method"]
+        if method == "component_nego" or method[:4] == "get_":
+            return self.info[method]
+        elif method[:4] == "set_":
+            _LOGGER.debug("Call %s not implemented, doing nothing", method)
+
+    async def close(self) -> None:
+        pass
 
 
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):

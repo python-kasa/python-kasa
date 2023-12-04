@@ -8,7 +8,7 @@ import kasa
 from kasa import Credentials, SmartDevice, SmartDeviceException
 from kasa.smartdevice import DeviceType
 
-from .conftest import handle_turn_on, has_emeter, no_emeter, turn_on
+from .conftest import device_iot, handle_turn_on, has_emeter, no_emeter, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
 
 # List of all SmartXXX classes including the SmartDevice base class
@@ -22,11 +22,13 @@ smart_device_classes = [
 ]
 
 
+@device_iot
 async def test_state_info(dev):
     assert isinstance(dev.state_information, dict)
 
 
 @pytest.mark.requires_dummy
+@device_iot
 async def test_invalid_connection(dev):
     with patch.object(
         FakeTransportProtocol, "query", side_effect=SmartDeviceException
@@ -58,12 +60,14 @@ async def test_initial_update_no_emeter(dev, mocker):
     assert spy.call_count == 2
 
 
+@device_iot
 async def test_query_helper(dev):
     with pytest.raises(SmartDeviceException):
         await dev._query_helper("test", "testcmd", {})
     # TODO check for unwrapping?
 
 
+@device_iot
 @turn_on
 async def test_state(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -90,6 +94,7 @@ async def test_state(dev, turn_on):
         assert dev.is_off
 
 
+@device_iot
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
@@ -104,6 +109,7 @@ async def test_alias(dev):
     assert dev.alias == original
 
 
+@device_iot
 @turn_on
 async def test_on_since(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -116,30 +122,37 @@ async def test_on_since(dev, turn_on):
         assert dev.on_since is None
 
 
+@device_iot
 async def test_time(dev):
     assert isinstance(await dev.get_time(), datetime)
 
 
+@device_iot
 async def test_timezone(dev):
     TZ_SCHEMA(await dev.get_timezone())
 
 
+@device_iot
 async def test_hw_info(dev):
     PLUG_SCHEMA(dev.hw_info)
 
 
+@device_iot
 async def test_location(dev):
     PLUG_SCHEMA(dev.location)
 
 
+@device_iot
 async def test_rssi(dev):
     PLUG_SCHEMA({"rssi": dev.rssi})  # wrapping for vol
 
 
+@device_iot
 async def test_mac(dev):
     PLUG_SCHEMA({"mac": dev.mac})  # wrapping for val
 
 
+@device_iot
 async def test_representation(dev):
     import re
 
@@ -147,6 +160,7 @@ async def test_representation(dev):
     assert pattern.match(str(dev))
 
 
+@device_iot
 async def test_childrens(dev):
     """Make sure that children property is exposed by every device."""
     if dev.is_strip:
@@ -155,6 +169,7 @@ async def test_childrens(dev):
         assert len(dev.children) == 0
 
 
+@device_iot
 async def test_children(dev):
     """Make sure that children property is exposed by every device."""
     if dev.is_strip:
@@ -165,11 +180,13 @@ async def test_children(dev):
         assert dev.has_children is False
 
 
+@device_iot
 async def test_internal_state(dev):
     """Make sure the internal state returns the last update results."""
     assert dev.internal_state == dev._last_update
 
 
+@device_iot
 async def test_features(dev):
     """Make sure features is always accessible."""
     sysinfo = dev._last_update["system"]["get_sysinfo"]
@@ -179,11 +196,13 @@ async def test_features(dev):
         assert dev.features == set()
 
 
+@device_iot
 async def test_max_device_response_size(dev):
     """Make sure every device return has a set max response size."""
     assert dev.max_device_response_size > 0
 
 
+@device_iot
 async def test_estimated_response_sizes(dev):
     """Make sure every module has an estimated response size set."""
     for mod in dev.modules.values():
@@ -202,6 +221,7 @@ def test_device_class_ctors(device_class):
     assert dev.credentials == credentials
 
 
+@device_iot
 async def test_modules_preserved(dev: SmartDevice):
     """Make modules that are not being updated are preserved between updates."""
     dev._last_update["some_module_not_being_updated"] = "should_be_kept"
@@ -237,6 +257,7 @@ async def test_create_thin_wrapper():
     )
 
 
+@device_iot
 async def test_modules_not_supported(dev: SmartDevice):
     """Test that unsupported modules do not break the device."""
     for module in dev.modules.values():

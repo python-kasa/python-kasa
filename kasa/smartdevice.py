@@ -365,6 +365,7 @@ class SmartDevice:
 
     def update_from_discover_info(self, info: Dict[str, Any]) -> None:
         """Update state from info from the discover call."""
+        self._discovery_info = info
         if "system" in info and (sys_info := info["system"].get("get_sysinfo")):
             self._last_update = info
             self._set_sys_info(sys_info)
@@ -372,7 +373,6 @@ class SmartDevice:
             # This allows setting of some info properties directly
             # from partial discovery info that will then be found
             # by the requires_update decorator
-            self._discovery_info = info
             self._set_sys_info(info)
 
     def _set_sys_info(self, sys_info: Dict[str, Any]) -> None:

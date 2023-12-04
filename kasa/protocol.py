@@ -22,6 +22,7 @@ from typing import Dict, Generator, Optional, Union
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
+from cryptography.hazmat.primitives import hashes
 
 from .credentials import Credentials
 from .exceptions import SmartDeviceException
@@ -30,6 +31,56 @@ from .json import loads as json_loads
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
+
+
+def md5(payload: bytes) -> bytes:
+    """Return an md5 hash of the payload."""
+    digest = hashes.Hash(hashes.MD5())  # noqa: S303
+    digest.update(payload)
+    hash = digest.finalize()
+    return hash
+
+
+class BaseTransport(ABC):
+    """Base class for all TP-Link protocol transports."""
+
+    def __init__(
+        self,
+        host: str,
+        *,
+        port: Optional[int] = None,
+        credentials: Optional[Credentials] = None,
+    ) -> None:
+        """Create a protocol object."""
+        self.host = host
+        self.port = port
+        self.credentials = credentials
+
+    @property
+    @abstractmethod
+    def needs_handshake(self) -> bool:
+        """Return true if the transport needs to do a handshake."""
+
+    @property
+    @abstractmethod
+    def needs_login(self) -> bool:
+        """Return true if the transport needs to do a login."""
+
+    @abstractmethod
+    async def login(self, request: str) -> None:
+        """Login to the device."""
+
+    @abstractmethod
+    async def handshake(self) -> None:
+        """Perform the encryption handshake."""
+
+    @abstractmethod
+    async def send(self, request: str) -> Dict:
+        """Send a message to the device and return a response."""
+
+    @abstractmethod
+    async def close(self) -> None:
+        """Close the transport.  Abstract method to be overriden."""
 
 
 class TPLinkProtocol(ABC):
@@ -41,6 +92,7 @@ class TPLinkProtocol(ABC):
         *,
         port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
+        transport: Optional[BaseTransport] = None,
     ) -> None:
         """Create a protocol object."""
         self.host = host
