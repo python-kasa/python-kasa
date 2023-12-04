@@ -21,7 +21,6 @@ from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartdevice import SmartDevice, SmartDeviceException
-from kasa.tapo import TapoBulb, TapoPlug
 
 from .device_factory import (
     get_device_class_from_sys_info,

@@ -21,7 +21,7 @@ from kasa import (
     SmartStrip,
     TPLinkSmartHomeProtocol,
 )
-from kasa.tapo import TapoDevice, TapoPlug, TapoBulb
+from kasa.tapo import TapoBulb, TapoDevice, TapoPlug
 
 from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
