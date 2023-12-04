@@ -21,7 +21,7 @@ from kasa import (
     SmartStrip,
     TPLinkSmartHomeProtocol,
 )
-from kasa.tapo import TapoDevice, TapoPlug
+from kasa.tapo import TapoDevice, TapoPlug, TapoBulb
 
 from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
@@ -82,9 +82,11 @@ WITH_EMETER = {"HS110", "HS300", "KP115", "KP125", *BULBS}
 
 ALL_DEVICES_IOT = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
+BULBS_SMART = {"L530"}
 PLUGS_SMART = {"P110"}
-ALL_DEVICES_SMART = PLUGS_SMART
+ALL_DEVICES_SMART = BULBS_SMART.union(PLUGS_SMART)
 
+BULBS = BULBS.union(BULBS_SMART)
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
 IP_MODEL_CACHE: Dict[str, str] = {}
@@ -137,6 +139,9 @@ non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
 
 plug_smart = parametrize(
     "plug devices smart", PLUGS_SMART, protocol_filter={"SMART"}, ids=idgenerator
+)
+bulb_smart = parametrize(
+    "bulb devices smart", BULBS_SMART, protocol_filter={"SMART"}, ids=idgenerator
 )
 device_smart = parametrize(
     "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}, ids=idgenerator
@@ -197,6 +202,7 @@ def check_categories():
         + bulb.args[1]
         + lightstrip.args[1]
         + plug_smart.args[1]
+        + bulb_smart.args[1]
     )
     diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
     if diff:
@@ -225,6 +231,9 @@ def device_for_file(model, protocol):
         for d in PLUGS_SMART:
             if d in model:
                 return TapoPlug
+        for d in BULBS_SMART:
+            if d in model:
+                return TapoBulb
     else:
         for d in STRIPS:
             if d in model:
