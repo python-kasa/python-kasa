@@ -296,9 +296,11 @@ class FakeSmartTransport(BaseTransport):
     def __init__(self, info):
         self.info = info
 
+    @property
     def needs_handshake(self) -> bool:
         return False
 
+    @property
     def needs_login(self) -> bool:
         return False
 
@@ -314,7 +316,7 @@ class FakeSmartTransport(BaseTransport):
         if method == "component_nego" or method[:4] == "get_":
             return self.info[method]
         elif method[:4] == "set_":
-            pass
+            _LOGGER.debug("Call %s not implemented, doing nothing", method)
 
     async def close(self) -> None:
         pass

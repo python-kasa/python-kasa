@@ -96,8 +96,11 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
 
         return mock_response
 
-    mocker.patch.object(transport_class, "needs_handshake", return_value=False)
-    mocker.patch.object(transport_class, "needs_login", return_value=False)
+    mocker.patch.object(
+        transport_class, "needs_handshake", property(lambda self: False)
+    )
+    mocker.patch.object(transport_class, "needs_login", property(lambda self: False))
+
     send_mock = mocker.patch.object(
         transport_class,
         "send",
@@ -127,9 +130,9 @@ async def test_protocol_logging(mocker, caplog, log_level):
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
     protocol = IotProtocol("127.0.0.1")
 
-    protocol.transport.handshake_done = True
-    protocol.transport.session_expire_at = time.time() + 86400
-    protocol.transport.encryption_session = encryption_session
+    protocol._transport._handshake_done = True
+    protocol._transport._session_expire_at = time.time() + 86400
+    protocol._transport._encryption_session = encryption_session
     mocker.patch.object(KlapTransport, "client_post", side_effect=_return_encrypted)
 
     response = await protocol.query({})
@@ -205,13 +208,13 @@ async def test_handshake1(mocker, device_credentials, expectation):
 
     protocol = IotProtocol("127.0.0.1", credentials=client_credentials)
 
-    protocol.transport.http_client = httpx.AsyncClient()
+    protocol._transport.http_client = httpx.AsyncClient()
     with expectation:
         (
             local_seed,
             device_remote_seed,
             auth_hash,
-        ) = await protocol.transport.perform_handshake1()
+        ) = await protocol._transport.perform_handshake1()
 
         assert local_seed == client_seed
         assert device_remote_seed == server_seed
@@ -241,16 +244,16 @@ async def test_handshake(mocker):
     )
 
     protocol = IotProtocol("127.0.0.1", credentials=client_credentials)
-    protocol.transport.http_client = httpx.AsyncClient()
+    protocol._transport.http_client = httpx.AsyncClient()
 
     response_status = 200
-    await protocol.transport.perform_handshake()
-    assert protocol.transport.handshake_done is True
+    await protocol._transport.perform_handshake()
+    assert protocol._transport._handshake_done is True
 
     response_status = 403
     with pytest.raises(AuthenticationException):
-        await protocol.transport.perform_handshake()
-    assert protocol.transport.handshake_done is False
+        await protocol._transport.perform_handshake()
+    assert protocol._transport._handshake_done is False
     await protocol.close()
 
 
@@ -267,9 +270,9 @@ async def test_query(mocker):
             return _mock_response(200, b"")
         elif url == "http://127.0.0.1/app/request":
             encryption_session = KlapEncryptionSession(
-                protocol.transport.encryption_session.local_seed,
-                protocol.transport.encryption_session.remote_seed,
-                protocol.transport.encryption_session.user_hash,
+                protocol._transport._encryption_session.local_seed,
+                protocol._transport._encryption_session.remote_seed,
+                protocol._transport._encryption_session.user_hash,
             )
             seq = params.get("seq")
             encryption_session._seq = seq - 1

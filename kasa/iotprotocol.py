@@ -29,16 +29,14 @@ class IotProtocol(TPLinkProtocol):
     ) -> None:
         super().__init__(host=host, port=self.DEFAULT_PORT)
 
-        self.credentials: Credentials = (
-            credentials
-            if credentials and credentials.username and credentials.password
-            else Credentials(username="", password="")
+        self._credentials: Credentials = credentials or Credentials(
+            username="", password=""
         )
-        self.transport: BaseTransport = transport or KlapTransport(
-            host, credentials=self.credentials, timeout=timeout
+        self._transport: BaseTransport = transport or KlapTransport(
+            host, credentials=self._credentials, timeout=timeout
         )
 
-        self.query_lock = asyncio.Lock()
+        self._query_lock = asyncio.Lock()
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Query the device retrying for retry_count on failure."""
@@ -46,7 +44,7 @@ class IotProtocol(TPLinkProtocol):
             request = json_dumps(request)
             assert isinstance(request, str)  # noqa: S101
 
-        async with self.query_lock:
+        async with self._query_lock:
             return await self._query(request, retry_count)
 
     async def _query(self, request: str, retry_count: int = 3) -> Dict:
@@ -87,16 +85,16 @@ class IotProtocol(TPLinkProtocol):
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     async def _execute_query(self, request: str, retry_count: int) -> Dict:
-        if self.transport.needs_handshake():
-            await self.transport.handshake()
+        if self._transport.needs_handshake:
+            await self._transport.handshake()
 
-        if self.transport.needs_login():  # This shouln't happen
+        if self._transport.needs_login:  # This shouln't happen
             raise SmartDeviceException(
                 "IOT Protocol needs to login to transport but is not login aware"
             )
 
-        return await self.transport.send(request)
+        return await self._transport.send(request)
 
     async def close(self) -> None:
         """Close the protocol."""
-        await self.transport.close()
+        await self._transport.close()

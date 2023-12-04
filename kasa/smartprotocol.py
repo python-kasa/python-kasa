@@ -39,32 +39,30 @@ class SmartProtocol(TPLinkProtocol):
     ) -> None:
         super().__init__(host=host, port=self.DEFAULT_PORT)
 
-        self.credentials: Credentials = (
-            credentials
-            if credentials and credentials.username and credentials.password
-            else Credentials(username="", password="")
+        self._credentials: Credentials = credentials or Credentials(
+            username="", password=""
         )
-        self.transport: BaseTransport = transport or AesTransport(
-            host, credentials=self.credentials, timeout=timeout
+        self._transport: BaseTransport = transport or AesTransport(
+            host, credentials=self._credentials, timeout=timeout
         )
-        self.terminal_uuid: Optional[str] = None
-        self.request_id_generator = SnowflakeId(1, 1)
-        self.query_lock = asyncio.Lock()
+        self._terminal_uuid: Optional[str] = None
+        self._request_id_generator = SnowflakeId(1, 1)
+        self._query_lock = asyncio.Lock()
 
     def get_smart_request(self, method, params=None) -> str:
         """Get a request message as a string."""
         request = {
             "method": method,
             "params": params,
-            "requestID": self.request_id_generator.generate_id(),
+            "requestID": self._request_id_generator.generate_id(),
             "request_time_milis": round(time.time() * 1000),
-            "terminal_uuid": self.terminal_uuid,
+            "terminal_uuid": self._terminal_uuid,
         }
         return json_dumps(request)
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Query the device retrying for retry_count on failure."""
-        async with self.query_lock:
+        async with self._query_lock:
             resp_dict = await self._query(request, retry_count)
             if "result" in resp_dict:
                 return resp_dict["result"]
@@ -115,18 +113,18 @@ class SmartProtocol(TPLinkProtocol):
             smart_method = request
             smart_params = None
 
-        if self.transport.needs_handshake():
-            await self.transport.handshake()
+        if self._transport.needs_handshake:
+            await self._transport.handshake()
 
-        if self.transport.needs_login():
-            self.terminal_uuid = base64.b64encode(md5(uuid.uuid4().bytes)).decode(
+        if self._transport.needs_login:
+            self._terminal_uuid = base64.b64encode(md5(uuid.uuid4().bytes)).decode(
                 "UTF-8"
             )
             login_request = self.get_smart_request("login_device")
-            await self.transport.login(login_request)
+            await self._transport.login(login_request)
 
         smart_request = self.get_smart_request(smart_method, smart_params)
-        response_data = await self.transport.send(smart_request)
+        response_data = await self._transport.send(smart_request)
 
         _LOGGER.debug(
             "%s << %s",
@@ -138,7 +136,7 @@ class SmartProtocol(TPLinkProtocol):
 
     async def close(self) -> None:
         """Close the protocol."""
-        await self.transport.close()
+        await self._transport.close()
 
 
 class SnowflakeId:

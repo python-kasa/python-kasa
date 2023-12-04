@@ -42,7 +42,7 @@ def md5(payload: bytes) -> bytes:
 
 
 class BaseTransport(ABC):
-    """Base class for all TP-Link KASA-KLAP and TAPO transports."""
+    """Base class for all TP-Link protocol transports."""
 
     def __init__(
         self,
@@ -56,10 +56,12 @@ class BaseTransport(ABC):
         self.port = port
         self.credentials = credentials
 
+    @property
     @abstractmethod
     def needs_handshake(self) -> bool:
         """Return true if the transport needs to do a handshake."""
 
+    @property
     @abstractmethod
     def needs_login(self) -> bool:
         """Return true if the transport needs to do a login."""
