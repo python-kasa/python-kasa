@@ -129,7 +129,11 @@ def json_formatter_cb(result, **kwargs):
     type=click.Choice(DEVICE_TYPES, case_sensitive=False),
 )
 @click.option(
-    "--json", default=False, is_flag=True, help="Output raw device response as JSON."
+    "--json/--no-json",
+    envvar="KASA_JSON",
+    default=False,
+    is_flag=True,
+    help="Output raw device response as JSON.",
 )
 @click.option(
     "--timeout",
@@ -149,14 +153,14 @@ def json_formatter_cb(result, **kwargs):
     "--username",
     default=None,
     required=False,
-    envvar="TPLINK_CLOUD_USERNAME",
+    envvar="KASA_USERNAME",
     help="Username/email address to authenticate to device.",
 )
 @click.option(
     "--password",
     default=None,
     required=False,
-    envvar="TPLINK_CLOUD_PASSWORD",
+    envvar="KASA_PASSWORD",
     help="Password to use to authenticate to device.",
 )
 @click.version_option(package_name="python-kasa")
