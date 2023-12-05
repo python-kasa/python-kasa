@@ -97,7 +97,7 @@
         "owner": "00000000000000000000000000000000"
     },
     "get_current_power": {
-        "current_power": 0
+        "current_power": 2
     },
     "get_device_info": {
         "auto_off_remain_time": 0,
@@ -108,7 +108,7 @@
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": false,
+        "device_on": true,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.2.3 Build 230425 Rel.142542",
         "has_set_location_info": false,
@@ -120,14 +120,14 @@
         "longitude": 0,
         "mac": "00-00-00-00-00-00",
         "model": "P110",
-        "nickname": "IyNNQVNLRUROQU1FIyM=",
+        "nickname": "VGFwb3BsdWc=",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 0,
+        "on_time": 147207,
         "overheated": false,
         "power_protection_status": "normal",
         "region": "Europe/Berlin",
-        "rssi": -51,
-        "signal_level": 2,
+        "rssi": -45,
+        "signal_level": 3,
         "specs": "",
         "ssid": "IyNNQVNLRUROQU1FIyM=",
         "time_diff": 60,
@@ -136,36 +136,36 @@
     "get_device_time": {
         "region": "Europe/Berlin",
         "time_diff": 60,
-        "timestamp": 1701533150
+        "timestamp": 1701788347
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 0,
-            "past7": 0,
-            "today": 0
+            "past30": 91,
+            "past7": 91,
+            "today": 36
         },
         "saved_power": {
-            "past30": 17,
-            "past7": 0,
-            "today": 0
+            "past30": 2380,
+            "past7": 2363,
+            "today": 923
         },
         "time_usage": {
-            "past30": 17,
-            "past7": 0,
-            "today": 0
+            "past30": 2471,
+            "past7": 2454,
+            "today": 959
         }
     },
     "get_energy_usage": {
-        "current_power": 0,
+        "current_power": 2225,
         "electricity_charge": [
             0,
             0,
             0
         ],
-        "local_time": "2023-12-02 17:05:50",
-        "month_energy": 0,
-        "month_runtime": 0,
-        "today_energy": 0,
-        "today_runtime": 0
+        "local_time": "2023-12-05 15:59:07",
+        "month_energy": 91,
+        "month_runtime": 2454,
+        "today_energy": 36,
+        "today_runtime": 959
     }
 }
