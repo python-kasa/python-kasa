@@ -42,19 +42,27 @@ SUPPORTED_SMART_DEVICES = [
 
 SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
 
+# Tapo bulbs
+BULBS_SMART_VARIABLE_TEMP = {"L530"}
+BULBS_SMART_COLOR = {"L530"}
+BULBS_SMART_LIGHT_STRIP = {}
+BULBS_SMART_DIMMABLE = {}
+BULBS_SMART = BULBS_SMART_VARIABLE_TEMP.union(BULBS_SMART_COLOR).union(BULBS_SMART_DIMMABLE).union(BULBS_SMART_LIGHT_STRIP)
 
-LIGHT_STRIPS = {"KL400", "KL430", "KL420"}
-VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL125", "KL130", "KL135", "KL430"}
-COLOR_BULBS = {"LB130", "KL125", "KL130", "KL135", *LIGHT_STRIPS}
+# Kasa (IOT-prefixed) bulbs
+BULBS_IOT_LIGHT_STRIP = {"KL400", "KL430", "KL420"}
+BULBS_IOT_VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL125", "KL130", "KL135", "KL430"}
+BULBS_IOT_COLOR = {"LB130", "KL125", "KL130", "KL135", *BULBS_IOT_LIGHT_STRIP}
+BULBS_IOT_DIMMABLE = {"KL50", "KL60", "LB100", "LB110", "KL110"}
+BULBS_IOT = BULBS_IOT_VARIABLE_TEMP.union(BULBS_IOT_COLOR).union(BULBS_IOT_DIMMABLE).union(BULBS_IOT_LIGHT_STRIP)
+
+BULBS_VARIABLE_TEMP = {*BULBS_SMART_VARIABLE_TEMP, *BULBS_IOT_VARIABLE_TEMP}
+BULBS_COLOR = {*BULBS_SMART_COLOR, *BULBS_IOT_COLOR}
+BULBS_LIGHT_STRIP = {*BULBS_SMART_LIGHT_STRIP, *BULBS_IOT_LIGHT_STRIP}
+
 BULBS = {
-    "KL50",
-    "KL60",
-    "LB100",
-    "LB110",
-    "KL110",
-    *VARIABLE_TEMP,
-    *COLOR_BULBS,
-    *LIGHT_STRIPS,
+    *BULBS_IOT,
+    *BULBS_SMART,
 }
 
 
@@ -82,20 +90,21 @@ WITH_EMETER = {"HS110", "HS300", "KP115", "KP125", *BULBS}
 
 ALL_DEVICES_IOT = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
-BULBS_SMART = {"L530"}
 PLUGS_SMART = {"P110"}
 ALL_DEVICES_SMART = BULBS_SMART.union(PLUGS_SMART)
 
-BULBS = BULBS.union(BULBS_SMART)
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
 IP_MODEL_CACHE: Dict[str, str] = {}
 
 
 def idgenerator(paramtuple):
-    return basename(paramtuple[0]) + (
-        "" if paramtuple[1] == "IOT" else "-" + paramtuple[1]
-    )
+    try:
+        return basename(paramtuple[0]) + (
+            "" if paramtuple[1] == "IOT" else "-" + paramtuple[1]
+        )
+    except:  # TODO: HACK as idgenerator is now used by default
+        return None
 
 
 def filter_model(desc, model_filter, protocol_filter=None):
@@ -110,11 +119,15 @@ def filter_model(desc, model_filter, protocol_filter=None):
                     filtered.append((file, protocol))
 
     filtered_basenames = [basename(f) + "-" + p for f, p in filtered]
-    print(f"{desc}: {filtered_basenames}")
+    print(f"# {desc}")
+    for file in filtered_basenames:
+        print(f"\t{file}")
     return filtered
 
 
 def parametrize(desc, devices, protocol_filter=None, ids=None):
+    if ids is None:
+        ids = idgenerator
     return pytest.mark.parametrize(
         "dev", filter_model(desc, devices, protocol_filter), indirect=True, ids=ids
     )
@@ -123,31 +136,35 @@ def parametrize(desc, devices, protocol_filter=None, ids=None):
 has_emeter = parametrize("has emeter", WITH_EMETER)
 no_emeter = parametrize("no emeter", ALL_DEVICES_IOT - WITH_EMETER)
 
-bulb = parametrize("bulbs", BULBS, ids=idgenerator)
-plug = parametrize("plugs", PLUGS, ids=idgenerator)
-strip = parametrize("strips", STRIPS, ids=idgenerator)
-dimmer = parametrize("dimmers", DIMMERS, ids=idgenerator)
-lightstrip = parametrize("lightstrips", LIGHT_STRIPS, ids=idgenerator)
+bulb = parametrize("bulbs", BULBS, protocol_filter={"SMART", "IOT"})
+plug = parametrize("plugs", PLUGS)
+strip = parametrize("strips", STRIPS)
+dimmer = parametrize("dimmers", DIMMERS)
+lightstrip = parametrize("lightstrips", BULBS_LIGHT_STRIP)
 
 # bulb types
 dimmable = parametrize("dimmable", DIMMABLE)
 non_dimmable = parametrize("non-dimmable", BULBS - DIMMABLE)
-variable_temp = parametrize("variable color temp", VARIABLE_TEMP)
-non_variable_temp = parametrize("non-variable color temp", BULBS - VARIABLE_TEMP)
-color_bulb = parametrize("color bulbs", COLOR_BULBS)
-non_color_bulb = parametrize("non-color bulbs", BULBS - COLOR_BULBS)
+variable_temp = parametrize("variable color temp", BULBS_VARIABLE_TEMP, {"SMART", "IOT"})
+non_variable_temp = parametrize("non-variable color temp", BULBS - BULBS_VARIABLE_TEMP, {"SMART", "IOT"})
+color_bulb = parametrize("color bulbs", BULBS_COLOR, {"SMART", "IOT"})
+non_color_bulb = parametrize("non-color bulbs", BULBS - BULBS_COLOR, {"SMART", "IOT"})
+
+color_bulb_iot = parametrize("color bulbs iot", BULBS_COLOR, {"IOT"})
+variable_temp_iot = parametrize("variable color temp iot", BULBS_VARIABLE_TEMP, {"IOT"})
+bulb_iot = parametrize("bulb devices iot", BULBS_IOT)
 
 plug_smart = parametrize(
-    "plug devices smart", PLUGS_SMART, protocol_filter={"SMART"}, ids=idgenerator
+    "plug devices smart", PLUGS_SMART, protocol_filter={"SMART"}
 )
 bulb_smart = parametrize(
-    "bulb devices smart", BULBS_SMART, protocol_filter={"SMART"}, ids=idgenerator
+    "bulb devices smart", BULBS_SMART, protocol_filter={"SMART"}
 )
 device_smart = parametrize(
-    "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}, ids=idgenerator
+    "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
 device_iot = parametrize(
-    "devices iot", ALL_DEVICES_IOT, protocol_filter={"IOT"}, ids=idgenerator
+    "devices iot", ALL_DEVICES_IOT, protocol_filter={"IOT"}
 )
 
 
@@ -244,7 +261,7 @@ def device_for_file(model, protocol):
                 return SmartPlug
 
         # Light strips are recognized also as bulbs, so this has to go first
-        for d in LIGHT_STRIPS:
+        for d in BULBS_IOT_LIGHT_STRIP:
             if d in model:
                 return SmartLightStrip
 
