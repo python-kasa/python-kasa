@@ -129,7 +129,11 @@ def json_formatter_cb(result, **kwargs):
     type=click.Choice(DEVICE_TYPES, case_sensitive=False),
 )
 @click.option(
-    "--json/--no-json", envvar="KASA_JSON", default=False, is_flag=True, help="Output raw device response as JSON."
+    "--json/--no-json",
+    envvar="KASA_JSON",
+    default=False,
+    is_flag=True,
+    help="Output raw device response as JSON.",
 )
 @click.option(
     "--timeout",
