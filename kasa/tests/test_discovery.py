@@ -15,7 +15,7 @@ from kasa import (
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
 
-from .conftest import bulb, dimmer, lightstrip, plug, strip
+from .conftest import bulb, bulb_iot, dimmer, lightstrip, plug, strip
 
 UNSUPPORTED = {
     "result": {
@@ -46,7 +46,7 @@ async def test_type_detection_plug(dev: SmartDevice):
     assert d.device_type == DeviceType.Plug
 
 
-@bulb
+@bulb_iot
 async def test_type_detection_bulb(dev: SmartDevice):
     d = Discover._get_device_class(dev._last_update)("localhost")
     # TODO: light_strip is a special case for now to force bulb tests on it

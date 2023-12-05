@@ -4,7 +4,9 @@ from kasa import DeviceType, SmartBulb, SmartBulbPreset, SmartDeviceException
 
 from .conftest import (
     bulb,
+    bulb_iot,
     color_bulb,
+    color_bulb_iot,
     dimmable,
     handle_turn_on,
     non_color_bulb,
@@ -12,6 +14,7 @@ from .conftest import (
     non_variable_temp,
     turn_on,
     variable_temp,
+    variable_temp_iot,
 )
 from .newfakes import BULB_SCHEMA, LIGHT_STATE_SCHEMA
 
@@ -38,7 +41,7 @@ async def test_state_attributes(dev: SmartBulb):
     assert dev.state_information["Is dimmable"] == dev.is_dimmable
 
 
-@bulb
+@bulb_iot
 async def test_light_state_without_update(dev: SmartBulb, monkeypatch):
     with pytest.raises(SmartDeviceException):
         monkeypatch.setitem(
@@ -47,7 +50,7 @@ async def test_light_state_without_update(dev: SmartBulb, monkeypatch):
         print(dev.light_state)
 
 
-@bulb
+@bulb_iot
 async def test_get_light_state(dev: SmartBulb):
     LIGHT_STATE_SCHEMA(await dev.get_light_state())
 
@@ -72,7 +75,7 @@ async def test_hsv(dev: SmartBulb, turn_on):
     assert brightness == 1
 
 
-@color_bulb
+@color_bulb_iot
 async def test_set_hsv_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.set_hsv(10, 10, 100, transition=1000)
@@ -138,7 +141,7 @@ async def test_try_set_colortemp(dev: SmartBulb, turn_on):
     assert dev.color_temp == 2700
 
 
-@variable_temp
+@variable_temp_iot
 async def test_set_color_temp_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.set_color_temp(2700, transition=100)
@@ -146,7 +149,7 @@ async def test_set_color_temp_transition(dev: SmartBulb, mocker):
     set_light_state.assert_called_with({"color_temp": 2700}, transition=100)
 
 
-@variable_temp
+@variable_temp_iot
 async def test_unknown_temp_range(dev: SmartBulb, monkeypatch, caplog):
     monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
 
@@ -192,7 +195,7 @@ async def test_dimmable_brightness(dev: SmartBulb, turn_on):
         await dev.set_brightness("foo")
 
 
-@bulb
+@bulb_iot
 async def test_turn_on_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.turn_on(transition=1000)
@@ -204,7 +207,7 @@ async def test_turn_on_transition(dev: SmartBulb, mocker):
     set_light_state.assert_called_with({"on_off": 0}, transition=100)
 
 
-@bulb
+@bulb_iot
 async def test_dimmable_brightness_transition(dev: SmartBulb, mocker):
     set_light_state = mocker.patch("kasa.SmartBulb.set_light_state")
     await dev.set_brightness(10, transition=1000)
@@ -233,7 +236,7 @@ async def test_non_dimmable(dev: SmartBulb):
         await dev.set_brightness(100)
 
 
-@bulb
+@bulb_iot
 async def test_ignore_default_not_set_without_color_mode_change_turn_on(
     dev: SmartBulb, mocker
 ):
@@ -248,7 +251,7 @@ async def test_ignore_default_not_set_without_color_mode_change_turn_on(
     assert args[2] == {"on_off": 0, "ignore_default": 1}
 
 
-@bulb
+@bulb_iot
 async def test_list_presets(dev: SmartBulb):
     presets = dev.presets
     assert len(presets) == len(dev.sys_info["preferred_state"])
@@ -261,7 +264,7 @@ async def test_list_presets(dev: SmartBulb):
         assert preset.color_temp == raw["color_temp"]
 
 
-@bulb
+@bulb_iot
 async def test_modify_preset(dev: SmartBulb, mocker):
     """Verify that modifying preset calls the and exceptions are raised properly."""
     if not dev.presets:
@@ -291,7 +294,7 @@ async def test_modify_preset(dev: SmartBulb, mocker):
         )
 
 
-@bulb
+@bulb_iot
 @pytest.mark.parametrize(
     ("preset", "payload"),
     [
