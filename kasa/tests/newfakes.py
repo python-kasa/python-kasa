@@ -314,7 +314,7 @@ class FakeSmartTransport(BaseTransport):
         request_dict = json_loads(request)
         method = request_dict["method"]
         if method == "component_nego" or method[:4] == "get_":
-            return self.info[method]
+            return {"result": self.info[method]}
         elif method[:4] == "set_":
             _LOGGER.debug("Call %s not implemented, doing nothing", method)
 
