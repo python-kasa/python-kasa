@@ -1,11 +1,18 @@
 """Script that checks if README.md is missing devices that have fixtures."""
-from kasa.tests.conftest import ALL_DEVICES, BULBS, DIMMERS, LIGHT_STRIPS, PLUGS, STRIPS
+from kasa.tests.conftest import (
+    ALL_DEVICES,
+    BULBS,
+    BULBS_IOT_LIGHT_STRIP,
+    DIMMERS,
+    PLUGS,
+    STRIPS,
+)
 
 with open("README.md") as f:
     readme = f.read()
 
 typemap = {
-    "light strips": LIGHT_STRIPS,
+    "light strips": BULBS_IOT_LIGHT_STRIP,
     "bulbs": BULBS,
     "plugs": PLUGS,
     "strips": STRIPS,

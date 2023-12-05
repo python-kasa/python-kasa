@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from json import dumps as json_dumps
 from os.path import basename
 from pathlib import Path, PurePath
-from typing import Dict, Optional
+from typing import Dict, Optional, Set
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
@@ -45,16 +45,32 @@ SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
 # Tapo bulbs
 BULBS_SMART_VARIABLE_TEMP = {"L530"}
 BULBS_SMART_COLOR = {"L530"}
-BULBS_SMART_LIGHT_STRIP = {}
-BULBS_SMART_DIMMABLE = {}
-BULBS_SMART = BULBS_SMART_VARIABLE_TEMP.union(BULBS_SMART_COLOR).union(BULBS_SMART_DIMMABLE).union(BULBS_SMART_LIGHT_STRIP)
+BULBS_SMART_LIGHT_STRIP: Set[str] = set()
+BULBS_SMART_DIMMABLE: Set[str] = set()
+BULBS_SMART = (
+    BULBS_SMART_VARIABLE_TEMP.union(BULBS_SMART_COLOR)
+    .union(BULBS_SMART_DIMMABLE)
+    .union(BULBS_SMART_LIGHT_STRIP)
+)
 
 # Kasa (IOT-prefixed) bulbs
 BULBS_IOT_LIGHT_STRIP = {"KL400", "KL430", "KL420"}
-BULBS_IOT_VARIABLE_TEMP = {"LB120", "LB130", "KL120", "KL125", "KL130", "KL135", "KL430"}
+BULBS_IOT_VARIABLE_TEMP = {
+    "LB120",
+    "LB130",
+    "KL120",
+    "KL125",
+    "KL130",
+    "KL135",
+    "KL430",
+}
 BULBS_IOT_COLOR = {"LB130", "KL125", "KL130", "KL135", *BULBS_IOT_LIGHT_STRIP}
 BULBS_IOT_DIMMABLE = {"KL50", "KL60", "LB100", "LB110", "KL110"}
-BULBS_IOT = BULBS_IOT_VARIABLE_TEMP.union(BULBS_IOT_COLOR).union(BULBS_IOT_DIMMABLE).union(BULBS_IOT_LIGHT_STRIP)
+BULBS_IOT = (
+    BULBS_IOT_VARIABLE_TEMP.union(BULBS_IOT_COLOR)
+    .union(BULBS_IOT_DIMMABLE)
+    .union(BULBS_IOT_LIGHT_STRIP)
+)
 
 BULBS_VARIABLE_TEMP = {*BULBS_SMART_VARIABLE_TEMP, *BULBS_IOT_VARIABLE_TEMP}
 BULBS_COLOR = {*BULBS_SMART_COLOR, *BULBS_IOT_COLOR}
@@ -103,7 +119,7 @@ def idgenerator(paramtuple):
         return basename(paramtuple[0]) + (
             "" if paramtuple[1] == "IOT" else "-" + paramtuple[1]
         )
-    except:  # TODO: HACK as idgenerator is now used by default
+    except:  # TODO: HACK as idgenerator is now used by default  # noqa: E722
         return None
 
 
@@ -145,8 +161,12 @@ lightstrip = parametrize("lightstrips", BULBS_LIGHT_STRIP)
 # bulb types
 dimmable = parametrize("dimmable", DIMMABLE)
 non_dimmable = parametrize("non-dimmable", BULBS - DIMMABLE)
-variable_temp = parametrize("variable color temp", BULBS_VARIABLE_TEMP, {"SMART", "IOT"})
-non_variable_temp = parametrize("non-variable color temp", BULBS - BULBS_VARIABLE_TEMP, {"SMART", "IOT"})
+variable_temp = parametrize(
+    "variable color temp", BULBS_VARIABLE_TEMP, {"SMART", "IOT"}
+)
+non_variable_temp = parametrize(
+    "non-variable color temp", BULBS - BULBS_VARIABLE_TEMP, {"SMART", "IOT"}
+)
 color_bulb = parametrize("color bulbs", BULBS_COLOR, {"SMART", "IOT"})
 non_color_bulb = parametrize("non-color bulbs", BULBS - BULBS_COLOR, {"SMART", "IOT"})
 
@@ -154,18 +174,12 @@ color_bulb_iot = parametrize("color bulbs iot", BULBS_COLOR, {"IOT"})
 variable_temp_iot = parametrize("variable color temp iot", BULBS_VARIABLE_TEMP, {"IOT"})
 bulb_iot = parametrize("bulb devices iot", BULBS_IOT)
 
-plug_smart = parametrize(
-    "plug devices smart", PLUGS_SMART, protocol_filter={"SMART"}
-)
-bulb_smart = parametrize(
-    "bulb devices smart", BULBS_SMART, protocol_filter={"SMART"}
-)
+plug_smart = parametrize("plug devices smart", PLUGS_SMART, protocol_filter={"SMART"})
+bulb_smart = parametrize("bulb devices smart", BULBS_SMART, protocol_filter={"SMART"})
 device_smart = parametrize(
     "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
-device_iot = parametrize(
-    "devices iot", ALL_DEVICES_IOT, protocol_filter={"IOT"}
-)
+device_iot = parametrize("devices iot", ALL_DEVICES_IOT, protocol_filter={"IOT"})
 
 
 def get_fixture_data():
