@@ -146,6 +146,17 @@ class TapoBulb(TapoDevice, SmartBulb):
         if not self.is_color:
             raise SmartDeviceException("Bulb does not support color.")
 
+        if not isinstance(hue, int) or not (0 <= hue <= 360):
+            raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
+
+        if not isinstance(saturation, int) or not (0 <= saturation <= 100):
+            raise ValueError(
+                f"Invalid saturation value: {saturation} (valid range: 0-100%)"
+            )
+
+        if value is not None:
+            self._raise_for_invalid_brightness(value)
+
         return await self.protocol.query(
             {
                 "set_device_info": {
@@ -170,6 +181,14 @@ class TapoBulb(TapoDevice, SmartBulb):
         #  with color_temp causes error -1008
         if not self.is_variable_color_temp:
             raise SmartDeviceException("Bulb does not support colortemp.")
+
+        valid_temperature_range = self.valid_temperature_range
+        if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
+            raise ValueError(
+                "Temperature should be between {} and {}, was {}".format(
+                    *valid_temperature_range, temp
+                )
+            )
 
         return await self.protocol.query({"set_device_info": {"color_temp": temp}})
 
