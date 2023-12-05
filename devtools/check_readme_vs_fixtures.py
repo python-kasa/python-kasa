@@ -2,8 +2,8 @@
 from kasa.tests.conftest import (
     ALL_DEVICES,
     BULBS,
-    BULBS_IOT_LIGHT_STRIP,
     DIMMERS,
+    LIGHT_STRIPS,
     PLUGS,
     STRIPS,
 )
@@ -12,7 +12,7 @@ with open("README.md") as f:
     readme = f.read()
 
 typemap = {
-    "light strips": BULBS_IOT_LIGHT_STRIP,
+    "light strips": LIGHT_STRIPS,
     "bulbs": BULBS,
     "plugs": PLUGS,
     "strips": STRIPS,

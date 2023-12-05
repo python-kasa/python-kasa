@@ -74,8 +74,9 @@ BULBS_IOT = (
 
 BULBS_VARIABLE_TEMP = {*BULBS_SMART_VARIABLE_TEMP, *BULBS_IOT_VARIABLE_TEMP}
 BULBS_COLOR = {*BULBS_SMART_COLOR, *BULBS_IOT_COLOR}
-BULBS_LIGHT_STRIP = {*BULBS_SMART_LIGHT_STRIP, *BULBS_IOT_LIGHT_STRIP}
 
+
+LIGHT_STRIPS = {*BULBS_SMART_LIGHT_STRIP, *BULBS_IOT_LIGHT_STRIP}
 BULBS = {
     *BULBS_IOT,
     *BULBS_SMART,
@@ -156,7 +157,7 @@ bulb = parametrize("bulbs", BULBS, protocol_filter={"SMART", "IOT"})
 plug = parametrize("plugs", PLUGS)
 strip = parametrize("strips", STRIPS)
 dimmer = parametrize("dimmers", DIMMERS)
-lightstrip = parametrize("lightstrips", BULBS_LIGHT_STRIP)
+lightstrip = parametrize("lightstrips", LIGHT_STRIPS)
 
 # bulb types
 dimmable = parametrize("dimmable", DIMMABLE)
