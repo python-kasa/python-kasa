@@ -118,6 +118,8 @@ class KlapTransport(BaseTransport):
 
     async def client_post(self, url, params=None, data=None):
         """Send an http post request to the device."""
+        if not self._http_client:
+            self._http_client = httpx.AsyncClient()
         response_data = None
         cookies = None
         if self._session_cookie:

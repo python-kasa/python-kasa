@@ -32,7 +32,7 @@ class _mock_response:
 async def test_protocol_retries(mocker, retry_count, protocol_class, transport_class):
     host = "127.0.0.1"
     conn = mocker.patch.object(
-        transport_class, "client_post", side_effect=Exception("dummy exception")
+        httpx.AsyncClient, "post", side_effect=Exception("dummy exception")
     )
     with pytest.raises(SmartDeviceException):
         await protocol_class(host, transport=transport_class(host)).query(
@@ -49,8 +49,8 @@ async def test_protocol_no_retry_on_connection_error(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(
-        transport_class,
-        "client_post",
+        httpx.AsyncClient,
+        "post",
         side_effect=httpx.ConnectError("foo"),
     )
     with pytest.raises(SmartDeviceException):
@@ -68,8 +68,8 @@ async def test_protocol_retry_recoverable_error(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(
-        transport_class,
-        "client_post",
+        httpx.AsyncClient,
+        "post",
         side_effect=httpx.CloseError("foo"),
     )
     with pytest.raises(SmartDeviceException):
