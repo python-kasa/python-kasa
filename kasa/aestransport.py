@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padd
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .credentials import Credentials
+from .connectionparams import ConnectionParameters
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
@@ -48,7 +48,6 @@ class AesTransport(BaseTransport):
     """
 
     DEFAULT_PORT = 80
-    DEFAULT_TIMEOUT = 5
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     COMMON_HEADERS = {
         "Content-Type": "application/json",
@@ -58,28 +57,22 @@ class AesTransport(BaseTransport):
 
     def __init__(
         self,
-        host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        cparams: ConnectionParameters,
     ) -> None:
-        super().__init__(
-            host,
-            port=port or self.DEFAULT_PORT,
-            credentials=credentials,
-            timeout=timeout,
-        )
+        super().__init__(cparams=cparams)
+        self._port = cparams.port or self.DEFAULT_PORT
 
+        self._http_client: httpx.AsyncClient = (
+            cparams.http_client or httpx.AsyncClient()
+        )
         self._handshake_done = False
 
         self._encryption_session: Optional[AesEncyptionSession] = None
         self._session_expire_at: Optional[float] = None
 
-        self._timeout = timeout if timeout else self.DEFAULT_TIMEOUT
         self._session_cookie = None
 
-        self._http_client: httpx.AsyncClient = httpx.AsyncClient()
         self._login_token = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
@@ -102,8 +95,6 @@ class AesTransport(BaseTransport):
 
     async def client_post(self, url, params=None, data=None, json=None, headers=None):
         """Send an http post request to the device."""
-        if not self._http_client:
-            self._http_client = httpx.AsyncClient()
         response_data = None
         cookies = None
         if self._session_cookie:

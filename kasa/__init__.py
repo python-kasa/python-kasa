@@ -13,6 +13,12 @@ to be handled by the user of the library.
 """
 from importlib.metadata import version
 
+from kasa.connectionparams import (
+    ConnectionParameters,
+    ConnectionType,
+    DeviceFamilyType,
+    EncryptType,
+)
 from kasa.credentials import Credentials
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
@@ -55,4 +61,8 @@ __all__ = [
     "AuthenticationException",
     "UnsupportedDeviceException",
     "Credentials",
+    "ConnectionParameters",
+    "ConnectionType",
+    "EncryptType",
+    "DeviceFamilyType",
 ]

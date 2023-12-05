@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Set, cast
 
 from ..aestransport import AesTransport
+from ..connectionparams import ConnectionParameters
 from ..credentials import Credentials
 from ..exceptions import AuthenticationException
 from ..smartdevice import SmartDevice
@@ -28,11 +29,14 @@ class TapoDevice(SmartDevice):
         self._components: Optional[Dict[str, Any]] = None
         self._state_information: Dict[str, Any] = {}
         self._discovery_info: Optional[Dict[str, Any]] = None
+        cparams = ConnectionParameters(
+            host=host,
+            port=port,
+            credentials=credentials,  # type: ignore[arg-type]
+            timeout=timeout,
+        )
         self.protocol = SmartProtocol(
-            host,
-            transport=AesTransport(
-                host, credentials=credentials, timeout=timeout, port=port
-            ),
+            transport=AesTransport(cparams=cparams),
         )
 
     async def update(self, update_children: bool = True):
@@ -66,7 +70,7 @@ class TapoDevice(SmartDevice):
     @property
     def sys_info(self) -> Dict[str, Any]:
         """Returns the device info."""
-        return self._info
+        return self._info  # type: ignore
 
     @property
     def model(self) -> str:
@@ -135,7 +139,7 @@ class TapoDevice(SmartDevice):
     @property
     def device_id(self) -> str:
         """Return the device id."""
-        return str(self._info.get("device_id"))
+        return str(self._info.get("device_id"))  # type: ignore
 
     @property
     def internal_state(self) -> Any:
@@ -180,3 +184,4 @@ class TapoDevice(SmartDevice):
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
         self._discovery_info = info
+        self._info = info

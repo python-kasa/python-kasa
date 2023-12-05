@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 import kasa
-from kasa import Credentials, SmartDevice, SmartDeviceException
+from kasa import ConnectionParameters, Credentials, SmartDevice, SmartDeviceException
 from kasa.smartdevice import DeviceType
 
 from .conftest import device_iot, handle_turn_on, has_emeter, no_emeter_iot, turn_on
@@ -238,22 +238,18 @@ async def test_create_smart_device_with_timeout():
 async def test_create_thin_wrapper():
     """Make sure thin wrapper is created with the correct device type."""
     mock = Mock()
-    with patch("kasa.device_factory.connect", return_value=mock) as connect:
-        dev = await SmartDevice.connect(
-            host="test_host",
-            port=1234,
-            timeout=100,
-            credentials=Credentials("username", "password"),
-            device_type=DeviceType.Strip,
-        )
-        assert dev is mock
-
-    connect.assert_called_once_with(
+    cparams = ConnectionParameters(
         host="test_host",
         port=1234,
         timeout=100,
         credentials=Credentials("username", "password"),
-        device_type=DeviceType.Strip,
+    )
+    with patch("kasa.device_factory.connect", return_value=mock) as connect:
+        dev = await SmartDevice.connect(cparams=cparams)
+        assert dev is mock
+
+    connect.assert_called_once_with(
+        cparams=cparams,
     )
 
 

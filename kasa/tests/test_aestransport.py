@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 
 from ..aestransport import AesEncyptionSession, AesTransport
+from ..connectionparams import ConnectionParameters
 from ..credentials import Credentials
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
@@ -58,7 +59,9 @@ async def test_handshake(
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
 
-    transport = AesTransport(host=host, credentials=Credentials("foo", "bar"))
+    transport = AesTransport(
+        cparams=ConnectionParameters(host, credentials=Credentials("foo", "bar"))
+    )
 
     assert transport._encryption_session is None
     assert transport._handshake_done is False
@@ -74,7 +77,9 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
 
-    transport = AesTransport(host=host, credentials=Credentials("foo", "bar"))
+    transport = AesTransport(
+        cparams=ConnectionParameters(host, credentials=Credentials("foo", "bar"))
+    )
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
@@ -91,13 +96,14 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
 
-    transport = AesTransport(host=host, credentials=Credentials("foo", "bar"))
+    transport = AesTransport(
+        cparams=ConnectionParameters(host, credentials=Credentials("foo", "bar"))
+    )
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
     transport._login_token = mock_aes_device.token
 
-    un, pw = transport.hash_credentials(True)
     request = {
         "method": "get_device_info",
         "params": None,

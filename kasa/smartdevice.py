@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set
 
+from .connectionparams import ConnectionParameters
 from .credentials import Credentials
 from .device_type import DeviceType
 from .emeterstatus import EmeterStatus
@@ -201,8 +202,9 @@ class SmartDevice:
         """
         self.host = host
         self.port = port
+        cparams = ConnectionParameters(host=host, port=port, timeout=timeout)
         self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(
-            host, transport=_XorTransport(host, port=port, timeout=timeout)
+            transport=_XorTransport(cparams=cparams),
         )
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
@@ -394,7 +396,7 @@ class SmartDevice:
         """
         return self._sys_info  # type: ignore
 
-    @property  # type: ignore
+    @property
     @requires_update
     def model(self) -> str:
         """Return device model."""
@@ -760,7 +762,7 @@ class SmartDevice:
         The returned object contains the raw results from the last update call.
         This should only be used for debugging purposes.
         """
-        return self._last_update
+        return self._last_update or self._discovery_info
 
     def __repr__(self):
         if self._last_update is None:
@@ -771,19 +773,21 @@ class SmartDevice:
             f" - dev specific: {self.state_information}>"
         )
 
+    @property
+    def connection_parameters(self) -> ConnectionParameters:
+        """Return the connection parameters the device is using."""
+        return self.protocol.connection_parameters
+
     @staticmethod
     async def connect(
-        host: str,
         *,
-        port: Optional[int] = None,
-        timeout=5,
-        credentials: Optional[Credentials] = None,
-        device_type: Optional[DeviceType] = None,
+        host: Optional[str] = None,
+        cparams: Optional[ConnectionParameters] = None,
     ) -> "SmartDevice":
-        """Connect to a single device by the given IP address.
+        """Connect to a single device by the given hostname or connection parameters.
 
         This method avoids the UDP based discovery process and
-        will connect directly to the device to query its type.
+        will connect directly to the device.
 
         It is generally preferred to avoid :func:`discover_single()` and
         use this function instead as it should perform better when
@@ -793,19 +797,17 @@ class SmartDevice:
         The device type is discovered by querying the device.
 
         :param host: Hostname of device to query
-        :param device_type: Device type to use for the device.
-            If not given, the device type is discovered by querying the device.
-            If the device type is already known, it is preferred to pass it
-            to avoid the extra query to the device to discover its type.
+        :param cparams: Connection parameters to ensure the correct protocol
+            and connection options are used.
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
         from .device_factory import connect  # pylint: disable=import-outside-toplevel
 
-        return await connect(
-            host=host,
-            port=port,
-            timeout=timeout,
-            credentials=credentials,
-            device_type=device_type,
-        )
+        if host and cparams or (not host and not cparams):
+            raise SmartDeviceException(
+                "One of host or cparams must be provded and not both"
+            )
+        if host:
+            cparams = ConnectionParameters(host=host)
+        return await connect(cparams=cparams)  # type: ignore[arg-type]

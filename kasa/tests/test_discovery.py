@@ -1,21 +1,29 @@
 # type: ignore
+import logging
 import re
 import socket
 
+import httpx
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
+    Credentials,
     DeviceType,
     Discover,
     SmartDevice,
     SmartDeviceException,
-    SmartStrip,
     protocol,
+)
+from kasa.connectionparams import (
+    ConnectionParameters,
+    ConnectionType,
+    DeviceFamilyType,
+    EncryptType,
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
 
-from .conftest import bulb, bulb_iot, dimmer, lightstrip, plug, strip
+from .conftest import bulb, bulb_iot, dimmer, lightstrip, new_discovery, plug, strip
 
 UNSUPPORTED = {
     "result": {
@@ -89,13 +97,23 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     host = "127.0.0.1"
     discovery_mock.ip = host
     discovery_mock.port_override = custom_port
-    update_mock = mocker.patch.object(SmartStrip, "update")
 
-    x = await Discover.discover_single(host, port=custom_port)
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    update_mock = mocker.patch.object(device_class, "update")
+
+    x = await Discover.discover_single(
+        host, port=custom_port, credentials=Credentials("", "")
+    )
     assert issubclass(x.__class__, SmartDevice)
     assert x._discovery_info is not None
     assert x.port == custom_port or x.port == discovery_mock.default_port
-    assert (update_mock.call_count > 0) == isinstance(x, SmartStrip)
+    assert update_mock.call_count == 0
+
+    ct = ConnectionType.from_values(
+        discovery_mock.device_type, discovery_mock.encrypt_type
+    )
+    cp = ConnectionParameters(host=host, port=custom_port, connection_type=ct)
+    assert x.connection_parameters == cp
 
 
 async def test_discover_single_hostname(discovery_mock, mocker):
@@ -104,47 +122,39 @@ async def test_discover_single_hostname(discovery_mock, mocker):
     ip = "127.0.0.1"
 
     discovery_mock.ip = ip
-    update_mock = mocker.patch.object(SmartStrip, "update")
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    update_mock = mocker.patch.object(device_class, "update")
 
-    x = await Discover.discover_single(host)
+    x = await Discover.discover_single(host, credentials=Credentials("", ""))
     assert issubclass(x.__class__, SmartDevice)
     assert x._discovery_info is not None
     assert x.host == host
-    assert (update_mock.call_count > 0) == isinstance(x, SmartStrip)
+    assert update_mock.call_count == 0
 
     mocker.patch("socket.getaddrinfo", side_effect=socket.gaierror())
     with pytest.raises(SmartDeviceException):
-        x = await Discover.discover_single(host)
+        x = await Discover.discover_single(host, credentials=Credentials("", ""))
 
 
-async def test_discover_single_unsupported(mocker):
+async def test_discover_single_unsupported(unsupported_device_info, mocker):
     """Make sure that discover_single handles unsupported devices correctly."""
     host = "127.0.0.1"
 
-    def mock_discover(self):
-        if discovery_data:
-            data = (
-                b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
-                + json_dumps(discovery_data).encode()
-            )
-            self.datagram_received(data, (host, 20002))
-
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
-
     # Test with a valid unsupported response
-    discovery_data = UNSUPPORTED
     with pytest.raises(
         UnsupportedDeviceException,
-        match=f"Unsupported device {host} of type SMART.TAPOXMASTREE: {re.escape(str(UNSUPPORTED))}",
     ):
         await Discover.discover_single(host)
 
-    # Test with no response
-    discovery_data = None
+
+async def test_discover_single_no_response(mocker):
+    """Make sure that discover_single handles no response correctly."""
+    host = "127.0.0.1"
+    mocker.patch.object(_DiscoverProtocol, "do_discover")
     with pytest.raises(
         SmartDeviceException, match=f"Timed out getting discovery response for {host}"
     ):
-        await Discover.discover_single(host, timeout=0.001)
+        await Discover.discover_single(host, discovery_timeout=0)
 
 
 INVALIDS = [
@@ -241,52 +251,83 @@ AUTHENTICATION_DATA_KLAP = {
 }
 
 
-async def test_discover_single_authentication(mocker):
+@new_discovery
+async def test_discover_single_authentication(discovery_mock, mocker):
     """Make sure that discover_single handles authenticating devices correctly."""
     host = "127.0.0.1"
-
-    def mock_discover(self):
-        if discovery_data:
-            data = (
-                b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
-                + json_dumps(discovery_data).encode()
-            )
-            self.datagram_received(data, (host, 20002))
-
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    discovery_mock.ip = host
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
     mocker.patch.object(
-        SmartDevice,
+        device_class,
         "update",
         side_effect=AuthenticationException("Failed to authenticate"),
     )
 
-    # Test with a valid unsupported response
-    discovery_data = AUTHENTICATION_DATA_KLAP
     with pytest.raises(
         AuthenticationException,
         match="Failed to authenticate",
     ):
-        device = await Discover.discover_single(host)
+        device = await Discover.discover_single(
+            host, credentials=Credentials("foo", "bar")
+        )
         await device.update()
 
-    mocker.patch.object(SmartDevice, "update")
-    device = await Discover.discover_single(host)
+    mocker.patch.object(device_class, "update")
+    device = await Discover.discover_single(host, credentials=Credentials("foo", "bar"))
     await device.update()
-    assert device.device_type == DeviceType.Plug
+    assert isinstance(device, device_class)
 
 
-async def test_device_update_from_new_discovery_info():
+@new_discovery
+async def test_device_update_from_new_discovery_info(discovery_data):
     device = SmartDevice("127.0.0.7")
-    discover_info = DiscoveryResult(**AUTHENTICATION_DATA_KLAP["result"])
+    discover_info = DiscoveryResult(**discovery_data["result"])
     discover_dump = discover_info.get_dict()
+    discover_dump["alias"] = "foobar"
+    discover_dump["model"] = discover_dump["device_model"]
     device.update_from_discover_info(discover_dump)
 
-    assert device.alias == discover_dump["alias"]
+    assert device.alias == "foobar"
     assert device.mac == discover_dump["mac"].replace("-", ":")
-    assert device.model == discover_dump["model"]
+    assert device.model == discover_dump["device_model"]
 
     with pytest.raises(
         SmartDeviceException,
         match=re.escape("You need to await update() to access the data"),
     ):
         assert device.supported_modules
+
+
+async def test_discover_single_http_client(discovery_mock, mocker):
+    """Make sure that discover_single returns an initialized SmartDevice instance."""
+    host = "127.0.0.1"
+    discovery_mock.ip = host
+
+    http_client = httpx.AsyncClient()
+
+    x = await Discover.discover_single(host)
+    if discovery_mock.default_port == 20002:
+        assert x.protocol._transport._http_client != http_client
+
+    x = await Discover.discover_single(host, httpx_asyncclient=http_client)
+    if discovery_mock.default_port == 20002:
+        assert x.protocol._transport._http_client == http_client
+
+
+async def test_discover_http_client(discovery_mock, mocker):
+    """Make sure that discover_single returns an initialized SmartDevice instance."""
+    host = "127.0.0.1"
+    discovery_mock.ip = host
+
+    http_client = httpx.AsyncClient()
+
+    def gen():
+        return http_client
+
+    devs = await Discover.discover(discovery_timeout=0)
+    if discovery_mock.default_port == 20002:
+        assert devs[host].protocol._transport._http_client != http_client
+
+    devs = await Discover.discover(discovery_timeout=0, http_client_generator=gen)
+    if discovery_mock.default_port == 20002:
+        assert devs[host].protocol._transport._http_client == http_client

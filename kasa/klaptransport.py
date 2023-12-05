@@ -53,6 +53,7 @@ import httpx
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from .connectionparams import ConnectionParameters
 from .credentials import Credentials
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import loads as json_loads
@@ -84,25 +85,21 @@ class KlapTransport(BaseTransport):
 
     DEFAULT_PORT = 80
     DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
+
     KASA_SETUP_EMAIL = "kasa@tp-link.net"
     KASA_SETUP_PASSWORD = "kasaSetup"  # noqa: S105
     SESSION_COOKIE_NAME = "TP_SESSIONID"
 
     def __init__(
         self,
-        host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        cparams: ConnectionParameters,
     ) -> None:
-        super().__init__(
-            host,
-            port=port or self.DEFAULT_PORT,
-            credentials=credentials,
-            timeout=timeout,
+        super().__init__(cparams=cparams)
+        self._port = cparams.port or self.DEFAULT_PORT
+        self._http_client: httpx.AsyncClient = (
+            cparams.http_client or httpx.AsyncClient()
         )
-
         self._local_seed: Optional[bytes] = None
         self._local_auth_hash = self.generate_auth_hash(self._credentials)
         self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
@@ -116,14 +113,11 @@ class KlapTransport(BaseTransport):
         self._session_expire_at: Optional[float] = None
 
         self._session_cookie = None
-        self._http_client: httpx.AsyncClient = httpx.AsyncClient()
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
 
     async def client_post(self, url, params=None, data=None):
         """Send an http post request to the device."""
-        if not self._http_client:
-            self._http_client = httpx.AsyncClient()
         response_data = None
         cookies = None
         if self._session_cookie:
@@ -390,7 +384,7 @@ class KlapTransport(BaseTransport):
         return md5(un.encode())
 
 
-class TPlinkKlapTransportV2(KlapTransport):
+class KlapTransportV2(KlapTransport):
     """Implementation of the KLAP encryption protocol with v2 hanshake hashes."""
 
     @staticmethod

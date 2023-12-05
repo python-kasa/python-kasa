@@ -4,10 +4,26 @@ import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
 
-from kasa import AuthenticationException, SmartDevice, UnsupportedDeviceException
-from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
-from kasa.device_factory import DEVICE_TYPE_TO_CLASS
-from kasa.discover import Discover
+from kasa import (
+    AuthenticationException,
+    Credentials,
+    SmartDevice,
+    TPLinkSmartHomeProtocol,
+    UnsupportedDeviceException,
+)
+from kasa.cli import (
+    TYPE_TO_CLASS,
+    alias,
+    brightness,
+    cli,
+    emeter,
+    raw_command,
+    state,
+    sysinfo,
+    toggle,
+)
+from kasa.discover import Discover, DiscoveryResult
+from kasa.smartprotocol import SmartProtocol
 
 from .conftest import device_iot, handle_turn_on, new_discovery, turn_on
 
@@ -145,9 +161,11 @@ async def test_credentials(discovery_mock, mocker):
             )
 
     mocker.patch("kasa.cli.state", new=_state)
-    for subclass in DEVICE_TYPE_TO_CLASS.values():
-        mocker.patch.object(subclass, "update")
 
+    mocker.patch("kasa.IotProtocol.query", return_value=discovery_mock.query_data)
+    mocker.patch("kasa.SmartProtocol.query", return_value=discovery_mock.query_data)
+
+    dr = DiscoveryResult(**discovery_mock.discovery_data["result"])
     runner = CliRunner()
     res = await runner.invoke(
         cli,
@@ -158,6 +176,10 @@ async def test_credentials(discovery_mock, mocker):
             "foo",
             "--password",
             "bar",
+            "--device-family",
+            dr.device_type,
+            "--encrypt-type",
+            dr.mgt_encrypt_schm.encrypt_type,
         ],
     )
     assert res.exit_code == 0
@@ -166,7 +188,7 @@ async def test_credentials(discovery_mock, mocker):
 
 
 @device_iot
-async def test_without_device_type(discovery_data: dict, dev, mocker):
+async def test_without_device_type(dev, mocker):
     """Test connecting without the device type."""
     runner = CliRunner()
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
@@ -342,3 +364,27 @@ async def test_host_auth_failed(discovery_mock, mocker):
 
     assert res.exit_code != 0
     assert isinstance(res.exception, AuthenticationException)
+
+
+@pytest.mark.parametrize("device_type", list(TYPE_TO_CLASS))
+async def test_type_param(device_type, mocker):
+    """Test for handling only one of username or password supplied."""
+    runner = CliRunner()
+
+    result_device = FileNotFoundError
+    pass_dev = click.make_pass_decorator(SmartDevice)
+
+    @pass_dev
+    async def _state(dev: SmartDevice):
+        nonlocal result_device
+        result_device = dev
+
+    mocker.patch("kasa.cli.state", new=_state)
+    expected_type = TYPE_TO_CLASS[device_type]
+    mocker.patch.object(expected_type, "update")
+    res = await runner.invoke(
+        cli,
+        ["--type", device_type, "--host", "127.0.0.1"],
+    )
+    assert res.exit_code == 0
+    assert isinstance(result_device, expected_type)

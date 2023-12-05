@@ -15,6 +15,8 @@ from voluptuous import (
     Schema,
 )
 
+from ..connectionparams import ConnectionParameters
+from ..credentials import Credentials
 from ..protocol import BaseTransport, TPLinkSmartHomeProtocol
 from ..smartprotocol import SmartProtocol
 
@@ -290,7 +292,9 @@ TIME_MODULE = {
 
 class FakeSmartProtocol(SmartProtocol):
     def __init__(self, info):
-        super().__init__("127.0.0.123", transport=FakeSmartTransport(info))
+        super().__init__(
+            transport=FakeSmartTransport(info),
+        )
 
     async def query(self, request, retry_count: int = 3):
         """Implement query here so can still patch SmartProtocol.query."""
@@ -301,7 +305,9 @@ class FakeSmartProtocol(SmartProtocol):
 class FakeSmartTransport(BaseTransport):
     def __init__(self, info):
         super().__init__(
-            "127.0.0.123",
+            cparams=ConnectionParameters(
+                "127.0.0.123", credentials=Credentials("", "")
+            ),
         )
         self.info = info
 
