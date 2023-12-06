@@ -116,7 +116,7 @@ Options:
   --help                Show this message and exit.
 ```
 
- 
+
 ### Bulbs
 
 Common commands for bulbs and light strips include:
@@ -131,10 +131,10 @@ Some devices support `--transition` option to perform a smooth state change.
 For example, the following turns the light to 30% brightness over a period of five seconds:
 ```
 $ kasa --host <addr> brightness --transition 5000 30
-``` 
+```
 
 See `--help` for additional options and [the documentation](https://python-kasa.readthedocs.io/en/latest/smartbulb.html) for more details about supported features and limitations.
- 
+
 ### Power strips
 
 Each individual socket can be controlled separately by passing `--index` or `--name` to the command.
@@ -147,7 +147,7 @@ $ kasa --host <addr> off --name 'Socket1'  # turns off socket named 'Socket1'
 ```
 
 See `--help` for additional options and [the documentation](https://python-kasa.readthedocs.io/en/latest/smartstrip.html) for more details about supported features and limitations.
- 
+
 
 ## Energy meter
 
