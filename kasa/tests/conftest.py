@@ -378,7 +378,7 @@ def pytest_addoption(parser):
         "--ip", action="store", default=None, help="run against device on given ip"
     )
     parser.addoption(
-        "--username", action="store", default=None, help="tapo authentication username"
+        "--username", action="store", default=None, help="authentication username"
     )
     parser.addoption(
         "--password", action="store", default=None, help="tapo authentication password"
