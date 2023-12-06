@@ -381,7 +381,7 @@ def pytest_addoption(parser):
         "--username", action="store", default=None, help="authentication username"
     )
     parser.addoption(
-        "--password", action="store", default=None, help="tapo authentication password"
+        "--password", action="store", default=None, help="authentication password"
     )
 
 
