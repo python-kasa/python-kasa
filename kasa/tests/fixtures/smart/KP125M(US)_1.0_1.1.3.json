@@ -124,7 +124,7 @@
         "longitude": 0,
         "mac": "00-00-00-00-00-00",
         "model": "KP125M",
-        "nickname": "VXNlciBHaXZlbiBOYW1l",
+        "nickname": "IyNNQVNLRUROQU1FIyM=",
         "oem_id": "00000000000000000000000000000000",
         "on_time": 5332,
         "overheated": false,
@@ -133,7 +133,7 @@
         "rssi": -62,
         "signal_level": 2,
         "specs": "",
-        "ssid": "VXNlciBHaXZlbiBTU0lE",
+        "ssid": "IyNNQVNLRUROQU1FIyM=",
         "time_diff": -360,
         "type": "SMART.KASAPLUG"
     },
