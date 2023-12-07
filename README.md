@@ -5,9 +5,11 @@
 [![codecov](https://codecov.io/gh/python-kasa/python-kasa/branch/master/graph/badge.svg?token=5K7rtN5OmS)](https://codecov.io/gh/python-kasa/python-kasa)
 [![Documentation Status](https://readthedocs.org/projects/python-kasa/badge/?version=latest)](https://python-kasa.readthedocs.io/en/latest/?badge=latest)
 
-python-kasa is a Python library to control TPLink's kasa-branded smart home devices (plugs, wall switches, power strips, and bulbs) using asyncio.
+python-kasa is a Python library to control TPLink's smart home devices (plugs, wall switches, power strips, and bulbs).
 
 This is a voluntary, community-driven effort and is not affiliated, sponsored, or endorsed by TPLink.
+
+**Contributions in any form (adding missing features, reporting issues, fixing or triaging existing ones, improving the documentation, or device donations) are more than welcome!**
 
 ---
 
@@ -32,44 +34,126 @@ cd python-kasa/
 poetry install
 ```
 
+If you have not yet provisioned your device, [you can do so using the cli tool](https://python-kasa.readthedocs.io/en/latest/cli.html#provisioning).
+
 ## Discovering devices
 
-After installation, the devices can be discovered either by using `kasa discover` or by calling `kasa` without any parameters.
+Running `kasa discover` will send discovery packets to the default broadcast address (`255.255.255.255`) to discover supported devices.
+If your system has multiple network interfaces, you can specify the broadcast address using the `--target` option.
+
+The `discover` command will automatically execute the `state` command on all the discovered devices:
 
 ```
-$ kasa
-No --bulb nor --plug given, discovering..
-Discovering devices for 3 seconds
-== My Smart Plug - HS110(EU) ==
-Device state: ON
-IP address: 192.168.x.x
-LED state: False
-On since: 2017-03-26 18:29:17.242219
-== Generic information ==
-Time:         1970-06-22 02:39:41
-Hardware:     1.0
-Software:     1.0.8 Build 151101 Rel.24452
-MAC (rssi):   50:C7:BF:XX:XX:XX (-77)
-Location:     {'latitude': XXXX, 'longitude': XXXX}
-== Emeter ==
-Current state: {'total': 133.082, 'power': 100.418681, 'current': 0.510967, 'voltage': 225.600477}
+$ kasa discover
+Discovering devices on 255.255.255.255 for 3 seconds
+
+== Bulb McBulby - KL130(EU) ==
+        Host: 192.168.xx.xx
+        Port: 9999
+        Device state: True
+        == Generic information ==
+        Time:         2023-12-05 14:33:23 (tz: {'index': 6, 'err_code': 0}
+        Hardware:     1.0
+        Software:     1.8.8 Build 190613 Rel.123436
+        MAC (rssi):   1c:3b:f3:xx:xx:xx (-56)
+        Location:     {'latitude': None, 'longitude': None}
+
+        == Device specific information ==
+        Brightness: 16
+        Is dimmable: True
+        Color temperature: 2500
+        Valid temperature range: ColorTempRange(min=2500, max=9000)
+        HSV: HSV(hue=0, saturation=0, value=16)
+        Presets:
+                index=0 brightness=50 hue=0 saturation=0 color_temp=2500 custom=None id=None mode=None
+                index=1 brightness=100 hue=299 saturation=95 color_temp=0 custom=None id=None mode=None
+                index=2 brightness=100 hue=120 saturation=75 color_temp=0 custom=None id=None mode=None
+                index=3 brightness=100 hue=240 saturation=75 color_temp=0 custom=None id=None mode=None
+
+        == Current State ==
+        <EmeterStatus power=2.4 voltage=None current=None total=None>
+
+        == Modules ==
+        + <Module Schedule (smartlife.iot.common.schedule) for 192.168.xx.xx>
+        + <Module Usage (smartlife.iot.common.schedule) for 192.168.xx.xx>
+        + <Module Antitheft (smartlife.iot.common.anti_theft) for 192.168.xx.xx>
+        + <Module Time (smartlife.iot.common.timesetting) for 192.168.xx.xx>
+        + <Module Emeter (smartlife.iot.common.emeter) for 192.168.xx.xx>
+        - <Module Countdown (countdown) for 192.168.xx.xx>
+        + <Module Cloud (smartlife.iot.common.cloud) for 192.168.xx.xx>
 ```
 
-Use `kasa --help` to get list of all available commands, or alternatively, [consult the documentation](https://python-kasa.readthedocs.io/en/latest/cli.html).
+If your device requires authentication to control it,
+you need to pass the credentials using `--username` and `--password` options.
 
-## Basic controls
+## Basic functionalities
 
 All devices support a variety of common commands, including:
- * `state` which returns state information
- * `on` and `off` for turning the device on or off
- * `emeter` (where applicable) to return energy consumption information
- * `sysinfo` to return raw system information
+
+* `state` which returns state information
+* `on` and `off` for turning the device on or off
+* `emeter` (where applicable) to return energy consumption information
+* `sysinfo` to return raw system information
+
+The syntax to control device is `kasa --host <ip address> <command>`.
+Use `kasa --help` ([or consult the documentation](https://python-kasa.readthedocs.io/en/latest/cli.html#kasa-help)) to get a list of all available commands and options.
+Some examples of available options include JSON output (`--json`), defining timeouts (`--timeout` and `--discovery-timeout`).
+
+Each individual command may also have additional options, which are shown when called with the `--help` option.
+For example, `--transition` on bulbs requests a smooth state change, while `--name` and `--index` are used on power strips to select the socket to act on:
+
+```
+$ kasa on --help
+
+Usage: kasa on [OPTIONS]
+
+  Turn the device on.
+
+Options:
+  --index INTEGER
+  --name TEXT
+  --transition INTEGER
+  --help                Show this message and exit.
+```
+
+
+### Bulbs
+
+Common commands for bulbs and light strips include:
+
+* `brightness` to control the brightness
+* `hsv` to control the colors
+* `temperature` to control the color temperatures
+
+When executed without parameters, these commands will report the current state.
+
+Some devices support `--transition` option to perform a smooth state change.
+For example, the following turns the light to 30% brightness over a period of five seconds:
+```
+$ kasa --host <addr> brightness --transition 5000 30
+```
+
+See `--help` for additional options and [the documentation](https://python-kasa.readthedocs.io/en/latest/smartbulb.html) for more details about supported features and limitations.
+
+### Power strips
+
+Each individual socket can be controlled separately by passing `--index` or `--name` to the command.
+If neither option is defined, the commands act on the whole power strip.
+
+For example:
+```
+$ kasa --host <addr> off  # turns off all sockets
+$ kasa --host <addr> off --name 'Socket1'  # turns off socket named 'Socket1'
+```
+
+See `--help` for additional options and [the documentation](https://python-kasa.readthedocs.io/en/latest/smartstrip.html) for more details about supported features and limitations.
+
 
 ## Energy meter
 
-Passing no options to `emeter` command will return the current consumption.
+Running `kasa emeter` command will return the current consumption.
 Possible options include `--year` and `--month` for retrieving historical state,
-and reseting the counters is done with `--erase`.
+and reseting the counters can be done with `--erase`.
 
 ```
 $ kasa emeter
@@ -77,14 +161,19 @@ $ kasa emeter
 Current state: {'total': 133.105, 'power': 108.223577, 'current': 0.54463, 'voltage': 225.296283}
 ```
 
-## Bulb-specific commands
-
-At the moment setting brightness, color temperature and color (in HSV) are supported depending on the device.
-The commands are straightforward, so feel free to check `--help` for instructions how to use them.
-
 # Library usage
 
-You can find several code examples in [the API documentation](https://python-kasa.readthedocs.io).
+If you want to use this library in your own project, a good starting point is to check [the documentation on discovering devices](https://python-kasa.readthedocs.io/en/latest/discover.html).
+You can find several code examples in the API documentation of each of the implementation base classes, check out the [documentation for the base class shared by all supported devices](https://python-kasa.readthedocs.io/en/latest/smartdevice.html).
+
+[The library design and module structure is described in a separate page](https://python-kasa.readthedocs.io/en/latest/design.html).
+
+The device type specific documentation can be found in their separate pages:
+* [Plugs](https://python-kasa.readthedocs.io/en/latest/smartplug.html)
+* [Bulbs](https://python-kasa.readthedocs.io/en/latest/smartbulb.html)
+* [Dimmers](https://python-kasa.readthedocs.io/en/latest/smartdimmer.html)
+* [Power strips](https://python-kasa.readthedocs.io/en/latest/smartstrip.html)
+* [Light strips](https://python-kasa.readthedocs.io/en/latest/smartlightstrip.html)
 
 ## Contributing
 
@@ -109,7 +198,7 @@ You can also execute the checks by running either `tox -e lint` to only do the l
 You can run tests on the library by executing `pytest` in the source directory.
 This will run the tests against contributed example responses, but you can also execute the tests against a real device:
 ```
-pytest --ip <address>
+$ pytest --ip <address>
 ```
 Note that this will perform state changes on the device.
 
@@ -118,13 +207,15 @@ Note that this will perform state changes on the device.
 The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
 After capturing the traffic, you can either use the [softScheck's  wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
 or the `parse_pcap.py` script contained inside the `devtools` directory.
+Note, that this works currently only on kasa-branded devices which use port 9999 for communications.
 
 
 ## Supported devices
 
-In principle all devices that are locally controllable using the official Kasa mobile app should work with this library.
-The following lists merely the devices that have been manually verified to work.
-If your device is unlisted but working, please open a pull request to update the list and add a fixture file (generated by `devtools/dump_devinfo.py`).
+In principle, most kasa-branded devices that are locally controllable using the official Kasa mobile app work with this library.
+
+The following lists the devices that have been manually verified to work.
+**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `devtools/dump_devinfo.py` to generate one).**
 
 ### Plugs
 
@@ -181,7 +272,16 @@ If your device is unlisted but working, please open a pull request to update the
 * KL420
 * KL430
 
-**Contributions (be it adding missing features, fixing bugs or improving documentation) are more than welcome, feel free to submit pull requests!**
+### Tapo-branded devices
+
+The library has recently added a limited supported for devices that carry tapo branding.
+
+At the moment, the following devices have been confirmed to work:
+
+* Tapo P110 (plug)
+* Tapo L530 (bulb)
+
+**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `devtools/dump_devinfo.py` to generate one).**
 
 ## Resources
 
