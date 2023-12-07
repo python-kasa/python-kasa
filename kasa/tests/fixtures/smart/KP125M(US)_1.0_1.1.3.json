@@ -1,0 +1,175 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "auto_off",
+                "ver_code": 2
+            },
+            {
+                "id": "energy_monitoring",
+                "ver_code": 2
+            },
+            {
+                "id": "power_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "KP125M(US)",
+        "device_type": "SMART.KASAPLUG",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "00-00-00-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "AES",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "obd_src": "tplink",
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_current_power": {
+        "current_power": 17
+    },
+    "get_device_info": {
+        "auto_off_remain_time": 0,
+        "auto_off_status": "off",
+        "avatar": "coffee_maker",
+        "default_states": {
+            "state": {},
+            "type": "last_states"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": true,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.1.3 Build 230801 Rel.092557",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "00-00-00-00-00-00",
+        "model": "KP125M",
+        "nickname": "IyNNQVNLRUROQU1FIyM=",
+        "oem_id": "00000000000000000000000000000000",
+        "on_time": 5332,
+        "overheated": false,
+        "power_protection_status": "normal",
+        "region": "America/Chicago",
+        "rssi": -62,
+        "signal_level": 2,
+        "specs": "",
+        "ssid": "IyNNQVNLRUROQU1FIyM=",
+        "time_diff": -360,
+        "type": "SMART.KASAPLUG"
+    },
+    "get_device_time": {
+        "region": "America/Chicago",
+        "time_diff": -360,
+        "timestamp": 1701569348
+    },
+    "get_device_usage": {
+        "power_usage": {
+            "past30": 6757,
+            "past7": 4101,
+            "today": 513
+        },
+        "saved_power": {
+            "past30": 9516,
+            "past7": 5748,
+            "today": 696
+        },
+        "time_usage": {
+            "past30": 16273,
+            "past7": 9849,
+            "today": 1209
+        }
+    },
+    "get_energy_usage": {
+        "current_power": 17654,
+        "electricity_charge": [
+            0,
+            64,
+            111
+        ],
+        "local_time": "2023-12-02 20:09:08",
+        "month_energy": 1020,
+        "month_runtime": 2649,
+        "today_energy": 513,
+        "today_runtime": 1209
+    }
+}

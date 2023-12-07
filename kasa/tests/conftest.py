@@ -95,6 +95,7 @@ PLUGS = {
     "KP105",
     "KP115",
     "KP125",
+    "KP125M",
     "KP401",
     "KS200M",
 }
@@ -103,11 +104,11 @@ STRIPS = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
 DIMMERS = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
 
 DIMMABLE = {*BULBS, *DIMMERS}
-WITH_EMETER = {"HS110", "HS300", "KP115", "KP125", *BULBS}
+WITH_EMETER = {"HS110", "HS300", "KP115", "KP125", "KP125M", *BULBS}
 
 ALL_DEVICES_IOT = BULBS.union(PLUGS).union(STRIPS).union(DIMMERS)
 
-PLUGS_SMART = {"P110"}
+PLUGS_SMART = {"P110", "KP125M"}
 ALL_DEVICES_SMART = BULBS_SMART.union(PLUGS_SMART)
 
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
@@ -297,8 +298,12 @@ async def _update_and_close(d):
     return d
 
 
-async def _discover_update_and_close(ip):
-    d = await Discover.discover_single(ip, timeout=10)
+async def _discover_update_and_close(ip, username, password):
+    if username and password:
+        credentials = Credentials(username=username, password=password)
+    else:
+        credentials = None
+    d = await Discover.discover_single(ip, timeout=10, credentials=credentials)
     return await _update_and_close(d)
 
 
@@ -339,15 +344,17 @@ async def dev(request):
     file, protocol = request.param
 
     ip = request.config.getoption("--ip")
+    username = request.config.getoption("--username")
+    password = request.config.getoption("--password")
     if ip:
         model = IP_MODEL_CACHE.get(ip)
         d = None
         if not model:
-            d = await _discover_update_and_close(ip)
+            d = await _discover_update_and_close(ip, username, password)
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        return d if d else await _discover_update_and_close(ip)
+        return d if d else await _discover_update_and_close(ip, username, password)
 
     return await get_device_for_file(file, protocol)
 
@@ -410,6 +417,12 @@ def all_fixture_data(request):
 def pytest_addoption(parser):
     parser.addoption(
         "--ip", action="store", default=None, help="run against device on given ip"
+    )
+    parser.addoption(
+        "--username", action="store", default=None, help="authentication username"
+    )
+    parser.addoption(
+        "--password", action="store", default=None, help="authentication password"
     )
 
 
