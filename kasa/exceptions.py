@@ -11,3 +11,11 @@ class UnsupportedDeviceException(SmartDeviceException):
 
 class AuthenticationException(SmartDeviceException):
     """Base exception for device authentication errors."""
+
+
+class RetryableException(SmartDeviceException):
+    """Retryable exception for device errors."""
+
+
+class TimeoutException(SmartDeviceException):
+    """Timeout exception for device errors."""

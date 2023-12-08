@@ -16,9 +16,20 @@ import httpx
 
 from .aestransport import AesTransport
 from .credentials import Credentials
-from .exceptions import AuthenticationException, SmartDeviceException
+from .exceptions import (
+    AuthenticationException,
+    RetryableException,
+    SmartDeviceException,
+    TimeoutException,
+)
 from .json import dumps as json_dumps
 from .protocol import BaseTransport, TPLinkProtocol, md5
+from .smartprotocolerrors import (
+    AUTHENTICATION_ERRORS,
+    RETRYABLE_ERRORS,
+    TIMEOUT_ERRORS,
+    ErrorCode,
+)
 
 _LOGGER = logging.getLogger(__name__)
 logging.getLogger("httpx").propagate = False
@@ -64,6 +75,22 @@ class SmartProtocol(TPLinkProtocol):
         """Query the device retrying for retry_count on failure."""
         async with self._query_lock:
             resp_dict = await self._query(request, retry_count)
+
+            if (
+                error_code := ErrorCode(resp_dict.get("error_code"))
+            ) != ErrorCode.SUCCESS:
+                msg = (
+                    f"Error querying device: {self.host}: "
+                    + f"{error_code.name}({error_code.value})"
+                )
+                if error_code in TIMEOUT_ERRORS:
+                    raise TimeoutException(msg)
+                if error_code in RETRYABLE_ERRORS:
+                    raise RetryableException(msg)
+                if error_code in AUTHENTICATION_ERRORS:
+                    raise AuthenticationException(msg)
+                raise SmartDeviceException(msg)
+
             if "result" in resp_dict:
                 return resp_dict["result"]
             return {}
@@ -86,20 +113,41 @@ class SmartProtocol(TPLinkProtocol):
                     f"Unable to connect to the device: {self.host}: {cex}"
                 ) from cex
             except TimeoutError as tex:
-                await self.close()
-                raise SmartDeviceException(
-                    f"Unable to connect to the device, timed out: {self.host}: {tex}"
-                ) from tex
+                if retry >= retry_count:
+                    await self.close()
+                    raise SmartDeviceException(
+                        "Unable to connect to the device, "
+                        + f"timed out: {self.host}: {tex}"
+                    ) from tex
+                await asyncio.sleep(2)
+                continue
             except AuthenticationException as auex:
+                await self.close()
                 _LOGGER.debug("Unable to authenticate with %s, not retrying", self.host)
                 raise auex
-            except Exception as ex:
-                await self.close()
+            except RetryableException as ex:
                 if retry >= retry_count:
+                    await self.close()
+                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
+                    raise ex
+                continue
+            except TimeoutException as ex:
+                if retry >= retry_count:
+                    await self.close()
+                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
+                    raise ex
+                await asyncio.sleep(2)
+                continue
+            except Exception as ex:
+                if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}: {ex}"
+                        f"Unable to query the device {self.host}:{self.port}: {ex}"
                     ) from ex
+                _LOGGER.debug(
+                    "Unable to query the device %s, retrying: %s", self.host, ex
+                )
                 continue
 
         # make mypy happy, this should never be reached..
