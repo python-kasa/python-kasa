@@ -157,12 +157,19 @@ class TapoBulb(TapoDevice, SmartBulb):
         if value is not None:
             self._raise_for_invalid_brightness(value)
 
+        request_payload = {
+            "color_temp": 0,  # If set, color_temp takes precedence over hue&sat
+            "hue": hue,
+            "saturation": saturation,
+        }
+        # The device errors on invalid brightness values.
+        if value is not None:
+            request_payload["brightness"] = value
+
         return await self.protocol.query(
             {
                 "set_device_info": {
-                    "hue": hue,
-                    "saturation": saturation,
-                    "brightness": value,
+                    **request_payload
                 }
             }
         )
