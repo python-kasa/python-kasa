@@ -17,7 +17,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Bedroom Lamp 2",
+            "alias": "#MASKED_NAME#",
             "dev_name": "Smart Wi-Fi Plug",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,

@@ -44,6 +44,8 @@ def scrub(res):
         "hw_id",
         "fw_id",
         "oem_id",
+        "nickname",
+        "alias",
     ]
 
     for k, v in res.items():
@@ -57,7 +59,11 @@ def scrub(res):
                     v = "127.0.0.123"
                 elif k in ["ssid"]:
                     # Need a valid base64 value here
-                    v = base64.b64encode(b"##MASKEDNAME##").decode()
+                    v = base64.b64encode(b"#MASKED_SSID#").decode()
+                elif k in ["nickname"]:
+                    v = base64.b64encode(b"#MASKED_NAME#").decode()
+                elif k in ["alias"]:
+                    v = "#MASKED_NAME#"
                 else:
                     v = re.sub(r"\w", "0", v)
 
@@ -203,6 +209,12 @@ async def get_smart_fixture(device: SmartDevice):
         Call(module="device_time", method="get_device_time"),
         Call(module="energy_usage", method="get_energy_usage"),
         Call(module="current_power", method="get_current_power"),
+        Call(module="temp_humidity_records", method="get_temp_humidity_records"),
+        Call(module="child_device_list", method="get_child_device_list"),
+        Call(
+            module="trigger_logs",
+            method={"get_trigger_logs": {"page_size": 5, "start_id": 0}},
+        ),
         Call(
             module="child_device_component_list",
             method="get_child_device_component_list",
