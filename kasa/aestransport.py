@@ -122,7 +122,7 @@ class AesTransport(BaseTransport):
             "params": {"request": encrypted_payload.decode()},
         }
         status_code, resp_dict = await self.client_post(url, json=passthrough_request)
-        _LOGGER.debug(f"secure_passthrough response is {status_code}: {resp_dict}")
+        # _LOGGER.debug(f"secure_passthrough response is {status_code}: {resp_dict}")
         if status_code == 200 and resp_dict["error_code"] == 0:
             response = self._encryption_session.decrypt(  # type: ignore
                 resp_dict["result"]["response"].encode()
