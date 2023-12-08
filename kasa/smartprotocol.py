@@ -124,7 +124,11 @@ class SmartProtocol(TPLinkProtocol):
             await self._transport.login(login_request)
 
         smart_request = self.get_smart_request(smart_method, smart_params)
-        _LOGGER.debug("%s >> %s", self.host, _LOGGER.isEnabledFor(logging.DEBUG) and pf(smart_request))
+        _LOGGER.debug(
+            "%s >> %s",
+            self.host,
+            _LOGGER.isEnabledFor(logging.DEBUG) and pf(smart_request),
+        )
         response_data = await self._transport.send(smart_request)
 
         _LOGGER.debug(
