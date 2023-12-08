@@ -228,9 +228,10 @@ The following lists the devices that have been manually verified to work.
 * KP105
 * KP115
 * KP125
-* KP125M
+* KP125M [See note below](#tapo-and-newer-kasa-branded-devices)
 * KP401
 * EP10
+* EP25 [See note below](#tapo-and-newer-kasa-branded-devices)
 
 ### Power Strips
 
@@ -268,18 +269,25 @@ The following lists the devices that have been manually verified to work.
 
 ### Light strips
 
-* KL400
-* KL420
+* KL400L5
+* KL420L5
 * KL430
 
-### Tapo-branded devices
+### Tapo and newer Kasa branded devices
 
-The library has recently added a limited supported for devices that carry tapo branding.
+The library has recently added a limited supported for devices that carry Tapo branding.
 
 At the moment, the following devices have been confirmed to work:
 
 * Tapo P110 (plug)
-* Tapo L530 (bulb)
+* Tapo L530E (bulb)
+
+Some newer hardware versions of Kasa branded devices are now using the same protocol as
+Tapo branded devices.  Support for these devices is currently limited as per TAPO branded
+devices:
+
+* Kasa EP25 (plug) hw_version 2.6
+* Kasa KP125M (plug)
 
 **If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `devtools/dump_devinfo.py` to generate one).**
 
@@ -300,6 +308,12 @@ At the moment, the following devices have been confirmed to work:
 * [MQTT access to TP-Link devices, using python-kasa](https://github.com/flavio-fernandes/mqtt2kasa)
 
 ### TP-Link Tapo support
+
+This library has recently added a limited supported for devices that carry Tapo branding.
+That support is currently limited to the cli.  The package `kasa.tapo` is in flux and if you
+use it directly you should expect it could break in future releases until this statement is removed.
+
+Other TAPO libraries are:
 
 * [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
 * [Tapo P100 (Tapo P105/P100 plugs, Tapo L510E bulbs)](https://github.com/fishbigger/TapoP100)
