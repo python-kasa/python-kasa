@@ -18,20 +18,18 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .credentials import Credentials
 from .exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
+    SMART_RETRYABLE_ERRORS,
+    SMART_TIMEOUT_ERRORS,
     AuthenticationException,
     RetryableException,
     SmartDeviceException,
+    SmartErrorCode,
     TimeoutException,
 )
 from .json import dumps as json_dumps
 from .json import loads as json_loads
 from .protocol import BaseTransport
-from .smartprotocolerrors import (
-    AUTHENTICATION_ERRORS,
-    RETRYABLE_ERRORS,
-    TIMEOUT_ERRORS,
-    ErrorCode,
-)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -122,13 +120,15 @@ class AesTransport(BaseTransport):
         return resp.status_code, response_data
 
     def _handle_response_error_code(self, resp_dict: dict, msg: str):
-        if (error_code := ErrorCode(resp_dict.get("error_code"))) != ErrorCode.SUCCESS:
+        if (
+            error_code := SmartErrorCode(resp_dict.get("error_code"))
+        ) != SmartErrorCode.SUCCESS:
             msg = f"{msg}: {self.host}: {error_code.name}({error_code.value})"
-            if error_code in TIMEOUT_ERRORS:
+            if error_code in SMART_TIMEOUT_ERRORS:
                 raise TimeoutException(msg)
-            if error_code in RETRYABLE_ERRORS:
+            if error_code in SMART_RETRYABLE_ERRORS:
                 raise RetryableException(msg)
-            if error_code in AUTHENTICATION_ERRORS:
+            if error_code in SMART_AUTHENTICATION_ERRORS:
                 self._handshake_done = False
                 self._login_token = None
                 raise AuthenticationException(msg)
@@ -150,7 +150,8 @@ class AesTransport(BaseTransport):
 
         if status_code != 200:
             raise SmartDeviceException(
-                f"Unable to send message for {self.host}, status code is {status_code}"
+                f"{self.host} responded with an unexpected "
+                + f"status code {status_code} to passthrough"
             )
 
         self._handle_response_error_code(
@@ -160,7 +161,6 @@ class AesTransport(BaseTransport):
         response = self._encryption_session.decrypt(  # type: ignore
             resp_dict["result"]["response"].encode()
         )
-        _LOGGER.debug(f"decrypted secure_passthrough response is {response}")
         resp_dict = json_loads(response)
         return resp_dict
 
@@ -238,13 +238,12 @@ class AesTransport(BaseTransport):
 
         if status_code != 200:
             raise SmartDeviceException(
-                f"Unable to complete handshake for {self.host}, "
-                + "response status code is {status_code}"
+                f"{self.host} responded with an unexpected "
+                + f"status code {status_code} to handshake"
             )
 
         self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 
-        _LOGGER.debug("Decoding handshake key...")
         handshake_key = resp_dict["result"]["key"]
 
         self._session_cookie = self._http_client.cookies.get(  # type: ignore

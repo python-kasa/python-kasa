@@ -17,19 +17,17 @@ import httpx
 from .aestransport import AesTransport
 from .credentials import Credentials
 from .exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
+    SMART_RETRYABLE_ERRORS,
+    SMART_TIMEOUT_ERRORS,
     AuthenticationException,
     RetryableException,
     SmartDeviceException,
+    SmartErrorCode,
     TimeoutException,
 )
 from .json import dumps as json_dumps
 from .protocol import BaseTransport, TPLinkProtocol, md5
-from .smartprotocolerrors import (
-    AUTHENTICATION_ERRORS,
-    RETRYABLE_ERRORS,
-    TIMEOUT_ERRORS,
-    ErrorCode,
-)
 
 _LOGGER = logging.getLogger(__name__)
 logging.getLogger("httpx").propagate = False
@@ -77,17 +75,17 @@ class SmartProtocol(TPLinkProtocol):
             resp_dict = await self._query(request, retry_count)
 
             if (
-                error_code := ErrorCode(resp_dict.get("error_code"))
-            ) != ErrorCode.SUCCESS:
+                error_code := SmartErrorCode(resp_dict.get("error_code"))
+            ) != SmartErrorCode.SUCCESS:
                 msg = (
                     f"Error querying device: {self.host}: "
                     + f"{error_code.name}({error_code.value})"
                 )
-                if error_code in TIMEOUT_ERRORS:
+                if error_code in SMART_TIMEOUT_ERRORS:
                     raise TimeoutException(msg)
-                if error_code in RETRYABLE_ERRORS:
+                if error_code in SMART_RETRYABLE_ERRORS:
                     raise RetryableException(msg)
-                if error_code in AUTHENTICATION_ERRORS:
+                if error_code in SMART_AUTHENTICATION_ERRORS:
                     raise AuthenticationException(msg)
                 raise SmartDeviceException(msg)
 
