@@ -24,6 +24,7 @@ class TapoDevice(SmartDevice):
         timeout: Optional[int] = None,
     ) -> None:
         super().__init__(host, port=port, credentials=credentials, timeout=timeout)
+        self._components: Optional[Dict[str, Any]] = None
         self._state_information: Dict[str, Any] = {}
         self._discovery_info: Optional[Dict[str, Any]] = None
         self.protocol = SmartProtocol(host, credentials=credentials, timeout=timeout)
@@ -33,7 +34,9 @@ class TapoDevice(SmartDevice):
         if self.credentials is None or self.credentials.username is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
-        self._components = await self.protocol.query("component_nego")
+        if self._components is None:
+            self._components = await self.protocol.query("component_nego")
+
         self._info = await self.protocol.query("get_device_info")
         self._usage = await self.protocol.query("get_device_usage")
         self._time = await self.protocol.query("get_device_time")
