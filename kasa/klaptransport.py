@@ -377,6 +377,7 @@ class KlapTransport(BaseTransport):
         """Close the transport."""
         client = self._http_client
         self._http_client = None
+        self._handshake_done = False
         if client:
             await client.aclose()
 

@@ -86,7 +86,7 @@ async def test_protocol_retry_recoverable_error(
 async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport_class):
     host = "127.0.0.1"
     remaining = retry_count
-    mock_response = {"result": {"great": "success"}}
+    mock_response = {"result": {"great": "success"}, "error_code": 0}
 
     def _fail_one_less_than_retry_count(*_, **__):
         nonlocal remaining

@@ -16,7 +16,16 @@ import httpx
 
 from .aestransport import AesTransport
 from .credentials import Credentials
-from .exceptions import AuthenticationException, SmartDeviceException
+from .exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
+    SMART_RETRYABLE_ERRORS,
+    SMART_TIMEOUT_ERRORS,
+    AuthenticationException,
+    RetryableException,
+    SmartDeviceException,
+    SmartErrorCode,
+    TimeoutException,
+)
 from .json import dumps as json_dumps
 from .protocol import BaseTransport, TPLinkProtocol, md5
 
@@ -28,6 +37,7 @@ class SmartProtocol(TPLinkProtocol):
     """Class for the new TPLink SMART protocol."""
 
     DEFAULT_PORT = 80
+    SLEEP_SECONDS_AFTER_TIMEOUT = 1
 
     def __init__(
         self,
@@ -64,6 +74,22 @@ class SmartProtocol(TPLinkProtocol):
         """Query the device retrying for retry_count on failure."""
         async with self._query_lock:
             resp_dict = await self._query(request, retry_count)
+
+            if (
+                error_code := SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
+            ) != SmartErrorCode.SUCCESS:
+                msg = (
+                    f"Error querying device: {self.host}: "
+                    + f"{error_code.name}({error_code.value})"
+                )
+                if error_code in SMART_TIMEOUT_ERRORS:
+                    raise TimeoutException(msg)
+                if error_code in SMART_RETRYABLE_ERRORS:
+                    raise RetryableException(msg)
+                if error_code in SMART_AUTHENTICATION_ERRORS:
+                    raise AuthenticationException(msg)
+                raise SmartDeviceException(msg)
+
             if "result" in resp_dict:
                 return resp_dict["result"]
             return {}
@@ -86,20 +112,41 @@ class SmartProtocol(TPLinkProtocol):
                     f"Unable to connect to the device: {self.host}: {cex}"
                 ) from cex
             except TimeoutError as tex:
-                await self.close()
-                raise SmartDeviceException(
-                    f"Unable to connect to the device, timed out: {self.host}: {tex}"
-                ) from tex
+                if retry >= retry_count:
+                    await self.close()
+                    raise SmartDeviceException(
+                        "Unable to connect to the device, "
+                        + f"timed out: {self.host}: {tex}"
+                    ) from tex
+                await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
+                continue
             except AuthenticationException as auex:
+                await self.close()
                 _LOGGER.debug("Unable to authenticate with %s, not retrying", self.host)
                 raise auex
-            except Exception as ex:
-                await self.close()
+            except RetryableException as ex:
                 if retry >= retry_count:
+                    await self.close()
+                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
+                    raise ex
+                continue
+            except TimeoutException as ex:
+                if retry >= retry_count:
+                    await self.close()
+                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
+                    raise ex
+                await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
+                continue
+            except Exception as ex:
+                if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}: {ex}"
+                        f"Unable to query the device {self.host}:{self.port}: {ex}"
                     ) from ex
+                _LOGGER.debug(
+                    "Unable to query the device %s, retrying: %s", self.host, ex
+                )
                 continue
 
         # make mypy happy, this should never be reached..

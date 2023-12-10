@@ -315,11 +315,11 @@ class FakeSmartTransport(BaseTransport):
         method = request_dict["method"]
         params = request_dict["params"]
         if method == "component_nego" or method[:4] == "get_":
-            return {"result": self.info[method]}
+            return {"result": self.info[method], "error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             self.info[target_method].update(params)
-            return {"result": ""}
+            return {"error_code": 0}
 
     async def close(self) -> None:
         pass

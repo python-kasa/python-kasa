@@ -166,13 +166,7 @@ class TapoBulb(TapoDevice, SmartBulb):
         if value is not None:
             request_payload["brightness"] = value
 
-        return await self.protocol.query(
-            {
-                "set_device_info": {
-                    **request_payload
-                }
-            }
-        )
+        return await self.protocol.query({"set_device_info": {**request_payload}})
 
     async def set_color_temp(
         self, temp: int, *, brightness=None, transition: Optional[int] = None
