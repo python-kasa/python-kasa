@@ -121,7 +121,7 @@ class AesTransport(BaseTransport):
 
     def _handle_response_error_code(self, resp_dict: dict, msg: str):
         if (
-            error_code := SmartErrorCode(resp_dict.get("error_code"))
+            error_code := SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         ) != SmartErrorCode.SUCCESS:
             msg = f"{msg}: {self.host}: {error_code.name}({error_code.value})"
             if error_code in SMART_TIMEOUT_ERRORS:

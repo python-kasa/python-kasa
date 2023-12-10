@@ -1,5 +1,5 @@
 """python-kasa exceptions."""
-from enum import Enum
+from enum import IntEnum
 
 
 class SmartDeviceException(Exception):
@@ -22,7 +22,7 @@ class TimeoutException(SmartDeviceException):
     """Timeout exception for device errors."""
 
 
-class SmartErrorCode(Enum):
+class SmartErrorCode(IntEnum):
     """Enum for SMART Error Codes."""
 
     SUCCESS = 0

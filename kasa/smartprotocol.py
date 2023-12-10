@@ -37,6 +37,7 @@ class SmartProtocol(TPLinkProtocol):
     """Class for the new TPLink SMART protocol."""
 
     DEFAULT_PORT = 80
+    SLEEP_SECONDS_AFTER_TIMEOUT = 1
 
     def __init__(
         self,
@@ -75,7 +76,7 @@ class SmartProtocol(TPLinkProtocol):
             resp_dict = await self._query(request, retry_count)
 
             if (
-                error_code := SmartErrorCode(resp_dict.get("error_code"))
+                error_code := SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
             ) != SmartErrorCode.SUCCESS:
                 msg = (
                     f"Error querying device: {self.host}: "
@@ -117,7 +118,7 @@ class SmartProtocol(TPLinkProtocol):
                         "Unable to connect to the device, "
                         + f"timed out: {self.host}: {tex}"
                     ) from tex
-                await asyncio.sleep(2)
+                await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
                 continue
             except AuthenticationException as auex:
                 await self.close()
@@ -134,7 +135,7 @@ class SmartProtocol(TPLinkProtocol):
                     await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
                     raise ex
-                await asyncio.sleep(2)
+                await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
                 continue
             except Exception as ex:
                 if retry >= retry_count:
