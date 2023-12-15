@@ -8,7 +8,7 @@ import base64
 import hashlib
 import logging
 import time
-from typing import Optional, Union
+from typing import Optional
 
 import httpx
 from cryptography.hazmat.primitives import padding, serialization
@@ -164,18 +164,16 @@ class AesTransport(BaseTransport):
         resp_dict = json_loads(response)
         return resp_dict
 
-    async def perform_login(self, login_request: Union[str, dict], *, login_v2: bool):
+    async def perform_login_version(self, *, login_v2: bool):
         """Login to the device."""
         self._login_token = None
-
-        if isinstance(login_request, str):
-            login_request_dict: dict = json_loads(login_request)
-        else:
-            login_request_dict = login_request
-
         un, pw = self.hash_credentials(login_v2)
-        login_request_dict["params"] = {"password": pw, "username": un}
-        request = json_dumps(login_request_dict)
+        login_request = {
+            "method": "login_device",
+            "params": {"password": pw, "username": un},
+            "request_time_milis": round(time.time() * 1000),
+        }
+        request = json_dumps(login_request)
         try:
             resp_dict = await self.send_secure_passthrough(request)
         except SmartDeviceException as ex:
@@ -185,24 +183,32 @@ class AesTransport(BaseTransport):
     @property
     def needs_login(self) -> bool:
         """Return true if the transport needs to do a login."""
-        return self._login_token is None
+        return False
 
     async def login(self, request: str) -> None:
+        """Will raise and exception as AES does not do a login."""
+        # If this PR works we can drop the needs_login and needs handshake
+        # stuff altogether
+        raise SmartDeviceException(
+            "AES does not perform logins and return needs_login == False"
+        )
+
+    async def perform_login(self) -> None:
         """Login to the device."""
         try:
             if self.needs_handshake:
                 raise SmartDeviceException(
                     "Handshake must be complete before trying to login"
                 )
-            await self.perform_login(request, login_v2=False)
+            await self.perform_login_version(login_v2=False)
         except AuthenticationException:
             await self.perform_handshake()
-            await self.perform_login(request, login_v2=True)
+            await self.perform_login_version(login_v2=True)
 
     @property
     def needs_handshake(self) -> bool:
         """Return true if the transport needs to do a handshake."""
-        return not self._handshake_done or self._handshake_session_expired()
+        return False
 
     async def handshake(self) -> None:
         """Perform the encryption handshake."""
@@ -272,12 +278,10 @@ class AesTransport(BaseTransport):
 
     async def send(self, request: str):
         """Send the request."""
-        if self.needs_handshake:
-            raise SmartDeviceException(
-                "Handshake must be complete before trying to send"
-            )
-        if self.needs_login:
-            raise SmartDeviceException("Login must be complete before trying to send")
+        if not self._handshake_done or self._handshake_session_expired():
+            await self.perform_handshake()
+        if not self._login_token:
+            await self.perform_login()
 
         return await self.send_secure_passthrough(request)
 

@@ -55,7 +55,7 @@ class SmartProtocol(TPLinkProtocol):
         self._transport: BaseTransport = transport or AesTransport(
             host, credentials=self._credentials, timeout=timeout
         )
-        self._terminal_uuid: Optional[str] = None
+        self._terminal_uuid: str = base64.b64encode(md5(uuid.uuid4().bytes)).decode()
         self._request_id_generator = SnowflakeId(1, 1)
         self._query_lock = asyncio.Lock()
 
