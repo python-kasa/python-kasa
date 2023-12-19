@@ -118,7 +118,7 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
         self._http_client: httpx.AsyncClient = httpx.AsyncClient()
 
-        _LOGGER.debug("Created KLAP object for %s", self._host)
+        _LOGGER.debug("Created KLAP transport for %s", self._host)
 
     async def client_post(self, url, params=None, data=None):
         """Send an http post request to the device."""

@@ -82,7 +82,7 @@ class AesTransport(BaseTransport):
         self._http_client: httpx.AsyncClient = httpx.AsyncClient()
         self._login_token = None
 
-        _LOGGER.debug("Created AES object for %s", self._host)
+        _LOGGER.debug("Created AES transport for %s", self._host)
 
     def hash_credentials(self, login_v2):
         """Hash the credentials."""
@@ -169,11 +169,11 @@ class AesTransport(BaseTransport):
         resp_dict = json_loads(response)
         return resp_dict
 
-    async def perform_login_for_version(self, *, login_v2: bool):
+    async def _perform_login_for_version(self, *, login_version: int = 1):
         """Login to the device."""
         self._login_token = None
-        un, pw = self.hash_credentials(login_v2)
-        password_field_name = "password2" if login_v2 else "password"
+        un, pw = self.hash_credentials(login_version == 2)
+        password_field_name = "password2" if login_version == 2 else "password"
         login_request = {
             "method": "login_device",
             "params": {password_field_name: pw, "username": un},
@@ -189,11 +189,11 @@ class AesTransport(BaseTransport):
     async def perform_login(self) -> None:
         """Login to the device."""
         try:
-            await self.perform_login_for_version(login_v2=True)
+            await self._perform_login_for_version(login_version=2)
         except AuthenticationException:
             _LOGGER.warning("Login version 2 failed, trying version 1")
             await self.perform_handshake()
-            await self.perform_login_for_version(login_v2=False)
+            await self._perform_login_for_version(login_version=1)
 
     async def perform_handshake(self):
         """Perform the handshake."""
