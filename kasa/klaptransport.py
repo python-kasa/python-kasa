@@ -82,7 +82,7 @@ class KlapTransport(BaseTransport):
     protocol, used by newer firmware versions.
     """
 
-    DEFAULT_TIMEOUT = 5
+    DEFAULT_PORT = 80
     DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
     KASA_SETUP_EMAIL = "kasa@tp-link.net"
     KASA_SETUP_PASSWORD = "kasaSetup"  # noqa: S105
@@ -92,12 +92,17 @@ class KlapTransport(BaseTransport):
         self,
         host: str,
         *,
+        port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
     ) -> None:
-        super().__init__(host=host)
+        super().__init__(
+            host,
+            port=port or self.DEFAULT_PORT,
+            credentials=credentials,
+            timeout=timeout,
+        )
 
-        self._credentials = credentials or Credentials(username="", password="")
         self._local_seed: Optional[bytes] = None
         self._local_auth_hash = self.generate_auth_hash(self._credentials)
         self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
@@ -110,11 +115,10 @@ class KlapTransport(BaseTransport):
         self._encryption_session: Optional[KlapEncryptionSession] = None
         self._session_expire_at: Optional[float] = None
 
-        self._timeout = timeout if timeout else self.DEFAULT_TIMEOUT
         self._session_cookie = None
         self._http_client: httpx.AsyncClient = httpx.AsyncClient()
 
-        _LOGGER.debug("Created KLAP object for %s", self.host)
+        _LOGGER.debug("Created KLAP transport for %s", self._host)
 
     async def client_post(self, url, params=None, data=None):
         """Send an http post request to the device."""
@@ -148,7 +152,7 @@ class KlapTransport(BaseTransport):
 
         payload = local_seed
 
-        url = f"http://{self.host}/app/handshake1"
+        url = f"http://{self._host}/app/handshake1"
 
         response_status, response_data = await self.client_post(url, data=payload)
 
@@ -157,14 +161,14 @@ class KlapTransport(BaseTransport):
                 "Handshake1 posted at %s. Host is %s, Response"
                 + "status is %s, Request was %s",
                 datetime.datetime.now(),
-                self.host,
+                self._host,
                 response_status,
                 payload.hex(),
             )
 
         if response_status != 200:
             raise AuthenticationException(
-                f"Device {self.host} responded with {response_status} to handshake1"
+                f"Device {self._host} responded with {response_status} to handshake1"
             )
 
         remote_seed: bytes = response_data[0:16]
@@ -175,7 +179,7 @@ class KlapTransport(BaseTransport):
                 "Handshake1 success at %s. Host is %s, "
                 + "Server remote_seed is: %s, server hash is: %s",
                 datetime.datetime.now(),
-                self.host,
+                self._host,
                 remote_seed.hex(),
                 server_hash.hex(),
             )
@@ -207,7 +211,7 @@ class KlapTransport(BaseTransport):
             _LOGGER.debug(
                 "Server response doesn't match our expected hash on ip %s"
                 + " but an authentication with kasa setup credentials matched",
-                self.host,
+                self._host,
             )
             return local_seed, remote_seed, self._kasa_setup_auth_hash  # type: ignore
 
@@ -226,11 +230,11 @@ class KlapTransport(BaseTransport):
                 _LOGGER.debug(
                     "Server response doesn't match our expected hash on ip %s"
                     + " but an authentication with blank credentials matched",
-                    self.host,
+                    self._host,
                 )
                 return local_seed, remote_seed, self._blank_auth_hash  # type: ignore
 
-        msg = f"Server response doesn't match our challenge on ip {self.host}"
+        msg = f"Server response doesn't match our challenge on ip {self._host}"
         _LOGGER.debug(msg)
         raise AuthenticationException(msg)
 
@@ -241,7 +245,7 @@ class KlapTransport(BaseTransport):
         # Handshake 2 has the following payload:
         #    sha256(serverBytes | authenticator)
 
-        url = f"http://{self.host}/app/handshake2"
+        url = f"http://{self._host}/app/handshake2"
 
         payload = self.handshake2_seed_auth_hash(local_seed, remote_seed, auth_hash)
 
@@ -252,44 +256,24 @@ class KlapTransport(BaseTransport):
                 "Handshake2 posted %s.  Host is %s, Response status is %s, "
                 + "Request was %s",
                 datetime.datetime.now(),
-                self.host,
+                self._host,
                 response_status,
                 payload.hex(),
             )
 
         if response_status != 200:
             raise AuthenticationException(
-                f"Device {self.host} responded with {response_status} to handshake2"
+                f"Device {self._host} responded with {response_status} to handshake2"
             )
 
         return KlapEncryptionSession(local_seed, remote_seed, auth_hash)
-
-    @property
-    def needs_login(self) -> bool:
-        """Will return false as KLAP does not do a login."""
-        return False
-
-    async def login(self, request: str) -> None:
-        """Will raise and exception as KLAP does not do a login."""
-        raise SmartDeviceException(
-            "KLAP does not perform logins and return needs_login == False"
-        )
-
-    @property
-    def needs_handshake(self) -> bool:
-        """Return true if the transport needs to do a handshake."""
-        return not self._handshake_done or self._handshake_session_expired()
-
-    async def handshake(self) -> None:
-        """Perform the encryption handshake."""
-        await self.perform_handshake()
 
     async def perform_handshake(self) -> Any:
         """Perform handshake1 and handshake2.
 
         Sets the encryption_session if successful.
         """
-        _LOGGER.debug("Starting handshake with %s", self.host)
+        _LOGGER.debug("Starting handshake with %s", self._host)
         self._handshake_done = False
         self._session_expire_at = None
         self._session_cookie = None
@@ -307,7 +291,7 @@ class KlapTransport(BaseTransport):
         )
         self._handshake_done = True
 
-        _LOGGER.debug("Handshake with %s complete", self.host)
+        _LOGGER.debug("Handshake with %s complete", self._host)
 
     def _handshake_session_expired(self):
         """Return true if session has expired."""
@@ -318,18 +302,14 @@ class KlapTransport(BaseTransport):
 
     async def send(self, request: str):
         """Send the request."""
-        if self.needs_handshake:
-            raise SmartDeviceException(
-                "Handshake must be complete before trying to send"
-            )
-        if self.needs_login:
-            raise SmartDeviceException("Login must be complete before trying to send")
+        if not self._handshake_done or self._handshake_session_expired():
+            await self.perform_handshake()
 
         # Check for mypy
         if self._encryption_session is not None:
             payload, seq = self._encryption_session.encrypt(request.encode())
 
-        url = f"http://{self.host}/app/request"
+        url = f"http://{self._host}/app/request"
 
         response_status, response_data = await self.client_post(
             url,
@@ -338,7 +318,7 @@ class KlapTransport(BaseTransport):
         )
 
         msg = (
-            f"at {datetime.datetime.now()}.  Host is {self.host}, "
+            f"at {datetime.datetime.now()}.  Host is {self._host}, "
             + f"Sequence is {seq}, "
             + f"Response status is {response_status}, Request was {request}"
         )
@@ -348,12 +328,12 @@ class KlapTransport(BaseTransport):
             if response_status == 403:
                 self._handshake_done = False
                 raise AuthenticationException(
-                    f"Got a security error from {self.host} after handshake "
+                    f"Got a security error from {self._host} after handshake "
                     + "completed"
                 )
             else:
                 raise SmartDeviceException(
-                    f"Device {self.host} responded with {response_status} to"
+                    f"Device {self._host} responded with {response_status} to"
                     + f"request with seq {seq}"
                 )
         else:
@@ -367,7 +347,7 @@ class KlapTransport(BaseTransport):
 
             _LOGGER.debug(
                 "%s << %s",
-                self.host,
+                self._host,
                 _LOGGER.isEnabledFor(logging.DEBUG) and pf(json_payload),
             )
 

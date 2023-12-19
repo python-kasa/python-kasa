@@ -96,10 +96,9 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
 
         return mock_response
 
-    mocker.patch.object(
-        transport_class, "needs_handshake", property(lambda self: False)
-    )
-    mocker.patch.object(transport_class, "needs_login", property(lambda self: False))
+    mocker.patch.object(transport_class, "perform_handshake")
+    if hasattr(transport_class, "perform_login"):
+        mocker.patch.object(transport_class, "perform_login")
 
     send_mock = mocker.patch.object(
         transport_class,
@@ -128,7 +127,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
     seed = secrets.token_bytes(16)
     auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
-    protocol = IotProtocol("127.0.0.1")
+    protocol = IotProtocol("127.0.0.1", transport=KlapTransport("127.0.0.1"))
 
     protocol._transport._handshake_done = True
     protocol._transport._session_expire_at = time.time() + 86400
@@ -206,7 +205,10 @@ async def test_handshake1(mocker, device_credentials, expectation):
         httpx.AsyncClient, "post", side_effect=_return_handshake1_response
     )
 
-    protocol = IotProtocol("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(
+        "127.0.0.1",
+        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
+    )
 
     protocol._transport.http_client = httpx.AsyncClient()
     with expectation:
@@ -243,7 +245,10 @@ async def test_handshake(mocker):
         httpx.AsyncClient, "post", side_effect=_return_handshake_response
     )
 
-    protocol = IotProtocol("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(
+        "127.0.0.1",
+        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
+    )
     protocol._transport.http_client = httpx.AsyncClient()
 
     response_status = 200
@@ -289,7 +294,10 @@ async def test_query(mocker):
 
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
 
-    protocol = IotProtocol("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(
+        "127.0.0.1",
+        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
+    )
 
     for _ in range(10):
         resp = await protocol.query({})
@@ -333,7 +341,10 @@ async def test_authentication_failures(mocker, response_status, expectation):
 
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
 
-    protocol = IotProtocol("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(
+        "127.0.0.1",
+        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
+    )
 
     with expectation:
         await protocol.query({})

@@ -1,13 +1,21 @@
 import errno
+import importlib
+import inspect
 import json
 import logging
+import pkgutil
 import struct
 import sys
 
 import pytest
 
 from ..exceptions import SmartDeviceException
-from ..protocol import TPLinkSmartHomeProtocol
+from ..protocol import (
+    BaseTransport,
+    TPLinkProtocol,
+    TPLinkSmartHomeProtocol,
+    _XorTransport,
+)
 
 
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
@@ -24,7 +32,9 @@ async def test_protocol_retries(mocker, retry_count):
 
     conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=retry_count)
+        await TPLinkSmartHomeProtocol(
+            "127.0.0.1", transport=_XorTransport("127.0.0.1")
+        ).query({}, retry_count=retry_count)
 
     assert conn.call_count == retry_count + 1
 
@@ -35,7 +45,9 @@ async def test_protocol_no_retry_on_unreachable(mocker):
         side_effect=OSError(errno.EHOSTUNREACH, "No route to host"),
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=5)
+        await TPLinkSmartHomeProtocol(
+            "127.0.0.1", transport=_XorTransport("127.0.0.1")
+        ).query({}, retry_count=5)
 
     assert conn.call_count == 1
 
@@ -46,7 +58,9 @@ async def test_protocol_no_retry_connection_refused(mocker):
         side_effect=ConnectionRefusedError,
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=5)
+        await TPLinkSmartHomeProtocol(
+            "127.0.0.1", transport=_XorTransport("127.0.0.1")
+        ).query({}, retry_count=5)
 
     assert conn.call_count == 1
 
@@ -57,7 +71,9 @@ async def test_protocol_retry_recoverable_error(mocker):
         side_effect=OSError(errno.ECONNRESET, "Connection reset by peer"),
     )
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol("127.0.0.1").query({}, retry_count=5)
+        await TPLinkSmartHomeProtocol(
+            "127.0.0.1", transport=_XorTransport("127.0.0.1")
+        ).query({}, retry_count=5)
 
     assert conn.call_count == 6
 
@@ -91,7 +107,9 @@ async def test_protocol_reconnect(mocker, retry_count):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    protocol = TPLinkSmartHomeProtocol("127.0.0.1")
+    protocol = TPLinkSmartHomeProtocol(
+        "127.0.0.1", transport=_XorTransport("127.0.0.1")
+    )
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({}, retry_count=retry_count)
     assert response == {"great": "success"}
@@ -119,7 +137,9 @@ async def test_protocol_logging(mocker, caplog, log_level):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    protocol = TPLinkSmartHomeProtocol("127.0.0.1")
+    protocol = TPLinkSmartHomeProtocol(
+        "127.0.0.1", transport=_XorTransport("127.0.0.1")
+    )
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})
     assert response == {"great": "success"}
@@ -153,7 +173,9 @@ async def test_protocol_custom_port(mocker, custom_port):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    protocol = TPLinkSmartHomeProtocol("127.0.0.1", port=custom_port)
+    protocol = TPLinkSmartHomeProtocol(
+        "127.0.0.1", transport=_XorTransport("127.0.0.1", port=custom_port)
+    )
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})
     assert response == {"great": "success"}
@@ -227,3 +249,63 @@ def test_decrypt_unicode():
     d = "{'snowman': '\u2603'}"
 
     assert d == TPLinkSmartHomeProtocol.decrypt(e)
+
+
+def _get_subclasses(of_class):
+    import kasa
+
+    package = sys.modules["kasa"]
+    subclasses = set()
+    for _, modname, _ in pkgutil.iter_modules(package.__path__):
+        importlib.import_module("." + modname, package="kasa")
+        module = sys.modules["kasa." + modname]
+        for name, obj in inspect.getmembers(module):
+            if inspect.isclass(obj) and issubclass(obj, of_class):
+                subclasses.add((name, obj))
+    return subclasses
+
+
+@pytest.mark.parametrize(
+    "class_name_obj", _get_subclasses(TPLinkProtocol), ids=lambda t: t[0]
+)
+def test_protocol_init_signature(class_name_obj):
+    params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
+
+    assert len(params) == 3
+    assert (
+        params[0].name == "self"
+        and params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )
+    assert (
+        params[1].name == "host"
+        and params[1].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )
+    assert (
+        params[2].name == "transport"
+        and params[2].kind == inspect.Parameter.KEYWORD_ONLY
+    )
+
+
+@pytest.mark.parametrize(
+    "class_name_obj", _get_subclasses(BaseTransport), ids=lambda t: t[0]
+)
+def test_transport_init_signature(class_name_obj):
+    params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
+
+    assert len(params) == 5
+    assert (
+        params[0].name == "self"
+        and params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )
+    assert (
+        params[1].name == "host"
+        and params[1].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )
+    assert params[2].name == "port" and params[2].kind == inspect.Parameter.KEYWORD_ONLY
+    assert (
+        params[3].name == "credentials"
+        and params[3].kind == inspect.Parameter.KEYWORD_ONLY
+    )
+    assert (
+        params[4].name == "timeout" and params[4].kind == inspect.Parameter.KEYWORD_ONLY
+    )

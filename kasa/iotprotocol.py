@@ -1,14 +1,12 @@
 """Module for the IOT legacy IOT KASA protocol."""
 import asyncio
 import logging
-from typing import Dict, Optional, Union
+from typing import Dict, Union
 
 import httpx
 
-from .credentials import Credentials
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import dumps as json_dumps
-from .klaptransport import KlapTransport
 from .protocol import BaseTransport, TPLinkProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,24 +15,14 @@ _LOGGER = logging.getLogger(__name__)
 class IotProtocol(TPLinkProtocol):
     """Class for the legacy TPLink IOT KASA Protocol."""
 
-    DEFAULT_PORT = 80
-
     def __init__(
         self,
         host: str,
         *,
-        transport: Optional[BaseTransport] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        transport: BaseTransport,
     ) -> None:
-        super().__init__(host=host, port=self.DEFAULT_PORT)
-
-        self._credentials: Credentials = credentials or Credentials(
-            username="", password=""
-        )
-        self._transport: BaseTransport = transport or KlapTransport(
-            host, credentials=self._credentials, timeout=timeout
-        )
+        """Create a protocol object."""
+        super().__init__(host, transport=transport)
 
         self._query_lock = asyncio.Lock()
 
@@ -54,30 +42,32 @@ class IotProtocol(TPLinkProtocol):
             except httpx.CloseError as sdex:
                 await self.close()
                 if retry >= retry_count:
-                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
+                    _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}: {sdex}"
+                        f"Unable to connect to the device: {self._host}: {sdex}"
                     ) from sdex
                 continue
             except httpx.ConnectError as cex:
                 await self.close()
                 raise SmartDeviceException(
-                    f"Unable to connect to the device: {self.host}: {cex}"
+                    f"Unable to connect to the device: {self._host}: {cex}"
                 ) from cex
             except TimeoutError as tex:
                 await self.close()
                 raise SmartDeviceException(
-                    f"Unable to connect to the device, timed out: {self.host}: {tex}"
+                    f"Unable to connect to the device, timed out: {self._host}: {tex}"
                 ) from tex
             except AuthenticationException as auex:
-                _LOGGER.debug("Unable to authenticate with %s, not retrying", self.host)
+                _LOGGER.debug(
+                    "Unable to authenticate with %s, not retrying", self._host
+                )
                 raise auex
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:
-                    _LOGGER.debug("Giving up on %s after %s retries", self.host, retry)
+                    _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
-                        f"Unable to connect to the device: {self.host}: {ex}"
+                        f"Unable to connect to the device: {self._host}: {ex}"
                     ) from ex
                 continue
 
@@ -85,14 +75,6 @@ class IotProtocol(TPLinkProtocol):
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     async def _execute_query(self, request: str, retry_count: int) -> Dict:
-        if self._transport.needs_handshake:
-            await self._transport.handshake()
-
-        if self._transport.needs_login:  # This shouln't happen
-            raise SmartDeviceException(
-                "IOT Protocol needs to login to transport but is not login aware"
-            )
-
         return await self._transport.send(request)
 
     async def close(self) -> None:
