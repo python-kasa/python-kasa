@@ -24,7 +24,7 @@ from .device_type import DeviceType
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
-from .protocol import TPLinkProtocol, TPLinkSmartHomeProtocol
+from .protocol import TPLinkProtocol, TPLinkSmartHomeProtocol, _XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -202,7 +202,7 @@ class SmartDevice:
         self.host = host
         self.port = port
         self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(
-            host, port=port, timeout=timeout
+            host, transport=_XorTransport(host, port=port, timeout=timeout)
         )
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))

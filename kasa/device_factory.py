@@ -74,7 +74,12 @@ async def connect(
             host=host, port=port, credentials=credentials, timeout=timeout
         )
         if protocol_class is not None:
-            dev.protocol = protocol_class(host, credentials=credentials)
+            dev.protocol = protocol_class(
+                host,
+                transport=AesTransport(
+                    host, port=port, credentials=credentials, timeout=timeout
+                ),
+            )
         await dev.update()
         if debug_enabled:
             end_time = time.perf_counter()
@@ -90,7 +95,13 @@ async def connect(
         host=host, port=port, credentials=credentials, timeout=timeout
     )
     if protocol_class is not None:
-        unknown_dev.protocol = protocol_class(host, credentials=credentials)
+        # TODO this will be replaced with connection params
+        unknown_dev.protocol = protocol_class(
+            host,
+            transport=AesTransport(
+                host, port=port, credentials=credentials, timeout=timeout
+            ),
+        )
     await unknown_dev.update()
     device_class = get_device_class_from_sys_info(unknown_dev.internal_state)
     dev = device_class(host=host, port=port, credentials=credentials, timeout=timeout)
@@ -163,7 +174,5 @@ def get_protocol_from_connection_name(
 
     protocol_class, transport_class = supported_device_protocols.get(connection_name)  # type: ignore
     transport: BaseTransport = transport_class(host, credentials=credentials)
-    protocol: TPLinkProtocol = protocol_class(
-        host, credentials=credentials, transport=transport
-    )
+    protocol: TPLinkProtocol = protocol_class(host, transport=transport)
     return protocol

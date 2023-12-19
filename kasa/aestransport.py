@@ -47,6 +47,7 @@ class AesTransport(BaseTransport):
     protocol, sometimes used by newer firmware versions on kasa devices.
     """
 
+    DEFAULT_PORT = 80
     DEFAULT_TIMEOUT = 5
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     COMMON_HEADERS = {
@@ -59,12 +60,16 @@ class AesTransport(BaseTransport):
         self,
         host: str,
         *,
+        port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
     ) -> None:
-        super().__init__(host=host)
-
-        self._credentials = credentials or Credentials(username="", password="")
+        super().__init__(
+            host,
+            port=port or self.DEFAULT_PORT,
+            credentials=credentials,
+            timeout=timeout,
+        )
 
         self._handshake_done = False
 
@@ -77,7 +82,7 @@ class AesTransport(BaseTransport):
         self._http_client: httpx.AsyncClient = httpx.AsyncClient()
         self._login_token = None
 
-        _LOGGER.debug("Created AES object for %s", self.host)
+        _LOGGER.debug("Created AES object for %s", self._host)
 
     def hash_credentials(self, login_v2):
         """Hash the credentials."""
@@ -123,7 +128,7 @@ class AesTransport(BaseTransport):
         if (
             error_code := SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         ) != SmartErrorCode.SUCCESS:
-            msg = f"{msg}: {self.host}: {error_code.name}({error_code.value})"
+            msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
             if error_code in SMART_TIMEOUT_ERRORS:
                 raise TimeoutException(msg)
             if error_code in SMART_RETRYABLE_ERRORS:
@@ -136,7 +141,7 @@ class AesTransport(BaseTransport):
 
     async def send_secure_passthrough(self, request: str):
         """Send encrypted message as passthrough."""
-        url = f"http://{self.host}/app"
+        url = f"http://{self._host}/app"
         if self._login_token:
             url += f"?token={self._login_token}"
 
@@ -150,7 +155,7 @@ class AesTransport(BaseTransport):
 
         if status_code != 200:
             raise SmartDeviceException(
-                f"{self.host} responded with an unexpected "
+                f"{self._host} responded with an unexpected "
                 + f"status code {status_code} to passthrough"
             )
 
@@ -199,7 +204,7 @@ class AesTransport(BaseTransport):
         self._session_expire_at = None
         self._session_cookie = None
 
-        url = f"http://{self.host}/app"
+        url = f"http://{self._host}/app"
         key_pair = KeyPair.create_key_pair()
 
         pub_key = (
@@ -220,7 +225,7 @@ class AesTransport(BaseTransport):
 
         if status_code != 200:
             raise SmartDeviceException(
-                f"{self.host} responded with an unexpected "
+                f"{self._host} responded with an unexpected "
                 + f"status code {status_code} to handshake"
             )
 
@@ -243,7 +248,7 @@ class AesTransport(BaseTransport):
 
         self._handshake_done = True
 
-        _LOGGER.debug("Handshake with %s complete", self.host)
+        _LOGGER.debug("Handshake with %s complete", self._host)
 
     def _handshake_session_expired(self):
         """Return true if session has expired."""

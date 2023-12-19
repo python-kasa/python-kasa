@@ -232,7 +232,7 @@ async def test_modules_preserved(dev: SmartDevice):
 async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
     dev = SmartDevice(host="127.0.0.1", timeout=100)
-    assert dev.protocol.timeout == 100
+    assert dev.protocol._transport._timeout == 100
 
 
 async def test_create_thin_wrapper():

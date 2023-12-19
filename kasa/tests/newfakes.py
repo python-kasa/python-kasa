@@ -301,6 +301,9 @@ class FakeSmartProtocol(SmartProtocol):
 
 class FakeSmartTransport(BaseTransport):
     def __init__(self, info):
+        super().__init__(
+            "127.0.0.123",
+        )
         self.info = info
 
     @property
