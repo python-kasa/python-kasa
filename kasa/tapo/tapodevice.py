@@ -41,11 +41,18 @@ class TapoDevice(SmartDevice):
             raise AuthenticationException("Tapo plug requires authentication.")
 
         if self._components is None:
-            self._components = await self.protocol.query("component_nego")
+            resp = await self.protocol.query("component_nego")
+            self._components = resp["component_nego"]
 
-        self._info = await self.protocol.query("get_device_info")
-        self._usage = await self.protocol.query("get_device_usage")
-        self._time = await self.protocol.query("get_device_time")
+        req = {
+            "get_device_info": None,
+            "get_device_usage": None,
+            "get_device_time": None,
+        }
+        resp = await self.protocol.query(req)
+        self._info = resp["get_device_info"]
+        self._usage = resp["get_device_usage"]
+        self._time = resp["get_device_time"]
 
         self._last_update = self._data = {
             "components": self._components,

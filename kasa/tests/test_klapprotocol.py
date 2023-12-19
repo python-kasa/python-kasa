@@ -109,7 +109,7 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
     response = await protocol_class(host, transport=transport_class(host)).query(
         DUMMY_QUERY, retry_count=retry_count
     )
-    assert "result" in response or "great" in response
+    assert "result" in response or "foobar" in response
     assert send_mock.call_count == retry_count
 
 
