@@ -264,26 +264,6 @@ class KlapTransport(BaseTransport):
 
         return KlapEncryptionSession(local_seed, remote_seed, auth_hash)
 
-    @property
-    def needs_login(self) -> bool:
-        """Will return false as KLAP does not do a login."""
-        return False
-
-    async def login(self, request: str) -> None:
-        """Will raise and exception as KLAP does not do a login."""
-        raise SmartDeviceException(
-            "KLAP does not perform logins and return needs_login == False"
-        )
-
-    @property
-    def needs_handshake(self) -> bool:
-        """Return true if the transport needs to do a handshake."""
-        return not self._handshake_done or self._handshake_session_expired()
-
-    async def handshake(self) -> None:
-        """Perform the encryption handshake."""
-        await self.perform_handshake()
-
     async def perform_handshake(self) -> Any:
         """Perform handshake1 and handshake2.
 
@@ -318,12 +298,8 @@ class KlapTransport(BaseTransport):
 
     async def send(self, request: str):
         """Send the request."""
-        if self.needs_handshake:
-            raise SmartDeviceException(
-                "Handshake must be complete before trying to send"
-            )
-        if self.needs_login:
-            raise SmartDeviceException("Login must be complete before trying to send")
+        if not self._handshake_done or self._handshake_session_expired():
+            await self.perform_handshake()
 
         # Check for mypy
         if self._encryption_session is not None:

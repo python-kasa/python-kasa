@@ -160,16 +160,6 @@ class SmartProtocol(TPLinkProtocol):
             smart_method = request
             smart_params = None
 
-        if self._transport.needs_handshake:
-            await self._transport.handshake()
-
-        if self._transport.needs_login:
-            self._terminal_uuid = base64.b64encode(md5(uuid.uuid4().bytes)).decode(
-                "UTF-8"
-            )
-            login_request = self.get_smart_request("login_device")
-            await self._transport.login(login_request)
-
         smart_request = self.get_smart_request(smart_method, smart_params)
         _LOGGER.debug(
             "%s >> %s",

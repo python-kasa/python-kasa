@@ -56,24 +56,6 @@ class BaseTransport(ABC):
         self.port = port
         self.credentials = credentials
 
-    @property
-    @abstractmethod
-    def needs_handshake(self) -> bool:
-        """Return true if the transport needs to do a handshake."""
-
-    @property
-    @abstractmethod
-    def needs_login(self) -> bool:
-        """Return true if the transport needs to do a login."""
-
-    @abstractmethod
-    async def login(self, request: str) -> None:
-        """Login to the device."""
-
-    @abstractmethod
-    async def handshake(self) -> None:
-        """Perform the encryption handshake."""
-
     @abstractmethod
     async def send(self, request: str) -> Dict:
         """Send a message to the device and return a response."""

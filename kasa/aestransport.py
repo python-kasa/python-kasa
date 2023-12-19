@@ -164,13 +164,14 @@ class AesTransport(BaseTransport):
         resp_dict = json_loads(response)
         return resp_dict
 
-    async def perform_login_version(self, *, login_v2: bool):
+    async def perform_login_for_version(self, *, login_v2: bool):
         """Login to the device."""
         self._login_token = None
         un, pw = self.hash_credentials(login_v2)
+        password_field_name = "password2" if login_v2 else "password"
         login_request = {
             "method": "login_device",
-            "params": {"password": pw, "username": un},
+            "params": {password_field_name: pw, "username": un},
             "request_time_milis": round(time.time() * 1000),
         }
         request = json_dumps(login_request)
@@ -180,39 +181,14 @@ class AesTransport(BaseTransport):
             raise AuthenticationException(ex) from ex
         self._login_token = resp_dict["result"]["token"]
 
-    @property
-    def needs_login(self) -> bool:
-        """Return true if the transport needs to do a login."""
-        return False
-
-    async def login(self, request: str) -> None:
-        """Will raise and exception as AES does not do a login."""
-        # If this PR works we can drop the needs_login and needs handshake
-        # stuff altogether
-        raise SmartDeviceException(
-            "AES does not perform logins and return needs_login == False"
-        )
-
     async def perform_login(self) -> None:
         """Login to the device."""
         try:
-            if self.needs_handshake:
-                raise SmartDeviceException(
-                    "Handshake must be complete before trying to login"
-                )
-            await self.perform_login_version(login_v2=False)
+            await self.perform_login_for_version(login_v2=True)
         except AuthenticationException:
+            _LOGGER.warning("Login version 2 failed, trying version 1")
             await self.perform_handshake()
-            await self.perform_login_version(login_v2=True)
-
-    @property
-    def needs_handshake(self) -> bool:
-        """Return true if the transport needs to do a handshake."""
-        return False
-
-    async def handshake(self) -> None:
-        """Perform the encryption handshake."""
-        await self.perform_handshake()
+            await self.perform_login_for_version(login_v2=False)
 
     async def perform_handshake(self):
         """Perform the handshake."""

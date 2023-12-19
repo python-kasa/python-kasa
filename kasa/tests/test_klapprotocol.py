@@ -96,10 +96,9 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
 
         return mock_response
 
-    mocker.patch.object(
-        transport_class, "needs_handshake", property(lambda self: False)
-    )
-    mocker.patch.object(transport_class, "needs_login", property(lambda self: False))
+    mocker.patch.object(transport_class, "perform_handshake")
+    if hasattr(transport_class, "perform_login"):
+        mocker.patch.object(transport_class, "perform_login")
 
     send_mock = mocker.patch.object(
         transport_class,

@@ -85,14 +85,6 @@ class IotProtocol(TPLinkProtocol):
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     async def _execute_query(self, request: str, retry_count: int) -> Dict:
-        if self._transport.needs_handshake:
-            await self._transport.handshake()
-
-        if self._transport.needs_login:  # This shouln't happen
-            raise SmartDeviceException(
-                "IOT Protocol needs to login to transport but is not login aware"
-            )
-
         return await self._transport.send(request)
 
     async def close(self) -> None:
