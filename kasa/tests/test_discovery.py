@@ -202,7 +202,7 @@ async def test_discover_datagram_received(mocker, discovery_data):
     # Check that device in discovered_devices is initialized correctly
     assert len(proto.discovered_devices) == 1
     # Check that unsupported device is 1
-    assert len(proto.unsupported_devices) == 1
+    assert len(proto.unsupported_device_exceptions) == 1
     dev = proto.discovered_devices[addr]
     assert issubclass(dev.__class__, SmartDevice)
     assert dev.host == addr

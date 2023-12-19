@@ -50,7 +50,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         interface: Optional[str] = None,
-        on_unsupported: Optional[Callable[[str], Awaitable[None]]] = None,
+        on_unsupported: Optional[
+            Callable[[UnsupportedDeviceException], Awaitable[None]]
+        ] = None,
         port: Optional[int] = None,
         discovered_event: Optional[asyncio.Event] = None,
         credentials: Optional[Credentials] = None,
@@ -64,7 +66,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target = (target, self.discovery_port)
         self.target_2 = (target, Discover.DISCOVERY_PORT_2)
         self.discovered_devices = {}
-        self.unsupported_devices: Dict = {}
+        self.unsupported_device_exceptions: Dict = {}
         self.invalid_device_exceptions: Dict = {}
         self.on_unsupported = on_unsupported
         self.discovered_event = discovered_event
@@ -119,9 +121,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 return
         except UnsupportedDeviceException as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
-            self.unsupported_devices[ip] = str(udex)
+            self.unsupported_device_exceptions[ip] = udex
             if self.on_unsupported is not None:
-                asyncio.ensure_future(self.on_unsupported(str(udex)))
+                asyncio.ensure_future(self.on_unsupported(udex))
             if self.discovered_event is not None:
                 self.discovered_event.set()
             return
@@ -336,10 +338,8 @@ class Discover:
             if update_parent_devices and dev.has_children:
                 await dev.update()
             return dev
-        elif ip in protocol.unsupported_devices:
-            raise UnsupportedDeviceException(
-                f"Unsupported device {host}: {protocol.unsupported_devices[ip]}"
-            )
+        elif ip in protocol.unsupported_device_exceptions:
+            raise protocol.unsupported_device_exceptions[ip]
         elif ip in protocol.invalid_device_exceptions:
             raise protocol.invalid_device_exceptions[ip]
         else:
@@ -397,7 +397,8 @@ class Discover:
         if (device_class := get_device_class_from_type_name(type_)) is None:
             _LOGGER.warning("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceException(
-                f"Unsupported device {ip} of type {type_}: {info}"
+                f"Unsupported device {ip} of type {type_}: {info}",
+                discovery_result=discovery_result.get_dict(),
             )
         if (
             protocol := get_protocol_from_connection_name(
@@ -406,7 +407,8 @@ class Discover:
         ) is None:
             _LOGGER.warning("Got unsupported device type: %s", encrypt_type_)
             raise UnsupportedDeviceException(
-                f"Unsupported encryption scheme {ip} of type {encrypt_type_}: {info}"
+                f"Unsupported encryption scheme {ip} of type {encrypt_type_}: {info}",
+                discovery_result=discovery_result.get_dict(),
             )
 
         _LOGGER.debug("[DISCOVERY] %s << %s", ip, info)

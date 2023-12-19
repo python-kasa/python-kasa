@@ -4,14 +4,12 @@ import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
 
-from kasa import SmartDevice, TPLinkSmartHomeProtocol
+from kasa import AuthenticationException, SmartDevice, UnsupportedDeviceException
 from kasa.cli import alias, brightness, cli, emeter, raw_command, state, sysinfo, toggle
 from kasa.device_factory import DEVICE_TYPE_TO_CLASS
 from kasa.discover import Discover
-from kasa.smartprotocol import SmartProtocol
 
 from .conftest import device_iot, handle_turn_on, new_discovery, turn_on
-from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
 
 @device_iot
@@ -22,7 +20,6 @@ async def test_sysinfo(dev):
     assert dev.alias in res.output
 
 
-@device_iot
 @turn_on
 async def test_state(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -36,7 +33,6 @@ async def test_state(dev, turn_on):
         assert "Device state: False" in res.output
 
 
-@device_iot
 @turn_on
 async def test_toggle(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
@@ -226,3 +222,123 @@ async def test_duplicate_target_device():
     )
     assert res.exit_code == 2
     assert "Error: Use either --alias or --host, not both." in res.output
+
+
+async def test_discover(discovery_mock, mocker):
+    """Test discovery output."""
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        [
+            "--discovery-timeout",
+            0,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "discover",
+            "--verbose",
+        ],
+    )
+    assert res.exit_code == 0
+
+
+async def test_discover_unsupported(unsupported_device_info):
+    """Test discovery output."""
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        [
+            "--discovery-timeout",
+            0,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "discover",
+            "--verbose",
+        ],
+    )
+    assert res.exit_code == 0
+    assert "== Unsupported device ==" in res.output
+    assert "== Discovery Result ==" in res.output
+
+
+async def test_host_unsupported(unsupported_device_info):
+    """Test discovery output."""
+    runner = CliRunner()
+    host = "127.0.0.1"
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            host,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+        ],
+    )
+
+    assert res.exit_code != 0
+    assert isinstance(res.exception, UnsupportedDeviceException)
+
+
+@new_discovery
+async def test_discover_auth_failed(discovery_mock, mocker):
+    """Test discovery output."""
+    runner = CliRunner()
+    host = "127.0.0.1"
+    discovery_mock.ip = host
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    mocker.patch.object(
+        device_class,
+        "update",
+        side_effect=AuthenticationException("Failed to authenticate"),
+    )
+    res = await runner.invoke(
+        cli,
+        [
+            "--discovery-timeout",
+            0,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "discover",
+            "--verbose",
+        ],
+    )
+
+    assert res.exit_code == 0
+    assert "== Authentication failed for device ==" in res.output
+    assert "== Discovery Result ==" in res.output
+
+
+@new_discovery
+async def test_host_auth_failed(discovery_mock, mocker):
+    """Test discovery output."""
+    runner = CliRunner()
+    host = "127.0.0.1"
+    discovery_mock.ip = host
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    mocker.patch.object(
+        device_class,
+        "update",
+        side_effect=AuthenticationException("Failed to authenticate"),
+    )
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            host,
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+        ],
+    )
+
+    assert res.exit_code != 0
+    assert isinstance(res.exception, AuthenticationException)

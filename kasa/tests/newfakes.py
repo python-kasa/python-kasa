@@ -291,6 +291,13 @@ class FakeSmartProtocol(SmartProtocol):
     def __init__(self, info):
         super().__init__("127.0.0.123", transport=FakeSmartTransport(info))
 
+    async def query(self, request, retry_count: int = 3):
+        """Implement query here so can still patch SmartProtocol.query."""
+        resp_dict = await self._query(request, retry_count)
+        if "result" in resp_dict:
+            return resp_dict["result"]
+        return {}
+
 
 class FakeSmartTransport(BaseTransport):
     def __init__(self, info):

@@ -129,6 +129,37 @@ ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 IP_MODEL_CACHE: Dict[str, str] = {}
 
 
+def _make_unsupported(device_family, encrypt_type):
+    return {
+        "result": {
+            "device_id": "xx",
+            "owner": "xx",
+            "device_type": device_family,
+            "device_model": "P110(EU)",
+            "ip": "127.0.0.1",
+            "mac": "48-22xxx",
+            "is_support_iot_cloud": True,
+            "obd_src": "tplink",
+            "factory_default": False,
+            "mgt_encrypt_schm": {
+                "is_support_https": False,
+                "encrypt_type": encrypt_type,
+                "http_port": 80,
+                "lv": 2,
+            },
+        },
+        "error_code": 0,
+    }
+
+
+UNSUPPORTED_DEVICES = {
+    "unknown_device_family": _make_unsupported("SMART.TAPOXMASTREE", "AES"),
+    "wrong_encryption_iot": _make_unsupported("IOT.SMARTPLUGSWITCH", "AES"),
+    "wrong_encryption_smart": _make_unsupported("SMART.TAPOBULB", "IOT"),
+    "unknown_encryption": _make_unsupported("IOT.SMARTPLUGSWITCH", "FOO"),
+}
+
+
 def idgenerator(paramtuple):
     try:
         return basename(paramtuple[0]) + (
@@ -242,7 +273,7 @@ def filter_fixtures(desc, root_filter):
 def parametrize_discovery(desc, root_key):
     filtered_fixtures = filter_fixtures(desc, root_key)
     return pytest.mark.parametrize(
-        "discovery_data",
+        "all_fixture_data",
         filtered_fixtures.values(),
         indirect=True,
         ids=filtered_fixtures.keys(),
@@ -360,7 +391,7 @@ async def get_device_for_file(file, protocol):
     return d
 
 
-@pytest.fixture(params=SUPPORTED_DEVICES)
+@pytest.fixture(params=SUPPORTED_DEVICES, ids=idgenerator)
 async def dev(request):
     """Device fixture.
 
@@ -386,23 +417,27 @@ async def dev(request):
 
 
 @pytest.fixture
-def discovery_mock(discovery_data, mocker):
+def discovery_mock(all_fixture_data, mocker):
     @dataclass
     class _DiscoveryMock:
         ip: str
         default_port: int
         discovery_data: dict
+        query_data: dict
         port_override: Optional[int] = None
 
-    if "result" in discovery_data:
+    if "discovery_result" in all_fixture_data:
+        discovery_data = {"result": all_fixture_data["discovery_result"]}
         datagram = (
             b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
             + json_dumps(discovery_data).encode()
         )
-        dm = _DiscoveryMock("127.0.0.123", 20002, discovery_data)
+        dm = _DiscoveryMock("127.0.0.123", 20002, discovery_data, all_fixture_data)
     else:
+        sys_info = all_fixture_data["system"]["get_sysinfo"]
+        discovery_data = {"system": {"get_sysinfo": sys_info}}
         datagram = TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:]
-        dm = _DiscoveryMock("127.0.0.123", 9999, discovery_data)
+        dm = _DiscoveryMock("127.0.0.123", 9999, discovery_data, all_fixture_data)
 
     def mock_discover(self):
         port = (
@@ -420,17 +455,29 @@ def discovery_mock(discovery_data, mocker):
         "socket.getaddrinfo",
         side_effect=lambda *_, **__: [(None, None, None, None, (dm.ip, 0))],
     )
+
+    if "component_nego" in dm.query_data:
+        proto = FakeSmartProtocol(dm.query_data)
+    else:
+        proto = FakeTransportProtocol(dm.query_data)
+
+    async def _query(request, retry_count: int = 3):
+        return await proto.query(request)
+
+    mocker.patch("kasa.IotProtocol.query", side_effect=_query)
+    mocker.patch("kasa.SmartProtocol.query", side_effect=_query)
+    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", side_effect=_query)
+
     yield dm
 
 
-@pytest.fixture(params=FIXTURE_DATA.values(), ids=FIXTURE_DATA.keys(), scope="session")
-def discovery_data(request):
+@pytest.fixture
+def discovery_data(all_fixture_data):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
-    fixture_data = request.param
-    if "discovery_result" in fixture_data:
-        return {"result": fixture_data["discovery_result"]}
+    if "discovery_result" in all_fixture_data:
+        return {"result": all_fixture_data["discovery_result"]}
     else:
-        return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
+        return {"system": {"get_sysinfo": all_fixture_data["system"]["get_sysinfo"]}}
 
 
 @pytest.fixture(params=FIXTURE_DATA.values(), ids=FIXTURE_DATA.keys(), scope="session")
@@ -438,6 +485,25 @@ def all_fixture_data(request):
     """Return raw fixture file contents as JSON. Used for discovery tests."""
     fixture_data = request.param
     return fixture_data
+
+
+@pytest.fixture(params=UNSUPPORTED_DEVICES.values(), ids=UNSUPPORTED_DEVICES.keys())
+def unsupported_device_info(request, mocker):
+    """Return unsupported devices for cli and discovery tests."""
+    discovery_data = request.param
+    host = "127.0.0.1"
+
+    def mock_discover(self):
+        if discovery_data:
+            data = (
+                b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
+                + json_dumps(discovery_data).encode()
+            )
+            self.datagram_received(data, (host, 20002))
+
+    mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
+
+    yield discovery_data
 
 
 def pytest_addoption(parser):
