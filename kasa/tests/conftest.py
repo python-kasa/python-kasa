@@ -196,9 +196,13 @@ def parametrize(desc, devices, protocol_filter=None, ids=None):
     )
 
 
-has_emeter = parametrize("has emeter", WITH_EMETER_IOT, protocol_filter={"IOT"})
+has_emeter = parametrize("has emeter", WITH_EMETER, protocol_filter={"SMART", "IOT"})
 no_emeter = parametrize(
-    "no emeter", ALL_DEVICES_IOT - WITH_EMETER_IOT, protocol_filter={"SMART", "IOT"}
+    "no emeter", ALL_DEVICES - WITH_EMETER, protocol_filter={"SMART", "IOT"}
+)
+has_emeter_iot = parametrize("has emeter iot", WITH_EMETER_IOT, protocol_filter={"IOT"})
+no_emeter_iot = parametrize(
+    "no emeter iot", ALL_DEVICES_IOT - WITH_EMETER_IOT, protocol_filter={"IOT"}
 )
 
 bulb = parametrize("bulbs", BULBS, protocol_filter={"SMART", "IOT"})

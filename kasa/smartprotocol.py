@@ -62,26 +62,7 @@ class SmartProtocol(TPLinkProtocol):
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Query the device retrying for retry_count on failure."""
         async with self._query_lock:
-            resp_dict = await self._query(request, retry_count)
-
-            if (
-                error_code := SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
-            ) != SmartErrorCode.SUCCESS:
-                msg = (
-                    f"Error querying device: {self._host}: "
-                    + f"{error_code.name}({error_code.value})"
-                )
-                if error_code in SMART_TIMEOUT_ERRORS:
-                    raise TimeoutException(msg)
-                if error_code in SMART_RETRYABLE_ERRORS:
-                    raise RetryableException(msg)
-                if error_code in SMART_AUTHENTICATION_ERRORS:
-                    raise AuthenticationException(msg)
-                raise SmartDeviceException(msg)
-
-            if "result" in resp_dict:
-                return resp_dict["result"]
-            return {}
+            return await self._query(request, retry_count)
 
     async def _query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         for retry in range(retry_count + 1):
@@ -128,6 +109,11 @@ class SmartProtocol(TPLinkProtocol):
                     raise ex
                 await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
                 continue
+            except SmartDeviceException as ex:
+                # Transport would have raised RetryableException if retry makes sense.
+                await self.close()
+                _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
+                raise ex
             except Exception as ex:
                 if retry >= retry_count:
                     await self.close()
@@ -145,8 +131,15 @@ class SmartProtocol(TPLinkProtocol):
 
     async def _execute_query(self, request: Union[str, Dict], retry_count: int) -> Dict:
         if isinstance(request, dict):
-            smart_method = next(iter(request))
-            smart_params = request[smart_method]
+            if len(request) == 1:
+                smart_method = next(iter(request))
+                smart_params = request[smart_method]
+            else:
+                requests = []
+                for method, params in request.items():
+                    requests.append({"method": method, "params": params})
+                smart_method = "multipleRequest"
+                smart_params = {"requests": requests}
         else:
             smart_method = request
             smart_params = None
@@ -165,7 +158,40 @@ class SmartProtocol(TPLinkProtocol):
             _LOGGER.isEnabledFor(logging.DEBUG) and pf(response_data),
         )
 
-        return response_data
+        self._handle_response_error_code(response_data)
+
+        if (result := response_data.get("result")) is None:
+            # Single set_ requests do not return a result
+            return {smart_method: None}
+
+        if (responses := result.get("responses")) is None:
+            return {smart_method: result}
+
+        # responses is returned for multipleRequest
+        multi_result = {}
+        for response in responses:
+            self._handle_response_error_code(response)
+            result = response.get("result", None)
+            multi_result[response["method"]] = result
+        return multi_result
+
+    def _handle_response_error_code(self, resp_dict: dict):
+        error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
+        if error_code == SmartErrorCode.SUCCESS:
+            return
+        msg = (
+            f"Error querying device: {self._host}: "
+            + f"{error_code.name}({error_code.value})"
+        )
+        if method := resp_dict.get("method"):
+            msg += f" for method: {method}"
+        if error_code in SMART_TIMEOUT_ERRORS:
+            raise TimeoutException(msg)
+        if error_code in SMART_RETRYABLE_ERRORS:
+            raise RetryableException(msg)
+        if error_code in SMART_AUTHENTICATION_ERRORS:
+            raise AuthenticationException(msg)
+        raise SmartDeviceException(msg)
 
     async def close(self) -> None:
         """Close the protocol."""

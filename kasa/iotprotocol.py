@@ -62,6 +62,13 @@ class IotProtocol(TPLinkProtocol):
                     "Unable to authenticate with %s, not retrying", self._host
                 )
                 raise auex
+            except SmartDeviceException as ex:
+                _LOGGER.debug(
+                    "Unable to connect to the device: %s, not retrying: %s",
+                    self._host,
+                    ex,
+                )
+                raise ex
             except Exception as ex:
                 await self.close()
                 if retry >= retry_count:

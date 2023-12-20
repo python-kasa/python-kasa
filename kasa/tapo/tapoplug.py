@@ -39,8 +39,13 @@ class TapoPlug(TapoDevice):
         """Call the device endpoint and update the device data."""
         await super().update(update_children)
 
-        self._energy = await self.protocol.query("get_energy_usage")
-        self._emeter = await self.protocol.query("get_current_power")
+        req = {
+            "get_energy_usage": None,
+            "get_current_power": None,
+        }
+        resp = await self.protocol.query(req)
+        self._energy = resp["get_energy_usage"]
+        self._emeter = resp["get_current_power"]
 
         self._data["energy"] = self._energy
         self._data["emeter"] = self._emeter
@@ -70,6 +75,13 @@ class TapoPlug(TapoDevice):
                 ),
             }
         )
+
+    async def get_emeter_realtime(self) -> EmeterStatus:
+        """Retrieve current energy readings."""
+        self._verify_emeter()
+        resp = await self.protocol.query("get_energy_usage")
+        self._energy = resp["get_energy_usage"]
+        return self.emeter_realtime
 
     @property
     def emeter_today(self) -> Optional[float]:

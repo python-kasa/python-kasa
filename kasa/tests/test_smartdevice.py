@@ -8,7 +8,7 @@ import kasa
 from kasa import Credentials, SmartDevice, SmartDeviceException
 from kasa.smartdevice import DeviceType
 
-from .conftest import device_iot, handle_turn_on, has_emeter, no_emeter, turn_on
+from .conftest import device_iot, handle_turn_on, has_emeter, no_emeter_iot, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
 
 # List of all SmartXXX classes including the SmartDevice base class
@@ -48,7 +48,7 @@ async def test_initial_update_emeter(dev, mocker):
     assert spy.call_count == expected_queries + len(dev.children)
 
 
-@no_emeter
+@no_emeter_iot
 async def test_initial_update_no_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = None

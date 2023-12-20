@@ -1,6 +1,7 @@
 import copy
 import logging
 import re
+import warnings
 from json import loads as json_loads
 
 from voluptuous import (
@@ -294,9 +295,7 @@ class FakeSmartProtocol(SmartProtocol):
     async def query(self, request, retry_count: int = 3):
         """Implement query here so can still patch SmartProtocol.query."""
         resp_dict = await self._query(request, retry_count)
-        if "result" in resp_dict:
-            return resp_dict["result"]
-        return {}
+        return resp_dict
 
 
 class FakeSmartTransport(BaseTransport):
@@ -306,26 +305,34 @@ class FakeSmartTransport(BaseTransport):
         )
         self.info = info
 
-    @property
-    def needs_handshake(self) -> bool:
-        return False
-
-    @property
-    def needs_login(self) -> bool:
-        return False
-
-    async def login(self, request: str) -> None:
-        pass
-
-    async def handshake(self) -> None:
-        pass
-
     async def send(self, request: str):
         request_dict = json_loads(request)
         method = request_dict["method"]
         params = request_dict["params"]
+        if method == "multipleRequest":
+            responses = []
+            for request in params["requests"]:
+                response = self._send_request(request)  # type: ignore[arg-type]
+                response["method"] = request["method"]  # type: ignore[index]
+                responses.append(response)
+            return {"result": {"responses": responses}, "error_code": 0}
+        else:
+            return self._send_request(request_dict)
+
+    def _send_request(self, request_dict: dict):
+        method = request_dict["method"]
+        params = request_dict["params"]
         if method == "component_nego" or method[:4] == "get_":
-            return {"result": self.info[method], "error_code": 0}
+            if method in self.info:
+                return {"result": self.info[method], "error_code": 0}
+            else:
+                warnings.warn(
+                    UserWarning(
+                        f"Fixture missing expected method {method}, try to regenerate"
+                    ),
+                    stacklevel=1,
+                )
+                return {"result": {}, "error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             self.info[target_method].update(params)

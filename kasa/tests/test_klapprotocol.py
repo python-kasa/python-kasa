@@ -26,20 +26,29 @@ class _mock_response:
         self.content = content
 
 
+@pytest.mark.parametrize(
+    "error, retry_expectation",
+    [
+        (Exception("dummy exception"), True),
+        (SmartDeviceException("dummy exception"), False),
+    ],
+    ids=("Exception", "SmartDeviceException"),
+)
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_retries(mocker, retry_count, protocol_class, transport_class):
+async def test_protocol_retries(
+    mocker, retry_count, protocol_class, transport_class, error, retry_expectation
+):
     host = "127.0.0.1"
-    conn = mocker.patch.object(
-        httpx.AsyncClient, "post", side_effect=Exception("dummy exception")
-    )
+    conn = mocker.patch.object(httpx.AsyncClient, "post", side_effect=error)
     with pytest.raises(SmartDeviceException):
         await protocol_class(host, transport=transport_class(host)).query(
             DUMMY_QUERY, retry_count=retry_count
         )
 
-    assert conn.call_count == retry_count + 1
+    expected_count = retry_count + 1 if retry_expectation else 1
+    assert conn.call_count == expected_count
 
 
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
@@ -109,7 +118,7 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
     response = await protocol_class(host, transport=transport_class(host)).query(
         DUMMY_QUERY, retry_count=retry_count
     )
-    assert "result" in response or "great" in response
+    assert "result" in response or "foobar" in response
     assert send_mock.call_count == retry_count
 
 

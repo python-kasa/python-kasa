@@ -2,7 +2,7 @@ import pytest
 
 from kasa import EmeterStatus, SmartDeviceException
 
-from .conftest import has_emeter, no_emeter
+from .conftest import has_emeter, has_emeter_iot, no_emeter
 from .newfakes import CURRENT_CONSUMPTION_SCHEMA
 
 
@@ -20,7 +20,7 @@ async def test_no_emeter(dev):
         await dev.erase_emeter_stats()
 
 
-@has_emeter
+@has_emeter_iot
 async def test_get_emeter_realtime(dev):
     assert dev.has_emeter
 
@@ -28,7 +28,7 @@ async def test_get_emeter_realtime(dev):
     CURRENT_CONSUMPTION_SCHEMA(current_emeter)
 
 
-@has_emeter
+@has_emeter_iot
 @pytest.mark.requires_dummy
 async def test_get_emeter_daily(dev):
     assert dev.has_emeter
@@ -48,7 +48,7 @@ async def test_get_emeter_daily(dev):
     assert v * 1000 == v2
 
 
-@has_emeter
+@has_emeter_iot
 @pytest.mark.requires_dummy
 async def test_get_emeter_monthly(dev):
     assert dev.has_emeter
@@ -68,7 +68,7 @@ async def test_get_emeter_monthly(dev):
     assert v * 1000 == v2
 
 
-@has_emeter
+@has_emeter_iot
 async def test_emeter_status(dev):
     assert dev.has_emeter
 
