@@ -12,7 +12,12 @@ from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padd
 
 from ..aestransport import AesEncyptionSession, AesTransport
 from ..credentials import Credentials
-from ..exceptions import SmartDeviceException
+from ..exceptions import (
+    SMART_RETRYABLE_ERRORS,
+    SMART_TIMEOUT_ERRORS,
+    SmartDeviceException,
+    SmartErrorCode,
+)
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
@@ -103,6 +108,32 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
     with expectation:
         res = await transport.send(json_dumps(request))
         assert "result" in res
+
+
+ERRORS = [e for e in SmartErrorCode if e != 0]
+
+
+@pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
+async def test_passthrough_errors(mocker, error_code):
+    host = "127.0.0.1"
+    mock_aes_device = MockAesDevice(host, 200, error_code, 0)
+    mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
+
+    transport = AesTransport(host=host, credentials=Credentials("foo", "bar"))
+    transport._handshake_done = True
+    transport._session_expire_at = time.time() + 86400
+    transport._encryption_session = mock_aes_device.encryption_session
+    transport._login_token = mock_aes_device.token
+
+    request = {
+        "method": "get_device_info",
+        "params": None,
+        "request_time_milis": round(time.time() * 1000),
+        "requestID": 1,
+        "terminal_uuid": "foobar",
+    }
+    with pytest.raises(SmartDeviceException):
+        await transport.send(json_dumps(request))
 
 
 class MockAesDevice:
