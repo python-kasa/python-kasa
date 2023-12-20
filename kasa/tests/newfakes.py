@@ -1,9 +1,9 @@
 import copy
 import logging
 import re
-import warnings
 from json import loads as json_loads
 
+import pytest
 from voluptuous import (
     REMOVE_EXTRA,
     All,
@@ -331,16 +331,21 @@ class FakeSmartTransport(BaseTransport):
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
         params = request_dict["params"]
-        if method == "component_nego" or method[:4] == "get_":
+        if method in ["component_nego", "qs_component_nego"] or method[:4] == "get_":
             if method in self.info:
                 return {"result": self.info[method], "error_code": 0}
             else:
-                warnings.warn(
-                    UserWarning(
-                        f"Fixture missing expected method {method}, try to regenerate"
-                    ),
-                    stacklevel=1,
+                fixture_name = (
+                    self.info["discovery_result"]["device_model"]
+                    + "_"
+                    + self.info["get_device_info"]["hw_ver"]
+                    + "_"
+                    + self.info["get_device_info"]["fw_ver"].split(" ", maxsplit=1)[0]
                 )
+                if fixture_name not in pytest.fixtures_missing_methods:
+                    pytest.fixtures_missing_methods[fixture_name] = set()
+                pytest.fixtures_missing_methods[fixture_name].add(method)
+
                 return {"result": {}, "error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"

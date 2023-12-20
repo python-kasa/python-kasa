@@ -2,6 +2,7 @@ import asyncio
 import glob
 import json
 import os
+import warnings
 from dataclasses import dataclass
 from json import dumps as json_dumps
 from os.path import basename
@@ -43,7 +44,7 @@ SUPPORTED_SMART_DEVICES = [
 SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
 
 # Tapo bulbs
-BULBS_SMART_VARIABLE_TEMP = {"L530E"}
+BULBS_SMART_VARIABLE_TEMP = {"L530E", "L510B"}
 BULBS_SMART_COLOR = {"L530E"}
 BULBS_SMART_LIGHT_STRIP: Set[str] = set()
 BULBS_SMART_DIMMABLE: Set[str] = set()
@@ -532,6 +533,21 @@ def unsupported_device_info(request, mocker):
     mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
 
     yield discovery_data
+
+
+def pytest_configure():
+    pytest.fixtures_missing_methods = {}
+
+
+def pytest_sessionfinish(session, exitstatus):
+    for fixture, methods in pytest.fixtures_missing_methods.items():
+        method_list = "\n".join(methods)
+        warnings.warn(
+            UserWarning(
+                f"Fixture {fixture} missing expected methods and needs regenerating:\n{method_list}\n"
+            ),
+            stacklevel=1,
+        )
 
 
 def pytest_addoption(parser):

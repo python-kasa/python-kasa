@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Set, cast
+from typing import Any, Dict, Optional, Set, Union, cast
 
 from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
@@ -10,6 +10,7 @@ from ..exceptions import AuthenticationException
 from ..protocol import TPLinkProtocol
 from ..smartdevice import SmartDevice
 from ..smartprotocol import SmartProtocol
+from ..smartrequests import SmartRequest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,15 +39,13 @@ class TapoDevice(SmartDevice):
             raise AuthenticationException("Tapo plug requires authentication.")
 
         if self._components is None:
-            resp = await self.protocol.query("component_nego")
+            resp = await self._smart_query_helper(SmartRequest.component_nego())
             self._components = resp["component_nego"]
 
-        req = {
-            "get_device_info": None,
-            "get_device_usage": None,
-            "get_device_time": None,
-        }
-        resp = await self.protocol.query(req)
+        requests = SmartRequest.get_component_info_requests(self._components)
+
+        resp = await self._smart_query_helper(requests)
+
         self._info = resp["get_device_info"]
         self._usage = resp["get_device_usage"]
         self._time = resp["get_device_time"]
@@ -139,10 +138,12 @@ class TapoDevice(SmartDevice):
         """Return all the internal state data."""
         return self._data
 
-    async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+    async def _smart_query_helper(
+        self, smart_request: Union[SmartRequest, list[SmartRequest]]
     ) -> Any:
-        res = await self.protocol.query({cmd: arg})
+        res = await self.protocol.query(
+            SmartRequest._create_request_dict(smart_request)
+        )
 
         return res
 
@@ -168,11 +169,15 @@ class TapoDevice(SmartDevice):
 
     async def turn_on(self, **kwargs):
         """Turn on the device."""
-        await self.protocol.query({"set_device_info": {"device_on": True}})
+        await self._smart_query_helper(
+            SmartRequest.set_device_on(SmartRequest.DeviceOnParams(True))
+        )
 
     async def turn_off(self, **kwargs):
         """Turn off the device."""
-        await self.protocol.query({"set_device_info": {"device_on": False}})
+        await self._smart_query_helper(
+            SmartRequest.set_device_on(SmartRequest.DeviceOnParams(False))
+        )
 
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
