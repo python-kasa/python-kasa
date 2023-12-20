@@ -53,8 +53,8 @@ import httpx
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .connectionparams import ConnectionParameters
 from .credentials import Credentials
+from .deviceconfig import DeviceConfig
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import loads as json_loads
 from .protocol import BaseTransport, md5
@@ -93,13 +93,11 @@ class KlapTransport(BaseTransport):
     def __init__(
         self,
         *,
-        cparams: ConnectionParameters,
+        config: DeviceConfig,
     ) -> None:
-        super().__init__(cparams=cparams)
-        self._port = cparams.port or self.DEFAULT_PORT
-        self._http_client: httpx.AsyncClient = (
-            cparams.http_client or httpx.AsyncClient()
-        )
+        super().__init__(config=config)
+        self._port = config.port or self.DEFAULT_PORT
+        self._default_http_client: Optional[httpx.AsyncClient] = None
         self._local_seed: Optional[bytes] = None
         self._local_auth_hash = self.generate_auth_hash(self._credentials)
         self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
@@ -115,6 +113,14 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
+
+    @property
+    def _http_client(self) -> httpx.AsyncClient:
+        if self._config.http_client:
+            return self._config.http_client
+        if not self._default_http_client:
+            self._default_http_client = httpx.AsyncClient()
+        return self._default_http_client
 
     async def client_post(self, url, params=None, data=None):
         """Send an http post request to the device."""
@@ -349,8 +355,8 @@ class KlapTransport(BaseTransport):
 
     async def close(self) -> None:
         """Close the transport."""
-        client = self._http_client
-        self._http_client = None
+        client = self._default_http_client
+        self._default_http_client = None
         self._handshake_done = False
         if client:
             await client.aclose()

@@ -69,6 +69,7 @@ class SmartProtocol(TPLinkProtocol):
                 return await self._execute_query(request, retry)
             except httpx.ConnectError as sdex:
                 if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
                         f"Unable to connect to the device: {self._host}: {sdex}"
@@ -76,6 +77,7 @@ class SmartProtocol(TPLinkProtocol):
                 continue
             except TimeoutError as tex:
                 if retry >= retry_count:
+                    await self.close()
                     raise SmartDeviceException(
                         "Unable to connect to the device, "
                         + f"timed out: {self._host}: {tex}"
@@ -83,17 +85,20 @@ class SmartProtocol(TPLinkProtocol):
                 await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
                 continue
             except AuthenticationException as auex:
+                await self.close()
                 _LOGGER.debug(
                     "Unable to authenticate with %s, not retrying", self._host
                 )
                 raise auex
             except RetryableException as ex:
                 if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 continue
             except TimeoutException as ex:
                 if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
@@ -105,6 +110,7 @@ class SmartProtocol(TPLinkProtocol):
                 raise ex
             except Exception as ex:
                 if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
                         f"Unable to connect to the device: {self._host}: {ex}"

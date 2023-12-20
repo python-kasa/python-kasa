@@ -9,7 +9,7 @@ import sys
 
 import pytest
 
-from ..connectionparams import ConnectionParameters
+from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
 from ..protocol import (
     BaseTransport,
@@ -32,9 +32,9 @@ async def test_protocol_retries(mocker, retry_count):
         return reader, writer
 
     conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
-    cparams = ConnectionParameters("127.0.0.1")
+    config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(cparams=cparams)).query(
+        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
             {}, retry_count=retry_count
         )
 
@@ -46,9 +46,9 @@ async def test_protocol_no_retry_on_unreachable(mocker):
         "asyncio.open_connection",
         side_effect=OSError(errno.EHOSTUNREACH, "No route to host"),
     )
-    cparams = ConnectionParameters("127.0.0.1")
+    config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(cparams=cparams)).query(
+        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
             {}, retry_count=5
         )
 
@@ -60,9 +60,9 @@ async def test_protocol_no_retry_connection_refused(mocker):
         "asyncio.open_connection",
         side_effect=ConnectionRefusedError,
     )
-    cparams = ConnectionParameters("127.0.0.1")
+    config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(cparams=cparams)).query(
+        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
             {}, retry_count=5
         )
 
@@ -74,9 +74,9 @@ async def test_protocol_retry_recoverable_error(mocker):
         "asyncio.open_connection",
         side_effect=OSError(errno.ECONNRESET, "Connection reset by peer"),
     )
-    cparams = ConnectionParameters("127.0.0.1")
+    config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(cparams=cparams)).query(
+        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
             {}, retry_count=5
         )
 
@@ -112,8 +112,8 @@ async def test_protocol_reconnect(mocker, retry_count):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    cparams = ConnectionParameters("127.0.0.1")
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(cparams=cparams))
+    config = DeviceConfig("127.0.0.1")
+    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({}, retry_count=retry_count)
     assert response == {"great": "success"}
@@ -141,8 +141,8 @@ async def test_protocol_logging(mocker, caplog, log_level):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    cparams = ConnectionParameters("127.0.0.1")
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(cparams=cparams))
+    config = DeviceConfig("127.0.0.1")
+    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})
     assert response == {"great": "success"}
@@ -176,8 +176,8 @@ async def test_protocol_custom_port(mocker, custom_port):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    cparams = ConnectionParameters("127.0.0.1", port=custom_port)
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(cparams=cparams))
+    config = DeviceConfig("127.0.0.1", port=custom_port)
+    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})
     assert response == {"great": "success"}
@@ -296,5 +296,5 @@ def test_transport_init_signature(class_name_obj):
         and params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
     )
     assert (
-        params[1].name == "cparams" and params[1].kind == inspect.Parameter.KEYWORD_ONLY
+        params[1].name == "config" and params[1].kind == inspect.Parameter.KEYWORD_ONLY
     )

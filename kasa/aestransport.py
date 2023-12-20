@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padd
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .connectionparams import ConnectionParameters
+from .deviceconfig import DeviceConfig
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
@@ -58,14 +58,13 @@ class AesTransport(BaseTransport):
     def __init__(
         self,
         *,
-        cparams: ConnectionParameters,
+        config: DeviceConfig,
     ) -> None:
-        super().__init__(cparams=cparams)
-        self._port = cparams.port or self.DEFAULT_PORT
+        super().__init__(config=config)
+        self._port = config.port or self.DEFAULT_PORT
 
-        self._http_client: httpx.AsyncClient = (
-            cparams.http_client or httpx.AsyncClient()
-        )
+        self._default_http_client: Optional[httpx.AsyncClient] = None
+
         self._handshake_done = False
 
         self._encryption_session: Optional[AesEncyptionSession] = None
@@ -76,6 +75,14 @@ class AesTransport(BaseTransport):
         self._login_token = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
+
+    @property
+    def _http_client(self) -> httpx.AsyncClient:
+        if self._config.http_client:
+            return self._config.http_client
+        if not self._default_http_client:
+            self._default_http_client = httpx.AsyncClient()
+        return self._default_http_client
 
     def hash_credentials(self, login_v2):
         """Hash the credentials."""
@@ -259,8 +266,8 @@ class AesTransport(BaseTransport):
 
     async def close(self) -> None:
         """Close the protocol."""
-        client = self._http_client
-        self._http_client = None
+        client = self._default_http_client
+        self._default_http_client = None
         self._handshake_done = False
         self._login_token = None
         if client:

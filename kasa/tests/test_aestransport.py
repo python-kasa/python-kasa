@@ -11,8 +11,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 
 from ..aestransport import AesEncyptionSession, AesTransport
-from ..connectionparams import ConnectionParameters
 from ..credentials import Credentials
+from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
     SMART_TIMEOUT_ERRORS,
@@ -60,7 +60,7 @@ async def test_handshake(
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
 
     transport = AesTransport(
-        cparams=ConnectionParameters(host, credentials=Credentials("foo", "bar"))
+        config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
 
     assert transport._encryption_session is None
@@ -78,7 +78,7 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
 
     transport = AesTransport(
-        cparams=ConnectionParameters(host, credentials=Credentials("foo", "bar"))
+        config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
@@ -97,7 +97,7 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
 
     transport = AesTransport(
-        cparams=ConnectionParameters(host, credentials=Credentials("foo", "bar"))
+        config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
@@ -125,7 +125,8 @@ async def test_passthrough_errors(mocker, error_code):
     mock_aes_device = MockAesDevice(host, 200, error_code, 0)
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
 
-    transport = AesTransport(host=host, credentials=Credentials("foo", "bar"))
+    config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
+    transport = AesTransport(config=config)
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session

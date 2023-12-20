@@ -15,8 +15,8 @@ from voluptuous import (
     Schema,
 )
 
-from ..connectionparams import ConnectionParameters
 from ..credentials import Credentials
+from ..deviceconfig import DeviceConfig
 from ..protocol import BaseTransport, TPLinkSmartHomeProtocol
 from ..smartprotocol import SmartProtocol
 
@@ -305,9 +305,7 @@ class FakeSmartProtocol(SmartProtocol):
 class FakeSmartTransport(BaseTransport):
     def __init__(self, info):
         super().__init__(
-            cparams=ConnectionParameters(
-                "127.0.0.123", credentials=Credentials("", "")
-            ),
+            config=DeviceConfig("127.0.0.123", credentials=Credentials()),
         )
         self.info = info
 

@@ -16,13 +16,13 @@ from kasa import (
     SmartLightStrip,
     SmartPlug,
 )
-from kasa.connectionparams import (
-    ConnectionParameters,
+from kasa.device_factory import connect
+from kasa.deviceconfig import (
     ConnectionType,
+    DeviceConfig,
     DeviceFamilyType,
     EncryptType,
 )
-from kasa.device_factory import connect
 from kasa.discover import DiscoveryResult
 from kasa.protocolfactory import get_protocol
 
@@ -57,18 +57,18 @@ async def test_connect(
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
 
-    cparams = ConnectionParameters(
+    config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
-    protocol_class = get_protocol(cparams).__class__
+    protocol_class = get_protocol(config).__class__
 
     dev = await connect(
-        cparams=cparams,
+        config=config,
     )
     assert isinstance(dev, device_class)
     assert isinstance(dev.protocol, protocol_class)
 
-    assert dev.connection_parameters == cparams
+    assert dev.config == config
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
@@ -77,14 +77,14 @@ async def test_connect_custom_port(all_fixture_data: dict, mocker, custom_port):
     host = "127.0.0.1"
 
     ctype, _ = _get_connection_type_device_class(all_fixture_data)
-    cparams = ConnectionParameters(host=host, port=custom_port, connection_type=ctype)
+    config = DeviceConfig(host=host, port=custom_port, connection_type=ctype)
     default_port = 80 if "discovery_result" in all_fixture_data else 9999
 
     ctype, _ = _get_connection_type_device_class(all_fixture_data)
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
-    dev = await connect(cparams=cparams)
+    dev = await connect(config=config)
     assert issubclass(dev.__class__, SmartDevice)
     assert dev.port == custom_port or dev.port == default_port
 
@@ -99,12 +99,12 @@ async def test_connect_logs_connect_time(
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
 
     host = "127.0.0.1"
-    cparams = ConnectionParameters(
+    config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
     logging.getLogger("kasa").setLevel(logging.DEBUG)
     await connect(
-        cparams=cparams,
+        config=config,
     )
     assert "seconds to update" in caplog.text
 
@@ -117,11 +117,11 @@ async def test_connect_query_fails(all_fixture_data: dict, mocker):
     mocker.patch("kasa.SmartProtocol.query", side_effect=SmartDeviceException)
 
     ctype, _ = _get_connection_type_device_class(all_fixture_data)
-    cparams = ConnectionParameters(
+    config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
     with pytest.raises(SmartDeviceException):
-        await connect(cparams=cparams)
+        await connect(config=config)
 
 
 async def test_connect_http_client(all_fixture_data, mocker):
@@ -136,19 +136,19 @@ async def test_connect_http_client(all_fixture_data, mocker):
 
     http_client = httpx.AsyncClient()
 
-    cparams = ConnectionParameters(
+    config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
-    dev = await connect(cparams=cparams)
+    dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
         assert dev.protocol._transport._http_client != http_client
 
-    cparams = ConnectionParameters(
+    config = DeviceConfig(
         host=host,
         credentials=Credentials("foor", "bar"),
         connection_type=ctype,
         http_client=http_client,
     )
-    dev = await connect(cparams=cparams)
+    dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
         assert dev.protocol._transport._http_client == http_client

@@ -109,7 +109,7 @@ class ConnectionType:
 
 
 @dataclass
-class ConnectionParameters:
+class DeviceConfig:
     """Class to represent paramaters that determine how to connect to devices."""
 
     DEFAULT_TIMEOUT = 5
@@ -126,6 +126,7 @@ class ConnectionParameters:
         )
     )
 
+    uses_http: bool = False
     # compare=False will be excluded from the serialization and object comparison.
     http_client: Optional[httpx.AsyncClient] = field(default=None, compare=False)
 
@@ -142,6 +143,6 @@ class ConnectionParameters:
         return _dataclass_to_dict(self)
 
     @staticmethod
-    def from_dict(cparam_dict: Dict[str, Dict[str, str]]) -> "ConnectionParameters":
+    def from_dict(cparam_dict: Dict[str, Dict[str, str]]) -> "DeviceConfig":
         """Return connection parameters from dict."""
-        return _dataclass_from_dict(ConnectionParameters, cparam_dict)
+        return _dataclass_from_dict(DeviceConfig, cparam_dict)

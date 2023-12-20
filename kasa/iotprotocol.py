@@ -40,16 +40,19 @@ class IotProtocol(TPLinkProtocol):
                 return await self._execute_query(request, retry)
             except httpx.ConnectError as sdex:
                 if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
                         f"Unable to connect to the device: {self._host}: {sdex}"
                     ) from sdex
                 continue
             except TimeoutError as tex:
+                await self.close()
                 raise SmartDeviceException(
                     f"Unable to connect to the device, timed out: {self._host}: {tex}"
                 ) from tex
             except AuthenticationException as auex:
+                await self.close()
                 _LOGGER.debug(
                     "Unable to authenticate with %s, not retrying", self._host
                 )
@@ -63,6 +66,7 @@ class IotProtocol(TPLinkProtocol):
                 raise ex
             except Exception as ex:
                 if retry >= retry_count:
+                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
                         f"Unable to connect to the device: {self._host}: {ex}"

@@ -7,23 +7,21 @@ import logging
 import socket
 from typing import Awaitable, Callable, Dict, Optional, Set, Type, cast
 
-import httpx
-
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
 try:
-    from pydantic.v1 import BaseModel, ValidationError
+    from pydantic.v1 import BaseModel, ValidationError  # pragma: no cover
 except ImportError:
-    from pydantic import BaseModel, ValidationError
+    from pydantic import BaseModel, ValidationError  # pragma: no cover
 
-from kasa.connectionparams import ConnectionParameters, ConnectionType, EncryptType
 from kasa.credentials import Credentials
 from kasa.device_factory import (
     get_device_class_from_family,
     get_device_class_from_sys_info,
 )
+from kasa.deviceconfig import ConnectionType, DeviceConfig, EncryptType
 from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -63,7 +61,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         discovered_event: Optional[asyncio.Event] = None,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
-        http_client_generator: Optional[Callable[[], httpx.AsyncClient]] = None,
     ) -> None:
         self.transport = None
         self.discovery_packets = discovery_packets
@@ -83,9 +80,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.credentials = credentials
         self.timeout = timeout
         self.seen_hosts: Set[str] = set()
-        self.http_client_generator: Optional[
-            Callable[[], httpx.AsyncClient]
-        ] = http_client_generator
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -124,18 +118,17 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         device = None
 
-        cparams = ConnectionParameters(host=ip, port=self.port)
+        config = DeviceConfig(host=ip, port=self.port)
         if self.credentials:
-            cparams.credentials = self.credentials
+            config.credentials = self.credentials
         if self.timeout:
-            cparams.timeout = self.timeout
+            config.timeout = self.timeout
         try:
             if port == self.discovery_port:
-                device = Discover._get_device_instance_legacy(data, cparams)
+                device = Discover._get_device_instance_legacy(data, config)
             elif port == Discover.DISCOVERY_PORT_2:
-                if self.http_client_generator:
-                    cparams.http_client = self.http_client_generator()
-                device = Discover._get_device_instance(data, cparams)
+                config.uses_http = True
+                device = Discover._get_device_instance(data, config)
             else:
                 return
         except UnsupportedDeviceException as udex:
@@ -226,7 +219,6 @@ class Discover:
         credentials=None,
         port=None,
         timeout=None,
-        http_client_generator: Optional[Callable[[], httpx.AsyncClient]] = None,
     ) -> DeviceDict:
         """Discover supported devices.
 
@@ -263,7 +255,6 @@ class Discover:
                 credentials=credentials,
                 timeout=timeout,
                 port=port,
-                http_client_generator=http_client_generator,
             ),
             local_addr=("0.0.0.0", 0),  # noqa: S104
         )
@@ -287,7 +278,6 @@ class Discover:
         port: Optional[int] = None,
         timeout: Optional[int] = None,
         credentials: Optional[Credentials] = None,
-        httpx_asyncclient: httpx.AsyncClient = None,
     ) -> SmartDevice:
         """Discover a single device by the given IP address.
 
@@ -337,9 +327,6 @@ class Discover:
                 discovered_event=event,
                 credentials=credentials,
                 timeout=timeout,
-                http_client_generator=lambda: httpx_asyncclient
-                if httpx_asyncclient
-                else None,
             ),
             local_addr=("0.0.0.0", 0),  # noqa: S104
         )
@@ -362,8 +349,6 @@ class Discover:
         if ip in protocol.discovered_devices:
             dev = protocol.discovered_devices[ip]
             dev.host = host
-            if httpx_asyncclient and hasattr(dev.protocol._transport, "http_client"):
-                dev.protocol._transport.http_client = httpx_asyncclient  # type: ignore[union-attr]
             return dev
         elif ip in protocol.unsupported_device_exceptions:
             raise protocol.unsupported_device_exceptions[ip]
@@ -388,86 +373,84 @@ class Discover:
             return get_device_class_from_sys_info(info)
 
     @staticmethod
-    def _get_device_instance_legacy(
-        data: bytes, cparams: ConnectionParameters
-    ) -> SmartDevice:
+    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> SmartDevice:
         """Get SmartDevice from legacy 9999 response."""
         try:
             info = json_loads(TPLinkSmartHomeProtocol.decrypt(data))
         except Exception as ex:
             raise SmartDeviceException(
-                f"Unable to read response from device: {cparams.host}: {ex}"
+                f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
 
-        _LOGGER.debug("[DISCOVERY] %s << %s", cparams.host, info)
+        _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
 
         device_class = Discover._get_device_class(info)
-        device = device_class(cparams.host, port=cparams.port)
+        device = device_class(config.host, port=config.port)
         sys_info = info["system"]["get_sysinfo"]
         if (device_type := sys_info.get("mic_type")) or (
             device_type := sys_info.get("type")
         ):
-            cparams.connection_type = ConnectionType.from_values(
+            config.connection_type = ConnectionType.from_values(
                 device_family=device_type, encryption_type=EncryptType.Xor.value
             )
-        device.protocol = get_protocol(cparams)  # type: ignore[assignment]
+        device.protocol = get_protocol(config)  # type: ignore[assignment]
         device.update_from_discover_info(info)
         return device
 
     @staticmethod
     def _get_device_instance(
         data: bytes,
-        cparams: ConnectionParameters,
+        config: DeviceConfig,
     ) -> SmartDevice:
         """Get SmartDevice from the new 20002 response."""
         try:
             info = json_loads(data[16:])
         except Exception as ex:
-            _LOGGER.debug("Got invalid response from device %s: %s", cparams.host, data)
+            _LOGGER.debug("Got invalid response from device %s: %s", config.host, data)
             raise SmartDeviceException(
-                f"Unable to read response from device: {cparams.host}: {ex}"
+                f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
         try:
             discovery_result = DiscoveryResult(**info["result"])
         except ValidationError as ex:
             _LOGGER.debug(
-                "Unable to parse discovery from device %s: %s", cparams.host, info
+                "Unable to parse discovery from device %s: %s", config.host, info
             )
             raise UnsupportedDeviceException(
-                f"Unable to parse discovery from device: {cparams.host}: {ex}"
+                f"Unable to parse discovery from device: {config.host}: {ex}"
             ) from ex
 
         type_ = discovery_result.device_type
 
         try:
-            cparams.connection_type = ConnectionType.from_values(
+            config.connection_type = ConnectionType.from_values(
                 type_, discovery_result.mgt_encrypt_schm.encrypt_type
             )
         except SmartDeviceException as ex:
             raise UnsupportedDeviceException(
-                f"Unsupported device {cparams.host} of type {type_} "
+                f"Unsupported device {config.host} of type {type_} "
                 + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.get_dict(),
             ) from ex
         if (device_class := get_device_class_from_family(type_)) is None:
             _LOGGER.warning("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceException(
-                f"Unsupported device {cparams.host} of type {type_}: {info}",
+                f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.get_dict(),
             )
-        if (protocol := get_protocol(cparams)) is None:
+        if (protocol := get_protocol(config)) is None:
             _LOGGER.warning(
-                "Got unsupported connection type: %s", cparams.connection_type.to_dict()
+                "Got unsupported connection type: %s", config.connection_type.to_dict()
             )
             raise UnsupportedDeviceException(
-                f"Unsupported encryption scheme {cparams.host} of "
-                + f"type {cparams.connection_type.to_dict()}: {info}",
+                f"Unsupported encryption scheme {config.host} of "
+                + f"type {config.connection_type.to_dict()}: {info}",
                 discovery_result=discovery_result.get_dict(),
             )
 
-        _LOGGER.debug("[DISCOVERY] %s << %s", cparams.host, info)
+        _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
         device = device_class(
-            cparams.host, port=cparams.port, credentials=cparams.credentials
+            config.host, port=config.port, credentials=config.credentials
         )
         device.protocol = protocol
 

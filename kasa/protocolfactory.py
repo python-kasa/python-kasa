@@ -2,7 +2,7 @@
 from typing import Optional, Tuple, Type
 
 from .aestransport import AesTransport
-from .connectionparams import ConnectionParameters
+from .deviceconfig import DeviceConfig
 from .iotprotocol import IotProtocol
 from .klaptransport import KlapTransport, KlapTransportV2
 from .protocol import (
@@ -15,12 +15,12 @@ from .smartprotocol import SmartProtocol
 
 
 def get_protocol(
-    cparams: ConnectionParameters,
+    config: DeviceConfig,
 ) -> Optional[TPLinkProtocol]:
     """Return the protocol from the connection name."""
-    protocol_name = cparams.connection_type.device_family.value.split(".")[0]
+    protocol_name = config.connection_type.device_family.value.split(".")[0]
     protocol_transport_key = (
-        protocol_name + "." + cparams.connection_type.encryption_type.value
+        protocol_name + "." + config.connection_type.encryption_type.value
     )
     supported_device_protocols: dict[
         str, Tuple[Type[TPLinkProtocol], Type[BaseTransport]]
@@ -36,4 +36,4 @@ def get_protocol(
     protocol_class, transport_class = supported_device_protocols.get(
         protocol_transport_key
     )  # type: ignore
-    return protocol_class(transport=transport_class(cparams=cparams))
+    return protocol_class(transport=transport_class(config=config))

@@ -12,9 +12,9 @@ import asyncclick as click
 
 from kasa import (
     AuthenticationException,
-    ConnectionParameters,
     ConnectionType,
     Credentials,
+    DeviceConfig,
     DeviceFamilyType,
     Discover,
     EncryptType,
@@ -305,10 +305,10 @@ async def cli(
             DeviceFamilyType(device_family),
             EncryptType(encrypt_type),
         )
-        cparams = ConnectionParameters(
+        config = DeviceConfig(
             host=host, credentials=credentials, timeout=timeout, connection_type=ctype
         )
-        dev = await SmartDevice.connect(cparams=cparams)
+        dev = await SmartDevice.connect(config=config)
     else:
         echo("No --type or --device-family and --encrypt-type defined, discovering..")
         dev = await Discover.discover_single(

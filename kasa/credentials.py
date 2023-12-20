@@ -8,5 +8,5 @@ from typing import Optional
 class Credentials:
     """Credentials for authentication."""
 
-    username: Optional[str] = field(default=None, repr=False)
-    password: Optional[str] = field(default=None, repr=False)
+    username: Optional[str] = field(default="", repr=False)
+    password: Optional[str] = field(default="", repr=False)

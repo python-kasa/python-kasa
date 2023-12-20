@@ -14,9 +14,9 @@ from kasa import (
     SmartDeviceException,
     protocol,
 )
-from kasa.connectionparams import (
-    ConnectionParameters,
+from kasa.deviceconfig import (
     ConnectionType,
+    DeviceConfig,
     DeviceFamilyType,
     EncryptType,
 )
@@ -102,7 +102,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     update_mock = mocker.patch.object(device_class, "update")
 
     x = await Discover.discover_single(
-        host, port=custom_port, credentials=Credentials("", "")
+        host, port=custom_port, credentials=Credentials()
     )
     assert issubclass(x.__class__, SmartDevice)
     assert x._discovery_info is not None
@@ -112,8 +112,11 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     ct = ConnectionType.from_values(
         discovery_mock.device_type, discovery_mock.encrypt_type
     )
-    cp = ConnectionParameters(host=host, port=custom_port, connection_type=ct)
-    assert x.connection_parameters == cp
+    uses_http = discovery_mock.default_port == 20002
+    config = DeviceConfig(
+        host=host, port=custom_port, connection_type=ct, uses_http=uses_http
+    )
+    assert x.config == config
 
 
 async def test_discover_single_hostname(discovery_mock, mocker):
@@ -125,7 +128,7 @@ async def test_discover_single_hostname(discovery_mock, mocker):
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
     update_mock = mocker.patch.object(device_class, "update")
 
-    x = await Discover.discover_single(host, credentials=Credentials("", ""))
+    x = await Discover.discover_single(host, credentials=Credentials())
     assert issubclass(x.__class__, SmartDevice)
     assert x._discovery_info is not None
     assert x.host == host
@@ -133,7 +136,7 @@ async def test_discover_single_hostname(discovery_mock, mocker):
 
     mocker.patch("socket.getaddrinfo", side_effect=socket.gaierror())
     with pytest.raises(SmartDeviceException):
-        x = await Discover.discover_single(host, credentials=Credentials("", ""))
+        x = await Discover.discover_single(host, credentials=Credentials())
 
 
 async def test_discover_single_unsupported(unsupported_device_info, mocker):
@@ -305,12 +308,13 @@ async def test_discover_single_http_client(discovery_mock, mocker):
 
     http_client = httpx.AsyncClient()
 
-    x = await Discover.discover_single(host)
+    x: SmartDevice = await Discover.discover_single(host)
+
+    assert x.config.uses_http == (discovery_mock.default_port == 20002)
+
     if discovery_mock.default_port == 20002:
         assert x.protocol._transport._http_client != http_client
-
-    x = await Discover.discover_single(host, httpx_asyncclient=http_client)
-    if discovery_mock.default_port == 20002:
+        x.config.http_client = http_client
         assert x.protocol._transport._http_client == http_client
 
 
@@ -321,13 +325,11 @@ async def test_discover_http_client(discovery_mock, mocker):
 
     http_client = httpx.AsyncClient()
 
-    def gen():
-        return http_client
+    devices = await Discover.discover(discovery_timeout=0)
+    x: SmartDevice = devices[host]
+    assert x.config.uses_http == (discovery_mock.default_port == 20002)
 
-    devs = await Discover.discover(discovery_timeout=0)
     if discovery_mock.default_port == 20002:
-        assert devs[host].protocol._transport._http_client != http_client
-
-    devs = await Discover.discover(discovery_timeout=0, http_client_generator=gen)
-    if discovery_mock.default_port == 20002:
-        assert devs[host].protocol._transport._http_client == http_client
+        assert x.protocol._transport._http_client != http_client
+        x.config.http_client = http_client
+        assert x.protocol._transport._http_client == http_client

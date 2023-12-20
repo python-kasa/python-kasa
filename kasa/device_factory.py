@@ -1,9 +1,9 @@
-"""Device creation via ConnectionParameters."""
+"""Device creation via DeviceConfig."""
 import logging
 import time
 from typing import Any, Dict, Optional, Type
 
-from kasa.connectionparams import ConnectionParameters
+from kasa.deviceconfig import DeviceConfig
 from kasa.protocol import TPLinkSmartHomeProtocol
 from kasa.smartbulb import SmartBulb
 from kasa.smartdevice import SmartDevice
@@ -23,7 +23,7 @@ GET_SYSINFO_QUERY = {
 }
 
 
-async def connect(*, cparams: ConnectionParameters) -> "SmartDevice":
+async def connect(*, config: DeviceConfig) -> "SmartDevice":
     """Connect to a single device by the given connection parameters.
 
     Do not use this function directly, use SmartDevice.Connect()
@@ -37,15 +37,15 @@ async def connect(*, cparams: ConnectionParameters) -> "SmartDevice":
         if debug_enabled:
             end_time = time.perf_counter()
             _LOGGER.debug(
-                f"Device {cparams.host} with connection params {has_params} "
+                f"Device {config.host} with connection params {has_params} "
                 + f"took {end_time - start_time:.2f} seconds to {perf_type}",
             )
             start_time = time.perf_counter()
 
-    if (protocol := get_protocol(cparams=cparams)) is None:
+    if (protocol := get_protocol(config=config)) is None:
         raise UnsupportedDeviceException(
-            f"Unsupported device for {cparams.host}: "
-            + f"{cparams.connection_type.device_family.value}"
+            f"Unsupported device for {config.host}: "
+            + f"{config.connection_type.device_family.value}"
         )
 
     device_class: Optional[Type[SmartDevice]]
@@ -54,20 +54,20 @@ async def connect(*, cparams: ConnectionParameters) -> "SmartDevice":
         info = await protocol.query(GET_SYSINFO_QUERY)
         _perf_log(True, "get_sysinfo")
         device_class = get_device_class_from_sys_info(info)
-        device = device_class(cparams.host, port=cparams.port, timeout=cparams.timeout)
+        device = device_class(config.host, port=config.port, timeout=config.timeout)
         device.update_from_discover_info(info)
         device.protocol = protocol
         await device.update()
         _perf_log(True, "update")
         return device
     elif device_class := get_device_class_from_family(
-        cparams.connection_type.device_family.value
+        config.connection_type.device_family.value
     ):
         device = device_class(
-            cparams.host,
-            port=cparams.port,
-            timeout=cparams.timeout,
-            credentials=cparams.credentials,
+            config.host,
+            port=config.port,
+            timeout=config.timeout,
+            credentials=config.credentials,
         )
         device.protocol = protocol
         await device.update()
@@ -75,8 +75,8 @@ async def connect(*, cparams: ConnectionParameters) -> "SmartDevice":
         return device
     else:
         raise UnsupportedDeviceException(
-            f"Unsupported device for {cparams.host}: "
-            + f"{cparams.connection_type.device_family.value}"
+            f"Unsupported device for {config.host}: "
+            + f"{config.connection_type.device_family.value}"
         )
 
 

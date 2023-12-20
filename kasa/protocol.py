@@ -24,7 +24,7 @@ from typing import Dict, Generator, Optional, Union
 from async_timeout import timeout as asyncio_timeout
 from cryptography.hazmat.primitives import hashes
 
-from .connectionparams import ConnectionParameters
+from .deviceconfig import DeviceConfig
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
 from .json import loads as json_loads
@@ -49,14 +49,14 @@ class BaseTransport(ABC):
     def __init__(
         self,
         *,
-        cparams: ConnectionParameters,
+        config: DeviceConfig,
     ) -> None:
         """Create a protocol object."""
-        self._cparams = cparams
-        self._host = cparams.host
-        self._port = cparams.port  # Set by derived classes
-        self._credentials = cparams.credentials
-        self._timeout = cparams.timeout
+        self._config = config
+        self._host = config.host
+        self._port = config.port  # Set by derived classes
+        self._credentials = config.credentials
+        self._timeout = config.timeout
 
     @abstractmethod
     async def send(self, request: str) -> Dict:
@@ -83,9 +83,9 @@ class TPLinkProtocol(ABC):
         return self._transport._host
 
     @property
-    def connection_parameters(self) -> ConnectionParameters:
+    def config(self) -> DeviceConfig:
         """Return the connection parameters the device is using."""
-        return self._transport._cparams
+        return self._transport._config
 
     @abstractmethod
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
@@ -107,9 +107,9 @@ class _XorTransport(BaseTransport):
 
     DEFAULT_PORT = 9999
 
-    def __init__(self, *, cparams: ConnectionParameters) -> None:
-        super().__init__(cparams=cparams)
-        self._port = cparams.port or self.DEFAULT_PORT
+    def __init__(self, *, config: DeviceConfig) -> None:
+        super().__init__(config=config)
+        self._port = config.port or self.DEFAULT_PORT
 
     async def send(self, request: str) -> Dict:
         """Send a message to the device and return a response."""

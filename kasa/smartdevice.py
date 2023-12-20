@@ -19,9 +19,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set
 
-from .connectionparams import ConnectionParameters
 from .credentials import Credentials
 from .device_type import DeviceType
+from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
@@ -202,9 +202,9 @@ class SmartDevice:
         """
         self.host = host
         self.port = port
-        cparams = ConnectionParameters(host=host, port=port, timeout=timeout)
+        config = DeviceConfig(host=host, port=port, timeout=timeout)
         self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(
-            transport=_XorTransport(cparams=cparams),
+            transport=_XorTransport(config=config),
         )
         self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
@@ -774,15 +774,15 @@ class SmartDevice:
         )
 
     @property
-    def connection_parameters(self) -> ConnectionParameters:
+    def config(self) -> DeviceConfig:
         """Return the connection parameters the device is using."""
-        return self.protocol.connection_parameters
+        return self.protocol.config
 
     @staticmethod
     async def connect(
         *,
         host: Optional[str] = None,
-        cparams: Optional[ConnectionParameters] = None,
+        config: Optional[DeviceConfig] = None,
     ) -> "SmartDevice":
         """Connect to a single device by the given hostname or connection parameters.
 
@@ -797,17 +797,17 @@ class SmartDevice:
         The device type is discovered by querying the device.
 
         :param host: Hostname of device to query
-        :param cparams: Connection parameters to ensure the correct protocol
+        :param config: Connection parameters to ensure the correct protocol
             and connection options are used.
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
         from .device_factory import connect  # pylint: disable=import-outside-toplevel
 
-        if host and cparams or (not host and not cparams):
+        if host and config or (not host and not config):
             raise SmartDeviceException(
-                "One of host or cparams must be provded and not both"
+                "One of host or config must be provded and not both"
             )
         if host:
-            cparams = ConnectionParameters(host=host)
-        return await connect(cparams=cparams)  # type: ignore[arg-type]
+            config = DeviceConfig(host=host)
+        return await connect(config=config)  # type: ignore[arg-type]

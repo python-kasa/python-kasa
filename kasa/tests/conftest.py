@@ -388,7 +388,7 @@ async def get_device_for_file(file, protocol):
     d = device_for_file(model, protocol)(host="127.0.0.123")
     if protocol == "SMART":
         d.protocol = FakeSmartProtocol(sysinfo)
-        d.credentials = Credentials("", "")
+        d.credentials = Credentials()
     else:
         d.protocol = FakeTransportProtocol(sysinfo)
     await _update_and_close(d)

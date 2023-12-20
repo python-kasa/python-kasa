@@ -5,8 +5,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Set, cast
 
 from ..aestransport import AesTransport
-from ..connectionparams import ConnectionParameters
 from ..credentials import Credentials
+from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationException
 from ..smartdevice import SmartDevice
 from ..smartprotocol import SmartProtocol
@@ -29,14 +29,14 @@ class TapoDevice(SmartDevice):
         self._components: Optional[Dict[str, Any]] = None
         self._state_information: Dict[str, Any] = {}
         self._discovery_info: Optional[Dict[str, Any]] = None
-        cparams = ConnectionParameters(
+        config = DeviceConfig(
             host=host,
             port=port,
             credentials=credentials,  # type: ignore[arg-type]
             timeout=timeout,
         )
         self.protocol = SmartProtocol(
-            transport=AesTransport(cparams=cparams),
+            transport=AesTransport(config=config),
         )
 
     async def update(self, update_children: bool = True):
