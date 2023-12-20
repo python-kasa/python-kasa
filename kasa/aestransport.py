@@ -130,14 +130,14 @@ class AesTransport(BaseTransport):
             return
         msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
         if error_code in SMART_TIMEOUT_ERRORS:
-            raise TimeoutException(msg)
+            raise TimeoutException(msg, error_code=error_code)
         if error_code in SMART_RETRYABLE_ERRORS:
-            raise RetryableException(msg)
+            raise RetryableException(msg, error_code=error_code)
         if error_code in SMART_AUTHENTICATION_ERRORS:
             self._handshake_done = False
             self._login_token = None
-            raise AuthenticationException(msg)
-        raise SmartDeviceException(msg)
+            raise AuthenticationException(msg, error_code=error_code)
+        raise SmartDeviceException(msg, error_code=error_code)
 
     async def send_secure_passthrough(self, request: str):
         """Send encrypted message as passthrough."""

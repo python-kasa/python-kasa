@@ -186,12 +186,12 @@ class SmartProtocol(TPLinkProtocol):
         if method := resp_dict.get("method"):
             msg += f" for method: {method}"
         if error_code in SMART_TIMEOUT_ERRORS:
-            raise TimeoutException(msg)
+            raise TimeoutException(msg, error_code=error_code)
         if error_code in SMART_RETRYABLE_ERRORS:
-            raise RetryableException(msg)
+            raise RetryableException(msg, error_code=error_code)
         if error_code in SMART_AUTHENTICATION_ERRORS:
-            raise AuthenticationException(msg)
-        raise SmartDeviceException(msg)
+            raise AuthenticationException(msg, error_code=error_code)
+        raise SmartDeviceException(msg, error_code=error_code)
 
     async def close(self) -> None:
         """Close the protocol."""
