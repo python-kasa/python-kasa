@@ -128,7 +128,23 @@ def json_formatter_cb(result, **kwargs):
     show_default=True,
     help="The broadcast address to be used for discovery.",
 )
-@click.option("-d", "--debug", envvar="KASA_DEBUG", default=False, is_flag=True)
+@click.option(
+    "-v",
+    "--verbose",
+    envvar="KASA_VERBOSE",
+    required=False,
+    default=False,
+    is_flag=True,
+    help="Be more verbose on output",
+)
+@click.option(
+    "-d",
+    "--debug",
+    envvar="KASA_DEBUG",
+    default=False,
+    is_flag=True,
+    help="Print debug output",
+)
 @click.option(
     "--type",
     envvar="KASA_TYPE",
@@ -147,6 +163,7 @@ def json_formatter_cb(result, **kwargs):
     envvar="KASA_TIMEOUT",
     default=5,
     required=False,
+    show_default=True,
     help="Timeout for device communications.",
 )
 @click.option(
@@ -154,6 +171,7 @@ def json_formatter_cb(result, **kwargs):
     envvar="KASA_DISCOVERY_TIMEOUT",
     default=3,
     required=False,
+    show_default=True,
     help="Timeout for discovery.",
 )
 @click.option(
@@ -178,6 +196,7 @@ async def cli(
     port,
     alias,
     target,
+    verbose,
     debug,
     type,
     json,
@@ -307,21 +326,14 @@ async def join(dev: SmartDevice, ssid, password, keytype):
 
 
 @cli.command()
-@click.option(
-    "--verbose",
-    envvar="KASA_VERBOSE",
-    required=False,
-    default=False,
-    is_flag=True,
-    help="Be more verbose on output",
-)
 @click.pass_context
-async def discover(ctx, verbose):
+async def discover(ctx):
     """Discover devices in the network."""
     target = ctx.parent.params["target"]
     username = ctx.parent.params["username"]
     password = ctx.parent.params["password"]
     timeout = ctx.parent.params["discovery_timeout"]
+    verbose = ctx.parent.params["verbose"]
 
     credentials = Credentials(username, password)
 
