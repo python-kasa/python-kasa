@@ -47,7 +47,7 @@ class AesTransport(BaseTransport):
     protocol, sometimes used by newer firmware versions on kasa devices.
     """
 
-    DEFAULT_PORT = 80
+    DEFAULT_PORT: int = 80
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     COMMON_HEADERS = {
         "Content-Type": "application/json",
@@ -61,7 +61,6 @@ class AesTransport(BaseTransport):
         config: DeviceConfig,
     ) -> None:
         super().__init__(config=config)
-        self._port = config.port or self.DEFAULT_PORT
 
         self._default_http_client: Optional[httpx.AsyncClient] = None
 
@@ -75,6 +74,11 @@ class AesTransport(BaseTransport):
         self._login_token = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
+
+    @property
+    def default_port(self):
+        """Default port for the transport."""
+        return self.DEFAULT_PORT
 
     @property
     def _http_client(self) -> httpx.AsyncClient:

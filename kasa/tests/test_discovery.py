@@ -112,9 +112,9 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     ct = ConnectionType.from_values(
         discovery_mock.device_type, discovery_mock.encrypt_type
     )
-    uses_http = discovery_mock.default_port == 20002
+    uses_http = discovery_mock.default_port == 80
     config = DeviceConfig(
-        host=host, port=custom_port, connection_type=ct, uses_http=uses_http
+        host=host, port_override=custom_port, connection_type=ct, uses_http=uses_http
     )
     assert x.config == config
 
@@ -310,9 +310,9 @@ async def test_discover_single_http_client(discovery_mock, mocker):
 
     x: SmartDevice = await Discover.discover_single(host)
 
-    assert x.config.uses_http == (discovery_mock.default_port == 20002)
+    assert x.config.uses_http == (discovery_mock.default_port == 80)
 
-    if discovery_mock.default_port == 20002:
+    if discovery_mock.default_port == 80:
         assert x.protocol._transport._http_client != http_client
         x.config.http_client = http_client
         assert x.protocol._transport._http_client == http_client
@@ -327,9 +327,9 @@ async def test_discover_http_client(discovery_mock, mocker):
 
     devices = await Discover.discover(discovery_timeout=0)
     x: SmartDevice = devices[host]
-    assert x.config.uses_http == (discovery_mock.default_port == 20002)
+    assert x.config.uses_http == (discovery_mock.default_port == 80)
 
-    if discovery_mock.default_port == 20002:
+    if discovery_mock.default_port == 80:
         assert x.protocol._transport._http_client != http_client
         x.config.http_client = http_client
         assert x.protocol._transport._http_client == http_client

@@ -54,9 +54,14 @@ class BaseTransport(ABC):
         """Create a protocol object."""
         self._config = config
         self._host = config.host
-        self._port = config.port  # Set by derived classes
+        self._port = config.port_override or self.default_port
         self._credentials = config.credentials
         self._timeout = config.timeout
+
+    @property
+    @abstractmethod
+    def default_port(self) -> int:
+        """The default port for the transport."""
 
     @abstractmethod
     async def send(self, request: str) -> Dict:
@@ -105,11 +110,15 @@ class _XorTransport(BaseTransport):
     class.
     """
 
-    DEFAULT_PORT = 9999
+    DEFAULT_PORT: int = 9999
 
     def __init__(self, *, config: DeviceConfig) -> None:
         super().__init__(config=config)
-        self._port = config.port or self.DEFAULT_PORT
+
+    @property
+    def default_port(self):
+        """Default port for the transport."""
+        return self.DEFAULT_PORT
 
     async def send(self, request: str) -> Dict:
         """Send a message to the device and return a response."""

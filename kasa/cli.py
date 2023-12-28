@@ -65,8 +65,8 @@ TYPE_TO_CLASS = {
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
 
-TPLINK_DEVICE_TYPES = [
-    tplink_device_type.value for tplink_device_type in DeviceFamilyType
+DEVICE_FAMILY_TYPES = [
+    device_family_type.value for device_family_type in DeviceFamilyType
 ]
 
 click.anyio_backend = "asyncio"
@@ -182,7 +182,7 @@ def json_formatter_cb(result, **kwargs):
     "--device-family",
     envvar="KASA_DEVICE_FAMILY",
     default=None,
-    type=click.Choice(TPLINK_DEVICE_TYPES, case_sensitive=False),
+    type=click.Choice(DEVICE_FAMILY_TYPES, case_sensitive=False),
 )
 @click.option(
     "--timeout",

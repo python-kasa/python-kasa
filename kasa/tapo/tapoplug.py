@@ -3,9 +3,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, cast
 
-from ..credentials import Credentials
+from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..modules import Emeter
+from ..protocol import TPLinkProtocol
 from ..smartdevice import DeviceType, requires_update
 from .tapodevice import TapoDevice
 
@@ -19,11 +20,10 @@ class TapoPlug(TapoDevice):
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
+        super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
         self.modules: Dict[str, Any] = {}
         self.emeter_type = "emeter"

@@ -388,7 +388,6 @@ async def get_device_for_file(file, protocol):
     d = device_for_file(model, protocol)(host="127.0.0.123")
     if protocol == "SMART":
         d.protocol = FakeSmartProtocol(sysinfo)
-        d.credentials = Credentials()
     else:
         d.protocol = FakeTransportProtocol(sysinfo)
     await _update_and_close(d)
@@ -426,6 +425,7 @@ def discovery_mock(all_fixture_data, mocker):
     class _DiscoveryMock:
         ip: str
         default_port: int
+        discovery_port: int
         discovery_data: dict
         query_data: dict
         device_type: str
@@ -444,6 +444,7 @@ def discovery_mock(all_fixture_data, mocker):
         )
         dm = _DiscoveryMock(
             "127.0.0.123",
+            80,
             20002,
             discovery_data,
             all_fixture_data,
@@ -459,6 +460,7 @@ def discovery_mock(all_fixture_data, mocker):
         dm = _DiscoveryMock(
             "127.0.0.123",
             9999,
+            9999,
             discovery_data,
             all_fixture_data,
             device_type,
@@ -468,8 +470,8 @@ def discovery_mock(all_fixture_data, mocker):
     def mock_discover(self):
         port = (
             dm.port_override
-            if dm.port_override and dm.default_port != 20002
-            else dm.default_port
+            if dm.port_override and dm.discovery_port != 20002
+            else dm.discovery_port
         )
         self.datagram_received(
             datagram,

@@ -1,8 +1,9 @@
 """Module for light strips (KL430)."""
 from typing import Any, Dict, List, Optional
 
-from .credentials import Credentials
+from .deviceconfig import DeviceConfig
 from .effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
+from .protocol import TPLinkProtocol
 from .smartbulb import SmartBulb
 from .smartdevice import DeviceType, SmartDeviceException, requires_update
 
@@ -46,11 +47,10 @@ class SmartLightStrip(SmartBulb):
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
+        super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.LightStrip
 
     @property  # type: ignore

@@ -9,8 +9,9 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field, root_validator
 
-from .credentials import Credentials
+from .deviceconfig import DeviceConfig
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
+from .protocol import TPLinkProtocol
 from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
 
 
@@ -220,11 +221,10 @@ class SmartBulb(SmartDevice):
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
-        super().__init__(host=host, port=port, credentials=credentials, timeout=timeout)
+        super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb
         self.add_module("schedule", Schedule(self, "smartlife.iot.common.schedule"))
         self.add_module("usage", Usage(self, "smartlife.iot.common.schedule"))

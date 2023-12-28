@@ -176,7 +176,7 @@ async def test_protocol_custom_port(mocker, custom_port):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    config = DeviceConfig("127.0.0.1", port=custom_port)
+    config = DeviceConfig("127.0.0.1", port_override=custom_port)
     protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})

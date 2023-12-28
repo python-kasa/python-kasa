@@ -5,9 +5,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Set, cast
 
 from ..aestransport import AesTransport
-from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationException
+from ..protocol import TPLinkProtocol
 from ..smartdevice import SmartDevice
 from ..smartprotocol import SmartProtocol
 
@@ -21,23 +21,16 @@ class TapoDevice(SmartDevice):
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
+        _protocol = protocol or SmartProtocol(
+            transport=AesTransport(config=config or DeviceConfig(host=host)),
+        )
+        super().__init__(host=host, config=config, protocol=_protocol)
         self._components: Optional[Dict[str, Any]] = None
         self._state_information: Dict[str, Any] = {}
         self._discovery_info: Optional[Dict[str, Any]] = None
-        config = DeviceConfig(
-            host=host,
-            port=port,
-            credentials=credentials,  # type: ignore[arg-type]
-            timeout=timeout,
-        )
-        self.protocol = SmartProtocol(
-            transport=AesTransport(config=config),
-        )
 
     async def update(self, update_children: bool = True):
         """Update the device."""

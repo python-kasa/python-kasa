@@ -192,21 +192,18 @@ class SmartDevice:
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
         """
-        self.host = host
-        self.port = port
-        config = DeviceConfig(host=host, port=port, timeout=timeout)
-        self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(
-            transport=_XorTransport(config=config),
+        if config and protocol:
+            protocol._transport._config = config
+        self.protocol: TPLinkProtocol = protocol or TPLinkSmartHomeProtocol(
+            transport=_XorTransport(config=config or DeviceConfig(host=host)),
         )
-        self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate
@@ -220,6 +217,30 @@ class SmartDevice:
         self.modules: Dict[str, Any] = {}
 
         self.children: List["SmartDevice"] = []
+
+    @property
+    def host(self) -> str:
+        """The device host."""
+        return self.protocol._transport._host
+
+    @host.setter
+    def host(self, value):
+        """Set the device host.
+
+        Generally used by discovery to set the hostname after ip discovery.
+        """
+        self.protocol._transport._host = value
+        self.protocol._transport._config.host = value
+
+    @property
+    def port(self) -> int:
+        """The device port."""
+        return self.protocol._transport._port
+
+    @property
+    def credentials(self) -> Optional[Credentials]:
+        """The device credentials."""
+        return self.protocol._transport._credentials
 
     def add_module(self, name: str, module: Module):
         """Register a module."""

@@ -118,7 +118,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         device = None
 
-        config = DeviceConfig(host=ip, port=self.port)
+        config = DeviceConfig(host=ip, port_override=self.port)
         if self.credentials:
             config.credentials = self.credentials
         if self.timeout:
@@ -385,7 +385,7 @@ class Discover:
         _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
 
         device_class = Discover._get_device_class(info)
-        device = device_class(config.host, port=config.port)
+        device = device_class(config.host, config=config)
         sys_info = info["system"]["get_sysinfo"]
         if (device_type := sys_info.get("mic_type")) or (
             device_type := sys_info.get("type")
@@ -449,10 +449,7 @@ class Discover:
             )
 
         _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
-        device = device_class(
-            config.host, port=config.port, credentials=config.credentials
-        )
-        device.protocol = protocol
+        device = device_class(config.host, protocol=protocol)
 
         di = discovery_result.get_dict()
         di["model"] = discovery_result.device_model

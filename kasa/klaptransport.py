@@ -83,7 +83,7 @@ class KlapTransport(BaseTransport):
     protocol, used by newer firmware versions.
     """
 
-    DEFAULT_PORT = 80
+    DEFAULT_PORT: int = 80
     DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
 
     KASA_SETUP_EMAIL = "kasa@tp-link.net"
@@ -96,7 +96,7 @@ class KlapTransport(BaseTransport):
         config: DeviceConfig,
     ) -> None:
         super().__init__(config=config)
-        self._port = config.port or self.DEFAULT_PORT
+
         self._default_http_client: Optional[httpx.AsyncClient] = None
         self._local_seed: Optional[bytes] = None
         self._local_auth_hash = self.generate_auth_hash(self._credentials)
@@ -113,6 +113,11 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
+
+    @property
+    def default_port(self):
+        """Default port for the transport."""
+        return self.DEFAULT_PORT
 
     @property
     def _http_client(self) -> httpx.AsyncClient:

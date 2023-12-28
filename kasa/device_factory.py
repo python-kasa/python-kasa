@@ -54,22 +54,15 @@ async def connect(*, config: DeviceConfig) -> "SmartDevice":
         info = await protocol.query(GET_SYSINFO_QUERY)
         _perf_log(True, "get_sysinfo")
         device_class = get_device_class_from_sys_info(info)
-        device = device_class(config.host, port=config.port, timeout=config.timeout)
+        device = device_class(config.host, protocol=protocol)
         device.update_from_discover_info(info)
-        device.protocol = protocol
         await device.update()
         _perf_log(True, "update")
         return device
     elif device_class := get_device_class_from_family(
         config.connection_type.device_family.value
     ):
-        device = device_class(
-            config.host,
-            port=config.port,
-            timeout=config.timeout,
-            credentials=config.credentials,
-        )
-        device.protocol = protocol
+        device = device_class(host=config.host, protocol=protocol)
         await device.update()
         _perf_log(True, "update")
         return device

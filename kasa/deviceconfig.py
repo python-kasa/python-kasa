@@ -116,7 +116,7 @@ class DeviceConfig:
 
     host: str
     timeout: Optional[int] = DEFAULT_TIMEOUT
-    port: Optional[int] = None
+    port_override: Optional[int] = None
     credentials: Credentials = field(
         default_factory=lambda: Credentials(username="", password="")
     )
