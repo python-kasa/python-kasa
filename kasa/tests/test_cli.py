@@ -236,8 +236,8 @@ async def test_discover(discovery_mock, mocker):
             "foo",
             "--password",
             "bar",
-            "discover",
             "--verbose",
+            "discover",
         ],
     )
     assert res.exit_code == 0
@@ -255,8 +255,8 @@ async def test_discover_unsupported(unsupported_device_info):
             "foo",
             "--password",
             "bar",
-            "discover",
             "--verbose",
+            "discover",
         ],
     )
     assert res.exit_code == 0
@@ -306,8 +306,8 @@ async def test_discover_auth_failed(discovery_mock, mocker):
             "foo",
             "--password",
             "bar",
-            "discover",
             "--verbose",
+            "discover",
         ],
     )
 
