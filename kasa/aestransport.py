@@ -182,10 +182,9 @@ class AesTransport(BaseTransport):
             "request_time_milis": round(time.time() * 1000),
         }
         request = json_dumps(login_request)
-        try:
-            resp_dict = await self.send_secure_passthrough(request)
-        except SmartDeviceException as ex:
-            raise AuthenticationException(ex) from ex
+
+        resp_dict = await self.send_secure_passthrough(request)
+        self._handle_response_error_code(resp_dict, "Error logging in")
         self._login_token = resp_dict["result"]["token"]
 
     async def perform_login(self) -> None:
