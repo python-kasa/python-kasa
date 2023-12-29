@@ -22,7 +22,7 @@ Discovery
 The tool can automatically discover supported devices using a broadcast-based discovery protocol.
 This works by sending an UDP datagram on port 9999 to the broadcast address (defaulting to ``255.255.255.255``).
 
-On multihomed systems, you can use ``--target`` option to specify the broadcsat target.
+On multihomed systems, you can use ``--target`` option to specify the broadcast target.
 For example, if your devices reside in network ``10.0.0.0/24`` you can use ``kasa --target 10.0.0.255 discover`` to discover them.
 
 .. note::
