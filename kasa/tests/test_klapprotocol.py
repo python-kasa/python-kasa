@@ -12,9 +12,15 @@ import pytest
 
 from ..aestransport import AesTransport
 from ..credentials import Credentials
+from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationException, SmartDeviceException
 from ..iotprotocol import IotProtocol
-from ..klaptransport import KlapEncryptionSession, KlapTransport, _sha256
+from ..klaptransport import (
+    KlapEncryptionSession,
+    KlapTransport,
+    KlapTransportV2,
+    _sha256,
+)
 from ..smartprotocol import SmartProtocol
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
@@ -31,8 +37,9 @@ class _mock_response:
     [
         (Exception("dummy exception"), True),
         (SmartDeviceException("dummy exception"), False),
+        (httpx.ConnectError("dummy exception"), True),
     ],
-    ids=("Exception", "SmartDeviceException"),
+    ids=("Exception", "SmartDeviceException", "httpx.ConnectError"),
 )
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
@@ -42,8 +49,10 @@ async def test_protocol_retries(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(httpx.AsyncClient, "post", side_effect=error)
+
+    config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
-        await protocol_class(host, transport=transport_class(host)).query(
+        await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=retry_count
         )
 
@@ -60,10 +69,11 @@ async def test_protocol_no_retry_on_connection_error(
     conn = mocker.patch.object(
         httpx.AsyncClient,
         "post",
-        side_effect=httpx.ConnectError("foo"),
+        side_effect=AuthenticationException("foo"),
     )
+    config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
-        await protocol_class(host, transport=transport_class(host)).query(
+        await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=5
         )
 
@@ -81,8 +91,9 @@ async def test_protocol_retry_recoverable_error(
         "post",
         side_effect=httpx.CloseError("foo"),
     )
+    config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
-        await protocol_class(host, transport=transport_class(host)).query(
+        await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=5
         )
 
@@ -115,7 +126,8 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
         side_effect=_fail_one_less_than_retry_count,
     )
 
-    response = await protocol_class(host, transport=transport_class(host)).query(
+    config = DeviceConfig(host)
+    response = await protocol_class(transport=transport_class(config=config)).query(
         DUMMY_QUERY, retry_count=retry_count
     )
     assert "result" in response or "foobar" in response
@@ -136,7 +148,9 @@ async def test_protocol_logging(mocker, caplog, log_level):
     seed = secrets.token_bytes(16)
     auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
     encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
-    protocol = IotProtocol("127.0.0.1", transport=KlapTransport("127.0.0.1"))
+
+    config = DeviceConfig("127.0.0.1")
+    protocol = IotProtocol(transport=KlapTransport(config=config))
 
     protocol._transport._handshake_done = True
     protocol._transport._session_expire_at = time.time() + 86400
@@ -181,7 +195,7 @@ def test_encrypt_unicode():
     "device_credentials, expectation",
     [
         (Credentials("foo", "bar"), does_not_raise()),
-        (Credentials("", ""), does_not_raise()),
+        (Credentials(), does_not_raise()),
         (
             Credentials(
                 KlapTransport.KASA_SETUP_EMAIL,
@@ -196,30 +210,37 @@ def test_encrypt_unicode():
     ],
     ids=("client", "blank", "kasa_setup", "shouldfail"),
 )
-async def test_handshake1(mocker, device_credentials, expectation):
+@pytest.mark.parametrize(
+    "transport_class, seed_auth_hash_calc",
+    [
+        pytest.param(KlapTransport, lambda c, s, a: c + a, id="KLAP"),
+        pytest.param(KlapTransportV2, lambda c, s, a: c + s + a, id="KLAPV2"),
+    ],
+)
+async def test_handshake1(
+    mocker, device_credentials, expectation, transport_class, seed_auth_hash_calc
+):
     async def _return_handshake1_response(url, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash
 
         client_seed = data
-        client_seed_auth_hash = _sha256(data + device_auth_hash)
-
-        return _mock_response(200, server_seed + client_seed_auth_hash)
+        seed_auth_hash = _sha256(
+            seed_auth_hash_calc(client_seed, server_seed, device_auth_hash)
+        )
+        return _mock_response(200, server_seed + seed_auth_hash)
 
     client_seed = None
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
-    device_auth_hash = KlapTransport.generate_auth_hash(device_credentials)
+    device_auth_hash = transport_class.generate_auth_hash(device_credentials)
 
     mocker.patch.object(
         httpx.AsyncClient, "post", side_effect=_return_handshake1_response
     )
 
-    protocol = IotProtocol(
-        "127.0.0.1",
-        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
-    )
+    config = DeviceConfig("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(transport=transport_class(config=config))
 
-    protocol._transport.http_client = httpx.AsyncClient()
     with expectation:
         (
             local_seed,
@@ -233,31 +254,51 @@ async def test_handshake1(mocker, device_credentials, expectation):
     await protocol.close()
 
 
-async def test_handshake(mocker):
+@pytest.mark.parametrize(
+    "transport_class, seed_auth_hash_calc1, seed_auth_hash_calc2",
+    [
+        pytest.param(
+            KlapTransport, lambda c, s, a: c + a, lambda c, s, a: s + a, id="KLAP"
+        ),
+        pytest.param(
+            KlapTransportV2,
+            lambda c, s, a: c + s + a,
+            lambda c, s, a: s + c + a,
+            id="KLAPV2",
+        ),
+    ],
+)
+async def test_handshake(
+    mocker, transport_class, seed_auth_hash_calc1, seed_auth_hash_calc2
+):
     async def _return_handshake_response(url, params=None, data=None, *_, **__):
-        nonlocal response_status, client_seed, server_seed, device_auth_hash
+        nonlocal client_seed, server_seed, device_auth_hash
 
         if url == "http://127.0.0.1/app/handshake1":
             client_seed = data
-            client_seed_auth_hash = _sha256(data + device_auth_hash)
+            seed_auth_hash = _sha256(
+                seed_auth_hash_calc1(client_seed, server_seed, device_auth_hash)
+            )
 
-            return _mock_response(200, server_seed + client_seed_auth_hash)
+            return _mock_response(200, server_seed + seed_auth_hash)
         elif url == "http://127.0.0.1/app/handshake2":
+            seed_auth_hash = _sha256(
+                seed_auth_hash_calc2(client_seed, server_seed, device_auth_hash)
+            )
+            assert data == seed_auth_hash
             return _mock_response(response_status, b"")
 
     client_seed = None
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
-    device_auth_hash = KlapTransport.generate_auth_hash(client_credentials)
+    device_auth_hash = transport_class.generate_auth_hash(client_credentials)
 
     mocker.patch.object(
         httpx.AsyncClient, "post", side_effect=_return_handshake_response
     )
 
-    protocol = IotProtocol(
-        "127.0.0.1",
-        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
-    )
+    config = DeviceConfig("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(transport=transport_class(config=config))
     protocol._transport.http_client = httpx.AsyncClient()
 
     response_status = 200
@@ -273,7 +314,7 @@ async def test_handshake(mocker):
 
 async def test_query(mocker):
     async def _return_response(url, params=None, data=None, *_, **__):
-        nonlocal client_seed, server_seed, device_auth_hash, protocol, seq
+        nonlocal client_seed, server_seed, device_auth_hash, seq
 
         if url == "http://127.0.0.1/app/handshake1":
             client_seed = data
@@ -303,10 +344,8 @@ async def test_query(mocker):
 
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
 
-    protocol = IotProtocol(
-        "127.0.0.1",
-        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
-    )
+    config = DeviceConfig("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(transport=KlapTransport(config=config))
 
     for _ in range(10):
         resp = await protocol.query({})
@@ -350,10 +389,8 @@ async def test_authentication_failures(mocker, response_status, expectation):
 
     mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
 
-    protocol = IotProtocol(
-        "127.0.0.1",
-        transport=KlapTransport("127.0.0.1", credentials=client_credentials),
-    )
+    config = DeviceConfig("127.0.0.1", credentials=client_credentials)
+    protocol = IotProtocol(transport=KlapTransport(config=config))
 
     with expectation:
         await protocol.query({})

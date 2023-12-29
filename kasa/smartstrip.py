@@ -14,8 +14,9 @@ from kasa.smartdevice import (
 )
 from kasa.smartplug import SmartPlug
 
-from .credentials import Credentials
+from .deviceconfig import DeviceConfig
 from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
+from .protocol import TPLinkProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -85,11 +86,10 @@ class SmartStrip(SmartDevice):
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
-        super().__init__(host=host, port=port, credentials=credentials, timeout=timeout)
+        super().__init__(host=host, config=config, protocol=protocol)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
         self.add_module("antitheft", Antitheft(self, "anti_theft"))

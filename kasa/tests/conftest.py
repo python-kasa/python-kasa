@@ -388,7 +388,6 @@ async def get_device_for_file(file, protocol):
     d = device_for_file(model, protocol)(host="127.0.0.123")
     if protocol == "SMART":
         d.protocol = FakeSmartProtocol(sysinfo)
-        d.credentials = Credentials("", "")
     else:
         d.protocol = FakeTransportProtocol(sysinfo)
     await _update_and_close(d)
@@ -426,28 +425,53 @@ def discovery_mock(all_fixture_data, mocker):
     class _DiscoveryMock:
         ip: str
         default_port: int
+        discovery_port: int
         discovery_data: dict
         query_data: dict
+        device_type: str
+        encrypt_type: str
         port_override: Optional[int] = None
 
     if "discovery_result" in all_fixture_data:
         discovery_data = {"result": all_fixture_data["discovery_result"]}
+        device_type = all_fixture_data["discovery_result"]["device_type"]
+        encrypt_type = all_fixture_data["discovery_result"]["mgt_encrypt_schm"][
+            "encrypt_type"
+        ]
         datagram = (
             b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
             + json_dumps(discovery_data).encode()
         )
-        dm = _DiscoveryMock("127.0.0.123", 20002, discovery_data, all_fixture_data)
+        dm = _DiscoveryMock(
+            "127.0.0.123",
+            80,
+            20002,
+            discovery_data,
+            all_fixture_data,
+            device_type,
+            encrypt_type,
+        )
     else:
         sys_info = all_fixture_data["system"]["get_sysinfo"]
         discovery_data = {"system": {"get_sysinfo": sys_info}}
+        device_type = sys_info.get("mic_type") or sys_info.get("type")
+        encrypt_type = "XOR"
         datagram = TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:]
-        dm = _DiscoveryMock("127.0.0.123", 9999, discovery_data, all_fixture_data)
+        dm = _DiscoveryMock(
+            "127.0.0.123",
+            9999,
+            9999,
+            discovery_data,
+            all_fixture_data,
+            device_type,
+            encrypt_type,
+        )
 
     def mock_discover(self):
         port = (
             dm.port_override
-            if dm.port_override and dm.default_port != 20002
-            else dm.default_port
+            if dm.port_override and dm.discovery_port != 20002
+            else dm.discovery_port
         )
         self.datagram_received(
             datagram,

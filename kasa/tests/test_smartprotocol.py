@@ -13,6 +13,7 @@ import pytest
 
 from ..aestransport import AesTransport
 from ..credentials import Credentials
+from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
     SMART_TIMEOUT_ERRORS,
@@ -37,7 +38,8 @@ async def test_smart_device_errors(mocker, error_code):
 
     send_mock = mocker.patch.object(AesTransport, "send", return_value=mock_response)
 
-    protocol = SmartProtocol(host, transport=AesTransport(host))
+    config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
+    protocol = SmartProtocol(transport=AesTransport(config=config))
     with pytest.raises(SmartDeviceException):
         await protocol.query(DUMMY_QUERY, retry_count=2)
 
@@ -70,8 +72,8 @@ async def test_smart_device_errors_in_multiple_request(mocker, error_code):
     mocker.patch.object(AesTransport, "perform_login")
 
     send_mock = mocker.patch.object(AesTransport, "send", return_value=mock_response)
-
-    protocol = SmartProtocol(host, transport=AesTransport(host))
+    config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
+    protocol = SmartProtocol(transport=AesTransport(config=config))
     with pytest.raises(SmartDeviceException):
         await protocol.query(DUMMY_QUERY, retry_count=2)
     if error_code in chain(SMART_TIMEOUT_ERRORS, SMART_RETRYABLE_ERRORS):

@@ -54,6 +54,7 @@ from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .credentials import Credentials
+from .deviceconfig import DeviceConfig
 from .exceptions import AuthenticationException, SmartDeviceException
 from .json import loads as json_loads
 from .protocol import BaseTransport, md5
@@ -82,27 +83,21 @@ class KlapTransport(BaseTransport):
     protocol, used by newer firmware versions.
     """
 
-    DEFAULT_PORT = 80
+    DEFAULT_PORT: int = 80
     DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
+
     KASA_SETUP_EMAIL = "kasa@tp-link.net"
     KASA_SETUP_PASSWORD = "kasaSetup"  # noqa: S105
     SESSION_COOKIE_NAME = "TP_SESSIONID"
 
     def __init__(
         self,
-        host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: DeviceConfig,
     ) -> None:
-        super().__init__(
-            host,
-            port=port or self.DEFAULT_PORT,
-            credentials=credentials,
-            timeout=timeout,
-        )
+        super().__init__(config=config)
 
+        self._default_http_client: Optional[httpx.AsyncClient] = None
         self._local_seed: Optional[bytes] = None
         self._local_auth_hash = self.generate_auth_hash(self._credentials)
         self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
@@ -116,14 +111,24 @@ class KlapTransport(BaseTransport):
         self._session_expire_at: Optional[float] = None
 
         self._session_cookie = None
-        self._http_client: httpx.AsyncClient = httpx.AsyncClient()
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
 
+    @property
+    def default_port(self):
+        """Default port for the transport."""
+        return self.DEFAULT_PORT
+
+    @property
+    def _http_client(self) -> httpx.AsyncClient:
+        if self._config.http_client:
+            return self._config.http_client
+        if not self._default_http_client:
+            self._default_http_client = httpx.AsyncClient()
+        return self._default_http_client
+
     async def client_post(self, url, params=None, data=None):
         """Send an http post request to the device."""
-        if not self._http_client:
-            self._http_client = httpx.AsyncClient()
         response_data = None
         cookies = None
         if self._session_cookie:
@@ -355,8 +360,8 @@ class KlapTransport(BaseTransport):
 
     async def close(self) -> None:
         """Close the transport."""
-        client = self._http_client
-        self._http_client = None
+        client = self._default_http_client
+        self._default_http_client = None
         self._handshake_done = False
         if client:
             await client.aclose()
@@ -390,7 +395,7 @@ class KlapTransport(BaseTransport):
         return md5(un.encode())
 
 
-class TPlinkKlapTransportV2(KlapTransport):
+class KlapTransportV2(KlapTransport):
     """Implementation of the KLAP encryption protocol with v2 hanshake hashes."""
 
     @staticmethod

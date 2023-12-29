@@ -12,15 +12,20 @@ import asyncclick as click
 
 from kasa import (
     AuthenticationException,
+    ConnectionType,
     Credentials,
-    DeviceType,
+    DeviceConfig,
+    DeviceFamilyType,
     Discover,
+    EncryptType,
     SmartBulb,
     SmartDevice,
+    SmartDimmer,
+    SmartLightStrip,
+    SmartPlug,
     SmartStrip,
     UnsupportedDeviceException,
 )
-from kasa.device_factory import DEVICE_TYPE_TO_CLASS
 from kasa.discover import DiscoveryResult
 
 try:
@@ -49,10 +54,19 @@ except ImportError:
 # --json has set it to _nop_echo
 echo = _do_echo
 
-DEVICE_TYPES = [
-    device_type.value
-    for device_type in DeviceType
-    if device_type in DEVICE_TYPE_TO_CLASS
+
+TYPE_TO_CLASS = {
+    "plug": SmartPlug,
+    "bulb": SmartBulb,
+    "dimmer": SmartDimmer,
+    "strip": SmartStrip,
+    "lightstrip": SmartLightStrip,
+}
+
+ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
+
+DEVICE_FAMILY_TYPES = [
+    device_family_type.value for device_family_type in DeviceFamilyType
 ]
 
 click.anyio_backend = "asyncio"
@@ -149,7 +163,7 @@ def json_formatter_cb(result, **kwargs):
     "--type",
     envvar="KASA_TYPE",
     default=None,
-    type=click.Choice(DEVICE_TYPES, case_sensitive=False),
+    type=click.Choice(list(TYPE_TO_CLASS), case_sensitive=False),
 )
 @click.option(
     "--json/--no-json",
@@ -157,6 +171,18 @@ def json_formatter_cb(result, **kwargs):
     default=False,
     is_flag=True,
     help="Output raw device response as JSON.",
+)
+@click.option(
+    "--encrypt-type",
+    envvar="KASA_ENCRYPT_TYPE",
+    default=None,
+    type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
+)
+@click.option(
+    "--device-family",
+    envvar="KASA_DEVICE_FAMILY",
+    default=None,
+    type=click.Choice(DEVICE_FAMILY_TYPES, case_sensitive=False),
 )
 @click.option(
     "--timeout",
@@ -199,6 +225,8 @@ async def cli(
     verbose,
     debug,
     type,
+    encrypt_type,
+    device_family,
     json,
     timeout,
     discovery_timeout,
@@ -270,12 +298,19 @@ async def cli(
         return await ctx.invoke(discover)
 
     if type is not None:
-        device_type = DeviceType.from_value(type)
-        dev = await SmartDevice.connect(
-            host, credentials=credentials, device_type=device_type, timeout=timeout
+        dev = TYPE_TO_CLASS[type](host)
+        await dev.update()
+    elif device_family or encrypt_type:
+        ctype = ConnectionType(
+            DeviceFamilyType(device_family),
+            EncryptType(encrypt_type),
         )
+        config = DeviceConfig(
+            host=host, credentials=credentials, timeout=timeout, connection_type=ctype
+        )
+        dev = await SmartDevice.connect(config=config)
     else:
-        echo("No --type defined, discovering..")
+        echo("No --type or --device-family and --encrypt-type defined, discovering..")
         dev = await Discover.discover_single(
             host,
             port=port,
@@ -332,8 +367,10 @@ async def discover(ctx):
     target = ctx.parent.params["target"]
     username = ctx.parent.params["username"]
     password = ctx.parent.params["password"]
-    timeout = ctx.parent.params["discovery_timeout"]
     verbose = ctx.parent.params["verbose"]
+    discovery_timeout = ctx.parent.params["discovery_timeout"]
+    timeout = ctx.parent.params["timeout"]
+    port = ctx.parent.params["port"]
 
     credentials = Credentials(username, password)
 
@@ -354,7 +391,7 @@ async def discover(ctx):
                 echo(f"\t{unsupported_exception}")
                 echo()
 
-    echo(f"Discovering devices on {target} for {timeout} seconds")
+    echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
 
     async def print_discovered(dev: SmartDevice):
         async with sem:
@@ -376,9 +413,11 @@ async def discover(ctx):
 
     await Discover.discover(
         target=target,
-        timeout=timeout,
+        discovery_timeout=discovery_timeout,
         on_discovered=print_discovered,
         on_unsupported=print_unsupported,
+        port=port,
+        timeout=timeout,
         credentials=credentials,
     )
 

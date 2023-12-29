@@ -1,18 +1,21 @@
-"""Device creation by type."""
-
+"""Device creation via DeviceConfig."""
 import logging
 import time
 from typing import Any, Dict, Optional, Tuple, Type
 
 from .aestransport import AesTransport
-from .credentials import Credentials
-from .device_type import DeviceType
-from .exceptions import UnsupportedDeviceException
+from .deviceconfig import DeviceConfig
+from .exceptions import SmartDeviceException, UnsupportedDeviceException
 from .iotprotocol import IotProtocol
-from .klaptransport import KlapTransport, TPlinkKlapTransportV2
-from .protocol import BaseTransport, TPLinkProtocol
+from .klaptransport import KlapTransport, KlapTransportV2
+from .protocol import (
+    BaseTransport,
+    TPLinkProtocol,
+    TPLinkSmartHomeProtocol,
+    _XorTransport,
+)
 from .smartbulb import SmartBulb
-from .smartdevice import SmartDevice, SmartDeviceException
+from .smartdevice import SmartDevice
 from .smartdimmer import SmartDimmer
 from .smartlightstrip import SmartLightStrip
 from .smartplug import SmartPlug
@@ -20,104 +23,80 @@ from .smartprotocol import SmartProtocol
 from .smartstrip import SmartStrip
 from .tapo import TapoBulb, TapoPlug
 
-DEVICE_TYPE_TO_CLASS = {
-    DeviceType.Plug: SmartPlug,
-    DeviceType.Bulb: SmartBulb,
-    DeviceType.Strip: SmartStrip,
-    DeviceType.Dimmer: SmartDimmer,
-    DeviceType.LightStrip: SmartLightStrip,
-    DeviceType.TapoPlug: TapoPlug,
-    DeviceType.TapoBulb: TapoBulb,
-}
-
 _LOGGER = logging.getLogger(__name__)
 
+GET_SYSINFO_QUERY = {
+    "system": {"get_sysinfo": None},
+}
 
-async def connect(
-    host: str,
-    *,
-    port: Optional[int] = None,
-    timeout=5,
-    credentials: Optional[Credentials] = None,
-    device_type: Optional[DeviceType] = None,
-    protocol_class: Optional[Type[TPLinkProtocol]] = None,
-) -> "SmartDevice":
-    """Connect to a single device by the given IP address.
+
+async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "SmartDevice":
+    """Connect to a single device by the given hostname or device configuration.
 
     This method avoids the UDP based discovery process and
-    will connect directly to the device to query its type.
+    will connect directly to the device.
 
     It is generally preferred to avoid :func:`discover_single()` and
     use this function instead as it should perform better when
     the WiFi network is congested or the device is not responding
     to discovery requests.
 
-    The device type is discovered by querying the device.
+    Do not use this function directly, use SmartDevice.connect()
 
     :param host: Hostname of device to query
-    :param device_type: Device type to use for the device.
-        If not given, the device type is discovered by querying the device.
-        If the device type is already known, it is preferred to pass it
-        to avoid the extra query to the device to discover its type.
-    :param protocol_class: Optionally provide the protocol class
-            to use.
+    :param config: Connection parameters to ensure the correct protocol
+        and connection options are used.
     :rtype: SmartDevice
     :return: Object for querying/controlling found device.
     """
-    debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+    if host and config or (not host and not config):
+        raise SmartDeviceException("One of host or config must be provded and not both")
+    if host:
+        config = DeviceConfig(host=host)
 
+    debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
     if debug_enabled:
         start_time = time.perf_counter()
 
-    if device_type and (klass := DEVICE_TYPE_TO_CLASS.get(device_type)):
-        dev: SmartDevice = klass(
-            host=host, port=port, credentials=credentials, timeout=timeout
-        )
-        if protocol_class is not None:
-            dev.protocol = protocol_class(
-                host,
-                transport=AesTransport(
-                    host, port=port, credentials=credentials, timeout=timeout
-                ),
-            )
-        await dev.update()
+    def _perf_log(has_params, perf_type):
+        nonlocal start_time
         if debug_enabled:
             end_time = time.perf_counter()
             _LOGGER.debug(
-                "Device %s with known type (%s) took %.2f seconds to connect",
-                host,
-                device_type.value,
-                end_time - start_time,
+                f"Device {config.host} with connection params {has_params} "
+                + f"took {end_time - start_time:.2f} seconds to {perf_type}",
             )
-        return dev
+            start_time = time.perf_counter()
 
-    unknown_dev = SmartDevice(
-        host=host, port=port, credentials=credentials, timeout=timeout
-    )
-    if protocol_class is not None:
-        # TODO this will be replaced with connection params
-        unknown_dev.protocol = protocol_class(
-            host,
-            transport=AesTransport(
-                host, port=port, credentials=credentials, timeout=timeout
-            ),
+    if (protocol := get_protocol(config=config)) is None:
+        raise UnsupportedDeviceException(
+            f"Unsupported device for {config.host}: "
+            + f"{config.connection_type.device_family.value}"
         )
-    await unknown_dev.update()
-    device_class = get_device_class_from_sys_info(unknown_dev.internal_state)
-    dev = device_class(host=host, port=port, credentials=credentials, timeout=timeout)
-    # Reuse the connection from the unknown device
-    # so we don't have to reconnect
-    dev.protocol = unknown_dev.protocol
-    await dev.update()
-    if debug_enabled:
-        end_time = time.perf_counter()
-        _LOGGER.debug(
-            "Device %s with unknown type (%s) took %.2f seconds to connect",
-            host,
-            dev.device_type.value,
-            end_time - start_time,
+
+    device_class: Optional[Type[SmartDevice]]
+
+    if isinstance(protocol, TPLinkSmartHomeProtocol):
+        info = await protocol.query(GET_SYSINFO_QUERY)
+        _perf_log(True, "get_sysinfo")
+        device_class = get_device_class_from_sys_info(info)
+        device = device_class(config.host, protocol=protocol)
+        device.update_from_discover_info(info)
+        await device.update()
+        _perf_log(True, "update")
+        return device
+    elif device_class := get_device_class_from_family(
+        config.connection_type.device_family.value
+    ):
+        device = device_class(host=config.host, protocol=protocol)
+        await device.update()
+        _perf_log(True, "update")
+        return device
+    else:
+        raise UnsupportedDeviceException(
+            f"Unsupported device for {config.host}: "
+            + f"{config.connection_type.device_family.value}"
         )
-    return dev
 
 
 def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[SmartDevice]:
@@ -147,32 +126,38 @@ def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[SmartDevice]:
     raise UnsupportedDeviceException("Unknown device type: %s" % type_)
 
 
-def get_device_class_from_type_name(device_type: str) -> Optional[Type[SmartDevice]]:
+def get_device_class_from_family(device_type: str) -> Optional[Type[SmartDevice]]:
     """Return the device class from the type name."""
     supported_device_types: dict[str, Type[SmartDevice]] = {
         "SMART.TAPOPLUG": TapoPlug,
         "SMART.TAPOBULB": TapoBulb,
         "SMART.KASAPLUG": TapoPlug,
         "IOT.SMARTPLUGSWITCH": SmartPlug,
+        "IOT.SMARTBULB": SmartBulb,
     }
     return supported_device_types.get(device_type)
 
 
-def get_protocol_from_connection_name(
-    connection_name: str, host: str, credentials: Optional[Credentials] = None
+def get_protocol(
+    config: DeviceConfig,
 ) -> Optional[TPLinkProtocol]:
     """Return the protocol from the connection name."""
+    protocol_name = config.connection_type.device_family.value.split(".")[0]
+    protocol_transport_key = (
+        protocol_name + "." + config.connection_type.encryption_type.value
+    )
     supported_device_protocols: dict[
         str, Tuple[Type[TPLinkProtocol], Type[BaseTransport]]
     ] = {
+        "IOT.XOR": (TPLinkSmartHomeProtocol, _XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
-        "SMART.KLAP": (SmartProtocol, TPlinkKlapTransportV2),
+        "SMART.KLAP": (SmartProtocol, KlapTransportV2),
     }
-    if connection_name not in supported_device_protocols:
+    if protocol_transport_key not in supported_device_protocols:
         return None
 
-    protocol_class, transport_class = supported_device_protocols.get(connection_name)  # type: ignore
-    transport: BaseTransport = transport_class(host, credentials=credentials)
-    protocol: TPLinkProtocol = protocol_class(host, transport=transport)
-    return protocol
+    protocol_class, transport_class = supported_device_protocols.get(
+        protocol_transport_key
+    )  # type: ignore
+    return protocol_class(transport=transport_class(config=config))

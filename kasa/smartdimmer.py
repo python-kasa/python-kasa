@@ -2,8 +2,9 @@
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from kasa.credentials import Credentials
+from kasa.deviceconfig import DeviceConfig
 from kasa.modules import AmbientLight, Motion
+from kasa.protocol import TPLinkProtocol
 from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
 from kasa.smartplug import SmartPlug
 
@@ -68,11 +69,10 @@ class SmartDimmer(SmartPlug):
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
+        super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Dimmer
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
         # TODO: need to be figured out what's the best approach to detect support

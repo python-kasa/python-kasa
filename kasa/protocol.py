@@ -24,7 +24,7 @@ from typing import Dict, Generator, Optional, Union
 from async_timeout import timeout as asyncio_timeout
 from cryptography.hazmat.primitives import hashes
 
-from .credentials import Credentials
+from .deviceconfig import DeviceConfig
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
 from .json import loads as json_loads
@@ -48,17 +48,20 @@ class BaseTransport(ABC):
 
     def __init__(
         self,
-        host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: DeviceConfig,
     ) -> None:
         """Create a protocol object."""
-        self._host = host
-        self._port = port
-        self._credentials = credentials or Credentials(username="", password="")
-        self._timeout = timeout or self.DEFAULT_TIMEOUT
+        self._config = config
+        self._host = config.host
+        self._port = config.port_override or self.default_port
+        self._credentials = config.credentials
+        self._timeout = config.timeout
+
+    @property
+    @abstractmethod
+    def default_port(self) -> int:
+        """The default port for the transport."""
 
     @abstractmethod
     async def send(self, request: str) -> Dict:
@@ -74,7 +77,6 @@ class TPLinkProtocol(ABC):
 
     def __init__(
         self,
-        host: str,
         *,
         transport: BaseTransport,
     ) -> None:
@@ -84,6 +86,11 @@ class TPLinkProtocol(ABC):
     @property
     def _host(self):
         return self._transport._host
+
+    @property
+    def config(self) -> DeviceConfig:
+        """Return the connection parameters the device is using."""
+        return self._transport._config
 
     @abstractmethod
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
@@ -103,22 +110,15 @@ class _XorTransport(BaseTransport):
     class.
     """
 
-    DEFAULT_PORT = 9999
+    DEFAULT_PORT: int = 9999
 
-    def __init__(
-        self,
-        host: str,
-        *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
-    ) -> None:
-        super().__init__(
-            host,
-            port=port or self.DEFAULT_PORT,
-            credentials=credentials,
-            timeout=timeout,
-        )
+    def __init__(self, *, config: DeviceConfig) -> None:
+        super().__init__(config=config)
+
+    @property
+    def default_port(self):
+        """Default port for the transport."""
+        return self.DEFAULT_PORT
 
     async def send(self, request: str) -> Dict:
         """Send a message to the device and return a response."""
@@ -133,17 +133,15 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
 
     INITIALIZATION_VECTOR = 171
     DEFAULT_PORT = 9999
-    DEFAULT_TIMEOUT = 5
     BLOCK_SIZE = 4
 
     def __init__(
         self,
-        host: str,
         *,
         transport: BaseTransport,
     ) -> None:
         """Create a protocol object."""
-        super().__init__(host, transport=transport)
+        super().__init__(transport=transport)
 
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None
@@ -167,7 +165,7 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
             assert isinstance(request, str)  # noqa: S101
 
         async with self.query_lock:
-            return await self._query(request, retry_count, self._timeout)
+            return await self._query(request, retry_count, self._timeout)  # type: ignore[arg-type]
 
     async def _connect(self, timeout: int) -> None:
         """Try to connect or reconnect to the device."""

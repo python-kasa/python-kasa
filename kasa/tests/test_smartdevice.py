@@ -5,8 +5,7 @@ from unittest.mock import Mock, patch
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 import kasa
-from kasa import Credentials, SmartDevice, SmartDeviceException
-from kasa.smartdevice import DeviceType
+from kasa import Credentials, DeviceConfig, SmartDevice, SmartDeviceException
 
 from .conftest import device_iot, handle_turn_on, has_emeter, no_emeter_iot, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
@@ -215,7 +214,8 @@ def test_device_class_ctors(device_class):
     host = "127.0.0.2"
     port = 1234
     credentials = Credentials("foo", "bar")
-    dev = device_class(host, port=port, credentials=credentials)
+    config = DeviceConfig(host, port_override=port, credentials=credentials)
+    dev = device_class(host, config=config)
     assert dev.host == host
     assert dev.port == port
     assert dev.credentials == credentials
@@ -231,29 +231,27 @@ async def test_modules_preserved(dev: SmartDevice):
 
 async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
-    dev = SmartDevice(host="127.0.0.1", timeout=100)
+    host = "127.0.0.1"
+    dev = SmartDevice(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
 
 
 async def test_create_thin_wrapper():
     """Make sure thin wrapper is created with the correct device type."""
     mock = Mock()
+    config = DeviceConfig(
+        host="test_host",
+        port_override=1234,
+        timeout=100,
+        credentials=Credentials("username", "password"),
+    )
     with patch("kasa.device_factory.connect", return_value=mock) as connect:
-        dev = await SmartDevice.connect(
-            host="test_host",
-            port=1234,
-            timeout=100,
-            credentials=Credentials("username", "password"),
-            device_type=DeviceType.Strip,
-        )
+        dev = await SmartDevice.connect(config=config)
         assert dev is mock
 
     connect.assert_called_once_with(
-        host="test_host",
-        port=1234,
-        timeout=100,
-        credentials=Credentials("username", "password"),
-        device_type=DeviceType.Strip,
+        host=None,
+        config=config,
     )
 
 

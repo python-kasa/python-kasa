@@ -2,8 +2,9 @@
 import logging
 from typing import Any, Dict, Optional
 
-from kasa.credentials import Credentials
+from kasa.deviceconfig import DeviceConfig
 from kasa.modules import Antitheft, Cloud, Schedule, Time, Usage
+from kasa.protocol import TPLinkProtocol
 from kasa.smartdevice import DeviceType, SmartDevice, requires_update
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,11 +44,10 @@ class SmartPlug(SmartDevice):
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
-        super().__init__(host, port=port, credentials=credentials, timeout=timeout)
+        super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
         self.add_module("schedule", Schedule(self, "schedule"))
         self.add_module("usage", Usage(self, "schedule"))

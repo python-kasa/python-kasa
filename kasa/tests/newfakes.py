@@ -15,7 +15,9 @@ from voluptuous import (
     Schema,
 )
 
-from ..protocol import BaseTransport, TPLinkSmartHomeProtocol
+from ..credentials import Credentials
+from ..deviceconfig import DeviceConfig
+from ..protocol import BaseTransport, TPLinkSmartHomeProtocol, _XorTransport
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -290,7 +292,9 @@ TIME_MODULE = {
 
 class FakeSmartProtocol(SmartProtocol):
     def __init__(self, info):
-        super().__init__("127.0.0.123", transport=FakeSmartTransport(info))
+        super().__init__(
+            transport=FakeSmartTransport(info),
+        )
 
     async def query(self, request, retry_count: int = 3):
         """Implement query here so can still patch SmartProtocol.query."""
@@ -301,9 +305,14 @@ class FakeSmartProtocol(SmartProtocol):
 class FakeSmartTransport(BaseTransport):
     def __init__(self, info):
         super().__init__(
-            "127.0.0.123",
+            config=DeviceConfig("127.0.0.123", credentials=Credentials()),
         )
         self.info = info
+
+    @property
+    def default_port(self):
+        """Default port for the transport."""
+        return 80
 
     async def send(self, request: str):
         request_dict = json_loads(request)
@@ -344,6 +353,11 @@ class FakeSmartTransport(BaseTransport):
 
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):
+        super().__init__(
+            transport=_XorTransport(
+                config=DeviceConfig("127.0.0.123"),
+            )
+        )
         self.discovery_data = info
         self.writer = None
         self.reader = None

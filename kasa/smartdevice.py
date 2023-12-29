@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from .credentials import Credentials
 from .device_type import DeviceType
+from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
 from .modules import Emeter, Module
@@ -191,20 +192,18 @@ class SmartDevice:
         self,
         host: str,
         *,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[TPLinkProtocol] = None,
     ) -> None:
         """Create a new SmartDevice instance.
 
         :param str host: host name or ip address on which the device listens
         """
-        self.host = host
-        self.port = port
-        self.protocol: TPLinkProtocol = TPLinkSmartHomeProtocol(
-            host, transport=_XorTransport(host, port=port, timeout=timeout)
+        if config and protocol:
+            protocol._transport._config = config
+        self.protocol: TPLinkProtocol = protocol or TPLinkSmartHomeProtocol(
+            transport=_XorTransport(config=config or DeviceConfig(host=host)),
         )
-        self.credentials = credentials
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate
@@ -218,6 +217,30 @@ class SmartDevice:
         self.modules: Dict[str, Any] = {}
 
         self.children: List["SmartDevice"] = []
+
+    @property
+    def host(self) -> str:
+        """The device host."""
+        return self.protocol._transport._host
+
+    @host.setter
+    def host(self, value):
+        """Set the device host.
+
+        Generally used by discovery to set the hostname after ip discovery.
+        """
+        self.protocol._transport._host = value
+        self.protocol._transport._config.host = value
+
+    @property
+    def port(self) -> int:
+        """The device port."""
+        return self.protocol._transport._port
+
+    @property
+    def credentials(self) -> Optional[Credentials]:
+        """The device credentials."""
+        return self.protocol._transport._credentials
 
     def add_module(self, name: str, module: Module):
         """Register a module."""
@@ -760,7 +783,7 @@ class SmartDevice:
         The returned object contains the raw results from the last update call.
         This should only be used for debugging purposes.
         """
-        return self._last_update
+        return self._last_update or self._discovery_info
 
     def __repr__(self):
         if self._last_update is None:
@@ -771,41 +794,33 @@ class SmartDevice:
             f" - dev specific: {self.state_information}>"
         )
 
+    @property
+    def config(self) -> DeviceConfig:
+        """Return the connection parameters the device is using."""
+        return self.protocol.config
+
     @staticmethod
     async def connect(
-        host: str,
         *,
-        port: Optional[int] = None,
-        timeout=5,
-        credentials: Optional[Credentials] = None,
-        device_type: Optional[DeviceType] = None,
+        host: Optional[str] = None,
+        config: Optional[DeviceConfig] = None,
     ) -> "SmartDevice":
-        """Connect to a single device by the given IP address.
+        """Connect to a single device by the given hostname or device configuration.
 
         This method avoids the UDP based discovery process and
-        will connect directly to the device to query its type.
+        will connect directly to the device.
 
         It is generally preferred to avoid :func:`discover_single()` and
         use this function instead as it should perform better when
         the WiFi network is congested or the device is not responding
         to discovery requests.
 
-        The device type is discovered by querying the device.
-
         :param host: Hostname of device to query
-        :param device_type: Device type to use for the device.
-            If not given, the device type is discovered by querying the device.
-            If the device type is already known, it is preferred to pass it
-            to avoid the extra query to the device to discover its type.
+        :param config: Connection parameters to ensure the correct protocol
+            and connection options are used.
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
         from .device_factory import connect  # pylint: disable=import-outside-toplevel
 
-        return await connect(
-            host=host,
-            port=port,
-            timeout=timeout,
-            credentials=credentials,
-            device_type=device_type,
-        )
+        return await connect(host=host, config=config)  # type: ignore[arg-type]
