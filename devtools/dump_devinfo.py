@@ -17,7 +17,7 @@ from pprint import pprint
 
 import asyncclick as click
 
-from kasa import Credentials, Discover, SmartDevice
+from kasa import AuthenticationException, Credentials, Discover, SmartDevice
 from kasa.discover import DiscoveryResult
 from kasa.tapo.tapodevice import TapoDevice
 
@@ -85,14 +85,14 @@ def default_to_regular(d):
 @click.argument("host")
 @click.option(
     "--username",
-    default=None,
+    default="",
     required=False,
     envvar="TPLINK_CLOUD_USERNAME",
     help="Username/email address to authenticate to device.",
 )
 @click.option(
     "--password",
-    default=None,
+    default="",
     required=False,
     envvar="TPLINK_CLOUD_PASSWORD",
     help="Password to use to authenticate to device.",
@@ -227,6 +227,15 @@ async def get_smart_fixture(device: SmartDevice):
         try:
             click.echo(f"Testing {test_call}..", nl=False)
             response = await device.protocol.query(test_call.method)
+        except AuthenticationException as ex:
+            click.echo(
+                click.style(
+                    f"Unable to query the device due to an authentication error: {ex}",
+                    bold=True,
+                    fg="red",
+                )
+            )
+            exit(1)
         except Exception as ex:
             click.echo(click.style(f"FAIL {ex}", fg="red"))
         else:
@@ -244,15 +253,25 @@ async def get_smart_fixture(device: SmartDevice):
 
     try:
         responses = await device.protocol.query(final_query)
+    except AuthenticationException as ex:
+        click.echo(
+            click.style(
+                f"Unable to query the device due to an authentication error: {ex}",
+                bold=True,
+                fg="red",
+            )
+        )
+        exit(1)
     except Exception as ex:
         click.echo(
             click.style(
                 f"Unable to query all successes at once: {ex}", bold=True, fg="red"
             )
         )
+        exit(1)
     final = {}
-    for response in responses["responses"]:
-        final[response["method"]] = response["result"]
+    for method, result in responses.items():
+        final[method] = result
 
     # Need to recreate a DiscoverResult here because we don't want the aliases
     # in the fixture, we want the actual field names as returned by the device.

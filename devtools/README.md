@@ -13,6 +13,8 @@ Usage: dump_devinfo.py [OPTIONS] HOST
 Options:
   -d, --debug
   --help       Show this message and exit.
+  --username   For authenticating devices.
+  --password
 ```
 
 ## create_module_fixtures
