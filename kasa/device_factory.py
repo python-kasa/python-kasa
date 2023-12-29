@@ -31,9 +31,23 @@ GET_SYSINFO_QUERY = {
 
 
 async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "SmartDevice":
-    """Connect to a single device by the given connection parameters.
+    """Connect to a single device by the given hostname or device configuration.
 
-    Do not use this function directly, use SmartDevice.Connect()
+    This method avoids the UDP based discovery process and
+    will connect directly to the device.
+
+    It is generally preferred to avoid :func:`discover_single()` and
+    use this function instead as it should perform better when
+    the WiFi network is congested or the device is not responding
+    to discovery requests.
+
+    Do not use this function directly, use SmartDevice.connect()
+
+    :param host: Hostname of device to query
+    :param config: Connection parameters to ensure the correct protocol
+        and connection options are used.
+    :rtype: SmartDevice
+    :return: Object for querying/controlling found device.
     """
     if host and config or (not host and not config):
         raise SmartDeviceException("One of host or config must be provded and not both")

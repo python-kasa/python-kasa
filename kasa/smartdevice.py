@@ -805,7 +805,7 @@ class SmartDevice:
         host: Optional[str] = None,
         config: Optional[DeviceConfig] = None,
     ) -> "SmartDevice":
-        """Connect to a single device by the given hostname or connection parameters.
+        """Connect to a single device by the given hostname or device configuration.
 
         This method avoids the UDP based discovery process and
         will connect directly to the device.
@@ -814,8 +814,6 @@ class SmartDevice:
         use this function instead as it should perform better when
         the WiFi network is congested or the device is not responding
         to discovery requests.
-
-        The device type is discovered by querying the device.
 
         :param host: Hostname of device to query
         :param config: Connection parameters to ensure the correct protocol
