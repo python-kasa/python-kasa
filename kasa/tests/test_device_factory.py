@@ -16,7 +16,7 @@ from kasa import (
     SmartLightStrip,
     SmartPlug,
 )
-from kasa.device_factory import connect
+from kasa.device_factory import connect, get_protocol
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
@@ -24,7 +24,6 @@ from kasa.deviceconfig import (
     EncryptType,
 )
 from kasa.discover import DiscoveryResult
-from kasa.protocolfactory import get_protocol
 
 
 def _get_connection_type_device_class(the_fixture_data):

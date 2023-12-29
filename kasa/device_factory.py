@@ -1,20 +1,27 @@
 """Device creation via DeviceConfig."""
 import logging
 import time
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Tuple, Type
 
-from kasa.deviceconfig import DeviceConfig
-from kasa.protocol import TPLinkSmartHomeProtocol
-from kasa.smartbulb import SmartBulb
-from kasa.smartdevice import SmartDevice
-from kasa.smartdimmer import SmartDimmer
-from kasa.smartlightstrip import SmartLightStrip
-from kasa.smartplug import SmartPlug
-from kasa.smartstrip import SmartStrip
-from kasa.tapo import TapoBulb, TapoPlug
-
+from .aestransport import AesTransport
+from .deviceconfig import DeviceConfig
 from .exceptions import SmartDeviceException, UnsupportedDeviceException
-from .protocolfactory import get_protocol
+from .iotprotocol import IotProtocol
+from .klaptransport import KlapTransport, KlapTransportV2
+from .protocol import (
+    BaseTransport,
+    TPLinkProtocol,
+    TPLinkSmartHomeProtocol,
+    _XorTransport,
+)
+from .smartbulb import SmartBulb
+from .smartdevice import SmartDevice
+from .smartdimmer import SmartDimmer
+from .smartlightstrip import SmartLightStrip
+from .smartplug import SmartPlug
+from .smartprotocol import SmartProtocol
+from .smartstrip import SmartStrip
+from .tapo import TapoBulb, TapoPlug
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,11 +30,16 @@ GET_SYSINFO_QUERY = {
 }
 
 
-async def connect(*, config: DeviceConfig) -> "SmartDevice":
+async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "SmartDevice":
     """Connect to a single device by the given connection parameters.
 
     Do not use this function directly, use SmartDevice.Connect()
     """
+    if host and config or (not host and not config):
+        raise SmartDeviceException("One of host or config must be provded and not both")
+    if host:
+        config = DeviceConfig(host=host)
+
     debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
     if debug_enabled:
         start_time = time.perf_counter()
@@ -110,3 +122,28 @@ def get_device_class_from_family(device_type: str) -> Optional[Type[SmartDevice]
         "IOT.SMARTBULB": SmartBulb,
     }
     return supported_device_types.get(device_type)
+
+
+def get_protocol(
+    config: DeviceConfig,
+) -> Optional[TPLinkProtocol]:
+    """Return the protocol from the connection name."""
+    protocol_name = config.connection_type.device_family.value.split(".")[0]
+    protocol_transport_key = (
+        protocol_name + "." + config.connection_type.encryption_type.value
+    )
+    supported_device_protocols: dict[
+        str, Tuple[Type[TPLinkProtocol], Type[BaseTransport]]
+    ] = {
+        "IOT.XOR": (TPLinkSmartHomeProtocol, _XorTransport),
+        "IOT.KLAP": (IotProtocol, KlapTransport),
+        "SMART.AES": (SmartProtocol, AesTransport),
+        "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+    }
+    if protocol_transport_key not in supported_device_protocols:
+        return None
+
+    protocol_class, transport_class = supported_device_protocols.get(
+        protocol_transport_key
+    )  # type: ignore
+    return protocol_class(transport=transport_class(config=config))

@@ -132,7 +132,7 @@ class TapoDevice(SmartDevice):
     @property
     def device_id(self) -> str:
         """Return the device id."""
-        return str(self._info.get("device_id"))  # type: ignore
+        return str(self._info.get("device_id"))
 
     @property
     def internal_state(self) -> Any:

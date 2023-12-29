@@ -250,6 +250,7 @@ async def test_create_thin_wrapper():
         assert dev is mock
 
     connect.assert_called_once_with(
+        host=None,
         config=config,
     )
 

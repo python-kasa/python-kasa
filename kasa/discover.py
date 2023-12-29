@@ -20,13 +20,13 @@ from kasa.credentials import Credentials
 from kasa.device_factory import (
     get_device_class_from_family,
     get_device_class_from_sys_info,
+    get_protocol,
 )
 from kasa.deviceconfig import ConnectionType, DeviceConfig, EncryptType
 from kasa.exceptions import UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
-from kasa.protocolfactory import get_protocol
 from kasa.smartdevice import SmartDevice, SmartDeviceException
 
 _LOGGER = logging.getLogger(__name__)
@@ -387,9 +387,7 @@ class Discover:
         device_class = Discover._get_device_class(info)
         device = device_class(config.host, config=config)
         sys_info = info["system"]["get_sysinfo"]
-        if (device_type := sys_info.get("mic_type")) or (
-            device_type := sys_info.get("type")
-        ):
+        if device_type := sys_info.get("mic_type", sys_info.get("type")):
             config.connection_type = ConnectionType.from_values(
                 device_family=device_type, encryption_type=EncryptType.Xor.value
             )

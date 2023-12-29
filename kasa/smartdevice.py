@@ -417,7 +417,7 @@ class SmartDevice:
         """
         return self._sys_info  # type: ignore
 
-    @property
+    @property  # type: ignore
     @requires_update
     def model(self) -> str:
         """Return device model."""
@@ -825,10 +825,4 @@ class SmartDevice:
         """
         from .device_factory import connect  # pylint: disable=import-outside-toplevel
 
-        if host and config or (not host and not config):
-            raise SmartDeviceException(
-                "One of host or config must be provded and not both"
-            )
-        if host:
-            config = DeviceConfig(host=host)
-        return await connect(config=config)  # type: ignore[arg-type]
+        return await connect(host=host, config=config)  # type: ignore[arg-type]
