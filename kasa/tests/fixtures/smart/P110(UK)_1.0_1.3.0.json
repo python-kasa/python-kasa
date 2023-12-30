@@ -104,8 +104,40 @@
         "obd_src": "tplink",
         "owner": "00000000000000000000000000000000"
     },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_off_config": {
+        "delay_min": 120,
+        "enable": false
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": [
+            {
+                "delay": 300,
+                "desired_states": {
+                    "on": true
+                },
+                "enable": false,
+                "id": "C1",
+                "remain": 0
+            }
+        ]
+    },
     "get_current_power": {
-        "current_power": 0
+        "current_power": 11
     },
     "get_device_info": {
         "auto_off_remain_time": 0,
@@ -130,12 +162,12 @@
         "model": "P110",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 119335,
+        "on_time": 3087,
         "overcurrent_status": "normal",
         "overheated": false,
         "power_protection_status": "normal",
         "region": "Europe/London",
-        "rssi": -57,
+        "rssi": -50,
         "signal_level": 2,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
@@ -145,36 +177,271 @@
     "get_device_time": {
         "region": "Europe/London",
         "time_diff": 0,
-        "timestamp": 1701370224
+        "timestamp": 1703934043
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 75,
-            "past7": 69,
-            "today": 0
+            "past30": 2090,
+            "past7": 1171,
+            "today": 9
         },
         "saved_power": {
-            "past30": 2029,
-            "past7": 1964,
-            "today": 1130
+            "past30": 31616,
+            "past7": 5033,
+            "today": 42
         },
         "time_usage": {
-            "past30": 2104,
-            "past7": 2033,
-            "today": 1130
+            "past30": 33706,
+            "past7": 6204,
+            "today": 51
         }
     },
+    "get_electricity_price_config": {
+        "constant_price": 0,
+        "time_of_use_config": {
+            "summer": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "winter": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        "type": "constant"
+    },
     "get_energy_usage": {
-        "current_power": 0,
+        "current_power": 11300,
         "electricity_charge": [
             0,
             0,
             0
         ],
-        "local_time": "2023-11-30 18:50:24",
-        "month_energy": 75,
-        "month_runtime": 2104,
-        "today_energy": 0,
-        "today_runtime": 1130
+        "local_time": "2023-12-30 11:00:43",
+        "month_energy": 2090,
+        "month_runtime": 33706,
+        "today_energy": 9,
+        "today_runtime": 51
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.3.0 Build 230905 Rel.152200",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "led_rule": "night_mode",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 550,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 961,
+            "sunrise_offset": 62,
+            "sunset_offset": 0
+        }
+    },
+    "get_max_power": {
+        "max_power": 3342
+    },
+    "get_next_event": {
+        "desired_states": {
+            "on": true
+        },
+        "e_time": 0,
+        "id": "S1",
+        "s_time": 1703937000,
+        "type": 1
+    },
+    "get_protection_power": {
+        "enabled": true,
+        "protection_power": 2960
+    },
+    "get_schedule_rules": {
+        "enable": true,
+        "rule_list": [
+            {
+                "day": 30,
+                "desired_states": {
+                    "on": true
+                },
+                "e_action": "none",
+                "e_min": 0,
+                "e_type": "normal",
+                "enable": true,
+                "id": "S1",
+                "mode": "repeat",
+                "month": 12,
+                "s_min": 710,
+                "s_type": "normal",
+                "time_offset": 0,
+                "week_day": 127,
+                "year": 2023
+            }
+        ],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 1
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "P110",
+            "device_type": "SMART.TAPOPLUG",
+            "is_klap": true
+        }
     }
 }
