@@ -65,7 +65,7 @@ class TapoDevice(SmartDevice):
         }
 
         resp = await self.protocol.query(req)
-        
+
         self._info = resp["get_device_info"]
         self._usage = resp["get_device_usage"]
         self._time = resp["get_device_time"]
@@ -89,11 +89,6 @@ class TapoDevice(SmartDevice):
         if "energy_monitoring" in self._components:
             self.emeter_type = "emeter"
             self.modules["emeter"] = Emeter(self, self.emeter_type)
-
-    @property
-    def supported_modules(self) -> List[str]:
-        """Return list of components for now."""
-        return list(self._components.keys())
 
     @property
     def sys_info(self) -> Dict[str, Any]:
