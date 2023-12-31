@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, cast
 
 from ..deviceconfig import DeviceConfig
-from ..emeterstatus import EmeterStatus
 from ..protocol import TPLinkProtocol
 from ..smartdevice import DeviceType
 from .tapodevice import TapoDevice
@@ -25,23 +24,6 @@ class TapoPlug(TapoDevice):
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
 
-    async def update(self, update_children: bool = True):
-        """Call the device endpoint and update the device data."""
-        await super().update(update_children)
-
-        req = {
-            "get_energy_usage": None,
-            "get_current_power": None,
-        }
-        resp = await self.protocol.query(req)
-        self._energy = resp["get_energy_usage"]
-        self._emeter = resp["get_current_power"]
-
-        self._data["energy"] = self._energy
-        self._data["emeter"] = self._emeter
-
-        _LOGGER.debug("Got an update: %s %s", self._energy, self._emeter)
-
     @property
     def state_information(self) -> Dict[str, Any]:
         """Return the key state information."""
@@ -55,42 +37,9 @@ class TapoPlug(TapoDevice):
         }
 
     @property
-    def emeter_realtime(self) -> EmeterStatus:
-        """Get the emeter status."""
-        return EmeterStatus(
-            {
-                "power_mw": self._energy.get("current_power"),
-                "total": self._convert_energy_data(
-                    self._energy.get("today_energy"), 1 / 1000
-                ),
-            }
-        )
-
-    async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrieve current energy readings."""
-        self._verify_emeter()
-        resp = await self.protocol.query("get_energy_usage")
-        self._energy = resp["get_energy_usage"]
-        return self.emeter_realtime
-
-    @property
-    def emeter_today(self) -> Optional[float]:
-        """Get the emeter value for today."""
-        return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
-
-    @property
-    def emeter_this_month(self) -> Optional[float]:
-        """Get the emeter value for this month."""
-        return self._convert_energy_data(self._energy.get("month_energy"), 1 / 1000)
-
-    @property
     def on_since(self) -> Optional[datetime]:
         """Return the time that the device was turned on or None if turned off."""
         if not self._info.get("device_on"):
             return None
         on_time = cast(float, self._info.get("on_time"))
         return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
-
-    def _convert_energy_data(self, data, scale) -> Optional[float]:
-        """Return adjusted emeter information."""
-        return data if not data else data * scale

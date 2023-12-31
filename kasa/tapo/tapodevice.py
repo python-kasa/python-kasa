@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set, cast
 
+from ..emeterstatus import EmeterStatus
 from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationException
@@ -40,6 +41,7 @@ class TapoDevice(SmartDevice):
         if self.credentials is None or self.credentials.username is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
+        extra_reqs = {}
         if self._components_raw is None:
             resp = await self.protocol.query("component_nego")
             self._components_raw = resp["component_nego"]
@@ -49,21 +51,35 @@ class TapoDevice(SmartDevice):
             }
             await self._initialize_modules()
 
+            if "energy_monitoring" in self._components:
+                extra_reqs = {**extra_reqs,
+                    "get_energy_usage": None,
+                    "get_current_power": None,
+                }
+
         req = {
             "get_device_info": None,
             "get_device_usage": None,
             "get_device_time": None,
+            **extra_reqs,
         }
+
         resp = await self.protocol.query(req)
+        
         self._info = resp["get_device_info"]
         self._usage = resp["get_device_usage"]
         self._time = resp["get_device_time"]
+        # Emeter is not always available, but we set them still for now.
+        self._energy = resp.get("get_energy_usage")
+        self._emeter = resp.get("get_current_power")
 
         self._last_update = self._data = {
             "components": self._components_raw,
             "info": self._info,
             "usage": self._usage,
             "time": self._time,
+            "energy": self._energy,
+            "emeter": self._emeter
         }
 
         _LOGGER.debug("Got an update: %s", self._data)
@@ -202,3 +218,36 @@ class TapoDevice(SmartDevice):
         """Update state from info from the discover call."""
         self._discovery_info = info
         self._info = info
+
+    async def get_emeter_realtime(self) -> EmeterStatus:
+        """Retrieve current energy readings."""
+        self._verify_emeter()
+        resp = await self.protocol.query("get_energy_usage")
+        self._energy = resp["get_energy_usage"]
+        return self.emeter_realtime
+
+    def _convert_energy_data(self, data, scale) -> Optional[float]:
+        """Return adjusted emeter information."""
+        return data if not data else data * scale
+
+    @property
+    def emeter_realtime(self) -> EmeterStatus:
+        """Get the emeter status."""
+        return EmeterStatus(
+            {
+                "power_mw": self._energy.get("current_power"),
+                "total": self._convert_energy_data(
+                    self._energy.get("today_energy"), 1 / 1000
+                ),
+            }
+        )
+
+    @property
+    def emeter_this_month(self) -> Optional[float]:
+        """Get the emeter value for this month."""
+        return self._convert_energy_data(self._energy.get("month_energy"), 1 / 1000)
+
+    @property
+    def emeter_today(self) -> Optional[float]:
+        """Get the emeter value for today."""
+        return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
