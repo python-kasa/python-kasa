@@ -2,11 +2,11 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, Dict, Optional, Set, cast
 
-from ..emeterstatus import EmeterStatus
 from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
+from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException
 from ..modules import Emeter
 from ..protocol import TPLinkProtocol
@@ -41,7 +41,7 @@ class TapoDevice(SmartDevice):
         if self.credentials is None or self.credentials.username is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
-        extra_reqs = {}
+        extra_reqs: Dict[str, Any] = {}
         if self._components_raw is None:
             resp = await self.protocol.query("component_nego")
             self._components_raw = resp["component_nego"]
@@ -51,11 +51,12 @@ class TapoDevice(SmartDevice):
             }
             await self._initialize_modules()
 
-            if "energy_monitoring" in self._components:
-                extra_reqs = {**extra_reqs,
-                    "get_energy_usage": None,
-                    "get_current_power": None,
-                }
+        if "energy_monitoring" in self._components:
+            extra_reqs = {
+                **extra_reqs,
+                "get_energy_usage": None,
+                "get_current_power": None,
+            }
 
         req = {
             "get_device_info": None,
@@ -70,8 +71,8 @@ class TapoDevice(SmartDevice):
         self._usage = resp["get_device_usage"]
         self._time = resp["get_device_time"]
         # Emeter is not always available, but we set them still for now.
-        self._energy = resp.get("get_energy_usage")
-        self._emeter = resp.get("get_current_power")
+        self._energy = resp.get("get_energy_usage", {})
+        self._emeter = resp.get("get_current_power", {})
 
         self._last_update = self._data = {
             "components": self._components_raw,
@@ -79,7 +80,7 @@ class TapoDevice(SmartDevice):
             "usage": self._usage,
             "time": self._time,
             "energy": self._energy,
-            "emeter": self._emeter
+            "emeter": self._emeter,
         }
 
         _LOGGER.debug("Got an update: %s", self._data)
