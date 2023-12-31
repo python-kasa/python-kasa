@@ -41,7 +41,6 @@ class TapoDevice(SmartDevice):
         if self.credentials is None or self.credentials.username is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
-        extra_reqs: Dict[str, Any] = {}
         if self._components_raw is None:
             resp = await self.protocol.query("component_nego")
             self._components_raw = resp["component_nego"]
@@ -51,6 +50,7 @@ class TapoDevice(SmartDevice):
             }
             await self._initialize_modules()
 
+        extra_reqs: Dict[str, Any] = {}
         if "energy_monitoring" in self._components:
             extra_reqs = {
                 **extra_reqs,
