@@ -20,8 +20,9 @@ import asyncclick as click
 from kasa import AuthenticationException, Credentials, Discover
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
-from kasa.smartrequests import COMPONENT_REQUESTS, SmartRequest
 from kasa.tapo.tapodevice import TapoDevice
+
+from .smartrequests import COMPONENT_REQUESTS, SmartRequest
 
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed")
