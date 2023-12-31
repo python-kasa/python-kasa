@@ -16,7 +16,7 @@ class UnsupportedDeviceException(SmartDeviceException):
 
     def __init__(self, *args, **kwargs):
         self.discovery_result = kwargs.get("discovery_result")
-        super().__init__(*args)
+        super().__init__(*args, **kwargs)
 
 
 class AuthenticationException(SmartDeviceException):
