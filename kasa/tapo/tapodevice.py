@@ -2,11 +2,12 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Set, cast
+from typing import Any, Dict, List, Optional, Set, cast
 
 from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationException
+from ..modules import Emeter
 from ..protocol import TPLinkProtocol
 from ..smartdevice import SmartDevice
 from ..smartprotocol import SmartProtocol
@@ -28,18 +29,25 @@ class TapoDevice(SmartDevice):
             transport=AesTransport(config=config or DeviceConfig(host=host)),
         )
         super().__init__(host=host, config=config, protocol=_protocol)
-        self._components: Optional[Dict[str, Any]] = None
+        self._components_raw: Optional[Dict[str, Any]] = None
+        self._components: Dict[str, int]
         self._state_information: Dict[str, Any] = {}
         self._discovery_info: Optional[Dict[str, Any]] = None
+        self.modules: Dict[str, Any] = {}
 
     async def update(self, update_children: bool = True):
         """Update the device."""
         if self.credentials is None or self.credentials.username is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
-        if self._components is None:
+        if self._components_raw is None:
             resp = await self.protocol.query("component_nego")
-            self._components = resp["component_nego"]
+            self._components_raw = resp["component_nego"]
+            self._components = {
+                comp["id"]: comp["ver_code"]
+                for comp in self._components_raw["component_list"]
+            }
+            await self._initialize_modules()
 
         req = {
             "get_device_info": None,
@@ -52,13 +60,24 @@ class TapoDevice(SmartDevice):
         self._time = resp["get_device_time"]
 
         self._last_update = self._data = {
-            "components": self._components,
+            "components": self._components_raw,
             "info": self._info,
             "usage": self._usage,
             "time": self._time,
         }
 
         _LOGGER.debug("Got an update: %s", self._data)
+
+    async def _initialize_modules(self):
+        """Initialize modules based on component negotiation response."""
+        if "energy_monitoring" in self._components:
+            self.emeter_type = "emeter"
+            self.modules["emeter"] = Emeter(self, self.emeter_type)
+
+    @property
+    def supported_modules(self) -> List[str]:
+        """Return list of components for now."""
+        return list(self._components.keys())
 
     @property
     def sys_info(self) -> Dict[str, Any]:
@@ -160,6 +179,11 @@ class TapoDevice(SmartDevice):
         """Return the list of supported features."""
         # TODO:
         return set()
+
+    @property
+    def has_emeter(self) -> bool:
+        """Return if the device has emeter."""
+        return "energy_monitoring" in self._components
 
     @property
     def is_on(self) -> bool:

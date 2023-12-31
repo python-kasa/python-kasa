@@ -5,9 +5,8 @@ from typing import Any, Dict, Optional, cast
 
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
-from ..modules import Emeter
 from ..protocol import TPLinkProtocol
-from ..smartdevice import DeviceType, requires_update
+from ..smartdevice import DeviceType
 from .tapodevice import TapoDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,15 +24,6 @@ class TapoPlug(TapoDevice):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
-        self.modules: Dict[str, Any] = {}
-        self.emeter_type = "emeter"
-        self.modules["emeter"] = Emeter(self, self.emeter_type)
-
-    @property  # type: ignore
-    @requires_update
-    def has_emeter(self) -> bool:
-        """Return that the plug has an emeter."""
-        return True
 
     async def update(self, update_children: bool = True):
         """Call the device endpoint and update the device data."""
