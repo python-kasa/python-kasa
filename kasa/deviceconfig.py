@@ -26,6 +26,7 @@ class DeviceFamilyType(Enum):
     IotSmartPlugSwitch = "IOT.SMARTPLUGSWITCH"
     IotSmartBulb = "IOT.SMARTBULB"
     SmartKasaPlug = "SMART.KASAPLUG"
+    SmartKasaSwitch = "SMART.KASASWITCH"
     SmartTapoPlug = "SMART.TAPOPLUG"
     SmartTapoBulb = "SMART.TAPOBULB"
 
