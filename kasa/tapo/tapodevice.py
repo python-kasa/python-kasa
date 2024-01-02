@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional, Set, cast
 
 from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
+from ..exceptions import AuthenticationException, SmartDeviceException
 from ..emeterstatus import EmeterStatus
-from ..exceptions import AuthenticationException
 from ..modules import Emeter
 from ..protocol import TPLinkProtocol
 from ..smartdevice import SmartDevice, WifiNetwork
@@ -283,13 +283,41 @@ class TapoDevice(SmartDevice):
         return await _query_networks()
 
     async def wifi_join(self, ssid: str, password: str, keytype: str = "wpa2_psk"):
-        """Join the given wifi network."""
+        """Join the given wifi network.
+
+        This method returns nothing as the device tries to activate the new
+        settings immediately instead of responding to the request.
+
+        If joining the network fails, the device will return to the previous state
+        after some delay.
+        """
+        if not self.credentials:
+            raise AuthenticationException("Device requires authentication.")
+
         payload = {
+            "account": {
+                "username": base64.b64encode(
+                    self.credentials.username.encode()
+                ).decode(),
+                "password": base64.b64encode(
+                    self.credentials.password.encode()
+                ).decode(),
+            },
             "wireless": {
                 "key_type": keytype,
                 "password": base64.b64encode(password.encode()).decode(),
                 "ssid": base64.b64encode(ssid.encode()).decode(),
-            }
+            },
+            "time": self.internal_state["time"],
         }
 
-        return await self.protocol.query({"set_qs_info": payload})
+        # The device does not respond to the request but changes the settings
+        # immediately which causes us to timeout.
+        # Thus, We limit retries and suppress the raised exception as useless.
+        try:
+            return await self.protocol.query({"set_qs_info": payload}, retry_count=0)
+        except SmartDeviceException as ex:
+            if ex.error_code:  # Re-raise on device-reported errors
+                raise
+
+            _LOGGER.debug("Received an expected for wifi join, but this is expected")
