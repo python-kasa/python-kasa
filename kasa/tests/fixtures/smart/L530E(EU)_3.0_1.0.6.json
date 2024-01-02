@@ -116,6 +116,28 @@
         "obd_src": "tplink",
         "owner": "00000000000000000000000000000000"
     },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_light_info": {
+        "enable": false,
+        "mode": "light_track"
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 1
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
     "get_device_info": {
         "avatar": "bulb",
         "brightness": 100,
@@ -129,58 +151,275 @@
             "state": {
                 "brightness": 100,
                 "color_temp": 2500,
-                "hue": 0,
-                "saturation": 100
+                "hue": 31,
+                "saturation": 88
             },
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": true,
+        "device_on": false,
         "dynamic_light_effect_enable": false,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.0.6 Build 230509 Rel.195312",
         "has_set_location_info": true,
-        "hue": 0,
+        "hue": 31,
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "3.0",
         "ip": "127.0.0.123",
-        "lang": "de_DE",
+        "lang": "en_US",
         "latitude": 0,
         "longitude": 0,
         "mac": "00-00-00-00-00-00",
         "model": "L530",
-        "nickname": "c21hcnRlIFdMQU4tR2zDvGhiaXJuZQ==",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
         "overheated": false,
         "region": "Europe/Berlin",
-        "rssi": -38,
-        "saturation": 100,
+        "rssi": -48,
+        "saturation": 88,
         "signal_level": 3,
         "specs": "",
-        "ssid": "IyNNQVNLRUROQU1FIyM=",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
         "time_diff": 60,
         "type": "SMART.TAPOBULB"
     },
     "get_device_time": {
         "region": "Europe/Berlin",
         "time_diff": 60,
-        "timestamp": 1701618972
+        "timestamp": 1704212283
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 107,
-            "past7": 107,
-            "today": 7
+            "past30": 53,
+            "past7": 12,
+            "today": 0
         },
         "saved_power": {
-            "past30": 535,
-            "past7": 535,
-            "today": 41
+            "past30": 494,
+            "past7": 112,
+            "today": 0
         },
         "time_usage": {
-            "past30": 642,
-            "past7": 642,
-            "today": 48
+            "past30": 547,
+            "past7": 124,
+            "today": 0
+        }
+    },
+    "get_dynamic_light_effect_rules": {
+        "enable": false,
+        "max_count": 2,
+        "rule_list": [
+            {
+                "change_mode": "direct",
+                "change_time": 1000,
+                "color_status_list": [
+                    [
+                        100,
+                        0,
+                        0,
+                        2700
+                    ],
+                    [
+                        100,
+                        321,
+                        99,
+                        0
+                    ],
+                    [
+                        100,
+                        196,
+                        99,
+                        0
+                    ],
+                    [
+                        100,
+                        6,
+                        97,
+                        0
+                    ],
+                    [
+                        100,
+                        160,
+                        100,
+                        0
+                    ],
+                    [
+                        100,
+                        274,
+                        95,
+                        0
+                    ],
+                    [
+                        100,
+                        48,
+                        100,
+                        0
+                    ],
+                    [
+                        100,
+                        242,
+                        99,
+                        0
+                    ]
+                ],
+                "id": "L1",
+                "scene_name": ""
+            },
+            {
+                "change_mode": "bln",
+                "change_time": 2000,
+                "color_status_list": [
+                    [
+                        100,
+                        54,
+                        6,
+                        0
+                    ],
+                    [
+                        100,
+                        19,
+                        39,
+                        0
+                    ],
+                    [
+                        100,
+                        194,
+                        52,
+                        0
+                    ],
+                    [
+                        100,
+                        324,
+                        24,
+                        0
+                    ],
+                    [
+                        100,
+                        170,
+                        34,
+                        0
+                    ],
+                    [
+                        100,
+                        276,
+                        27,
+                        0
+                    ],
+                    [
+                        100,
+                        56,
+                        46,
+                        0
+                    ],
+                    [
+                        100,
+                        221,
+                        36,
+                        0
+                    ]
+                ],
+                "id": "L2",
+                "scene_name": ""
+            }
+        ],
+        "start_index": 0,
+        "sum": 2
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_next_event": {},
+    "get_on_off_gradually_info": {
+        "enable": false
+    },
+    "get_preset_rules": {
+        "states": [
+            {
+                "brightness": 50,
+                "color_temp": 2700,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 240,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 120,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 277,
+                "saturation": 86
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 60,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 300,
+                "saturation": 100
+            }
+        ]
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "L530",
+            "device_type": "SMART.TAPOBULB"
         }
     }
 }
