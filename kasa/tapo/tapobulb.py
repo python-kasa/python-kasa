@@ -52,6 +52,9 @@ class TapoBulb(TapoDevice, SmartBulb):
 
         :return: White temperature range in Kelvin (minimum, maximum)
         """
+        if not self.is_variable_color_temp:
+            raise SmartDeviceException("Color temperature not supported")
+
         ct_range = self._info.get("color_temp_range", [0, 0])
         return ColorTempRange(min=ct_range[0], max=ct_range[1])
 
