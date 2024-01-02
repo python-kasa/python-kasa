@@ -117,9 +117,7 @@ class DeviceConfig:
     host: str
     timeout: Optional[int] = DEFAULT_TIMEOUT
     port_override: Optional[int] = None
-    credentials: Credentials = field(
-        default_factory=lambda: Credentials()
-    )
+    credentials: Credentials = field(default_factory=lambda: Credentials())
     connection_type: ConnectionType = field(
         default_factory=lambda: ConnectionType(
             DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor
