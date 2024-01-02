@@ -6,38 +6,28 @@ from typing import Optional
 class SmartDeviceException(Exception):
     """Base exception for device errors."""
 
-    def __init__(self, *args, error_code: Optional["SmartErrorCode"] = None):
-        self.error_code = error_code
-        super().__init__(args)
+    def __init__(self, *args, **kwargs):
+        self.error_code: Optional["SmartErrorCode"] = kwargs.get("error_code", None)
+        super().__init__(*args)
 
 
 class UnsupportedDeviceException(SmartDeviceException):
     """Exception for trying to connect to unsupported devices."""
 
-    def __init__(self, *args, discovery_result=None):
-        self.discovery_result = discovery_result
-        super().__init__(args)
+    def __init__(self, *args, **kwargs):
+        self.discovery_result = kwargs.get("discovery_result")
+        super().__init__(*args, **kwargs)
 
 
 class AuthenticationException(SmartDeviceException):
     """Base exception for device authentication errors."""
 
-    def __init__(self, *args, error_code: Optional["SmartErrorCode"] = None):
-        super().__init__(args, error_code)
-
 
 class RetryableException(SmartDeviceException):
     """Retryable exception for device errors."""
 
-    def __init__(self, *args, error_code: Optional["SmartErrorCode"] = None):
-        super().__init__(args, error_code)
-
-
 class TimeoutException(SmartDeviceException):
     """Timeout exception for device errors."""
-
-    def __init__(self, *args, error_code: Optional["SmartErrorCode"] = None):
-        super().__init__(args, error_code)
 
 
 class SmartErrorCode(IntEnum):
