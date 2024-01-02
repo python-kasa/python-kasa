@@ -112,9 +112,27 @@
         "obd_src": "tplink",
         "owner": "00000000000000000000000000000000"
     },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
     "get_device_info": {
         "avatar": "switch_s500d",
-        "brightness": 25,
+        "brightness": 34,
         "default_states": {
             "re_power_type": "always_off",
             "re_power_type_capability": [
@@ -125,7 +143,7 @@
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": true,
+        "device_on": false,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.0.2 Build 230810 Rel.141013",
         "has_set_location_info": true,
@@ -139,10 +157,10 @@
         "model": "KS225",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 936,
+        "on_time": 0,
         "overheat_status": "normal",
         "region": "America/Toronto",
-        "rssi": -50,
+        "rssi": -51,
         "signal_level": 2,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
@@ -152,13 +170,100 @@
     "get_device_time": {
         "region": "America/Toronto",
         "time_diff": -300,
-        "timestamp": 1704144371
+        "timestamp": 1704216678
     },
     "get_device_usage": {
         "time_usage": {
-            "past30": 7127,
-            "past7": 2091,
-            "today": 19
+            "past30": 7410,
+            "past7": 2190,
+            "today": 1
+        }
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.0.2 Build 230810 Rel.141013",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "led_rule": "always",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 476,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 1020,
+            "sunrise_offset": 0,
+            "sunset_offset": 0
+        }
+    },
+    "get_next_event": {},
+    "get_preset_rules": {
+        "brightness": [
+            100,
+            75,
+            50,
+            25,
+            1
+        ]
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "KS225",
+            "device_type": "SMART.KASASWITCH",
+            "is_klap": false
         }
     }
 }
