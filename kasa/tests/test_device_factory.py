@@ -76,7 +76,12 @@ async def test_connect_custom_port(all_fixture_data: dict, mocker, custom_port):
     host = "127.0.0.1"
 
     ctype, _ = _get_connection_type_device_class(all_fixture_data)
-    config = DeviceConfig(host=host, port_override=custom_port, connection_type=ctype)
+    config = DeviceConfig(
+        host=host,
+        port_override=custom_port,
+        connection_type=ctype,
+        credentials=Credentials("dummy_user", "dummy_password"),
+    )
     default_port = 80 if "discovery_result" in all_fixture_data else 9999
 
     ctype, _ = _get_connection_type_device_class(all_fixture_data)

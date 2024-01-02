@@ -305,7 +305,13 @@ class FakeSmartProtocol(SmartProtocol):
 class FakeSmartTransport(BaseTransport):
     def __init__(self, info):
         super().__init__(
-            config=DeviceConfig("127.0.0.123", credentials=Credentials()),
+            config=DeviceConfig(
+                "127.0.0.123",
+                credentials=Credentials(
+                    username="dummy_user",
+                    password="dummy_password",  # noqa: S106
+                ),
+            ),
         )
         self.info = info
 
