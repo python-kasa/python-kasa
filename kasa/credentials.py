@@ -9,3 +9,7 @@ class Credentials:
 
     username: str = field(default="", repr=False)
     password: str = field(default="", repr=False)
+
+    def __bool__(self):
+        """Overridden to allow easy checks for valid credentials."""
+        return self.username != "" and self.password != ""
