@@ -14,15 +14,15 @@ import logging
 import re
 from collections import defaultdict, namedtuple
 from pprint import pprint
+from typing import Dict, List
 
 import asyncclick as click
 
-from kasa import AuthenticationException, Credentials, Discover
+from devtools.helpers.smartrequests import COMPONENT_REQUESTS, SmartRequest
+from kasa import AuthenticationException, Credentials, Discover, SmartDevice
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
 from kasa.tapo.tapodevice import TapoDevice
-
-from .smartrequests import COMPONENT_REQUESTS, SmartRequest
 
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed")
@@ -214,6 +214,38 @@ async def get_legacy_fixture(device):
     return save_filename, copy_folder, final
 
 
+async def _make_requests_or_exit(
+    device: SmartDevice, requests: List[SmartRequest], name: str
+) -> Dict[str, Dict]:
+    final = {}
+    try:
+        end = len(requests)
+        step = 10  # Break the requests down as there seems to be a size limit
+        for i in range(0, end, step):
+            x = i
+            requests_step = requests[x : x + step]
+            responses = await device.protocol.query(
+                SmartRequest._create_request_dict(requests_step)
+            )
+            for method, result in responses.items():
+                final[method] = result
+        return final
+    except AuthenticationException as ex:
+        click.echo(
+            click.style(
+                f"Unable to query the device due to an authentication error: {ex}",
+                bold=True,
+                fg="red",
+            )
+        )
+        exit(1)
+    except Exception as ex:
+        click.echo(
+            click.style(f"Unable to query {name} at once: {ex}", bold=True, fg="red")
+        )
+        exit(1)
+
+
 async def get_smart_fixture(device: TapoDevice):
     """Get fixture for new TAPO style protocol."""
     extra_test_calls = [
@@ -243,38 +275,24 @@ async def get_smart_fixture(device: TapoDevice):
 
     successes = []
 
-    try:
-        click.echo("Testing component_nego call ..", nl=False)
-        component_info_response = await device.protocol.query(
-            SmartRequest._create_request_dict(SmartRequest.component_nego())
+    click.echo("Testing component_nego call ..", nl=False)
+    responses = await _make_requests_or_exit(
+        device, [SmartRequest.component_nego()], "component_nego call"
+    )
+    component_info_response = responses["component_nego"]
+    click.echo(click.style("OK", fg="green"))
+    successes.append(
+        SmartCall(
+            module="component_nego",
+            request=SmartRequest("component_nego"),
+            should_succeed=True,
         )
-        click.echo(click.style("OK", fg="green"))
-        successes.append(
-            SmartCall(
-                module="component_nego",
-                request=SmartRequest("component_nego"),
-                should_succeed=True,
-            )
-        )
-    except AuthenticationException as ex:
-        click.echo(
-            click.style(
-                f"Unable to query the device due to an authentication error: {ex}",
-                bold=True,
-                fg="red",
-            )
-        )
-        exit(1)
-    except Exception:
-        click.echo(
-            click.style("CRITICAL FAIL on component_nego call, exiting", fg="red")
-        )
-        exit(1)
+    )
 
     test_calls = []
     should_succeed = []
 
-    for item in component_info_response["component_nego"]["component_list"]:
+    for item in component_info_response["component_list"]:
         component_id = item["id"]
         if requests := COMPONENT_REQUESTS.get(component_id):
             component_test_calls = [
@@ -328,34 +346,7 @@ async def get_smart_fixture(device: TapoDevice):
     for succ in successes:
         requests.append(succ.request)
 
-    final = {}
-    try:
-        end = len(requests)
-        step = 10  # Break the requests down as there seems to be a size limit
-        for i in range(0, end, step):
-            x = i
-            requests_step = requests[x : x + step]
-            responses = await device.protocol.query(
-                SmartRequest._create_request_dict(requests_step)
-            )
-            for method, result in responses.items():
-                final[method] = result
-    except AuthenticationException as ex:
-        click.echo(
-            click.style(
-                f"Unable to query the device due to an authentication error: {ex}",
-                bold=True,
-                fg="red",
-            )
-        )
-        exit(1)
-    except Exception as ex:
-        click.echo(
-            click.style(
-                f"Unable to query all successes at once: {ex}", bold=True, fg="red"
-            )
-        )
-        exit(1)
+    final = await _make_requests_or_exit(device, requests, "all successes at once")
 
     # Need to recreate a DiscoverResult here because we don't want the aliases
     # in the fixture, we want the actual field names as returned by the device.
