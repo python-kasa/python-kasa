@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Set, cast
+from typing import Any, Dict, List, Optional, Set, cast
 
 from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
@@ -10,7 +10,7 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException
 from ..modules import Emeter
 from ..protocol import TPLinkProtocol
-from ..smartdevice import SmartDevice
+from ..smartdevice import SmartDevice, WifiNetwork
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -247,3 +247,49 @@ class TapoDevice(SmartDevice):
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
         return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
+
+    async def wifi_scan(self) -> List[WifiNetwork]:
+        """Scan for available wifi networks."""
+
+        def _net_for_scan_info(res):
+            return WifiNetwork(
+                ssid=base64.b64decode(res["ssid"]).decode(),
+                cipher_type=res["cipher_type"],
+                key_type=res["key_type"],
+                channel=res["channel"],
+                signal_level=res["signal_level"],
+                bssid=res["bssid"],
+            )
+
+        async def _query_networks(networks=None, start_index=0):
+            _LOGGER.debug("Querying networks using start_index=%s", start_index)
+            if networks is None:
+                networks = []
+
+            resp = await self.protocol.query(
+                {"get_wireless_scan_info": {"start_index": start_index}}
+            )
+            network_list = [
+                _net_for_scan_info(net)
+                for net in resp["get_wireless_scan_info"]["ap_list"]
+            ]
+            networks.extend(network_list)
+
+            if resp["get_wireless_scan_info"]["sum"] > start_index + 10:
+                return await _query_networks(networks, start_index=start_index + 10)
+
+            return networks
+
+        return await _query_networks()
+
+    async def wifi_join(self, ssid: str, password: str, keytype: str = "wpa2_psk"):
+        """Join the given wifi network."""
+        payload = {
+            "wireless": {
+                "key_type": keytype,
+                "password": base64.b64encode(password.encode()).decode(),
+                "ssid": base64.b64encode(ssid.encode()).decode(),
+            }
+        }
+
+        return await self.protocol.query({"set_qs_info": payload})

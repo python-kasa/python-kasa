@@ -345,10 +345,10 @@ async def scan(dev):
 
 @wifi.command()
 @click.argument("ssid")
+@click.option("--keytype", prompt=True)
 @click.option("--password", prompt=True, hide_input=True)
-@click.option("--keytype", default=3)
 @pass_dev
-async def join(dev: SmartDevice, ssid, password, keytype):
+async def join(dev: SmartDevice, ssid: str, password: str, keytype: str):
     """Join the given wifi network."""
     echo(f"Asking the device to connect to {ssid}..")
     res = await dev.wifi_join(ssid, password, keytype=keytype)

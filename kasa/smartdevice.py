@@ -42,6 +42,9 @@ class WifiNetwork:
     channel: Optional[int] = None
     rssi: Optional[int] = None
 
+    # For SMART devices
+    signal_level: Optional[int] = None
+
 
 def merge(d, u):
     """Update dict recursively."""
@@ -687,7 +690,7 @@ class SmartDevice:
 
         return [WifiNetwork(**x) for x in info["ap_list"]]
 
-    async def wifi_join(self, ssid, password, keytype=3):  # noqa: D202
+    async def wifi_join(self, ssid: str, password: str, keytype: str = "3"):  # noqa: D202
         """Join the given wifi network.
 
         If joining the network fails, the device will return to AP mode after a while.
@@ -696,7 +699,7 @@ class SmartDevice:
         async def _join(target, payload):
             return await self._query_helper(target, "set_stainfo", payload)
 
-        payload = {"ssid": ssid, "password": password, "key_type": keytype}
+        payload = {"ssid": ssid, "password": password, "key_type": int(keytype)}
         try:
             return await _join("netif", payload)
         except SmartDeviceException as ex:
