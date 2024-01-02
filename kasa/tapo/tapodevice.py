@@ -34,7 +34,7 @@ class TapoDevice(SmartDevice):
 
     async def update(self, update_children: bool = True):
         """Update the device."""
-        if self.credentials is None or self.credentials.username is None:
+        if not self.credentials:
             raise AuthenticationException("Tapo plug requires authentication.")
 
         if self._components is None:
