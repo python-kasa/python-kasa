@@ -281,6 +281,8 @@ At the moment, the following devices have been confirmed to work:
 
 * Tapo P110 (plug)
 * Tapo L530E (bulb)
+* Kasa KS205 (Wifi/Matter Wall Switch)
+* Kasa KS225 (Wifi/Matter Wall Dimmer Switch)
 
 Some newer hardware versions of Kasa branded devices are now using the same protocol as
 Tapo branded devices.  Support for these devices is currently limited as per TAPO branded

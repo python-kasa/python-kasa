@@ -171,7 +171,7 @@ async def test_non_variable_temp(dev: SmartBulb):
         await dev.set_color_temp(2700)
 
     with pytest.raises(SmartDeviceException):
-        dev.valid_temperature_range()
+        print(dev.valid_temperature_range)
 
     with pytest.raises(SmartDeviceException):
         print(dev.color_temp)
