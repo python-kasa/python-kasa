@@ -66,7 +66,7 @@ class BaseTransport(ABC):
 
     @property
     @abstractmethod
-    def credentials_hash(self) -> Optional[str]:
+    def credentials_hash(self) -> str:
         """The hashed credentials used by the transport."""
 
     @abstractmethod
@@ -127,9 +127,9 @@ class _XorTransport(BaseTransport):
         return self.DEFAULT_PORT
 
     @property
-    def credentials_hash(self) -> Optional[str]:
+    def credentials_hash(self) -> str:
         """The hashed credentials used by the transport."""
-        return None
+        return ""
 
     async def send(self, request: str) -> Dict:
         """Send a message to the device and return a response."""

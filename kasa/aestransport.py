@@ -67,7 +67,7 @@ class AesTransport(BaseTransport):
         if not self._credentials and not self._credentials_hash:
             self._credentials = Credentials()
         if self._credentials:
-            self._login_params = self.get_login_params()
+            self._login_params = self._get_login_params()
         else:
             self._login_params = json_loads(
                 base64.b64decode(self._credentials_hash.encode()).decode()  # type: ignore[union-attr]
@@ -92,7 +92,7 @@ class AesTransport(BaseTransport):
         return self.DEFAULT_PORT
 
     @property
-    def credentials_hash(self) -> Optional[str]:
+    def credentials_hash(self) -> str:
         """The hashed credentials used by the transport."""
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
@@ -104,7 +104,7 @@ class AesTransport(BaseTransport):
             self._default_http_client = httpx.AsyncClient()
         return self._default_http_client
 
-    def get_login_params(self):
+    def _get_login_params(self):
         """Get the login parameters based on the login_version."""
         un, pw = self.hash_credentials(self._login_version == 2)
         password_field_name = "password2" if self._login_version == 2 else "password"

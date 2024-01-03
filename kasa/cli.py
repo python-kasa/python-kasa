@@ -224,6 +224,7 @@ def json_formatter_cb(result, **kwargs):
     "--credentials-hash",
     default=None,
     required=False,
+    envvar="KASA_CREDENTIALS_HASH",
     help="Hashed credentials used to authenticate to the device.",
 )
 @click.version_option(package_name="python-kasa")
@@ -317,7 +318,7 @@ async def cli(
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
         await dev.update()
-    elif device_family and encrypt_type and login_version:
+    elif device_family and encrypt_type:
         ctype = ConnectionType(
             DeviceFamilyType(device_family),
             EncryptType(encrypt_type),
