@@ -185,6 +185,12 @@ def json_formatter_cb(result, **kwargs):
     type=click.Choice(DEVICE_FAMILY_TYPES, case_sensitive=False),
 )
 @click.option(
+    "--login-version",
+    envvar="KASA_LOGIN_VERSION",
+    default=None,
+    type=int,
+)
+@click.option(
     "--timeout",
     envvar="KASA_TIMEOUT",
     default=5,
@@ -214,6 +220,12 @@ def json_formatter_cb(result, **kwargs):
     envvar="KASA_PASSWORD",
     help="Password to use to authenticate to device.",
 )
+@click.option(
+    "--credentials-hash",
+    default=None,
+    required=False,
+    help="Hashed credentials used to authenticate to the device.",
+)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(
@@ -227,11 +239,13 @@ async def cli(
     type,
     encrypt_type,
     device_family,
+    login_version,
     json,
     timeout,
     discovery_timeout,
     username,
     password,
+    credentials_hash,
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
@@ -291,7 +305,10 @@ async def cli(
             "username", "Using authentication requires both --username and --password"
         )
 
-    credentials = Credentials(username=username, password=password)
+    if username:
+        credentials = Credentials(username=username, password=password)
+    else:
+        credentials = None
 
     if host is None:
         echo("No host name given, trying discovery..")
@@ -300,13 +317,18 @@ async def cli(
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
         await dev.update()
-    elif device_family or encrypt_type:
+    elif device_family and encrypt_type and login_version:
         ctype = ConnectionType(
             DeviceFamilyType(device_family),
             EncryptType(encrypt_type),
+            login_version,
         )
         config = DeviceConfig(
-            host=host, credentials=credentials, timeout=timeout, connection_type=ctype
+            host=host,
+            credentials=credentials,
+            credentials_hash=credentials_hash,
+            timeout=timeout,
+            connection_type=ctype,
         )
         dev = await SmartDevice.connect(config=config)
     else:
@@ -495,6 +517,7 @@ async def state(dev: SmartDevice):
     echo(f"[bold]== {dev.alias} - {dev.model} ==[/bold]")
     echo(f"\tHost: {dev.host}")
     echo(f"\tPort: {dev.port}")
+    echo(f"\tCredentials hash: {dev.credentials_hash}")
     echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
         echo("\t[bold]== Plugs ==[/bold]")

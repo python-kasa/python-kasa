@@ -41,6 +41,7 @@ https://github.com/python-kasa/python-kasa/pull/117
 """
 
 import asyncio
+import base64
 import datetime
 import hashlib
 import logging
@@ -99,8 +100,13 @@ class KlapTransport(BaseTransport):
 
         self._default_http_client: Optional[httpx.AsyncClient] = None
         self._local_seed: Optional[bytes] = None
-        self._local_auth_hash = self.generate_auth_hash(self._credentials)
-        self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
+        if not self._credentials and not self._credentials_hash:
+            self._credentials = Credentials()
+        if self._credentials:
+            self._local_auth_hash = self.generate_auth_hash(self._credentials)
+            self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
+        else:
+            self._local_auth_hash = base64.b64decode(self._credentials_hash.encode())  # type: ignore[union-attr]
         self._kasa_setup_auth_hash = None
         self._blank_auth_hash = None
         self._handshake_lock = asyncio.Lock()
@@ -118,6 +124,11 @@ class KlapTransport(BaseTransport):
     def default_port(self):
         """Default port for the transport."""
         return self.DEFAULT_PORT
+
+    @property
+    def credentials_hash(self) -> Optional[str]:
+        """The hashed credentials used by the transport."""
+        return base64.b64encode(self._local_auth_hash).decode()
 
     @property
     def _http_client(self) -> httpx.AsyncClient:

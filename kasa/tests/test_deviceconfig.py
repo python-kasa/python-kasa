@@ -19,3 +19,30 @@ def test_serialization():
     config2_dict = json_loads(config_json)
     config2 = DeviceConfig.from_dict(config2_dict)
     assert config == config2
+
+
+def test_credentials_hash():
+    config = DeviceConfig(
+        host="Foo",
+        http_client=httpx.AsyncClient(),
+        credentials=Credentials("foo", "bar"),
+    )
+    config_dict = config.to_dict(credentials_hash="credhash")
+    config_json = json_dumps(config_dict)
+    config2_dict = json_loads(config_json)
+    config2 = DeviceConfig.from_dict(config2_dict)
+    assert config2.credentials_hash == "credhash"
+    assert config2.credentials is None
+
+
+def test_no_credentials_serialization():
+    config = DeviceConfig(
+        host="Foo",
+        http_client=httpx.AsyncClient(),
+        credentials=Credentials("foo", "bar"),
+    )
+    config_dict = config.to_dict(exclude_credentials=True)
+    config_json = json_dumps(config_dict)
+    config2_dict = json_loads(config_json)
+    config2 = DeviceConfig.from_dict(config2_dict)
+    assert config2.credentials is None
