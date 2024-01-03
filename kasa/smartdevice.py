@@ -245,6 +245,11 @@ class SmartDevice:
         """The device credentials."""
         return self.protocol._transport._credentials
 
+    @property
+    def credentials_hash(self) -> Optional[str]:
+        """Return the connection parameters the device is using."""
+        return self.protocol._transport.credentials_hash
+
     def add_module(self, name: str, module: Module):
         """Register a module."""
         if name in self.modules:

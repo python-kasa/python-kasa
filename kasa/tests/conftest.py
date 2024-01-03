@@ -430,6 +430,7 @@ def discovery_mock(all_fixture_data, mocker):
         query_data: dict
         device_type: str
         encrypt_type: str
+        login_version: Optional[int] = None
         port_override: Optional[int] = None
 
     if "discovery_result" in all_fixture_data:
@@ -438,6 +439,9 @@ def discovery_mock(all_fixture_data, mocker):
         encrypt_type = all_fixture_data["discovery_result"]["mgt_encrypt_schm"][
             "encrypt_type"
         ]
+        login_version = all_fixture_data["discovery_result"]["mgt_encrypt_schm"].get(
+            "lv"
+        )
         datagram = (
             b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
             + json_dumps(discovery_data).encode()
@@ -450,12 +454,14 @@ def discovery_mock(all_fixture_data, mocker):
             all_fixture_data,
             device_type,
             encrypt_type,
+            login_version,
         )
     else:
         sys_info = all_fixture_data["system"]["get_sysinfo"]
         discovery_data = {"system": {"get_sysinfo": sys_info}}
         device_type = sys_info.get("mic_type") or sys_info.get("type")
         encrypt_type = "XOR"
+        login_version = None
         datagram = TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:]
         dm = _DiscoveryMock(
             "127.0.0.123",
@@ -465,6 +471,7 @@ def discovery_mock(all_fixture_data, mocker):
             all_fixture_data,
             device_type,
             encrypt_type,
+            login_version,
         )
 
     def mock_discover(self):

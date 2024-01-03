@@ -1,3 +1,4 @@
+import base64
 import copy
 import logging
 import re
@@ -319,6 +320,11 @@ class FakeSmartTransport(BaseTransport):
     def default_port(self):
         """Default port for the transport."""
         return 80
+
+    @property
+    def credentials_hash(self):
+        """The hashed credentials used by the transport."""
+        return self._credentials.username + self._credentials.password + "hash"
 
     async def send(self, request: str):
         request_dict = json_loads(request)

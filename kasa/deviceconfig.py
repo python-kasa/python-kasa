@@ -2,7 +2,7 @@
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import httpx
 
@@ -69,21 +69,25 @@ class ConnectionType:
 
     device_family: DeviceFamilyType
     encryption_type: EncryptType
+    login_version: Optional[int] = None
 
     @staticmethod
     def from_values(
         device_family: str,
         encryption_type: str,
+        login_version: Optional[int] = None,
     ) -> "ConnectionType":
         """Return connection parameters from string values."""
         try:
             return ConnectionType(
                 DeviceFamilyType(device_family),
                 EncryptType(encryption_type),
+                login_version,
             )
-        except ValueError as ex:
+        except (ValueError, TypeError) as ex:
             raise SmartDeviceException(
-                f"Invalid connection parameters for {device_family}.{encryption_type}"
+                f"Invalid connection parameters for {device_family}."
+                + f"{encryption_type}.{login_version}"
             ) from ex
 
     @staticmethod
@@ -94,18 +98,26 @@ class ConnectionType:
             and (device_family := connection_type_dict.get("device_family"))
             and (encryption_type := connection_type_dict.get("encryption_type"))
         ):
-            return ConnectionType.from_values(device_family, encryption_type)
+            if login_version := connection_type_dict.get("login_version"):
+                login_version = int(login_version)  # type: ignore[assignment]
+            return ConnectionType.from_values(
+                device_family,
+                encryption_type,
+                login_version,  # type: ignore[arg-type]
+            )
 
         raise SmartDeviceException(
             f"Invalid connection type data for {connection_type_dict}"
         )
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> Dict[str, Union[str, int]]:
         """Convert connection params to dict."""
-        result = {
+        result: Dict[str, Union[str, int]] = {
             "device_family": self.device_family.value,
             "encryption_type": self.encryption_type.value,
         }
+        if self.login_version:
+            result["login_version"] = self.login_version
         return result
 
 
@@ -118,10 +130,11 @@ class DeviceConfig:
     host: str
     timeout: Optional[int] = DEFAULT_TIMEOUT
     port_override: Optional[int] = None
-    credentials: Credentials = field(default_factory=lambda: Credentials())
+    credentials: Optional[Credentials] = None
+    credentials_hash: Optional[str] = None
     connection_type: ConnectionType = field(
         default_factory=lambda: ConnectionType(
-            DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor
+            DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor, 1
         )
     )
 
@@ -130,15 +143,22 @@ class DeviceConfig:
     http_client: Optional[httpx.AsyncClient] = field(default=None, compare=False)
 
     def __post_init__(self):
-        if self.credentials is None:
-            self.credentials = Credentials()
         if self.connection_type is None:
             self.connection_type = ConnectionType(
                 DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor
             )
 
-    def to_dict(self) -> Dict[str, Dict[str, str]]:
+    def to_dict(
+        self,
+        *,
+        credentials_hash: Optional[str] = None,
+        exclude_credentials: bool = False,
+    ) -> Dict[str, Dict[str, str]]:
         """Convert connection params to dict."""
+        if credentials_hash or exclude_credentials:
+            self.credentials = None
+        if credentials_hash:
+            self.credentials_hash = credentials_hash
         return _dataclass_to_dict(self)
 
     @staticmethod

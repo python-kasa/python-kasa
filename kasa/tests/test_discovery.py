@@ -110,11 +110,17 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     assert update_mock.call_count == 0
 
     ct = ConnectionType.from_values(
-        discovery_mock.device_type, discovery_mock.encrypt_type
+        discovery_mock.device_type,
+        discovery_mock.encrypt_type,
+        discovery_mock.login_version,
     )
     uses_http = discovery_mock.default_port == 80
     config = DeviceConfig(
-        host=host, port_override=custom_port, connection_type=ct, uses_http=uses_http
+        host=host,
+        port_override=custom_port,
+        connection_type=ct,
+        uses_http=uses_http,
+        credentials=Credentials(),
     )
     assert x.config == config
 

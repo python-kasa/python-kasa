@@ -56,12 +56,18 @@ class BaseTransport(ABC):
         self._host = config.host
         self._port = config.port_override or self.default_port
         self._credentials = config.credentials
+        self._credentials_hash = config.credentials_hash
         self._timeout = config.timeout
 
     @property
     @abstractmethod
     def default_port(self) -> int:
         """The default port for the transport."""
+
+    @property
+    @abstractmethod
+    def credentials_hash(self) -> str:
+        """The hashed credentials used by the transport."""
 
     @abstractmethod
     async def send(self, request: str) -> Dict:
@@ -119,6 +125,11 @@ class _XorTransport(BaseTransport):
     def default_port(self):
         """Default port for the transport."""
         return self.DEFAULT_PORT
+
+    @property
+    def credentials_hash(self) -> str:
+        """The hashed credentials used by the transport."""
+        return ""
 
     async def send(self, request: str) -> Dict:
         """Send a message to the device and return a response."""

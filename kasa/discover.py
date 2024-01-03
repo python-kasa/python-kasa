@@ -422,7 +422,9 @@ class Discover:
 
         try:
             config.connection_type = ConnectionType.from_values(
-                type_, discovery_result.mgt_encrypt_schm.encrypt_type
+                type_,
+                discovery_result.mgt_encrypt_schm.encrypt_type,
+                discovery_result.mgt_encrypt_schm.lv,
             )
         except SmartDeviceException as ex:
             raise UnsupportedDeviceException(

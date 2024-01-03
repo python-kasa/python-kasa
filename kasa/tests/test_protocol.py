@@ -9,8 +9,11 @@ import sys
 
 import pytest
 
+from ..aestransport import AesTransport
+from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
+from ..klaptransport import KlapTransport, KlapTransportV2
 from ..protocol import (
     BaseTransport,
     TPLinkProtocol,
@@ -298,3 +301,19 @@ def test_transport_init_signature(class_name_obj):
     assert (
         params[1].name == "config" and params[1].kind == inspect.Parameter.KEYWORD_ONLY
     )
+
+
+@pytest.mark.parametrize(
+    "transport_class", [AesTransport, KlapTransport, KlapTransportV2, _XorTransport]
+)
+async def test_transport_credentials_hash(mocker, transport_class):
+    host = "127.0.0.1"
+
+    credentials = Credentials("Foo", "Bar")
+    config = DeviceConfig(host, credentials=credentials)
+    transport = transport_class(config=config)
+    credentials_hash = transport.credentials_hash
+    config = DeviceConfig(host, credentials_hash=credentials_hash)
+    transport = transport_class(config=config)
+
+    assert transport.credentials_hash == credentials_hash
