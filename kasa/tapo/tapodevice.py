@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional, Set, cast
 
 from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
-from ..exceptions import AuthenticationException, SmartDeviceException
 from ..emeterstatus import EmeterStatus
+from ..exceptions import AuthenticationException, SmartDeviceException
 from ..modules import Emeter
 from ..protocol import TPLinkProtocol
 from ..smartdevice import SmartDevice, WifiNetwork
