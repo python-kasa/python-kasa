@@ -7,7 +7,7 @@ import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 import kasa
 from kasa import Credentials, DeviceConfig, SmartDevice, SmartDeviceException
 
-from .conftest import device_iot, handle_turn_on, has_emeter, no_emeter_iot, turn_on
+from .conftest import device_iot, handle_turn_on, has_emeter_iot, no_emeter_iot, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
 
 # List of all SmartXXX classes including the SmartDevice base class
@@ -35,7 +35,7 @@ async def test_invalid_connection(dev):
         await dev.update()
 
 
-@has_emeter
+@has_emeter_iot
 async def test_initial_update_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = None
