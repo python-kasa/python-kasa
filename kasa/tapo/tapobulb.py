@@ -18,17 +18,6 @@ class TapoBulb(TapoDevice, SmartBulb):
     """
 
     @property
-    def has_emeter(self) -> bool:
-        """Bulbs have only historical emeter.
-
-        {'usage':
-        'power_usage': {'today': 6, 'past7': 106, 'past30': 106},
-        'saved_power': {'today': 35, 'past7': 529, 'past30': 529},
-        }
-        """
-        return False
-
-    @property
     def is_color(self) -> bool:
         """Whether the bulb supports color changes."""
         # TODO: this makes an assumption that only color bulbs report this
