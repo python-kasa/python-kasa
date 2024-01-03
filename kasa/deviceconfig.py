@@ -117,9 +117,7 @@ class DeviceConfig:
     host: str
     timeout: Optional[int] = DEFAULT_TIMEOUT
     port_override: Optional[int] = None
-    credentials: Credentials = field(
-        default_factory=lambda: Credentials(username="", password="")
-    )
+    credentials: Credentials = field(default_factory=lambda: Credentials())
     connection_type: ConnectionType = field(
         default_factory=lambda: ConnectionType(
             DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor
@@ -132,7 +130,7 @@ class DeviceConfig:
 
     def __post_init__(self):
         if self.credentials is None:
-            self.credentials = Credentials(username="", password="")
+            self.credentials = Credentials()
         if self.connection_type is None:
             self.connection_type = ConnectionType(
                 DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor

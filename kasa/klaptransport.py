@@ -221,7 +221,8 @@ class KlapTransport(BaseTransport):
             return local_seed, remote_seed, self._kasa_setup_auth_hash  # type: ignore
 
         # Finally check against blank credentials if not already blank
-        if self._credentials != (blank_creds := Credentials(username="", password="")):
+        blank_creds = Credentials()
+        if self._credentials != blank_creds:
             if not self._blank_auth_hash:
                 self._blank_auth_hash = self.generate_auth_hash(blank_creds)
 
@@ -369,8 +370,8 @@ class KlapTransport(BaseTransport):
     @staticmethod
     def generate_auth_hash(creds: Credentials):
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
-        un = creds.username or ""
-        pw = creds.password or ""
+        un = creds.username
+        pw = creds.password
 
         return md5(md5(un.encode()) + md5(pw.encode()))
 
@@ -391,7 +392,7 @@ class KlapTransport(BaseTransport):
     @staticmethod
     def generate_owner_hash(creds: Credentials):
         """Return the MD5 hash of the username in this object."""
-        un = creds.username or ""
+        un = creds.username
         return md5(un.encode())
 
 
@@ -401,8 +402,8 @@ class KlapTransportV2(KlapTransport):
     @staticmethod
     def generate_auth_hash(creds: Credentials):
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
-        un = creds.username or ""
-        pw = creds.password or ""
+        un = creds.username
+        pw = creds.password
 
         return _sha256(_sha1(un.encode()) + _sha1(pw.encode()))
 
