@@ -7,9 +7,7 @@ from dataclasses import dataclass, field
 class Credentials:
     """Credentials for authentication."""
 
+    #: Username (email address) of the cloud account
     username: str = field(default="", repr=False)
+    #: Password of the cloud account
     password: str = field(default="", repr=False)
-
-    def __bool__(self):
-        """Overridden to allow easy checks for valid credentials."""
-        return self.username != "" and self.password != ""
