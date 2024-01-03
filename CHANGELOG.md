@@ -1,5 +1,85 @@
 # Changelog
 
+## [0.6.0.dev0](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev0) (2024-01-03)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.4...0.6.0.dev0)
+
+**Breaking changes:**
+
+- Add DeviceConfig to allow specifying configuration parameters [\#569](https://github.com/python-kasa/python-kasa/pull/569) (@sdb9696)
+- Move connect\_single to SmartDevice.connect [\#538](https://github.com/python-kasa/python-kasa/pull/538) (@bdraco)
+
+**Implemented enhancements:**
+
+- Support for KS225\(US\) Light Dimmer and KS205\(US\) Light Switch [\#589](https://github.com/python-kasa/python-kasa/issues/589)
+- Set timeout using command line parameters [\#310](https://github.com/python-kasa/python-kasa/issues/310)
+- Implement the new protocol \(HTTP over 80/tcp, 20002/udp for discovery\) [\#115](https://github.com/python-kasa/python-kasa/issues/115)
+- Allow serializing and passing of credentials\_hashes in DeviceConfig [\#607](https://github.com/python-kasa/python-kasa/pull/607) (@sdb9696)
+- Implement wifi interface for tapodevice [\#606](https://github.com/python-kasa/python-kasa/pull/606) (@rytilahti)
+- Add support for KS205 and KS225 wall switches [\#594](https://github.com/python-kasa/python-kasa/pull/594) (@gimpy88)
+- Enable multiple requests in smartprotocol [\#584](https://github.com/python-kasa/python-kasa/pull/584) (@sdb9696)
+- Improve CLI Discovery output [\#583](https://github.com/python-kasa/python-kasa/pull/583) (@sdb9696)
+- Improve smartprotocol error handling and retries [\#578](https://github.com/python-kasa/python-kasa/pull/578) (@sdb9696)
+- Request component\_nego only once for tapodevice [\#576](https://github.com/python-kasa/python-kasa/pull/576) (@rytilahti)
+- Use consistent naming for cli envvars [\#570](https://github.com/python-kasa/python-kasa/pull/570) (@rytilahti)
+- Add KP125M fixture and allow passing credentials for tests [\#567](https://github.com/python-kasa/python-kasa/pull/567) (@sbytnar)
+- Make timeout configurable for cli [\#564](https://github.com/python-kasa/python-kasa/pull/564) (@rytilahti)
+- Update dump\_devinfo to produce new TAPO/SMART fixtures [\#561](https://github.com/python-kasa/python-kasa/pull/561) (@sdb9696)
+- Kasa KP125M basic emeter support [\#560](https://github.com/python-kasa/python-kasa/pull/560) (@sbytnar)
+- Add support for tapo bulbs [\#558](https://github.com/python-kasa/python-kasa/pull/558) (@rytilahti)
+- Add klap support for TAPO protocol by splitting out Transports and Protocols [\#557](https://github.com/python-kasa/python-kasa/pull/557) (@sdb9696)
+- Update dump\_devinfo to include 20002 discovery results [\#556](https://github.com/python-kasa/python-kasa/pull/556) (@sdb9696)
+- Set TCP\_NODELAY to avoid needless buffering [\#554](https://github.com/python-kasa/python-kasa/pull/554) (@bdraco)
+- Add support for the protocol used by TAPO devices and some newer KASA devices. [\#552](https://github.com/python-kasa/python-kasa/pull/552) (@sdb9696)
+- Re-add protocol\_class parameter to connect [\#551](https://github.com/python-kasa/python-kasa/pull/551) (@sdb9696)
+- Update discover single to handle hostnames [\#539](https://github.com/python-kasa/python-kasa/pull/539) (@sdb9696)
+- Add klap protocol [\#509](https://github.com/python-kasa/python-kasa/pull/509) (@sdb9696)
+
+**Fixed bugs:**
+
+- dump\_devinfo crashes when credentials are not given [\#591](https://github.com/python-kasa/python-kasa/issues/591)
+- Fix hsv setting for tapobulb [\#573](https://github.com/python-kasa/python-kasa/pull/573) (@rytilahti)
+- Fix transport retries after close [\#568](https://github.com/python-kasa/python-kasa/pull/568) (@sdb9696)
+
+**Documentation updates:**
+
+- Update readme with clearer instructions, tapo support [\#571](https://github.com/python-kasa/python-kasa/pull/571) (@rytilahti)
+- Add some more external links to README [\#541](https://github.com/python-kasa/python-kasa/pull/541) (@rytilahti)
+
+**Closed issues:**
+
+- Discover returns dictionary with no 'alias' property [\#592](https://github.com/python-kasa/python-kasa/issues/592)
+- Sending with the legacy protocol is needlessly delayed [\#553](https://github.com/python-kasa/python-kasa/issues/553)
+- Issues adding a KP405 device [\#549](https://github.com/python-kasa/python-kasa/issues/549)
+- Support for L510E bulb [\#547](https://github.com/python-kasa/python-kasa/issues/547)
+- Support for tapo L530E bulbs? [\#546](https://github.com/python-kasa/python-kasa/issues/546)
+- Unable to connect to host on different subnet with 0.5.4 [\#545](https://github.com/python-kasa/python-kasa/issues/545)
+- Discovery/Connect broken when upgrading from 0.5.3 -\> 0.5.4 [\#543](https://github.com/python-kasa/python-kasa/issues/543)
+- PydanticUserError, If you use `@root_validator` with pre=False \(the default\) you MUST specify `skip_on_failure=True` [\#516](https://github.com/python-kasa/python-kasa/issues/516)
+- KP 125M / support for matter devices [\#450](https://github.com/python-kasa/python-kasa/issues/450)
+
+**Merged pull requests:**
+
+- Cleanup credentials handling [\#605](https://github.com/python-kasa/python-kasa/pull/605) (@rytilahti)
+- Update P110\(EU\) fixture [\#604](https://github.com/python-kasa/python-kasa/pull/604) (@rytilahti)
+- Update L530 aes fixture [\#603](https://github.com/python-kasa/python-kasa/pull/603) (@rytilahti)
+- Cleanup custom exception kwarg handling [\#602](https://github.com/python-kasa/python-kasa/pull/602) (@rytilahti)
+- Pull up emeter handling to tapodevice base class [\#601](https://github.com/python-kasa/python-kasa/pull/601) (@rytilahti)
+- Add L530\(EU\) klap fixture [\#598](https://github.com/python-kasa/python-kasa/pull/598) (@sdb9696)
+- Add known smart requests to dump\_devinfo [\#597](https://github.com/python-kasa/python-kasa/pull/597) (@sdb9696)
+- Update P110\(UK\) fixture [\#596](https://github.com/python-kasa/python-kasa/pull/596) (@sdb9696)
+- Fix dump\_devinfo for unauthenticated [\#593](https://github.com/python-kasa/python-kasa/pull/593) (@sdb9696)
+- Elevate --verbose to top-level option [\#590](https://github.com/python-kasa/python-kasa/pull/590) (@rytilahti)
+- Add optional error code to exceptions [\#585](https://github.com/python-kasa/python-kasa/pull/585) (@sdb9696)
+- Fix typo in cli.rst [\#581](https://github.com/python-kasa/python-kasa/pull/581) (@alanblake)
+- Do login entirely within AesTransport [\#580](https://github.com/python-kasa/python-kasa/pull/580) (@sdb9696)
+- Log smartprotocol requests [\#575](https://github.com/python-kasa/python-kasa/pull/575) (@rytilahti)
+- Add new methods to dump\_devinfo and mask aliases [\#574](https://github.com/python-kasa/python-kasa/pull/574) (@sdb9696)
+- Add EP25 smart fixture and improve test framework for SMART devices [\#572](https://github.com/python-kasa/python-kasa/pull/572) (@sdb9696)
+- Re-add regional suffix to TAPO/SMART fixtures [\#566](https://github.com/python-kasa/python-kasa/pull/566) (@sdb9696)
+- Add P110 fixture [\#562](https://github.com/python-kasa/python-kasa/pull/562) (@rytilahti)
+- Do not do update\(\) in discover\_single [\#542](https://github.com/python-kasa/python-kasa/pull/542) (@sdb9696)
+
 ## [0.5.4](https://github.com/python-kasa/python-kasa/tree/0.5.4) (2023-10-29)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.3...0.5.4)
@@ -22,10 +102,10 @@ As always, see the full changelog for details.
 - Add support for pydantic v2 using v1 shims [\#504](https://github.com/python-kasa/python-kasa/pull/504) (@rytilahti)
 - Split queries to avoid overflowing device buffers [\#502](https://github.com/python-kasa/python-kasa/pull/502) (@cobryan05)
 - Add toggle command to cli [\#498](https://github.com/python-kasa/python-kasa/pull/498) (@normanr)
-- Make timeout adjustable [\#494](https://github.com/python-kasa/python-kasa/pull/494) (@bdraco)
 - Add support for alternative discovery protocol \(20002/udp\) [\#488](https://github.com/python-kasa/python-kasa/pull/488) (@sdb9696)
 - Add discovery timeout parameter [\#486](https://github.com/python-kasa/python-kasa/pull/486) (@sdb9696)
 - Add devtools script to create module fixtures [\#404](https://github.com/python-kasa/python-kasa/pull/404) (@rytilahti)
+- Make timeout adjustable [\#494](https://github.com/python-kasa/python-kasa/pull/494) (@bdraco)
 
 **Fixed bugs:**
 
@@ -50,9 +130,11 @@ As always, see the full changelog for details.
 - \[Feature Request\] Add a toggle command [\#492](https://github.com/python-kasa/python-kasa/issues/492)
 - \[Feature Request\] Pydantic 2.0+ Support [\#491](https://github.com/python-kasa/python-kasa/issues/491)
 - Support for EP10 Plug [\#170](https://github.com/python-kasa/python-kasa/issues/170)
+- \[Request\] New release to pip? [\#518](https://github.com/python-kasa/python-kasa/issues/518)
 
 **Merged pull requests:**
 
+- Release 0.5.4 [\#536](https://github.com/python-kasa/python-kasa/pull/536) (@rytilahti)
 - Use ruff and ruff format [\#534](https://github.com/python-kasa/python-kasa/pull/534) (@rytilahti)
 - Add python3.12 and pypy-3.10 to CI [\#532](https://github.com/python-kasa/python-kasa/pull/532) (@rytilahti)
 - Use trusted publisher for publishing to pypi [\#531](https://github.com/python-kasa/python-kasa/pull/531) (@rytilahti)
