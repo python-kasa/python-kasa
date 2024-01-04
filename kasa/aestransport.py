@@ -64,7 +64,9 @@ class AesTransport(BaseTransport):
         super().__init__(config=config)
 
         self._login_version = config.connection_type.login_version
-        if not self._credentials and not self._credentials_hash:
+        if (
+            not self._credentials or self._credentials.username is None
+        ) and not self._credentials_hash:
             self._credentials = Credentials()
         if self._credentials:
             self._login_params = self._get_login_params()
