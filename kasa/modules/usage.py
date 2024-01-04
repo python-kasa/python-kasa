@@ -10,8 +10,9 @@ class Usage(Module):
 
     def query(self):
         """Return the base query."""
-        year = datetime.now().year
-        month = datetime.now().month
+        now = datetime.now()
+        year = now.year
+        month = now.month
 
         req = self.query_for_command("get_realtime")
         req = merge(
@@ -40,21 +41,21 @@ class Usage(Module):
     def usage_today(self):
         """Return today's usage in minutes."""
         today = datetime.now().day
-        converted = [x["time"] for x in self.daily_data if x["day"] == today]
-        if not converted:
-            return None
-
-        return converted.pop()
+        # Traverse the list in reverse order to find the latest entry.
+        for entry in reversed(self.daily_data):
+            if entry["day"] == today:
+                return entry["time"]
+        return None
 
     @property
     def usage_this_month(self):
         """Return usage in this month in minutes."""
         this_month = datetime.now().month
-        converted = [x["time"] for x in self.monthly_data if x["month"] == this_month]
-        if not converted:
-            return None
-
-        return converted.pop()
+        # Traverse the list in reverse order to find the latest entry.
+        for entry in reversed(self.monthly_data):
+            if entry["month"] == this_month:
+                return entry["time"]
+        return None
 
     async def get_raw_daystat(self, *, year=None, month=None) -> Dict:
         """Return raw daily stats for the given year & month."""
