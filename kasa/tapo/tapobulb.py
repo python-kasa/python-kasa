@@ -32,8 +32,9 @@ class TapoBulb(TapoDevice, SmartBulb):
     @property
     def is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes."""
-        # TODO: this makes an assumption, that only ct bulbs report this
-        return bool(self._info.get("color_temp_range", False))
+        ct = self._info.get("color_temp_range")
+        # L900 reports [9000, 9000] even when it doesn't support changing the ct
+        return ct is not None and ct[0] != ct[1]
 
     @property
     def valid_temperature_range(self) -> ColorTempRange:
