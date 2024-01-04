@@ -9,7 +9,9 @@ readme = "README.md"
 packages = [
   { include = "kasa" }
 ]
-include = ["CHANGELOG.md"]
+include = [
+  { path= "CHANGELOG.md", format = "sdist" }
+]
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/python-kasa/python-kasa/issues"
