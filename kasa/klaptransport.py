@@ -100,7 +100,9 @@ class KlapTransport(BaseTransport):
 
         self._default_http_client: Optional[httpx.AsyncClient] = None
         self._local_seed: Optional[bytes] = None
-        if not self._credentials and not self._credentials_hash:
+        if (
+            not self._credentials or self._credentials.username is None
+        ) and not self._credentials_hash:
             self._credentials = Credentials()
         if self._credentials:
             self._local_auth_hash = self.generate_auth_hash(self._credentials)

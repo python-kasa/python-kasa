@@ -395,7 +395,7 @@ async def discover(ctx):
     timeout = ctx.parent.params["timeout"]
     port = ctx.parent.params["port"]
 
-    credentials = Credentials(username, password)
+    credentials = Credentials(username, password) if username and password else None
 
     sem = asyncio.Semaphore()
     discovered = dict()
