@@ -997,5 +997,14 @@ async def turn_on_behavior(dev: SmartBulb, type, last, preset):
     return await dev.set_turn_on_behavior(settings)
 
 
+@cli.command()
+@pass_dev
+@click.option("--username")
+@click.option("--password")
+async def change_credentials(dev, username, password):
+    """Change device credentials for authenticated devices."""
+    return await dev.change_credentials(username, password)
+
+
 if __name__ == "__main__":
     cli()
