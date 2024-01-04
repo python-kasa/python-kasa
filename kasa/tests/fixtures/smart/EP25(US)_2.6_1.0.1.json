@@ -97,11 +97,33 @@
             "is_support_https": false,
             "lv": 2
         },
-        "obd_src": "apple",
+        "obd_src": "tplink",
         "owner": "00000000000000000000000000000000"
     },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_off_config": {
+        "delay_min": 120,
+        "enable": false
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
     "get_current_power": {
-        "current_power": 715
+        "current_power": 0
     },
     "get_device_info": {
         "auto_off_remain_time": 0,
@@ -115,7 +137,7 @@
         "device_on": true,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.0.1 Build 230614 Rel.150219",
-        "has_set_location_info": false,
+        "has_set_location_info": true,
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "2.6",
         "ip": "127.0.0.123",
@@ -124,52 +146,312 @@
         "longitude": 0,
         "mac": "00-00-00-00-00-00",
         "model": "EP25",
-        "nickname": "emVlaw==",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 177938,
+        "on_time": 36,
         "overheated": false,
         "power_protection_status": "normal",
-        "region": "America/Los_Angeles",
-        "rssi": -58,
+        "region": "America/Chicago",
+        "rssi": -51,
         "signal_level": 2,
         "specs": "",
-        "ssid": "IyNNQVNLRUROQU1FIyM=",
-        "time_diff": -480,
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": -360,
         "type": "SMART.KASAPLUG"
     },
     "get_device_time": {
-        "region": "America/Los_Angeles",
-        "time_diff": -480,
-        "timestamp": 1701455103
+        "region": "America/Chicago",
+        "time_diff": -360,
+        "timestamp": 1704406778
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 100856,
-            "past7": 56030,
-            "today": 3965
-        },
-        "saved_power": {
             "past30": 0,
             "past7": 0,
             "today": 0
         },
+        "saved_power": {
+            "past30": 38793,
+            "past7": 9619,
+            "today": 979
+        },
         "time_usage": {
-            "past30": 19678,
-            "past7": 9265,
-            "today": 625
+            "past30": 38793,
+            "past7": 9619,
+            "today": 979
         }
     },
+    "get_electricity_price_config": {
+        "constant_price": 0,
+        "time_of_use_config": {
+            "summer": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "winter": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        "type": "constant"
+    },
     "get_energy_usage": {
-        "current_power": 715092,
+        "current_power": 0,
         "electricity_charge": [
             0,
             0,
             0
         ],
-        "local_time": "2023-12-01 10:25:03",
-        "month_energy": 3965,
-        "month_runtime": 625,
-        "today_energy": 3965,
-        "today_runtime": 625
+        "local_time": "2024-01-04 16:19:38",
+        "month_energy": 0,
+        "month_runtime": 5299,
+        "today_energy": 0,
+        "today_runtime": 979
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": true,
+        "download_progress": 100,
+        "reboot_time": 5,
+        "status": 3,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 786432,
+        "fw_ver": "1.0.2 Build 231108 Rel.163012",
+        "hw_id": "00000000000000000000000000000000",
+        "need_to_upgrade": true,
+        "oem_id": "00000000000000000000000000000000",
+        "release_date": "2023-12-05",
+        "release_note": "Modifications and Bug Fixes:\n1. Enhanced device security.\n2. Optimized Homekit setup.\n3. Improved time synchronization accuracy.\n4. Fixed some minor bugs.",
+        "type": 1
+    },
+    "get_led_info": {
+        "led_rule": "always",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 438,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 1056,
+            "sunrise_offset": 0,
+            "sunset_offset": 0
+        }
+    },
+    "get_max_power": {
+        "max_power": 1883
+    },
+    "get_next_event": {},
+    "get_protection_power": {
+        "enabled": false,
+        "protection_power": 0
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "EP25",
+            "device_type": "SMART.KASAPLUG"
+        }
     }
 }
