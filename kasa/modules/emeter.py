@@ -1,6 +1,6 @@
 """Implementation of the emeter module."""
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Union
 
 from ..emeterstatus import EmeterStatus
 from .usage import Usage
@@ -19,8 +19,7 @@ class Emeter(Usage):
         """Return today's energy consumption in kWh."""
         raw_data = self.daily_data
         today = datetime.now().day
-        data = self._convert_stat_data(raw_data, entry_key="day")
-
+        data = self._convert_stat_data(raw_data, entry_key="day", key=today)
         return data.get(today)
 
     @property
@@ -28,8 +27,7 @@ class Emeter(Usage):
         """Return this month's energy consumption in kWh."""
         raw_data = self.monthly_data
         current_month = datetime.now().month
-        data = self._convert_stat_data(raw_data, entry_key="month")
-
+        data = self._convert_stat_data(raw_data, entry_key="month", key=current_month)
         return data.get(current_month)
 
     async def erase_stats(self):
@@ -61,7 +59,13 @@ class Emeter(Usage):
         data = self._convert_stat_data(data["month_list"], entry_key="month", kwh=kwh)
         return data
 
-    def _convert_stat_data(self, data, entry_key, kwh=True) -> Dict:
+    def _convert_stat_data(
+        self,
+        data: List[Dict[str, Union[int, float]]],
+        entry_key: str,
+        kwh: bool=True,
+        key: Optional[int] = None,
+    ) -> Dict[Union[int, float], Union[int, float]]:
         """Return emeter information keyed with the day/month.
 
         The incoming data is a list of dictionaries::
@@ -89,6 +93,19 @@ class Emeter(Usage):
             if not kwh:
                 scale = 1000
 
-        data = {entry[entry_key]: entry[value_key] * scale for entry in data}
+        if key is None:
+            # Return all the data
+            return {entry[entry_key]: entry[value_key] * scale for entry in data}
 
-        return data
+        # In this case we want a specific key in the data
+        # i.e. the current day or month.
+        #
+        # Since we usually want the data at the end of the list so we can
+        # optimize the search by starting at the end and avoid scaling
+        # the data we don't need.
+        #
+        for entry in reversed(data):
+            if entry[entry_key] == key:
+                return {entry[entry_key]: entry[value_key] * scale}
+
+        return {}
