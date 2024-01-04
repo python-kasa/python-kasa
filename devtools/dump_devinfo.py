@@ -101,14 +101,14 @@ def default_to_regular(d):
     "--username",
     default="",
     required=False,
-    envvar="TPLINK_CLOUD_USERNAME",
+    envvar="KASA_USERNAME",
     help="Username/email address to authenticate to device.",
 )
 @click.option(
     "--password",
     default="",
     required=False,
-    envvar="TPLINK_CLOUD_PASSWORD",
+    envvar="KASA_PASSWORD",
     help="Password to use to authenticate to device.",
 )
 @click.option("-d", "--debug", is_flag=True)
