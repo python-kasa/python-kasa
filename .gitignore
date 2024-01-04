@@ -27,3 +27,4 @@ venv
 .venv
 
 /build
+docs/build

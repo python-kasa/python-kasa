@@ -67,6 +67,17 @@ Refer to device type specific classes for more examples:
 :class:`SmartPlug`, :class:`SmartBulb`, :class:`SmartStrip`,
 :class:`SmartDimmer`, :class:`SmartLightStrip`.
 
+DeviceConfig class
+******************
+
+The :class:`DeviceConfig` class can be used to initialise devices with parameters to allow them to be connected to without using
+discovery.  This is required for newer KASA and TAPO devices that use different protocols for communication and will not respond
+on port 9999 but instead use different encryption protocols over http port 80.  To connect directly pass a :class:`DeviceConfig`
+object to :meth:`SmartDevice.connect()`.
+
+A :class:`DeviceConfig` can be constucted manually if you know the :attr:`DeviceConfig.connection_type` values for the device or
+alternatively the config can be retrieved from :attr:`SmartDevice.config` post discovery and then re-used.
+
 Energy Consumption and Usage Statistics
 ***************************************
 
@@ -103,3 +114,9 @@ API documentation
 .. autoclass:: SmartDevice
     :members:
     :undoc-members:
+
+.. autoclass:: kasa.DeviceConfig
+    :members:
+    :inherited-members:
+    :undoc-members:
+    :member-order: bysource

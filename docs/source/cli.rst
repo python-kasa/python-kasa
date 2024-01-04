@@ -20,7 +20,10 @@ Discovery
 *********
 
 The tool can automatically discover supported devices using a broadcast-based discovery protocol.
-This works by sending an UDP datagram on port 9999 to the broadcast address (defaulting to ``255.255.255.255``).
+This works by sending an UDP datagram on ports 9999 and 20002 to the broadcast address (defaulting to ``255.255.255.255``).
+
+Newer devices that respond on port 20002 will most likely require TP-Link cloud credentials to be passed or they will report as having failed authentication.
+Use ``--username`` and ``--password`` options to specify credentials.
 
 On multihomed systems, you can use ``--target`` option to specify the broadcast target.
 For example, if your devices reside in network ``10.0.0.0/24`` you can use ``kasa --target 10.0.0.255 discover`` to discover them.
