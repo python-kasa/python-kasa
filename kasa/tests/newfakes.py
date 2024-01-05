@@ -18,6 +18,7 @@ from voluptuous import (
 
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
+from ..exceptions import SmartDeviceException
 from ..protocol import BaseTransport, TPLinkSmartHomeProtocol, _XorTransport
 from ..smartprotocol import SmartProtocol
 
@@ -315,6 +316,10 @@ class FakeSmartTransport(BaseTransport):
             ),
         )
         self.info = info
+        self.components = {
+            comp["id"]: comp["ver_code"]
+            for comp in self.info["component_nego"]["component_list"]
+        }
 
     @property
     def default_port(self):
@@ -325,6 +330,10 @@ class FakeSmartTransport(BaseTransport):
     def credentials_hash(self):
         """The hashed credentials used by the transport."""
         return self._credentials.username + self._credentials.password + "hash"
+
+    FIXTURE_MISSING_MAP = {
+        "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
+    }
 
     async def send(self, request: str):
         request_dict = json_loads(request)
@@ -346,14 +355,20 @@ class FakeSmartTransport(BaseTransport):
         if method == "component_nego" or method[:4] == "get_":
             if method in self.info:
                 return {"result": self.info[method], "error_code": 0}
-            else:
+            elif (
+                missing_result := self.FIXTURE_MISSING_MAP.get(method)
+            ) and missing_result[0] in self.components:
                 warnings.warn(
                     UserWarning(
                         f"Fixture missing expected method {method}, try to regenerate"
                     ),
                     stacklevel=1,
                 )
-                return {"result": {}, "error_code": 0}
+                return {"result": missing_result[1], "error_code": 0}
+            else:
+                raise SmartDeviceException(f"Fixture doesn't support {method}")
+        elif method == "set_qs_info":
+            return {"error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             self.info[target_method].update(params)

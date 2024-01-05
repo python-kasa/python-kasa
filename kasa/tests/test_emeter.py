@@ -24,7 +24,7 @@ async def test_no_emeter(dev):
         await dev.erase_emeter_stats()
 
 
-@has_emeter_iot
+@has_emeter
 async def test_get_emeter_realtime(dev):
     assert dev.has_emeter
 
