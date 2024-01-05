@@ -26,7 +26,7 @@ These methods will return the device response, which can be useful for some use 
 
 Errors are raised as :class:`SmartDeviceException` instances for the library user to handle.
 
-Simple example script showing some functionality:
+Simple example script showing some functionality for legacy devices:
 
 .. code-block:: python
 
@@ -44,6 +44,30 @@ Simple example script showing some functionality:
 
     if __name__ == "__main__":
         asyncio.run(main())
+
+If you are connecting to a newer KASA or TAPO device you can get the device via discovery or connect directly with DeviceConfig:
+
+.. code-block:: python
+
+    import asyncio
+    from kasa import Discover, Credentials
+
+    async def main():
+        device = await Discover.discover_single(
+            "127.0.0.1",
+            credentials=Credentials("myusername", "mypassword"),
+            discovery_timeout=10
+        )
+
+        config = device.config # DeviceConfig.to_dict() can be used to store for later
+
+        # To connect directly later without discovery
+
+        later_device = await SmartDevice.Connect(config=config)
+
+        await later_device.update()
+
+        print(later_device.alias)  # Print out the alias
 
 If you want to perform updates in a loop, you need to make sure that the device accesses are done in the same event loop:
 
@@ -74,6 +98,10 @@ The :class:`DeviceConfig` class can be used to initialise devices with parameter
 discovery.
 This is required for newer KASA and TAPO devices that use different protocols for communication and will not respond
 on port 9999 but instead use different encryption protocols over http port 80.
+Currently there are three known types of encryption for TP-Link devices and two different protocols.
+Devices with automatic firmware updates enabled will randomly update to newer versions of the encryption
+hence why discovery can be helpful to determine the correct config.
+
 To connect directly pass a :class:`DeviceConfig` object to :meth:`SmartDevice.connect()`.
 
 A :class:`DeviceConfig` can be constucted manually if you know the :attr:`DeviceConfig.connection_type` values for the device or
@@ -116,8 +144,24 @@ API documentation
     :members:
     :undoc-members:
 
-.. autoclass:: kasa.DeviceConfig
+.. autoclass:: DeviceConfig
     :members:
     :inherited-members:
     :undoc-members:
     :member-order: bysource
+
+.. autoclass:: Credentials
+    :members:
+    :undoc-members:
+
+.. autoclass:: SmartDeviceException
+    :members:
+    :undoc-members:
+
+.. autoclass:: AuthenticationException
+    :members:
+    :undoc-members:
+
+.. autoclass:: UnsupportedDeviceException
+    :members:
+    :undoc-members:
