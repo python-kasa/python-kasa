@@ -35,7 +35,7 @@ _LOGGER = logging.getLogger(__name__)
 OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
 DeviceDict = Dict[str, SmartDevice]
 
-UNAVAILABLE_ALIAS = "Authentication required"
+UNAVAILABLE_ALIAS = "Auth required"
 UNAVAILABLE_NICKNAME = base64.b64encode(UNAVAILABLE_ALIAS.encode()).decode()
 
 
