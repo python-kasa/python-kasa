@@ -321,3 +321,18 @@ class TapoDevice(SmartDevice):
                 raise
 
             _LOGGER.debug("Received an expected for wifi join, but this is expected")
+
+    async def update_credentials(self, username: str, password: str):
+        """Update device credentials.
+
+        This will replace the existing authentication credentials on the device.
+        """
+        t = self.internal_state["time"]
+        payload = {
+            "account": {
+                "username": base64.b64encode(username.encode()).decode(),
+                "password": base64.b64encode(password.encode()).decode(),
+            },
+            "time": t,
+        }
+        return await self.protocol.query({"set_qs_info": payload})

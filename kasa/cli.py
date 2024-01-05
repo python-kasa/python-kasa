@@ -997,5 +997,28 @@ async def turn_on_behavior(dev: SmartBulb, type, last, preset):
     return await dev.set_turn_on_behavior(settings)
 
 
+@cli.command()
+@pass_dev
+@click.option(
+    "--username", required=True, prompt=True, help="New username to set on the device"
+)
+@click.option(
+    "--password", required=True, prompt=True, help="New password to set on the device"
+)
+async def update_credentials(dev, username, password):
+    """Update device credentials for authenticated devices."""
+    # Importing here as this is not really a public interface for now
+    from kasa.tapo import TapoDevice
+
+    if not isinstance(dev, TapoDevice):
+        raise NotImplementedError(
+            "Credentials can only be updated on authenticated devices."
+        )
+
+    click.confirm("Do you really want to replace the existing credentials?", abort=True)
+
+    return await dev.update_credentials(username, password)
+
+
 if __name__ == "__main__":
     cli()
