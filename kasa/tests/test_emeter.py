@@ -123,7 +123,7 @@ async def test_emeterstatus_missing_current():
 
 
 async def test_emeter_daily():
-    """Test that the emeter daily data is sorted by day.
+    """Test fetching the emeter for today.
 
     This test uses inline data since the fixtures
     will not have data for the current day.
