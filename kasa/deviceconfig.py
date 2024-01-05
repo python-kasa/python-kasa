@@ -165,7 +165,7 @@ class DeviceConfig:
         exclude_credentials: bool = False,
     ) -> Dict[str, Dict[str, str]]:
         """Convert device config to dict."""
-        if credentials_hash or exclude_credentials:
+        if credentials_hash is not None or exclude_credentials:
             self.credentials = None
         if credentials_hash:
             self.credentials_hash = credentials_hash
