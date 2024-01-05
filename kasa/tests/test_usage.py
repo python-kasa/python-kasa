@@ -46,8 +46,12 @@ def test_usage_today():
     usage = MockUsage(Mock(), "usage")
     assert usage.usage_today is None
     now = datetime.datetime.now()
-    emeter_data["get_daystat"]["day_list"].append(
-        {"day": now.day, "time": 500, "month": now.month, "year": now.year}
+    emeter_data["get_daystat"]["day_list"].extend(
+        [
+            {"day": now.day - 1, "time": 200, "month": now.month - 1, "year": now.year},
+            {"day": now.day, "time": 500, "month": now.month, "year": now.year},
+            {"day": now.day + 1, "time": 100, "month": now.month + 1, "year": now.year},
+        ]
     )
     assert usage.usage_today == 500
 
@@ -73,7 +77,11 @@ def test_usage_this_month():
     usage = MockUsage(Mock(), "usage")
     assert usage.usage_this_month is None
     now = datetime.datetime.now()
-    emeter_data["get_monthstat"]["month_list"].append(
-        {"time": 500, "month": now.month, "year": now.year}
+    emeter_data["get_monthstat"]["month_list"].extend(
+        [
+            {"time": 200, "month": now.month - 1, "year": now.year},
+            {"time": 500, "month": now.month, "year": now.year},
+            {"time": 100, "month": now.month + 1, "year": now.year},
+        ]
     )
     assert usage.usage_this_month == 500
