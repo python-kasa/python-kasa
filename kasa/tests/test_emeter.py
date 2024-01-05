@@ -142,10 +142,7 @@ async def test_emeter_daily():
 
     emeter = MockEmeter(Mock(), "emeter")
     now = datetime.datetime.now()
-    day = now.day
-    month = now.month
-    year = now.year
     emeter_data["get_daystat"]["day_list"].append(
-        {"day": day, "energy_wh": 500, "month": month, "year": year}
+        {"day": now.day, "energy_wh": 500, "month": now.month, "year": now.year}
     )
     assert emeter.emeter_today == 0.500

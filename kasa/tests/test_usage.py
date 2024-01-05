@@ -45,11 +45,8 @@ def test_usage_today():
 
     usage = MockUsage(Mock(), "usage")
     now = datetime.datetime.now()
-    day = now.day
-    month = now.month
-    year = now.year
     emeter_data["get_daystat"]["day_list"].append(
-        {"day": day, "time": 500, "month": month, "year": year}
+        {"day": now.day, "time": 500, "month": now.month, "year": now.year}
     )
     assert usage.usage_today == 500
 
@@ -74,9 +71,7 @@ def test_usage_this_month():
 
     usage = MockUsage(Mock(), "usage")
     now = datetime.datetime.now()
-    month = now.month
-    year = now.year
     emeter_data["get_monthstat"]["month_list"].append(
-        {"time": 500, "month": month, "year": year}
+        {"time": 500, "month": now.month, "year": now.year}
     )
     assert usage.usage_this_month == 500
