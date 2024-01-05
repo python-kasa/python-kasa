@@ -602,14 +602,27 @@ async def raw_command(dev: SmartDevice, module, command, parameters):
 
 @cli.command()
 @pass_dev
+@click.option("--index", type=int, required=False)
+@click.option("--name", type=str, required=False)
 @click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
-async def emeter(dev: SmartDevice, year, month, erase):
+async def emeter(dev: SmartDevice, index: int, name: str, year, month, erase):
     """Query emeter for historical consumption.
 
     Daily and monthly data provided in CSV format.
     """
+    if index is not None or name is not None:
+        if not dev.is_strip:
+            echo("Index and name are only for power strips!")
+            return
+
+        dev = cast(SmartStrip, dev)
+        if index is not None:
+            dev = dev.get_plug_by_index(index)
+        elif name:
+            dev = dev.get_plug_by_name(name)
+
     echo("[bold]== Emeter ==[/bold]")
     if not dev.has_emeter:
         echo("Device has no emeter")
@@ -629,7 +642,7 @@ async def emeter(dev: SmartDevice, year, month, erase):
         usage_data = await dev.get_emeter_daily(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        emeter_status = dev.emeter_realtime
+        emeter_status = await dev.get_emeter_realtime()
 
         echo("Current: %s A" % emeter_status["current"])
         echo("Voltage: %s V" % emeter_status["voltage"])

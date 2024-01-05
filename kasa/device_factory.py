@@ -128,7 +128,7 @@ def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[SmartDevice]:
 
 def get_device_class_from_family(device_type: str) -> Optional[Type[SmartDevice]]:
     """Return the device class from the type name."""
-    supported_device_types: dict[str, Type[SmartDevice]] = {
+    supported_device_types: Dict[str, Type[SmartDevice]] = {
         "SMART.TAPOPLUG": TapoPlug,
         "SMART.TAPOBULB": TapoBulb,
         "SMART.KASAPLUG": TapoPlug,
@@ -147,7 +147,7 @@ def get_protocol(
     protocol_transport_key = (
         protocol_name + "." + config.connection_type.encryption_type.value
     )
-    supported_device_protocols: dict[
+    supported_device_protocols: Dict[
         str, Tuple[Type[TPLinkProtocol], Type[BaseTransport]]
     ] = {
         "IOT.XOR": (TPLinkSmartHomeProtocol, _XorTransport),

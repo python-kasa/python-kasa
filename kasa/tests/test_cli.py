@@ -7,6 +7,7 @@ from asyncclick.testing import CliRunner
 from kasa import (
     AuthenticationException,
     Credentials,
+    EmeterStatus,
     SmartDevice,
     TPLinkSmartHomeProtocol,
     UnsupportedDeviceException,
@@ -103,6 +104,25 @@ async def test_emeter(dev: SmartDevice, mocker):
         return
 
     assert "== Emeter ==" in res.output
+
+    if not dev.is_strip:
+        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
+        assert "Index and name are only for power strips!" in res.output
+        res = await runner.invoke(emeter, ["--name", "mock"], obj=dev)
+        assert "Index and name are only for power strips!" in res.output
+
+    if dev.is_strip and len(dev.children) > 0:
+        realtime_emeter = mocker.patch.object(dev.children[0], "get_emeter_realtime")
+        realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
+
+        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
+        assert "Voltage: 122.066 V" in res.output
+        realtime_emeter.assert_called()
+        assert realtime_emeter.call_count == 1
+
+        res = await runner.invoke(emeter, ["--name", dev.children[0].alias], obj=dev)
+        assert "Voltage: 122.066 V" in res.output
+        assert realtime_emeter.call_count == 2
 
     monthly = mocker.patch.object(dev, "get_emeter_monthly")
     monthly.return_value = {1: 1234}
