@@ -1,6 +1,10 @@
+import datetime
+from unittest.mock import Mock
+
 import pytest
 
 from kasa import EmeterStatus, SmartDeviceException
+from kasa.modules.emeter import Emeter
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
 from .newfakes import CURRENT_CONSUMPTION_SCHEMA
@@ -116,3 +120,29 @@ async def test_emeterstatus_missing_current():
 
     missing_current = EmeterStatus({"err_code": 0, "power_mw": 0, "total_wh": 13})
     assert missing_current["current"] is None
+
+
+async def test_emeter_daily():
+    """Test fetching the emeter for today.
+
+    This test uses inline data since the fixtures
+    will not have data for the current day.
+    """
+    emeter_data = {
+        "get_daystat": {
+            "day_list": [{"day": 1, "energy_wh": 8, "month": 1, "year": 2023}],
+            "err_code": 0,
+        }
+    }
+
+    class MockEmeter(Emeter):
+        @property
+        def data(self):
+            return emeter_data
+
+    emeter = MockEmeter(Mock(), "emeter")
+    now = datetime.datetime.now()
+    emeter_data["get_daystat"]["day_list"].append(
+        {"day": now.day, "energy_wh": 500, "month": now.month, "year": now.year}
+    )
+    assert emeter.emeter_today == 0.500
