@@ -642,7 +642,10 @@ async def emeter(dev: SmartDevice, index: int, name: str, year, month, erase):
         usage_data = await dev.get_emeter_daily(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        emeter_status = await dev.get_emeter_realtime()
+        if index is not None or name is not None:
+            emeter_status = await dev.get_emeter_realtime()
+        else:
+            emeter_status = dev.emeter_realtime
 
         echo("Current: %s A" % emeter_status["current"])
         echo("Voltage: %s V" % emeter_status["voltage"])
