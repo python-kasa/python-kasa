@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.6.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev1) (2024-01-05)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.0.dev0...0.6.0.dev1)
+
+**Implemented enhancements:**
+
+- Get child emeters with CLI [\#623](https://github.com/python-kasa/python-kasa/pull/623) (@Obbay2)
+- Avoid linear search for emeter realtime and emeter\_today [\#622](https://github.com/python-kasa/python-kasa/pull/622) (@bdraco)
+- Add update-credentials command [\#620](https://github.com/python-kasa/python-kasa/pull/620) (@rytilahti)
+
+**Fixed bugs:**
+
+- Check the ct range for color temp support [\#619](https://github.com/python-kasa/python-kasa/pull/619) (@rytilahti)
+- Fix cli discover bug with None username/password [\#615](https://github.com/python-kasa/python-kasa/pull/615) (@sdb9696)
+
+**Closed issues:**
+
+- Need to do error code checking for new protocols [\#612](https://github.com/python-kasa/python-kasa/issues/612)
+- Support of last firmware update version 1.3.0 [\#611](https://github.com/python-kasa/python-kasa/issues/611)
+- Implement energy and usage for individual plugs in HS300 [\#462](https://github.com/python-kasa/python-kasa/issues/462)
+
+**Merged pull requests:**
+
+- Add P125M and update EP25 fixtures [\#621](https://github.com/python-kasa/python-kasa/pull/621) (@bdraco)
+- Use consistent envvars for dump\_devinfo credentials [\#618](https://github.com/python-kasa/python-kasa/pull/618) (@rytilahti)
+- Mark L900-5 as supported [\#617](https://github.com/python-kasa/python-kasa/pull/617) (@rytilahti)
+- Ship CHANGELOG only in sdist [\#610](https://github.com/python-kasa/python-kasa/pull/610) (@rytilahti)
+
 ## [0.6.0.dev0](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev0) (2024-01-03)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.4...0.6.0.dev0)
@@ -60,6 +88,7 @@
 
 **Merged pull requests:**
 
+- Release 0.6.0.dev0 [\#609](https://github.com/python-kasa/python-kasa/pull/609) (@rytilahti)
 - Cleanup credentials handling [\#605](https://github.com/python-kasa/python-kasa/pull/605) (@rytilahti)
 - Update P110\(EU\) fixture [\#604](https://github.com/python-kasa/python-kasa/pull/604) (@rytilahti)
 - Update L530 aes fixture [\#603](https://github.com/python-kasa/python-kasa/pull/603) (@rytilahti)
