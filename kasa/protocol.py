@@ -31,6 +31,7 @@ from .json import loads as json_loads
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
+_UNSIGNED_INT_NETWORK_ORDER = struct.Struct(">I")
 
 
 def md5(payload: bytes) -> bytes:
@@ -206,7 +207,7 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
         await self.writer.drain()
 
         packed_block_size = await self.reader.readexactly(self.BLOCK_SIZE)
-        length = struct.unpack(">I", packed_block_size)[0]
+        length = _UNSIGNED_INT_NETWORK_ORDER.unpack(packed_block_size)[0]
 
         buffer = await self.reader.readexactly(length)
         response = TPLinkSmartHomeProtocol.decrypt(buffer)
@@ -311,7 +312,7 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
         :return: ciphertext to be send over wire, in bytes
         """
         plainbytes = request.encode()
-        return struct.pack(">I", len(plainbytes)) + bytes(
+        return _UNSIGNED_INT_NETWORK_ORDER.pack(len(plainbytes)) + bytes(
             TPLinkSmartHomeProtocol._xor_payload(plainbytes)
         )
 
