@@ -27,8 +27,8 @@ Discovery
 The tool can automatically discover supported devices using a broadcast-based discovery protocol.
 This works by sending an UDP datagram on ports 9999 and 20002 to the broadcast address (defaulting to ``255.255.255.255``).
 
-Newer devices that respond on port 20002 will most likely require TP-Link cloud credentials to be passed or they will report as having failed authentication
-when trying to query or update.
+Newer devices that respond on port 20002 will require TP-Link cloud credentials to be passed (unless they have never been connected
+to the TP-Link cloud) or they will report as having failed authentication when trying to query the device.
 Use ``--username`` and ``--password`` options to specify credentials.
 These values can also be set as environment variables via ``KASA_USERNAME`` and ``KASA_PASSWORD``.
 

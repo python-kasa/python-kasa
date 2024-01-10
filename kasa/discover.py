@@ -245,13 +245,13 @@ class Discover:
         :param target: The target address where to send the broadcast discovery
          queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
-        :param discovery_timeout: How long to wait for responses, defaults to 5
+        :param discovery_timeout: Seconds to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets to broadcast
         :param interface: Bind to specific interface
         :param on_unsupported: Optional callback when unsupported devices are discovered
         :param credentials: Credentials for devices requiring authentication
         :param port: Override the discovery port for devices listening on 9999
-        :param timeout: Query timeout for devices returned by discovery
+        :param timeout: Query timeout in seconds for devices returned by discovery
         :return: dictionary with discovered devices
         """
         loop = asyncio.get_event_loop()
@@ -297,9 +297,9 @@ class Discover:
         to discovery requests.
 
         :param host: Hostname of device to query
-        :param discovery_timeout: Timeout for discovery
+        :param discovery_timeout: Timeout in seconds for discovery
         :param port: Optionally set a different port for legacy devices using port 9999
-        :param timeout: Timeout for query devices returned by discovery
+        :param timeout: Timeout in seconds device for devices queries
         :param credentials: Credentials for devices that require authentication
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.

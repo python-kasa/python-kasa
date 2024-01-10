@@ -45,7 +45,8 @@ Simple example script showing some functionality for legacy devices:
     if __name__ == "__main__":
         asyncio.run(main())
 
-If you are connecting to a newer KASA or TAPO device you can get the device via discovery or connect directly with DeviceConfig:
+If you are connecting to a newer KASA or TAPO device you can get the device via discovery or
+connect directly with :class:`DeviceConfig`:
 
 .. code-block:: python
 
@@ -63,7 +64,7 @@ If you are connecting to a newer KASA or TAPO device you can get the device via 
 
         # To connect directly later without discovery
 
-        later_device = await SmartDevice.Connect(config=config)
+        later_device = await SmartDevice.connect(config=config)
 
         await later_device.update()
 
@@ -99,8 +100,8 @@ discovery.
 This is required for newer KASA and TAPO devices that use different protocols for communication and will not respond
 on port 9999 but instead use different encryption protocols over http port 80.
 Currently there are three known types of encryption for TP-Link devices and two different protocols.
-Devices with automatic firmware updates enabled will randomly update to newer versions of the encryption
-hence why discovery can be helpful to determine the correct config.
+Devices with automatic firmware updates enabled may update to newer versions of the encryption without separate notice,
+so discovery can be helpful to determine the correct config.
 
 To connect directly pass a :class:`DeviceConfig` object to :meth:`SmartDevice.connect()`.
 
