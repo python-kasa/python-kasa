@@ -431,7 +431,7 @@ async def test_discover_auth_failed(discovery_mock, mocker):
     )
 
     assert res.exit_code == 0
-    assert "== Authentication failed for device ==" in res.output
+    assert "== Authentication failed for device" in res.output
     assert "== Discovery Result ==" in res.output
 
 

@@ -35,9 +35,6 @@ _LOGGER = logging.getLogger(__name__)
 OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
 DeviceDict = Dict[str, SmartDevice]
 
-UNAVAILABLE_ALIAS = "Auth required"
-UNAVAILABLE_NICKNAME = base64.b64encode(UNAVAILABLE_ALIAS.encode()).decode()
-
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
     """Implementation of the discovery protocol handler.
@@ -464,8 +461,9 @@ class Discover:
 
         di = discovery_result.get_dict()
         di["model"] = discovery_result.device_model
-        di["alias"] = UNAVAILABLE_ALIAS
-        di["nickname"] = UNAVAILABLE_NICKNAME
+        mac_alias = _mac_alias(discovery_result.mac)
+        di["alias"] = mac_alias
+        di["nickname"] = base64.b64encode(mac_alias.encode()).decode()
         device.update_from_discover_info(di)
         return device
 
@@ -502,3 +500,11 @@ class DiscoveryResult(BaseModel):
         return self.dict(
             by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
         )
+
+
+def _mac_alias(address: str) -> str:
+    """Convert a MAC address to a short address."""
+    results = address.replace("-", ":").split(":")
+    last: str = results[-1]
+    second_last: str = results[-2]
+    return f"{second_last.upper()}{last.upper()}"[-4:]
