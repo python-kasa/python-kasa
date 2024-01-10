@@ -247,7 +247,7 @@ class SmartDevice:
 
     @property
     def credentials_hash(self) -> Optional[str]:
-        """Return the connection parameters the device is using."""
+        """The protocol specific hash of the credentials the device is using."""
         return self.protocol._transport.credentials_hash
 
     def add_module(self, name: str, module: Module):
@@ -804,7 +804,7 @@ class SmartDevice:
 
     @property
     def config(self) -> DeviceConfig:
-        """Return the connection parameters the device is using."""
+        """Return the device configuration."""
         return self.protocol.config
 
     @staticmethod

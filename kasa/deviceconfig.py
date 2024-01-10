@@ -126,20 +126,30 @@ class DeviceConfig:
     """Class to represent paramaters that determine how to connect to devices."""
 
     DEFAULT_TIMEOUT = 5
-
+    #: IP address or hostname
     host: str
+    #: Timeout for querying the device
     timeout: Optional[int] = DEFAULT_TIMEOUT
+    #: Override the default 9999 port to support port forwarding
     port_override: Optional[int] = None
+    #: Credentials for devices requiring authentication
     credentials: Optional[Credentials] = None
+    #: Credentials hash for devices requiring authentication.
+    #: If credentials are also supplied they take precendence over credentials_hash.
+    #: Credentials hash can be retrieved from :attr:`SmartDevice.credentials_hash`
     credentials_hash: Optional[str] = None
+    #: The protocol specific type of connection.  Defaults to the legacy type.
     connection_type: ConnectionType = field(
         default_factory=lambda: ConnectionType(
             DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor, 1
         )
     )
-
+    #: True if the device uses http.  Consumers should retrieve rather than set this
+    #: in order to determine whether they should pass a custom http client if desired.
     uses_http: bool = False
+
     # compare=False will be excluded from the serialization and object comparison.
+    #: Set a custom http_client for the device to use.
     http_client: Optional[httpx.AsyncClient] = field(default=None, compare=False)
 
     def __post_init__(self):
@@ -154,7 +164,7 @@ class DeviceConfig:
         credentials_hash: Optional[str] = None,
         exclude_credentials: bool = False,
     ) -> Dict[str, Dict[str, str]]:
-        """Convert connection params to dict."""
+        """Convert device config to dict."""
         if credentials_hash or exclude_credentials:
             self.credentials = None
         if credentials_hash:
@@ -163,5 +173,5 @@ class DeviceConfig:
 
     @staticmethod
     def from_dict(cparam_dict: Dict[str, Dict[str, str]]) -> "DeviceConfig":
-        """Return connection parameters from dict."""
+        """Return device config from dict."""
         return _dataclass_from_dict(DeviceConfig, cparam_dict)

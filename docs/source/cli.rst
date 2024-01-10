@@ -7,6 +7,11 @@ To see what is being sent to and received from the device, specify option ``--de
 
 To avoid discovering the devices when executing commands its type can be passed as an option (e.g., ``--type plug`` for plugs, ``--type bulb`` for bulbs, ..).
 If no type is manually given, its type will be discovered automatically which causes a short delay.
+Note that the ``--type`` parameter only works for legacy devices using port 9999.
+
+To avoid discovering the devices for newer KASA or TAPO devices using port 20002 for discovery the ``--device-family``, ``-encrypt-type`` and optional
+``-login-version`` options can be passed and the devices will probably require authentication via ``--username`` and ``--password``.
+Refer to ``kasa --help`` for detailed usage.
 
 If no command is given, the ``state`` command will be executed to query the device state.
 
@@ -20,7 +25,12 @@ Discovery
 *********
 
 The tool can automatically discover supported devices using a broadcast-based discovery protocol.
-This works by sending an UDP datagram on port 9999 to the broadcast address (defaulting to ``255.255.255.255``).
+This works by sending an UDP datagram on ports 9999 and 20002 to the broadcast address (defaulting to ``255.255.255.255``).
+
+Newer devices that respond on port 20002 will require TP-Link cloud credentials to be passed (unless they have never been connected
+to the TP-Link cloud) or they will report as having failed authentication when trying to query the device.
+Use ``--username`` and ``--password`` options to specify credentials.
+These values can also be set as environment variables via ``KASA_USERNAME`` and ``KASA_PASSWORD``.
 
 On multihomed systems, you can use ``--target`` option to specify the broadcast target.
 For example, if your devices reside in network ``10.0.0.0/24`` you can use ``kasa --target 10.0.0.255 discover`` to discover them.

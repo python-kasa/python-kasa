@@ -67,7 +67,7 @@ API documentation
     :members:
     :undoc-members:
 
-.. autoclass:: kasa.BehaviorMode
+.. autoclass:: kasa.smartbulb.BehaviorMode
     :members:
 
 .. autoclass:: kasa.TurnOnBehaviors

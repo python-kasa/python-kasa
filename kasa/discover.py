@@ -171,10 +171,15 @@ class Discover:
     device object.
 
     :func:`discover_single()` can be used to initialize a single device given its
-    IP address. If the type of the device and its IP address is already known,
-    you can initialize the corresponding device class directly without this.
+    IP address. If the :class:`DeviceConfig` of the device is already known,
+    you can initialize the corresponding device class directly without discovery.
 
-    The protocol uses UDP broadcast datagrams on port 9999 for discovery.
+    The protocol uses UDP broadcast datagrams on port 9999 and 20002 for discovery.
+    Legacy devices support discovery on port 9999 and newer devices on 20002.
+
+    Newer devices that respond on port 20002 will most likely require TP-Link cloud
+    credentials to be passed if queries or updates are to be performed on the returned
+    devices.
 
     Examples:
         Discovery returns a list of discovered devices:
@@ -222,7 +227,8 @@ class Discover:
     ) -> DeviceDict:
         """Discover supported devices.
 
-        Sends discovery message to 255.255.255.255:9999 in order
+        Sends discovery message to 255.255.255.255:9999 and
+        255.255.255.255:20002 in order
         to detect available supported devices in the local network,
         and waits for given timeout for answers from devices.
         If you have multiple interfaces,
@@ -239,9 +245,13 @@ class Discover:
         :param target: The target address where to send the broadcast discovery
          queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
-        :param timeout: How long to wait for responses, defaults to 5
+        :param discovery_timeout: Seconds to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets to broadcast
         :param interface: Bind to specific interface
+        :param on_unsupported: Optional callback when unsupported devices are discovered
+        :param credentials: Credentials for devices requiring authentication
+        :param port: Override the discovery port for devices listening on 9999
+        :param timeout: Query timeout in seconds for devices returned by discovery
         :return: dictionary with discovered devices
         """
         loop = asyncio.get_event_loop()
@@ -282,13 +292,14 @@ class Discover:
         """Discover a single device by the given IP address.
 
         It is generally preferred to avoid :func:`discover_single()` and
-        use :func:`connect_single()` instead as it should perform better when
+        use :meth:`SmartDevice.connect()` instead as it should perform better when
         the WiFi network is congested or the device is not responding
         to discovery requests.
 
         :param host: Hostname of device to query
-        :param port: Optionally set a different port for the device
-        :param timeout: Timeout for discovery
+        :param discovery_timeout: Timeout in seconds for discovery
+        :param port: Optionally set a different port for legacy devices using port 9999
+        :param timeout: Timeout in seconds device for devices queries
         :param credentials: Credentials for devices that require authentication
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.

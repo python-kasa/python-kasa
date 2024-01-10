@@ -15,4 +15,3 @@
    smartdimmer
    smartstrip
    smartlightstrip
-   deviceconfig
