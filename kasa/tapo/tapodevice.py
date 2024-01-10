@@ -275,7 +275,7 @@ class TapoDevice(SmartDevice):
             ]
             networks.extend(network_list)
 
-            if resp["get_wireless_scan_info"]["sum"] > start_index + 10:
+            if resp["get_wireless_scan_info"].get("sum", 0) > start_index + 10:
                 return await _query_networks(networks, start_index=start_index + 10)
 
             return networks

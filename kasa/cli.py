@@ -427,8 +427,8 @@ async def discover(ctx):
                 echo()
             else:
                 discovered[dev.host] = dev.internal_state
-                ctx.obj = dev
-                await ctx.invoke(state)
+                ctx.parent.obj = dev
+                await ctx.parent.invoke(state)
                 if verbose:
                     echo()
                     _echo_discovery_info(dev._discovery_info)
@@ -513,12 +513,14 @@ async def sysinfo(dev):
 
 @cli.command()
 @pass_dev
-async def state(dev: SmartDevice):
+@click.pass_context
+async def state(ctx, dev: SmartDevice):
     """Print out device state and versions."""
+    verbose = ctx.parent.params.get("verbose", False) if ctx.parent else False
+
     echo(f"[bold]== {dev.alias} - {dev.model} ==[/bold]")
     echo(f"\tHost: {dev.host}")
     echo(f"\tPort: {dev.port}")
-    echo(f"\tCredentials hash: {dev.credentials_hash}")
     echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
         echo("\t[bold]== Plugs ==[/bold]")
@@ -554,6 +556,12 @@ async def state(dev: SmartDevice):
         else:
             echo(f"\t[red]- {module}[/red]")
 
+    if verbose:
+        echo("\n\t[bold]== Verbose information ==[/bold]")
+        echo(f"\tCredentials hash:  {dev.credentials_hash}")
+        echo(f"\tDevice ID:         {dev.device_id}")
+        for feature in dev.features:
+            echo(f"\tFeature:           {feature}")
     return dev.internal_state
 
 

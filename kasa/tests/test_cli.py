@@ -1,4 +1,5 @@
 import json
+import re
 
 import asyncclick as click
 import pytest
@@ -9,6 +10,7 @@ from kasa import (
     Credentials,
     EmeterStatus,
     SmartDevice,
+    SmartDeviceException,
     TPLinkSmartHomeProtocol,
     UnsupportedDeviceException,
 )
@@ -22,11 +24,13 @@ from kasa.cli import (
     state,
     sysinfo,
     toggle,
+    update_credentials,
+    wifi,
 )
 from kasa.discover import Discover, DiscoveryResult
 from kasa.smartprotocol import SmartProtocol
 
-from .conftest import device_iot, handle_turn_on, new_discovery, turn_on
+from .conftest import device_iot, device_smart, handle_turn_on, new_discovery, turn_on
 
 
 @device_iot
@@ -81,20 +85,93 @@ async def test_alias(dev):
     await dev.set_alias(old_alias)
 
 
-@device_iot
 async def test_raw_command(dev):
     runner = CliRunner()
-    res = await runner.invoke(raw_command, ["system", "get_sysinfo"], obj=dev)
+    from kasa.tapo import TapoDevice
+
+    if isinstance(dev, TapoDevice):
+        params = ["na", "get_device_info"]
+    else:
+        params = ["system", "get_sysinfo"]
+    res = await runner.invoke(raw_command, params, obj=dev)
 
     assert res.exit_code == 0
-    assert dev.alias in res.output
+    assert dev.model in res.output
 
     res = await runner.invoke(raw_command, obj=dev)
     assert res.exit_code != 0
     assert "Usage" in res.output
 
 
-@device_iot
+@device_smart
+async def test_wifi_scan(dev):
+    runner = CliRunner()
+    res = await runner.invoke(wifi, ["scan"], obj=dev)
+
+    assert res.exit_code == 0
+    assert re.search(r"Found \d wifi networks!", res.output)
+
+
+@device_smart
+async def test_wifi_join(dev):
+    runner = CliRunner()
+    res = await runner.invoke(
+        wifi,
+        ["join", "FOOBAR", "--keytype", "wpa_psk", "--password", "foobar"],
+        obj=dev,
+    )
+
+    assert res.exit_code == 0
+    assert "Asking the device to connect to FOOBAR" in res.output
+
+
+@device_smart
+async def test_wifi_join_no_creds(dev):
+    runner = CliRunner()
+    dev.protocol._transport._credentials = None
+    res = await runner.invoke(
+        wifi,
+        ["join", "FOOBAR", "--keytype", "wpa_psk", "--password", "foobar"],
+        obj=dev,
+    )
+
+    assert res.exit_code != 0
+    assert isinstance(res.exception, AuthenticationException)
+
+
+@device_smart
+async def test_wifi_join_exception(dev, mocker):
+    runner = CliRunner()
+    mocker.patch.object(
+        dev.protocol, "query", side_effect=SmartDeviceException(error_code=9999)
+    )
+    res = await runner.invoke(
+        wifi,
+        ["join", "FOOBAR", "--keytype", "wpa_psk", "--password", "foobar"],
+        obj=dev,
+    )
+
+    assert res.exit_code != 0
+    assert isinstance(res.exception, SmartDeviceException)
+
+
+@device_smart
+async def test_update_credentials(dev):
+    runner = CliRunner()
+    res = await runner.invoke(
+        update_credentials,
+        ["--username", "foo", "--password", "bar"],
+        input="y\n",
+        obj=dev,
+    )
+
+    assert res.exit_code == 0
+    assert (
+        "Do you really want to replace the existing credentials? [y/N]: y\n"
+        in res.output
+    )
+
+
 async def test_emeter(dev: SmartDevice, mocker):
     runner = CliRunner()
 
