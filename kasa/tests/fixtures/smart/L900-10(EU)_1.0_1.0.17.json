@@ -1,0 +1,441 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "light_strip",
+                "ver_code": 1
+            },
+            {
+                "id": "light_strip_lighting_effect",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "brightness",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "color_temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "preset",
+                "ver_code": 3
+            },
+            {
+                "id": "color",
+                "ver_code": 1
+            },
+            {
+                "id": "on_off_gradually",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "music_rhythm",
+                "ver_code": 3
+            },
+            {
+                "id": "bulb_quick_control",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "L900-10(EU)",
+        "device_type": "SMART.TAPOBULB",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "00-00-00-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "AES",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "obd_src": "tplink",
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_update_info": {
+        "enable": false,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_device_info": {
+        "avatar": "light_strip",
+        "brightness": 100,
+        "color_temp": 0,
+        "color_temp_range": [
+            9000,
+            9000
+        ],
+        "default_states": {
+            "state": {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 230,
+                "saturation": 96
+            },
+            "type": "last_states"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": false,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.0.17 Build 230426 Rel.153230",
+        "has_set_location_info": true,
+        "hue": 230,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "lighting_effect": {
+            "brightness": 100,
+            "custom": 0,
+            "display_colors": [
+                [
+                    0,
+                    100,
+                    100
+                ],
+                [
+                    30,
+                    95,
+                    100
+                ],
+                [
+                    0,
+                    0,
+                    100
+                ]
+            ],
+            "enable": 0,
+            "id": "TapoStrip_5NiN0Y8GAUD78p4neKk9EL",
+            "name": "Sunset"
+        },
+        "longitude": 0,
+        "mac": "00-00-00-00-00-00",
+        "model": "L900",
+        "music_rhythm_enable": false,
+        "music_rhythm_mode": "single_lamp",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "Europe/London",
+        "rssi": -58,
+        "saturation": 96,
+        "signal_level": 2,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 0,
+        "type": "SMART.TAPOBULB"
+    },
+    "get_device_time": {
+        "region": "Europe/London",
+        "time_diff": 0,
+        "timestamp": 1704909087
+    },
+    "get_device_usage": {
+        "power_usage": {
+            "past30": 15,
+            "past7": 0,
+            "today": 0
+        },
+        "saved_power": {
+            "past30": 69,
+            "past7": 1,
+            "today": 0
+        },
+        "time_usage": {
+            "past30": 84,
+            "past7": 1,
+            "today": 0
+        }
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_latest_fw": {
+        "fw_size": 786432,
+        "fw_ver": "1.1.0 Build 230905 Rel.184939",
+        "hw_id": "00000000000000000000000000000000",
+        "need_to_upgrade": true,
+        "oem_id": "00000000000000000000000000000000",
+        "release_date": "2023-10-13",
+        "release_note": "Modifications and Bug Fixes:\n1. Enhanced stability and performance.\n2. Enhanced the local communication security.",
+        "type": 2
+    },
+    "get_lighting_effect": {
+        "brightness": 100,
+        "custom": 0,
+        "direction": 1,
+        "display_colors": [
+            [
+                0,
+                100,
+                100
+            ],
+            [
+                30,
+                95,
+                100
+            ],
+            [
+                0,
+                0,
+                100
+            ]
+        ],
+        "duration": 600,
+        "enable": 0,
+        "expansion_strategy": 2,
+        "id": "TapoStrip_5NiN0Y8GAUD78p4neKk9EL",
+        "name": "Sunset",
+        "repeat_times": 1,
+        "run_time": 0,
+        "segments": [
+            0
+        ],
+        "sequence": [
+            [
+                30,
+                0,
+                100
+            ],
+            [
+                30,
+                20,
+                100
+            ],
+            [
+                30,
+                50,
+                99
+            ],
+            [
+                30,
+                60,
+                98
+            ],
+            [
+                30,
+                70,
+                97
+            ],
+            [
+                30,
+                75,
+                95
+            ],
+            [
+                30,
+                80,
+                93
+            ],
+            [
+                30,
+                90,
+                90
+            ],
+            [
+                30,
+                95,
+                85
+            ],
+            [
+                30,
+                100,
+                80
+            ],
+            [
+                20,
+                100,
+                70
+            ],
+            [
+                20,
+                100,
+                60
+            ],
+            [
+                15,
+                100,
+                50
+            ],
+            [
+                10,
+                100,
+                40
+            ],
+            [
+                0,
+                100,
+                30
+            ],
+            [
+                0,
+                100,
+                0
+            ]
+        ],
+        "spread": 1,
+        "trans_sequence": [],
+        "transition": 60000,
+        "type": "pulse"
+    },
+    "get_next_event": {},
+    "get_on_off_gradually_info": {
+        "enable": false
+    },
+    "get_preset_rules": {
+        "start_index": 0,
+        "states": [
+            {
+                "brightness": 50,
+                "color_temp": 9000,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 240,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 120,
+                "saturation": 100
+            }
+        ],
+        "sum": 7
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 16,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "L900",
+            "device_type": "SMART.TAPOBULB"
+        }
+    }
+}

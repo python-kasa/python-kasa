@@ -347,4 +347,11 @@ COMPONENT_REQUESTS = {
     "light_effect": [SmartRequest.get_dynamic_light_effect_rules()],
     "bulb_quick_control": None,
     "on_off_gradually": [SmartRequest.get_raw_request("get_on_off_gradually_info")],
+    "light_strip": None,
+    "light_strip_lighting_effect": [
+        SmartRequest.get_raw_request("get_lighting_effect")
+    ],
+    "music_rhythm": None,  # music_rhythm_enable in device_info
+    "segment": [SmartRequest.get_raw_request("get_device_segment")],
+    "segment_effect": [SmartRequest.get_raw_request("get_segment_effect_rule")],
 }

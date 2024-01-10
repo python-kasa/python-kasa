@@ -282,6 +282,7 @@ At the moment, the following devices have been confirmed to work:
 * Tapo P110 (plug)
 * Tapo L530E (bulb)
 * Tapo L900-5 (led strip)
+* Tapo L900-10 (led strip)
 * Kasa KS205 (Wifi/Matter Wall Switch)
 * Kasa KS225 (Wifi/Matter Wall Dimmer Switch)
 
