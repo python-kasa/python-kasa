@@ -220,7 +220,7 @@ async def _make_requests_or_exit(
     final = {}
     try:
         end = len(requests)
-        step = 10  # Break the requests down as there seems to be a size limit
+        step = 5  # Break the requests down as there seems to be a size limit
         for i in range(0, end, step):
             x = i
             requests_step = requests[x : x + step]
