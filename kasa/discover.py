@@ -22,7 +22,7 @@ from kasa.device_factory import (
     get_protocol,
 )
 from kasa.deviceconfig import ConnectionType, DeviceConfig, EncryptType
-from kasa.exceptions import UnsupportedDeviceException
+from kasa.exceptions import TimeoutException, UnsupportedDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import TPLinkSmartHomeProtocol
@@ -347,7 +347,7 @@ class Discover:
             async with asyncio_timeout(discovery_timeout):
                 await event.wait()
         except asyncio.TimeoutError as ex:
-            raise SmartDeviceException(
+            raise TimeoutException(
                 f"Timed out getting discovery response for {host}"
             ) from ex
         finally:
