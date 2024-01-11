@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0.dev2](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev2) (2024-01-11)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.0.dev1...0.6.0.dev2)
+
+**Documentation updates:**
+
+- Update docs for newer devices and DeviceConfig [\#614](https://github.com/python-kasa/python-kasa/pull/614) (@sdb9696)
+
+**Merged pull requests:**
+
+- Raise TimeoutException on discover\_single timeout [\#632](https://github.com/python-kasa/python-kasa/pull/632) (@sdb9696)
+- Add L900-10 fixture and it's additional component requests [\#629](https://github.com/python-kasa/python-kasa/pull/629) (@sdb9696)
+- Avoid recreating struct each request in legacy protocol [\#628](https://github.com/python-kasa/python-kasa/pull/628) (@bdraco)
+- Return alias as None for new discovery devices before update [\#627](https://github.com/python-kasa/python-kasa/pull/627) (@sdb9696)
+- Update config to\_dict to exclude credentials if the hash is empty string [\#626](https://github.com/python-kasa/python-kasa/pull/626) (@sdb9696)
+- Improve test coverage [\#625](https://github.com/python-kasa/python-kasa/pull/625) (@sdb9696)
+
 ## [0.6.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev1) (2024-01-05)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.0.dev0...0.6.0.dev1)
@@ -23,6 +40,7 @@
 
 **Merged pull requests:**
 
+- Release 0.6.0.dev1 [\#624](https://github.com/python-kasa/python-kasa/pull/624) (@rytilahti)
 - Add P125M and update EP25 fixtures [\#621](https://github.com/python-kasa/python-kasa/pull/621) (@bdraco)
 - Use consistent envvars for dump\_devinfo credentials [\#618](https://github.com/python-kasa/python-kasa/pull/618) (@rytilahti)
 - Mark L900-5 as supported [\#617](https://github.com/python-kasa/python-kasa/pull/617) (@rytilahti)
