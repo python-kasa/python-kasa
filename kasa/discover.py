@@ -1,6 +1,5 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
-import base64
 import binascii
 import ipaddress
 import logging
@@ -34,9 +33,6 @@ _LOGGER = logging.getLogger(__name__)
 
 OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
 DeviceDict = Dict[str, SmartDevice]
-
-UNAVAILABLE_ALIAS = "Authentication required"
-UNAVAILABLE_NICKNAME = base64.b64encode(UNAVAILABLE_ALIAS.encode()).decode()
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -463,9 +459,7 @@ class Discover:
         device = device_class(config.host, protocol=protocol)
 
         di = discovery_result.get_dict()
-        di["model"] = discovery_result.device_model
-        di["alias"] = UNAVAILABLE_ALIAS
-        di["nickname"] = UNAVAILABLE_NICKNAME
+        di["model"], _, _ = discovery_result.device_model.partition("(")
         device.update_from_discover_info(di)
         return device
 

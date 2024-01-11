@@ -442,11 +442,10 @@ class SmartDevice:
         return self.is_strip
 
     @property  # type: ignore
-    @requires_update
-    def alias(self) -> str:
+    def alias(self) -> Optional[str]:
         """Return device name (alias)."""
         sys_info = self._sys_info
-        return str(sys_info["alias"])
+        return sys_info.get("alias") if sys_info else None
 
     async def set_alias(self, alias: str) -> None:
         """Set the device name (alias)."""

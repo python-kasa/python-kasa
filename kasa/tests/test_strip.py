@@ -70,7 +70,7 @@ async def test_children_on_since(dev):
 @strip
 async def test_get_plug_by_name(dev: SmartStrip):
     name = dev.children[0].alias
-    assert dev.get_plug_by_name(name) == dev.children[0]
+    assert dev.get_plug_by_name(name) == dev.children[0]  # type: ignore[arg-type]
 
     with pytest.raises(SmartDeviceException):
         dev.get_plug_by_name("NONEXISTING NAME")
