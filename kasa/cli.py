@@ -422,7 +422,7 @@ async def discover(ctx):
                 await dev.update()
             except AuthenticationException:
                 auth_failed.append(dev._discovery_info)
-                echo(f"== Authentication failed for device {dev.alias} ==")
+                echo("== Authentication failed for device ==")
                 _echo_discovery_info(dev._discovery_info)
                 echo()
             else:

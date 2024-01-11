@@ -1,6 +1,5 @@
 """Discovery module for TP-Link Smart Home devices."""
 import asyncio
-import base64
 import binascii
 import ipaddress
 import logging
@@ -460,10 +459,7 @@ class Discover:
         device = device_class(config.host, protocol=protocol)
 
         di = discovery_result.get_dict()
-        di["model"] = discovery_result.device_model
-        mac_alias = _mac_alias(discovery_result.mac)
-        di["alias"] = mac_alias
-        di["nickname"] = base64.b64encode(mac_alias.encode()).decode()
+        di["model"], _, _ = discovery_result.device_model.partition("(")
         device.update_from_discover_info(di)
         return device
 
@@ -500,11 +496,3 @@ class DiscoveryResult(BaseModel):
         return self.dict(
             by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
         )
-
-
-def _mac_alias(address: str) -> str:
-    """Convert a MAC address to a short address."""
-    results = address.replace("-", ":").split(":")
-    last: str = results[-1]
-    second_last: str = results[-2]
-    return f"{second_last.upper()}{last.upper()}"[-4:]

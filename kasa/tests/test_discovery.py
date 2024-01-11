@@ -108,6 +108,8 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     assert x._discovery_info is not None
     assert x.port == custom_port or x.port == discovery_mock.default_port
     assert update_mock.call_count == 0
+    if discovery_mock.default_port == 80:
+        assert x.alias is None
 
     ct = ConnectionType.from_values(
         discovery_mock.device_type,

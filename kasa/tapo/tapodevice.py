@@ -102,9 +102,12 @@ class TapoDevice(SmartDevice):
         return str(self._info.get("model"))
 
     @property
-    def alias(self) -> str:
+    def alias(self) -> Optional[str]:
         """Returns the device alias or nickname."""
-        return base64.b64decode(str(self._info.get("nickname"))).decode()
+        if self._info and (nickname := self._info.get("nickname")):
+            return base64.b64decode(nickname).decode()
+        else:
+            return None
 
     @property
     def time(self) -> datetime:
