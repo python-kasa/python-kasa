@@ -25,6 +25,7 @@ from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (
     AuthenticationException,
     SmartDeviceException,
+    TimeoutException,
     UnsupportedDeviceException,
 )
 from kasa.iotprotocol import IotProtocol
@@ -60,6 +61,7 @@ __all__ = [
     "SmartLightStrip",
     "AuthenticationException",
     "UnsupportedDeviceException",
+    "TimeoutException",
     "Credentials",
     "DeviceConfig",
     "ConnectionType",
