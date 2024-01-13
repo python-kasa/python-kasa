@@ -100,14 +100,20 @@ class TPLinkSmartHomeProtocol:
     async def close(self) -> None:
         """Close the connection."""
         writer = self.writer
+        self.close_without_wait()
+        if writer:
+            with contextlib.suppress(Exception):
+                await writer.wait_closed()
+
+    def close_without_wait(self) -> None:
+        """Close the connection without waiting for the connection to close."""
+        writer = self.writer
         self.reader = self.writer = None
         debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
         if writer:
             if debug_log:
                 _LOGGER.debug("%s: closing connection", self.host)
             writer.close()
-            with contextlib.suppress(Exception):
-                await writer.wait_closed()
         elif debug_log:
             _LOGGER.debug("%s: connection already closed", self.host)
 
@@ -151,6 +157,14 @@ class TPLinkSmartHomeProtocol:
                         f" {self.host}:{self.port}: {ex}"
                     ) from ex
                 continue
+            except BaseException as ex:
+                # Likely something cancelled the task so we need to close the connection
+                self.close_without_wait()
+                _LOGGER.debug(
+                    "BaseException during connect, closing connection: %s",
+                    self.host,
+                    ex,
+                )
 
             try:
                 assert self.reader is not None  # noqa: S101
@@ -169,8 +183,8 @@ class TPLinkSmartHomeProtocol:
                     "Unable to query the device %s, retrying: %s", self.host, ex
                 )
             except BaseException as ex:
-                # Likely something cancelled the task, so we need to close the connection
-                await self.close()
+                # Likely something cancelled the task so we need to close the connection
+                self.close_without_wait()
                 _LOGGER.debug(
                     "BaseException during query, closing connection: %s", self.host, ex
                 )
