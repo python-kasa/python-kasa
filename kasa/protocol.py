@@ -200,7 +200,6 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
         assert self.writer is not None  # noqa: S101
         assert self.reader is not None  # noqa: S101
         debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
-
         if debug_log:
             _LOGGER.debug("%s >> %s", self._host, request)
         self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
@@ -220,11 +219,17 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
     async def close(self) -> None:
         """Close the connection."""
         writer = self.writer
+        self.close_without_wait()
+        if writer:
+            with contextlib.suppress(Exception):
+                await writer.wait_closed()
+
+    def close_without_wait(self) -> None:
+        """Close the connection without waiting for the connection to close."""
+        writer = self.writer
         self.reader = self.writer = None
         if writer:
             writer.close()
-            with contextlib.suppress(Exception):
-                await writer.wait_closed()
 
     def _reset(self) -> None:
         """Clear any varibles that should not survive between loops."""
@@ -266,6 +271,16 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
                         f" {self._host}:{self._port}: {ex}"
                     ) from ex
                 continue
+            except BaseException as ex:
+                # Likely something cancelled the task so we need to close the connection
+                # as we are not in an indeterminate state
+                self.close_without_wait()
+                _LOGGER.debug(
+                    "%s: BaseException during connect, closing connection: %s",
+                    self._host,
+                    ex,
+                )
+                raise
 
             try:
                 assert self.reader is not None  # noqa: S101
@@ -283,6 +298,16 @@ class TPLinkSmartHomeProtocol(TPLinkProtocol):
                 _LOGGER.debug(
                     "Unable to query the device %s, retrying: %s", self._host, ex
                 )
+            except BaseException as ex:
+                # Likely something cancelled the task so we need to close the connection
+                # as we are not in an indeterminate state
+                self.close_without_wait()
+                _LOGGER.debug(
+                    "%s: BaseException during query, closing connection: %s",
+                    self._host,
+                    ex,
+                )
+                raise
 
         # make mypy happy, this should never be reached..
         await self.close()
