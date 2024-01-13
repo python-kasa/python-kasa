@@ -165,6 +165,7 @@ class TPLinkSmartHomeProtocol:
                     self.host,
                     ex,
                 )
+                raise
 
             try:
                 assert self.reader is not None  # noqa: S101
@@ -188,6 +189,7 @@ class TPLinkSmartHomeProtocol:
                 _LOGGER.debug(
                     "BaseException during query, closing connection: %s", self.host, ex
                 )
+                raise
 
         # make mypy happy, this should never be reached..
         await self.close()
