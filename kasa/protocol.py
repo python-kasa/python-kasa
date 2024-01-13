@@ -80,10 +80,10 @@ class TPLinkSmartHomeProtocol:
         assert self.writer is not None  # noqa: S101
         assert self.reader is not None  # noqa: S101
         debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
-
+        encrypted = TPLinkSmartHomeProtocol.encrypt(request)
         if debug_log:
-            _LOGGER.debug("%s >> %s", self.host, request)
-        self.writer.write(TPLinkSmartHomeProtocol.encrypt(request))
+            _LOGGER.debug("%s >> (%s) %s", self.host, encrypted.hex(), request)
+        self.writer.write(encrypted)
         await self.writer.drain()
 
         packed_block_size = await self.reader.readexactly(self.BLOCK_SIZE)
@@ -93,7 +93,7 @@ class TPLinkSmartHomeProtocol:
         response = TPLinkSmartHomeProtocol.decrypt(buffer)
         json_payload = json_loads(response)
         if debug_log:
-            _LOGGER.debug("%s << %s", self.host, pf(json_payload))
+            _LOGGER.debug("%s << (%s) %s", self.host, buffer.hex(), pf(json_payload))
 
         return json_payload
 
@@ -101,10 +101,15 @@ class TPLinkSmartHomeProtocol:
         """Close the connection."""
         writer = self.writer
         self.reader = self.writer = None
+        debug_log = _LOGGER.isEnabledFor(logging.DEBUG)
         if writer:
+            if debug_log:
+                _LOGGER.debug("%s: closing connection", self.host)
             writer.close()
             with contextlib.suppress(Exception):
                 await writer.wait_closed()
+        elif debug_log:
+            _LOGGER.debug("%s: connection already closed", self.host)
 
     def _reset(self) -> None:
         """Clear any varibles that should not survive between loops."""
