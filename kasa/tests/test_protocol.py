@@ -1,3 +1,4 @@
+import asyncio
 import errno
 import importlib
 import inspect
@@ -119,6 +120,77 @@ async def test_protocol_reconnect(mocker, retry_count):
     protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({}, retry_count=retry_count)
+    assert response == {"great": "success"}
+
+
+async def test_protocol_handles_cancellation_during_write(mocker):
+    attempts = 0
+    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
+        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    ]
+
+    def _cancel_first_attempt(*_):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise asyncio.CancelledError("Simulated task cancel")
+
+    async def _mock_read(byte_count):
+        nonlocal encrypted
+        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+            return struct.pack(">I", len(encrypted))
+        if byte_count == len(encrypted):
+            return encrypted
+
+        raise ValueError(f"No mock for {byte_count}")
+
+    def aio_mock_writer(_, __):
+        reader = mocker.patch("asyncio.StreamReader")
+        writer = mocker.patch("asyncio.StreamWriter")
+        mocker.patch.object(writer, "write", _cancel_first_attempt)
+        mocker.patch.object(reader, "readexactly", _mock_read)
+        return reader, writer
+
+    protocol = TPLinkSmartHomeProtocol("127.0.0.1")
+    mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
+    with pytest.raises(asyncio.CancelledError):
+        await protocol.query({})
+    assert protocol.writer is None
+    response = await protocol.query({})
+    assert response == {"great": "success"}
+
+
+async def test_protocol_handles_cancellation_during_connection(mocker):
+    attempts = 0
+    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
+        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    ]
+
+    async def _mock_read(byte_count):
+        nonlocal encrypted
+        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+            return struct.pack(">I", len(encrypted))
+        if byte_count == len(encrypted):
+            return encrypted
+
+        raise ValueError(f"No mock for {byte_count}")
+
+    def aio_mock_writer(_, __):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise asyncio.CancelledError("Simulated task cancel")
+        reader = mocker.patch("asyncio.StreamReader")
+        writer = mocker.patch("asyncio.StreamWriter")
+        mocker.patch.object(reader, "readexactly", _mock_read)
+        return reader, writer
+
+    protocol = TPLinkSmartHomeProtocol("127.0.0.1")
+    mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
+    with pytest.raises(asyncio.CancelledError):
+        await protocol.query({})
+    assert protocol.writer is None
+    response = await protocol.query({})
     assert response == {"great": "success"}
 
 
