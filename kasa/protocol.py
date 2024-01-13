@@ -153,6 +153,7 @@ class TPLinkSmartHomeProtocol:
                 continue
             except BaseException as ex:
                 # Likely something cancelled the task so we need to close the connection
+                # as we are not in an indeterminate state
                 self.close_without_wait()
                 _LOGGER.debug(
                     "%s: BaseException during connect, closing connection: %s",
@@ -179,6 +180,7 @@ class TPLinkSmartHomeProtocol:
                 )
             except BaseException as ex:
                 # Likely something cancelled the task so we need to close the connection
+                # as we are not in an indeterminate state
                 self.close_without_wait()
                 _LOGGER.debug(
                     "%s: BaseException during query, closing connection: %s",
