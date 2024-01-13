@@ -168,6 +168,12 @@ class TPLinkSmartHomeProtocol:
                 _LOGGER.debug(
                     "Unable to query the device %s, retrying: %s", self.host, ex
                 )
+            except BaseException as ex:
+                # Likely something cancelled the task, so we need to close the connection
+                await self.close()
+                _LOGGER.debug(
+                    "BaseException during query, closing connection: %s", self.host, ex
+                )
 
         # make mypy happy, this should never be reached..
         await self.close()
