@@ -151,7 +151,8 @@ async def test_protocol_handles_cancellation_during_write(mocker):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    protocol = TPLinkSmartHomeProtocol("127.0.0.1")
+    config = DeviceConfig("127.0.0.1")
+    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(asyncio.CancelledError):
         await protocol.query({})
@@ -185,7 +186,8 @@ async def test_protocol_handles_cancellation_during_connection(mocker):
         mocker.patch.object(reader, "readexactly", _mock_read)
         return reader, writer
 
-    protocol = TPLinkSmartHomeProtocol("127.0.0.1")
+    config = DeviceConfig("127.0.0.1")
+    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(asyncio.CancelledError):
         await protocol.query({})
