@@ -2,6 +2,7 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 
 import httpx
+import pytest
 
 from kasa.credentials import Credentials
 from kasa.deviceconfig import (
@@ -10,6 +11,7 @@ from kasa.deviceconfig import (
     DeviceFamilyType,
     EncryptType,
 )
+from kasa.exceptions import SmartDeviceException
 
 
 def test_serialization():
@@ -19,6 +21,19 @@ def test_serialization():
     config2_dict = json_loads(config_json)
     config2 = DeviceConfig.from_dict(config2_dict)
     assert config == config2
+
+
+@pytest.mark.parametrize(
+    ("input_value", "expected_msg"),
+    [
+        ({"Foo": "Bar"}, "Cannot create dataclass from dict, unknown key: Foo"),
+        ("foobar", "Invalid device config data: foobar"),
+    ],
+    ids=["invalid-dict", "not-dict"],
+)
+def test_deserialization_errors(input_value, expected_msg):
+    with pytest.raises(SmartDeviceException, match=expected_msg):
+        DeviceConfig.from_dict(input_value)
 
 
 def test_credentials_hash():

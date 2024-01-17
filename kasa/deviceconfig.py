@@ -36,11 +36,16 @@ def _dataclass_from_dict(klass, in_val):
         fieldtypes = {f.name: f.type for f in fields(klass)}
         val = {}
         for dict_key in in_val:
-            if dict_key in fieldtypes and hasattr(fieldtypes[dict_key], "from_dict"):
-                val[dict_key] = fieldtypes[dict_key].from_dict(in_val[dict_key])
+            if dict_key in fieldtypes:
+                if hasattr(fieldtypes[dict_key], "from_dict"):
+                    val[dict_key] = fieldtypes[dict_key].from_dict(in_val[dict_key])
+                else:
+                    val[dict_key] = _dataclass_from_dict(
+                        fieldtypes[dict_key], in_val[dict_key]
+                    )
             else:
-                val[dict_key] = _dataclass_from_dict(
-                    fieldtypes[dict_key], in_val[dict_key]
+                raise SmartDeviceException(
+                    f"Cannot create dataclass from dict, unknown key: {dict_key}"
                 )
         return klass(**val)
     else:
@@ -172,6 +177,8 @@ class DeviceConfig:
         return _dataclass_to_dict(self)
 
     @staticmethod
-    def from_dict(cparam_dict: Dict[str, Dict[str, str]]) -> "DeviceConfig":
+    def from_dict(config_dict: Dict[str, Dict[str, str]]) -> "DeviceConfig":
         """Return device config from dict."""
-        return _dataclass_from_dict(DeviceConfig, cparam_dict)
+        if isinstance(config_dict, dict):
+            return _dataclass_from_dict(DeviceConfig, config_dict)
+        raise SmartDeviceException(f"Invalid device config data: {config_dict}")
