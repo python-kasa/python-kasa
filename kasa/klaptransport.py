@@ -50,18 +50,17 @@ import time
 from pprint import pformat as pf
 from typing import Any, Optional, Tuple
 
-import httpx
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
 from .exceptions import AuthenticationException, SmartDeviceException
+from .httpclientsession import HttpClientSession
 from .json import loads as json_loads
 from .protocol import BaseTransport, md5
 
 _LOGGER = logging.getLogger(__name__)
-logging.getLogger("httpx").propagate = False
 
 
 def _sha256(payload: bytes) -> bytes:
@@ -98,7 +97,7 @@ class KlapTransport(BaseTransport):
     ) -> None:
         super().__init__(config=config)
 
-        self._default_http_client: Optional[httpx.AsyncClient] = None
+        self._http_client = HttpClientSession(config)
         self._local_seed: Optional[bytes] = None
         if (
             not self._credentials or self._credentials.username is None
@@ -132,34 +131,6 @@ class KlapTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         return base64.b64encode(self._local_auth_hash).decode()
 
-    @property
-    def _http_client(self) -> httpx.AsyncClient:
-        if self._config.http_client:
-            return self._config.http_client
-        if not self._default_http_client:
-            self._default_http_client = httpx.AsyncClient()
-        return self._default_http_client
-
-    async def client_post(self, url, params=None, data=None):
-        """Send an http post request to the device."""
-        response_data = None
-        cookies = None
-        if self._session_cookie:
-            cookies = httpx.Cookies()
-            cookies.set(self.SESSION_COOKIE_NAME, self._session_cookie)
-        self._http_client.cookies.clear()
-        resp = await self._http_client.post(
-            url,
-            params=params,
-            data=data,
-            timeout=self._timeout,
-            cookies=cookies,
-        )
-        if resp.status_code == 200:
-            response_data = resp.content
-
-        return resp.status_code, response_data
-
     async def perform_handshake1(self) -> Tuple[bytes, bytes, bytes]:
         """Perform handshake1."""
         local_seed: bytes = secrets.token_bytes(16)
@@ -172,7 +143,7 @@ class KlapTransport(BaseTransport):
 
         url = f"http://{self._host}/app/handshake1"
 
-        response_status, response_data = await self.client_post(url, data=payload)
+        response_status, response_data = await self._http_client.post(url, data=payload)
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
@@ -268,7 +239,17 @@ class KlapTransport(BaseTransport):
 
         payload = self.handshake2_seed_auth_hash(local_seed, remote_seed, auth_hash)
 
-        response_status, response_data = await self.client_post(url, data=payload)
+        cookies_dict = (
+            {self.SESSION_COOKIE_NAME: self._session_cookie}
+            if self._session_cookie
+            else None
+        )
+
+        response_status, _ = await self._http_client.post(
+            url,
+            data=payload,
+            cookies_dict=cookies_dict,
+        )
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
@@ -298,7 +279,7 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
 
         local_seed, remote_seed, auth_hash = await self.perform_handshake1()
-        self._session_cookie = self._http_client.cookies.get(  # type: ignore
+        self._session_cookie = self._http_client.get_cookie(  # type: ignore
             self.SESSION_COOKIE_NAME
         )
         # The device returns a TIMEOUT cookie on handshake1 which
@@ -330,10 +311,16 @@ class KlapTransport(BaseTransport):
 
         url = f"http://{self._host}/app/request"
 
-        response_status, response_data = await self.client_post(
+        cookies_dict = (
+            {self.SESSION_COOKIE_NAME: self._session_cookie}
+            if self._session_cookie
+            else None
+        )
+        response_status, response_data = await self._http_client.post(
             url,
             params={"seq": seq},
             data=payload,
+            cookies_dict=cookies_dict,
         )
 
         msg = (
@@ -374,11 +361,8 @@ class KlapTransport(BaseTransport):
 
     async def close(self) -> None:
         """Close the transport."""
-        client = self._default_http_client
-        self._default_http_client = None
         self._handshake_done = False
-        if client:
-            await client.aclose()
+        await self._http_client.close()
 
     @staticmethod
     def generate_auth_hash(creds: Credentials):

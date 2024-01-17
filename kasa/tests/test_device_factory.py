@@ -145,7 +145,7 @@ async def test_connect_http_client(all_fixture_data, mocker):
     )
     dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
-        assert dev.protocol._transport._http_client != http_client
+        assert dev.protocol._transport._http_client.client != http_client
 
     config = DeviceConfig(
         host=host,
@@ -155,4 +155,4 @@ async def test_connect_http_client(all_fixture_data, mocker):
     )
     dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
-        assert dev.protocol._transport._http_client == http_client
+        assert dev.protocol._transport._http_client.client == http_client

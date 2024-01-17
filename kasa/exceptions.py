@@ -31,6 +31,10 @@ class TimeoutException(SmartDeviceException):
     """Timeout exception for device errors."""
 
 
+class ConnectionException(SmartDeviceException):
+    """Connection exception for device errors."""
+
+
 class SmartErrorCode(IntEnum):
     """Enum for SMART Error Codes."""
 

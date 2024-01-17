@@ -321,9 +321,9 @@ async def test_discover_single_http_client(discovery_mock, mocker):
     assert x.config.uses_http == (discovery_mock.default_port == 80)
 
     if discovery_mock.default_port == 80:
-        assert x.protocol._transport._http_client != http_client
+        assert x.protocol._transport._http_client.client != http_client
         x.config.http_client = http_client
-        assert x.protocol._transport._http_client == http_client
+        assert x.protocol._transport._http_client.client == http_client
 
 
 async def test_discover_http_client(discovery_mock, mocker):
@@ -338,6 +338,6 @@ async def test_discover_http_client(discovery_mock, mocker):
     assert x.config.uses_http == (discovery_mock.default_port == 80)
 
     if discovery_mock.default_port == 80:
-        assert x.protocol._transport._http_client != http_client
+        assert x.protocol._transport._http_client.client != http_client
         x.config.http_client = http_client
-        assert x.protocol._transport._http_client == http_client
+        assert x.protocol._transport._http_client.client == http_client

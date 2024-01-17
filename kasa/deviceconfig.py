@@ -2,9 +2,7 @@
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum
-from typing import Dict, Optional, Union
-
-import httpx
+from typing import Any, Dict, Optional, Union
 
 from .credentials import Credentials
 from .exceptions import SmartDeviceException
@@ -150,7 +148,7 @@ class DeviceConfig:
 
     # compare=False will be excluded from the serialization and object comparison.
     #: Set a custom http_client for the device to use.
-    http_client: Optional[httpx.AsyncClient] = field(default=None, compare=False)
+    http_client: Optional[Any] = field(default=None, compare=False)
 
     def __post_init__(self):
         if self.connection_type is None:

@@ -12,13 +12,12 @@ import uuid
 from pprint import pformat as pf
 from typing import Dict, Union
 
-import httpx
-
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
     SMART_TIMEOUT_ERRORS,
     AuthenticationException,
+    ConnectionException,
     RetryableException,
     SmartDeviceException,
     SmartErrorCode,
@@ -28,7 +27,6 @@ from .json import dumps as json_dumps
 from .protocol import BaseTransport, TPLinkProtocol, md5
 
 _LOGGER = logging.getLogger(__name__)
-logging.getLogger("httpx").propagate = False
 
 
 class SmartProtocol(TPLinkProtocol):
@@ -67,22 +65,11 @@ class SmartProtocol(TPLinkProtocol):
         for retry in range(retry_count + 1):
             try:
                 return await self._execute_query(request, retry)
-            except httpx.ConnectError as sdex:
+            except ConnectionException as sdex:
                 if retry >= retry_count:
                     await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
-                    raise SmartDeviceException(
-                        f"Unable to connect to the device: {self._host}: {sdex}"
-                    ) from sdex
-                continue
-            except TimeoutError as tex:
-                if retry >= retry_count:
-                    await self.close()
-                    raise SmartDeviceException(
-                        "Unable to connect to the device, "
-                        + f"timed out: {self._host}: {tex}"
-                    ) from tex
-                await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
+                    raise sdex
                 continue
             except AuthenticationException as auex:
                 await self.close()
@@ -104,21 +91,13 @@ class SmartProtocol(TPLinkProtocol):
                 await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
                 continue
             except SmartDeviceException as ex:
-                # Transport would have raised RetryableException if retry makes sense.
                 await self.close()
-                _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
-                raise ex
-            except Exception as ex:
-                if retry >= retry_count:
-                    await self.close()
-                    _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
-                    raise SmartDeviceException(
-                        f"Unable to connect to the device: {self._host}: {ex}"
-                    ) from ex
                 _LOGGER.debug(
-                    "Unable to query the device %s, retrying: %s", self._host, ex
+                    "Unable to query the device: %s, not retrying: %s",
+                    self._host,
+                    ex,
                 )
-                continue
+                raise ex
 
         # make mypy happy, this should never be reached..
         raise SmartDeviceException("Query reached somehow to unreachable")
