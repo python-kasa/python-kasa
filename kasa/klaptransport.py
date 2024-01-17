@@ -48,7 +48,7 @@ import logging
 import secrets
 import time
 from pprint import pformat as pf
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -117,7 +117,7 @@ class KlapTransport(BaseTransport):
         self._encryption_session: Optional[KlapEncryptionSession] = None
         self._session_expire_at: Optional[float] = None
 
-        self._session_cookie = None
+        self._session_cookie: Optional[Dict[str, Any]] = None
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
 
@@ -239,16 +239,10 @@ class KlapTransport(BaseTransport):
 
         payload = self.handshake2_seed_auth_hash(local_seed, remote_seed, auth_hash)
 
-        cookies_dict = (
-            {self.SESSION_COOKIE_NAME: self._session_cookie}
-            if self._session_cookie
-            else None
-        )
-
         response_status, _ = await self._http_client.post(
             url,
             data=payload,
-            cookies_dict=cookies_dict,
+            cookies_dict=self._session_cookie,
         )
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -279,9 +273,10 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
 
         local_seed, remote_seed, auth_hash = await self.perform_handshake1()
-        self._session_cookie = self._http_client.get_cookie(  # type: ignore
+        if cookie := self._http_client.get_cookie(  # type: ignore
             self.SESSION_COOKIE_NAME
-        )
+        ):
+            self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
         # The device returns a TIMEOUT cookie on handshake1 which
         # it doesn't like to get back so we store the one we want
 
@@ -311,16 +306,11 @@ class KlapTransport(BaseTransport):
 
         url = f"http://{self._host}/app/request"
 
-        cookies_dict = (
-            {self.SESSION_COOKIE_NAME: self._session_cookie}
-            if self._session_cookie
-            else None
-        )
         response_status, response_data = await self._http_client.post(
             url,
             params={"seq": seq},
             data=payload,
-            cookies_dict=cookies_dict,
+            cookies_dict=self._session_cookie,
         )
 
         msg = (

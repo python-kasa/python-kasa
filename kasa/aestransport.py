@@ -8,7 +8,7 @@ import base64
 import hashlib
 import logging
 import time
-from typing import Optional
+from typing import Dict, Optional
 
 from cryptography.hazmat.primitives import padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
@@ -82,7 +82,7 @@ class AesTransport(BaseTransport):
         self._encryption_session: Optional[AesEncyptionSession] = None
         self._session_expire_at: Optional[float] = None
 
-        self._session_cookie = None
+        self._session_cookie: Optional[Dict[str, str]] = None
 
         self._login_token = None
 
@@ -146,16 +146,11 @@ class AesTransport(BaseTransport):
             "method": "securePassthrough",
             "params": {"request": encrypted_payload.decode()},
         }
-        cookies_dict = (
-            {self.SESSION_COOKIE_NAME: self._session_cookie}
-            if self._session_cookie
-            else None
-        )
         status_code, resp_dict = await self._http_client.post(
             url,
             json=passthrough_request,
             headers=self.COMMON_HEADERS,
-            cookies_dict=cookies_dict,
+            cookies_dict=self._session_cookie,
         )
         # _LOGGER.debug(f"secure_passthrough response is {status_code}: {resp_dict}")
 
@@ -213,16 +208,11 @@ class AesTransport(BaseTransport):
 
         _LOGGER.debug(f"Request {request_body}")
 
-        cookies_dict = (
-            {self.SESSION_COOKIE_NAME: self._session_cookie}
-            if self._session_cookie
-            else None
-        )
         status_code, resp_dict = await self._http_client.post(
             url,
             json=request_body,
             headers=self.COMMON_HEADERS,
-            cookies_dict=cookies_dict,
+            cookies_dict=self._session_cookie,
         )
 
         _LOGGER.debug(f"Device responded with: {resp_dict}")
@@ -237,11 +227,16 @@ class AesTransport(BaseTransport):
 
         handshake_key = resp_dict["result"]["key"]
 
-        self._session_cookie = self._http_client.get_cookie(self.SESSION_COOKIE_NAME)
-        if not self._session_cookie:
-            self._session_cookie = self._http_client.get_cookie(  # type: ignore
+        if (
+            cookie := self._http_client.get_cookie(  # type: ignore
+                self.SESSION_COOKIE_NAME
+            )
+        ) or (
+            cookie := self._http_client.get_cookie(  # type: ignore
                 "SESSIONID"
             )
+        ):
+            self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
         self._session_expire_at = time.time() + 86400
         self._encryption_session = AesEncyptionSession.create_from_keypair(
