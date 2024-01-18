@@ -13,7 +13,12 @@ import pytest
 from ..aestransport import AesTransport
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
-from ..exceptions import AuthenticationException, SmartDeviceException
+from ..exceptions import (
+    AuthenticationException,
+    ConnectionException,
+    SmartDeviceException,
+)
+from ..httpclient import HttpClient
 from ..iotprotocol import IotProtocol
 from ..klaptransport import (
     KlapEncryptionSession,
@@ -35,8 +40,8 @@ class _mock_response:
 @pytest.mark.parametrize(
     "error, retry_expectation",
     [
-        (Exception("dummy exception"), True),
-        (SmartDeviceException("dummy exception"), False),
+        (Exception("dummy exception"), False),
+        (httpx.TimeoutException("dummy exception"), True),
         (httpx.ConnectError("dummy exception"), True),
     ],
     ids=("Exception", "SmartDeviceException", "httpx.ConnectError"),
@@ -89,7 +94,7 @@ async def test_protocol_retry_recoverable_error(
     conn = mocker.patch.object(
         httpx.AsyncClient,
         "post",
-        side_effect=httpx.CloseError("foo"),
+        side_effect=httpx.ConnectError("foo"),
     )
     config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
@@ -112,7 +117,7 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
         nonlocal remaining
         remaining -= 1
         if remaining:
-            raise Exception("Simulated post failure")
+            raise ConnectionException("Simulated connection failure")
 
         return mock_response
 
@@ -155,7 +160,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
     protocol._transport._handshake_done = True
     protocol._transport._session_expire_at = time.time() + 86400
     protocol._transport._encryption_session = encryption_session
-    mocker.patch.object(KlapTransport, "client_post", side_effect=_return_encrypted)
+    mocker.patch.object(HttpClient, "post", side_effect=_return_encrypted)
 
     response = await protocol.query({})
     assert response == {"great": "success"}

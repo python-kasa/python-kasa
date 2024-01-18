@@ -30,7 +30,6 @@ from dataclasses import asdict, dataclass
 from typing import List, Optional, Union
 
 _LOGGER = logging.getLogger(__name__)
-logging.getLogger("httpx").propagate = False
 
 
 class SmartRequest:
