@@ -3,7 +3,7 @@ import logging
 import re
 import socket
 
-import httpx
+import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
@@ -314,7 +314,7 @@ async def test_discover_single_http_client(discovery_mock, mocker):
     host = "127.0.0.1"
     discovery_mock.ip = host
 
-    http_client = httpx.AsyncClient()
+    http_client = aiohttp.ClientSession()
 
     x: SmartDevice = await Discover.discover_single(host)
 
@@ -331,7 +331,7 @@ async def test_discover_http_client(discovery_mock, mocker):
     host = "127.0.0.1"
     discovery_mock.ip = host
 
-    http_client = httpx.AsyncClient()
+    http_client = aiohttp.ClientSession()
 
     devices = await Discover.discover(discovery_timeout=0)
     x: SmartDevice = devices[host]

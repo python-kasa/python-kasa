@@ -8,7 +8,6 @@ import time
 from contextlib import nullcontext as does_not_raise
 from itertools import chain
 
-import httpx
 import pytest
 
 from ..aestransport import AesTransport
