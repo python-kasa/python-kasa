@@ -296,6 +296,16 @@ class KlapTransport(BaseTransport):
             or self._session_expire_at - time.time() <= 0
         )
 
+    def _generate_send_log_message(
+        self, seq: int, response_status: int, request: str
+    ) -> str:
+        """Generate a log message for a send."""
+        return (
+            f"at {datetime.datetime.now()}.  Host is {self._host}, "
+            + f"Sequence is {seq}, "
+            + f"Response status is {response_status}, Request was {request}"
+        )
+
     async def send(self, request: str):
         """Send the request."""
         if not self._handshake_done or self._handshake_session_expired():
@@ -314,13 +324,11 @@ class KlapTransport(BaseTransport):
             cookies_dict=self._session_cookie,
         )
 
-        msg = (
-            f"at {datetime.datetime.now()}.  Host is {self._host}, "
-            + f"Sequence is {seq}, "
-            + f"Response status is {response_status}, Request was {request}"
-        )
         if response_status != 200:
-            _LOGGER.error("Query failed after succesful authentication " + msg)
+            _LOGGER.error(
+                "Query failed after successful authentication "
+                + self._generate_send_log_message(seq, response_status, request)
+            )
             # If we failed with a security error, force a new handshake next time.
             if response_status == 403:
                 self._handshake_done = False
@@ -334,7 +342,12 @@ class KlapTransport(BaseTransport):
                     + f"request with seq {seq}"
                 )
         else:
-            _LOGGER.debug("Query posted " + msg)
+            debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+            if debug_enabled:
+                _LOGGER.debug(
+                    "Query posted "
+                    + self._generate_send_log_message(seq, response_status, request)
+                )
 
             # Check for mypy
             if self._encryption_session is not None:
@@ -342,11 +355,12 @@ class KlapTransport(BaseTransport):
 
             json_payload = json_loads(decrypted_response)
 
-            _LOGGER.debug(
-                "%s << %s",
-                self._host,
-                _LOGGER.isEnabledFor(logging.DEBUG) and pf(json_payload),
-            )
+            if debug_enabled:
+                _LOGGER.debug(
+                    "%s << %s",
+                    self._host,
+                    pf(json_payload),
+                )
 
             return json_payload
 
