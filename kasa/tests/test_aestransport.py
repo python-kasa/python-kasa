@@ -5,7 +5,7 @@ from contextlib import nullcontext as does_not_raise
 from json import dumps as json_dumps
 from json import loads as json_loads
 
-import httpx
+import aiohttp
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
@@ -19,6 +19,7 @@ from ..exceptions import (
     SmartDeviceException,
     SmartErrorCode,
 )
+from ..httpclient import HttpClient
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
@@ -57,7 +58,7 @@ async def test_handshake(
 ):
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
-    mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
 
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
@@ -75,7 +76,7 @@ async def test_handshake(
 async def test_login(mocker, status_code, error_code, inner_error_code, expectation):
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
-    mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
 
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
@@ -94,7 +95,7 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
 async def test_send(mocker, status_code, error_code, inner_error_code, expectation):
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, status_code, error_code, inner_error_code)
-    mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
 
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
@@ -123,7 +124,7 @@ ERRORS = [e for e in SmartErrorCode if e != 0]
 async def test_passthrough_errors(mocker, error_code):
     host = "127.0.0.1"
     mock_aes_device = MockAesDevice(host, 200, error_code, 0)
-    mocker.patch.object(httpx.AsyncClient, "post", side_effect=mock_aes_device.post)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
 
     config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
     transport = AesTransport(config=config)
@@ -145,12 +146,18 @@ async def test_passthrough_errors(mocker, error_code):
 
 class MockAesDevice:
     class _mock_response:
-        def __init__(self, status_code, json: dict):
-            self.status_code = status_code
+        def __init__(self, status, json: dict):
+            self.status = status
             self._json = json
 
-        def json(self):
-            return self._json
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_t, exc_v, exc_tb):
+            pass
+
+        async def read(self):
+            return json_dumps(self._json).encode()
 
     encryption_session = AesEncyptionSession(KEY_IV[:16], KEY_IV[16:])
     token = "test_token"  # noqa
@@ -160,6 +167,7 @@ class MockAesDevice:
         self.status_code = status_code
         self.error_code = error_code
         self.inner_error_code = inner_error_code
+        self.http_client = HttpClient(DeviceConfig(self.host))
 
     async def post(self, url, params=None, json=None, *_, **__):
         return await self._post(url, json)
@@ -193,7 +201,9 @@ class MockAesDevice:
         decrypted_request = self.encryption_session.decrypt(encrypted_request.encode())
         decrypted_request_dict = json_loads(decrypted_request)
         decrypted_response = await self._post(url, decrypted_request_dict)
-        decrypted_response_dict = decrypted_response.json()
+        async with decrypted_response:
+            response_data = await decrypted_response.read()
+            decrypted_response_dict = json_loads(response_data.decode())
         encrypted_response = self.encryption_session.encrypt(
             json_dumps(decrypted_response_dict).encode()
         )

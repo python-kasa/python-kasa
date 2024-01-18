@@ -27,7 +27,7 @@ asyncclick = ">=8"
 pydantic = ">=1"
 cryptography = ">=1.9"
 async-timeout = ">=3.0.0"
-httpx = ">=0.25.0"
+aiohttp = ">=3"
 
 # speed ups
 orjson = { "version" = ">=3.9.1", optional = true }
