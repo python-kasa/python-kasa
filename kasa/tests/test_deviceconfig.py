@@ -12,7 +12,7 @@ from kasa.deviceconfig import (
 )
 
 
-def test_serialization():
+async def test_serialization():
     config = DeviceConfig(host="Foo", http_client=aiohttp.ClientSession())
     config_dict = config.to_dict()
     config_json = json_dumps(config_dict)
@@ -21,7 +21,7 @@ def test_serialization():
     assert config == config2
 
 
-def test_credentials_hash():
+async def test_credentials_hash():
     config = DeviceConfig(
         host="Foo",
         http_client=aiohttp.ClientSession(),
@@ -35,7 +35,7 @@ def test_credentials_hash():
     assert config2.credentials is None
 
 
-def test_blank_credentials_hash():
+async def test_blank_credentials_hash():
     config = DeviceConfig(
         host="Foo",
         http_client=aiohttp.ClientSession(),
@@ -49,7 +49,7 @@ def test_blank_credentials_hash():
     assert config2.credentials is None
 
 
-def test_exclude_credentials():
+async def test_exclude_credentials():
     config = DeviceConfig(
         host="Foo",
         http_client=aiohttp.ClientSession(),
