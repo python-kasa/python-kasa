@@ -356,11 +356,7 @@ class KlapTransport(BaseTransport):
             json_payload = json_loads(decrypted_response)
 
             if debug_enabled:
-                _LOGGER.debug(
-                    "%s << %s",
-                    self._host,
-                    pf(json_payload),
-                )
+                _LOGGER.debug("%s << %s", self._host, pf(json_payload))
 
             return json_payload
 
