@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 class IotProtocol(TPLinkProtocol):
     """Class for the legacy TPLink IOT KASA Protocol."""
 
-    SLEEP_SECONDS_AFTER_TIMEOUT = 1
+    BACKOFF_SECONDS_AFTER_TIMEOUT = 1
 
     def __init__(
         self,
@@ -67,7 +67,7 @@ class IotProtocol(TPLinkProtocol):
                     await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
-                await asyncio.sleep(self.SLEEP_SECONDS_AFTER_TIMEOUT)
+                await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
             except SmartDeviceException as ex:
                 await self.close()

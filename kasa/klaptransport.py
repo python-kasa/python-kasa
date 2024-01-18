@@ -48,7 +48,7 @@ import logging
 import secrets
 import time
 from pprint import pformat as pf
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -56,7 +56,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
 from .exceptions import AuthenticationException, SmartDeviceException
-from .httpclientsession import HttpClientSession
+from .httpclient import HttpClient
 from .json import loads as json_loads
 from .protocol import BaseTransport, md5
 
@@ -97,7 +97,7 @@ class KlapTransport(BaseTransport):
     ) -> None:
         super().__init__(config=config)
 
-        self._http_client = HttpClientSession(config)
+        self._http_client = HttpClient(config)
         self._local_seed: Optional[bytes] = None
         if (
             not self._credentials or self._credentials.username is None
@@ -160,6 +160,7 @@ class KlapTransport(BaseTransport):
                 f"Device {self._host} responded with {response_status} to handshake1"
             )
 
+        response_data = cast(bytes, response_data)
         remote_seed: bytes = response_data[0:16]
         server_hash = response_data[16:]
 

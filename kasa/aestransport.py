@@ -8,7 +8,7 @@ import base64
 import hashlib
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 from cryptography.hazmat.primitives import padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
@@ -27,7 +27,7 @@ from .exceptions import (
     SmartErrorCode,
     TimeoutException,
 )
-from .httpclientsession import HttpClientSession
+from .httpclient import HttpClient
 from .json import dumps as json_dumps
 from .json import loads as json_loads
 from .protocol import BaseTransport
@@ -75,7 +75,7 @@ class AesTransport(BaseTransport):
                 base64.b64decode(self._credentials_hash.encode()).decode()  # type: ignore[union-attr]
             )
 
-        self._http_client: HttpClientSession = HttpClientSession(config)
+        self._http_client: HttpClient = HttpClient(config)
 
         self._handshake_done = False
 
@@ -160,6 +160,7 @@ class AesTransport(BaseTransport):
                 + f"status code {status_code} to passthrough"
             )
 
+        resp_dict = cast(Dict, resp_dict)
         self._handle_response_error_code(
             resp_dict, "Error sending secure_passthrough message"
         )

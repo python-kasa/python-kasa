@@ -1,6 +1,6 @@
 """Module for HttpClientSession class."""
 import logging
-from typing import Dict, Optional, Type
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import httpx
 
@@ -12,34 +12,35 @@ logging.getLogger("httpx").propagate = False
 InnerHttpType = Type[httpx.AsyncClient]
 
 
-class HttpClientSession:
-    """HttpClientSession Class."""
+class HttpClient:
+    """HttpClient Class."""
 
     def __init__(self, config: DeviceConfig) -> None:
         self._config = config
-        self._default_client: httpx.AsyncClient = None
+        self._client: httpx.AsyncClient = None
 
     @property
-    def client(self):
+    def client(self) -> httpx.AsyncClient:
         """Return the underlying http client."""
         if self._config.http_client and issubclass(
             self._config.http_client.__class__, httpx.AsyncClient
         ):
             return self._config.http_client
 
-        if not self._default_client:
-            self._default_client = httpx.AsyncClient()
-        return self._default_client
+        if not self._client:
+            self._client = httpx.AsyncClient()
+        return self._client
 
     async def post(
         self,
-        url,
-        params=None,
-        data=None,
-        json=None,
-        headers=None,
+        url: str,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[bytes] = None,
+        json: Optional[Dict] = None,
+        headers: Optional[Dict[str, str]] = None,
         cookies_dict: Optional[Dict[str, str]] = None,
-    ):
+    ) -> Tuple[int, Optional[Union[Dict, bytes]]]:
         """Send an http post request to the device."""
         response_data = None
         cookies = None
@@ -76,13 +77,13 @@ class HttpClientSession:
 
         return resp.status_code, response_data
 
-    def get_cookie(self, cookie_name):
+    def get_cookie(self, cookie_name: str) -> str:
         """Return the cookie with cookie_name."""
-        return self._default_client.cookies.get(cookie_name)
+        return self._client.cookies.get(cookie_name)
 
     async def close(self) -> None:
         """Close the protocol."""
-        client = self._default_client
-        self._default_client = None
+        client = self._client
+        self._client = None
         if client:
             await client.aclose()

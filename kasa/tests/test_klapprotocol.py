@@ -18,7 +18,7 @@ from ..exceptions import (
     ConnectionException,
     SmartDeviceException,
 )
-from ..httpclientsession import HttpClientSession
+from ..httpclient import HttpClient
 from ..iotprotocol import IotProtocol
 from ..klaptransport import (
     KlapEncryptionSession,
@@ -160,7 +160,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
     protocol._transport._handshake_done = True
     protocol._transport._session_expire_at = time.time() + 86400
     protocol._transport._encryption_session = encryption_session
-    mocker.patch.object(HttpClientSession, "post", side_effect=_return_encrypted)
+    mocker.patch.object(HttpClient, "post", side_effect=_return_encrypted)
 
     response = await protocol.query({})
     assert response == {"great": "success"}
