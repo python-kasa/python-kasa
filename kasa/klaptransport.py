@@ -315,7 +315,7 @@ class KlapTransport(BaseTransport):
         )
 
         msg = (
-            f"at {datetime.datetime.now()}.  Host is {self._host}, "
+            f"Host is {self._host}, "
             + f"Sequence is {seq}, "
             + f"Response status is {response_status}, Request was {request}"
         )
