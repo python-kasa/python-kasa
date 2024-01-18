@@ -2,7 +2,7 @@
 import logging
 from typing import Type
 
-import httpx
+import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
@@ -138,14 +138,14 @@ async def test_connect_http_client(all_fixture_data, mocker):
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
 
-    http_client = httpx.AsyncClient()
+    http_client = aiohttp.ClientSession()
 
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
     dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
-        assert dev.protocol._transport._http_client != http_client
+        assert dev.protocol._transport._http_client.client != http_client
 
     config = DeviceConfig(
         host=host,
@@ -155,4 +155,4 @@ async def test_connect_http_client(all_fixture_data, mocker):
     )
     dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
-        assert dev.protocol._transport._http_client == http_client
+        assert dev.protocol._transport._http_client.client == http_client

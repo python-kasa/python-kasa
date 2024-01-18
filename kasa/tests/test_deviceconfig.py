@@ -1,7 +1,7 @@
 from json import dumps as json_dumps
 from json import loads as json_loads
 
-import httpx
+import aiohttp
 import pytest
 
 from kasa.credentials import Credentials
@@ -14,8 +14,8 @@ from kasa.deviceconfig import (
 from kasa.exceptions import SmartDeviceException
 
 
-def test_serialization():
-    config = DeviceConfig(host="Foo", http_client=httpx.AsyncClient())
+async def test_serialization():
+    config = DeviceConfig(host="Foo", http_client=aiohttp.ClientSession())
     config_dict = config.to_dict()
     config_json = json_dumps(config_dict)
     config2_dict = json_loads(config_json)
@@ -36,10 +36,10 @@ def test_deserialization_errors(input_value, expected_msg):
         DeviceConfig.from_dict(input_value)
 
 
-def test_credentials_hash():
+async def test_credentials_hash():
     config = DeviceConfig(
         host="Foo",
-        http_client=httpx.AsyncClient(),
+        http_client=aiohttp.ClientSession(),
         credentials=Credentials("foo", "bar"),
     )
     config_dict = config.to_dict(credentials_hash="credhash")
@@ -50,10 +50,10 @@ def test_credentials_hash():
     assert config2.credentials is None
 
 
-def test_blank_credentials_hash():
+async def test_blank_credentials_hash():
     config = DeviceConfig(
         host="Foo",
-        http_client=httpx.AsyncClient(),
+        http_client=aiohttp.ClientSession(),
         credentials=Credentials("foo", "bar"),
     )
     config_dict = config.to_dict(credentials_hash="")
@@ -64,10 +64,10 @@ def test_blank_credentials_hash():
     assert config2.credentials is None
 
 
-def test_exclude_credentials():
+async def test_exclude_credentials():
     config = DeviceConfig(
         host="Foo",
-        http_client=httpx.AsyncClient(),
+        http_client=aiohttp.ClientSession(),
         credentials=Credentials("foo", "bar"),
     )
     config_dict = config.to_dict(exclude_credentials=True)

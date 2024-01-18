@@ -7,13 +7,18 @@ import sys
 import time
 from contextlib import nullcontext as does_not_raise
 
-import httpx
+import aiohttp
 import pytest
 
 from ..aestransport import AesTransport
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
-from ..exceptions import AuthenticationException, SmartDeviceException
+from ..exceptions import (
+    AuthenticationException,
+    ConnectionException,
+    SmartDeviceException,
+)
+from ..httpclient import HttpClient
 from ..iotprotocol import IotProtocol
 from ..klaptransport import (
     KlapEncryptionSession,
@@ -27,19 +32,28 @@ DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
 
 class _mock_response:
-    def __init__(self, status_code, content: bytes):
-        self.status_code = status_code
+    def __init__(self, status, content: bytes):
+        self.status = status
         self.content = content
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_t, exc_v, exc_tb):
+        pass
+
+    async def read(self):
+        return self.content
 
 
 @pytest.mark.parametrize(
     "error, retry_expectation",
     [
-        (Exception("dummy exception"), True),
-        (SmartDeviceException("dummy exception"), False),
-        (httpx.ConnectError("dummy exception"), True),
+        (Exception("dummy exception"), False),
+        (aiohttp.ServerTimeoutError("dummy exception"), True),
+        (aiohttp.ClientOSError("dummy exception"), True),
     ],
-    ids=("Exception", "SmartDeviceException", "httpx.ConnectError"),
+    ids=("Exception", "SmartDeviceException", "ConnectError"),
 )
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
@@ -48,7 +62,7 @@ async def test_protocol_retries(
     mocker, retry_count, protocol_class, transport_class, error, retry_expectation
 ):
     host = "127.0.0.1"
-    conn = mocker.patch.object(httpx.AsyncClient, "post", side_effect=error)
+    conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=error)
 
     config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
@@ -67,7 +81,7 @@ async def test_protocol_no_retry_on_connection_error(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(
-        httpx.AsyncClient,
+        aiohttp.ClientSession,
         "post",
         side_effect=AuthenticationException("foo"),
     )
@@ -87,9 +101,9 @@ async def test_protocol_retry_recoverable_error(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(
-        httpx.AsyncClient,
+        aiohttp.ClientSession,
         "post",
-        side_effect=httpx.CloseError("foo"),
+        side_effect=aiohttp.ClientOSError("foo"),
     )
     config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
@@ -112,7 +126,7 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
         nonlocal remaining
         remaining -= 1
         if remaining:
-            raise Exception("Simulated post failure")
+            raise ConnectionException("Simulated connection failure")
 
         return mock_response
 
@@ -155,7 +169,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
     protocol._transport._handshake_done = True
     protocol._transport._session_expire_at = time.time() + 86400
     protocol._transport._encryption_session = encryption_session
-    mocker.patch.object(KlapTransport, "client_post", side_effect=_return_encrypted)
+    mocker.patch.object(HttpClient, "post", side_effect=_return_encrypted)
 
     response = await protocol.query({})
     assert response == {"great": "success"}
@@ -235,7 +249,7 @@ async def test_handshake1(
     device_auth_hash = transport_class.generate_auth_hash(device_credentials)
 
     mocker.patch.object(
-        httpx.AsyncClient, "post", side_effect=_return_handshake1_response
+        aiohttp.ClientSession, "post", side_effect=_return_handshake1_response
     )
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
@@ -294,12 +308,12 @@ async def test_handshake(
     device_auth_hash = transport_class.generate_auth_hash(client_credentials)
 
     mocker.patch.object(
-        httpx.AsyncClient, "post", side_effect=_return_handshake_response
+        aiohttp.ClientSession, "post", side_effect=_return_handshake_response
     )
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
     protocol = IotProtocol(transport=transport_class(config=config))
-    protocol._transport.http_client = httpx.AsyncClient()
+    protocol._transport.http_client = aiohttp.ClientSession()
 
     response_status = 200
     await protocol._transport.perform_handshake()
@@ -342,7 +356,7 @@ async def test_query(mocker):
     client_credentials = Credentials("foo", "bar")
     device_auth_hash = KlapTransport.generate_auth_hash(client_credentials)
 
-    mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
     protocol = IotProtocol(transport=KlapTransport(config=config))
@@ -387,7 +401,7 @@ async def test_authentication_failures(mocker, response_status, expectation):
     client_credentials = Credentials("foo", "bar")
     device_auth_hash = KlapTransport.generate_auth_hash(client_credentials)
 
-    mocker.patch.object(httpx.AsyncClient, "post", side_effect=_return_response)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
     protocol = IotProtocol(transport=KlapTransport(config=config))
