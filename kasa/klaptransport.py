@@ -320,7 +320,7 @@ class KlapTransport(BaseTransport):
             + f"Response status is {response_status}, Request was {request}"
         )
         if response_status != 200:
-            _LOGGER.error("Query failed after succesful authentication " + msg)
+            _LOGGER.error("Query failed after successful authentication " + msg)
             # If we failed with a security error, force a new handshake next time.
             if response_status == 403:
                 self._handshake_done = False
@@ -351,9 +351,8 @@ class KlapTransport(BaseTransport):
             return json_payload
 
     async def close(self) -> None:
-        """Close the transport."""
+        """Mark the handshake as not done since we likely lost the connection."""
         self._handshake_done = False
-        await self._http_client.close()
 
     @staticmethod
     def generate_auth_hash(creds: Credentials):
