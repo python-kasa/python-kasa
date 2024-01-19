@@ -1,51 +1,35 @@
 {
-    "emeter": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
-    "smartlife.iot.common.emeter": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
-    "smartlife.iot.dimmer": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
-    "smartlife.iot.smartbulb.lightingservice": {
-        "err_code": -1,
-        "err_msg": "module not support"
-    },
     "system": {
         "get_sysinfo": {
-            "alias": "TP-LINK_Power Strip_CF69",
+            "alias": "#MASKED_NAME#",
             "child_num": 3,
             "children": [
                 {
-                    "alias": "Plug 1",
-                    "id": "00",
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7700",
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 302,
+                    "on_time": 79701,
                     "state": 1
                 },
                 {
-                    "alias": "Plug 2",
-                    "id": "01",
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7701",
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 0,
-                    "state": 0
+                    "on_time": 79700,
+                    "state": 1
                 },
                 {
-                    "alias": "Plug 3",
-                    "id": "02",
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7702",
                     "next_action": {
                         "type": -1
                     },
-                    "on_time": 0,
-                    "state": 0
+                    "on_time": 1484408,
+                    "state": 1
                 }
             ],
             "deviceId": "0000000000000000000000000000000000000000",
@@ -54,14 +38,14 @@
             "hwId": "00000000000000000000000000000000",
             "hw_ver": "1.0",
             "latitude_i": 0,
-            "led_off": 0,
+            "led_off": 1,
             "longitude_i": 0,
-            "mac": "00:00:00:00:00:00",
+            "mac": "1C:3B:F3:00:00:00",
             "mic_type": "IOT.SMARTPLUGSWITCH",
             "model": "KP303(UK)",
             "ntc_state": 0,
             "oemId": "00000000000000000000000000000000",
-            "rssi": -63,
+            "rssi": -68,
             "status": "new",
             "sw_ver": "1.0.3 Build 191105 Rel.113122",
             "updating": 0

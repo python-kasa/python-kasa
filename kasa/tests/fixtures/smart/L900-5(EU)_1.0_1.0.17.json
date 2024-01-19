@@ -110,7 +110,7 @@
         "factory_default": false,
         "ip": "127.0.0.123",
         "is_support_iot_cloud": true,
-        "mac": "00-00-00-00-00-00",
+        "mac": "A8-42-A1-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "AES",
             "http_port": 80,
@@ -141,7 +141,7 @@
     "get_device_info": {
         "avatar": "",
         "brightness": 100,
-        "color_temp": 9000,
+        "color_temp": 0,
         "color_temp_range": [
             9000,
             9000
@@ -149,18 +149,18 @@
         "default_states": {
             "state": {
                 "brightness": 100,
-                "color_temp": 9000,
-                "hue": 0,
-                "saturation": 100
+                "color_temp": 0,
+                "hue": 354,
+                "saturation": 93
             },
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": true,
+        "device_on": false,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.0.17 Build 230426 Rel.153230",
         "has_set_location_info": false,
-        "hue": 0,
+        "hue": 354,
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "1.0",
         "ip": "127.0.0.123",
@@ -175,7 +175,7 @@
             "name": "station"
         },
         "longitude": 0,
-        "mac": "00-00-00-00-00-00",
+        "mac": "A8-42-A1-00-00-00",
         "model": "L900",
         "music_rhythm_enable": false,
         "music_rhythm_mode": "single_lamp",
@@ -183,8 +183,8 @@
         "oem_id": "00000000000000000000000000000000",
         "overheated": false,
         "region": "Europe/Berlin",
-        "rssi": -50,
-        "saturation": 100,
+        "rssi": -55,
+        "saturation": 93,
         "signal_level": 2,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
@@ -194,23 +194,23 @@
     "get_device_time": {
         "region": "Europe/Berlin",
         "time_diff": 0,
-        "timestamp": 1704389578
+        "timestamp": 1705699997
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 5,
-            "past7": 5,
-            "today": 5
+            "past30": 15,
+            "past7": 0,
+            "today": 0
         },
         "saved_power": {
-            "past30": 17,
-            "past7": 17,
-            "today": 17
+            "past30": 81,
+            "past7": 1,
+            "today": 0
         },
         "time_usage": {
-            "past30": 22,
-            "past7": 22,
-            "today": 22
+            "past30": 96,
+            "past7": 1,
+            "today": 0
         }
     },
     "get_fw_download_state": {
@@ -221,6 +221,84 @@
         "upgrade_time": 5
     },
     "get_inherit_info": null,
+    "get_lighting_effect": {
+        "brightness": 50,
+        "custom": 0,
+        "direction": 1,
+        "display_colors": [],
+        "duration": 0,
+        "enable": 0,
+        "expansion_strategy": 2,
+        "id": "",
+        "name": "station",
+        "repeat_times": 1,
+        "segment_length": 1,
+        "sequence": [
+            [
+                300,
+                100,
+                50
+            ],
+            [
+                240,
+                100,
+                50
+            ],
+            [
+                180,
+                100,
+                50
+            ],
+            [
+                120,
+                100,
+                50
+            ],
+            [
+                60,
+                100,
+                50
+            ],
+            [
+                0,
+                100,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ]
+        ],
+        "spread": 16,
+        "transition": 400,
+        "type": "sequence"
+    },
     "get_next_event": {},
     "get_on_off_gradually_info": {
         "enable": false
