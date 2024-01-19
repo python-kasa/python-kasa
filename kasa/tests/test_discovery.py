@@ -198,9 +198,9 @@ async def test_discover_send(mocker):
     """Test discovery parameters."""
     proto = _DiscoverProtocol()
     assert proto.discovery_packets == 3
-    assert proto.target == ("255.255.255.255", 9999)
+    assert proto.target_1 == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
-    proto.do_discover()
+    await proto.do_discover()
     assert transport.sendto.call_count == proto.discovery_packets * 2
 
 
