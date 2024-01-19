@@ -1,54 +1,20 @@
 # Changelog
 
-## [0.6.0.dev2](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev2) (2024-01-11)
+## [0.6.0](https://github.com/python-kasa/python-kasa/tree/0.6.0) (2024-01-19)
 
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.0.dev1...0.6.0.dev2)
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.4...0.6.0)
 
-**Documentation updates:**
+This major brings major changes to the library by adding support for devices that require authentication for communications, all of this being possible thanks to the great work by @sdb9696!
 
-- Update docs for newer devices and DeviceConfig [\#614](https://github.com/python-kasa/python-kasa/pull/614) (@sdb9696)
+This release adds support to a large range of previously unsupported devices, including:
+* Newer kasa-branded devices, including Matter-enabled devices like KP125M
+* Newer hardware/firmware versions on some models, like EP25, that suddenly changed the used protocol
+* Tapo-branded devices like plugs (P110), light bulbs (KL530), LED strips (L900, L920), and wall switches (KS205, KS225)
+* UK variant of HS110, which was the first device using the new protocol
 
-**Merged pull requests:**
+If your device that is not currently listed as supported is working, please consider contributing a test fixture file.
 
-- Raise TimeoutException on discover\_single timeout [\#632](https://github.com/python-kasa/python-kasa/pull/632) (@sdb9696)
-- Add L900-10 fixture and it's additional component requests [\#629](https://github.com/python-kasa/python-kasa/pull/629) (@sdb9696)
-- Avoid recreating struct each request in legacy protocol [\#628](https://github.com/python-kasa/python-kasa/pull/628) (@bdraco)
-- Return alias as None for new discovery devices before update [\#627](https://github.com/python-kasa/python-kasa/pull/627) (@sdb9696)
-- Update config to\_dict to exclude credentials if the hash is empty string [\#626](https://github.com/python-kasa/python-kasa/pull/626) (@sdb9696)
-- Improve test coverage [\#625](https://github.com/python-kasa/python-kasa/pull/625) (@sdb9696)
-
-## [0.6.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev1) (2024-01-05)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.0.dev0...0.6.0.dev1)
-
-**Implemented enhancements:**
-
-- Get child emeters with CLI [\#623](https://github.com/python-kasa/python-kasa/pull/623) (@Obbay2)
-- Avoid linear search for emeter realtime and emeter\_today [\#622](https://github.com/python-kasa/python-kasa/pull/622) (@bdraco)
-- Add update-credentials command [\#620](https://github.com/python-kasa/python-kasa/pull/620) (@rytilahti)
-
-**Fixed bugs:**
-
-- Check the ct range for color temp support [\#619](https://github.com/python-kasa/python-kasa/pull/619) (@rytilahti)
-- Fix cli discover bug with None username/password [\#615](https://github.com/python-kasa/python-kasa/pull/615) (@sdb9696)
-
-**Closed issues:**
-
-- Need to do error code checking for new protocols [\#612](https://github.com/python-kasa/python-kasa/issues/612)
-- Support of last firmware update version 1.3.0 [\#611](https://github.com/python-kasa/python-kasa/issues/611)
-- Implement energy and usage for individual plugs in HS300 [\#462](https://github.com/python-kasa/python-kasa/issues/462)
-
-**Merged pull requests:**
-
-- Release 0.6.0.dev1 [\#624](https://github.com/python-kasa/python-kasa/pull/624) (@rytilahti)
-- Add P125M and update EP25 fixtures [\#621](https://github.com/python-kasa/python-kasa/pull/621) (@bdraco)
-- Use consistent envvars for dump\_devinfo credentials [\#618](https://github.com/python-kasa/python-kasa/pull/618) (@rytilahti)
-- Mark L900-5 as supported [\#617](https://github.com/python-kasa/python-kasa/pull/617) (@rytilahti)
-- Ship CHANGELOG only in sdist [\#610](https://github.com/python-kasa/python-kasa/pull/610) (@rytilahti)
-
-## [0.6.0.dev0](https://github.com/python-kasa/python-kasa/tree/0.6.0.dev0) (2024-01-03)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.5.4...0.6.0.dev0)
+Special thanks goes to @SimonWilkinson who created the initial PR for the new communication protocol!
 
 **Breaking changes:**
 
@@ -60,6 +26,9 @@
 - Support for KS225\(US\) Light Dimmer and KS205\(US\) Light Switch [\#589](https://github.com/python-kasa/python-kasa/issues/589)
 - Set timeout using command line parameters [\#310](https://github.com/python-kasa/python-kasa/issues/310)
 - Implement the new protocol \(HTTP over 80/tcp, 20002/udp for discovery\) [\#115](https://github.com/python-kasa/python-kasa/issues/115)
+- Get child emeters with CLI [\#623](https://github.com/python-kasa/python-kasa/pull/623) (@Obbay2)
+- Avoid linear search for emeter realtime and emeter\_today [\#622](https://github.com/python-kasa/python-kasa/pull/622) (@bdraco)
+- Add update-credentials command [\#620](https://github.com/python-kasa/python-kasa/pull/620) (@rytilahti)
 - Allow serializing and passing of credentials\_hashes in DeviceConfig [\#607](https://github.com/python-kasa/python-kasa/pull/607) (@sdb9696)
 - Implement wifi interface for tapodevice [\#606](https://github.com/python-kasa/python-kasa/pull/606) (@rytilahti)
 - Add support for KS205 and KS225 wall switches [\#594](https://github.com/python-kasa/python-kasa/pull/594) (@gimpy88)
@@ -84,16 +53,26 @@
 **Fixed bugs:**
 
 - dump\_devinfo crashes when credentials are not given [\#591](https://github.com/python-kasa/python-kasa/issues/591)
+- Fix connection indeterminate state on cancellation [\#636](https://github.com/python-kasa/python-kasa/pull/636) (@bdraco)
+- Check the ct range for color temp support [\#619](https://github.com/python-kasa/python-kasa/pull/619) (@rytilahti)
+- Fix cli discover bug with None username/password [\#615](https://github.com/python-kasa/python-kasa/pull/615) (@sdb9696)
 - Fix hsv setting for tapobulb [\#573](https://github.com/python-kasa/python-kasa/pull/573) (@rytilahti)
 - Fix transport retries after close [\#568](https://github.com/python-kasa/python-kasa/pull/568) (@sdb9696)
 
 **Documentation updates:**
 
+- Update the documentation for 0.6 release [\#600](https://github.com/python-kasa/python-kasa/issues/600)
+- Update docs for newer devices and DeviceConfig [\#614](https://github.com/python-kasa/python-kasa/pull/614) (@sdb9696)
 - Update readme with clearer instructions, tapo support [\#571](https://github.com/python-kasa/python-kasa/pull/571) (@rytilahti)
 - Add some more external links to README [\#541](https://github.com/python-kasa/python-kasa/pull/541) (@rytilahti)
 
 **Closed issues:**
 
+- Convert to use aiohttp instead of httpx [\#635](https://github.com/python-kasa/python-kasa/issues/635)
+- KS225 support [\#631](https://github.com/python-kasa/python-kasa/issues/631)
+- Need to do error code checking for new protocols [\#612](https://github.com/python-kasa/python-kasa/issues/612)
+- Support of last firmware update version 1.3.0 [\#611](https://github.com/python-kasa/python-kasa/issues/611)
+- Improve test coverage for tapodevice class [\#608](https://github.com/python-kasa/python-kasa/issues/608)
 - Discover returns dictionary with no 'alias' property [\#592](https://github.com/python-kasa/python-kasa/issues/592)
 - Sending with the legacy protocol is needlessly delayed [\#553](https://github.com/python-kasa/python-kasa/issues/553)
 - Issues adding a KP405 device [\#549](https://github.com/python-kasa/python-kasa/issues/549)
@@ -102,10 +81,29 @@
 - Unable to connect to host on different subnet with 0.5.4 [\#545](https://github.com/python-kasa/python-kasa/issues/545)
 - Discovery/Connect broken when upgrading from 0.5.3 -\> 0.5.4 [\#543](https://github.com/python-kasa/python-kasa/issues/543)
 - PydanticUserError, If you use `@root_validator` with pre=False \(the default\) you MUST specify `skip_on_failure=True` [\#516](https://github.com/python-kasa/python-kasa/issues/516)
+- Implement energy and usage for individual plugs in HS300 [\#462](https://github.com/python-kasa/python-kasa/issues/462)
 - KP 125M / support for matter devices [\#450](https://github.com/python-kasa/python-kasa/issues/450)
 
 **Merged pull requests:**
 
+- Remove time logging in debug message [\#645](https://github.com/python-kasa/python-kasa/pull/645) (@sdb9696)
+- Migrate http client to use aiohttp instead of httpx [\#643](https://github.com/python-kasa/python-kasa/pull/643) (@sdb9696)
+- Encapsulate http client dependency [\#642](https://github.com/python-kasa/python-kasa/pull/642) (@sdb9696)
+- Fix broken docs due to applehelp dependency [\#641](https://github.com/python-kasa/python-kasa/pull/641) (@sdb9696)
+- Raise SmartDeviceException on invalid config dicts [\#640](https://github.com/python-kasa/python-kasa/pull/640) (@sdb9696)
+- Add fixture for L920 [\#638](https://github.com/python-kasa/python-kasa/pull/638) (@bdraco)
+- Release 0.6.0.dev2 [\#633](https://github.com/python-kasa/python-kasa/pull/633) (@rytilahti)
+- Raise TimeoutException on discover\_single timeout [\#632](https://github.com/python-kasa/python-kasa/pull/632) (@sdb9696)
+- Add L900-10 fixture and it's additional component requests [\#629](https://github.com/python-kasa/python-kasa/pull/629) (@sdb9696)
+- Avoid recreating struct each request in legacy protocol [\#628](https://github.com/python-kasa/python-kasa/pull/628) (@bdraco)
+- Return alias as None for new discovery devices before update [\#627](https://github.com/python-kasa/python-kasa/pull/627) (@sdb9696)
+- Update config to\_dict to exclude credentials if the hash is empty string [\#626](https://github.com/python-kasa/python-kasa/pull/626) (@sdb9696)
+- Improve test coverage [\#625](https://github.com/python-kasa/python-kasa/pull/625) (@sdb9696)
+- Release 0.6.0.dev1 [\#624](https://github.com/python-kasa/python-kasa/pull/624) (@rytilahti)
+- Add P125M and update EP25 fixtures [\#621](https://github.com/python-kasa/python-kasa/pull/621) (@bdraco)
+- Use consistent envvars for dump\_devinfo credentials [\#618](https://github.com/python-kasa/python-kasa/pull/618) (@rytilahti)
+- Mark L900-5 as supported [\#617](https://github.com/python-kasa/python-kasa/pull/617) (@rytilahti)
+- Ship CHANGELOG only in sdist [\#610](https://github.com/python-kasa/python-kasa/pull/610) (@rytilahti)
 - Release 0.6.0.dev0 [\#609](https://github.com/python-kasa/python-kasa/pull/609) (@rytilahti)
 - Cleanup credentials handling [\#605](https://github.com/python-kasa/python-kasa/pull/605) (@rytilahti)
 - Update P110\(EU\) fixture [\#604](https://github.com/python-kasa/python-kasa/pull/604) (@rytilahti)
@@ -526,43 +524,15 @@ Pull requests improving the functionality of modules as well as adding better in
 
 ## [0.4.0](https://github.com/python-kasa/python-kasa/tree/0.4.0) (2021-09-27)
 
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev5...0.4.0)
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.pre0...0.4.0)
 
 **Implemented enhancements:**
 
+- KL430 support [\#67](https://github.com/python-kasa/python-kasa/issues/67)
+- Improve retry logic for discovery, messaging \(was: Handle empty responses\) [\#38](https://github.com/python-kasa/python-kasa/issues/38)
 - Fix lock being unexpectedly reset on close [\#218](https://github.com/python-kasa/python-kasa/pull/218) (@bdraco)
 - Avoid calling pformat unless debug logging is enabled [\#217](https://github.com/python-kasa/python-kasa/pull/217) (@bdraco)
-
-**Closed issues:**
-
-- Debug logging in protocol.py is the majority of the execution time [\#216](https://github.com/python-kasa/python-kasa/issues/216)
-
-**Merged pull requests:**
-
-- Release 0.4.0 [\#221](https://github.com/python-kasa/python-kasa/pull/221) (@rytilahti)
-- Add github workflow for pypi publishing [\#220](https://github.com/python-kasa/python-kasa/pull/220) (@rytilahti)
-- Add host information to protocol debug logs [\#219](https://github.com/python-kasa/python-kasa/pull/219) (@rytilahti)
-
-## [0.4.0.dev5](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev5) (2021-09-24)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev4...0.4.0.dev5)
-
-**Implemented enhancements:**
-
 - Keep connection open and lock to prevent duplicate requests [\#213](https://github.com/python-kasa/python-kasa/pull/213) (@bdraco)
-
-**Merged pull requests:**
-
-- Release 0.4.0.dev5 [\#215](https://github.com/python-kasa/python-kasa/pull/215) (@rytilahti)
-- Add KL130 fixture, initial lightstrip tests [\#214](https://github.com/python-kasa/python-kasa/pull/214) (@rytilahti)
-- Cleanup discovery & add tests [\#212](https://github.com/python-kasa/python-kasa/pull/212) (@rytilahti)
-
-## [0.4.0.dev4](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev4) (2021-09-23)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev3...0.4.0.dev4)
-
-**Implemented enhancements:**
-
 - Improve emeterstatus API, move into own module [\#205](https://github.com/python-kasa/python-kasa/pull/205) (@rytilahti)
 - Avoid temp array during encrypt and decrypt [\#204](https://github.com/python-kasa/python-kasa/pull/204) (@bdraco)
 - Add emeter support for strip sockets [\#203](https://github.com/python-kasa/python-kasa/pull/203) (@bdraco)
@@ -571,29 +541,76 @@ Pull requests improving the functionality of modules as well as adding better in
 - Improve bulb support \(alias, time settings\) [\#198](https://github.com/python-kasa/python-kasa/pull/198) (@rytilahti)
 - Improve testing harness to allow tests on real devices [\#197](https://github.com/python-kasa/python-kasa/pull/197) (@rytilahti)
 - cli: add human-friendly printout when calling temperature on non-supported devices [\#196](https://github.com/python-kasa/python-kasa/pull/196) (@JaydenRA)
+- 'Interface' parameter added to discovery process [\#79](https://github.com/python-kasa/python-kasa/pull/79) (@dmitryelj)
+- Add support for lightstrips \(KL430\) [\#74](https://github.com/python-kasa/python-kasa/pull/74) (@rytilahti)
 
 **Fixed bugs:**
 
 - KL430: Throw error for Device specific information [\#189](https://github.com/python-kasa/python-kasa/issues/189)
+- `Unable to find a value for 'current'` error when attempting to query KL125 bulb emeter [\#142](https://github.com/python-kasa/python-kasa/issues/142)
+- `Unknown color temperature range` error when attempting to query KL125 bulb state [\#141](https://github.com/python-kasa/python-kasa/issues/141)
 - HS300 Children plugs have emeter [\#64](https://github.com/python-kasa/python-kasa/issues/64)
 - dump\_devinfo: handle latitude/longitude keys properly [\#175](https://github.com/python-kasa/python-kasa/pull/175) (@rytilahti)
+- Simplify discovery query, refactor dump-devinfo [\#147](https://github.com/python-kasa/python-kasa/pull/147) (@rytilahti)
+- Return None instead of raising an exception on missing, valid emeter keys [\#146](https://github.com/python-kasa/python-kasa/pull/146) (@rytilahti)
+- Simplify device class detection for discovery, fix hardcoded timeout [\#112](https://github.com/python-kasa/python-kasa/pull/112) (@rytilahti)
+- Update cli.py to addresss crash on year/month calls and improve output formatting [\#103](https://github.com/python-kasa/python-kasa/pull/103) (@BuongiornoTexas)
 
 **Documentation updates:**
 
 - Discover does not support specifying network interface [\#167](https://github.com/python-kasa/python-kasa/issues/167)
+- Add ability to control individual sockets on KP400 [\#121](https://github.com/python-kasa/python-kasa/issues/121)
+- Improve poetry usage documentation [\#60](https://github.com/python-kasa/python-kasa/issues/60)
+- Improve cli documentation for bulbs and power strips [\#123](https://github.com/python-kasa/python-kasa/pull/123) (@rytilahti)
 
 **Closed issues:**
 
+- Debug logging in protocol.py is the majority of the execution time [\#216](https://github.com/python-kasa/python-kasa/issues/216)
 - Feature Request - Toggle Command [\#188](https://github.com/python-kasa/python-kasa/issues/188)
 - Is It Compatible With HS105? [\#186](https://github.com/python-kasa/python-kasa/issues/186)
 - Cannot use some functions with KP303 [\#181](https://github.com/python-kasa/python-kasa/issues/181)
 - Help needed - awaiting game  [\#179](https://github.com/python-kasa/python-kasa/issues/179)
 - Version inconsistency between CLI and pip [\#177](https://github.com/python-kasa/python-kasa/issues/177)
 - Release 0.4.0.dev3? [\#169](https://github.com/python-kasa/python-kasa/issues/169)
+- After installing, command `kasa` not found [\#165](https://github.com/python-kasa/python-kasa/issues/165)
 - Can't command or query HS200 v5 switch [\#161](https://github.com/python-kasa/python-kasa/issues/161)
+- KL430 causing "non-hexadecimal number found in fromhex\(\) arg at position 2" error in smartdevice.py [\#159](https://github.com/python-kasa/python-kasa/issues/159)
+- Cant get smart strip children to work [\#144](https://github.com/python-kasa/python-kasa/issues/144)
+- `kasa --host 192.168.1.67 wifi join <ssid>` does not change network [\#139](https://github.com/python-kasa/python-kasa/issues/139)
+- Poetry returns error when installing dependencies [\#131](https://github.com/python-kasa/python-kasa/issues/131)
+- 'kasa wifi scan' raises RuntimeError [\#127](https://github.com/python-kasa/python-kasa/issues/127)
+- Runtime Error when I execute Kasa emeter command [\#124](https://github.com/python-kasa/python-kasa/issues/124)
+- HS105\(US\) HW 5.0/SW 1.0.2 Not Working [\#119](https://github.com/python-kasa/python-kasa/issues/119)
+- TPLINK HS100 firmware 4.1 no longer has TCP 9999 available [\#114](https://github.com/python-kasa/python-kasa/issues/114)
+- HS110\(UK\) not discoverable [\#113](https://github.com/python-kasa/python-kasa/issues/113)
+- Stopping Kasa SmartDevices from phoning home [\#111](https://github.com/python-kasa/python-kasa/issues/111)
+- 7.1.2 Update to asyncclick breaks github install of python-kasa [\#106](https://github.com/python-kasa/python-kasa/issues/106)
+- TP Link Dimmer switch \(HS220\) hardware version 2.0 not being discovered [\#105](https://github.com/python-kasa/python-kasa/issues/105)
+- cli emeter year and month functions fail [\#102](https://github.com/python-kasa/python-kasa/issues/102)
+- how to know the duration for which the plug was ON? [\#99](https://github.com/python-kasa/python-kasa/issues/99)
+- problem controlling the smartplug through a controller [\#98](https://github.com/python-kasa/python-kasa/issues/98)
+- unable to install [\#97](https://github.com/python-kasa/python-kasa/issues/97)
+- Install on Ubuntu 18.04 no luck [\#96](https://github.com/python-kasa/python-kasa/issues/96)
+- issue with installation [\#95](https://github.com/python-kasa/python-kasa/issues/95)
+- Running via Crontab [\#92](https://github.com/python-kasa/python-kasa/issues/92)
+- Issues with setup [\#91](https://github.com/python-kasa/python-kasa/issues/91)
+- I don't python... how do I make this executable? [\#88](https://github.com/python-kasa/python-kasa/issues/88)
+- ImportError: cannot import name 'smartplug' [\#87](https://github.com/python-kasa/python-kasa/issues/87)
+- Support for P100 Smart Plug [\#83](https://github.com/python-kasa/python-kasa/issues/83)
+- not able to pip install the library [\#82](https://github.com/python-kasa/python-kasa/issues/82)
+- Discover.discover\(\) add selecting network interface \[pull request\] [\#78](https://github.com/python-kasa/python-kasa/issues/78)
+- LB100 unable to turn on or off the lights [\#68](https://github.com/python-kasa/python-kasa/issues/68)
+- sys\_info not None fails assertion [\#55](https://github.com/python-kasa/python-kasa/issues/55)
+- Upload pre-release to pypi for easier testing [\#17](https://github.com/python-kasa/python-kasa/issues/17)
 
 **Merged pull requests:**
 
+- Release 0.4.0 [\#221](https://github.com/python-kasa/python-kasa/pull/221) (@rytilahti)
+- Add github workflow for pypi publishing [\#220](https://github.com/python-kasa/python-kasa/pull/220) (@rytilahti)
+- Add host information to protocol debug logs [\#219](https://github.com/python-kasa/python-kasa/pull/219) (@rytilahti)
+- Release 0.4.0.dev5 [\#215](https://github.com/python-kasa/python-kasa/pull/215) (@rytilahti)
+- Add KL130 fixture, initial lightstrip tests [\#214](https://github.com/python-kasa/python-kasa/pull/214) (@rytilahti)
+- Cleanup discovery & add tests [\#212](https://github.com/python-kasa/python-kasa/pull/212) (@rytilahti)
 - Release 0.4.0.dev4 [\#210](https://github.com/python-kasa/python-kasa/pull/210) (@rytilahti)
 - More CI fixes [\#208](https://github.com/python-kasa/python-kasa/pull/208) (@rytilahti)
 - Fix CI dep installation [\#207](https://github.com/python-kasa/python-kasa/pull/207) (@rytilahti)
@@ -603,42 +620,8 @@ Pull requests improving the functionality of modules as well as adding better in
 - Add real kasa KL430\(UN\) device dump [\#192](https://github.com/python-kasa/python-kasa/pull/192) (@iprodanovbg)
 - Use less strict matcher for kl430 color temperature [\#190](https://github.com/python-kasa/python-kasa/pull/190) (@rytilahti)
 - Add EP10\(US\) 1.0 1.0.2 fixture [\#174](https://github.com/python-kasa/python-kasa/pull/174) (@nbrew)
-- Add a note about using the discovery target parameter [\#168](https://github.com/python-kasa/python-kasa/pull/168) (@leandroreox)
-
-## [0.4.0.dev3](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev3) (2021-06-16)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev2...0.4.0.dev3)
-
-**Fixed bugs:**
-
-- `Unable to find a value for 'current'` error when attempting to query KL125 bulb emeter [\#142](https://github.com/python-kasa/python-kasa/issues/142)
-- `Unknown color temperature range` error when attempting to query KL125 bulb state [\#141](https://github.com/python-kasa/python-kasa/issues/141)
-- Simplify discovery query, refactor dump-devinfo [\#147](https://github.com/python-kasa/python-kasa/pull/147) (@rytilahti)
-- Return None instead of raising an exception on missing, valid emeter keys [\#146](https://github.com/python-kasa/python-kasa/pull/146) (@rytilahti)
-
-**Documentation updates:**
-
-- Add ability to control individual sockets on KP400 [\#121](https://github.com/python-kasa/python-kasa/issues/121)
-- Improve cli documentation for bulbs and power strips [\#123](https://github.com/python-kasa/python-kasa/pull/123) (@rytilahti)
-
-**Closed issues:**
-
-- After installing, command `kasa` not found [\#165](https://github.com/python-kasa/python-kasa/issues/165)
-- KL430 causing "non-hexadecimal number found in fromhex\(\) arg at position 2" error in smartdevice.py [\#159](https://github.com/python-kasa/python-kasa/issues/159)
-- Cant get smart strip children to work [\#144](https://github.com/python-kasa/python-kasa/issues/144)
-- `kasa --host 192.168.1.67 wifi join <ssid>` does not change network [\#139](https://github.com/python-kasa/python-kasa/issues/139)
-- Poetry returns error when installing dependencies [\#131](https://github.com/python-kasa/python-kasa/issues/131)
-- 'kasa wifi scan' raises RuntimeError [\#127](https://github.com/python-kasa/python-kasa/issues/127)
-- Runtime Error when I execute Kasa emeter command [\#124](https://github.com/python-kasa/python-kasa/issues/124)
-- HS105\(US\) HW 5.0/SW 1.0.2 Not Working [\#119](https://github.com/python-kasa/python-kasa/issues/119)
-- HS110\(UK\) not discoverable [\#113](https://github.com/python-kasa/python-kasa/issues/113)
-- Stopping Kasa SmartDevices from phoning home [\#111](https://github.com/python-kasa/python-kasa/issues/111)
-- TP Link Dimmer switch \(HS220\) hardware version 2.0 not being discovered [\#105](https://github.com/python-kasa/python-kasa/issues/105)
-- Support for P100 Smart Plug [\#83](https://github.com/python-kasa/python-kasa/issues/83)
-
-**Merged pull requests:**
-
 - Prepare 0.4.0.dev3 [\#172](https://github.com/python-kasa/python-kasa/pull/172) (@rytilahti)
+- Add a note about using the discovery target parameter [\#168](https://github.com/python-kasa/python-kasa/pull/168) (@leandroreox)
 - Simplify mac address handling [\#162](https://github.com/python-kasa/python-kasa/pull/162) (@rytilahti)
 - Added KL125 and HS200 fixture dumps and updated tests to run on new format [\#160](https://github.com/python-kasa/python-kasa/pull/160) (@brianthedavis)
 - Add KL125 bulb definition [\#143](https://github.com/python-kasa/python-kasa/pull/143) (@mdarnol)
@@ -646,65 +629,9 @@ Pull requests improving the functionality of modules as well as adding better in
 - Fix documentation on Smart strips [\#136](https://github.com/python-kasa/python-kasa/pull/136) (@flavio-fernandes)
 - add tapo link, fix tplink-smarthome-simulator link [\#133](https://github.com/python-kasa/python-kasa/pull/133) (@rytilahti)
 - Leverage data from UDP discovery to initialize device structure [\#132](https://github.com/python-kasa/python-kasa/pull/132) (@dlee1j1)
-- Add HS220 hw 2.0 fixture [\#107](https://github.com/python-kasa/python-kasa/pull/107) (@appleguru)
-
-## [0.4.0.dev2](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev2) (2020-11-21)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev1...0.4.0.dev2)
-
-**Implemented enhancements:**
-
-- 'Interface' parameter added to discovery process [\#79](https://github.com/python-kasa/python-kasa/pull/79) (@dmitryelj)
-
-**Fixed bugs:**
-
-- Simplify device class detection for discovery, fix hardcoded timeout [\#112](https://github.com/python-kasa/python-kasa/pull/112) (@rytilahti)
-- Update cli.py to addresss crash on year/month calls and improve output formatting [\#103](https://github.com/python-kasa/python-kasa/pull/103) (@BuongiornoTexas)
-
-**Closed issues:**
-
-- TPLINK HS100 firmware 4.1 no longer has TCP 9999 available [\#114](https://github.com/python-kasa/python-kasa/issues/114)
-- 7.1.2 Update to asyncclick breaks github install of python-kasa [\#106](https://github.com/python-kasa/python-kasa/issues/106)
-- cli emeter year and month functions fail [\#102](https://github.com/python-kasa/python-kasa/issues/102)
-- how to know the duration for which the plug was ON? [\#99](https://github.com/python-kasa/python-kasa/issues/99)
-- problem controlling the smartplug through a controller [\#98](https://github.com/python-kasa/python-kasa/issues/98)
-- unable to install [\#97](https://github.com/python-kasa/python-kasa/issues/97)
-- Install on Ubuntu 18.04 no luck [\#96](https://github.com/python-kasa/python-kasa/issues/96)
-- issue with installation [\#95](https://github.com/python-kasa/python-kasa/issues/95)
-- Running via Crontab [\#92](https://github.com/python-kasa/python-kasa/issues/92)
-- Issues with setup [\#91](https://github.com/python-kasa/python-kasa/issues/91)
-
-**Merged pull requests:**
-
 - Release 0.4.0.dev2 [\#118](https://github.com/python-kasa/python-kasa/pull/118) (@rytilahti)
+- Add HS220 hw 2.0 fixture [\#107](https://github.com/python-kasa/python-kasa/pull/107) (@appleguru)
 - Pin dependencies on major versions, add poetry.lock [\#94](https://github.com/python-kasa/python-kasa/pull/94) (@rytilahti)
-
-## [0.4.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev1) (2020-07-28)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.dev0...0.4.0.dev1)
-
-**Implemented enhancements:**
-
-- KL430 support [\#67](https://github.com/python-kasa/python-kasa/issues/67)
-- Improve retry logic for discovery, messaging \(was: Handle empty responses\) [\#38](https://github.com/python-kasa/python-kasa/issues/38)
-- Add support for lightstrips \(KL430\) [\#74](https://github.com/python-kasa/python-kasa/pull/74) (@rytilahti)
-
-**Documentation updates:**
-
-- Improve poetry usage documentation [\#60](https://github.com/python-kasa/python-kasa/issues/60)
-
-**Closed issues:**
-
-- I don't python... how do I make this executable? [\#88](https://github.com/python-kasa/python-kasa/issues/88)
-- ImportError: cannot import name 'smartplug' [\#87](https://github.com/python-kasa/python-kasa/issues/87)
-- not able to pip install the library [\#82](https://github.com/python-kasa/python-kasa/issues/82)
-- Discover.discover\(\) add selecting network interface \[pull request\] [\#78](https://github.com/python-kasa/python-kasa/issues/78)
-- LB100 unable to turn on or off the lights [\#68](https://github.com/python-kasa/python-kasa/issues/68)
-- sys\_info not None fails assertion [\#55](https://github.com/python-kasa/python-kasa/issues/55)
-- Upload pre-release to pypi for easier testing [\#17](https://github.com/python-kasa/python-kasa/issues/17)
-
-**Merged pull requests:**
-
 - Release 0.4.0.dev1 [\#93](https://github.com/python-kasa/python-kasa/pull/93) (@rytilahti)
 - add a small example script to show library usage [\#90](https://github.com/python-kasa/python-kasa/pull/90) (@rytilahti)
 - add .readthedocs.yml required for poetry builds [\#89](https://github.com/python-kasa/python-kasa/pull/89) (@rytilahti)
@@ -716,10 +643,6 @@ Pull requests improving the functionality of modules as well as adding better in
 - Simplify API documentation by using doctests [\#73](https://github.com/python-kasa/python-kasa/pull/73) (@rytilahti)
 - Bulbs: allow specifying transition for state changes [\#70](https://github.com/python-kasa/python-kasa/pull/70) (@rytilahti)
 - Add transition support for SmartDimmer [\#69](https://github.com/python-kasa/python-kasa/pull/69) (@connorproctor)
-
-## [0.4.0.dev0](https://github.com/python-kasa/python-kasa/tree/0.4.0.dev0) (2020-05-27)
-
-[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.4.0.pre0...0.4.0.dev0)
 
 ## [0.4.0.pre0](https://github.com/python-kasa/python-kasa/tree/0.4.0.pre0) (2020-05-27)
 
