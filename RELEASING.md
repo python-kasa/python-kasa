@@ -24,8 +24,10 @@ poetry version $NEW_RELEASE
 # gem install github_changelog_generator --pre
 # https://github.com/github-changelog-generator/github-changelog-generator#github-token
 export CHANGELOG_GITHUB_TOKEN=token
-github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md
+github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md --exclude-tags-regex 'dev\d$'
 ```
+
+Remove '--exclude-tags-regex' for dev releases.
 
 4. Commit the changed files
 
