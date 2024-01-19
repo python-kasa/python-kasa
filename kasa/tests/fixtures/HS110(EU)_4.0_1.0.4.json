@@ -1,0 +1,40 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 451,
+            "err_code": 0,
+            "power_mw": 61753,
+            "total_wh": 16323,
+            "voltage_mv": 230837
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Smart Wi-Fi Plug With Energy Monitoring",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "4.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 1,
+            "longitude_i": 0,
+            "mac": "B0:95:75:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS110(EU)",
+            "next_action": {
+                "type": -1
+            },
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 1484778,
+            "relay_state": 1,
+            "rssi": -60,
+            "status": "new",
+            "sw_ver": "1.0.4 Build 191111 Rel.143500",
+            "updating": 0
+        }
+    }
+}
