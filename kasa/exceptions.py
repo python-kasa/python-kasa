@@ -1,4 +1,5 @@
 """python-kasa exceptions."""
+from asyncio import TimeoutError
 from enum import IntEnum
 from typing import Optional
 
@@ -27,8 +28,14 @@ class RetryableException(SmartDeviceException):
     """Retryable exception for device errors."""
 
 
-class TimeoutException(SmartDeviceException):
+class TimeoutException(SmartDeviceException, TimeoutError):
     """Timeout exception for device errors."""
+
+    def __repr__(self):
+        return SmartDeviceException.__repr__(self)
+
+    def __str__(self):
+        return SmartDeviceException.__str__(self)
 
 
 class ConnectionException(SmartDeviceException):
