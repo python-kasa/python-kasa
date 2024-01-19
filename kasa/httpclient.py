@@ -19,7 +19,7 @@ class HttpClient:
 
     def __init__(self, config: DeviceConfig) -> None:
         self._config = config
-        self._client: aiohttp.ClientSession = None
+        self._client_session: aiohttp.ClientSession = None
         self._jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
         self._last_url = f"http://{self._config.host}/"
 
@@ -31,9 +31,9 @@ class HttpClient:
         ):
             return self._config.http_client
 
-        if not self._client:
-            self._client = aiohttp.ClientSession(cookie_jar=get_cookie_jar())
-        return self._client
+        if not self._client_session:
+            self._client_session = aiohttp.ClientSession(cookie_jar=get_cookie_jar())
+        return self._client_session
 
     async def post(
         self,
@@ -91,8 +91,8 @@ class HttpClient:
         return None
 
     async def close(self) -> None:
-        """Close the client."""
-        client = self._client
-        self._client = None
+        """Close the ClientSession."""
+        client = self._client_session
+        self._client_session = None
         if client:
             await client.close()

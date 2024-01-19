@@ -84,8 +84,8 @@ class SmartProtocol(TPLinkProtocol):
                     raise ex
                 continue
             except TimeoutException as ex:
+                await self.close()
                 if retry >= retry_count:
-                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
@@ -167,7 +167,12 @@ class SmartProtocol(TPLinkProtocol):
         raise SmartDeviceException(msg, error_code=error_code)
 
     async def close(self) -> None:
-        """Close the protocol."""
+        """Close the underlying transport.
+
+        Some transports may close the connection, and some may
+        use this as a hint that they need to reconnect, or
+        reauthenticate.
+        """
         await self._transport.close()
 
 
