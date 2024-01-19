@@ -133,8 +133,8 @@ async def handle_device(basedir, autosave, device: SmartDevice):
 
 
 @click.command()
-@click.option("--host", required=False)
-@click.option("--target")
+@click.option("--host", required=False, help="Target host.")
+@click.option("--target", required=False, help="Target network for discovery.")
 @click.option(
     "--username",
     default="",
@@ -150,10 +150,13 @@ async def handle_device(basedir, autosave, device: SmartDevice):
     help="Password to use to authenticate to device.",
 )
 @click.option("--basedir", help="Base directory for the git repository", default=".")
-@click.option("--autosave", is_flag=True, default=False)
+@click.option("--autosave", is_flag=True, default=False, help="Save without prompting")
 @click.option("-d", "--debug", is_flag=True)
 async def cli(host, target, basedir, autosave, debug, username, password):
-    """Generate devinfo file for given device."""
+    """Generate devinfo files for devices.
+
+    Use --host (for a single device) or --target (for a complete network).
+    """
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
