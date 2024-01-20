@@ -110,7 +110,7 @@
         "factory_default": false,
         "ip": "127.0.0.123",
         "is_support_iot_cloud": true,
-        "mac": "00-00-00-00-00-00",
+        "mac": "F0-A7-31-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "AES",
             "http_port": 80,
@@ -191,7 +191,7 @@
             "name": "Sunset"
         },
         "longitude": 0,
-        "mac": "00-00-00-00-00-00",
+        "mac": "F0-A7-31-00-00-00",
         "model": "L900",
         "music_rhythm_enable": false,
         "music_rhythm_mode": "single_lamp",
@@ -199,7 +199,7 @@
         "oem_id": "00000000000000000000000000000000",
         "overheated": false,
         "region": "Europe/London",
-        "rssi": -58,
+        "rssi": -60,
         "saturation": 96,
         "signal_level": 2,
         "specs": "",
@@ -210,22 +210,22 @@
     "get_device_time": {
         "region": "Europe/London",
         "time_diff": 0,
-        "timestamp": 1704909087
+        "timestamp": 1705742728
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 15,
-            "past7": 0,
+            "past30": 94,
+            "past7": 79,
             "today": 0
         },
         "saved_power": {
-            "past30": 69,
-            "past7": 1,
+            "past30": 434,
+            "past7": 365,
             "today": 0
         },
         "time_usage": {
-            "past30": 84,
-            "past7": 1,
+            "past30": 528,
+            "past7": 444,
             "today": 0
         }
     },

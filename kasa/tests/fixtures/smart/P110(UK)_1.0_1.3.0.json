@@ -94,7 +94,7 @@
         "factory_default": false,
         "ip": "127.0.0.123",
         "is_support_iot_cloud": true,
-        "mac": "00-00-00-00-00-00",
+        "mac": "48-22-54-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "KLAP",
             "http_port": 80,
@@ -137,7 +137,7 @@
         ]
     },
     "get_current_power": {
-        "current_power": 11
+        "current_power": 0
     },
     "get_device_info": {
         "auto_off_remain_time": 0,
@@ -148,7 +148,7 @@
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": true,
+        "device_on": false,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.3.0 Build 230905 Rel.152200",
         "has_set_location_info": true,
@@ -158,17 +158,17 @@
         "lang": "en_US",
         "latitude": 0,
         "longitude": 0,
-        "mac": "00-00-00-00-00-00",
+        "mac": "48-22-54-00-00-00",
         "model": "P110",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 3087,
+        "on_time": 0,
         "overcurrent_status": "normal",
         "overheated": false,
         "power_protection_status": "normal",
         "region": "Europe/London",
-        "rssi": -50,
-        "signal_level": 2,
+        "rssi": -45,
+        "signal_level": 3,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
         "time_diff": 0,
@@ -177,23 +177,23 @@
     "get_device_time": {
         "region": "Europe/London",
         "time_diff": 0,
-        "timestamp": 1703934043
+        "timestamp": 1705742730
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 2090,
-            "past7": 1171,
-            "today": 9
+            "past30": 3205,
+            "past7": 0,
+            "today": 0
         },
         "saved_power": {
-            "past30": 31616,
-            "past7": 5033,
-            "today": 42
+            "past30": 26000,
+            "past7": 7265,
+            "today": 3
         },
         "time_usage": {
-            "past30": 33706,
-            "past7": 6204,
-            "today": 51
+            "past30": 29205,
+            "past7": 7265,
+            "today": 3
         }
     },
     "get_electricity_price_config": {
@@ -329,17 +329,17 @@
         "type": "constant"
     },
     "get_energy_usage": {
-        "current_power": 11300,
+        "current_power": 0,
         "electricity_charge": [
             0,
             0,
             0
         ],
-        "local_time": "2023-12-30 11:00:43",
-        "month_energy": 2090,
-        "month_runtime": 33706,
-        "today_energy": 9,
-        "today_runtime": 51
+        "local_time": "2024-01-20 09:25:31",
+        "month_energy": 1421,
+        "month_runtime": 19742,
+        "today_energy": 0,
+        "today_runtime": 3
     },
     "get_fw_download_state": {
         "auto_upgrade": false,
@@ -360,17 +360,17 @@
     },
     "get_led_info": {
         "led_rule": "night_mode",
-        "led_status": true,
+        "led_status": false,
         "night_mode": {
-            "end_time": 550,
+            "end_time": 538,
             "night_mode_type": "sunrise_sunset",
-            "start_time": 961,
+            "start_time": 989,
             "sunrise_offset": 62,
             "sunset_offset": 0
         }
     },
     "get_max_power": {
-        "max_power": 3342
+        "max_power": 3379
     },
     "get_next_event": {
         "desired_states": {
@@ -378,7 +378,7 @@
         },
         "e_time": 0,
         "id": "S1",
-        "s_time": 1703937000,
+        "s_time": 1705751400,
         "type": 1
     },
     "get_protection_power": {
@@ -389,7 +389,7 @@
         "enable": true,
         "rule_list": [
             {
-                "day": 30,
+                "day": 20,
                 "desired_states": {
                     "on": true
                 },
@@ -399,12 +399,12 @@
                 "enable": true,
                 "id": "S1",
                 "mode": "repeat",
-                "month": 12,
+                "month": 1,
                 "s_min": 710,
                 "s_type": "normal",
                 "time_offset": 0,
                 "week_day": 127,
-                "year": 2023
+                "year": 2024
             }
         ],
         "schedule_rule_max_count": 32,
