@@ -61,11 +61,78 @@ You can get the list of supported modules for a given device instance using :att
     If you only need some module-specific information,
     you can call the wanted method on the module to avoid using :meth:`~kasa.SmartDevice.update`.
 
+Protocols and Transports
+************************
+
+The library supports two different TP-Link protocols, ``IOT`` and ``SMART``.
+``IOT`` is the original Kasa protocol and ``SMART`` is the newer protocol supported by TAPO devices and newer KASA devices.
+Confusingly TP-Link originally called the Kasa line "Kasa Smart" and hence this library used "Smart" in a lot of the
+module and class names but actually they were built to work with the ``IOT`` protocol.
+
+In 2021 TP-Link started updating the underlying communication transport used by Kasa devices to make them more secure.
+It switched from a TCP connection with static XOR type of encryption to a transport called ``KLAP`` which communicates
+over http and uses handshakes to negotiate a dynamic encrpytion cipher.
+This automatic update was put on hold and only seemed to affect UK HS100 models.
+
+In 2023 TP-Link started updating the underlying communication transport used by Tapo devices to make them more secure.
+It switched from AES encryption via public key exchange to use ``KLAP`` encryption and negotiation due to concerns
+around impersonation with AES.
+The encryption cipher is the same as for Kasa KLAP but the handshake seeds are slightly different.
+Also in 2023 TP-Link started releasing newer Kasa branded devices using the ``SMART`` protocol.
+This appears to be driven by hardware version rather than firmware.
+
+In order to support these different configurations the library is migrating from a single :class:`~TPLinkSmartHomeProtocol`
+that support XOR encryption and the IOT protocol to seperate transports and protocols.
+The classes providing this functionality are:
+
+- :class:`~kasa.BaseProtocol`
+- :class:`~kasa.IotProtocol`
+- :class:`~kasa.SmartProtocol`
+
+- :class:`~kasa.BaseTransport`
+- :class:`~kasa.XorTransport`
+- :class:`~kasa.AesTransport`
+- :class:`~kasa.KlapTransport`
+- :class:`~kasa.KlapTransportV2`
+
 
 API documentation for modules
 *****************************
 
 .. automodule:: kasa.modules
+    :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+API documentation for protocols and transports
+**********************************************
+
+.. automodule:: kasa.protocol
+    :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. automodule:: kasa.klaptransport
+    :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. automodule:: kasa.aestransport
+    :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. automodule:: kasa.iotprotocol
+    :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. automodule:: kasa.smartprotocol
     :noindex:
     :members:
     :inherited-members:
