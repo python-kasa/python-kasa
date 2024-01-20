@@ -45,8 +45,8 @@ class IotProtocol(TPLinkProtocol):
             try:
                 return await self._execute_query(request, retry)
             except ConnectionException as sdex:
+                await self.close()
                 if retry >= retry_count:
-                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise sdex
                 continue
@@ -57,14 +57,14 @@ class IotProtocol(TPLinkProtocol):
                 )
                 raise auex
             except RetryableException as ex:
+                await self.close()
                 if retry >= retry_count:
-                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 continue
             except TimeoutException as ex:
+                await self.close()
                 if retry >= retry_count:
-                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
@@ -85,5 +85,10 @@ class IotProtocol(TPLinkProtocol):
         return await self._transport.send(request)
 
     async def close(self) -> None:
-        """Close the protocol."""
+        """Close the underlying transport.
+
+        Some transports may close the connection, and some may
+        use this as a hint that they need to reconnect, or
+        reauthenticate.
+        """
         await self._transport.close()
