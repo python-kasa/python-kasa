@@ -158,6 +158,9 @@ class DeviceConfig:
     #: Set a custom http_client for the device to use.
     http_client: Optional["ClientSession"] = field(default=None, compare=False)
 
+    #: Debug level for the device. Can be used to increase the logging verbosity.
+    debug_level: int = 0
+
     def __post_init__(self):
         if self.connection_type is None:
             self.connection_type = ConnectionType(
