@@ -66,8 +66,8 @@ class SmartProtocol(TPLinkProtocol):
             try:
                 return await self._execute_query(request, retry)
             except ConnectionException as sdex:
+                await self.close()
                 if retry >= retry_count:
-                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise sdex
                 continue
@@ -78,8 +78,8 @@ class SmartProtocol(TPLinkProtocol):
                 )
                 raise auex
             except RetryableException as ex:
+                await self.close()
                 if retry >= retry_count:
-                    await self.close()
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 continue

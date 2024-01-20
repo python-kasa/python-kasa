@@ -265,10 +265,12 @@ class AesTransport(BaseTransport):
         return await self.send_secure_passthrough(request)
 
     async def close(self) -> None:
-        """Close the transport."""
+        """Mark the handshake and login as not done.
+
+        Since we likely lost the connection.
+        """
         self._handshake_done = False
         self._login_token = None
-        await self._http_client.close()
 
 
 class AesEncyptionSession:

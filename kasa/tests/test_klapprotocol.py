@@ -16,7 +16,9 @@ from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     AuthenticationException,
     ConnectionException,
+    RetryableException,
     SmartDeviceException,
+    TimeoutException,
 )
 from ..httpclient import HttpClient
 from ..iotprotocol import IotProtocol
@@ -58,11 +60,39 @@ class _mock_response:
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_retries(
+async def test_protocol_retries_via_client_session(
     mocker, retry_count, protocol_class, transport_class, error, retry_expectation
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=error)
+
+    config = DeviceConfig(host)
+    with pytest.raises(SmartDeviceException):
+        await protocol_class(transport=transport_class(config=config)).query(
+            DUMMY_QUERY, retry_count=retry_count
+        )
+
+    expected_count = retry_count + 1 if retry_expectation else 1
+    assert conn.call_count == expected_count
+
+
+@pytest.mark.parametrize(
+    "error, retry_expectation",
+    [
+        (SmartDeviceException("dummy exception"), False),
+        (RetryableException("dummy exception"), True),
+        (TimeoutException("dummy exception"), True),
+    ],
+    ids=("SmartDeviceException", "RetryableException", "TimeoutException"),
+)
+@pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
+@pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
+@pytest.mark.parametrize("retry_count", [1, 3, 5])
+async def test_protocol_retries_via_httpclient(
+    mocker, retry_count, protocol_class, transport_class, error, retry_expectation
+):
+    host = "127.0.0.1"
+    conn = mocker.patch.object(HttpClient, "post", side_effect=error)
 
     config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
