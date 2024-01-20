@@ -134,7 +134,12 @@ async def handle_device(basedir, autosave, device: SmartDevice):
 
 @click.command()
 @click.option("--host", required=False, help="Target host.")
-@click.option("--target", required=False, help="Target network for discovery.")
+@click.option(
+    "--target",
+    required=False,
+    default="255.255.255.255",
+    help="Target network for discovery.",
+)
 @click.option(
     "--username",
     default="",
@@ -162,15 +167,18 @@ async def cli(host, target, basedir, autosave, debug, username, password):
 
     credentials = Credentials(username=username, password=password)
     if host is not None:
+        click.echo("Host given, performing discovery on %s." % host)
         device = await Discover.discover_single(host, credentials=credentials)
         await handle_device(basedir, autosave, device)
-    elif target is not None:
+    else:
+        click.echo(
+            "No --host given, performing discovery on %s. Use --target to override."
+            % target
+        )
         devices = await Discover.discover(target=target, credentials=credentials)
         click.echo("Detected %s devices" % len(devices))
         for dev in devices.values():
             await handle_device(basedir, autosave, dev)
-    else:
-        click.echo("You need to define either --host or --target")
 
 
 async def get_legacy_fixture(device):
