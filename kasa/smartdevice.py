@@ -125,7 +125,7 @@ class SmartDevice:
         >>> dev.rssi
         -71
         >>> dev.mac
-        50:C7:BF:01:F8:CD
+        50:C7:BF:00:00:00
 
         Some information can also be changed programmatically:
 
@@ -155,9 +155,9 @@ class SmartDevice:
          'hw_ver': '1.0',
          'mac': '01:23:45:67:89:ab',
          'type': 'IOT.SMARTPLUGSWITCH',
-         'hwId': '45E29DA8382494D2E82688B52A0B2EB5',
+         'hwId': '00000000000000000000000000000000',
          'fwId': '00000000000000000000000000000000',
-         'oemId': '3D341ECE302C0642C99E31CE2430544B',
+         'oemId': '00000000000000000000000000000000',
          'dev_name': 'Wi-Fi Smart Plug With Energy Monitoring'}
         >>> dev.sys_info
 
@@ -175,7 +175,7 @@ class SmartDevice:
         >>> dev.has_emeter
         True
         >>> dev.emeter_realtime
-        <EmeterStatus power=0.983971 voltage=235.595234 current=0.015342 total=32.448>
+        <EmeterStatus power=0.928511 voltage=231.067823 current=0.014937 total=55.139>
         >>> dev.emeter_today
         >>> dev.emeter_this_month
 

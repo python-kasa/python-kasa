@@ -1,11 +1,11 @@
 {
     "system": {
         "get_sysinfo": {
-            "alias": "#MASKED_NAME#",
+            "alias": "TP-LINK_Power Strip_CF69",
             "child_num": 3,
             "children": [
                 {
-                    "alias": "#MASKED_NAME#",
+                    "alias": "Plug 1",
                     "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7700",
                     "next_action": {
                         "type": -1
@@ -14,22 +14,22 @@
                     "state": 1
                 },
                 {
-                    "alias": "#MASKED_NAME#",
+                    "alias": "Plug 2",
                     "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7701",
                     "next_action": {
                         "type": -1
                     },
                     "on_time": 79700,
-                    "state": 1
+                    "state": 0
                 },
                 {
-                    "alias": "#MASKED_NAME#",
+                    "alias": "Plug 3",
                     "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7702",
                     "next_action": {
                         "type": -1
                     },
                     "on_time": 1484408,
-                    "state": 1
+                    "state": 0
                 }
             ],
             "deviceId": "0000000000000000000000000000000000000000",
