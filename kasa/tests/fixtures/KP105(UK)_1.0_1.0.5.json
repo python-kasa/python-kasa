@@ -1,7 +1,7 @@
 {
     "system": {
         "get_sysinfo": {
-            "active_mode": "none",
+            "active_mode": "schedule",
             "alias": "#MASKED_NAME#",
             "dev_name": "Smart Wi-Fi Plug",
             "deviceId": "0000000000000000000000000000000000000000",
@@ -17,16 +17,19 @@
             "mic_type": "IOT.SMARTPLUGSWITCH",
             "model": "KP105(UK)",
             "next_action": {
-                "type": -1
+                "action": 1,
+                "id": "8AA75A50A8440B17941D192BD9E01FFA",
+                "schd_sec": 59160,
+                "type": 1
             },
             "ntc_state": 0,
             "obd_src": "tplink",
             "oemId": "00000000000000000000000000000000",
             "on_time": 0,
             "relay_state": 0,
-            "rssi": -67,
+            "rssi": -66,
             "status": "configured",
-            "sw_ver": "1.0.7 Build 210506 Rel.153510",
+            "sw_ver": "1.0.5 Build 191209 Rel.094735",
             "updating": 0
         }
     }

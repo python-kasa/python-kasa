@@ -110,7 +110,7 @@
         "factory_default": false,
         "ip": "127.0.0.123",
         "is_support_iot_cloud": true,
-        "mac": "00-00-00-00-00-00",
+        "mac": "5C-E9-31-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "KLAP",
             "http_port": 80,
@@ -144,7 +144,7 @@
     },
     "get_device_info": {
         "avatar": "bulb",
-        "brightness": 50,
+        "brightness": 100,
         "color_temp": 2700,
         "color_temp_range": [
             2500,
@@ -153,7 +153,7 @@
         "default_states": {
             "re_power_type": "last_states",
             "state": {
-                "brightness": 50,
+                "brightness": 100,
                 "color_temp": 2700,
                 "hue": 0,
                 "saturation": 100
@@ -173,13 +173,13 @@
         "lang": "en_US",
         "latitude": 0,
         "longitude": 0,
-        "mac": "00-00-00-00-00-00",
+        "mac": "5C-E9-31-00-00-00",
         "model": "L530",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
         "overheated": false,
         "region": "Europe/London",
-        "rssi": -70,
+        "rssi": -79,
         "saturation": 100,
         "signal_level": 1,
         "specs": "",
@@ -190,22 +190,22 @@
     "get_device_time": {
         "region": "Europe/London",
         "time_diff": 0,
-        "timestamp": 1703934078
+        "timestamp": 1705742727
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 221,
-            "past7": 54,
+            "past30": 140,
+            "past7": 0,
             "today": 0
         },
         "saved_power": {
-            "past30": 1452,
-            "past7": 503,
+            "past30": 1198,
+            "past7": 0,
             "today": 0
         },
         "time_usage": {
-            "past30": 1673,
-            "past7": 557,
+            "past30": 1338,
+            "past7": 0,
             "today": 0
         }
     },

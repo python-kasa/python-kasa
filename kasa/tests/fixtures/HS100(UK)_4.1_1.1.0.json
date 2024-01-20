@@ -6,7 +6,7 @@
         "factory_default": true,
         "hw_ver": "4.1",
         "ip": "127.0.0.123",
-        "mac": "00-00-00-00-00-00",
+        "mac": "CC-32-E5-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "KLAP",
             "http_port": 80,
@@ -28,7 +28,7 @@
             "latitude_i": 0,
             "led_off": 0,
             "longitude_i": 0,
-            "mac": "00:00:00:00:00:00",
+            "mac": "CC:32:E5:00:00:00",
             "mic_type": "IOT.SMARTPLUGSWITCH",
             "model": "HS100(UK)",
             "next_action": {
@@ -38,7 +38,7 @@
             "oemId": "00000000000000000000000000000000",
             "on_time": 0,
             "relay_state": 0,
-            "rssi": -66,
+            "rssi": -43,
             "status": "new",
             "sw_ver": "1.1.0 Build 201016 Rel.175121",
             "updating": 0
