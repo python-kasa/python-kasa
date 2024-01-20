@@ -13,6 +13,7 @@ import json
 import logging
 import re
 from collections import defaultdict, namedtuple
+from pathlib import Path
 from pprint import pprint
 from typing import Dict, List
 
@@ -65,7 +66,17 @@ def scrub(res):
             res[k] = [scrub(vi) for vi in v]
         else:
             if k in keys_to_scrub:
-                if k in ["latitude", "latitude_i", "longitude", "longitude_i"]:
+                if k in ["mac", "mic_mac"]:
+                    # Some macs have : or - as a separator and others do not
+                    if len(v) == 12:
+                        v = f"{v[:6]}000000"
+                    else:
+                        delim = ":" if ":" in v else "-"
+                        rest = delim.join(
+                            format(s, "02x") for s in bytes.fromhex("000000")
+                        )
+                        v = f"{v[:8]}{delim}{rest}"
+                elif k in ["latitude", "latitude_i", "longitude", "longitude_i"]:
                     v = 0
                 elif k in ["ip"]:
                     v = "127.0.0.123"
@@ -95,8 +106,40 @@ def default_to_regular(d):
     return d
 
 
+async def handle_device(basedir, autosave, device: SmartDevice):
+    """Create a fixture for a single device instance."""
+    if isinstance(device, TapoDevice):
+        filename, copy_folder, final = await get_smart_fixture(device)
+    else:
+        filename, copy_folder, final = await get_legacy_fixture(device)
+
+    save_filename = Path(basedir) / copy_folder / filename
+
+    pprint(scrub(final))
+    if autosave:
+        save = "y"
+    else:
+        save = click.prompt(
+            f"Do you want to save the above content to {save_filename} (y/n)"
+        )
+    if save == "y":
+        click.echo(f"Saving info to {save_filename}")
+
+        with open(save_filename, "w") as f:
+            json.dump(final, f, sort_keys=True, indent=4)
+            f.write("\n")
+    else:
+        click.echo("Not saving.")
+
+
 @click.command()
-@click.argument("host")
+@click.option("--host", required=False, help="Target host.")
+@click.option(
+    "--target",
+    required=False,
+    default="255.255.255.255",
+    help="Target network for discovery.",
+)
 @click.option(
     "--username",
     default="",
@@ -111,37 +154,31 @@ def default_to_regular(d):
     envvar="KASA_PASSWORD",
     help="Password to use to authenticate to device.",
 )
+@click.option("--basedir", help="Base directory for the git repository", default=".")
+@click.option("--autosave", is_flag=True, default=False, help="Save without prompting")
 @click.option("-d", "--debug", is_flag=True)
-async def cli(host, debug, username, password):
-    """Generate devinfo file for given device."""
+async def cli(host, target, basedir, autosave, debug, username, password):
+    """Generate devinfo files for devices.
+
+    Use --host (for a single device) or --target (for a complete network).
+    """
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
     credentials = Credentials(username=username, password=password)
-    device = await Discover.discover_single(host, credentials=credentials)
-
-    if isinstance(device, TapoDevice):
-        save_filename, copy_folder, final = await get_smart_fixture(device)
+    if host is not None:
+        click.echo("Host given, performing discovery on %s." % host)
+        device = await Discover.discover_single(host, credentials=credentials)
+        await handle_device(basedir, autosave, device)
     else:
-        save_filename, copy_folder, final = await get_legacy_fixture(device)
-
-    pprint(scrub(final))
-    save = click.prompt(
-        f"Do you want to save the above content to {save_filename} (y/n)"
-    )
-    if save == "y":
-        click.echo(f"Saving info to {save_filename}")
-
-        with open(save_filename, "w") as f:
-            json.dump(final, f, sort_keys=True, indent=4)
-            f.write("\n")
-
         click.echo(
-            f"Saved. Copy/Move {save_filename} to "
-            + f"{copy_folder} to add it to the test suite"
+            "No --host given, performing discovery on %s. Use --target to override."
+            % target
         )
-    else:
-        click.echo("Not saving.")
+        devices = await Discover.discover(target=target, credentials=credentials)
+        click.echo("Detected %s devices" % len(devices))
+        for dev in devices.values():
+            await handle_device(basedir, autosave, dev)
 
 
 async def get_legacy_fixture(device):

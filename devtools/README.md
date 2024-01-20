@@ -3,18 +3,24 @@
 This directory contains some simple scripts that can be useful for developers.
 
 ## dump_devinfo
-* Queries the device and returns a fixture that can be added to the test suite
+* Queries the device (if --host is given) or discover devices and creates fixture files that can be added to the test suite.
 
 ```shell
-Usage: dump_devinfo.py [OPTIONS] HOST
+Usage: python -m devtools.dump_devinfo [OPTIONS]
 
-  Generate devinfo file for given device.
+  Generate devinfo files for devices.
+
+  Use --host (for a single device) or --target (for a complete network).
 
 Options:
+  --host TEXT      Target host.
+  --target TEXT    Target network for discovery.
+  --username TEXT  Username/email address to authenticate to device.
+  --password TEXT  Password to use to authenticate to device.
+  --basedir TEXT   Base directory for the git repository
+  --autosave       Save without prompting
   -d, --debug
-  --help       Show this message and exit.
-  --username   For authenticating devices.
-  --password
+  --help           Show this message and exit.
 ```
 
 ## create_module_fixtures

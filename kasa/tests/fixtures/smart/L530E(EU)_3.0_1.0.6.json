@@ -106,7 +106,7 @@
         "factory_default": false,
         "ip": "127.0.0.123",
         "is_support_iot_cloud": true,
-        "mac": "00-00-00-00-00-00",
+        "mac": "5C-E9-31-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "AES",
             "http_port": 80,
@@ -141,7 +141,7 @@
     "get_device_info": {
         "avatar": "bulb",
         "brightness": 100,
-        "color_temp": 2500,
+        "color_temp": 6500,
         "color_temp_range": [
             2500,
             6500
@@ -150,33 +150,33 @@
             "re_power_type": "always_on",
             "state": {
                 "brightness": 100,
-                "color_temp": 2500,
-                "hue": 31,
-                "saturation": 88
+                "color_temp": 6500,
+                "hue": 9,
+                "saturation": 67
             },
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": false,
+        "device_on": true,
         "dynamic_light_effect_enable": false,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.0.6 Build 230509 Rel.195312",
         "has_set_location_info": true,
-        "hue": 31,
+        "hue": 9,
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "3.0",
         "ip": "127.0.0.123",
         "lang": "en_US",
         "latitude": 0,
         "longitude": 0,
-        "mac": "00-00-00-00-00-00",
+        "mac": "5C-E9-31-00-00-00",
         "model": "L530",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
         "overheated": false,
         "region": "Europe/Berlin",
         "rssi": -48,
-        "saturation": 88,
+        "saturation": 67,
         "signal_level": 3,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
@@ -186,23 +186,23 @@
     "get_device_time": {
         "region": "Europe/Berlin",
         "time_diff": 60,
-        "timestamp": 1704212283
+        "timestamp": 1705700000
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 53,
-            "past7": 12,
-            "today": 0
+            "past30": 19,
+            "past7": 3,
+            "today": 3
         },
         "saved_power": {
-            "past30": 494,
-            "past7": 112,
-            "today": 0
+            "past30": 179,
+            "past7": 20,
+            "today": 20
         },
         "time_usage": {
-            "past30": 547,
-            "past7": 124,
-            "today": 0
+            "past30": 198,
+            "past7": 23,
+            "today": 23
         }
     },
     "get_dynamic_light_effect_rules": {
