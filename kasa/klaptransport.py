@@ -26,11 +26,11 @@ finds a match it moves onto handshake2
 
 handshake2: client sends sha25(remote_seed + auth_hash) to
 the device along with the TP_SESSIONID.  Device responds with
-200 if succesful.  It generally will be because this
-implemenation checks the auth_hash it recevied during handshake1
+200 if successful.  It generally will be because this
+implementation checks the auth_hash it received during handshake1
 
 encryption: local_seed, remote_seed and auth_hash are now used
-for encryption.  The last 4 bytes of the initialisation vector
+for encryption.  The last 4 bytes of the initialization vector
 are used as a sequence number that increments every time the
 client calls encrypt and this sequence number is sent as a
 url parameter to the device along with the encrypted payload
