@@ -24,6 +24,10 @@ from ..klaptransport import KlapEncryptionSession, KlapTransport, _sha256
 from ..smartprotocol import SmartProtocol
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
+DUMMY_MULTIPLE_QUERY = {
+    "foobar": {"foo": "bar", "bar": "foo"},
+    "barfoo": {"foo": "bar", "bar": "foo"},
+}
 ERRORS = [e for e in SmartErrorCode if e != 0]
 
 
@@ -74,7 +78,7 @@ async def test_smart_device_errors_in_multiple_request(mocker, error_code):
     config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
     protocol = SmartProtocol(transport=AesTransport(config=config))
     with pytest.raises(SmartDeviceException):
-        await protocol.query(DUMMY_QUERY, retry_count=2)
+        await protocol.query(DUMMY_MULTIPLE_QUERY, retry_count=2)
     if error_code in chain(SMART_TIMEOUT_ERRORS, SMART_RETRYABLE_ERRORS):
         expected_calls = 3
     else:

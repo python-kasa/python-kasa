@@ -33,6 +33,7 @@ class SmartProtocol(BaseProtocol):
     """Class for the new TPLink SMART protocol."""
 
     BACKOFF_SECONDS_AFTER_TIMEOUT = 1
+    MULTI_REQUEST_BATCH_SIZE = 5
 
     def __init__(
         self,
@@ -101,17 +102,51 @@ class SmartProtocol(BaseProtocol):
         # make mypy happy, this should never be reached..
         raise SmartDeviceException("Query reached somehow to unreachable")
 
+    async def _execute_multiple_query(self, request: Dict, retry_count: int) -> Dict:
+        requests = []
+        multi_result = {}
+        smart_method = "multipleRequest"
+        for method, params in request.items():
+            requests.append({"method": method, "params": params})
+
+        end = len(requests)
+        step = (
+            self.MULTI_REQUEST_BATCH_SIZE
+        )  # Break the requests down as there seems to be a size limit
+        for i in range(0, end, step):
+            x = i
+            requests_step = requests[x : x + step]
+
+            smart_params = {"requests": requests_step}
+            smart_request = self.get_smart_request(smart_method, smart_params)
+            _LOGGER.debug(
+                "%s multi-request-batch-%s >> %s",
+                self._host,
+                i + 1,
+                _LOGGER.isEnabledFor(logging.DEBUG) and pf(smart_request),
+            )
+            response_step = await self._transport.send(smart_request)
+            _LOGGER.debug(
+                "%s multi-request-batch-%s << %s",
+                self._host,
+                i + 1,
+                _LOGGER.isEnabledFor(logging.DEBUG) and pf(response_step),
+            )
+            self._handle_response_error_code(response_step)
+            responses = response_step["result"]["responses"]
+            for response in responses:
+                self._handle_response_error_code(response)
+                result = response.get("result", None)
+                multi_result[response["method"]] = result
+        return multi_result
+
     async def _execute_query(self, request: Union[str, Dict], retry_count: int) -> Dict:
         if isinstance(request, dict):
             if len(request) == 1:
                 smart_method = next(iter(request))
                 smart_params = request[smart_method]
             else:
-                requests = []
-                for method, params in request.items():
-                    requests.append({"method": method, "params": params})
-                smart_method = "multipleRequest"
-                smart_params = {"requests": requests}
+                return await self._execute_multiple_query(request, retry_count)
         else:
             smart_method = request
             smart_params = None
@@ -132,20 +167,9 @@ class SmartProtocol(BaseProtocol):
 
         self._handle_response_error_code(response_data)
 
-        if (result := response_data.get("result")) is None:
-            # Single set_ requests do not return a result
-            return {smart_method: None}
-
-        if (responses := result.get("responses")) is None:
-            return {smart_method: result}
-
-        # responses is returned for multipleRequest
-        multi_result = {}
-        for response in responses:
-            self._handle_response_error_code(response)
-            result = response.get("result", None)
-            multi_result[response["method"]] = result
-        return multi_result
+        # Single set_ requests do not return a result
+        result = response_data.get("result")
+        return {smart_method: result}
 
     def _handle_response_error_code(self, resp_dict: dict):
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
