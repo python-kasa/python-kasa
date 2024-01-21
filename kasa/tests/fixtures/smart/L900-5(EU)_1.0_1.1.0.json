@@ -1,0 +1,390 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "light_strip",
+                "ver_code": 1
+            },
+            {
+                "id": "light_strip_lighting_effect",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "brightness",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "color_temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "preset",
+                "ver_code": 3
+            },
+            {
+                "id": "color",
+                "ver_code": 1
+            },
+            {
+                "id": "on_off_gradually",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "music_rhythm",
+                "ver_code": 3
+            },
+            {
+                "id": "bulb_quick_control",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "L900-5(EU)",
+        "device_type": "SMART.TAPOBULB",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "A8-42-A1-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "KLAP",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "obd_src": "tplink",
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_update_info": {
+        "enable": false,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_device_info": {
+        "avatar": "light_strip",
+        "brightness": 100,
+        "color_temp": 9000,
+        "color_temp_range": [
+            9000,
+            9000
+        ],
+        "default_states": {
+            "state": {
+                "brightness": 100,
+                "color_temp": 9000,
+                "hue": 0,
+                "saturation": 100
+            },
+            "type": "last_states"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": true,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.1.0 Build 230905 Rel.184939",
+        "has_set_location_info": false,
+        "hue": 0,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "",
+        "latitude": 0,
+        "lighting_effect": {
+            "brightness": 50,
+            "custom": 0,
+            "display_colors": [],
+            "enable": 0,
+            "id": "",
+            "name": "station"
+        },
+        "longitude": 0,
+        "mac": "A8-42-A1-00-00-00",
+        "model": "L900",
+        "music_rhythm_enable": false,
+        "music_rhythm_mode": "single_lamp",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "",
+        "rssi": -50,
+        "saturation": 100,
+        "signal_level": 2,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 60,
+        "type": "SMART.TAPOBULB"
+    },
+    "get_device_time": {
+        "region": "",
+        "time_diff": 60,
+        "timestamp": 1705796222
+    },
+    "get_device_usage": {
+        "power_usage": {
+            "past30": 0,
+            "past7": 0,
+            "today": 0
+        },
+        "saved_power": {
+            "past30": 2,
+            "past7": 2,
+            "today": 2
+        },
+        "time_usage": {
+            "past30": 2,
+            "past7": 2,
+            "today": 2
+        }
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.1.0 Build 230905 Rel.184939",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_lighting_effect": {
+        "brightness": 50,
+        "custom": 0,
+        "direction": 1,
+        "display_colors": [],
+        "duration": 0,
+        "enable": 0,
+        "expansion_strategy": 2,
+        "id": "",
+        "name": "station",
+        "repeat_times": 1,
+        "segment_length": 1,
+        "sequence": [
+            [
+                300,
+                100,
+                50
+            ],
+            [
+                240,
+                100,
+                50
+            ],
+            [
+                180,
+                100,
+                50
+            ],
+            [
+                120,
+                100,
+                50
+            ],
+            [
+                60,
+                100,
+                50
+            ],
+            [
+                0,
+                100,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ],
+            [
+                0,
+                0,
+                50
+            ]
+        ],
+        "spread": 16,
+        "transition": 400,
+        "type": "sequence"
+    },
+    "get_next_event": {},
+    "get_on_off_gradually_info": {
+        "enable": false
+    },
+    "get_preset_rules": {
+        "start_index": 0,
+        "states": [
+            {
+                "brightness": 50,
+                "color_temp": 9000,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 240,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 120,
+                "saturation": 100
+            }
+        ],
+        "sum": 7
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 16,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "L900",
+            "device_type": "SMART.TAPOBULB",
+            "is_klap": true
+        }
+    }
+}
