@@ -11,7 +11,7 @@ except ImportError:
 
 from .deviceconfig import DeviceConfig
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
-from .protocol import TPLinkProtocol
+from .protocol import BaseProtocol
 from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
 
 
@@ -222,7 +222,7 @@ class SmartBulb(SmartDevice):
         host: str,
         *,
         config: Optional[DeviceConfig] = None,
-        protocol: Optional[TPLinkProtocol] = None,
+        protocol: Optional[BaseProtocol] = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb

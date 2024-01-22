@@ -11,12 +11,12 @@ from .exceptions import (
     TimeoutException,
 )
 from .json import dumps as json_dumps
-from .protocol import BaseTransport, TPLinkProtocol
+from .protocol import BaseProtocol, BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class IotProtocol(TPLinkProtocol):
+class IotProtocol(BaseProtocol):
     """Class for the legacy TPLink IOT KASA Protocol."""
 
     BACKOFF_SECONDS_AFTER_TIMEOUT = 1

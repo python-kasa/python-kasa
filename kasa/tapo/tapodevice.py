@@ -9,7 +9,7 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
 from ..modules import Emeter
-from ..protocol import TPLinkProtocol
+from ..protocol import BaseProtocol
 from ..smartdevice import SmartDevice, WifiNetwork
 from ..smartprotocol import SmartProtocol
 
@@ -24,7 +24,7 @@ class TapoDevice(SmartDevice):
         host: str,
         *,
         config: Optional[DeviceConfig] = None,
-        protocol: Optional[TPLinkProtocol] = None,
+        protocol: Optional[BaseProtocol] = None,
     ) -> None:
         _protocol = protocol or SmartProtocol(
             transport=AesTransport(config=config or DeviceConfig(host=host)),

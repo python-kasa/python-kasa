@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from kasa.deviceconfig import DeviceConfig
 from kasa.modules import Antitheft, Cloud, Schedule, Time, Usage
-from kasa.protocol import TPLinkProtocol
+from kasa.protocol import BaseProtocol
 from kasa.smartdevice import DeviceType, SmartDevice, requires_update
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class SmartPlug(SmartDevice):
         host: str,
         *,
         config: Optional[DeviceConfig] = None,
-        protocol: Optional[TPLinkProtocol] = None,
+        protocol: Optional[BaseProtocol] = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug

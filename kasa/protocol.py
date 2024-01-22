@@ -79,7 +79,7 @@ class BaseTransport(ABC):
         """Close the transport.  Abstract method to be overriden."""
 
 
-class TPLinkProtocol(ABC):
+class BaseProtocol(ABC):
     """Base class for all TP-Link Smart Home communication."""
 
     def __init__(
@@ -140,7 +140,7 @@ class _XorTransport(BaseTransport):
         """Close the transport.  Abstract method to be overriden."""
 
 
-class TPLinkSmartHomeProtocol(TPLinkProtocol):
+class TPLinkSmartHomeProtocol(BaseProtocol):
     """Implementation of the TP-Link Smart Home protocol."""
 
     INITIALIZATION_VECTOR = 171

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from kasa.deviceconfig import DeviceConfig
 from kasa.modules import AmbientLight, Motion
-from kasa.protocol import TPLinkProtocol
+from kasa.protocol import BaseProtocol
 from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
 from kasa.smartplug import SmartPlug
 
@@ -70,7 +70,7 @@ class SmartDimmer(SmartPlug):
         host: str,
         *,
         config: Optional[DeviceConfig] = None,
-        protocol: Optional[TPLinkProtocol] = None,
+        protocol: Optional[BaseProtocol] = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Dimmer
