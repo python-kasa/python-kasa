@@ -9,8 +9,8 @@ from .exceptions import SmartDeviceException, UnsupportedDeviceException
 from .iotprotocol import IotProtocol
 from .klaptransport import KlapTransport, KlapTransportV2
 from .protocol import (
+    BaseProtocol,
     BaseTransport,
-    TPLinkProtocol,
     TPLinkSmartHomeProtocol,
     _XorTransport,
 )
@@ -141,14 +141,14 @@ def get_device_class_from_family(device_type: str) -> Optional[Type[SmartDevice]
 
 def get_protocol(
     config: DeviceConfig,
-) -> Optional[TPLinkProtocol]:
+) -> Optional[BaseProtocol]:
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
     protocol_transport_key = (
         protocol_name + "." + config.connection_type.encryption_type.value
     )
     supported_device_protocols: Dict[
-        str, Tuple[Type[TPLinkProtocol], Type[BaseTransport]]
+        str, Tuple[Type[BaseProtocol], Type[BaseTransport]]
     ] = {
         "IOT.XOR": (TPLinkSmartHomeProtocol, _XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),

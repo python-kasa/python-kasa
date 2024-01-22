@@ -16,8 +16,8 @@ from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
 from ..klaptransport import KlapTransport, KlapTransportV2
 from ..protocol import (
+    BaseProtocol,
     BaseTransport,
-    TPLinkProtocol,
     TPLinkSmartHomeProtocol,
     _XorTransport,
 )
@@ -345,7 +345,7 @@ def _get_subclasses(of_class):
 
 
 @pytest.mark.parametrize(
-    "class_name_obj", _get_subclasses(TPLinkProtocol), ids=lambda t: t[0]
+    "class_name_obj", _get_subclasses(BaseProtocol), ids=lambda t: t[0]
 )
 def test_protocol_init_signature(class_name_obj):
     params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())

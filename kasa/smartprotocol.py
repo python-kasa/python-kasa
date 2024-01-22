@@ -24,12 +24,12 @@ from .exceptions import (
     TimeoutException,
 )
 from .json import dumps as json_dumps
-from .protocol import BaseTransport, TPLinkProtocol, md5
+from .protocol import BaseProtocol, BaseTransport, md5
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SmartProtocol(TPLinkProtocol):
+class SmartProtocol(BaseProtocol):
     """Class for the new TPLink SMART protocol."""
 
     BACKOFF_SECONDS_AFTER_TIMEOUT = 1
