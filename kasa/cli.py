@@ -399,7 +399,7 @@ async def discover(ctx):
     sem = asyncio.Semaphore()
     discovered = dict()
     unsupported = []
-    auth_failed = []
+    auth_failed = {}
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceException):
         unsupported.append(unsupported_exception)
@@ -420,17 +420,17 @@ async def discover(ctx):
             try:
                 await dev.update()
             except AuthenticationException:
-                auth_failed.append(dev._discovery_info)
+                auth_failed[dev.host] = dev._discovery_info
                 echo("== Authentication failed for device ==")
                 _echo_discovery_info(dev._discovery_info)
                 echo()
             else:
-                discovered[dev.host] = dev.internal_state
                 ctx.parent.obj = dev
                 await ctx.parent.invoke(state)
+                discovered[dev.host] = dev.internal_state
             echo()
 
-    await Discover.discover(
+    discovered_devices = await Discover.discover(
         target=target,
         discovery_timeout=discovery_timeout,
         on_discovered=print_discovered,
@@ -439,6 +439,23 @@ async def discover(ctx):
         timeout=timeout,
         credentials=credentials,
     )
+
+    # TimeoutError could have cancelled discover() before all
+    # discovered devices can print
+    not_printed = [
+        device
+        for ip, device in discovered_devices.items()
+        if ip not in discovered and ip not in auth_failed
+    ]
+    for device in not_printed:
+        await print_discovered(device)
+
+    for device in discovered_devices.values():
+        await device.protocol.close()
+        # TODO transports need to permit close to avoid
+        # ERROR:asyncio:Unclosed client session
+        if hasattr(device.protocol._transport, "_http_client"):
+            await device.protocol._transport._http_client.close()
 
     echo(f"Found {len(discovered)} devices")
     if unsupported:
