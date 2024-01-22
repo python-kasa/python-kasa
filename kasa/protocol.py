@@ -168,7 +168,7 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
 
         :param str host: host name or ip address of the device
         :param request: command to send to the device (can be either dict or
-        json string)
+            json string)
         :param retry_count: how many retries to do in case of failure
         :return: response dict
         """

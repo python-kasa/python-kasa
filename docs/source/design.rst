@@ -1,5 +1,6 @@
 .. py:module:: kasa.modules
 
+
 .. _library_design:
 
 Library Design & Modules
@@ -46,6 +47,7 @@ While the properties are designed to provide a nice API to use for common use ca
 you may sometimes want to access the raw, cached data as returned by the device.
 This can be done using the :attr:`~kasa.SmartDevice.internal_state` property.
 
+
 .. _modules:
 
 Modules
@@ -61,12 +63,93 @@ You can get the list of supported modules for a given device instance using :att
     If you only need some module-specific information,
     you can call the wanted method on the module to avoid using :meth:`~kasa.SmartDevice.update`.
 
+Protocols and Transports
+************************
+
+The library supports two different TP-Link protocols, ``IOT`` and ``SMART``.
+``IOT`` is the original Kasa protocol and ``SMART`` is the newer protocol supported by TAPO devices and newer KASA devices.
+The original protocol has a ``target``, ``command``, ``args`` interface whereas the new protocol uses a different set of
+commands and has a ``method``, ``parameters`` interface.
+Confusingly TP-Link originally called the Kasa line "Kasa Smart" and hence this library used "Smart" in a lot of the
+module and class names but actually they were built to work with the ``IOT`` protocol.
+
+In 2021 TP-Link started updating the underlying communication transport used by Kasa devices to make them more secure.
+It switched from a TCP connection with static XOR type of encryption to a transport called ``KLAP`` which communicates
+over http and uses handshakes to negotiate a dynamic encryption cipher.
+This automatic update was put on hold and only seemed to affect UK HS100 models.
+
+In 2023 TP-Link started updating the underlying communication transport used by Tapo devices to make them more secure.
+It switched from AES encryption via public key exchange to use ``KLAP`` encryption and negotiation due to concerns
+around impersonation with AES.
+The encryption cipher is the same as for Kasa KLAP but the handshake seeds are slightly different.
+Also in 2023 TP-Link started releasing newer Kasa branded devices using the ``SMART`` protocol.
+This appears to be driven by hardware version rather than firmware.
+
+
+In order to support these different configurations the library migrated from a single :class:`TPLinkSmartHomeProtocol <kasa.protocol.TPLinkSmartHomeProtocol>`
+to support pluggable transports and protocols.
+The classes providing this functionality are:
+
+- :class:`BaseProtocol <kasa.protocol.BaseProtocol>`
+- :class:`IotProtocol <kasa.iotprotocol.IotProtocol>`
+- :class:`SmartProtocol <kasa.smartprotocol.SmartProtocol>`
+
+- :class:`BaseTransport <kasa.protocol.BaseTransport>`
+- :class:`AesTransport <kasa.aestransport.AesTransport>`
+- :class:`KlapTransport <kasa.klaptransport.KlapTransport>`
+- :class:`KlapTransportV2 <kasa.klaptransport.KlapTransportV2>`
+
 
 API documentation for modules
 *****************************
 
 .. automodule:: kasa.modules
     :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+
+
+API documentation for protocols and transports
+**********************************************
+
+.. autoclass:: kasa.protocol.BaseProtocol
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.iotprotocol.IotProtocol
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.smartprotocol.SmartProtocol
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.protocol.BaseTransport
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.klaptransport.KlapTransport
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.klaptransport.KlapTransportV2
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.aestransport.AesTransport
+    :members:
+    :inherited-members:
+    :undoc-members:
+
+.. autoclass:: kasa.protocol.TPLinkSmartHomeProtocol
     :members:
     :inherited-members:
     :undoc-members:
