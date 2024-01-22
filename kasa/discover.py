@@ -105,12 +105,13 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = TPLinkSmartHomeProtocol.encrypt(req)
         sleep_between_packets = self.discovery_timeout / self.discovery_packets
-        for _i in range(self.discovery_packets):
+        for i in range(self.discovery_packets):
             if self.target in self.seen_hosts:  # Stop sending for discover_single
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
             self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
-            await asyncio.sleep(sleep_between_packets)
+            if i < self.discovery_packets - 1:
+                await asyncio.sleep(sleep_between_packets)
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
@@ -140,18 +141,12 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self.unsupported_device_exceptions[ip] = udex
             if self.on_unsupported is not None:
                 asyncio.ensure_future(self.on_unsupported(udex))
-            if self.discovered_event is not None:
-                if self.discover_task:
-                    self.discover_task.cancel()
-                self.discovered_event.set()
+            self._handle_discovered_event()
             return
         except SmartDeviceException as ex:
             _LOGGER.debug(f"[DISCOVERY] Unable to find device type for {ip}: {ex}")
             self.invalid_device_exceptions[ip] = ex
-            if self.discovered_event is not None:
-                if self.discover_task:
-                    self.discover_task.cancel()
-                self.discovered_event.set()
+            self._handle_discovered_event()
             return
 
         self.discovered_devices[ip] = device
@@ -159,6 +154,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         if self.on_discovered is not None:
             asyncio.ensure_future(self.on_discovered(device))
 
+        self._handle_discovered_event()
+
+    def _handle_discovered_event(self):
+        """If discovered_event is available set it and cancel discover_task."""
         if self.discovered_event is not None:
             if self.discover_task:
                 self.discover_task.cancel()
@@ -168,8 +167,10 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         """Handle asyncio.Protocol errors."""
         _LOGGER.error("Got error: %s", ex)
 
-    def connection_lost(self, ex):
-        """NOP implementation of connection lost."""
+    def connection_lost(self, ex):  # pragma: no cover
+        """Cancel the discover task if running."""
+        if self.discover_task:
+            self.discover_task.cancel()
 
 
 class Discover:
