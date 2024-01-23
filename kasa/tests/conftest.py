@@ -98,7 +98,9 @@ PLUGS_IOT = {
     "KP401",
     "KS200M",
 }
-PLUGS_SMART = {"P110", "KP125M", "EP25", "KS205", "P125M"}
+# P135 supports dimming, but its not currently support
+# by the library
+PLUGS_SMART = {"P110", "KP125M", "EP25", "KS205", "P125M", "P135"}
 PLUGS = {
     *PLUGS_IOT,
     *PLUGS_SMART,
