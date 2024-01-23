@@ -28,6 +28,7 @@ from ..klaptransport import (
     KlapTransportV2,
     _sha256,
 )
+from ..protocol import DEFAULT_CREDENTIALS, get_default_credentials
 from ..smartprotocol import SmartProtocol
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
@@ -241,10 +242,7 @@ def test_encrypt_unicode():
         (Credentials("foo", "bar"), does_not_raise()),
         (Credentials(), does_not_raise()),
         (
-            Credentials(
-                KlapTransport.KASA_SETUP_EMAIL,
-                KlapTransport.KASA_SETUP_PASSWORD,
-            ),
+            get_default_credentials(DEFAULT_CREDENTIALS["KASA"]),
             does_not_raise(),
         ),
         (
