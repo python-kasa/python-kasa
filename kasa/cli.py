@@ -339,7 +339,8 @@ async def cli(
             credentials=credentials,
         )
 
-    if ctx.invoked_subcommand not in ["wifi", "raw-command"]:
+    # Skip update for wifi & raw-command, and if factory was used to connect
+    if ctx.invoked_subcommand not in ["wifi", "raw-command"] and not device_family:
         await dev.update()
 
     ctx.obj = dev
