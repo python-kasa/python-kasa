@@ -21,6 +21,7 @@ from kasa.cli import (
     cli,
     emeter,
     raw_command,
+    reboot,
     state,
     sysinfo,
     toggle,
@@ -101,6 +102,18 @@ async def test_raw_command(dev):
     res = await runner.invoke(raw_command, obj=dev)
     assert res.exit_code != 0
     assert "Usage" in res.output
+
+
+async def test_reboot(dev, mocker):
+    runner = CliRunner()
+    query_mock = mocker.patch.object(dev.protocol, "query")
+    res = await runner.invoke(
+        reboot,
+        obj=dev,
+    )
+
+    assert res.exit_code == 0
+    query_mock.assert_called()
 
 
 @device_smart
