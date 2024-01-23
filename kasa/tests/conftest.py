@@ -15,6 +15,7 @@ from kasa import (
     Credentials,
     Discover,
     SmartBulb,
+    SmartDevice,
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
@@ -416,9 +417,15 @@ async def dev(request):
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        return d if d else await _discover_update_and_close(ip, username, password)
+        dev: SmartDevice = (
+            d if d else await _discover_update_and_close(ip, username, password)
+        )
+    else:
+        dev: SmartDevice = await get_device_for_file(file, protocol)
 
-    return await get_device_for_file(file, protocol)
+    yield dev
+
+    await dev.disconnect()
 
 
 @pytest.fixture

@@ -348,7 +348,12 @@ class KlapTransport(BaseTransport):
             return json_payload
 
     async def close(self) -> None:
-        """Mark the handshake as not done since we likely lost the connection."""
+        """Close the http client and reset internal state."""
+        await self.reset()
+        await self._http_client.close()
+
+    async def reset(self) -> None:
+        """Reset internal handshake state."""
         self._handshake_done = False
 
     @staticmethod

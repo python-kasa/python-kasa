@@ -19,12 +19,12 @@ from ..httpclient import HttpClient
         (
             aiohttp.ServerDisconnectedError(),
             ConnectionException,
-            "Unable to connect to the device: ",
+            "Device connection error: ",
         ),
         (
             aiohttp.ClientOSError(),
             ConnectionException,
-            "Unable to connect to the device: ",
+            "Device connection error: ",
         ),
         (
             aiohttp.ServerTimeoutError(),

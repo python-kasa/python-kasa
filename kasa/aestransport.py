@@ -315,10 +315,12 @@ class AesTransport(BaseTransport):
         return await self.send_secure_passthrough(request)
 
     async def close(self) -> None:
-        """Mark the handshake and login as not done.
+        """Close the http client and reset internal state."""
+        await self.reset()
+        await self._http_client.close()
 
-        Since we likely lost the connection.
-        """
+    async def reset(self) -> None:
+        """Reset internal handshake and login state."""
         self._handshake_done = False
         self._login_token = None
 
