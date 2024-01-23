@@ -69,6 +69,8 @@ async def test_connect(
 
     assert dev.config == config
 
+    await dev.disconnect()
+
 
 @pytest.mark.parametrize("custom_port", [123, None])
 async def test_connect_custom_port(all_fixture_data: dict, mocker, custom_port):

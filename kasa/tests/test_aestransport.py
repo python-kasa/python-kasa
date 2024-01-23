@@ -137,6 +137,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
         await transport.send(json_dumps(request))
         assert transport._login_token == mock_aes_device.token
         assert post_mock.call_count == call_count  # Login, Handshake, Login
+        await transport.close()
 
 
 @status_parameters
