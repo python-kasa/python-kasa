@@ -390,7 +390,6 @@ async def discover(ctx):
     target = ctx.parent.params["target"]
     username = ctx.parent.params["username"]
     password = ctx.parent.params["password"]
-    verbose = ctx.parent.params["verbose"]
     discovery_timeout = ctx.parent.params["discovery_timeout"]
     timeout = ctx.parent.params["timeout"]
     port = ctx.parent.params["port"]
@@ -429,9 +428,6 @@ async def discover(ctx):
                 discovered[dev.host] = dev.internal_state
                 ctx.parent.obj = dev
                 await ctx.parent.invoke(state)
-                if verbose:
-                    echo()
-                    _echo_discovery_info(dev._discovery_info)
             echo()
 
     await Discover.discover(
@@ -561,6 +557,7 @@ async def state(ctx, dev: SmartDevice):
         echo(f"\tDevice ID:         {dev.device_id}")
         for feature in dev.features:
             echo(f"\tFeature:           {feature}")
+        echo()
         _echo_discovery_info(dev._discovery_info)
     return dev.internal_state
 
