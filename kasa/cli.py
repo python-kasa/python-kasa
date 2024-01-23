@@ -317,7 +317,6 @@ async def cli(
 
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
-        await dev.update()
     elif device_family and encrypt_type:
         ctype = ConnectionType(
             DeviceFamilyType(device_family),
@@ -339,6 +338,9 @@ async def cli(
             port=port,
             credentials=credentials,
         )
+
+    # Skip update for wifi & raw-command, and if factory was used to connect
+    if ctx.invoked_subcommand not in ["wifi", "raw-command"] and not device_family:
         await dev.update()
 
     ctx.obj = dev
