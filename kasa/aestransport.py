@@ -193,8 +193,6 @@ class AesTransport(BaseTransport):
         This prevents the key pair being generated unless a connection
         can be made to the device.
         """
-        if self._key_pair:
-            return
         self._key_pair = KeyPair.create_key_pair()
         pub_key = (
             "-----BEGIN PUBLIC KEY-----\n"
@@ -251,7 +249,7 @@ class AesTransport(BaseTransport):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
         self._session_expire_at = time.time() + 86400
-        if TYPE_CHECKING:
+        if TYPE_CHECKING:  # pragma: no cover
             assert self._key_pair is not None
         self._encryption_session = AesEncyptionSession.create_from_keypair(
             handshake_key, self._key_pair
