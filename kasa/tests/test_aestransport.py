@@ -169,7 +169,10 @@ class MockAesDevice:
         self.inner_error_code = inner_error_code
         self.http_client = HttpClient(DeviceConfig(self.host))
 
-    async def post(self, url, params=None, json=None, *_, **__):
+    async def post(self, url, params=None, json=None, data=None, *_, **__):
+        if data:
+            async for item in data:
+                json = json_loads(item.decode())
         return await self._post(url, json)
 
     async def _post(self, url, json):
