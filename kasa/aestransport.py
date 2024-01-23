@@ -120,17 +120,12 @@ class AesTransport(BaseTransport):
     @staticmethod
     def hash_credentials(login_v2: bool, credentials: Credentials) -> Tuple[str, str]:
         """Hash the credentials."""
+        un = base64.b64encode(_sha1(credentials.username.encode()).encode()).decode()
         if login_v2:
-            un = base64.b64encode(
-                _sha1(credentials.username.encode()).encode()
-            ).decode()
             pw = base64.b64encode(
                 _sha1(credentials.password.encode()).encode()
             ).decode()
         else:
-            un = base64.b64encode(
-                _sha1(credentials.username.encode()).encode()
-            ).decode()
             pw = base64.b64encode(credentials.password.encode()).decode()
         return un, pw
 
