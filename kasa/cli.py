@@ -339,7 +339,8 @@ async def cli(
             port=port,
             credentials=credentials,
         )
-        await dev.update()
+        if ctx.invoked_subcommand not in ["wifi", "raw-command"]:
+            await dev.update()
 
     ctx.obj = dev
 
