@@ -57,7 +57,7 @@ class _mock_response:
         (aiohttp.ServerDisconnectedError("dummy exception"), True),
         (aiohttp.ClientOSError("dummy exception"), True),
     ],
-    ids=("Exception", "SmartDeviceException", "DisconnectError", "ConnectError"),
+    ids=("Exception", "ServerTimeoutError", "ServerDisconnectedError", "ClientOSError"),
 )
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])

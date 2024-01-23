@@ -7,7 +7,6 @@ import aiohttp
 from .deviceconfig import DeviceConfig
 from .exceptions import (
     ConnectionException,
-    DisconnectedException,
     SmartDeviceException,
     TimeoutException,
 )
@@ -81,13 +80,9 @@ class HttpClient:
                     if return_json:
                         response_data = json_loads(response_data.decode())
 
-        except aiohttp.ServerDisconnectedError as ex:
-            raise DisconnectedException(
-                f"Disconnected from the device: {self._config.host}: {ex}", ex
-            ) from ex
-        except aiohttp.ClientOSError as ex:
+        except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
             raise ConnectionException(
-                f"Unable to connect to the device: {self._config.host}: {ex}", ex
+                f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
         except (aiohttp.ServerTimeoutError, asyncio.TimeoutError) as ex:
             raise TimeoutException(

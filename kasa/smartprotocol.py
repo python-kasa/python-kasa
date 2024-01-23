@@ -18,7 +18,6 @@ from .exceptions import (
     SMART_TIMEOUT_ERRORS,
     AuthenticationException,
     ConnectionException,
-    DisconnectedException,
     RetryableException,
     SmartDeviceException,
     SmartErrorCode,
@@ -66,13 +65,7 @@ class SmartProtocol(BaseProtocol):
         for retry in range(retry_count + 1):
             try:
                 return await self._execute_query(request, retry)
-            except DisconnectedException as sdex:
-                if retry >= retry_count:
-                    _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
-                    raise sdex
-                continue
             except ConnectionException as sdex:
-                await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise sdex

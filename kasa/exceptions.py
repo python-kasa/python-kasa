@@ -42,10 +42,6 @@ class ConnectionException(SmartDeviceException):
     """Connection exception for device errors."""
 
 
-class DisconnectedException(SmartDeviceException):
-    """Disconnected exception for device errors."""
-
-
 class SmartErrorCode(IntEnum):
     """Enum for SMART Error Codes."""
 
