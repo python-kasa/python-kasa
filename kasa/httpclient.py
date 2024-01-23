@@ -41,16 +41,22 @@ class HttpClient:
         *,
         params: Optional[Dict[str, Any]] = None,
         data: Optional[bytes] = None,
-        json: Optional[Dict] = None,
+        json: Optional[Union[Dict, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
         cookies_dict: Optional[Dict[str, str]] = None,
     ) -> Tuple[int, Optional[Union[Dict, bytes]]]:
-        """Send an http post request to the device."""
+        """Send an http post request to the device.
+
+        If the request is provided via the json parameter json will be returned.
+        """
         response_data = None
         self._last_url = url
         self.client.cookie_jar.clear()
         return_json = bool(json)
-        # If json is not a dict send as data
+        # If json is not a dict send as data.
+        # This allows the json parameter to be used to pass other
+        # types of data such as async_generator and still have json
+        # returned.
         if json and not isinstance(json, Dict):
             data = json
             json = None
