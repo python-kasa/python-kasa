@@ -11,5 +11,8 @@ try:
 except ImportError:
     import json
 
-    dumps = json.dumps
+    def dumps(obj, *, default=None):
+        """Dump JSON."""
+        return json.dumps(obj, separators=(",", ":"))
+
     loads = json.loads

@@ -56,7 +56,7 @@ class AesTransport(BaseTransport):
         "Accept": "application/json",
     }
     CONTENT_LENGTH = "Content-Length"
-    KEY_PAIR_CONTENT_LENGTH = 318
+    KEY_PAIR_CONTENT_LENGTH = 314
 
     def __init__(
         self,
