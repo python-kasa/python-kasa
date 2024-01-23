@@ -16,6 +16,7 @@ from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
     SMART_TIMEOUT_ERRORS,
+    AuthenticationException,
     SmartDeviceException,
     SmartErrorCode,
 )
@@ -89,6 +90,53 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     with expectation:
         await transport.perform_login()
         assert transport._login_token == mock_aes_device.token
+
+
+@pytest.mark.parametrize(
+    "inner_error_codes, expectation, call_count",
+    [
+        ([SmartErrorCode.LOGIN_ERROR, 0, 0, 0], does_not_raise(), 4),
+        (
+            [SmartErrorCode.LOGIN_ERROR, SmartErrorCode.LOGIN_ERROR],
+            pytest.raises(AuthenticationException),
+            3,
+        ),
+        (
+            [SmartErrorCode.LOGIN_FAILED_ERROR],
+            pytest.raises(AuthenticationException),
+            1,
+        ),
+    ],
+    ids=("LOGIN_ERROR-success", "LOGIN_ERROR-LOGIN_ERROR", "LOGIN_FAILED_ERROR"),
+)
+async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
+    host = "127.0.0.1"
+    mock_aes_device = MockAesDevice(host, 200, 0, inner_error_codes)
+    post_mock = mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_aes_device.post
+    )
+
+    transport = AesTransport(
+        config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
+    )
+    transport._handshake_done = True
+    transport._session_expire_at = time.time() + 86400
+    transport._encryption_session = mock_aes_device.encryption_session
+
+    assert transport._login_token is None
+
+    request = {
+        "method": "get_device_info",
+        "params": None,
+        "request_time_milis": round(time.time() * 1000),
+        "requestID": 1,
+        "terminal_uuid": "foobar",
+    }
+
+    with expectation:
+        await transport.send(json_dumps(request))
+        assert transport._login_token == mock_aes_device.token
+        assert post_mock.call_count == call_count  # Login, Handshake, Login
 
 
 @status_parameters
@@ -166,8 +214,16 @@ class MockAesDevice:
         self.host = host
         self.status_code = status_code
         self.error_code = error_code
-        self.inner_error_code = inner_error_code
+        self._inner_error_code = inner_error_code
         self.http_client = HttpClient(DeviceConfig(self.host))
+        self.inner_call_count = 0
+
+    @property
+    def inner_error_code(self):
+        if isinstance(self._inner_error_code, list):
+            return self._inner_error_code[self.inner_call_count]
+        else:
+            return self._inner_error_code
 
     async def post(self, url, params=None, json=None, *_, **__):
         return await self._post(url, json)
@@ -215,8 +271,10 @@ class MockAesDevice:
 
     async def _return_login_response(self, url, json):
         result = {"result": {"token": self.token}, "error_code": self.inner_error_code}
+        self.inner_call_count += 1
         return self._mock_response(self.status_code, result)
 
     async def _return_send_response(self, url, json):
         result = {"result": {"method": None}, "error_code": self.inner_error_code}
+        self.inner_call_count += 1
         return self._mock_response(self.status_code, result)
