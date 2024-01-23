@@ -175,8 +175,8 @@ class AesTransport(BaseTransport):
         )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)  # pragma: no cover
-            assert self._encryption_session is not None  # pragma: no cover
+            resp_dict = cast(Dict[str, Any], resp_dict)
+            assert self._encryption_session is not None
 
         raw_response: str = resp_dict["result"]["response"]
         response = self._encryption_session.decrypt(raw_response.encode())
@@ -274,7 +274,7 @@ class AesTransport(BaseTransport):
         self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)  # pragma: no cover
+            resp_dict = cast(Dict[str, Any], resp_dict)
 
         handshake_key = resp_dict["result"]["key"]
 
@@ -291,7 +291,7 @@ class AesTransport(BaseTransport):
 
         self._session_expire_at = time.time() + 86400
         if TYPE_CHECKING:
-            assert self._key_pair is not None  # pragma: no cover
+            assert self._key_pair is not None
         self._encryption_session = AesEncyptionSession.create_from_keypair(
             handshake_key, self._key_pair
         )
