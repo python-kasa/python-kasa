@@ -254,8 +254,8 @@ class AesTransport(BaseTransport):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
         self._session_expire_at = time.time() + 86400
-        if TYPE_CHECKING:  # pragma: no cover
-            assert self._key_pair is not None
+        if TYPE_CHECKING:
+            assert self._key_pair is not None  # pragma: no cover
         self._encryption_session = AesEncyptionSession.create_from_keypair(
             handshake_key, self._key_pair
         )
