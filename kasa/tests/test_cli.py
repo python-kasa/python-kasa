@@ -104,16 +104,19 @@ async def test_raw_command(dev):
     assert "Usage" in res.output
 
 
+@device_smart
 async def test_reboot(dev, mocker):
+    """Test that reboot works on SMART devices."""
     runner = CliRunner()
     query_mock = mocker.patch.object(dev.protocol, "query")
+
     res = await runner.invoke(
         reboot,
         obj=dev,
     )
 
-    assert res.exit_code == 0
     query_mock.assert_called()
+    assert res.exit_code == 0
 
 
 @device_smart
