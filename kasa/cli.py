@@ -390,7 +390,6 @@ async def discover(ctx):
     target = ctx.parent.params["target"]
     username = ctx.parent.params["username"]
     password = ctx.parent.params["password"]
-    verbose = ctx.parent.params["verbose"]
     discovery_timeout = ctx.parent.params["discovery_timeout"]
     timeout = ctx.parent.params["timeout"]
     port = ctx.parent.params["port"]
@@ -429,9 +428,6 @@ async def discover(ctx):
                 discovered[dev.host] = dev.internal_state
                 ctx.parent.obj = dev
                 await ctx.parent.invoke(state)
-                if verbose:
-                    echo()
-                    _echo_discovery_info(dev._discovery_info)
             echo()
 
     await Discover.discover(
@@ -473,21 +469,20 @@ def _echo_discovery_info(discovery_info):
         return
 
     echo("\t[bold]== Discovery Result ==[/bold]")
-    echo(f"\tDevice Type:          {dr.device_type}")
-    echo(f"\tDevice Model:         {dr.device_model}")
-    echo(f"\tIP:                   {dr.ip}")
-    echo(f"\tMAC:                  {dr.mac}")
-    echo(f"\tDevice Id (hash):     {dr.device_id}")
-    echo(f"\tOwner (hash):         {dr.owner}")
-    echo(f"\tHW Ver:               {dr.hw_ver}")
-    echo(f"\tIs Support IOT Cloud: {dr.is_support_iot_cloud})")
-    echo(f"\tOBD Src:              {dr.obd_src}")
-    echo(f"\tFactory Default:      {dr.factory_default}")
-    echo("\t\t== Encryption Scheme ==")
-    echo(f"\t\tEncrypt Type:     {dr.mgt_encrypt_schm.encrypt_type}")
-    echo(f"\t\tIs Support HTTPS: {dr.mgt_encrypt_schm.is_support_https}")
-    echo(f"\t\tHTTP Port:        {dr.mgt_encrypt_schm.http_port}")
-    echo(f"\t\tLV (Login Level): {dr.mgt_encrypt_schm.lv}")
+    echo(f"\tDevice Type:        {dr.device_type}")
+    echo(f"\tDevice Model:       {dr.device_model}")
+    echo(f"\tIP:                 {dr.ip}")
+    echo(f"\tMAC:                {dr.mac}")
+    echo(f"\tDevice Id (hash):   {dr.device_id}")
+    echo(f"\tOwner (hash):       {dr.owner}")
+    echo(f"\tHW Ver:             {dr.hw_ver}")
+    echo(f"\tSupports IOT Cloud: {dr.is_support_iot_cloud}")
+    echo(f"\tOBD Src:            {dr.obd_src}")
+    echo(f"\tFactory Default:    {dr.factory_default}")
+    echo(f"\tEncrypt Type:       {dr.mgt_encrypt_schm.encrypt_type}")
+    echo(f"\tSupports HTTPS:     {dr.mgt_encrypt_schm.is_support_https}")
+    echo(f"\tHTTP Port:          {dr.mgt_encrypt_schm.http_port}")
+    echo(f"\tLV (Login Level):   {dr.mgt_encrypt_schm.lv}")
 
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
@@ -562,6 +557,8 @@ async def state(ctx, dev: SmartDevice):
         echo(f"\tDevice ID:         {dev.device_id}")
         for feature in dev.features:
             echo(f"\tFeature:           {feature}")
+        echo()
+        _echo_discovery_info(dev._discovery_info)
     return dev.internal_state
 
 
