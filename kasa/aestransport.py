@@ -45,9 +45,9 @@ def _sha1(payload: bytes) -> str:
 class AesState(Enum):
     """Enum for AES state."""
 
-    HANDSHAKE = auto()
-    LOGIN = auto()
-    ESTABLISHED = auto()
+    HANDSHAKE = auto()  # Handshake needed
+    LOGIN = auto()  # Login needed
+    ESTABLISHED = auto()  # Ready to send requests
 
 
 class AesTransport(BaseTransport):
