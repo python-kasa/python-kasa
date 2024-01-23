@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Dict
 
-from .module import IotModule, merge
+from ..iotmodule import IotModule, merge
 
 
 class Usage(IotModule):

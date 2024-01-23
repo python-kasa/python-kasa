@@ -592,6 +592,9 @@ async def state(ctx, dev: Device):
     for module in dev.modules.values():
         if module.is_supported:
             echo(f"\t[green]+ {module}[/green]")
+            # TODO: fix this hack, probably with descriptors?
+            if pretty_print := getattr(module, "__cli_output__", None):
+                echo(f"\t\t{pretty_print()}")
         else:
             echo(f"\t[red]- {module}[/red]")
 
