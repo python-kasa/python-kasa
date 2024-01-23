@@ -80,6 +80,10 @@ class BaseTransport(ABC):
     async def close(self) -> None:
         """Close the transport.  Abstract method to be overriden."""
 
+    @abstractmethod
+    async def reset(self) -> None:
+        """Reset internal state."""
+
 
 class BaseProtocol(ABC):
     """Base class for all TP-Link Smart Home communication."""
@@ -139,7 +143,10 @@ class _XorTransport(BaseTransport):
         return {}
 
     async def close(self) -> None:
-        """Close the transport.  Abstract method to be overriden."""
+        """Close the transport."""
+
+    async def reset(self) -> None:
+        """Reset internal state.."""
 
 
 class TPLinkSmartHomeProtocol(BaseProtocol):
@@ -233,9 +240,9 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
         if writer:
             writer.close()
 
-    def _reset(self) -> None:
-        """Clear any varibles that should not survive between loops."""
-        self.reader = self.writer = None
+    async def reset(self) -> None:
+        """Reset the transport."""
+        await self.close()
 
     async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
@@ -252,12 +259,12 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
             try:
                 await self._connect(timeout)
             except ConnectionRefusedError as ex:
-                await self.close()
+                await self.reset()
                 raise SmartDeviceException(
                     f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
                 ) from ex
             except OSError as ex:
-                await self.close()
+                await self.reset()
                 if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
                     raise SmartDeviceException(
                         f"Unable to connect to the device:"
@@ -265,7 +272,7 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
                     ) from ex
                 continue
             except Exception as ex:
-                await self.close()
+                await self.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
@@ -290,7 +297,7 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
                 async with asyncio_timeout(timeout):
                     return await self._execute_query(request)
             except Exception as ex:
-                await self.close()
+                await self.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
@@ -312,7 +319,7 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
                 raise
 
         # make mypy happy, this should never be reached..
-        await self.close()
+        await self.reset()
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     def __del__(self) -> None:
@@ -322,7 +329,6 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
             # or in another thread so we need to make sure the call to
             # close is called safely with call_soon_threadsafe
             self.loop.call_soon_threadsafe(self.writer.close)
-        self._reset()
 
     @staticmethod
     def _xor_payload(unencrypted: bytes) -> Generator[int, None, None]:

@@ -806,6 +806,10 @@ class SmartDevice:
         """Return the device configuration."""
         return self.protocol.config
 
+    async def disconnect(self):
+        """Disconnect and close any underlying connection resources."""
+        await self.protocol.close()
+
     @staticmethod
     async def connect(
         *,

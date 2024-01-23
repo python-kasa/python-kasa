@@ -7,6 +7,7 @@ import pytest
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     ConnectionException,
+    DisconnectedException,
     SmartDeviceException,
     TimeoutException,
 )
@@ -18,8 +19,8 @@ from ..httpclient import HttpClient
     [
         (
             aiohttp.ServerDisconnectedError(),
-            ConnectionException,
-            "Unable to connect to the device: ",
+            DisconnectedException,
+            "Disconnected from the device: ",
         ),
         (
             aiohttp.ClientOSError(),

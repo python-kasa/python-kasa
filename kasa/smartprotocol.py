@@ -18,6 +18,7 @@ from .exceptions import (
     SMART_TIMEOUT_ERRORS,
     AuthenticationException,
     ConnectionException,
+    DisconnectedException,
     RetryableException,
     SmartDeviceException,
     SmartErrorCode,
@@ -65,33 +66,38 @@ class SmartProtocol(BaseProtocol):
         for retry in range(retry_count + 1):
             try:
                 return await self._execute_query(request, retry)
+            except DisconnectedException as sdex:
+                if retry >= retry_count:
+                    _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
+                    raise sdex
+                continue
             except ConnectionException as sdex:
-                await self.close()
+                await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise sdex
                 continue
             except AuthenticationException as auex:
-                await self.close()
+                await self._transport.reset()
                 _LOGGER.debug(
                     "Unable to authenticate with %s, not retrying", self._host
                 )
                 raise auex
             except RetryableException as ex:
-                await self.close()
+                await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 continue
             except TimeoutException as ex:
-                await self.close()
+                await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
             except SmartDeviceException as ex:
-                await self.close()
+                await self._transport.reset()
                 _LOGGER.debug(
                     "Unable to query the device: %s, not retrying: %s",
                     self._host,
@@ -167,12 +173,7 @@ class SmartProtocol(BaseProtocol):
         raise SmartDeviceException(msg, error_code=error_code)
 
     async def close(self) -> None:
-        """Close the underlying transport.
-
-        Some transports may close the connection, and some may
-        use this as a hint that they need to reconnect, or
-        reauthenticate.
-        """
+        """Close the underlying transport."""
         await self._transport.close()
 
 
