@@ -66,7 +66,6 @@ class SmartProtocol(BaseProtocol):
             try:
                 return await self._execute_query(request, retry)
             except ConnectionException as sdex:
-                await self.close()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise sdex
