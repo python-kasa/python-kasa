@@ -15,7 +15,7 @@ import re
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from pprint import pprint
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import asyncclick as click
 
@@ -106,10 +106,10 @@ def default_to_regular(d):
     return d
 
 
-async def handle_device(basedir, autosave, device: SmartDevice):
+async def handle_device(basedir, autosave, device: SmartDevice, batch_size: int):
     """Create a fixture for a single device instance."""
     if isinstance(device, TapoDevice):
-        filename, copy_folder, final = await get_smart_fixture(device)
+        filename, copy_folder, final = await get_smart_fixture(device, batch_size)
     else:
         filename, copy_folder, final = await get_legacy_fixture(device)
 
@@ -156,8 +156,11 @@ async def handle_device(basedir, autosave, device: SmartDevice):
 )
 @click.option("--basedir", help="Base directory for the git repository", default=".")
 @click.option("--autosave", is_flag=True, default=False, help="Save without prompting")
+@click.option(
+    "--batch-size", default=5, help="Number of batched requests to send at once"
+)
 @click.option("-d", "--debug", is_flag=True)
-async def cli(host, target, basedir, autosave, debug, username, password):
+async def cli(host, target, basedir, autosave, debug, username, password, batch_size):
     """Generate devinfo files for devices.
 
     Use --host (for a single device) or --target (for a complete network).
@@ -169,7 +172,7 @@ async def cli(host, target, basedir, autosave, debug, username, password):
     if host is not None:
         click.echo("Host given, performing discovery on %s." % host)
         device = await Discover.discover_single(host, credentials=credentials)
-        await handle_device(basedir, autosave, device)
+        await handle_device(basedir, autosave, device, batch_size)
     else:
         click.echo(
             "No --host given, performing discovery on %s. Use --target to override."
@@ -178,7 +181,7 @@ async def cli(host, target, basedir, autosave, debug, username, password):
         devices = await Discover.discover(target=target, credentials=credentials)
         click.echo("Detected %s devices" % len(devices))
         for dev in devices.values():
-            await handle_device(basedir, autosave, dev)
+            await handle_device(basedir, autosave, dev, batch_size)
 
 
 async def get_legacy_fixture(device):
@@ -252,17 +255,23 @@ async def get_legacy_fixture(device):
 
 
 async def _make_requests_or_exit(
-    device: SmartDevice, requests: List[SmartRequest], name: str
+    device: SmartDevice,
+    requests: List[SmartRequest],
+    name: str,
+    batch_size: int,
 ) -> Dict[str, Dict]:
     final = {}
     try:
         end = len(requests)
-        step = 5  # Break the requests down as there seems to be a size limit
+        step = batch_size  # Break the requests down as there seems to be a size limit
         for i in range(0, end, step):
             x = i
             requests_step = requests[x : x + step]
+            request: Union[List[SmartRequest], SmartRequest] = (
+                requests_step[0] if len(requests_step) == 1 else requests_step
+            )
             responses = await device.protocol.query(
-                SmartRequest._create_request_dict(requests_step)
+                SmartRequest._create_request_dict(request)
             )
             for method, result in responses.items():
                 final[method] = result
@@ -283,7 +292,7 @@ async def _make_requests_or_exit(
         exit(1)
 
 
-async def get_smart_fixture(device: TapoDevice):
+async def get_smart_fixture(device: TapoDevice, batch_size: int):
     """Get fixture for new TAPO style protocol."""
     extra_test_calls = [
         SmartCall(
@@ -314,7 +323,7 @@ async def get_smart_fixture(device: TapoDevice):
 
     click.echo("Testing component_nego call ..", nl=False)
     responses = await _make_requests_or_exit(
-        device, [SmartRequest.component_nego()], "component_nego call"
+        device, [SmartRequest.component_nego()], "component_nego call", batch_size
     )
     component_info_response = responses["component_nego"]
     click.echo(click.style("OK", fg="green"))
@@ -383,7 +392,9 @@ async def get_smart_fixture(device: TapoDevice):
     for succ in successes:
         requests.append(succ.request)
 
-    final = await _make_requests_or_exit(device, requests, "all successes at once")
+    final = await _make_requests_or_exit(
+        device, requests, "all successes at once", batch_size
+    )
 
     # Need to recreate a DiscoverResult here because we don't want the aliases
     # in the fixture, we want the actual field names as returned by the device.
