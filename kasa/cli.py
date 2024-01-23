@@ -1,4 +1,5 @@
 """python-kasa cli tool."""
+import ast
 import asyncio
 import json
 import logging
@@ -339,8 +340,9 @@ async def cli(
             credentials=credentials,
         )
 
-    # Skip update for wifi & raw-command, and if factory was used to connect
-    if ctx.invoked_subcommand not in ["wifi", "raw-command"] and not device_family:
+    # Skip update for wifi & raw command, and if factory was used to connect
+    SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
+    if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_family:
         await dev.update()
 
     ctx.obj = dev
@@ -592,13 +594,23 @@ async def alias(dev, new_alias, index):
 
 @cli.command()
 @pass_dev
+@click.pass_context
 @click.argument("module")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def raw_command(dev: SmartDevice, module, command, parameters):
+async def raw_command(ctx, dev: SmartDevice, module, command, parameters):
     """Run a raw command on the device."""
-    import ast
+    logging.warning("Deprecated, use 'kasa command --module %s %s'", module, command)
+    return await ctx.forward(cmd_command)
 
+
+@cli.command(name="command")
+@pass_dev
+@click.option("--module", required=False, help="Module for IOT protocol.")
+@click.argument("command")
+@click.argument("parameters", default=None, required=False)
+async def cmd_command(dev: SmartDevice, module, command, parameters):
+    """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
 
