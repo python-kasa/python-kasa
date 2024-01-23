@@ -49,7 +49,7 @@ jobs:
           poetry run pre-commit run check-ast --all-files
       - name: "Check that all models are listed in the README.md"
         run: |
-          python -m devtools.check_readme_vs_fixtures
+          poetry run python -m devtools.check_readme_vs_fixtures
 
 
   tests:
