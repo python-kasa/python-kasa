@@ -1,7 +1,7 @@
 """Module for a SMART device."""
 import base64
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
 
 from ..aestransport import AesTransport
@@ -12,6 +12,7 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
 from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
+from .modules import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class SmartDevice(Device):
         self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
         self._time: Dict[str, Any] = {}
+        self.modules: Dict[str, "SmartModule"] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -61,59 +63,48 @@ class SmartDevice(Device):
         """Return list of children."""
         return list(self._children.values())
 
+    async def _negotiate(self):
+        resp = await self.protocol.query("component_nego")
+        self._components_raw = resp["component_nego"]
+        self._components = {
+            comp["id"]: comp["ver_code"]
+            for comp in self._components_raw["component_list"]
+        }
+
     async def update(self, update_children: bool = True):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
         if self._components_raw is None:
-            resp = await self.protocol.query("component_nego")
-            self._components_raw = resp["component_nego"]
-            self._components = {
-                comp["id"]: comp["ver_code"]
-                for comp in self._components_raw["component_list"]
-            }
+            await self._negotiate()
             await self._initialize_modules()
 
         extra_reqs: Dict[str, Any] = {}
 
-        if "child_device" in self._components:
-            extra_reqs = {**extra_reqs, "get_child_device_list": None}
+        for module in self.modules.values():
+            extra_reqs.update(module.query())
 
-        if "energy_monitoring" in self._components:
-            extra_reqs = {
-                **extra_reqs,
-                "get_energy_usage": None,
-                "get_current_power": None,
-            }
 
         req = {
             "get_device_info": None,
-            "get_device_usage": None,
-            "get_device_time": None,
             **extra_reqs,
         }
 
         resp = await self.protocol.query(req)
 
         self._info = resp["get_device_info"]
-        self._usage = resp["get_device_usage"]
-        self._time = resp["get_device_time"]
         # Emeter is not always available, but we set them still for now.
         self._energy = resp.get("get_energy_usage", {})
         self._emeter = resp.get("get_current_power", {})
 
         self._last_update = {
             "components": self._components_raw,
-            "info": self._info,
-            "usage": self._usage,
-            "time": self._time,
-            "energy": self._energy,
-            "emeter": self._emeter,
+            **resp,
             "child_info": resp.get("get_child_device_list", {}),
         }
 
-        if child_info := self._last_update.get("child_info"):
+        _LOGGER.debug("Got an update: %s", pf(self._data))
             if not self.children:
                 await self._initialize_children()
             for info in child_info["child_device_list"]:
@@ -128,8 +119,18 @@ class SmartDevice(Device):
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
-        if "energy_monitoring" in self._components:
-            self.emeter_type = "emeter"
+        from .smartmodule import SmartModule
+
+        for mod in SmartModule.REGISTERED_MODULES.values():
+            _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
+            if mod.REQUIRED_COMPONENT in self._components:
+                _LOGGER.debug(
+                    "Found required %s, adding %s to modules.",
+                    mod.REQUIRED_COMPONENT,
+                    mod.__name__,
+                )
+                module = mod(self, mod.REQUIRED_COMPONENT)
+                self.modules[module.name] = module
 
     async def _initialize_features(self):
         """Initialize device features."""
@@ -197,17 +198,7 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        td = timedelta(minutes=cast(float, self._time.get("time_diff")))
-        if self._time.get("region"):
-            tz = timezone(td, str(self._time.get("region")))
-        else:
-            # in case the device returns a blank region this will result in the
-            # tzname being a UTC offset
-            tz = timezone(td)
-        return datetime.fromtimestamp(
-            cast(float, self._time.get("timestamp")),
-            tz=tz,
-        )
+        return self.modules["DeviceTime"].time
 
     @property
     def timezone(self) -> Dict:
