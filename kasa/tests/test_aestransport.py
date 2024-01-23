@@ -106,8 +106,18 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
             pytest.raises(AuthenticationException),
             1,
         ),
+        (
+            [SmartErrorCode.LOGIN_ERROR, SmartErrorCode.SESSION_TIMEOUT_ERROR],
+            pytest.raises(SmartDeviceException),
+            3,
+        ),
     ],
-    ids=("LOGIN_ERROR-success", "LOGIN_ERROR-LOGIN_ERROR", "LOGIN_FAILED_ERROR"),
+    ids=(
+        "LOGIN_ERROR-success",
+        "LOGIN_ERROR-LOGIN_ERROR",
+        "LOGIN_FAILED_ERROR",
+        "LOGIN_ERROR-SESSION_TIMEOUT_ERROR",
+    ),
 )
 async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     host = "127.0.0.1"

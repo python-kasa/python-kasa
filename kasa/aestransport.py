@@ -180,19 +180,28 @@ class AesTransport(BaseTransport):
         """Login to the device."""
         try:
             await self.try_login(self._login_params)
-        except AuthenticationException as ex:
-            if ex.error_code != SmartErrorCode.LOGIN_ERROR:
-                raise ex
-            if self._default_credentials is None:
-                self._default_credentials = get_default_credentials(
-                    DEFAULT_CREDENTIALS["TAPO"]
+        except AuthenticationException as aex:
+            try:
+                if aex.error_code != SmartErrorCode.LOGIN_ERROR:
+                    raise aex
+                if self._default_credentials is None:
+                    self._default_credentials = get_default_credentials(
+                        DEFAULT_CREDENTIALS["TAPO"]
+                    )
+                await self.perform_handshake()
+                await self.try_login(self._get_login_params(self._default_credentials))
+                _LOGGER.debug(
+                    "%s: logged in with default credentials",
+                    self._host,
                 )
-            await self.perform_handshake()
-            await self.try_login(self._get_login_params(self._default_credentials))
-            _LOGGER.debug(
-                "%s: logged in with default credentials",
-                self._host,
-            )
+            except AuthenticationException:
+                raise
+            except Exception as ex:
+                raise AuthenticationException(
+                    "Unable to login and trying default "
+                    + "login raised another exception: %s",
+                    ex,
+                ) from ex
 
     async def try_login(self, login_params):
         """Try to login with supplied login_params."""
