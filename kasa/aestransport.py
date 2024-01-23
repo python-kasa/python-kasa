@@ -135,7 +135,9 @@ class AesTransport(BaseTransport):
         return un, pw
 
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
-        error_code = SmartErrorCode((resp_dict or {}).get("error_code", -1001))
+        error_code = SmartErrorCode(
+            (resp_dict or {}).get("error_code", SmartErrorCode.UNSPECIFIC_ERROR.value)
+        )
         if error_code == SmartErrorCode.SUCCESS:
             return
         msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
