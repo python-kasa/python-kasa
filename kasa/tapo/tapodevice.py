@@ -339,3 +339,18 @@ class TapoDevice(SmartDevice):
             "time": t,
         }
         return await self.protocol.query({"set_qs_info": payload})
+
+    async def reboot(self, delay: int = 1) -> None:
+        """Reboot the device.
+
+        Note that giving a delay of zero causes this to block,
+        as the device reboots immediately without responding to the call.
+        """
+        await self.protocol.query({"device_reboot": {"delay": delay}})
+
+    async def factory_reset(self) -> None:
+        """Reset device back to factory settings.
+
+        Note, this does not downgrade the firmware.
+        """
+        await self.protocol.query("device_reset")
