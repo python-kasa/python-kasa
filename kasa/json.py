@@ -13,6 +13,7 @@ except ImportError:
 
     def dumps(obj, *, default=None):
         """Dump JSON."""
+        # Separators specified for consistency with orjson
         return json.dumps(obj, separators=(",", ":"))
 
     loads = json.loads
