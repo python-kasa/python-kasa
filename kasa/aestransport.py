@@ -55,6 +55,8 @@ class AesTransport(BaseTransport):
         "requestByApp": "true",
         "Accept": "application/json",
     }
+    CONTENT_LENGTH = "Content-Length"
+    KEY_PAIR_CONTENT_LENGTH = 318
 
     def __init__(
         self,
@@ -187,12 +189,13 @@ class AesTransport(BaseTransport):
         self._handle_response_error_code(resp_dict, "Error logging in")
         self._login_token = resp_dict["result"]["token"]
 
-    async def _generate_request_body(self) -> AsyncGenerator:
+    async def _generate_key_pair_payload(self) -> AsyncGenerator:
         """Generate the request body and return an ascyn_generator.
 
         This prevents the key pair being generated unless a connection
         can be made to the device.
         """
+        _LOGGER.debug("Generating keypair")
         self._key_pair = KeyPair.create_key_pair()
         pub_key = (
             "-----BEGIN PUBLIC KEY-----\n"
@@ -208,7 +211,6 @@ class AesTransport(BaseTransport):
     async def perform_handshake(self):
         """Perform the handshake."""
         _LOGGER.debug("Will perform handshaking...")
-        _LOGGER.debug("Generating keypair")
 
         self._key_pair = None
         self._handshake_done = False
@@ -217,10 +219,13 @@ class AesTransport(BaseTransport):
 
         url = f"http://{self._host}/app"
         # Device needs the content length or it will response with 500
-        headers = {**self.COMMON_HEADERS, "Content-Length": "318"}
+        headers = {
+            **self.COMMON_HEADERS,
+            self.CONTENT_LENGTH: str(self.KEY_PAIR_CONTENT_LENGTH),
+        }
         status_code, resp_dict = await self._http_client.post(
             url,
-            json=self._generate_request_body(),
+            json=self._generate_key_pair_payload(),
             headers=headers,
             cookies_dict=self._session_cookie,
         )
