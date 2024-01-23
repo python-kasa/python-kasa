@@ -1,0 +1,197 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "P100",
+        "device_type": "SMART.TAPOPLUG",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "CC-32-E5-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "AES",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_device_info": {
+        "avatar": "plug",
+        "default_states": {
+            "state": {},
+            "type": "last_states"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": false,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.3.7 Build 20230711 Rel. 61904",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "location": "bedroom",
+        "longitude": 0,
+        "mac": "CC-32-E5-00-00-00",
+        "model": "P100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "on_time": 0,
+        "overheated": false,
+        "region": "Pacific/Honolulu",
+        "rssi": -48,
+        "signal_level": 3,
+        "specs": "US",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": -600,
+        "type": "SMART.TAPOPLUG"
+    },
+    "get_device_time": {
+        "region": "Pacific/Honolulu",
+        "time_diff": -600,
+        "timestamp": 1705995478
+    },
+    "get_device_usage": {
+        "time_usage": {
+            "past30": 0,
+            "past7": 0,
+            "today": 0
+        }
+    },
+    "get_fw_download_state": {
+        "download_progress": 0,
+        "reboot_time": 10,
+        "status": 0,
+        "upgrade_time": 0
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.3.7 Build 20230711 Rel. 61904",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "led_rule": "always",
+        "led_status": false
+    },
+    "get_next_event": {
+        "action": -1,
+        "e_time": 0,
+        "id": "0",
+        "s_time": 0,
+        "type": 0
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 20,
+        "start_index": 0,
+        "sum": 0
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            }
+        ],
+        "extra_info": {
+            "device_model": "P100",
+            "device_type": "SMART.TAPOPLUG"
+        }
+    }
+}
