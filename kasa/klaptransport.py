@@ -58,7 +58,7 @@ from .deviceconfig import DeviceConfig
 from .exceptions import AuthenticationException, SmartDeviceException
 from .httpclient import HttpClient
 from .json import loads as json_loads
-from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials, md5
+from .protocol import BaseTransport, md5
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -85,6 +85,9 @@ class KlapTransport(BaseTransport):
 
     DEFAULT_PORT: int = 80
     DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
+
+    KASA_SETUP_EMAIL = "kasa@tp-link.net"
+    KASA_SETUP_PASSWORD = "kasaSetup"  # noqa: S105
     SESSION_COOKIE_NAME = "TP_SESSIONID"
 
     def __init__(
@@ -105,7 +108,7 @@ class KlapTransport(BaseTransport):
             self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
         else:
             self._local_auth_hash = base64.b64decode(self._credentials_hash.encode())  # type: ignore[union-attr]
-        self._default_credentials_auth_hash: Dict[str, bytes] = {}
+        self._kasa_setup_auth_hash = None
         self._blank_auth_hash = None
         self._handshake_lock = asyncio.Lock()
         self._query_lock = asyncio.Lock()
@@ -180,27 +183,27 @@ class KlapTransport(BaseTransport):
             _LOGGER.debug("handshake1 hashes match with expected credentials")
             return local_seed, remote_seed, self._local_auth_hash  # type: ignore
 
-        # Now check against the default setup credentials
-        for key, value in DEFAULT_CREDENTIALS.items():
-            if key not in self._default_credentials_auth_hash:
-                default_credentials = get_default_credentials(value)
-                self._default_credentials_auth_hash[key] = self.generate_auth_hash(
-                    default_credentials
-                )
-
-            default_credentials_seed_auth_hash = self.handshake1_seed_auth_hash(
-                local_seed,
-                remote_seed,
-                self._default_credentials_auth_hash[key],  # type: ignore
+        # Now check against the default kasa setup credentials
+        if not self._kasa_setup_auth_hash:
+            kasa_setup_creds = Credentials(
+                username=self.KASA_SETUP_EMAIL,
+                password=self.KASA_SETUP_PASSWORD,
             )
+            self._kasa_setup_auth_hash = self.generate_auth_hash(kasa_setup_creds)
 
-            if default_credentials_seed_auth_hash == server_hash:
-                _LOGGER.debug(
-                    "Server response doesn't match our expected hash on ip %s"
-                    + f" but an authentication with {key} default credentials matched",
-                    self._host,
-                )
-                return local_seed, remote_seed, self._default_credentials_auth_hash[key]  # type: ignore
+        kasa_setup_seed_auth_hash = self.handshake1_seed_auth_hash(
+            local_seed,
+            remote_seed,
+            self._kasa_setup_auth_hash,  # type: ignore
+        )
+
+        if kasa_setup_seed_auth_hash == server_hash:
+            _LOGGER.debug(
+                "Server response doesn't match our expected hash on ip %s"
+                + " but an authentication with kasa setup credentials matched",
+                self._host,
+            )
+            return local_seed, remote_seed, self._kasa_setup_auth_hash  # type: ignore
 
         # Finally check against blank credentials if not already blank
         blank_creds = Credentials()

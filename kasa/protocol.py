@@ -10,7 +10,6 @@ which are licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
-import base64
 import contextlib
 import errno
 import logging
@@ -18,14 +17,13 @@ import socket
 import struct
 from abc import ABC, abstractmethod
 from pprint import pformat as pf
-from typing import Dict, Generator, Optional, Tuple, Union
+from typing import Dict, Generator, Optional, Union
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 from cryptography.hazmat.primitives import hashes
 
-from .credentials import Credentials
 from .deviceconfig import DeviceConfig
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
@@ -368,18 +366,6 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
             TPLinkSmartHomeProtocol._xor_encrypted_payload(ciphertext)
         ).decode()
 
-
-def get_default_credentials(tuple: Tuple[str, str]) -> Credentials:
-    """Return decoded default credentials."""
-    un = base64.b64decode(tuple[0].encode()).decode()
-    pw = base64.b64decode(tuple[1].encode()).decode()
-    return Credentials(un, pw)
-
-
-DEFAULT_CREDENTIALS = {
-    "KASA": ("a2FzYUB0cC1saW5rLm5ldA==", "a2FzYVNldHVw"),
-    "TAPO": ("dGVzdEB0cC1saW5rLm5ldA==", "dGVzdA=="),
-}
 
 # Try to load the kasa_crypt module and if it is available
 try:

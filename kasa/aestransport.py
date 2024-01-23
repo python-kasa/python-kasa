@@ -30,7 +30,7 @@ from .exceptions import (
 from .httpclient import HttpClient
 from .json import dumps as json_dumps
 from .json import loads as json_loads
-from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from .protocol import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,12 +71,12 @@ class AesTransport(BaseTransport):
         ) and not self._credentials_hash:
             self._credentials = Credentials()
         if self._credentials:
-            self._login_params = self._get_login_params(self._credentials)
+            self._login_params = self._get_login_params()
         else:
             self._login_params = json_loads(
                 base64.b64decode(self._credentials_hash.encode()).decode()  # type: ignore[union-attr]
             )
-        self._default_credentials: Optional[Credentials] = None
+
         self._http_client: HttpClient = HttpClient(config)
 
         self._handshake_done = False
@@ -102,27 +102,26 @@ class AesTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
-    def _get_login_params(self, credentials):
+    def _get_login_params(self):
         """Get the login parameters based on the login_version."""
-        un, pw = self.hash_credentials(self._login_version == 2, credentials)
+        un, pw = self.hash_credentials(self._login_version == 2)
         password_field_name = "password2" if self._login_version == 2 else "password"
         return {password_field_name: pw, "username": un}
 
-    @staticmethod
-    def hash_credentials(login_v2, credentials):
+    def hash_credentials(self, login_v2):
         """Hash the credentials."""
         if login_v2:
             un = base64.b64encode(
-                _sha1(credentials.username.encode()).encode()
+                _sha1(self._credentials.username.encode()).encode()
             ).decode()
             pw = base64.b64encode(
-                _sha1(credentials.password.encode()).encode()
+                _sha1(self._credentials.password.encode()).encode()
             ).decode()
         else:
             un = base64.b64encode(
-                _sha1(credentials.username.encode()).encode()
+                _sha1(self._credentials.username.encode()).encode()
             ).decode()
-            pw = base64.b64encode(credentials.password.encode()).decode()
+            pw = base64.b64encode(self._credentials.password.encode()).decode()
         return un, pw
 
     def _handle_response_error_code(self, resp_dict: dict, msg: str):
@@ -178,28 +177,10 @@ class AesTransport(BaseTransport):
 
     async def perform_login(self):
         """Login to the device."""
-        try:
-            await self.try_login(self._login_params)
-        except AuthenticationException as ex:
-            if ex.error_code != SmartErrorCode.LOGIN_ERROR:
-                raise ex
-            if self._default_credentials is None:
-                self._default_credentials = get_default_credentials(
-                    DEFAULT_CREDENTIALS["TAPO"]
-                )
-            await self.perform_handshake()
-            await self.try_login(self._get_login_params(self._default_credentials))
-            _LOGGER.debug(
-                "%s: logged in with default credentials",
-                self._host,
-            )
-
-    async def try_login(self, login_params):
-        """Try to login with supplied login_params."""
         self._login_token = None
         login_request = {
             "method": "login_device",
-            "params": login_params,
+            "params": self._login_params,
             "request_time_milis": round(time.time() * 1000),
         }
         request = json_dumps(login_request)
@@ -295,13 +276,7 @@ class AesTransport(BaseTransport):
         if not self._handshake_done or self._handshake_session_expired():
             await self.perform_handshake()
         if not self._login_token:
-            try:
-                await self.perform_login()
-            # After a login failure handshake needs to
-            # be redone or a 9999 error is received.
-            except AuthenticationException as ex:
-                self._handshake_done = False
-                raise ex
+            await self.perform_login()
 
         return await self.send_secure_passthrough(request)
 
