@@ -70,6 +70,9 @@ DEVICE_FAMILY_TYPES = [
     device_family_type.value for device_family_type in DeviceFamilyType
 ]
 
+# Block list of commands which require no update
+SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
+
 click.anyio_backend = "asyncio"
 
 pass_dev = click.make_pass_decorator(SmartDevice)
@@ -340,8 +343,8 @@ async def cli(
             credentials=credentials,
         )
 
-    # Skip update for wifi & raw command, and if factory was used to connect
-    SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
+    # Skip update on specific commands, or if device factory,
+    # that performs an update was used for the device.
     if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_family:
         await dev.update()
 
