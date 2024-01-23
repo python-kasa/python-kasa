@@ -253,7 +253,7 @@ async def test_brightness(dev):
 @device_iot
 async def test_json_output(dev: SmartDevice, mocker):
     """Test that the json output produces correct output."""
-    mocker.patch("kasa.Discover.discover", return_value=[dev])
+    mocker.patch("kasa.Discover.discover", return_value={"127.0.0.1": dev})
     runner = CliRunner()
     res = await runner.invoke(cli, ["--json", "state"], obj=dev)
     assert res.exit_code == 0
