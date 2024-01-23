@@ -1,0 +1,59 @@
+{
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 600,
+            "total_wh": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "LEF": 1,
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "length": 16,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 100,
+                    "color_temp": 9000,
+                    "hue": 9,
+                    "mode": "normal",
+                    "saturation": 67
+                },
+                "on_off": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 70,
+                "custom": 0,
+                "enable": 0,
+                "id": "joqVjlaTsgzmuQQBAlHRkkPAqkBUiqeb",
+                "name": "Icicle"
+            },
+            "longitude_i": 0,
+            "mic_mac": "E8:48:B8:00:00:00",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL430(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [],
+            "rssi": -43,
+            "status": "new",
+            "sw_ver": "1.0.11 Build 220812 Rel.153345"
+        }
+    }
+}
