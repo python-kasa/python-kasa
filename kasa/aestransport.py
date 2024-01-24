@@ -39,7 +39,6 @@ ONE_DAY_SECONDS = 86400
 SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
 
 
-
 def _sha1(payload: bytes) -> str:
     sha1_algo = hashlib.sha1()  # noqa: S324
     sha1_algo.update(payload)
@@ -280,9 +279,7 @@ class AesTransport(BaseTransport):
                 self.SESSION_COOKIE_NAME
             )
         ) or (
-            cookie := self._http_client.get_cookie(  # type: ignore
-                "SESSIONID"
-            )
+            cookie := self._http_client.get_cookie("SESSIONID")  # type: ignore
         ):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 

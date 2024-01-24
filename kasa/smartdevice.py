@@ -694,7 +694,9 @@ class SmartDevice:
 
         return [WifiNetwork(**x) for x in info["ap_list"]]
 
-    async def wifi_join(self, ssid: str, password: str, keytype: str = "3"):  # noqa: D202
+    async def wifi_join(
+        self, ssid: str, password: str, keytype: str = "3"
+    ):  # noqa: D202
         """Join the given wifi network.
 
         If joining the network fails, the device will return to AP mode after a while.
