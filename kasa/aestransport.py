@@ -42,7 +42,7 @@ def _sha1(payload: bytes) -> str:
     return sha1_algo.hexdigest()
 
 
-class AesState(Enum):
+class TransportState(Enum):
     """Enum for AES state."""
 
     HANDSHAKE_REQUIRED = auto()  # Handshake needed
@@ -88,7 +88,7 @@ class AesTransport(BaseTransport):
         self._default_credentials: Optional[Credentials] = None
         self._http_client: HttpClient = HttpClient(config)
 
-        self._state = AesState.HANDSHAKE_REQUIRED
+        self._state = TransportState.HANDSHAKE_REQUIRED
 
         self._encryption_session: Optional[AesEncyptionSession] = None
         self._session_expire_at: Optional[float] = None
@@ -139,7 +139,7 @@ class AesTransport(BaseTransport):
         if error_code in SMART_RETRYABLE_ERRORS:
             raise RetryableException(msg, error_code=error_code)
         if error_code in SMART_AUTHENTICATION_ERRORS:
-            self._state = AesState.HANDSHAKE_REQUIRED
+            self._state = TransportState.HANDSHAKE_REQUIRED
             raise AuthenticationException(msg, error_code=error_code)
         raise SmartDeviceException(msg, error_code=error_code)
 
@@ -219,7 +219,7 @@ class AesTransport(BaseTransport):
         resp_dict = await self.send_secure_passthrough(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
         self._login_token = resp_dict["result"]["token"]
-        self._state = AesState.ESTABLISHED
+        self._state = TransportState.ESTABLISHED
 
     async def _generate_key_pair_payload(self) -> AsyncGenerator:
         """Generate the request body and return an ascyn_generator.
@@ -294,7 +294,7 @@ class AesTransport(BaseTransport):
             handshake_key, self._key_pair
         )
 
-        self._state = AesState.LOGIN_REQUIRED
+        self._state = TransportState.LOGIN_REQUIRED
 
         _LOGGER.debug("Handshake with %s complete", self._host)
 
@@ -308,17 +308,17 @@ class AesTransport(BaseTransport):
     async def send(self, request: str) -> Dict[str, Any]:
         """Send the request."""
         if (
-            self._state is AesState.HANDSHAKE_REQUIRED
+            self._state is TransportState.HANDSHAKE_REQUIRED
             or self._handshake_session_expired()
         ):
             await self.perform_handshake()
-        if self._state is not AesState.ESTABLISHED:
+        if self._state is not TransportState.ESTABLISHED:
             try:
                 await self.perform_login()
             # After a login failure handshake needs to
             # be redone or a 9999 error is received.
             except AuthenticationException as ex:
-                self._state = AesState.HANDSHAKE_REQUIRED
+                self._state = TransportState.HANDSHAKE_REQUIRED
                 raise ex
 
         return await self.send_secure_passthrough(request)
@@ -330,7 +330,7 @@ class AesTransport(BaseTransport):
 
     async def reset(self) -> None:
         """Reset internal handshake and login state."""
-        self._state = AesState.HANDSHAKE_REQUIRED
+        self._state = TransportState.HANDSHAKE_REQUIRED
 
 
 class AesEncyptionSession:
