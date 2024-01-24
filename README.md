@@ -215,7 +215,7 @@ Note, that this works currently only on kasa-branded devices which use port 9999
 In principle, most kasa-branded devices that are locally controllable using the official Kasa mobile app work with this library.
 
 The following lists the devices that have been manually verified to work.
-**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `devtools/dump_devinfo.py` to generate one).**
+**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).**
 
 ### Plugs
 
@@ -228,10 +228,10 @@ The following lists the devices that have been manually verified to work.
 * KP105
 * KP115
 * KP125
-* KP125M [See note below](#tapo-and-newer-kasa-branded-devices)
+* KP125M [See note below](#newer-kasa-branded-devices)
 * KP401
 * EP10
-* EP25 [See note below](#tapo-and-newer-kasa-branded-devices)
+* EP25 [See note below](#newer-kasa-branded-devices)
 
 ### Power Strips
 
@@ -273,18 +273,31 @@ The following lists the devices that have been manually verified to work.
 * KL420L5
 * KL430
 
-### Tapo and newer Kasa branded devices
+### Tapo branded devices
 
 The library has recently added a limited supported for devices that carry Tapo branding.
 
 At the moment, the following devices have been confirmed to work:
 
-* Tapo P110 (plug)
-* Tapo L530E (bulb)
-* Tapo L900-5 (led strip)
-* Tapo L900-10 (led strip)
-* Kasa KS205 (Wifi/Matter Wall Switch)
-* Kasa KS225 (Wifi/Matter Wall Dimmer Switch)
+#### Plugs
+
+* Tapo P110
+* Tapo P125M
+* Tapo P135 (dimming not yet supported)
+
+#### Bulbs
+
+* Tapo L510B
+* Tapo L510E
+* Tapo L530E
+
+#### Light strips
+
+* Tapo L900-5
+* Tapo L900-10
+* Tapo L920-5
+
+### Newer Kasa branded devices
 
 Some newer hardware versions of Kasa branded devices are now using the same protocol as
 Tapo branded devices.  Support for these devices is currently limited as per TAPO branded
@@ -292,8 +305,11 @@ devices:
 
 * Kasa EP25 (plug) hw_version 2.6
 * Kasa KP125M (plug)
+* Kasa KS205 (Wifi/Matter Wall Switch)
+* Kasa KS225 (Wifi/Matter Wall Dimmer Switch)
 
-**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `devtools/dump_devinfo.py` to generate one).**
+
+**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).**
 
 ## Resources
 
@@ -320,7 +336,7 @@ use it directly you should expect it could break in future releases until this s
 Other TAPO libraries are:
 
 * [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
-* [Tapo P100 (Tapo P105/P100 plugs, Tapo L510E bulbs)](https://github.com/fishbigger/TapoP100)
+* [Tapo P100 (Tapo plugs, Tapo bulbs)](https://github.com/fishbigger/TapoP100)
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
 * [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)
   * [Home Assistant integration](https://github.com/petretiandrea/home-assistant-tapo-p100)

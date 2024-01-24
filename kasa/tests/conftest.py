@@ -15,6 +15,7 @@ from kasa import (
     Credentials,
     Discover,
     SmartBulb,
+    SmartDevice,
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
@@ -46,7 +47,7 @@ SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
 BULBS_SMART_VARIABLE_TEMP = {"L530E"}
 BULBS_SMART_LIGHT_STRIP = {"L900-5", "L900-10", "L920-5"}
 BULBS_SMART_COLOR = {"L530E", *BULBS_SMART_LIGHT_STRIP}
-BULBS_SMART_DIMMABLE = {"KS225", "L510B"}
+BULBS_SMART_DIMMABLE = {"KS225", "L510B", "L510E"}
 BULBS_SMART = (
     BULBS_SMART_VARIABLE_TEMP.union(BULBS_SMART_COLOR)
     .union(BULBS_SMART_DIMMABLE)
@@ -98,7 +99,9 @@ PLUGS_IOT = {
     "KP401",
     "KS200M",
 }
-PLUGS_SMART = {"P110", "KP125M", "EP25", "KS205", "P125M"}
+# P135 supports dimming, but its not currently support
+# by the library
+PLUGS_SMART = {"P100", "P110", "KP125M", "EP25", "KS205", "P125M", "P135"}
 PLUGS = {
     *PLUGS_IOT,
     *PLUGS_SMART,
@@ -414,9 +417,15 @@ async def dev(request):
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        return d if d else await _discover_update_and_close(ip, username, password)
+        dev: SmartDevice = (
+            d if d else await _discover_update_and_close(ip, username, password)
+        )
+    else:
+        dev: SmartDevice = await get_device_for_file(file, protocol)
 
-    return await get_device_for_file(file, protocol)
+    yield dev
+
+    await dev.disconnect()
 
 
 @pytest.fixture

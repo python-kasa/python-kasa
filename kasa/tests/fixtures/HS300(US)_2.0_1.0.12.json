@@ -1,0 +1,90 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 6,
+            "err_code": 0,
+            "power_mw": 277,
+            "slot_id": 0,
+            "total_wh": 62,
+            "voltage_mv": 120110
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "#MASKED_NAME#",
+            "child_num": 6,
+            "children": [
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006A0F1D01120C3F93794F7AACACDBE1EAD246D00",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 710216,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006A0F1D01120C3F93794F7AACACDBE1EAD246D01",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 710216,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006A0F1D01120C3F93794F7AACACDBE1EAD246D02",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 710216,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006A0F1D01120C3F93794F7AACACDBE1EAD246D03",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 710216,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006A0F1D01120C3F93794F7AACACDBE1EAD246D04",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 710216,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006A0F1D01120C3F93794F7AACACDBE1EAD246D05",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 710216,
+                    "state": 1
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "C0:06:C3:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS300(US)",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -44,
+            "status": "new",
+            "sw_ver": "1.0.12 Build 220121 Rel.175814",
+            "updating": 0
+        }
+    }
+}

@@ -5,7 +5,11 @@ from typing import Any, Dict, Optional, Tuple, Union
 import aiohttp
 
 from .deviceconfig import DeviceConfig
-from .exceptions import ConnectionException, SmartDeviceException, TimeoutException
+from .exceptions import (
+    ConnectionException,
+    SmartDeviceException,
+    TimeoutException,
+)
 from .json import loads as json_loads
 
 
@@ -41,14 +45,25 @@ class HttpClient:
         *,
         params: Optional[Dict[str, Any]] = None,
         data: Optional[bytes] = None,
-        json: Optional[Dict] = None,
+        json: Optional[Union[Dict, Any]] = None,
         headers: Optional[Dict[str, str]] = None,
         cookies_dict: Optional[Dict[str, str]] = None,
     ) -> Tuple[int, Optional[Union[Dict, bytes]]]:
-        """Send an http post request to the device."""
+        """Send an http post request to the device.
+
+        If the request is provided via the json parameter json will be returned.
+        """
         response_data = None
         self._last_url = url
         self.client.cookie_jar.clear()
+        return_json = bool(json)
+        # If json is not a dict send as data.
+        # This allows the json parameter to be used to pass other
+        # types of data such as async_generator and still have json
+        # returned.
+        if json and not isinstance(json, Dict):
+            data = json
+            json = None
         try:
             resp = await self.client.post(
                 url,
@@ -62,12 +77,12 @@ class HttpClient:
             async with resp:
                 if resp.status == 200:
                     response_data = await resp.read()
-                    if json:
+                    if return_json:
                         response_data = json_loads(response_data.decode())
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
             raise ConnectionException(
-                f"Unable to connect to the device: {self._config.host}: {ex}", ex
+                f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
         except (aiohttp.ServerTimeoutError, asyncio.TimeoutError) as ex:
             raise TimeoutException(

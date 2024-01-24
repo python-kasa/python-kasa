@@ -1,4 +1,5 @@
 """python-kasa cli tool."""
+import ast
 import asyncio
 import json
 import logging
@@ -68,6 +69,9 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
 DEVICE_FAMILY_TYPES = [
     device_family_type.value for device_family_type in DeviceFamilyType
 ]
+
+# Block list of commands which require no update
+SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
 
 click.anyio_backend = "asyncio"
 
@@ -317,7 +321,6 @@ async def cli(
 
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
-        await dev.update()
     elif device_family and encrypt_type:
         ctype = ConnectionType(
             DeviceFamilyType(device_family),
@@ -339,6 +342,10 @@ async def cli(
             port=port,
             credentials=credentials,
         )
+
+    # Skip update on specific commands, or if device factory,
+    # that performs an update was used for the device.
+    if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_family:
         await dev.update()
 
     ctx.obj = dev
@@ -390,7 +397,6 @@ async def discover(ctx):
     target = ctx.parent.params["target"]
     username = ctx.parent.params["username"]
     password = ctx.parent.params["password"]
-    verbose = ctx.parent.params["verbose"]
     discovery_timeout = ctx.parent.params["discovery_timeout"]
     timeout = ctx.parent.params["timeout"]
     port = ctx.parent.params["port"]
@@ -429,9 +435,6 @@ async def discover(ctx):
                 discovered[dev.host] = dev.internal_state
                 ctx.parent.obj = dev
                 await ctx.parent.invoke(state)
-                if verbose:
-                    echo()
-                    _echo_discovery_info(dev._discovery_info)
             echo()
 
     await Discover.discover(
@@ -473,21 +476,20 @@ def _echo_discovery_info(discovery_info):
         return
 
     echo("\t[bold]== Discovery Result ==[/bold]")
-    echo(f"\tDevice Type:          {dr.device_type}")
-    echo(f"\tDevice Model:         {dr.device_model}")
-    echo(f"\tIP:                   {dr.ip}")
-    echo(f"\tMAC:                  {dr.mac}")
-    echo(f"\tDevice Id (hash):     {dr.device_id}")
-    echo(f"\tOwner (hash):         {dr.owner}")
-    echo(f"\tHW Ver:               {dr.hw_ver}")
-    echo(f"\tIs Support IOT Cloud: {dr.is_support_iot_cloud})")
-    echo(f"\tOBD Src:              {dr.obd_src}")
-    echo(f"\tFactory Default:      {dr.factory_default}")
-    echo("\t\t== Encryption Scheme ==")
-    echo(f"\t\tEncrypt Type:     {dr.mgt_encrypt_schm.encrypt_type}")
-    echo(f"\t\tIs Support HTTPS: {dr.mgt_encrypt_schm.is_support_https}")
-    echo(f"\t\tHTTP Port:        {dr.mgt_encrypt_schm.http_port}")
-    echo(f"\t\tLV (Login Level): {dr.mgt_encrypt_schm.lv}")
+    echo(f"\tDevice Type:        {dr.device_type}")
+    echo(f"\tDevice Model:       {dr.device_model}")
+    echo(f"\tIP:                 {dr.ip}")
+    echo(f"\tMAC:                {dr.mac}")
+    echo(f"\tDevice Id (hash):   {dr.device_id}")
+    echo(f"\tOwner (hash):       {dr.owner}")
+    echo(f"\tHW Ver:             {dr.hw_ver}")
+    echo(f"\tSupports IOT Cloud: {dr.is_support_iot_cloud}")
+    echo(f"\tOBD Src:            {dr.obd_src}")
+    echo(f"\tFactory Default:    {dr.factory_default}")
+    echo(f"\tEncrypt Type:       {dr.mgt_encrypt_schm.encrypt_type}")
+    echo(f"\tSupports HTTPS:     {dr.mgt_encrypt_schm.is_support_https}")
+    echo(f"\tHTTP Port:          {dr.mgt_encrypt_schm.http_port}")
+    echo(f"\tLV (Login Level):   {dr.mgt_encrypt_schm.lv}")
 
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
@@ -562,6 +564,8 @@ async def state(ctx, dev: SmartDevice):
         echo(f"\tDevice ID:         {dev.device_id}")
         for feature in dev.features:
             echo(f"\tFeature:           {feature}")
+        echo()
+        _echo_discovery_info(dev._discovery_info)
     return dev.internal_state
 
 
@@ -593,13 +597,23 @@ async def alias(dev, new_alias, index):
 
 @cli.command()
 @pass_dev
+@click.pass_context
 @click.argument("module")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def raw_command(dev: SmartDevice, module, command, parameters):
+async def raw_command(ctx, dev: SmartDevice, module, command, parameters):
     """Run a raw command on the device."""
-    import ast
+    logging.warning("Deprecated, use 'kasa command --module %s %s'", module, command)
+    return await ctx.forward(cmd_command)
 
+
+@cli.command(name="command")
+@pass_dev
+@click.option("--module", required=False, help="Module for IOT protocol.")
+@click.argument("command")
+@click.argument("parameters", default=None, required=False)
+async def cmd_command(dev: SmartDevice, module, command, parameters):
+    """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
 

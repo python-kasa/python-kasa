@@ -145,7 +145,7 @@
     "get_device_info": {
         "avatar": "bulb",
         "brightness": 100,
-        "color_temp": 2700,
+        "color_temp": 0,
         "color_temp_range": [
             2500,
             6500
@@ -154,19 +154,19 @@
             "re_power_type": "always_on",
             "state": {
                 "brightness": 100,
-                "color_temp": 2700,
-                "hue": 0,
-                "saturation": 100
+                "color_temp": 0,
+                "hue": 12,
+                "saturation": 45
             },
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": true,
+        "device_on": false,
         "dynamic_light_effect_enable": false,
         "fw_id": "00000000000000000000000000000000",
         "fw_ver": "1.1.0 Build 230721 Rel.224802",
         "has_set_location_info": true,
-        "hue": 0,
+        "hue": 12,
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "2.0",
         "ip": "127.0.0.123",
@@ -179,8 +179,8 @@
         "oem_id": "00000000000000000000000000000000",
         "overheated": false,
         "region": "Pacific/Honolulu",
-        "rssi": -43,
-        "saturation": 100,
+        "rssi": -41,
+        "saturation": 45,
         "signal_level": 3,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
@@ -190,23 +190,23 @@
     "get_device_time": {
         "region": "Pacific/Honolulu",
         "time_diff": -600,
-        "timestamp": 1705976485
+        "timestamp": 1705991895
     },
     "get_device_usage": {
         "power_usage": {
-            "past30": 1,
-            "past7": 1,
-            "today": 1
-        },
-        "saved_power": {
             "past30": 2,
             "past7": 2,
             "today": 2
         },
+        "saved_power": {
+            "past30": 8,
+            "past7": 8,
+            "today": 8
+        },
         "time_usage": {
-            "past30": 3,
-            "past7": 3,
-            "today": 3
+            "past30": 10,
+            "past7": 10,
+            "today": 10
         }
     },
     "get_dynamic_light_effect_rules": {

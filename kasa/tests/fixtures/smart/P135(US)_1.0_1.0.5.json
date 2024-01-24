@@ -14,6 +14,10 @@
                 "ver_code": 3
             },
             {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
                 "id": "time",
                 "ver_code": 1
             },
@@ -66,11 +70,23 @@
                 "ver_code": 1
             },
             {
-                "id": "auto_off",
+                "id": "brightness",
+                "ver_code": 1
+            },
+            {
+                "id": "preset",
+                "ver_code": 1
+            },
+            {
+                "id": "on_off_gradually",
                 "ver_code": 2
             },
             {
-                "id": "localSmart",
+                "id": "dimmer_calibration",
+                "ver_code": 1
+            },
+            {
+                "id": "overheat_protection",
                 "ver_code": 1
             },
             {
@@ -81,14 +97,14 @@
     },
     "discovery_result": {
         "device_id": "00000000000000000000000000000000",
-        "device_model": "P125M(US)",
+        "device_model": "P135(US)",
         "device_type": "SMART.TAPOPLUG",
         "factory_default": false,
         "ip": "127.0.0.123",
         "is_support_iot_cloud": true,
-        "mac": "48-22-54-00-00-00",
+        "mac": "F0-A7-31-00-00-00",
         "mgt_encrypt_schm": {
-            "encrypt_type": "KLAP",
+            "encrypt_type": "AES",
             "http_port": 80,
             "is_support_https": false,
             "lv": 2
@@ -100,10 +116,6 @@
         "antitheft_rule_max_count": 1,
         "enable": false,
         "rule_list": []
-    },
-    "get_auto_off_config": {
-        "delay_min": 120,
-        "enable": false
     },
     "get_auto_update_info": {
         "enable": true,
@@ -119,30 +131,34 @@
         "rule_list": []
     },
     "get_device_info": {
-        "auto_off_remain_time": 0,
-        "auto_off_status": "off",
         "avatar": "plug",
+        "brightness": 100,
         "default_states": {
-            "state": {},
+            "re_power_type": "always_off",
+            "re_power_type_capability": [
+                "last_states",
+                "always_on",
+                "always_off"
+            ],
             "type": "last_states"
         },
         "device_id": "0000000000000000000000000000000000000000",
-        "device_on": true,
+        "device_on": false,
         "fw_id": "00000000000000000000000000000000",
-        "fw_ver": "1.1.0 Build 231009 Rel.155831",
+        "fw_ver": "1.0.5 Build 230801 Rel.095702",
         "has_set_location_info": true,
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "1.0",
         "ip": "127.0.0.123",
-        "lang": "en_US",
+        "lang": "",
         "latitude": 0,
         "longitude": 0,
-        "mac": "48-22-54-00-00-00",
-        "model": "P125M",
+        "mac": "F0-A7-31-00-00-00",
+        "model": "P135",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 189479,
-        "overheated": false,
+        "on_time": 0,
+        "overheat_status": "normal",
         "region": "Pacific/Honolulu",
         "rssi": -43,
         "signal_level": 3,
@@ -154,13 +170,13 @@
     "get_device_time": {
         "region": "Pacific/Honolulu",
         "time_diff": -600,
-        "timestamp": 1705991899
+        "timestamp": 1705975451
     },
     "get_device_usage": {
         "time_usage": {
-            "past30": 3163,
-            "past7": 3163,
-            "today": 1238
+            "past30": 0,
+            "past7": 0,
+            "today": 0
         }
     },
     "get_fw_download_state": {
@@ -170,9 +186,10 @@
         "status": 0,
         "upgrade_time": 5
     },
+    "get_inherit_info": null,
     "get_latest_fw": {
         "fw_size": 0,
-        "fw_ver": "1.1.0 Build 231009 Rel.155831",
+        "fw_ver": "1.0.5 Build 230801 Rel.095702",
         "hw_id": "",
         "need_to_upgrade": false,
         "oem_id": "",
@@ -182,7 +199,7 @@
     },
     "get_led_info": {
         "led_rule": "always",
-        "led_status": true,
+        "led_status": false,
         "night_mode": {
             "end_time": 427,
             "night_mode_type": "sunrise_sunset",
@@ -192,6 +209,15 @@
         }
     },
     "get_next_event": {},
+    "get_preset_rules": {
+        "brightness": [
+            100,
+            75,
+            50,
+            25,
+            1
+        ]
+    },
     "get_schedule_rules": {
         "enable": false,
         "rule_list": [],
@@ -200,7 +226,56 @@
         "sum": 0
     },
     "get_wireless_scan_info": {
-        "ap_list": [],
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
         "wep_supported": false
     },
     "qs_component_nego": {
@@ -235,9 +310,8 @@
             }
         ],
         "extra_info": {
-            "device_model": "P125M",
-            "device_type": "SMART.TAPOPLUG",
-            "is_klap": true
+            "device_model": "P135",
+            "device_type": "SMART.TAPOPLUG"
         }
     }
 }

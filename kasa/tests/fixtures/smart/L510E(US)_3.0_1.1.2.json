@@ -14,6 +14,10 @@
                 "ver_code": 3
             },
             {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
                 "id": "time",
                 "ver_code": 1
             },
@@ -46,7 +50,7 @@
                 "ver_code": 1
             },
             {
-                "id": "led",
+                "id": "brightness",
                 "ver_code": 1
             },
             {
@@ -54,7 +58,11 @@
                 "ver_code": 1
             },
             {
-                "id": "iot_cloud",
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "preset",
                 "ver_code": 1
             },
             {
@@ -62,31 +70,31 @@
                 "ver_code": 1
             },
             {
-                "id": "default_states",
+                "id": "iot_cloud",
                 "ver_code": 1
             },
             {
-                "id": "auto_off",
-                "ver_code": 2
+                "id": "bulb_quick_control",
+                "ver_code": 1
+            },
+            {
+                "id": "on_off_gradually",
+                "ver_code": 3
             },
             {
                 "id": "localSmart",
                 "ver_code": 1
-            },
-            {
-                "id": "matter",
-                "ver_code": 2
             }
         ]
     },
     "discovery_result": {
         "device_id": "00000000000000000000000000000000",
-        "device_model": "P125M(US)",
-        "device_type": "SMART.TAPOPLUG",
+        "device_model": "L510E(US)",
+        "device_type": "SMART.TAPOBULB",
         "factory_default": false,
         "ip": "127.0.0.123",
         "is_support_iot_cloud": true,
-        "mac": "48-22-54-00-00-00",
+        "mac": "3C-52-A1-00-00-00",
         "mgt_encrypt_schm": {
             "encrypt_type": "KLAP",
             "http_port": 80,
@@ -100,10 +108,6 @@
         "antitheft_rule_max_count": 1,
         "enable": false,
         "rule_list": []
-    },
-    "get_auto_off_config": {
-        "delay_min": 120,
-        "enable": false
     },
     "get_auto_update_info": {
         "enable": true,
@@ -119,48 +123,65 @@
         "rule_list": []
     },
     "get_device_info": {
-        "auto_off_remain_time": 0,
-        "auto_off_status": "off",
-        "avatar": "plug",
+        "avatar": "bulb",
+        "brightness": 100,
+        "color_temp_range": [
+            2700,
+            2700
+        ],
         "default_states": {
-            "state": {},
-            "type": "last_states"
+            "brightness": {
+                "type": "last_states",
+                "value": 100
+            },
+            "re_power_type": "always_on"
         },
         "device_id": "0000000000000000000000000000000000000000",
         "device_on": true,
         "fw_id": "00000000000000000000000000000000",
-        "fw_ver": "1.1.0 Build 231009 Rel.155831",
+        "fw_ver": "1.1.2 Build 231120 Rel.201048",
         "has_set_location_info": true,
         "hw_id": "00000000000000000000000000000000",
-        "hw_ver": "1.0",
+        "hw_ver": "3.0",
         "ip": "127.0.0.123",
         "lang": "en_US",
         "latitude": 0,
         "longitude": 0,
-        "mac": "48-22-54-00-00-00",
-        "model": "P125M",
+        "mac": "3C-52-A1-00-00-00",
+        "model": "L510",
+        "music_rhythm_enable": false,
+        "music_rhythm_mode": "single_lamp",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 189479,
         "overheated": false,
         "region": "Pacific/Honolulu",
-        "rssi": -43,
-        "signal_level": 3,
+        "rssi": -69,
+        "signal_level": 2,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
         "time_diff": -600,
-        "type": "SMART.TAPOPLUG"
+        "type": "SMART.TAPOBULB"
     },
     "get_device_time": {
         "region": "Pacific/Honolulu",
         "time_diff": -600,
-        "timestamp": 1705991899
+        "timestamp": 1706060527
     },
     "get_device_usage": {
+        "power_usage": {
+            "past30": 1,
+            "past7": 1,
+            "today": 1
+        },
+        "saved_power": {
+            "past30": 9,
+            "past7": 9,
+            "today": 9
+        },
         "time_usage": {
-            "past30": 3163,
-            "past7": 3163,
-            "today": 1238
+            "past30": 10,
+            "past7": 10,
+            "today": 10
         }
     },
     "get_fw_download_state": {
@@ -170,9 +191,10 @@
         "status": 0,
         "upgrade_time": 5
     },
+    "get_inherit_info": null,
     "get_latest_fw": {
         "fw_size": 0,
-        "fw_ver": "1.1.0 Build 231009 Rel.155831",
+        "fw_ver": "1.1.2 Build 231120 Rel.201048",
         "hw_id": "",
         "need_to_upgrade": false,
         "oem_id": "",
@@ -180,18 +202,28 @@
         "release_note": "",
         "type": 0
     },
-    "get_led_info": {
-        "led_rule": "always",
-        "led_status": true,
-        "night_mode": {
-            "end_time": 427,
-            "night_mode_type": "sunrise_sunset",
-            "start_time": 1092,
-            "sunrise_offset": 0,
-            "sunset_offset": 0
+    "get_next_event": {},
+    "get_on_off_gradually_info": {
+        "off_state": {
+            "duration": 2,
+            "enable": false,
+            "max_duration": 60
+        },
+        "on_state": {
+            "duration": 2,
+            "enable": false,
+            "max_duration": 60
         }
     },
-    "get_next_event": {},
+    "get_preset_rules": {
+        "brightness": [
+            1,
+            25,
+            50,
+            75,
+            100
+        ]
+    },
     "get_schedule_rules": {
         "enable": false,
         "rule_list": [],
@@ -214,19 +246,11 @@
                 "ver_code": 1
             },
             {
-                "id": "ble_whole_setup",
+                "id": "inherit",
                 "ver_code": 1
-            },
-            {
-                "id": "matter",
-                "ver_code": 2
             },
             {
                 "id": "iot_cloud",
-                "ver_code": 1
-            },
-            {
-                "id": "inherit",
                 "ver_code": 1
             },
             {
@@ -235,8 +259,8 @@
             }
         ],
         "extra_info": {
-            "device_model": "P125M",
-            "device_type": "SMART.TAPOPLUG",
+            "device_model": "L510",
+            "device_type": "SMART.TAPOBULB",
             "is_klap": true
         }
     }

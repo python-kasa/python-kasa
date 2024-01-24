@@ -377,6 +377,9 @@ class FakeSmartTransport(BaseTransport):
     async def close(self) -> None:
         pass
 
+    async def reset(self) -> None:
+        pass
+
 
 class FakeTransportProtocol(TPLinkSmartHomeProtocol):
     def __init__(self, info):

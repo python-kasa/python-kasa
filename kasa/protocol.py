@@ -10,6 +10,7 @@ which are licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 """
 import asyncio
+import base64
 import contextlib
 import errno
 import logging
@@ -17,13 +18,14 @@ import socket
 import struct
 from abc import ABC, abstractmethod
 from pprint import pformat as pf
-from typing import Dict, Generator, Optional, Union
+from typing import Dict, Generator, Optional, Tuple, Union
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 from cryptography.hazmat.primitives import hashes
 
+from .credentials import Credentials
 from .deviceconfig import DeviceConfig
 from .exceptions import SmartDeviceException
 from .json import dumps as json_dumps
@@ -77,6 +79,10 @@ class BaseTransport(ABC):
     @abstractmethod
     async def close(self) -> None:
         """Close the transport.  Abstract method to be overriden."""
+
+    @abstractmethod
+    async def reset(self) -> None:
+        """Reset internal state."""
 
 
 class BaseProtocol(ABC):
@@ -137,7 +143,10 @@ class _XorTransport(BaseTransport):
         return {}
 
     async def close(self) -> None:
-        """Close the transport.  Abstract method to be overriden."""
+        """Close the transport."""
+
+    async def reset(self) -> None:
+        """Reset internal state.."""
 
 
 class TPLinkSmartHomeProtocol(BaseProtocol):
@@ -231,9 +240,9 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
         if writer:
             writer.close()
 
-    def _reset(self) -> None:
-        """Clear any varibles that should not survive between loops."""
-        self.reader = self.writer = None
+    async def reset(self) -> None:
+        """Reset the transport."""
+        await self.close()
 
     async def _query(self, request: str, retry_count: int, timeout: int) -> Dict:
         """Try to query a device."""
@@ -250,12 +259,12 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
             try:
                 await self._connect(timeout)
             except ConnectionRefusedError as ex:
-                await self.close()
+                await self.reset()
                 raise SmartDeviceException(
                     f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
                 ) from ex
             except OSError as ex:
-                await self.close()
+                await self.reset()
                 if ex.errno in _NO_RETRY_ERRORS or retry >= retry_count:
                     raise SmartDeviceException(
                         f"Unable to connect to the device:"
@@ -263,7 +272,7 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
                     ) from ex
                 continue
             except Exception as ex:
-                await self.close()
+                await self.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
@@ -288,7 +297,7 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
                 async with asyncio_timeout(timeout):
                     return await self._execute_query(request)
             except Exception as ex:
-                await self.close()
+                await self.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise SmartDeviceException(
@@ -310,7 +319,7 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
                 raise
 
         # make mypy happy, this should never be reached..
-        await self.close()
+        await self.reset()
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     def __del__(self) -> None:
@@ -320,7 +329,6 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
             # or in another thread so we need to make sure the call to
             # close is called safely with call_soon_threadsafe
             self.loop.call_soon_threadsafe(self.writer.close)
-        self._reset()
 
     @staticmethod
     def _xor_payload(unencrypted: bytes) -> Generator[int, None, None]:
@@ -360,6 +368,18 @@ class TPLinkSmartHomeProtocol(BaseProtocol):
             TPLinkSmartHomeProtocol._xor_encrypted_payload(ciphertext)
         ).decode()
 
+
+def get_default_credentials(tuple: Tuple[str, str]) -> Credentials:
+    """Return decoded default credentials."""
+    un = base64.b64decode(tuple[0].encode()).decode()
+    pw = base64.b64decode(tuple[1].encode()).decode()
+    return Credentials(un, pw)
+
+
+DEFAULT_CREDENTIALS = {
+    "KASA": ("a2FzYUB0cC1saW5rLm5ldA==", "a2FzYVNldHVw"),
+    "TAPO": ("dGVzdEB0cC1saW5rLm5ldA==", "dGVzdA=="),
+}
 
 # Try to load the kasa_crypt module and if it is available
 try:
