@@ -294,6 +294,7 @@ At the moment, the following devices have been confirmed to work:
 * Tapo L900-5
 * Tapo L900-10
 * Tapo L920-5
+* Tapo L930-5
 
 ### Newer Kasa branded devices
 
