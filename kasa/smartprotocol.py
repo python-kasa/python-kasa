@@ -112,9 +112,8 @@ class SmartProtocol(BaseProtocol):
         ]
 
         end = len(requests)
-        step = (
-            self.MULTI_REQUEST_BATCH_SIZE
-        )  # Break the requests down as there seems to be a size limit
+        # Break the requests down as there seems to be a size limit
+        step = self.MULTI_REQUEST_BATCH_SIZE
         for i in range(0, end, step):
             requests_step = requests[i : i + step]
 
