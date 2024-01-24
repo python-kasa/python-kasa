@@ -35,6 +35,11 @@ from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credential
 _LOGGER = logging.getLogger(__name__)
 
 
+ONE_DAY_SECONDS = 86400
+SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+
+
+
 def _sha1(payload: bytes) -> str:
     sha1_algo = hashlib.sha1()  # noqa: S324
     sha1_algo.update(payload)
@@ -281,7 +286,12 @@ class AesTransport(BaseTransport):
         ):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
-        self._session_expire_at = time.time() + 86400
+        # There is a 24 hour timeout on the session cookie
+        # but the clock on the device is not always accurate
+        # so we set the expiry to 24 hours from now minus a buffer
+        self._session_expire_at = (
+            time.time() + ONE_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
+        )
         if TYPE_CHECKING:
             assert self._key_pair is not None  # pragma: no cover
         self._encryption_session = AesEncyptionSession.create_from_keypair(
