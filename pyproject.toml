@@ -65,9 +65,16 @@ omit = ["kasa/tests/*"]
 
 [tool.coverage.report]
 exclude_lines = [
-  # ignore abstract methods
+  # Don't complain if tests don't hit defensive assertion code:
+  "raise AssertionError",
   "raise NotImplementedError",
+  # Don't complain about missing debug-only code:
   "def __repr__"
+  # Have to re-enable the standard pragma
+  "pragma: no cover",
+  # TYPE_CHECKING and @overload blocks are never executed during pytest run
+  "if TYPE_CHECKING:"
+  "@overload"
 ]
 
 [tool.pytest.ini_options]
