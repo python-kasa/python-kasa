@@ -256,7 +256,9 @@ class AesTransport(BaseTransport):
             **self.COMMON_HEADERS,
             self.CONTENT_LENGTH: str(self.KEY_PAIR_CONTENT_LENGTH),
         }
-        status_code, resp_dict = await self._http_client.post(
+        http_client = self._http_client
+
+        status_code, resp_dict = await http_client.post(
             url,
             json=self._generate_key_pair_payload(),
             headers=headers,
@@ -272,20 +274,19 @@ class AesTransport(BaseTransport):
             )
 
         self._handle_response_error_code(resp_dict, "Unable to complete handshake")
-
         handshake_key = resp_dict["result"]["key"]
 
         if (
-            cookie := self._http_client.get_cookie(  # type: ignore
+            cookie := http_client.get_cookie(  # type: ignore
                 self.SESSION_COOKIE_NAME
             )
         ) or (
-            cookie := self._http_client.get_cookie("SESSIONID")  # type: ignore
+            cookie := http_client.get_cookie("SESSIONID")  # type: ignore
         ):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
-        timeout = (
-            self._http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
+        timeout = int(
+            http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
         )
         # There is a 24 hour timeout on the session cookie
         # but the clock on the device is not always accurate

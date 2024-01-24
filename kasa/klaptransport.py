@@ -276,15 +276,13 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
 
         local_seed, remote_seed, auth_hash = await self.perform_handshake1()
-        if cookie := self._http_client.get_cookie(  # type: ignore
-            self.SESSION_COOKIE_NAME
-        ):
+        http_client = self._http_client
+        if cookie := http_client.get_cookie(self.SESSION_COOKIE_NAME):  # type: ignore
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
         # The device returns a TIMEOUT cookie on handshake1 which
         # it doesn't like to get back so we store the one we want
-
         timeout = int(
-            self._http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
+            http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
         )
         # There is a 24 hour timeout on the session cookie
         # but the clock on the device is not always accurate
