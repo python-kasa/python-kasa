@@ -36,6 +36,10 @@ from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credential
 _LOGGER = logging.getLogger(__name__)
 
 
+ONE_DAY_SECONDS = 86400
+SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+
+
 def _sha1(payload: bytes) -> str:
     sha1_algo = hashlib.sha1()  # noqa: S324
     sha1_algo.update(payload)
@@ -59,6 +63,7 @@ class AesTransport(BaseTransport):
 
     DEFAULT_PORT: int = 80
     SESSION_COOKIE_NAME = "TP_SESSIONID"
+    TIMEOUT_COOKIE_NAME = "TIMEOUT"
     COMMON_HEADERS = {
         "Content-Type": "application/json",
         "requestByApp": "true",
@@ -254,7 +259,9 @@ class AesTransport(BaseTransport):
             **self.COMMON_HEADERS,
             self.CONTENT_LENGTH: str(self.KEY_PAIR_CONTENT_LENGTH),
         }
-        status_code, resp_dict = await self._http_client.post(
+        http_client = self._http_client
+
+        status_code, resp_dict = await http_client.post(
             url,
             json=self._generate_key_pair_payload(),
             headers=headers,
@@ -277,17 +284,21 @@ class AesTransport(BaseTransport):
         handshake_key = resp_dict["result"]["key"]
 
         if (
-            cookie := self._http_client.get_cookie(  # type: ignore
+            cookie := http_client.get_cookie(  # type: ignore
                 self.SESSION_COOKIE_NAME
             )
         ) or (
-            cookie := self._http_client.get_cookie(  # type: ignore
-                "SESSIONID"
-            )
+            cookie := http_client.get_cookie("SESSIONID")  # type: ignore
         ):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
-        self._session_expire_at = time.time() + 86400
+        timeout = int(
+            http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
+        )
+        # There is a 24 hour timeout on the session cookie
+        # but the clock on the device is not always accurate
+        # so we set the expiry to 24 hours from now minus a buffer
+        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
         if TYPE_CHECKING:
             assert self._key_pair is not None
         self._encryption_session = AesEncyptionSession.create_from_keypair(
