@@ -63,7 +63,7 @@ from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credential
 _LOGGER = logging.getLogger(__name__)
 
 
-ON_DAY_SECONDS = 86400
+ONE_DAY_SECONDS = 86400
 SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
 
 
@@ -286,7 +286,7 @@ class KlapTransport(BaseTransport):
         # but the clock on the device is not always accurate
         # so we set the expiry to 24 hours from now minus a buffer
         self._session_expire_at = (
-            time.time() + ON_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
+            time.time() + ONE_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
         )
         self._encryption_session = await self.perform_handshake2(
             local_seed, remote_seed, auth_hash
