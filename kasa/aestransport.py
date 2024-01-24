@@ -54,6 +54,7 @@ class AesTransport(BaseTransport):
 
     DEFAULT_PORT: int = 80
     SESSION_COOKIE_NAME = "TP_SESSIONID"
+    TIMEOUT_COOKIE_NAME = "TIMEOUT"
     COMMON_HEADERS = {
         "Content-Type": "application/json",
         "requestByApp": "true",
@@ -283,12 +284,13 @@ class AesTransport(BaseTransport):
         ):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
+        timeout = (
+            self._http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
+        )
         # There is a 24 hour timeout on the session cookie
         # but the clock on the device is not always accurate
         # so we set the expiry to 24 hours from now minus a buffer
-        self._session_expire_at = (
-            time.time() + ONE_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
-        )
+        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
         if TYPE_CHECKING:
             assert self._key_pair is not None  # pragma: no cover
         self._encryption_session = AesEncyptionSession.create_from_keypair(
