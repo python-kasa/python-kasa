@@ -147,8 +147,8 @@ class TapoDevice(SmartDevice):
     def location(self) -> Dict:
         """Return the device location."""
         loc = {
-            "latitude": cast(float, self._info.get("latitude")) / 10_000,
-            "longitude": cast(float, self._info.get("longitude")) / 10_000,
+            "latitude": cast(float, self._info.get("latitude", 0)) / 10_000,
+            "longitude": cast(float, self._info.get("longitude", 0)) / 10_000,
         }
         return loc
 
