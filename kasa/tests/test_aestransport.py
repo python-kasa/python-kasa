@@ -66,11 +66,11 @@ async def test_handshake(
     )
 
     assert transport._encryption_session is None
-    assert transport._state is AesState.HANDSHAKE
+    assert transport._state is AesState.HANDSHAKE_REQUIRED
     with expectation:
         await transport.perform_handshake()
         assert transport._encryption_session is not None
-        assert transport._state is AesState.LOGIN
+        assert transport._state is AesState.LOGIN_REQUIRED
 
 
 @status_parameters
@@ -82,7 +82,7 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
-    transport._state = AesState.LOGIN
+    transport._state = AesState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
@@ -129,7 +129,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
-    transport._state = AesState.LOGIN
+    transport._state = AesState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
