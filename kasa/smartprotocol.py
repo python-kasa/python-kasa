@@ -107,32 +107,34 @@ class SmartProtocol(BaseProtocol):
         requests = []
         multi_result = {}
         smart_method = "multipleRequest"
-        for method, params in request.items():
-            requests.append({"method": method, "params": params})
+        requests = [
+            {"method": method, "params": params} for method, params in request.items()
+        ]
 
         end = len(requests)
         step = (
             self.MULTI_REQUEST_BATCH_SIZE
         )  # Break the requests down as there seems to be a size limit
         for i in range(0, end, step):
-            x = i
-            requests_step = requests[x : x + step]
+            requests_step = requests[i : i + step]
 
             smart_params = {"requests": requests_step}
             smart_request = self.get_smart_request(smart_method, smart_params)
-            _LOGGER.debug(
-                "%s multi-request-batch-%s >> %s",
-                self._host,
-                i + 1,
-                debug_enabled and pf(smart_request),
-            )
+            if debug_enabled:
+                _LOGGER.debug(
+                    "%s multi-request-batch-%s >> %s",
+                    self._host,
+                    i + 1,
+                    pf(smart_request),
+                )
             response_step = await self._transport.send(smart_request)
-            _LOGGER.debug(
-                "%s multi-request-batch-%s << %s",
-                self._host,
-                i + 1,
-                debug_enabled and pf(response_step),
-            )
+            if debug_enabled:
+                _LOGGER.debug(
+                    "%s multi-request-batch-%s << %s",
+                    self._host,
+                    i + 1,
+                    pf(response_step),
+                )
             self._handle_response_error_code(response_step)
             responses = response_step["result"]["responses"]
             for response in responses:
@@ -142,6 +144,8 @@ class SmartProtocol(BaseProtocol):
         return multi_result
 
     async def _execute_query(self, request: Union[str, Dict], retry_count: int) -> Dict:
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+
         if isinstance(request, dict):
             if len(request) == 1:
                 smart_method = next(iter(request))
@@ -153,18 +157,20 @@ class SmartProtocol(BaseProtocol):
             smart_params = None
 
         smart_request = self.get_smart_request(smart_method, smart_params)
-        _LOGGER.debug(
-            "%s >> %s",
-            self._host,
-            _LOGGER.isEnabledFor(logging.DEBUG) and pf(smart_request),
-        )
+        if debug_enabled:
+            _LOGGER.debug(
+                "%s >> %s",
+                self._host,
+                pf(smart_request),
+            )
         response_data = await self._transport.send(smart_request)
 
-        _LOGGER.debug(
-            "%s << %s",
-            self._host,
-            _LOGGER.isEnabledFor(logging.DEBUG) and pf(response_data),
-        )
+        if debug_enabled:
+            _LOGGER.debug(
+                "%s << %s",
+                self._host,
+                pf(response_data),
+            )
 
         self._handle_response_error_code(response_data)
 
