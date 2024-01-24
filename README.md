@@ -282,11 +282,13 @@ At the moment, the following devices have been confirmed to work:
 #### Plugs
 
 * Tapo P110
+* Tapo P125M
 * Tapo P135 (dimming not yet supported)
 
 #### Bulbs
 
 * Tapo L510B
+* Tapo L510E
 * Tapo L530E
 
 #### Light strips
@@ -335,7 +337,7 @@ use it directly you should expect it could break in future releases until this s
 Other TAPO libraries are:
 
 * [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
-* [Tapo P100 (Tapo P105/P100 plugs, Tapo L510E bulbs)](https://github.com/fishbigger/TapoP100)
+* [Tapo P100 (Tapo plugs, Tapo bulbs)](https://github.com/fishbigger/TapoP100)
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
 * [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)
   * [Home Assistant integration](https://github.com/petretiandrea/home-assistant-tapo-p100)

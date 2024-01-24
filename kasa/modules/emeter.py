@@ -63,7 +63,7 @@ class Emeter(Usage):
         self,
         data: List[Dict[str, Union[int, float]]],
         entry_key: str,
-        kwh: bool=True,
+        kwh: bool = True,
         key: Optional[int] = None,
     ) -> Dict[Union[int, float], Union[int, float]]:
         """Return emeter information keyed with the day/month.
