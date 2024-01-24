@@ -20,7 +20,14 @@ from typing import Dict, List, Union
 import asyncclick as click
 
 from devtools.helpers.smartrequests import COMPONENT_REQUESTS, SmartRequest
-from kasa import AuthenticationException, Credentials, Discover, SmartDevice
+from kasa import (
+    AuthenticationException,
+    Credentials,
+    Discover,
+    SmartDevice,
+    SmartDeviceException,
+    TimeoutException,
+)
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
 from kasa.tapo.tapodevice import TapoDevice
@@ -285,9 +292,29 @@ async def _make_requests_or_exit(
             )
         )
         exit(1)
-    except Exception as ex:
+    except SmartDeviceException as ex:
         click.echo(
             click.style(f"Unable to query {name} at once: {ex}", bold=True, fg="red")
+        )
+        if (
+            isinstance(ex, TimeoutException)
+            or ex.error_code == SmartErrorCode.SESSION_TIMEOUT_ERROR
+        ):
+            click.echo(
+                click.style(
+                    "Timeout, try reducing the batch size via --batch-size option.",
+                    bold=True,
+                    fg="red",
+                )
+            )
+        exit(1)
+    except Exception as ex:
+        click.echo(
+            click.style(
+                f"Unexpected exception querying {name} at once: {ex}",
+                bold=True,
+                fg="red",
+            )
         )
         exit(1)
 
