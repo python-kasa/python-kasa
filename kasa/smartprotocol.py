@@ -10,7 +10,7 @@ import logging
 import time
 import uuid
 from pprint import pformat as pf
-from typing import Dict, Union
+from typing import Dict, Union, Any
 
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -48,14 +48,13 @@ class SmartProtocol(BaseProtocol):
 
     def get_smart_request(self, method, params=None) -> str:
         """Get a request message as a string."""
-        request = {
+        return json_dumps({
             "method": method,
             "params": params,
             "requestID": self._request_id_generator.generate_id(),
             "request_time_milis": round(time.time() * 1000),
             "terminal_uuid": self._terminal_uuid,
-        }
-        return json_dumps(request)
+        })
 
     async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
         """Query the device retrying for retry_count on failure."""
@@ -104,8 +103,7 @@ class SmartProtocol(BaseProtocol):
 
     async def _execute_multiple_query(self, request: Dict, retry_count: int) -> Dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
-        requests = []
-        multi_result = {}
+        multi_result: Dict[str, Any] = {}
         smart_method = "multipleRequest"
         requests = [
             {"method": method, "params": params} for method, params in request.items()
