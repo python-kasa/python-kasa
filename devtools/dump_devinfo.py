@@ -234,11 +234,7 @@ async def get_legacy_fixture(device):
     try:
         final = await device.protocol.query(final_query)
     except Exception as ex:
-        click.echo(
-            click.style(
-                f"Unable to query all successes at once: {ex}", bold=True, fg="red"
-            )
-        )
+        _echo_error(f"Unable to query all successes at once: {ex}", bold=True, fg="red")
 
     if device._discovery_info and not device._discovery_info.get("system"):
         # Need to recreate a DiscoverResult here because we don't want the aliases
@@ -259,6 +255,16 @@ async def get_legacy_fixture(device):
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
     copy_folder = "kasa/tests/fixtures/"
     return save_filename, copy_folder, final
+
+
+def _echo_error(msg: str):
+    click.echo(
+        click.style(
+            msg,
+            bold=True,
+            fg="red",
+        )
+    )
 
 
 async def _make_requests_or_exit(
@@ -284,37 +290,25 @@ async def _make_requests_or_exit(
                 final[method] = result
         return final
     except AuthenticationException as ex:
-        click.echo(
-            click.style(
-                f"Unable to query the device due to an authentication error: {ex}",
-                bold=True,
-                fg="red",
-            )
+        _echo_error(
+            f"Unable to query the device due to an authentication error: {ex}",
         )
         exit(1)
     except SmartDeviceException as ex:
-        click.echo(
-            click.style(f"Unable to query {name} at once: {ex}", bold=True, fg="red")
+        _echo_error(
+            f"Unable to query {name} at once: {ex}",
         )
         if (
             isinstance(ex, TimeoutException)
             or ex.error_code == SmartErrorCode.SESSION_TIMEOUT_ERROR
         ):
-            click.echo(
-                click.style(
-                    "Timeout, try reducing the batch size via --batch-size option.",
-                    bold=True,
-                    fg="red",
-                )
+            _echo_error(
+                "Timeout, try reducing the batch size via --batch-size option.",
             )
         exit(1)
     except Exception as ex:
-        click.echo(
-            click.style(
-                f"Unexpected exception querying {name} at once: {ex}",
-                bold=True,
-                fg="red",
-            )
+        _echo_error(
+            f"Unexpected exception querying {name} at once: {ex}",
         )
         exit(1)
 
@@ -388,12 +382,8 @@ async def get_smart_fixture(device: TapoDevice, batch_size: int):
                 SmartRequest._create_request_dict(test_call.request)
             )
         except AuthenticationException as ex:
-            click.echo(
-                click.style(
-                    f"Unable to query the device due to an authentication error: {ex}",
-                    bold=True,
-                    fg="red",
-                )
+            _echo_error(
+                f"Unable to query the device due to an authentication error: {ex}",
             )
             exit(1)
         except Exception as ex:
