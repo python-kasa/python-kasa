@@ -63,6 +63,10 @@ from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credential
 _LOGGER = logging.getLogger(__name__)
 
 
+ON_DAY_SECONDS = 86400
+SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+
+
 def _sha256(payload: bytes) -> bytes:
     digest = hashes.Hash(hashes.SHA256())  # noqa: S303
     digest.update(payload)
@@ -278,7 +282,12 @@ class KlapTransport(BaseTransport):
         # The device returns a TIMEOUT cookie on handshake1 which
         # it doesn't like to get back so we store the one we want
 
-        self._session_expire_at = time.time() + 86400
+        # There is a 24 hour timeout on the session cookie
+        # but the clock on the device is not always accurate
+        # so we set the expiry to 24 hours from now minus a buffer
+        self._session_expire_at = (
+            time.time() + ON_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
+        )
         self._encryption_session = await self.perform_handshake2(
             local_seed, remote_seed, auth_hash
         )
