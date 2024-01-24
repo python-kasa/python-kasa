@@ -103,6 +103,7 @@ class SmartProtocol(BaseProtocol):
         raise SmartDeviceException("Query reached somehow to unreachable")
 
     async def _execute_multiple_query(self, request: Dict, retry_count: int) -> Dict:
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         requests = []
         multi_result = {}
         smart_method = "multipleRequest"
@@ -123,14 +124,14 @@ class SmartProtocol(BaseProtocol):
                 "%s multi-request-batch-%s >> %s",
                 self._host,
                 i + 1,
-                _LOGGER.isEnabledFor(logging.DEBUG) and pf(smart_request),
+                debug_enabled and pf(smart_request),
             )
             response_step = await self._transport.send(smart_request)
             _LOGGER.debug(
                 "%s multi-request-batch-%s << %s",
                 self._host,
                 i + 1,
-                _LOGGER.isEnabledFor(logging.DEBUG) and pf(response_step),
+                debug_enabled and pf(response_step),
             )
             self._handle_response_error_code(response_step)
             responses = response_step["result"]["responses"]
