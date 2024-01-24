@@ -10,7 +10,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 
-from ..aestransport import AesEncyptionSession, AesTransport
+from ..aestransport import AesEncyptionSession, AesTransport, TransportState
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
@@ -66,11 +66,11 @@ async def test_handshake(
     )
 
     assert transport._encryption_session is None
-    assert transport._handshake_done is False
+    assert transport._state is TransportState.HANDSHAKE_REQUIRED
     with expectation:
         await transport.perform_handshake()
         assert transport._encryption_session is not None
-        assert transport._handshake_done is True
+        assert transport._state is TransportState.LOGIN_REQUIRED
 
 
 @status_parameters
@@ -82,7 +82,7 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
-    transport._handshake_done = True
+    transport._state = TransportState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
@@ -129,7 +129,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
-    transport._handshake_done = True
+    transport._state = TransportState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
