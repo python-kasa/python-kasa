@@ -151,7 +151,7 @@ class AesTransport(BaseTransport):
     async def send_secure_passthrough(self, request: str) -> Dict[str, Any]:
         """Send encrypted message as passthrough."""
         url = f"http://{self._host}/app"
-        if self._login_token:
+        if self._state is TransportState.ESTABLISHED and self._login_token:
             url += f"?token={self._login_token}"
 
         encrypted_payload = self._encryption_session.encrypt(request.encode())  # type: ignore
@@ -250,6 +250,7 @@ class AesTransport(BaseTransport):
         _LOGGER.debug("Will perform handshaking...")
 
         self._key_pair = None
+        self._login_token = None
         self._session_expire_at = None
         self._session_cookie = None
 
@@ -284,9 +285,7 @@ class AesTransport(BaseTransport):
         handshake_key = resp_dict["result"]["key"]
 
         if (
-            cookie := http_client.get_cookie(  # type: ignore
-                self.SESSION_COOKIE_NAME
-            )
+            cookie := http_client.get_cookie(self.SESSION_COOKIE_NAME)  # type: ignore
         ) or (
             cookie := http_client.get_cookie("SESSIONID")  # type: ignore
         ):
