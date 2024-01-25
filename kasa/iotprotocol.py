@@ -1,8 +1,9 @@
 """Module for the IOT legacy IOT KASA protocol."""
 import asyncio
 import logging
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
+from .deviceconfig import DeviceConfig
 from .exceptions import (
     AuthenticationException,
     ConnectionException,
@@ -12,6 +13,7 @@ from .exceptions import (
 )
 from .json import dumps as json_dumps
 from .protocol import BaseProtocol, BaseTransport
+from .xortransport import XorEncryption, XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,3 +88,43 @@ class IotProtocol(BaseProtocol):
     async def close(self) -> None:
         """Close the underlying transport."""
         await self._transport.close()
+
+
+class _deprecated_TPLinkSmartHomeProtocol(IotProtocol):
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        *,
+        port: Optional[int] = None,
+        timeout: Optional[int] = None,
+        transport: Optional[BaseTransport] = None,
+    ) -> None:
+        """Create a protocol object."""
+        if not host and not transport:
+            raise SmartDeviceException("host or transport must be supplied")
+        if not transport:
+            config = DeviceConfig(
+                host=host,  # type: ignore[arg-type]
+                port_override=port,
+                timeout=timeout or XorTransport.DEFAULT_TIMEOUT,
+            )
+            transport = XorTransport(config=config)
+        super().__init__(transport=transport)
+
+    @staticmethod
+    def encrypt(request: str) -> bytes:
+        """Encrypt a request for a TP-Link Smart Home Device.
+
+        :param request: plaintext request data
+        :return: ciphertext to be send over wire, in bytes
+        """
+        return XorEncryption.encrypt(request)
+
+    @staticmethod
+    def decrypt(ciphertext: bytes) -> str:
+        """Decrypt a response of a TP-Link Smart Home Device.
+
+        :param ciphertext: encrypted response data
+        :return: plaintext response
+        """
+        return XorEncryption.decrypt(ciphertext)

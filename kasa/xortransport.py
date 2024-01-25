@@ -1,4 +1,14 @@
-"""Module for the XorTransport."""
+"""Implementation of the legacy TP-Link Smart Home Protocol.
+
+Encryption/Decryption methods based on the works of
+Lubomir Stroetmann and Tobias Esser
+
+https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/
+https://github.com/softScheck/tplink-smartplug/
+
+which are licensed under the Apache License, Version 2.0
+http://www.apache.org/licenses/LICENSE-2.0
+"""
 import asyncio
 import contextlib
 import errno
@@ -23,13 +33,7 @@ _UNSIGNED_INT_NETWORK_ORDER = struct.Struct(">I")
 
 
 class XorTransport(BaseTransport):
-    """Implementation of the Xor encryption transport.
-
-    WIP, currently only to ensure consistent __init__ method signatures
-    for protocol classes.  Will eventually incorporate the logic from
-    TPLinkSmartHomeProtocol to simplify the API and re-use the IotProtocol
-    class.
-    """
+    """XorTransport class."""
 
     DEFAULT_PORT: int = 9999
     BLOCK_SIZE = 4

@@ -11,7 +11,6 @@ from kasa import (
     EmeterStatus,
     SmartDevice,
     SmartDeviceException,
-    TPLinkSmartHomeProtocol,
     UnsupportedDeviceException,
 )
 from kasa.cli import (
