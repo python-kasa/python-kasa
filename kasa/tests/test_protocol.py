@@ -4,6 +4,7 @@ import importlib
 import inspect
 import json
 import logging
+import os
 import pkgutil
 import struct
 import sys
@@ -14,6 +15,7 @@ from ..aestransport import AesTransport
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
+from ..iotprotocol import IotProtocol
 from ..klaptransport import KlapTransport, KlapTransportV2
 from ..protocol import (
     BaseProtocol,
@@ -21,10 +23,19 @@ from ..protocol import (
     TPLinkSmartHomeProtocol,
     _XorTransport,
 )
+from ..xortransport import XorEncryption, XorTransport
 
 
+@pytest.mark.parametrize(
+    "protocol_class, transport_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport),
+        (IotProtocol, XorTransport),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_retries(mocker, retry_count):
+async def test_protocol_retries(mocker, retry_count, protocol_class, transport_class):
     def aio_mock_writer(_, __):
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
@@ -38,60 +49,100 @@ async def test_protocol_retries(mocker, retry_count):
     conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
+        await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=retry_count
         )
 
     assert conn.call_count == retry_count + 1
 
 
-async def test_protocol_no_retry_on_unreachable(mocker):
+@pytest.mark.parametrize(
+    "protocol_class, transport_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport),
+        (IotProtocol, XorTransport),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
+async def test_protocol_no_retry_on_unreachable(
+    mocker, protocol_class, transport_class
+):
     conn = mocker.patch(
         "asyncio.open_connection",
         side_effect=OSError(errno.EHOSTUNREACH, "No route to host"),
     )
     config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
+        await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=5
         )
 
     assert conn.call_count == 1
 
 
-async def test_protocol_no_retry_connection_refused(mocker):
+@pytest.mark.parametrize(
+    "protocol_class, transport_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport),
+        (IotProtocol, XorTransport),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
+async def test_protocol_no_retry_connection_refused(
+    mocker, protocol_class, transport_class
+):
     conn = mocker.patch(
         "asyncio.open_connection",
         side_effect=ConnectionRefusedError,
     )
     config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
+        await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=5
         )
 
     assert conn.call_count == 1
 
 
-async def test_protocol_retry_recoverable_error(mocker):
+@pytest.mark.parametrize(
+    "protocol_class, transport_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport),
+        (IotProtocol, XorTransport),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
+async def test_protocol_retry_recoverable_error(
+    mocker, protocol_class, transport_class
+):
     conn = mocker.patch(
         "asyncio.open_connection",
         side_effect=OSError(errno.ECONNRESET, "Connection reset by peer"),
     )
     config = DeviceConfig("127.0.0.1")
     with pytest.raises(SmartDeviceException):
-        await TPLinkSmartHomeProtocol(transport=_XorTransport(config=config)).query(
+        await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=5
         )
 
     assert conn.call_count == 6
 
 
+@pytest.mark.parametrize(
+    "protocol_class, transport_class, encryption_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport, TPLinkSmartHomeProtocol),
+        (IotProtocol, XorTransport, XorEncryption),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
 @pytest.mark.parametrize("retry_count", [1, 3, 5])
-async def test_protocol_reconnect(mocker, retry_count):
+async def test_protocol_reconnect(
+    mocker, retry_count, protocol_class, transport_class, encryption_class
+):
     remaining = retry_count
-    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
-        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    encrypted = encryption_class.encrypt('{"great":"success"}')[
+        transport_class.BLOCK_SIZE :
     ]
 
     def _fail_one_less_than_retry_count(*_):
@@ -102,7 +153,7 @@ async def test_protocol_reconnect(mocker, retry_count):
 
     async def _mock_read(byte_count):
         nonlocal encrypted
-        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+        if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
         if byte_count == len(encrypted):
             return encrypted
@@ -117,16 +168,26 @@ async def test_protocol_reconnect(mocker, retry_count):
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
+    protocol = protocol_class(transport=transport_class(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({}, retry_count=retry_count)
     assert response == {"great": "success"}
 
 
-async def test_protocol_handles_cancellation_during_write(mocker):
+@pytest.mark.parametrize(
+    "protocol_class, transport_class, encryption_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport, TPLinkSmartHomeProtocol),
+        (IotProtocol, XorTransport, XorEncryption),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
+async def test_protocol_handles_cancellation_during_write(
+    mocker, protocol_class, transport_class, encryption_class
+):
     attempts = 0
-    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
-        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    encrypted = encryption_class.encrypt('{"great":"success"}')[
+        transport_class.BLOCK_SIZE :
     ]
 
     def _cancel_first_attempt(*_):
@@ -137,7 +198,7 @@ async def test_protocol_handles_cancellation_during_write(mocker):
 
     async def _mock_read(byte_count):
         nonlocal encrypted
-        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+        if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
         if byte_count == len(encrypted):
             return encrypted
@@ -152,24 +213,36 @@ async def test_protocol_handles_cancellation_during_write(mocker):
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
-    mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
+    protocol = protocol_class(transport=transport_class(config=config))
+    conn_mock = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(asyncio.CancelledError):
         await protocol.query({})
-    assert protocol.writer is None
+    writer_obj = protocol if hasattr(protocol, "writer") else protocol._transport
+    assert writer_obj.writer is None
+    conn_mock.assert_awaited_once()
     response = await protocol.query({})
     assert response == {"great": "success"}
 
 
-async def test_protocol_handles_cancellation_during_connection(mocker):
+@pytest.mark.parametrize(
+    "protocol_class, transport_class, encryption_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport, TPLinkSmartHomeProtocol),
+        (IotProtocol, XorTransport, XorEncryption),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
+async def test_protocol_handles_cancellation_during_connection(
+    mocker, protocol_class, transport_class, encryption_class
+):
     attempts = 0
-    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
-        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    encrypted = encryption_class.encrypt('{"great":"success"}')[
+        transport_class.BLOCK_SIZE :
     ]
 
     async def _mock_read(byte_count):
         nonlocal encrypted
-        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+        if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
         if byte_count == len(encrypted):
             return encrypted
@@ -187,26 +260,39 @@ async def test_protocol_handles_cancellation_during_connection(mocker):
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
-    mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
+    protocol = protocol_class(transport=transport_class(config=config))
+    conn_mock = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(asyncio.CancelledError):
         await protocol.query({})
-    assert protocol.writer is None
+
+    writer_obj = protocol if hasattr(protocol, "writer") else protocol._transport
+    assert writer_obj.writer is None
+    conn_mock.assert_awaited_once()
     response = await protocol.query({})
     assert response == {"great": "success"}
 
 
+@pytest.mark.parametrize(
+    "protocol_class, transport_class, encryption_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport, TPLinkSmartHomeProtocol),
+        (IotProtocol, XorTransport, XorEncryption),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
 @pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])
-async def test_protocol_logging(mocker, caplog, log_level):
+async def test_protocol_logging(
+    mocker, caplog, log_level, protocol_class, transport_class, encryption_class
+):
     caplog.set_level(log_level)
     logging.getLogger("kasa").setLevel(log_level)
-    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
-        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+    encrypted = encryption_class.encrypt('{"great":"success"}')[
+        transport_class.BLOCK_SIZE :
     ]
 
     async def _mock_read(byte_count):
         nonlocal encrypted
-        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+        if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
         if byte_count == len(encrypted):
             return encrypted
@@ -219,7 +305,7 @@ async def test_protocol_logging(mocker, caplog, log_level):
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
+    protocol = protocol_class(transport=transport_class(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})
     assert response == {"great": "success"}
@@ -229,15 +315,25 @@ async def test_protocol_logging(mocker, caplog, log_level):
         assert "success" not in caplog.text
 
 
+@pytest.mark.parametrize(
+    "protocol_class, transport_class, encryption_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport, TPLinkSmartHomeProtocol),
+        (IotProtocol, XorTransport, XorEncryption),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
 @pytest.mark.parametrize("custom_port", [123, None])
-async def test_protocol_custom_port(mocker, custom_port):
-    encrypted = TPLinkSmartHomeProtocol.encrypt('{"great":"success"}')[
-        TPLinkSmartHomeProtocol.BLOCK_SIZE :
+async def test_protocol_custom_port(
+    mocker, custom_port, protocol_class, transport_class, encryption_class
+):
+    encrypted = encryption_class.encrypt('{"great":"success"}')[
+        transport_class.BLOCK_SIZE :
     ]
 
     async def _mock_read(byte_count):
         nonlocal encrypted
-        if byte_count == TPLinkSmartHomeProtocol.BLOCK_SIZE:
+        if byte_count == transport_class.BLOCK_SIZE:
             return struct.pack(">I", len(encrypted))
         if byte_count == len(encrypted):
             return encrypted
@@ -254,21 +350,33 @@ async def test_protocol_custom_port(mocker, custom_port):
         return reader, writer
 
     config = DeviceConfig("127.0.0.1", port_override=custom_port)
-    protocol = TPLinkSmartHomeProtocol(transport=_XorTransport(config=config))
+    protocol = protocol_class(transport=transport_class(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     response = await protocol.query({})
     assert response == {"great": "success"}
 
 
-def test_encrypt():
+@pytest.mark.parametrize(
+    "encrypt_class",
+    [TPLinkSmartHomeProtocol, XorEncryption],
+)
+@pytest.mark.parametrize(
+    "decrypt_class",
+    [TPLinkSmartHomeProtocol, XorEncryption],
+)
+def test_encrypt(encrypt_class, decrypt_class):
     d = json.dumps({"foo": 1, "bar": 2})
-    encrypted = TPLinkSmartHomeProtocol.encrypt(d)
+    encrypted = encrypt_class.encrypt(d)
     # encrypt adds a 4 byte header
     encrypted = encrypted[4:]
-    assert d == TPLinkSmartHomeProtocol.decrypt(encrypted)
+    assert d == decrypt_class.decrypt(encrypted)
 
 
-def test_encrypt_unicode():
+@pytest.mark.parametrize(
+    "encrypt_class",
+    [TPLinkSmartHomeProtocol, XorEncryption],
+)
+def test_encrypt_unicode(encrypt_class):
     d = "{'snowman': '\u2603'}"
 
     e = bytes(
@@ -294,14 +402,18 @@ def test_encrypt_unicode():
         ]
     )
 
-    encrypted = TPLinkSmartHomeProtocol.encrypt(d)
+    encrypted = encrypt_class.encrypt(d)
     # encrypt adds a 4 byte header
     encrypted = encrypted[4:]
 
     assert e == encrypted
 
 
-def test_decrypt_unicode():
+@pytest.mark.parametrize(
+    "decrypt_class",
+    [TPLinkSmartHomeProtocol, XorEncryption],
+)
+def test_decrypt_unicode(decrypt_class):
     e = bytes(
         [
             208,
@@ -327,7 +439,7 @@ def test_decrypt_unicode():
 
     d = "{'snowman': '\u2603'}"
 
-    assert d == TPLinkSmartHomeProtocol.decrypt(e)
+    assert d == decrypt_class.decrypt(e)
 
 
 def _get_subclasses(of_class):
@@ -378,7 +490,8 @@ def test_transport_init_signature(class_name_obj):
 
 
 @pytest.mark.parametrize(
-    "transport_class", [AesTransport, KlapTransport, KlapTransportV2, _XorTransport]
+    "transport_class",
+    [AesTransport, KlapTransport, KlapTransportV2, _XorTransport, XorTransport],
 )
 async def test_transport_credentials_hash(mocker, transport_class):
     host = "127.0.0.1"
@@ -391,3 +504,79 @@ async def test_transport_credentials_hash(mocker, transport_class):
     transport = transport_class(config=config)
 
     assert transport.credentials_hash == credentials_hash
+
+
+@pytest.mark.parametrize(
+    "error, retry_expectation",
+    [
+        (ConnectionRefusedError("dummy exception"), False),
+        (OSError(errno.EHOSTDOWN, os.strerror(errno.EHOSTDOWN)), False),
+        (OSError(errno.ECONNRESET, os.strerror(errno.ECONNRESET)), True),
+        (Exception("dummy exception"), True),
+    ],
+    ids=("ConnectionRefusedError", "OSErrorNoRetry", "OSErrorRetry", "Exception"),
+)
+@pytest.mark.parametrize(
+    "protocol_class, transport_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport),
+        (IotProtocol, XorTransport),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
+async def test_protocol_will_retry_on_connect(
+    mocker, protocol_class, transport_class, error, retry_expectation
+):
+    retry_count = 2
+    conn = mocker.patch("asyncio.open_connection", side_effect=error)
+    config = DeviceConfig("127.0.0.1")
+    with pytest.raises(SmartDeviceException):
+        await protocol_class(transport=transport_class(config=config)).query(
+            {}, retry_count=retry_count
+        )
+
+    assert conn.call_count == (retry_count + 1 if retry_expectation else 1)
+
+
+@pytest.mark.parametrize(
+    "error, retry_expectation",
+    [
+        (ConnectionRefusedError("dummy exception"), True),
+        (OSError(errno.EHOSTDOWN, os.strerror(errno.EHOSTDOWN)), True),
+        (OSError(errno.ECONNRESET, os.strerror(errno.ECONNRESET)), True),
+        (Exception("dummy exception"), True),
+    ],
+    ids=("ConnectionRefusedError", "OSErrorNoRetry", "OSErrorRetry", "Exception"),
+)
+@pytest.mark.parametrize(
+    "protocol_class, transport_class",
+    [
+        (TPLinkSmartHomeProtocol, _XorTransport),
+        (IotProtocol, XorTransport),
+    ],
+    ids=("TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
+)
+async def test_protocol_will_retry_on_write(
+    mocker, protocol_class, transport_class, error, retry_expectation
+):
+    retry_count = 2
+    writer = mocker.patch("asyncio.StreamWriter")
+    write_mock = mocker.patch.object(writer, "write", side_effect=error)
+
+    def aio_mock_writer(_, __):
+        nonlocal writer
+        reader = mocker.patch("asyncio.StreamReader")
+
+        return reader, writer
+
+    conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
+    write_mock = mocker.patch("asyncio.StreamWriter.write", side_effect=error)
+    config = DeviceConfig("127.0.0.1")
+    with pytest.raises(SmartDeviceException):
+        await protocol_class(transport=transport_class(config=config)).query(
+            {}, retry_count=retry_count
+        )
+
+    expected_call_count = retry_count + 1 if retry_expectation else 1
+    assert conn.call_count == expected_call_count
+    assert write_mock.call_count == expected_call_count

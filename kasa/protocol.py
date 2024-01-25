@@ -60,7 +60,7 @@ class BaseTransport(ABC):
         self._port = config.port_override or self.default_port
         self._credentials = config.credentials
         self._credentials_hash = config.credentials_hash
-        self._timeout = config.timeout
+        self._timeout = config.timeout or self.DEFAULT_TIMEOUT
 
     @property
     @abstractmethod
@@ -124,6 +124,7 @@ class _XorTransport(BaseTransport):
     """
 
     DEFAULT_PORT: int = 9999
+    BLOCK_SIZE = 4
 
     def __init__(self, *, config: DeviceConfig) -> None:
         super().__init__(config=config)
