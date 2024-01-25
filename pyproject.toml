@@ -67,7 +67,6 @@ omit = ["kasa/tests/*"]
 exclude_lines = [
   # ignore debug logging
   "if debug_enabled:",
-  # ignore abstract methods
   # Don't complain if tests don't hit defensive assertion code:
   "raise AssertionError",
   "raise NotImplementedError",
