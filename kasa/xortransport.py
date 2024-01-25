@@ -104,7 +104,10 @@ class XorTransport(BaseTransport):
             writer.close()
 
     async def reset(self) -> None:
-        """Reset the transport."""
+        """Reset the transport.
+
+        The transport cannot be reset so we must close instead.
+        """
         await self.close()
 
     async def send(self, request: str) -> Dict:
