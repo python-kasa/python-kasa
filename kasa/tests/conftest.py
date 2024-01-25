@@ -111,7 +111,7 @@ STRIPS_SMART: Set[str] = set()
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
-DIMMERS_SMART: Set[str] = set()
+DIMMERS_SMART = {"S500D"}
 DIMMERS = {
     *DIMMERS_IOT,
     *DIMMERS_SMART,
@@ -240,6 +240,9 @@ bulb_iot = parametrize("bulb devices iot", BULBS_IOT, protocol_filter={"IOT"})
 
 plug_smart = parametrize("plug devices smart", PLUGS_SMART, protocol_filter={"SMART"})
 bulb_smart = parametrize("bulb devices smart", BULBS_SMART, protocol_filter={"SMART"})
+dimmers_smart = parametrize(
+    "dimmer devices smart", DIMMERS_SMART, protocol_filter={"SMART"}
+)
 device_smart = parametrize(
     "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
@@ -300,6 +303,7 @@ def check_categories():
         + lightstrip.args[1]
         + plug_smart.args[1]
         + bulb_smart.args[1]
+        + dimmers_smart.args[1]
     )
     diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
     if diff:
@@ -329,6 +333,9 @@ def device_for_file(model, protocol):
             if d in model:
                 return TapoPlug
         for d in BULBS_SMART:
+            if d in model:
+                return TapoBulb
+        for d in DIMMERS_SMART:
             if d in model:
                 return TapoBulb
     else:

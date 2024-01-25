@@ -298,6 +298,10 @@ At the moment, the following devices have been confirmed to work:
 * Tapo L920-5
 * Tapo L930-5
 
+#### Wall switches
+
+* Tapo S500D
+
 ### Newer Kasa branded devices
 
 Some newer hardware versions of Kasa branded devices are now using the same protocol as
