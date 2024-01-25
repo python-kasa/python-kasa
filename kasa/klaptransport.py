@@ -63,6 +63,10 @@ from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credential
 _LOGGER = logging.getLogger(__name__)
 
 
+ONE_DAY_SECONDS = 86400
+SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+
+
 def _sha256(payload: bytes) -> bytes:
     digest = hashes.Hash(hashes.SHA256())  # noqa: S303
     digest.update(payload)
@@ -86,6 +90,7 @@ class KlapTransport(BaseTransport):
     DEFAULT_PORT: int = 80
     DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
     SESSION_COOKIE_NAME = "TP_SESSIONID"
+    TIMEOUT_COOKIE_NAME = "TIMEOUT"
 
     def __init__(
         self,
@@ -271,14 +276,18 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
 
         local_seed, remote_seed, auth_hash = await self.perform_handshake1()
-        if cookie := self._http_client.get_cookie(  # type: ignore
-            self.SESSION_COOKIE_NAME
-        ):
+        http_client = self._http_client
+        if cookie := http_client.get_cookie(self.SESSION_COOKIE_NAME):  # type: ignore
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
         # The device returns a TIMEOUT cookie on handshake1 which
         # it doesn't like to get back so we store the one we want
-
-        self._session_expire_at = time.time() + 86400
+        timeout = int(
+            http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
+        )
+        # There is a 24 hour timeout on the session cookie
+        # but the clock on the device is not always accurate
+        # so we set the expiry to 24 hours from now minus a buffer
+        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
         self._encryption_session = await self.perform_handshake2(
             local_seed, remote_seed, auth_hash
         )

@@ -51,6 +51,14 @@ You can provision your device without any extra apps by using the ``kasa wifi`` 
 
 As with all other commands, you can also pass ``--help`` to both ``join`` and ``scan`` commands to see the available options.
 
+.. note::
+
+    For devices requiring authentication, the device-stored credentials can be changed using
+    the ``update-credentials`` commands, for example, to match with other cloud-connected devices.
+    However, note that communications with devices provisioned using this method will stop working
+    when connected to the cloud.
+
+
 ``kasa --help``
 ***************
 

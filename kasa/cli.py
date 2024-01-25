@@ -1,4 +1,5 @@
 """python-kasa cli tool."""
+import ast
 import asyncio
 import json
 import logging
@@ -36,6 +37,11 @@ except ImportError:
 try:
     from rich import print as _do_echo
 except ImportError:
+    # Strip out rich formatting if rich is not installed
+    # but only lower case tags to avoid stripping out
+    # raw data from the device that is printed from
+    # the device state.
+    rich_formatting = re.compile(r"\[/?[a-z]+]")
 
     def _strip_rich_formatting(echo_func):
         """Strip rich formatting from messages."""
@@ -43,7 +49,7 @@ except ImportError:
         @wraps(echo_func)
         def wrapper(message=None, *args, **kwargs):
             if message is not None:
-                message = re.sub(r"\[/?.+?]", "", message)
+                message = rich_formatting.sub("", message)
             echo_func(message, *args, **kwargs)
 
         return wrapper
@@ -68,6 +74,9 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
 DEVICE_FAMILY_TYPES = [
     device_family_type.value for device_family_type in DeviceFamilyType
 ]
+
+# Block list of commands which require no update
+SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
 
 click.anyio_backend = "asyncio"
 
@@ -339,8 +348,9 @@ async def cli(
             credentials=credentials,
         )
 
-    # Skip update for wifi & raw-command, and if factory was used to connect
-    if ctx.invoked_subcommand not in ["wifi", "raw-command"] and not device_family:
+    # Skip update on specific commands, or if device factory,
+    # that performs an update was used for the device.
+    if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_family:
         await dev.update()
 
     ctx.obj = dev
@@ -592,13 +602,23 @@ async def alias(dev, new_alias, index):
 
 @cli.command()
 @pass_dev
+@click.pass_context
 @click.argument("module")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def raw_command(dev: SmartDevice, module, command, parameters):
+async def raw_command(ctx, dev: SmartDevice, module, command, parameters):
     """Run a raw command on the device."""
-    import ast
+    logging.warning("Deprecated, use 'kasa command --module %s %s'", module, command)
+    return await ctx.forward(cmd_command)
 
+
+@cli.command(name="command")
+@pass_dev
+@click.option("--module", required=False, help="Module for IOT protocol.")
+@click.argument("command")
+@click.argument("parameters", default=None, required=False)
+async def cmd_command(dev: SmartDevice, module, command, parameters):
+    """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
 

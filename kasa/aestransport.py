@@ -8,7 +8,8 @@ import base64
 import hashlib
 import logging
 import time
-from typing import TYPE_CHECKING, AsyncGenerator, Dict, Optional, cast
+from enum import Enum, auto
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, Optional, Tuple, cast
 
 from cryptography.hazmat.primitives import padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
@@ -35,10 +36,22 @@ from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credential
 _LOGGER = logging.getLogger(__name__)
 
 
+ONE_DAY_SECONDS = 86400
+SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+
+
 def _sha1(payload: bytes) -> str:
     sha1_algo = hashlib.sha1()  # noqa: S324
     sha1_algo.update(payload)
     return sha1_algo.hexdigest()
+
+
+class TransportState(Enum):
+    """Enum for AES state."""
+
+    HANDSHAKE_REQUIRED = auto()  # Handshake needed
+    LOGIN_REQUIRED = auto()  # Login needed
+    ESTABLISHED = auto()  # Ready to send requests
 
 
 class AesTransport(BaseTransport):
@@ -50,6 +63,7 @@ class AesTransport(BaseTransport):
 
     DEFAULT_PORT: int = 80
     SESSION_COOKIE_NAME = "TP_SESSIONID"
+    TIMEOUT_COOKIE_NAME = "TIMEOUT"
     COMMON_HEADERS = {
         "Content-Type": "application/json",
         "requestByApp": "true",
@@ -79,21 +93,21 @@ class AesTransport(BaseTransport):
         self._default_credentials: Optional[Credentials] = None
         self._http_client: HttpClient = HttpClient(config)
 
-        self._handshake_done = False
+        self._state = TransportState.HANDSHAKE_REQUIRED
 
         self._encryption_session: Optional[AesEncyptionSession] = None
         self._session_expire_at: Optional[float] = None
 
         self._session_cookie: Optional[Dict[str, str]] = None
 
-        self._login_token = None
+        self._login_token: Optional[str] = None
 
         self._key_pair: Optional[KeyPair] = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
     @property
-    def default_port(self):
+    def default_port(self) -> int:
         """Default port for the transport."""
         return self.DEFAULT_PORT
 
@@ -102,30 +116,25 @@ class AesTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
-    def _get_login_params(self, credentials):
+    def _get_login_params(self, credentials: Credentials) -> Dict[str, str]:
         """Get the login parameters based on the login_version."""
         un, pw = self.hash_credentials(self._login_version == 2, credentials)
         password_field_name = "password2" if self._login_version == 2 else "password"
         return {password_field_name: pw, "username": un}
 
     @staticmethod
-    def hash_credentials(login_v2, credentials):
+    def hash_credentials(login_v2: bool, credentials: Credentials) -> Tuple[str, str]:
         """Hash the credentials."""
+        un = base64.b64encode(_sha1(credentials.username.encode()).encode()).decode()
         if login_v2:
-            un = base64.b64encode(
-                _sha1(credentials.username.encode()).encode()
-            ).decode()
             pw = base64.b64encode(
                 _sha1(credentials.password.encode()).encode()
             ).decode()
         else:
-            un = base64.b64encode(
-                _sha1(credentials.username.encode()).encode()
-            ).decode()
             pw = base64.b64encode(credentials.password.encode()).decode()
         return un, pw
 
-    def _handle_response_error_code(self, resp_dict: dict, msg: str):
+    def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         if error_code == SmartErrorCode.SUCCESS:
             return
@@ -135,15 +144,14 @@ class AesTransport(BaseTransport):
         if error_code in SMART_RETRYABLE_ERRORS:
             raise RetryableException(msg, error_code=error_code)
         if error_code in SMART_AUTHENTICATION_ERRORS:
-            self._handshake_done = False
-            self._login_token = None
+            self._state = TransportState.HANDSHAKE_REQUIRED
             raise AuthenticationException(msg, error_code=error_code)
         raise SmartDeviceException(msg, error_code=error_code)
 
-    async def send_secure_passthrough(self, request: str):
+    async def send_secure_passthrough(self, request: str) -> Dict[str, Any]:
         """Send encrypted message as passthrough."""
         url = f"http://{self._host}/app"
-        if self._login_token:
+        if self._state is TransportState.ESTABLISHED and self._login_token:
             url += f"?token={self._login_token}"
 
         encrypted_payload = self._encryption_session.encrypt(request.encode())  # type: ignore
@@ -165,16 +173,17 @@ class AesTransport(BaseTransport):
                 + f"status code {status_code} to passthrough"
             )
 
-        resp_dict = cast(Dict, resp_dict)
         self._handle_response_error_code(
             resp_dict, "Error sending secure_passthrough message"
         )
 
-        response = self._encryption_session.decrypt(  # type: ignore
-            resp_dict["result"]["response"].encode()
-        )
-        resp_dict = json_loads(response)
-        return resp_dict
+        if TYPE_CHECKING:
+            resp_dict = cast(Dict[str, Any], resp_dict)
+            assert self._encryption_session is not None
+
+        raw_response: str = resp_dict["result"]["response"]
+        response = self._encryption_session.decrypt(raw_response.encode())
+        return json_loads(response)  # type: ignore[return-value]
 
     async def perform_login(self):
         """Login to the device."""
@@ -182,7 +191,7 @@ class AesTransport(BaseTransport):
             await self.try_login(self._login_params)
         except AuthenticationException as aex:
             try:
-                if aex.error_code != SmartErrorCode.LOGIN_ERROR:
+                if aex.error_code is not SmartErrorCode.LOGIN_ERROR:
                     raise aex
                 if self._default_credentials is None:
                     self._default_credentials = get_default_credentials(
@@ -203,9 +212,8 @@ class AesTransport(BaseTransport):
                     ex,
                 ) from ex
 
-    async def try_login(self, login_params):
+    async def try_login(self, login_params: Dict[str, Any]) -> None:
         """Try to login with supplied login_params."""
-        self._login_token = None
         login_request = {
             "method": "login_device",
             "params": login_params,
@@ -216,6 +224,7 @@ class AesTransport(BaseTransport):
         resp_dict = await self.send_secure_passthrough(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
         self._login_token = resp_dict["result"]["token"]
+        self._state = TransportState.ESTABLISHED
 
     async def _generate_key_pair_payload(self) -> AsyncGenerator:
         """Generate the request body and return an ascyn_generator.
@@ -236,12 +245,12 @@ class AesTransport(BaseTransport):
         _LOGGER.debug(f"Request {request_body}")
         yield json_dumps(request_body).encode()
 
-    async def perform_handshake(self):
+    async def perform_handshake(self) -> None:
         """Perform the handshake."""
         _LOGGER.debug("Will perform handshaking...")
 
         self._key_pair = None
-        self._handshake_done = False
+        self._login_token = None
         self._session_expire_at = None
         self._session_cookie = None
 
@@ -251,14 +260,16 @@ class AesTransport(BaseTransport):
             **self.COMMON_HEADERS,
             self.CONTENT_LENGTH: str(self.KEY_PAIR_CONTENT_LENGTH),
         }
-        status_code, resp_dict = await self._http_client.post(
+        http_client = self._http_client
+
+        status_code, resp_dict = await http_client.post(
             url,
             json=self._generate_key_pair_payload(),
             headers=headers,
             cookies_dict=self._session_cookie,
         )
 
-        _LOGGER.debug(f"Device responded with: {resp_dict}")
+        _LOGGER.debug("Device responded with: %s", resp_dict)
 
         if status_code != 200:
             raise SmartDeviceException(
@@ -268,27 +279,32 @@ class AesTransport(BaseTransport):
 
         self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 
+        if TYPE_CHECKING:
+            resp_dict = cast(Dict[str, Any], resp_dict)
+
         handshake_key = resp_dict["result"]["key"]
 
         if (
-            cookie := self._http_client.get_cookie(  # type: ignore
-                self.SESSION_COOKIE_NAME
-            )
+            cookie := http_client.get_cookie(self.SESSION_COOKIE_NAME)  # type: ignore
         ) or (
-            cookie := self._http_client.get_cookie(  # type: ignore
-                "SESSIONID"
-            )
+            cookie := http_client.get_cookie("SESSIONID")  # type: ignore
         ):
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
 
-        self._session_expire_at = time.time() + 86400
+        timeout = int(
+            http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
+        )
+        # There is a 24 hour timeout on the session cookie
+        # but the clock on the device is not always accurate
+        # so we set the expiry to 24 hours from now minus a buffer
+        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
         if TYPE_CHECKING:
-            assert self._key_pair is not None  # pragma: no cover
+            assert self._key_pair is not None
         self._encryption_session = AesEncyptionSession.create_from_keypair(
             handshake_key, self._key_pair
         )
 
-        self._handshake_done = True
+        self._state = TransportState.LOGIN_REQUIRED
 
         _LOGGER.debug("Handshake with %s complete", self._host)
 
@@ -299,17 +315,20 @@ class AesTransport(BaseTransport):
             or self._session_expire_at - time.time() <= 0
         )
 
-    async def send(self, request: str):
+    async def send(self, request: str) -> Dict[str, Any]:
         """Send the request."""
-        if not self._handshake_done or self._handshake_session_expired():
+        if (
+            self._state is TransportState.HANDSHAKE_REQUIRED
+            or self._handshake_session_expired()
+        ):
             await self.perform_handshake()
-        if not self._login_token:
+        if self._state is not TransportState.ESTABLISHED:
             try:
                 await self.perform_login()
             # After a login failure handshake needs to
             # be redone or a 9999 error is received.
             except AuthenticationException as ex:
-                self._handshake_done = False
+                self._state = TransportState.HANDSHAKE_REQUIRED
                 raise ex
 
         return await self.send_secure_passthrough(request)
@@ -321,8 +340,7 @@ class AesTransport(BaseTransport):
 
     async def reset(self) -> None:
         """Reset internal handshake and login state."""
-        self._handshake_done = False
-        self._login_token = None
+        self._state = TransportState.HANDSHAKE_REQUIRED
 
 
 class AesEncyptionSession:
