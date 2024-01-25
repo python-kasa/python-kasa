@@ -37,9 +37,11 @@ except ImportError:
 try:
     from rich import print as _do_echo
 except ImportError:
-    # Remove 7-bit C1 ANSI sequences
-    # https://stackoverflow.com/questions/14693701/how-can-i-remove-the-ansi-escape-sequences-from-a-string-in-python
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+    # Strip out rich formatting if rich is not installed
+    # but only lower case tags to avoid stripping out
+    # raw data from the device that is printed from
+    # the device state.
+    rich_formatting = re.compile(r"\[/?[a-z]+]")
 
     def _strip_rich_formatting(echo_func):
         """Strip rich formatting from messages."""
@@ -47,7 +49,7 @@ except ImportError:
         @wraps(echo_func)
         def wrapper(message=None, *args, **kwargs):
             if message is not None:
-                message = ansi_escape.sub("", message)
+                message = rich_formatting.sub("", message)
             echo_func(message, *args, **kwargs)
 
         return wrapper
