@@ -24,8 +24,10 @@ from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
+from .iotprotocol import IotProtocol
 from .modules import Emeter, Module
-from .protocol import BaseProtocol, TPLinkSmartHomeProtocol, _XorTransport
+from .protocol import BaseProtocol
+from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -204,8 +206,8 @@ class SmartDevice:
         """
         if config and protocol:
             protocol._transport._config = config
-        self.protocol: BaseProtocol = protocol or TPLinkSmartHomeProtocol(
-            transport=_XorTransport(config=config or DeviceConfig(host=host)),
+        self.protocol: BaseProtocol = protocol or IotProtocol(
+            transport=XorTransport(config=config or DeviceConfig(host=host)),
         )
         _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
         self._device_type = DeviceType.Unknown
