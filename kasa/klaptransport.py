@@ -429,6 +429,8 @@ class KlapEncryptionSession:
     i.e. sequence number which the device expects to increment.
     """
 
+    _cipher: Cipher
+
     def __init__(self, local_seed, remote_seed, user_hash):
         self.local_seed = local_seed
         self.remote_seed = remote_seed
