@@ -436,7 +436,6 @@ class KlapEncryptionSession:
         self._key = self._key_derive(local_seed, remote_seed, user_hash)
         (self._iv, self._seq) = self._iv_derive(local_seed, remote_seed, user_hash)
         self._aes = algorithms.AES(self._key)
-        self._generate_cipher()
         self._sig = self._sig_derive(local_seed, remote_seed, user_hash)
 
     def _key_derive(self, local_seed, remote_seed, user_hash):
@@ -474,7 +473,7 @@ class KlapEncryptionSession:
         padded_data = padder.update(msg) + padder.finalize()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
         signature = hashlib.sha256(
-            self._sig + self._seq.to_bytes(4, "big", signed=True) + ciphertext
+            self._sig + PACK_SIGNED_LONG(self._seq) + ciphertext
         ).digest()
         return (signature + ciphertext, self._seq)
 
