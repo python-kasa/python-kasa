@@ -90,10 +90,10 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
-    assert transport._login_token is None
+    assert transport._token_url is None
     with expectation:
         await transport.perform_login()
-        assert transport._login_token == mock_aes_device.token
+        assert mock_aes_device.token in str(transport._token_url)
 
 
 @pytest.mark.parametrize(
@@ -137,7 +137,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
-    assert transport._login_token is None
+    assert transport._token_url is None
 
     request = {
         "method": "get_device_info",
@@ -149,7 +149,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
 
     with expectation:
         await transport.send(json_dumps(request))
-        assert transport._login_token == mock_aes_device.token
+        assert mock_aes_device.token in str(transport._token_url)
         assert post_mock.call_count == call_count  # Login, Handshake, Login
         await transport.close()
 
@@ -166,7 +166,7 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
-    transport._login_token = mock_aes_device.token
+    transport._token_url = URL(f"http://{host}/app?token={mock_aes_device.token}")
 
     request = {
         "method": "get_device_info",
@@ -194,7 +194,7 @@ async def test_passthrough_errors(mocker, error_code):
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
-    transport._login_token = mock_aes_device.token
+    transport._token_url = URL(f"http://{host}/app?token={mock_aes_device.token}")
 
     request = {
         "method": "get_device_info",
