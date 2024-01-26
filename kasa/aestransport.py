@@ -101,11 +101,9 @@ class AesTransport(BaseTransport):
 
         self._session_cookie: Optional[Dict[str, str]] = None
 
-        self._login_token: Optional[str] = None
-
         self._key_pair: Optional[KeyPair] = None
         self._app_url = URL(f"http://{self._host}/app")
-        self._token_url = URL(f"{self._app_url}?token={self._login_token}")
+        self._token_url: Optional[str] = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
@@ -153,7 +151,7 @@ class AesTransport(BaseTransport):
 
     async def send_secure_passthrough(self, request: str) -> Dict[str, Any]:
         """Send encrypted message as passthrough."""
-        if self._state is TransportState.ESTABLISHED and self._login_token:
+        if self._state is TransportState.ESTABLISHED and self._token_url:
             url = self._token_url
         else:
             url = self._app_url
@@ -227,8 +225,8 @@ class AesTransport(BaseTransport):
 
         resp_dict = await self.send_secure_passthrough(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
-        self._login_token = resp_dict["result"]["token"]
-        self._token_url = URL(f"{self._app_url}?token={self._login_token}")
+        login_token = resp_dict["result"]["token"]
+        self._token_url = URL(f"{self._app_url}?token={login_token}")
         self._state = TransportState.ESTABLISHED
 
     async def _generate_key_pair_payload(self) -> AsyncGenerator:
@@ -255,7 +253,7 @@ class AesTransport(BaseTransport):
         _LOGGER.debug("Will perform handshaking...")
 
         self._key_pair = None
-        self._login_token = None
+        self._token_url = None
         self._session_expire_at = None
         self._session_cookie = None
 
