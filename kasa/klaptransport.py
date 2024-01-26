@@ -50,7 +50,7 @@ import time
 from pprint import pformat as pf
 from typing import Any, Dict, Optional, Tuple, cast
 
-from cryptography.hazmat.primitives import hashes, padding
+from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .credentials import Credentials
@@ -68,16 +68,11 @@ SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
 
 
 def _sha256(payload: bytes) -> bytes:
-    digest = hashes.Hash(hashes.SHA256())  # noqa: S303
-    digest.update(payload)
-    hash = digest.finalize()
-    return hash
+    return hashlib.sha256(payload).digest()  # noqa: S324
 
 
 def _sha1(payload: bytes) -> bytes:
-    digest = hashes.Hash(hashes.SHA1())  # noqa: S303
-    digest.update(payload)
-    return digest.finalize()
+    return hashlib.sha1(payload).digest()  # noqa: S324
 
 
 class KlapTransport(BaseTransport):

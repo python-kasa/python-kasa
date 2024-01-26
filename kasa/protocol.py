@@ -11,6 +11,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 """
 import base64
 import errno
+import hashlib
 import logging
 import struct
 from abc import ABC, abstractmethod
@@ -18,8 +19,6 @@ from typing import Dict, Tuple, Union
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
-from cryptography.hazmat.primitives import hashes
-
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
 
@@ -29,11 +28,8 @@ _UNSIGNED_INT_NETWORK_ORDER = struct.Struct(">I")
 
 
 def md5(payload: bytes) -> bytes:
-    """Return an md5 hash of the payload."""
-    digest = hashes.Hash(hashes.MD5())  # noqa: S303
-    digest.update(payload)
-    hash = digest.finalize()
-    return hash
+    """Return the MD5 hash of the payload."""
+    return hashlib.md5(payload).digest()  # noqa: S324
 
 
 class BaseTransport(ABC):
