@@ -312,10 +312,8 @@ class KlapTransport(BaseTransport):
         if self._encryption_session is not None:
             payload, seq = self._encryption_session.encrypt(request.encode())
 
-        url = self._request_url
-
         response_status, response_data = await self._http_client.post(
-            url,
+            self._request_url,
             params={"seq": seq},
             data=payload,
             cookies_dict=self._session_cookie,
