@@ -4,14 +4,14 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, cast
 
 from ..deviceconfig import DeviceConfig
+from ..iot.device import DeviceType
 from ..protocol import BaseProtocol
-from ..smartdevice import DeviceType
-from .tapodevice import TapoDevice
+from .device import Device
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TapoPlug(TapoDevice):
+class Plug(Device):
     """Class to represent a TAPO Plug."""
 
     def __init__(

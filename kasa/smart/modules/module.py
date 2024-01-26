@@ -4,10 +4,10 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from ..exceptions import SmartDeviceException
+from ...exceptions import SmartDeviceException
 
 if TYPE_CHECKING:
-    from kasa import SmartDevice
+    from kasa import Device
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ class Module(ABC):
     executed during the regular update cycle.
     """
 
-    def __init__(self, device: "SmartDevice", module: str):
-        self._device: "SmartDevice" = device
+    def __init__(self, device: "Device", module: str):
+        self._device: "Device" = device
         self._module = module
 
     @abstractmethod

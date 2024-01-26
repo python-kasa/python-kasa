@@ -8,8 +8,8 @@ from asyncclick.testing import CliRunner
 from kasa import (
     AuthenticationException,
     Credentials,
+    Device,
     EmeterStatus,
-    SmartDevice,
     SmartDeviceException,
     UnsupportedDeviceException,
 )
@@ -109,9 +109,9 @@ async def test_alias(dev):
 async def test_raw_command(dev, mocker):
     runner = CliRunner()
     update = mocker.patch.object(dev, "update")
-    from kasa.tapo import TapoDevice
+    from kasa.smart import Device
 
-    if isinstance(dev, TapoDevice):
+    if isinstance(dev, Device):
         params = ["na", "get_device_info"]
     else:
         params = ["system", "get_sysinfo"]
@@ -218,7 +218,7 @@ async def test_update_credentials(dev):
     )
 
 
-async def test_emeter(dev: SmartDevice, mocker):
+async def test_emeter(dev: Device, mocker):
     runner = CliRunner()
 
     res = await runner.invoke(emeter, obj=dev)
@@ -281,7 +281,7 @@ async def test_brightness(dev):
 
 
 @device_iot
-async def test_json_output(dev: SmartDevice, mocker):
+async def test_json_output(dev: Device, mocker):
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover", return_value=[dev])
     runner = CliRunner()
@@ -294,10 +294,10 @@ async def test_json_output(dev: SmartDevice, mocker):
 async def test_credentials(discovery_mock, mocker):
     """Test credentials are passed correctly from cli to device."""
     # Patch state to echo username and password
-    pass_dev = click.make_pass_decorator(SmartDevice)
+    pass_dev = click.make_pass_decorator(Device)
 
     @pass_dev
-    async def _state(dev: SmartDevice):
+    async def _state(dev: Device):
         if dev.credentials:
             click.echo(
                 f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
@@ -515,10 +515,10 @@ async def test_type_param(device_type, mocker):
     runner = CliRunner()
 
     result_device = FileNotFoundError
-    pass_dev = click.make_pass_decorator(SmartDevice)
+    pass_dev = click.make_pass_decorator(Device)
 
     @pass_dev
-    async def _state(dev: SmartDevice):
+    async def _state(dev: Device):
         nonlocal result_device
         result_device = dev
 

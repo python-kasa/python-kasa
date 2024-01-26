@@ -9,10 +9,11 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field, root_validator
 
-from .deviceconfig import DeviceConfig
-from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
-from .protocol import BaseProtocol
-from .smartdevice import DeviceType, SmartDevice, SmartDeviceException, requires_update
+from kasa.iot.modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
+
+from ..deviceconfig import DeviceConfig
+from ..protocol import BaseProtocol
+from .device import Device, DeviceType, SmartDeviceException, requires_update
 
 
 class ColorTempRange(NamedTuple):
@@ -30,7 +31,7 @@ class HSV(NamedTuple):
     value: int
 
 
-class SmartBulbPreset(BaseModel):
+class BulbPreset(BaseModel):
     """Bulb configuration preset."""
 
     index: int
@@ -116,7 +117,7 @@ NON_COLOR_MODE_FLAGS = {"transition_period", "on_off"}
 _LOGGER = logging.getLogger(__name__)
 
 
-class SmartBulb(SmartDevice):
+class Bulb(Device):
     r"""Representation of a TP-Link Smart Bulb.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -132,7 +133,7 @@ class SmartBulb(SmartDevice):
 
     Examples:
         >>> import asyncio
-        >>> bulb = SmartBulb("127.0.0.1")
+        >>> bulb = Bulb("127.0.0.1")
         >>> asyncio.run(bulb.update())
         >>> print(bulb.alias)
         Bulb2
@@ -198,7 +199,7 @@ class SmartBulb(SmartDevice):
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
         >>> bulb.presets
-        [SmartBulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), SmartBulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), SmartBulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
+        [BulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), BulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), BulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), BulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
         To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset`
         instance to :func:`save_preset` method:
@@ -534,11 +535,11 @@ class SmartBulb(SmartDevice):
 
     @property  # type: ignore
     @requires_update
-    def presets(self) -> List[SmartBulbPreset]:
+    def presets(self) -> List[BulbPreset]:
         """Return a list of available bulb setting presets."""
-        return [SmartBulbPreset(**vals) for vals in self.sys_info["preferred_state"]]
+        return [BulbPreset(**vals) for vals in self.sys_info["preferred_state"]]
 
-    async def save_preset(self, preset: SmartBulbPreset):
+    async def save_preset(self, preset: BulbPreset):
         """Save a setting preset.
 
         You can either construct a preset object manually, or pass an existing one

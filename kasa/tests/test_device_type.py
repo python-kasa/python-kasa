@@ -1,4 +1,4 @@
-from kasa.smartdevice import DeviceType
+from kasa.iot.device import DeviceType
 
 
 async def test_device_type_from_value():

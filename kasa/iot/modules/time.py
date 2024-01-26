@@ -1,7 +1,7 @@
 """Provides the current time and timezone information."""
 from datetime import datetime
 
-from ..exceptions import SmartDeviceException
+from ...exceptions import SmartDeviceException
 from .module import Module, merge
 
 

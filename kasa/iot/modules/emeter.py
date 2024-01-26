@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 
-from ..emeterstatus import EmeterStatus
+from ...emeterstatus import EmeterStatus
 from .usage import Usage
 
 

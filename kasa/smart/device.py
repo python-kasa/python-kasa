@@ -8,15 +8,16 @@ from ..aestransport import AesTransport
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
-from ..modules import Emeter
+from ..iot.device import Device as IotDevice
+from ..iot.device import WifiNetwork
 from ..protocol import BaseProtocol
-from ..smartdevice import SmartDevice, WifiNetwork
 from ..smartprotocol import SmartProtocol
+from .modules.emeter import Emeter
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class TapoDevice(SmartDevice):
+class Device(IotDevice):
     """Base class to represent a TAPO device."""
 
     def __init__(

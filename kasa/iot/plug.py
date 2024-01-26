@@ -3,14 +3,14 @@ import logging
 from typing import Any, Dict, Optional
 
 from kasa.deviceconfig import DeviceConfig
-from kasa.modules import Antitheft, Cloud, Schedule, Time, Usage
+from kasa.iot.device import Device, DeviceType, requires_update
+from kasa.iot.modules import Antitheft, Cloud, Schedule, Time, Usage
 from kasa.protocol import BaseProtocol
-from kasa.smartdevice import DeviceType, SmartDevice, requires_update
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SmartPlug(SmartDevice):
+class Plug(Device):
     r"""Representation of a TP-Link Smart Switch.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -25,7 +25,7 @@ class SmartPlug(SmartDevice):
 
     Examples:
         >>> import asyncio
-        >>> plug = SmartPlug("127.0.0.1")
+        >>> plug = Plug("127.0.0.1")
         >>> asyncio.run(plug.update())
         >>> plug.alias
         Kitchen

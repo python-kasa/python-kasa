@@ -29,18 +29,18 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
+from kasa.iot.bulb import Bulb, BulbPreset, TurnOnBehavior, TurnOnBehaviors
+from kasa.iot.device import Device, DeviceType
+from kasa.iot.dimmer import Dimmer
+from kasa.iot.lightstrip import LightStrip
+from kasa.iot.plug import Plug
+from kasa.iot.strip import Strip
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
 )
 from kasa.protocol import BaseProtocol
-from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
-from kasa.smartdevice import DeviceType, SmartDevice
-from kasa.smartdimmer import SmartDimmer
-from kasa.smartlightstrip import SmartLightStrip
-from kasa.smartplug import SmartPlug
 from kasa.smartprotocol import SmartProtocol
-from kasa.smartstrip import SmartStrip
 
 __version__ = version("python-kasa")
 
@@ -50,18 +50,18 @@ __all__ = [
     "BaseProtocol",
     "IotProtocol",
     "SmartProtocol",
-    "SmartBulb",
-    "SmartBulbPreset",
+    "Bulb",
+    "BulbPreset",
     "TurnOnBehaviors",
     "TurnOnBehavior",
     "DeviceType",
     "EmeterStatus",
-    "SmartDevice",
+    "Device",
     "SmartDeviceException",
-    "SmartPlug",
-    "SmartStrip",
-    "SmartDimmer",
-    "SmartLightStrip",
+    "Plug",
+    "Strip",
+    "Dimmer",
+    "LightStrip",
     "AuthenticationException",
     "UnsupportedDeviceException",
     "TimeoutException",
@@ -72,11 +72,24 @@ __all__ = [
     "DeviceFamilyType",
 ]
 
+from . import iot as Iot
+
 deprecated_names = ["TPLinkSmartHomeProtocol"]
+deprecated_smart_devices = {
+    "SmartDevice": Iot.Device,
+    "SmartPlug": Iot.Plug,
+    "SmartBulb": Iot.Bulb,
+    "SmartLightStrip": Iot.LightStrip,
+    "SmartStrip": Iot.Strip,
+    "SmartDimmer": Iot.Dimmer,
+}
 
 
 def __getattr__(name):
     if name in deprecated_names:
         warn(f"{name} is deprecated", DeprecationWarning, stacklevel=1)
         return globals()[f"_deprecated_{name}"]
+    if name in deprecated_smart_devices:
+        warn(f"{name} is deprecated", DeprecationWarning, stacklevel=1)
+        return deprecated_smart_devices[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

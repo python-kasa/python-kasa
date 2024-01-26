@@ -23,16 +23,16 @@ from kasa.device_factory import (
 )
 from kasa.deviceconfig import ConnectionType, DeviceConfig, EncryptType
 from kasa.exceptions import TimeoutException, UnsupportedDeviceException
+from kasa.iot.device import Device, SmartDeviceException
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
-from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
 
 
-OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
-DeviceDict = Dict[str, SmartDevice]
+OnDiscoveredCallable = Callable[[Device], Awaitable[None]]
+DeviceDict = Dict[str, Device]
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -300,7 +300,7 @@ class Discover:
         port: Optional[int] = None,
         timeout: Optional[int] = None,
         credentials: Optional[Credentials] = None,
-    ) -> SmartDevice:
+    ) -> Device:
         """Discover a single device by the given IP address.
 
         It is generally preferred to avoid :func:`discover_single()` and
@@ -382,7 +382,7 @@ class Discover:
             raise SmartDeviceException(f"Unable to get discovery response for {host}")
 
     @staticmethod
-    def _get_device_class(info: dict) -> Type[SmartDevice]:
+    def _get_device_class(info: dict) -> Type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult(**info["result"])
@@ -397,7 +397,7 @@ class Discover:
             return get_device_class_from_sys_info(info)
 
     @staticmethod
-    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> SmartDevice:
+    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> Device:
         """Get SmartDevice from legacy 9999 response."""
         try:
             info = json_loads(XorEncryption.decrypt(data))
@@ -423,7 +423,7 @@ class Discover:
     def _get_device_instance(
         data: bytes,
         config: DeviceConfig,
-    ) -> SmartDevice:
+    ) -> Device:
         """Get SmartDevice from the new 20002 response."""
         try:
             info = json_loads(data[16:])

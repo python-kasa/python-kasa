@@ -19,18 +19,18 @@ from typing import Dict, List, Union
 
 import asyncclick as click
 
+import kasa.iot as Iot
+import kasa.smart as Smart
 from devtools.helpers.smartrequests import COMPONENT_REQUESTS, SmartRequest
 from kasa import (
     AuthenticationException,
     Credentials,
     Discover,
-    SmartDevice,
     SmartDeviceException,
     TimeoutException,
 )
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
-from kasa.tapo.tapodevice import TapoDevice
 
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed")
@@ -113,9 +113,9 @@ def default_to_regular(d):
     return d
 
 
-async def handle_device(basedir, autosave, device: SmartDevice, batch_size: int):
+async def handle_device(basedir, autosave, device: Iot.Device, batch_size: int):
     """Create a fixture for a single device instance."""
-    if isinstance(device, TapoDevice):
+    if isinstance(device, Smart.Device):
         filename, copy_folder, final = await get_smart_fixture(device, batch_size)
     else:
         filename, copy_folder, final = await get_legacy_fixture(device)
@@ -268,7 +268,7 @@ def _echo_error(msg: str):
 
 
 async def _make_requests_or_exit(
-    device: SmartDevice,
+    device: Smart.Device,
     requests: List[SmartRequest],
     name: str,
     batch_size: int,
@@ -313,7 +313,7 @@ async def _make_requests_or_exit(
         exit(1)
 
 
-async def get_smart_fixture(device: TapoDevice, batch_size: int):
+async def get_smart_fixture(device: Smart.Device, batch_size: int):
     """Get fixture for new TAPO style protocol."""
     extra_test_calls = [
         SmartCall(

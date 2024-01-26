@@ -11,17 +11,17 @@ from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
+import kasa.smart as Smart
 from kasa import (
+    Bulb,
     Credentials,
+    Device,
+    Dimmer,
     Discover,
-    SmartBulb,
-    SmartDevice,
-    SmartDimmer,
-    SmartLightStrip,
-    SmartPlug,
-    SmartStrip,
+    LightStrip,
+    Plug,
+    Strip,
 )
-from kasa.tapo import TapoBulb, TapoDevice, TapoPlug
 from kasa.xortransport import XorEncryption
 
 from .newfakes import FakeSmartProtocol, FakeTransportProtocol
@@ -331,34 +331,34 @@ def device_for_file(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
-                return TapoPlug
+                return Smart.Plug
         for d in BULBS_SMART:
             if d in model:
-                return TapoBulb
+                return Smart.Bulb
         for d in DIMMERS_SMART:
             if d in model:
-                return TapoBulb
+                return Smart.Bulb
     else:
         for d in STRIPS_IOT:
             if d in model:
-                return SmartStrip
+                return Strip
 
         for d in PLUGS_IOT:
             if d in model:
-                return SmartPlug
+                return Plug
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:
             if d in model:
-                return SmartLightStrip
+                return LightStrip
 
         for d in BULBS_IOT:
             if d in model:
-                return SmartBulb
+                return Bulb
 
         for d in DIMMERS_IOT:
             if d in model:
-                return SmartDimmer
+                return Dimmer
 
     raise Exception("Unable to find type for %s", model)
 
@@ -424,11 +424,11 @@ async def dev(request):
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        dev: SmartDevice = (
+        dev: Device = (
             d if d else await _discover_update_and_close(ip, username, password)
         )
     else:
-        dev: SmartDevice = await get_device_for_file(file, protocol)
+        dev: Device = await get_device_for_file(file, protocol)
 
     yield dev
 

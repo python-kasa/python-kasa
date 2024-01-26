@@ -19,15 +19,16 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set
 
-from .credentials import Credentials
-from .device_type import DeviceType
-from .deviceconfig import DeviceConfig
-from .emeterstatus import EmeterStatus
-from .exceptions import SmartDeviceException
-from .iotprotocol import IotProtocol
+from ..credentials import Credentials
+from ..device import Device as BaseDevice
+from ..device_type import DeviceType
+from ..deviceconfig import DeviceConfig
+from ..emeterstatus import EmeterStatus
+from ..exceptions import SmartDeviceException
+from ..iotprotocol import IotProtocol
+from ..protocol import BaseProtocol
+from ..xortransport import XorTransport
 from .modules import Emeter, Module
-from .protocol import BaseProtocol
-from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ def _parse_features(features: str) -> Set[str]:
     return set(features.split(":"))
 
 
-class SmartDevice:
+class Device(BaseDevice):
     """Base class for all supported device types.
 
     You don't usually want to initialize this class manually,
@@ -115,7 +116,7 @@ class SmartDevice:
 
     Examples:
         >>> import asyncio
-        >>> dev = SmartDevice("127.0.0.1")
+        >>> dev = Device("127.0.0.1")
         >>> asyncio.run(dev.update())
 
         All devices provide several informational properties:
@@ -221,7 +222,7 @@ class SmartDevice:
         self._features: Set[str] = set()
         self.modules: Dict[str, Any] = {}
 
-        self.children: List["SmartDevice"] = []
+        self.children: List["Device"] = []
 
     @property
     def host(self) -> str:
@@ -714,7 +715,7 @@ class SmartDevice:
             )
             return await _join("smartlife.iot.common.softaponboarding", payload)
 
-    def get_plug_by_name(self, name: str) -> "SmartDevice":
+    def get_plug_by_name(self, name: str) -> "Device":
         """Return child device for the given name."""
         for p in self.children:
             if p.alias == name:
@@ -722,7 +723,7 @@ class SmartDevice:
 
         raise SmartDeviceException(f"Device has no child with {name}")
 
-    def get_plug_by_index(self, index: int) -> "SmartDevice":
+    def get_plug_by_index(self, index: int) -> "Device":
         """Return child device for the given index."""
         if index + 1 > len(self.children) or index < 0:
             raise SmartDeviceException(
@@ -817,7 +818,7 @@ class SmartDevice:
         *,
         host: Optional[str] = None,
         config: Optional[DeviceConfig] = None,
-    ) -> "SmartDevice":
+    ) -> "Device":
         """Connect to a single device by the given hostname or device configuration.
 
         This method avoids the UDP based discovery process and
@@ -834,6 +835,6 @@ class SmartDevice:
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
-        from .device_factory import connect  # pylint: disable=import-outside-toplevel
+        from ..device_factory import connect  # pylint: disable=import-outside-toplevel
 
         return await connect(host=host, config=config)  # type: ignore[arg-type]

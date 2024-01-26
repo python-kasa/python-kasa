@@ -3,10 +3,10 @@ from enum import Enum
 from typing import Any, Dict, Optional
 
 from kasa.deviceconfig import DeviceConfig
-from kasa.modules import AmbientLight, Motion
+from kasa.iot.device import DeviceType, SmartDeviceException, requires_update
+from kasa.iot.modules import AmbientLight, Motion
+from kasa.iot.plug import Plug
 from kasa.protocol import BaseProtocol
-from kasa.smartdevice import DeviceType, SmartDeviceException, requires_update
-from kasa.smartplug import SmartPlug
 
 
 class ButtonAction(Enum):
@@ -32,7 +32,7 @@ class FadeType(Enum):
     FadeOff = "fade_off"
 
 
-class SmartDimmer(SmartPlug):
+class Dimmer(Plug):
     r"""Representation of a TP-Link Smart Dimmer.
 
     Dimmers work similarly to plugs, but provide also support for
@@ -50,7 +50,7 @@ class SmartDimmer(SmartPlug):
 
     Examples:
     >>> import asyncio
-    >>> dimmer = SmartDimmer("192.168.1.105")
+    >>> dimmer = Dimmer("192.168.1.105")
     >>> asyncio.run(dimmer.turn_on())
     >>> dimmer.brightness
     25

@@ -9,12 +9,12 @@ from pathlib import Path
 
 import typer
 
-from kasa import Discover, SmartDevice
+from kasa import Device, Discover
 
 app = typer.Typer()
 
 
-def create_fixtures(dev: SmartDevice, outputdir: Path):
+def create_fixtures(dev: Device, outputdir: Path):
     """Iterate over supported modules and create version-specific fixture files."""
     for name, module in dev.modules.items():
         module_dir = outputdir / name
@@ -43,7 +43,7 @@ def create_module_fixtures(
     """Create module fixtures for given host/network."""
     devs = []
     if host is not None:
-        dev: SmartDevice = asyncio.run(Discover.discover_single(host))
+        dev: Device = asyncio.run(Discover.discover_single(host))
         devs.append(dev)
     else:
         if network is None:

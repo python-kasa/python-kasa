@@ -1,27 +1,27 @@
 import pytest
 
-from kasa import DeviceType, SmartLightStrip
+from kasa import DeviceType, LightStrip
 from kasa.exceptions import SmartDeviceException
 
 from .conftest import lightstrip
 
 
 @lightstrip
-async def test_lightstrip_length(dev: SmartLightStrip):
+async def test_lightstrip_length(dev: LightStrip):
     assert dev.is_light_strip
     assert dev.device_type == DeviceType.LightStrip
     assert dev.length == dev.sys_info["length"]
 
 
 @lightstrip
-async def test_lightstrip_effect(dev: SmartLightStrip):
+async def test_lightstrip_effect(dev: LightStrip):
     assert isinstance(dev.effect, dict)
     for k in ["brightness", "custom", "enable", "id", "name"]:
         assert k in dev.effect
 
 
 @lightstrip
-async def test_effects_lightstrip_set_effect(dev: SmartLightStrip):
+async def test_effects_lightstrip_set_effect(dev: LightStrip):
     with pytest.raises(SmartDeviceException):
         await dev.set_effect("Not real")
 
@@ -33,9 +33,9 @@ async def test_effects_lightstrip_set_effect(dev: SmartLightStrip):
 @lightstrip
 @pytest.mark.parametrize("brightness", [100, 50])
 async def test_effects_lightstrip_set_effect_brightness(
-    dev: SmartLightStrip, brightness, mocker
+    dev: LightStrip, brightness, mocker
 ):
-    query_helper = mocker.patch("kasa.SmartLightStrip._query_helper")
+    query_helper = mocker.patch("kasa.iot.LightStrip._query_helper")
 
     # test that default brightness works (100 for candy cane)
     if brightness == 100:
@@ -51,9 +51,9 @@ async def test_effects_lightstrip_set_effect_brightness(
 @lightstrip
 @pytest.mark.parametrize("transition", [500, 1000])
 async def test_effects_lightstrip_set_effect_transition(
-    dev: SmartLightStrip, transition, mocker
+    dev: LightStrip, transition, mocker
 ):
-    query_helper = mocker.patch("kasa.SmartLightStrip._query_helper")
+    query_helper = mocker.patch("kasa.iot.LightStrip._query_helper")
 
     # test that default (500 for candy cane) transition works
     if transition == 500:
@@ -67,6 +67,6 @@ async def test_effects_lightstrip_set_effect_transition(
 
 
 @lightstrip
-async def test_effects_lightstrip_has_effects(dev: SmartLightStrip):
+async def test_effects_lightstrip_has_effects(dev: LightStrip):
     assert dev.has_effects is True
     assert dev.effect_list

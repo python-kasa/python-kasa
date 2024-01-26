@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 import kasa
-from kasa import Credentials, DeviceConfig, SmartDevice, SmartDeviceException
+from kasa import Credentials, Device, DeviceConfig, SmartDeviceException
 
 from .conftest import device_iot, handle_turn_on, has_emeter_iot, no_emeter_iot, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
@@ -16,7 +16,7 @@ smart_device_classes = [
     for (mn, dc) in inspect.getmembers(
         kasa,
         lambda member: inspect.isclass(member)
-        and (member == SmartDevice or issubclass(member, SmartDevice)),
+        and (member == Device or issubclass(member, Device)),
     )
 ]
 
@@ -222,7 +222,7 @@ def test_device_class_ctors(device_class):
 
 
 @device_iot
-async def test_modules_preserved(dev: SmartDevice):
+async def test_modules_preserved(dev: Device):
     """Make modules that are not being updated are preserved between updates."""
     dev._last_update["some_module_not_being_updated"] = "should_be_kept"
     await dev.update()
@@ -232,7 +232,7 @@ async def test_modules_preserved(dev: SmartDevice):
 async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
     host = "127.0.0.1"
-    dev = SmartDevice(host, config=DeviceConfig(host, timeout=100))
+    dev = Device(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
 
 
@@ -246,7 +246,7 @@ async def test_create_thin_wrapper():
         credentials=Credentials("username", "password"),
     )
     with patch("kasa.device_factory.connect", return_value=mock) as connect:
-        dev = await SmartDevice.connect(config=config)
+        dev = await Device.connect(config=config)
         assert dev is mock
 
     connect.assert_called_once_with(
@@ -256,7 +256,7 @@ async def test_create_thin_wrapper():
 
 
 @device_iot
-async def test_modules_not_supported(dev: SmartDevice):
+async def test_modules_not_supported(dev: Device):
     """Test that unsupported modules do not break the device."""
     for module in dev.modules.values():
         assert module.is_supported is not None

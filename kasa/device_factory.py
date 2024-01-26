@@ -3,7 +3,10 @@ import logging
 import time
 from typing import Any, Dict, Optional, Tuple, Type
 
+from . import iot as Iot
+from . import smart as Smart
 from .aestransport import AesTransport
+from .device import Device
 from .deviceconfig import DeviceConfig
 from .exceptions import SmartDeviceException, UnsupportedDeviceException
 from .iotprotocol import IotProtocol
@@ -12,14 +15,7 @@ from .protocol import (
     BaseProtocol,
     BaseTransport,
 )
-from .smartbulb import SmartBulb
-from .smartdevice import SmartDevice
-from .smartdimmer import SmartDimmer
-from .smartlightstrip import SmartLightStrip
-from .smartplug import SmartPlug
 from .smartprotocol import SmartProtocol
-from .smartstrip import SmartStrip
-from .tapo import TapoBulb, TapoPlug
 from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,7 +25,7 @@ GET_SYSINFO_QUERY = {
 }
 
 
-async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "SmartDevice":
+async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Iot.Device":
     """Connect to a single device by the given hostname or device configuration.
 
     This method avoids the UDP based discovery process and
@@ -73,7 +69,7 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Smart
             + f"{config.connection_type.device_family.value}"
         )
 
-    device_class: Optional[Type[SmartDevice]]
+    device_class: Optional[Type[Device]]
 
     if isinstance(protocol, IotProtocol) and isinstance(
         protocol._transport, XorTransport
@@ -100,7 +96,7 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Smart
         )
 
 
-def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[SmartDevice]:
+def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[Iot.Device]:
     """Find SmartDevice subclass for device described by passed data."""
     if "system" not in info or "get_sysinfo" not in info["system"]:
         raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
@@ -111,32 +107,32 @@ def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[SmartDevice]:
         raise SmartDeviceException("Unable to find the device type field!")
 
     if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
-        return SmartDimmer
+        return Iot.Dimmer
 
     if "smartplug" in type_.lower():
         if "children" in sysinfo:
-            return SmartStrip
+            return Iot.Strip
 
-        return SmartPlug
+        return Iot.Plug
 
     if "smartbulb" in type_.lower():
         if "length" in sysinfo:  # strips have length
-            return SmartLightStrip
+            return Iot.LightStrip
 
-        return SmartBulb
+        return Iot.Bulb
     raise UnsupportedDeviceException("Unknown device type: %s" % type_)
 
 
-def get_device_class_from_family(device_type: str) -> Optional[Type[SmartDevice]]:
+def get_device_class_from_family(device_type: str) -> Optional[Type[Iot.Device]]:
     """Return the device class from the type name."""
-    supported_device_types: Dict[str, Type[SmartDevice]] = {
-        "SMART.TAPOPLUG": TapoPlug,
-        "SMART.TAPOBULB": TapoBulb,
-        "SMART.TAPOSWITCH": TapoBulb,
-        "SMART.KASAPLUG": TapoPlug,
-        "SMART.KASASWITCH": TapoBulb,
-        "IOT.SMARTPLUGSWITCH": SmartPlug,
-        "IOT.SMARTBULB": SmartBulb,
+    supported_device_types: Dict[str, Type[Iot.Device]] = {
+        "SMART.TAPOPLUG": Smart.Plug,
+        "SMART.TAPOBULB": Smart.Bulb,
+        "SMART.TAPOSWITCH": Smart.Bulb,
+        "SMART.KASAPLUG": Smart.Plug,
+        "SMART.KASASWITCH": Smart.Bulb,
+        "IOT.SMARTPLUGSWITCH": Iot.Plug,
+        "IOT.SMARTBULB": Iot.Bulb,
     }
     return supported_device_types.get(device_type)
 

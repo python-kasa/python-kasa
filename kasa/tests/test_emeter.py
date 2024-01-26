@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from kasa import EmeterStatus, SmartDeviceException
-from kasa.modules.emeter import Emeter
+from kasa.iot.modules.emeter import Emeter
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
 from .newfakes import CURRENT_CONSUMPTION_SCHEMA

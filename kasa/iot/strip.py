@@ -4,19 +4,19 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, DefaultDict, Dict, Optional
 
-from kasa.smartdevice import (
+from kasa.iot.device import (
+    Device,
     DeviceType,
     EmeterStatus,
-    SmartDevice,
     SmartDeviceException,
     merge,
     requires_update,
 )
-from kasa.smartplug import SmartPlug
+from kasa.iot.modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
+from kasa.iot.plug import Plug
 
-from .deviceconfig import DeviceConfig
-from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
-from .protocol import BaseProtocol
+from ..deviceconfig import DeviceConfig
+from ..protocol import BaseProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def merge_sums(dicts):
     return total_dict
 
 
-class SmartStrip(SmartDevice):
+class Strip(Device):
     r"""Representation of a TP-Link Smart Power Strip.
 
     A strip consists of the parent device and its children.
@@ -49,7 +49,7 @@ class SmartStrip(SmartDevice):
 
     Examples:
         >>> import asyncio
-        >>> strip = SmartStrip("127.0.0.1")
+        >>> strip = Strip("127.0.0.1")
         >>> asyncio.run(strip.update())
         >>> strip.alias
         TP-LINK_Power Strip_CF69
@@ -244,7 +244,7 @@ class SmartStrip(SmartDevice):
         return EmeterStatus(emeter)
 
 
-class SmartStripPlug(SmartPlug):
+class SmartStripPlug(Plug):
     """Representation of a single socket in a power strip.
 
     This allows you to use the sockets as they were SmartPlug objects.
@@ -254,7 +254,7 @@ class SmartStripPlug(SmartPlug):
     The plug inherits (most of) the system information from the parent.
     """
 
-    def __init__(self, host: str, parent: "SmartStrip", child_id: str) -> None:
+    def __init__(self, host: str, parent: "Strip", child_id: str) -> None:
         super().__init__(host)
 
         self.parent = parent
