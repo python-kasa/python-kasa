@@ -3,6 +3,7 @@ import asyncio
 from typing import Any, Dict, Optional, Tuple, Union
 
 import aiohttp
+from yarl import URL
 
 from .deviceconfig import DeviceConfig
 from .exceptions import (
@@ -41,7 +42,7 @@ class HttpClient:
 
     async def post(
         self,
-        url: str,
+        url: str | URL,
         *,
         params: Optional[Dict[str, Any]] = None,
         data: Optional[bytes] = None,

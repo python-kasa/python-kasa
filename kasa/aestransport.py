@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives import padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from yarl import URL
 
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
@@ -103,6 +104,8 @@ class AesTransport(BaseTransport):
         self._login_token: Optional[str] = None
 
         self._key_pair: Optional[KeyPair] = None
+        self._app_url = URL("http://{self._host}/app")
+        self._token_url = URL(f"{self._app_url}?token={self._login_token}")
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
@@ -150,9 +153,10 @@ class AesTransport(BaseTransport):
 
     async def send_secure_passthrough(self, request: str) -> Dict[str, Any]:
         """Send encrypted message as passthrough."""
-        url = f"http://{self._host}/app"
         if self._state is TransportState.ESTABLISHED and self._login_token:
-            url += f"?token={self._login_token}"
+            url = self._token_url
+        else:
+            url = self._app_url
 
         encrypted_payload = self._encryption_session.encrypt(request.encode())  # type: ignore
         passthrough_request = {
@@ -224,6 +228,7 @@ class AesTransport(BaseTransport):
         resp_dict = await self.send_secure_passthrough(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
         self._login_token = resp_dict["result"]["token"]
+        self._token_url = URL(f"{self._app_url}?token={self._login_token}")
         self._state = TransportState.ESTABLISHED
 
     async def _generate_key_pair_payload(self) -> AsyncGenerator:
