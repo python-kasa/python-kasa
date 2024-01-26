@@ -467,13 +467,9 @@ class KlapEncryptionSession:
         padder = padding.PKCS7(128).padder()
         padded_data = padder.update(msg) + padder.finalize()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
-
-        digest = hashes.Hash(hashes.SHA256())
-        digest.update(
+        signature = hashlib.sha256(
             self._sig + self._seq.to_bytes(4, "big", signed=True) + ciphertext
-        )
-        signature = digest.finalize()
-
+        ).digest()
         return (signature + ciphertext, self._seq)
 
     def decrypt(self, msg):
