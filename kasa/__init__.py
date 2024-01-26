@@ -29,7 +29,10 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
-from kasa.iotprotocol import IotProtocol
+from kasa.iotprotocol import (
+    IotProtocol,
+    _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
+)
 from kasa.protocol import BaseProtocol
 from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.smartdevice import DeviceType, SmartDevice
