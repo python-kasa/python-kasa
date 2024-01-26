@@ -12,6 +12,7 @@ Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
 from importlib.metadata import version
+from warnings import warn
 
 from kasa.credentials import Credentials
 from kasa.deviceconfig import (
@@ -28,8 +29,11 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
-from kasa.iotprotocol import IotProtocol
-from kasa.protocol import BaseProtocol, TPLinkSmartHomeProtocol
+from kasa.iotprotocol import (
+    IotProtocol,
+    _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
+)
+from kasa.protocol import BaseProtocol
 from kasa.smartbulb import SmartBulb, SmartBulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.smartdevice import DeviceType, SmartDevice
 from kasa.smartdimmer import SmartDimmer
@@ -43,7 +47,6 @@ __version__ = version("python-kasa")
 
 __all__ = [
     "Discover",
-    "TPLinkSmartHomeProtocol",
     "BaseProtocol",
     "IotProtocol",
     "SmartProtocol",
@@ -68,3 +71,12 @@ __all__ = [
     "EncryptType",
     "DeviceFamilyType",
 ]
+
+deprecated_names = ["TPLinkSmartHomeProtocol"]
+
+
+def __getattr__(name):
+    if name in deprecated_names:
+        warn(f"{name} is deprecated", DeprecationWarning, stacklevel=1)
+        return globals()[f"_deprecated_{name}"]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

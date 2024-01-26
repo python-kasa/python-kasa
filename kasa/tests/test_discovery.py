@@ -15,7 +15,6 @@ from kasa import (
     Discover,
     SmartDevice,
     SmartDeviceException,
-    TPLinkSmartHomeProtocol,
     protocol,
 )
 from kasa.deviceconfig import (
@@ -26,6 +25,7 @@ from kasa.deviceconfig import (
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
+from kasa.xortransport import XorEncryption
 
 from .conftest import bulb, bulb_iot, dimmer, lightstrip, new_discovery, plug, strip
 
@@ -189,7 +189,7 @@ async def test_discover_invalid_info(msg, data, mocker):
 
     def mock_discover(self):
         self.datagram_received(
-            protocol.TPLinkSmartHomeProtocol.encrypt(json_dumps(data))[4:], (host, 9999)
+            XorEncryption.encrypt(json_dumps(data))[4:], (host, 9999)
         )
 
     mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
@@ -212,7 +212,7 @@ async def test_discover_datagram_received(mocker, discovery_data):
     """Verify that datagram received fills discovered_devices."""
     proto = _DiscoverProtocol()
 
-    mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
+    mocker.patch.object(XorEncryption, "decrypt")
 
     addr = "127.0.0.1"
     port = 20002 if "result" in discovery_data else 9999
@@ -238,8 +238,8 @@ async def test_discover_invalid_responses(msg, data, mocker):
     """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
     proto = _DiscoverProtocol()
     mocker.patch("kasa.discover.json_loads", return_value=data)
-    mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "encrypt")
-    mocker.patch.object(protocol.TPLinkSmartHomeProtocol, "decrypt")
+    mocker.patch.object(XorEncryption, "encrypt")
+    mocker.patch.object(XorEncryption, "decrypt")
 
     proto.datagram_received(data, ("127.0.0.1", 9999))
     assert len(proto.discovered_devices) == 0
@@ -375,9 +375,7 @@ class FakeDatagramTransport(asyncio.DatagramTransport):
         self.do_not_reply_count = do_not_reply_count
         self.send_count = 0
         if port == 9999:
-            self.datagram = TPLinkSmartHomeProtocol.encrypt(
-                json_dumps(LEGACY_DISCOVER_DATA)
-            )[4:]
+            self.datagram = XorEncryption.encrypt(json_dumps(LEGACY_DISCOVER_DATA))[4:]
         elif port == 20002:
             discovery_data = UNSUPPORTED if unsupported else AUTHENTICATION_DATA_KLAP
             self.datagram = (
