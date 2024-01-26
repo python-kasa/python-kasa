@@ -602,3 +602,16 @@ async def test_protocol_will_retry_on_write(
     expected_call_count = retry_count + 1 if retry_expectation else 1
     assert conn.call_count == expected_call_count
     assert write_mock.call_count == expected_call_count
+
+
+def test_deprecated_protocol():
+    with pytest.deprecated_call():
+        from kasa import TPLinkSmartHomeProtocol
+
+        with pytest.raises(
+            SmartDeviceException, match="host or transport must be supplied"
+        ):
+            proto = TPLinkSmartHomeProtocol()
+        host = "127.0.0.1"
+        proto = TPLinkSmartHomeProtocol(host=host)
+        assert proto.config.host == host
