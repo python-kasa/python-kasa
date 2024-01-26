@@ -26,7 +26,7 @@ class HttpClient:
         self._config = config
         self._client_session: aiohttp.ClientSession = None
         self._jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
-        self._last_url = f"http://{self._config.host}/"
+        self._last_url = URL(f"http://{self._config.host}/")
 
     @property
     def client(self) -> aiohttp.ClientSession:
@@ -42,7 +42,7 @@ class HttpClient:
 
     async def post(
         self,
-        url: str | URL,
+        url: URL,
         *,
         params: Optional[Dict[str, Any]] = None,
         data: Optional[bytes] = None,

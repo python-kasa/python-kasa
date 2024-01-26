@@ -10,6 +10,7 @@ from unittest.mock import PropertyMock
 
 import aiohttp
 import pytest
+from yarl import URL
 
 from ..aestransport import AesTransport
 from ..credentials import Credentials
@@ -318,17 +319,17 @@ async def test_handshake1(
 async def test_handshake(
     mocker, transport_class, seed_auth_hash_calc1, seed_auth_hash_calc2
 ):
-    async def _return_handshake_response(url, params=None, data=None, *_, **__):
+    async def _return_handshake_response(url: URL, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash
 
-        if url == "http://127.0.0.1/app/handshake1":
+        if str(url) == "http://127.0.0.1/app/handshake1":
             client_seed = data
             seed_auth_hash = _sha256(
                 seed_auth_hash_calc1(client_seed, server_seed, device_auth_hash)
             )
 
             return _mock_response(200, server_seed + seed_auth_hash)
-        elif url == "http://127.0.0.1/app/handshake2":
+        elif str(url) == "http://127.0.0.1/app/handshake2":
             seed_auth_hash = _sha256(
                 seed_auth_hash_calc2(client_seed, server_seed, device_auth_hash)
             )
@@ -360,17 +361,17 @@ async def test_handshake(
 
 
 async def test_query(mocker):
-    async def _return_response(url, params=None, data=None, *_, **__):
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash, seq
 
-        if url == "http://127.0.0.1/app/handshake1":
+        if str(url) == "http://127.0.0.1/app/handshake1":
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
 
             return _mock_response(200, server_seed + client_seed_auth_hash)
-        elif url == "http://127.0.0.1/app/handshake2":
+        elif str(url) == "http://127.0.0.1/app/handshake2":
             return _mock_response(200, b"")
-        elif url == "http://127.0.0.1/app/request":
+        elif str(url) == "http://127.0.0.1/app/request":
             encryption_session = KlapEncryptionSession(
                 protocol._transport._encryption_session.local_seed,
                 protocol._transport._encryption_session.remote_seed,
@@ -413,19 +414,19 @@ async def test_query(mocker):
     ids=("handshake1", "handshake2", "request", "non_auth_error"),
 )
 async def test_authentication_failures(mocker, response_status, expectation):
-    async def _return_response(url, params=None, data=None, *_, **__):
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash, response_status
 
-        if url == "http://127.0.0.1/app/handshake1":
+        if str(url) == "http://127.0.0.1/app/handshake1":
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
 
             return _mock_response(
                 response_status[0], server_seed + client_seed_auth_hash
             )
-        elif url == "http://127.0.0.1/app/handshake2":
+        elif str(url) == "http://127.0.0.1/app/handshake2":
             return _mock_response(response_status[1], b"")
-        elif url == "http://127.0.0.1/app/request":
+        elif str(url) == "http://127.0.0.1/app/request":
             return _mock_response(response_status[2], None)
 
     client_seed = None

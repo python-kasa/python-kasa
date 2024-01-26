@@ -121,7 +121,7 @@ class KlapTransport(BaseTransport):
         self._session_cookie: Optional[Dict[str, Any]] = None
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
-        self._app_url = URL("http://{self._host}/app")
+        self._app_url = URL(f"http://{self._host}/app")
         self._request_url = self._app_url / "request"
 
     @property

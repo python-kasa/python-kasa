@@ -12,6 +12,7 @@ import aiohttp
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+from yarl import URL
 
 from ..aestransport import AesEncyptionSession, AesTransport, TransportState
 from ..credentials import Credentials
@@ -239,13 +240,13 @@ class MockAesDevice:
         else:
             return self._inner_error_code
 
-    async def post(self, url, params=None, json=None, data=None, *_, **__):
+    async def post(self, url: URL, params=None, json=None, data=None, *_, **__):
         if data:
             async for item in data:
                 json = json_loads(item.decode())
         return await self._post(url, json)
 
-    async def _post(self, url: str, json: Dict[str, Any]):
+    async def _post(self, url: URL, json: Dict[str, Any]):
         if json["method"] == "handshake":
             return await self._return_handshake_response(url, json)
         elif json["method"] == "securePassthrough":
@@ -253,10 +254,10 @@ class MockAesDevice:
         elif json["method"] == "login_device":
             return await self._return_login_response(url, json)
         else:
-            assert url == f"http://{self.host}/app?token={self.token}"
+            assert str(url) == f"http://{self.host}/app?token={self.token}"
             return await self._return_send_response(url, json)
 
-    async def _return_handshake_response(self, url: str, json: Dict[str, Any]):
+    async def _return_handshake_response(self, url: URL, json: Dict[str, Any]):
         start = len("-----BEGIN PUBLIC KEY-----\n")
         end = len("\n-----END PUBLIC KEY-----\n")
         client_pub_key = json["params"]["key"][start:-end]
@@ -269,7 +270,7 @@ class MockAesDevice:
             self.status_code, {"result": {"key": key_64}, "error_code": self.error_code}
         )
 
-    async def _return_secure_passthrough_response(self, url: str, json: Dict[str, Any]):
+    async def _return_secure_passthrough_response(self, url: URL, json: Dict[str, Any]):
         encrypted_request = json["params"]["request"]
         decrypted_request = self.encryption_session.decrypt(encrypted_request.encode())
         decrypted_request_dict = json_loads(decrypted_request)
@@ -286,15 +287,15 @@ class MockAesDevice:
         }
         return self._mock_response(self.status_code, result)
 
-    async def _return_login_response(self, url: str, json: Dict[str, Any]):
-        if "token=" in url:
+    async def _return_login_response(self, url: URL, json: Dict[str, Any]):
+        if "token=" in str(url):
             raise Exception("token should not be in url for a login request")
         self.token = "".join(random.choices(string.ascii_uppercase, k=32))  # noqa: S311
         result = {"result": {"token": self.token}, "error_code": self.inner_error_code}
         self.inner_call_count += 1
         return self._mock_response(self.status_code, result)
 
-    async def _return_send_response(self, url: str, json: Dict[str, Any]):
+    async def _return_send_response(self, url: URL, json: Dict[str, Any]):
         result = {"result": {"method": None}, "error_code": self.inner_error_code}
         self.inner_call_count += 1
         return self._mock_response(self.status_code, result)
