@@ -84,7 +84,7 @@ async def test_httpclient_errors(mocker, error, error_raises, error_message, moc
     client = HttpClient(DeviceConfig(host))
     # Exceptions with parameters print with double quotes, without use single quotes
     full_msg = (
-        "\("
+        "\("  # type: ignore
         + "['\"]"
         + re.escape(f"{error_message}{host}: {error}")
         + "['\"]"
