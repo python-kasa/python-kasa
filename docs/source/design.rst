@@ -86,7 +86,7 @@ Also in 2023 TP-Link started releasing newer Kasa branded devices using the ``SM
 This appears to be driven by hardware version rather than firmware.
 
 
-In order to support these different configurations the library migrated from a single :class:`TPLinkSmartHomeProtocol <kasa.protocol.TPLinkSmartHomeProtocol>`
+In order to support these different configurations the library migrated from a single protocol class ``TPLinkSmartHomeProtocol``
 to support pluggable transports and protocols.
 The classes providing this functionality are:
 
@@ -95,6 +95,7 @@ The classes providing this functionality are:
 - :class:`SmartProtocol <kasa.smartprotocol.SmartProtocol>`
 
 - :class:`BaseTransport <kasa.protocol.BaseTransport>`
+- :class:`XorTransport <kasa.xortransport.XorTransport>`
 - :class:`AesTransport <kasa.aestransport.AesTransport>`
 - :class:`KlapTransport <kasa.klaptransport.KlapTransport>`
 - :class:`KlapTransportV2 <kasa.klaptransport.KlapTransportV2>`
@@ -134,6 +135,11 @@ API documentation for protocols and transports
     :inherited-members:
     :undoc-members:
 
+.. autoclass:: kasa.xortransport.XorTransport
+    :members:
+    :inherited-members:
+    :undoc-members:
+
 .. autoclass:: kasa.klaptransport.KlapTransport
     :members:
     :inherited-members:
@@ -145,11 +151,6 @@ API documentation for protocols and transports
     :undoc-members:
 
 .. autoclass:: kasa.aestransport.AesTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.protocol.TPLinkSmartHomeProtocol
     :members:
     :inherited-members:
     :undoc-members:
