@@ -130,6 +130,9 @@ class SmartProtocol(BaseProtocol):
             _LOGGER.isEnabledFor(logging.DEBUG) and pf(response_data),
         )
 
+        if not response_data:
+            raise SmartDeviceException("Unexpected empty response")
+
         self._handle_response_error_code(response_data)
 
         if (result := response_data.get("result")) is None:

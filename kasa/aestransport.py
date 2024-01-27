@@ -182,6 +182,9 @@ class AesTransport(BaseTransport):
             assert self._encryption_session is not None
 
         raw_response: str = resp_dict["result"]["response"]
+        if not raw_response:
+            raise SmartDeviceException("Unexpected empty response")
+
         response = self._encryption_session.decrypt(raw_response.encode())
         return json_loads(response)  # type: ignore[return-value]
 
