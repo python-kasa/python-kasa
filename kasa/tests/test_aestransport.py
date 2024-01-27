@@ -166,7 +166,9 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
-    transport._token_url =  transport._app_url.with_query(f"token={mock_aes_device.token}")
+    transport._token_url = transport._app_url.with_query(
+        f"token={mock_aes_device.token}"
+    )
 
     request = {
         "method": "get_device_info",
@@ -194,7 +196,9 @@ async def test_passthrough_errors(mocker, error_code):
     transport._handshake_done = True
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
-    transport._token_url = transport._app_url.with_query(f"token={mock_aes_device.token}")
+    transport._token_url = transport._app_url.with_query(
+        f"token={mock_aes_device.token}"
+    )
 
     request = {
         "method": "get_device_info",
