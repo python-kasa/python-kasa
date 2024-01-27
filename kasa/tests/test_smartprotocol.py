@@ -63,19 +63,15 @@ def dummy_protocol():
 
 
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
-async def test_smart_device_errors(mocker, error_code):
-    host = "127.0.0.1"
+async def test_smart_device_errors(dummy_protocol, mocker, error_code):
     mock_response = {"result": {"great": "success"}, "error_code": error_code.value}
 
-    mocker.patch.object(AesTransport, "perform_handshake")
-    mocker.patch.object(AesTransport, "perform_login")
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport, "send", return_value=mock_response
+    )
 
-    send_mock = mocker.patch.object(AesTransport, "send", return_value=mock_response)
-
-    config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
-    protocol = SmartProtocol(transport=AesTransport(config=config))
     with pytest.raises(SmartDeviceException):
-        await protocol.query(DUMMY_QUERY, retry_count=2)
+        await dummy_protocol.query(DUMMY_QUERY, retry_count=2)
 
     if error_code in chain(SMART_TIMEOUT_ERRORS, SMART_RETRYABLE_ERRORS):
         expected_calls = 3
@@ -85,8 +81,9 @@ async def test_smart_device_errors(mocker, error_code):
 
 
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
-async def test_smart_device_errors_in_multiple_request(mocker, error_code):
-    host = "127.0.0.1"
+async def test_smart_device_errors_in_multiple_request(
+    dummy_protocol, mocker, error_code
+):
     mock_response = {
         "result": {
             "responses": [
@@ -102,14 +99,11 @@ async def test_smart_device_errors_in_multiple_request(mocker, error_code):
         "error_code": 0,
     }
 
-    mocker.patch.object(AesTransport, "perform_handshake")
-    mocker.patch.object(AesTransport, "perform_login")
-
-    send_mock = mocker.patch.object(AesTransport, "send", return_value=mock_response)
-    config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
-    protocol = SmartProtocol(transport=AesTransport(config=config))
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport, "send", return_value=mock_response
+    )
     with pytest.raises(SmartDeviceException):
-        await protocol.query(DUMMY_MULTIPLE_QUERY, retry_count=2)
+        await dummy_protocol.query(DUMMY_MULTIPLE_QUERY, retry_count=2)
     if error_code in chain(SMART_TIMEOUT_ERRORS, SMART_RETRYABLE_ERRORS):
         expected_calls = 3
     else:
