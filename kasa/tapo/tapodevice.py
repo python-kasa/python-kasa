@@ -12,7 +12,6 @@ from ..exceptions import AuthenticationException, SmartDeviceException
 from ..modules import Emeter
 from ..smartdevice import SmartDevice, WifiNetwork
 from ..smartprotocol import SmartProtocol
-from .child_device import ChildDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +41,8 @@ class TapoDevice(SmartDevice):
         children = self._last_update["child_info"]["child_device_list"]
         # TODO: Use the type information to construct children,
         #  as hubs can also have them.
+        from .child_device import ChildDevice
+
         self.children = [
             ChildDevice(parent=self, child_id=child["position"]) for child in children
         ]

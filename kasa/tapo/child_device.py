@@ -1,8 +1,9 @@
 """Child device implementation."""
 from typing import Dict, Optional, Union
 
-from kasa import DeviceConfig, SmartDeviceException, SmartProtocol
-
+from ..deviceconfig import DeviceConfig
+from ..exceptions import SmartDeviceException
+from ..smartprotocol import SmartProtocol
 from .tapodevice import TapoDevice
 
 
