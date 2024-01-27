@@ -226,7 +226,7 @@ class AesTransport(BaseTransport):
         resp_dict = await self.send_secure_passthrough(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
         login_token = resp_dict["result"]["token"]
-        self._token_url = URL(f"{self._app_url}?token={login_token}")
+        self._token_url = self._app_url.with_query(f"token={login_token}")
         self._state = TransportState.ESTABLISHED
 
     async def _generate_key_pair_payload(self) -> AsyncGenerator:
