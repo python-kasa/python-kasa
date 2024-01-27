@@ -251,6 +251,10 @@ class TapoDevice(SmartDevice):
         """Get the emeter value for today."""
         return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
 
+    async def erase_emeter_stats(self) -> Dict:
+        """Erase energy meter statistics."""
+        raise NotImplementedError
+
     async def wifi_scan(self) -> List[WifiNetwork]:
         """Scan for available wifi networks."""
 
@@ -339,6 +343,13 @@ class TapoDevice(SmartDevice):
             "time": t,
         }
         return await self.protocol.query({"set_qs_info": payload})
+
+    async def set_mac(self, mac):
+        """Set the mac address.
+
+        :param str mac: mac in hexadecimal with colons, e.g. 01:23:45:67:89:ab
+        """
+        raise NotImplementedError
 
     async def set_alias(self, alias: str):
         """Set the device name (alias)."""
