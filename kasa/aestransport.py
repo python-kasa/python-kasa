@@ -103,7 +103,7 @@ class AesTransport(BaseTransport):
 
         self._key_pair: Optional[KeyPair] = None
         self._app_url = URL(f"http://{self._host}/app")
-        self._token_url: Optional[str] = None
+        self._token_url: Optional[URL] = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
