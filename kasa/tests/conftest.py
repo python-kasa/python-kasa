@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from json import dumps as json_dumps
 from os.path import basename
 from pathlib import Path, PurePath
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, cast
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342

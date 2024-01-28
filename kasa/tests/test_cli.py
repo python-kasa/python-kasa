@@ -13,6 +13,7 @@ from kasa import (
     SmartDeviceException,
     UnsupportedDeviceException,
 )
+from kasa import iot as Iot
 from kasa.cli import (
     TYPE_TO_CLASS,
     alias,
@@ -218,7 +219,7 @@ async def test_update_credentials(dev):
     )
 
 
-async def test_emeter(dev: Device, mocker):
+async def test_emeter(dev: Iot.Device, mocker):
     runner = CliRunner()
 
     res = await runner.invoke(emeter, obj=dev)
@@ -281,7 +282,7 @@ async def test_brightness(dev):
 
 
 @device_iot
-async def test_json_output(dev: Device, mocker):
+async def test_json_output(dev: Iot.Device, mocker):
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover", return_value=[dev])
     runner = CliRunner()
@@ -297,7 +298,7 @@ async def test_credentials(discovery_mock, mocker):
     pass_dev = click.make_pass_decorator(Device)
 
     @pass_dev
-    async def _state(dev: Device):
+    async def _state(dev: Iot.Device):
         if dev.credentials:
             click.echo(
                 f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
@@ -518,7 +519,7 @@ async def test_type_param(device_type, mocker):
     pass_dev = click.make_pass_decorator(Device)
 
     @pass_dev
-    async def _state(dev: Device):
+    async def _state(dev: Iot.Device):
         nonlocal result_device
         result_device = dev
 
