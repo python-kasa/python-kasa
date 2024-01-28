@@ -11,16 +11,12 @@ from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
+import kasa.iot as Iot
 import kasa.smart as Smart
 from kasa import (
-    Bulb,
     Credentials,
     Device,
-    Dimmer,
     Discover,
-    LightStrip,
-    Plug,
-    Strip,
 )
 from kasa.xortransport import XorEncryption
 
@@ -341,24 +337,24 @@ def device_for_file(model, protocol):
     else:
         for d in STRIPS_IOT:
             if d in model:
-                return Strip
+                return Iot.Strip
 
         for d in PLUGS_IOT:
             if d in model:
-                return Plug
+                return Iot.Plug
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:
             if d in model:
-                return LightStrip
+                return Iot.LightStrip
 
         for d in BULBS_IOT:
             if d in model:
-                return Bulb
+                return Iot.Bulb
 
         for d in DIMMERS_IOT:
             if d in model:
-                return Dimmer
+                return Iot.Dimmer
 
     raise Exception("Unable to find type for %s", model)
 

@@ -17,6 +17,9 @@ from kasa import (
     SmartDeviceException,
     protocol,
 )
+from kasa import (
+    iot as Iot,
+)
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
@@ -295,7 +298,7 @@ async def test_discover_single_authentication(discovery_mock, mocker):
 
 @new_discovery
 async def test_device_update_from_new_discovery_info(discovery_data):
-    device = Device("127.0.0.7")
+    device = Iot.Device("127.0.0.7")
     discover_info = DiscoveryResult(**discovery_data["result"])
     discover_dump = discover_info.get_dict()
     discover_dump["alias"] = "foobar"

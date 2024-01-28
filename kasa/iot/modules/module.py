@@ -2,13 +2,14 @@
 import collections
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from ...exceptions import SmartDeviceException
 from ...module import Module as BaseModule
 
 if TYPE_CHECKING:
     from kasa import Device
+    from kasa.iot import Device as IotDevice
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,7 +34,10 @@ class Module(BaseModule, ABC):
     """
 
     def __init__(self, device: "Device", module: str):
-        self._device: "Device" = device
+        if TYPE_CHECKING:
+            self._device: IotDevice = cast(IotDevice, self._device)
+        else:
+            self._device = device
         self._module = module
 
     @abstractmethod

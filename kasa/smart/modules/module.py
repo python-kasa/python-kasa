@@ -2,12 +2,14 @@
 import collections
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from ...exceptions import SmartDeviceException
+from ...module import Module as BaseModule
 
 if TYPE_CHECKING:
     from kasa import Device
+    from kasa.smart import Device as SmartDevice
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,7 +26,7 @@ def merge(d, u):
     return d
 
 
-class Module(ABC):
+class Module(BaseModule, ABC):
     """Base class implemention for all modules.
 
     The base classes should implement `query` to return the query they want to be
@@ -32,7 +34,10 @@ class Module(ABC):
     """
 
     def __init__(self, device: "Device", module: str):
-        self._device: "Device" = device
+        if TYPE_CHECKING:
+            self._device: SmartDevice = cast(SmartDevice, self._device)
+        else:
+            self._device = device
         self._module = module
 
     @abstractmethod

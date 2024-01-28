@@ -1,6 +1,7 @@
 import pytest
 
-from kasa import Bulb, BulbPreset, DeviceType, SmartDeviceException
+from kasa import BulbPreset, DeviceType, SmartDeviceException
+from kasa.iot import Bulb
 
 from .conftest import (
     bulb,

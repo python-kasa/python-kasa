@@ -6,14 +6,10 @@ import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
-    Bulb,
     Credentials,
     Device,
     DeviceType,
-    Dimmer,
     Discover,
-    LightStrip,
-    Plug,
     SmartDeviceException,
 )
 from kasa.device_factory import connect, get_protocol
@@ -24,6 +20,13 @@ from kasa.deviceconfig import (
     EncryptType,
 )
 from kasa.discover import DiscoveryResult
+from kasa.iot import (
+    Bulb,
+    Dimmer,
+    LightStrip,
+    Plug,
+    Strip,
+)
 
 
 def _get_connection_type_device_class(the_fixture_data):

@@ -1,4 +1,7 @@
+import importlib
 import inspect
+import pkgutil
+import sys
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -6,19 +9,34 @@ import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, SmartDeviceException
+from kasa import iot as Iot
+from kasa import smart as Smart
 
 from .conftest import device_iot, handle_turn_on, has_emeter_iot, no_emeter_iot, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
 
-# List of all SmartXXX classes including the SmartDevice base class
-smart_device_classes = [
-    dc
-    for (mn, dc) in inspect.getmembers(
-        kasa,
-        lambda member: inspect.isclass(member)
-        and (member == Device or issubclass(member, Device)),
-    )
-]
+
+def _get_subclasses(of_class):
+    import kasa
+
+    package = sys.modules["kasa"]
+    subclasses = set()
+    for _, modname, _ in pkgutil.iter_modules(package.__path__):
+        importlib.import_module("." + modname, package="kasa")
+        module = sys.modules["kasa." + modname]
+        for name, obj in inspect.getmembers(module):
+            if (
+                inspect.isclass(obj)
+                and issubclass(obj, of_class)
+                and module.__package__ != "kasa"
+            ):
+                subclasses.add((module.__package__ + "." + name, obj))
+    return subclasses
+
+
+device_classes = pytest.mark.parametrize(
+    "device_class_name_obj", _get_subclasses(Device), ids=lambda t: t[0]
+)
 
 
 @device_iot
@@ -208,21 +226,21 @@ async def test_estimated_response_sizes(dev):
         assert mod.estimated_query_response_size > 0
 
 
-@pytest.mark.parametrize("device_class", smart_device_classes)
-def test_device_class_ctors(device_class):
+@device_classes
+async def test_device_class_ctors(device_class_name_obj):
     """Make sure constructor api not broken for new and existing SmartDevices."""
     host = "127.0.0.2"
     port = 1234
     credentials = Credentials("foo", "bar")
     config = DeviceConfig(host, port_override=port, credentials=credentials)
-    dev = device_class(host, config=config)
+    dev = device_class_name_obj[1](host, config=config)
     assert dev.host == host
     assert dev.port == port
     assert dev.credentials == credentials
 
 
 @device_iot
-async def test_modules_preserved(dev: Device):
+async def test_modules_preserved(dev: Iot.Device):
     """Make modules that are not being updated are preserved between updates."""
     dev._last_update["some_module_not_being_updated"] = "should_be_kept"
     await dev.update()
@@ -232,7 +250,9 @@ async def test_modules_preserved(dev: Device):
 async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
     host = "127.0.0.1"
-    dev = Device(host, config=DeviceConfig(host, timeout=100))
+    dev = Iot.Device(host, config=DeviceConfig(host, timeout=100))
+    assert dev.protocol._transport._timeout == 100
+    dev = Smart.Device(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
 
 
@@ -256,10 +276,16 @@ async def test_create_thin_wrapper():
 
 
 @device_iot
-async def test_modules_not_supported(dev: Device):
+async def test_modules_not_supported(dev: Iot.Device):
     """Test that unsupported modules do not break the device."""
     for module in dev.modules.values():
         assert module.is_supported is not None
     await dev.update()
     for module in dev.modules.values():
         assert module.is_supported is not None
+
+
+@pytest.mark.parametrize("device_class", kasa.deprecated_smart_devices.keys())
+def test_deprecated_devices(device_class):
+    with pytest.deprecated_call():
+        getattr(kasa, device_class)

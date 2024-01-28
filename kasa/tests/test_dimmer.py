@@ -1,6 +1,6 @@
 import pytest
 
-from kasa import Dimmer
+from kasa.iot import Dimmer
 
 from .conftest import dimmer, handle_turn_on, turn_on
 

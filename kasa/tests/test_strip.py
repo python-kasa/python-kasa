@@ -2,7 +2,8 @@ from datetime import datetime
 
 import pytest
 
-from kasa import SmartDeviceException, Strip
+from kasa import SmartDeviceException
+from kasa.iot import Strip
 
 from .conftest import handle_turn_on, strip, turn_on
 

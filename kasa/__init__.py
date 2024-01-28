@@ -15,6 +15,7 @@ from importlib.metadata import version
 from warnings import warn
 
 from kasa.credentials import Credentials
+from kasa.device import Device
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
@@ -29,12 +30,8 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
-from kasa.iot.bulb import Bulb, BulbPreset, TurnOnBehavior, TurnOnBehaviors
-from kasa.iot.device import Device, DeviceType
-from kasa.iot.dimmer import Dimmer
-from kasa.iot.lightstrip import LightStrip
-from kasa.iot.plug import Plug
-from kasa.iot.strip import Strip
+from kasa.iot.bulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
+from kasa.iot.device import DeviceType
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
@@ -50,7 +47,6 @@ __all__ = [
     "BaseProtocol",
     "IotProtocol",
     "SmartProtocol",
-    "Bulb",
     "BulbPreset",
     "TurnOnBehaviors",
     "TurnOnBehavior",
@@ -58,10 +54,6 @@ __all__ = [
     "EmeterStatus",
     "Device",
     "SmartDeviceException",
-    "Plug",
-    "Strip",
-    "Dimmer",
-    "LightStrip",
     "AuthenticationException",
     "UnsupportedDeviceException",
     "TimeoutException",
@@ -82,6 +74,7 @@ deprecated_smart_devices = {
     "SmartLightStrip": Iot.LightStrip,
     "SmartStrip": Iot.Strip,
     "SmartDimmer": Iot.Dimmer,
+    "SmartBulbPreset": Iot.bulb.BulbPreset,
 }
 
 

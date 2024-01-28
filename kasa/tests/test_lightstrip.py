@@ -1,7 +1,8 @@
 import pytest
 
-from kasa import DeviceType, LightStrip
+from kasa import DeviceType
 from kasa.exceptions import SmartDeviceException
+from kasa.iot import LightStrip
 
 from .conftest import lightstrip
 
