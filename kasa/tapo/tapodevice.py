@@ -44,7 +44,7 @@ class TapoDevice(SmartDevice):
         from .child_device import ChildDevice
 
         self.children = [
-            ChildDevice(parent=self, child_id=child["position"]) for child in children
+            ChildDevice(parent=self, child_id=child["device_id"]) for child in children
         ]
         self._device_type = DeviceType.Strip
 

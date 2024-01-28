@@ -279,3 +279,38 @@ class SnowflakeId:
         while timestamp <= last_timestamp:
             timestamp = self._current_millis()
         return timestamp
+
+
+class _ChildProtocolWrapper(SmartProtocol):
+    """Protocol wrapper for controlling child devices.
+
+    This is an internal class used to communicate with child devices,
+    and should not be used directly.
+
+    Internally, this class overrides query() method of the protocol to modify all
+    outgoing queries to use ``control_child`` command.
+    """
+
+    def __init__(self, device_id: str, base_protocol: SmartProtocol):
+        self._device_id = device_id
+        self._protocol = base_protocol
+        self._transport = base_protocol._transport
+
+    async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
+        """Wrap request inside control_child envelope."""
+        method, params = self._protocol.get_method_and_params_for_request(request)
+        request_data = {
+            "method": method,
+            "params": params,
+        }
+        wrapped_payload = {
+            "control_child": {
+                "device_id": self._device_id,
+                "requestData": request_data,
+            }
+        }
+
+        return await self._protocol.query(wrapped_payload, retry_count)
+
+    async def close(self) -> None:
+        """Do nothing as the parent owns the protocol."""
