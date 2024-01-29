@@ -200,7 +200,8 @@ async def test_discover_invalid_info(msg, data, mocker):
 
 async def test_discover_send(mocker):
     """Test discovery parameters."""
-    proto = _DiscoverProtocol()
+    discovery_timeout = 0.1
+    proto = _DiscoverProtocol(discovery_timeout=discovery_timeout)
     assert proto.discovery_packets == 3
     assert proto.target_1 == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
