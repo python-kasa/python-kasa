@@ -1,5 +1,4 @@
 from kasa.smartprotocol import _ChildProtocolWrapper
-from kasa.tapo import ChildDevice
 
 from .conftest import strip_smart
 

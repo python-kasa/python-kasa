@@ -3,12 +3,9 @@ from unittest.mock import Mock
 
 import pytest
 from voluptuous import (
-    REMOVE_EXTRA,
     All,
     Any,
     Coerce,  # type: ignore
-    Invalid,
-    Optional,
     Range,
     Schema,
 )
