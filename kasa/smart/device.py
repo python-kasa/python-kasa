@@ -341,6 +341,12 @@ class Device(IotDevice):
         }
         return await self.protocol.query({"set_qs_info": payload})
 
+    async def set_alias(self, alias: str):
+        """Set the device name (alias)."""
+        return await self.protocol.query(
+            {"set_device_info": {"nickname": base64.b64encode(alias.encode()).decode()}}
+        )
+
     async def reboot(self, delay: int = 1) -> None:
         """Reboot the device.
 

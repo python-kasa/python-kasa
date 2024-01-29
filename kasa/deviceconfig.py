@@ -146,6 +146,8 @@ class DeviceConfig:
     #: Credentials hash can be retrieved from :attr:`SmartDevice.credentials_hash`
     credentials_hash: Optional[str] = None
     #: The protocol specific type of connection.  Defaults to the legacy type.
+    batch_size: Optional[int] = None
+    #: The batch size for protoools supporting multiple request batches.
     connection_type: ConnectionType = field(
         default_factory=lambda: ConnectionType(
             DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor, 1

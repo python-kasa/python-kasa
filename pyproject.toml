@@ -65,6 +65,8 @@ omit = ["kasa/tests/*"]
 
 [tool.coverage.report]
 exclude_lines = [
+  # ignore debug logging
+  "if debug_enabled:",
   # Don't complain if tests don't hit defensive assertion code:
   "raise AssertionError",
   "raise NotImplementedError",
