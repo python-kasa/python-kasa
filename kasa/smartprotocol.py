@@ -287,8 +287,9 @@ class _ChildProtocolWrapper(SmartProtocol):
     This is an internal class used to communicate with child devices,
     and should not be used directly.
 
-    Internally, this class overrides query() method of the protocol to modify all
-    outgoing queries to use ``control_child`` command.
+    This class overrides query() method of the protocol to modify all
+    outgoing queries to use ``control_child`` command, and unwraps the
+    device responses before returning to the caller.
     """
 
     def __init__(self, device_id: str, base_protocol: SmartProtocol):

@@ -30,12 +30,10 @@ class TapoDevice(SmartDevice):
             transport=AesTransport(config=config or DeviceConfig(host=host)),
         )
         super().__init__(host=host, config=config, protocol=_protocol)
+        self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int]
         self._state_information: Dict[str, Any] = {}
-        self._discovery_info: Optional[Dict[str, Any]] = None
-        self.modules: Dict[str, Any] = {}
-        self.children: List["TapoDevice"] = []
 
     async def _initialize_children(self):
         children = self._last_update["child_info"]["child_device_list"]
