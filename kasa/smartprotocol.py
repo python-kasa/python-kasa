@@ -33,7 +33,7 @@ class SmartProtocol(BaseProtocol):
     """Class for the new TPLink SMART protocol."""
 
     BACKOFF_SECONDS_AFTER_TIMEOUT = 1
-    MULTI_REQUEST_BATCH_SIZE = 5
+    DEFAULT_MULTI_REQUEST_BATCH_SIZE = 5
 
     def __init__(
         self,
@@ -111,8 +111,10 @@ class SmartProtocol(BaseProtocol):
         ]
 
         end = len(requests)
-        # Break the requests down as there seems to be a size limit
-        step = self.MULTI_REQUEST_BATCH_SIZE
+        # Break the requests down as there can be a size limit
+        step = (
+            self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
+        )
         for i in range(0, end, step):
             requests_step = requests[i : i + step]
 
