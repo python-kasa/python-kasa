@@ -113,7 +113,9 @@ async def test_smart_device_errors_in_multiple_request(
 
 @pytest.mark.parametrize("request_size", [1, 3, 5, 10])
 @pytest.mark.parametrize("batch_size", [1, 2, 3, 4, 5])
-async def test_smart_device_multiple_request(mocker, request_size, batch_size):
+async def test_smart_device_multiple_request(
+    dummy_protocol, mocker, request_size, batch_size
+):
     host = "127.0.0.1"
     requests = {}
     mock_response = {
@@ -127,16 +129,15 @@ async def test_smart_device_multiple_request(mocker, request_size, batch_size):
             {"method": method, "result": {"great": "success"}, "error_code": 0}
         )
 
-    mocker.patch.object(AesTransport, "perform_handshake")
-    mocker.patch.object(AesTransport, "perform_login")
-
-    send_mock = mocker.patch.object(AesTransport, "send", return_value=mock_response)
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport, "send", return_value=mock_response
+    )
     config = DeviceConfig(
         host, credentials=Credentials("foo", "bar"), batch_size=batch_size
     )
-    protocol = SmartProtocol(transport=AesTransport(config=config))
+    dummy_protocol._transport._config = config
 
-    await protocol.query(requests, retry_count=0)
+    await dummy_protocol.query(requests, retry_count=0)
     expected_count = int(request_size / batch_size) + (request_size % batch_size > 0)
     assert send_mock.call_count == expected_count
 
