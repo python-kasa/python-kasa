@@ -11,7 +11,6 @@ from kasa import (
     EmeterStatus,
     SmartDevice,
     SmartDeviceException,
-    TPLinkSmartHomeProtocol,
     UnsupportedDeviceException,
 )
 from kasa.cli import (
@@ -32,6 +31,27 @@ from kasa.discover import Discover, DiscoveryResult
 from kasa.smartprotocol import SmartProtocol
 
 from .conftest import device_iot, device_smart, handle_turn_on, new_discovery, turn_on
+
+
+async def test_update_called_by_cli(dev, mocker):
+    """Test that device update is called on main."""
+    runner = CliRunner()
+    update = mocker.patch.object(dev, "update")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.1",
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+        ],
+    )
+    assert res.exit_code == 0
+    update.assert_called()
 
 
 @device_iot
@@ -86,8 +106,9 @@ async def test_alias(dev):
     await dev.set_alias(old_alias)
 
 
-async def test_raw_command(dev):
+async def test_raw_command(dev, mocker):
     runner = CliRunner()
+    update = mocker.patch.object(dev, "update")
     from kasa.tapo import TapoDevice
 
     if isinstance(dev, TapoDevice):
@@ -95,6 +116,10 @@ async def test_raw_command(dev):
     else:
         params = ["system", "get_sysinfo"]
     res = await runner.invoke(raw_command, params, obj=dev)
+
+    # Make sure that update was not called for wifi
+    with pytest.raises(AssertionError):
+        update.assert_called()
 
     assert res.exit_code == 0
     assert dev.model in res.output
@@ -129,13 +154,18 @@ async def test_wifi_scan(dev):
 
 
 @device_smart
-async def test_wifi_join(dev):
+async def test_wifi_join(dev, mocker):
     runner = CliRunner()
+    update = mocker.patch.object(dev, "update")
     res = await runner.invoke(
         wifi,
         ["join", "FOOBAR", "--keytype", "wpa_psk", "--password", "foobar"],
         obj=dev,
     )
+
+    # Make sure that update was not called for wifi
+    with pytest.raises(AssertionError):
+        update.assert_called()
 
     assert res.exit_code == 0
     assert "Asking the device to connect to FOOBAR" in res.output

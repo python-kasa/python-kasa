@@ -1,5 +1,67 @@
 # Changelog
 
+## [0.6.1](https://github.com/python-kasa/python-kasa/tree/0.6.1) (2024-01-25)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.0.1...0.6.1)
+
+Release highlights:
+* Support for tapo wall switches
+* Support for unprovisioned devices
+* Performance and stability improvements
+
+**Implemented enhancements:**
+
+- Add support for tapo wall switches \(S500D\) [\#704](https://github.com/python-kasa/python-kasa/pull/704) (@bdraco)
+- Add new cli command 'command' to execute arbitrary commands [\#692](https://github.com/python-kasa/python-kasa/pull/692) (@rytilahti)
+- Allow raw-command and wifi without update [\#688](https://github.com/python-kasa/python-kasa/pull/688) (@rytilahti)
+- Generate AES KeyPair lazily [\#687](https://github.com/python-kasa/python-kasa/pull/687) (@sdb9696)
+- Add reboot and factory\_reset to tapodevice [\#686](https://github.com/python-kasa/python-kasa/pull/686) (@rytilahti)
+- Try default tapo credentials for klap and aes [\#685](https://github.com/python-kasa/python-kasa/pull/685) (@sdb9696)
+- Sleep between discovery packets [\#656](https://github.com/python-kasa/python-kasa/pull/656) (@sdb9696)
+
+**Fixed bugs:**
+
+- Do not crash on missing geolocation [\#701](https://github.com/python-kasa/python-kasa/pull/701) (@rytilahti)
+- Fix P100 error getting conn closed when trying default login after login failure [\#690](https://github.com/python-kasa/python-kasa/pull/690) (@sdb9696)
+
+**Documentation updates:**
+
+- Add protocol and transport documentation [\#663](https://github.com/python-kasa/python-kasa/pull/663) (@sdb9696)
+- Document authenticated provisioning [\#634](https://github.com/python-kasa/python-kasa/pull/634) (@rytilahti)
+
+**Closed issues:**
+
+- Consider handshake as still valid on ServerDisconnectedError [\#676](https://github.com/python-kasa/python-kasa/issues/676)
+- AES Transport creates the key even if the device is offline [\#675](https://github.com/python-kasa/python-kasa/issues/675)
+- how to provision new Tapo plug devices? [\#565](https://github.com/python-kasa/python-kasa/issues/565)
+- Space out discovery requests [\#229](https://github.com/python-kasa/python-kasa/issues/229)
+
+**Merged pull requests:**
+
+- Add additional L900-10 fixture [\#707](https://github.com/python-kasa/python-kasa/pull/707) (@bdraco)
+- Replace rich formatting stripper [\#706](https://github.com/python-kasa/python-kasa/pull/706) (@bdraco)
+- Add support for the S500 [\#705](https://github.com/python-kasa/python-kasa/pull/705) (@bdraco)
+- Fix overly greedy \_strip\_rich\_formatting [\#703](https://github.com/python-kasa/python-kasa/pull/703) (@bdraco)
+- Ensure login token is only sent if aes state is ESTABLISHED [\#702](https://github.com/python-kasa/python-kasa/pull/702) (@bdraco)
+- Update readme fixture checker and readme [\#699](https://github.com/python-kasa/python-kasa/pull/699) (@rytilahti)
+- Fix test\_klapprotocol test duration [\#698](https://github.com/python-kasa/python-kasa/pull/698) (@sdb9696)
+- Renew the handshake session 20 minutes before we think it will expire [\#697](https://github.com/python-kasa/python-kasa/pull/697) (@bdraco)
+- Add --batch-size hint to timeout errors in dump\_devinfo [\#696](https://github.com/python-kasa/python-kasa/pull/696) (@sdb9696)
+- Add L930-5 fixture [\#694](https://github.com/python-kasa/python-kasa/pull/694) (@bdraco)
+- Add fixtures for L510E [\#693](https://github.com/python-kasa/python-kasa/pull/693) (@bdraco)
+- Refactor aestransport to use a state enum [\#691](https://github.com/python-kasa/python-kasa/pull/691) (@bdraco)
+- Update transport close/reset behaviour [\#689](https://github.com/python-kasa/python-kasa/pull/689) (@sdb9696)
+- Check README for supported models [\#684](https://github.com/python-kasa/python-kasa/pull/684) (@rytilahti)
+- Add P100 test fixture [\#683](https://github.com/python-kasa/python-kasa/pull/683) (@bdraco)
+- Make dump\_devinfo request batch size configurable [\#681](https://github.com/python-kasa/python-kasa/pull/681) (@sdb9696)
+- Add updated L920 fixture [\#680](https://github.com/python-kasa/python-kasa/pull/680) (@bdraco)
+- Update fixtures from test devices [\#679](https://github.com/python-kasa/python-kasa/pull/679) (@bdraco)
+- Show discovery data for state with verbose [\#678](https://github.com/python-kasa/python-kasa/pull/678) (@rytilahti)
+- Add L530E\(US\) fixture [\#674](https://github.com/python-kasa/python-kasa/pull/674) (@bdraco)
+- Add P135 fixture [\#673](https://github.com/python-kasa/python-kasa/pull/673) (@bdraco)
+- Rename base TPLinkProtocol to BaseProtocol [\#669](https://github.com/python-kasa/python-kasa/pull/669) (@sdb9696)
+- Add 1003 \(TRANSPORT\_UNKNOWN\_CREDENTIALS\_ERROR\) [\#667](https://github.com/python-kasa/python-kasa/pull/667) (@rytilahti)
+
 ## [0.6.0.1](https://github.com/python-kasa/python-kasa/tree/0.6.0.1) (2024-01-21)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.0...0.6.0.1)
@@ -17,6 +79,7 @@ A patch release to improve the protocol handling.
 
 **Merged pull requests:**
 
+- Release 0.6.0.1 [\#666](https://github.com/python-kasa/python-kasa/pull/666) (@rytilahti)
 - Add l900-5 1.1.0 fixture [\#664](https://github.com/python-kasa/python-kasa/pull/664) (@rytilahti)
 - Add fixtures with new MAC mask [\#661](https://github.com/python-kasa/python-kasa/pull/661) (@sdb9696)
 - Make close behaviour consistent across new protocols and transports [\#660](https://github.com/python-kasa/python-kasa/pull/660) (@sdb9696)

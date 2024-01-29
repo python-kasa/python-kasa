@@ -11,8 +11,6 @@ from .klaptransport import KlapTransport, KlapTransportV2
 from .protocol import (
     BaseProtocol,
     BaseTransport,
-    TPLinkSmartHomeProtocol,
-    _XorTransport,
 )
 from .smartbulb import SmartBulb
 from .smartdevice import SmartDevice
@@ -22,6 +20,7 @@ from .smartplug import SmartPlug
 from .smartprotocol import SmartProtocol
 from .smartstrip import SmartStrip
 from .tapo import TapoBulb, TapoPlug
+from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,7 +75,9 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Smart
 
     device_class: Optional[Type[SmartDevice]]
 
-    if isinstance(protocol, TPLinkSmartHomeProtocol):
+    if isinstance(protocol, IotProtocol) and isinstance(
+        protocol._transport, XorTransport
+    ):
         info = await protocol.query(GET_SYSINFO_QUERY)
         _perf_log(True, "get_sysinfo")
         device_class = get_device_class_from_sys_info(info)
@@ -131,6 +132,7 @@ def get_device_class_from_family(device_type: str) -> Optional[Type[SmartDevice]
     supported_device_types: Dict[str, Type[SmartDevice]] = {
         "SMART.TAPOPLUG": TapoPlug,
         "SMART.TAPOBULB": TapoBulb,
+        "SMART.TAPOSWITCH": TapoBulb,
         "SMART.KASAPLUG": TapoPlug,
         "SMART.KASASWITCH": TapoPlug,
         "IOT.SMARTPLUGSWITCH": SmartPlug,
@@ -150,7 +152,7 @@ def get_protocol(
     supported_device_protocols: Dict[
         str, Tuple[Type[BaseProtocol], Type[BaseTransport]]
     ] = {
-        "IOT.XOR": (TPLinkSmartHomeProtocol, _XorTransport),
+        "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),

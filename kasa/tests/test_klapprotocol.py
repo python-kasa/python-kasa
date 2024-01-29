@@ -6,6 +6,7 @@ import struct
 import sys
 import time
 from contextlib import nullcontext as does_not_raise
+from unittest.mock import PropertyMock
 
 import aiohttp
 import pytest
@@ -54,9 +55,10 @@ class _mock_response:
     [
         (Exception("dummy exception"), False),
         (aiohttp.ServerTimeoutError("dummy exception"), True),
+        (aiohttp.ServerDisconnectedError("dummy exception"), True),
         (aiohttp.ClientOSError("dummy exception"), True),
     ],
-    ids=("Exception", "SmartDeviceException", "ConnectError"),
+    ids=("Exception", "ServerTimeoutError", "ServerDisconnectedError", "ClientOSError"),
 )
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
@@ -66,6 +68,7 @@ async def test_protocol_retries_via_client_session(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=error)
+    mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
 
     config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
@@ -94,6 +97,7 @@ async def test_protocol_retries_via_httpclient(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(HttpClient, "post", side_effect=error)
+    mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
 
     config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
@@ -116,6 +120,7 @@ async def test_protocol_no_retry_on_connection_error(
         "post",
         side_effect=AuthenticationException("foo"),
     )
+    mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
     config = DeviceConfig(host)
     with pytest.raises(SmartDeviceException):
         await protocol_class(transport=transport_class(config=config)).query(

@@ -5,7 +5,11 @@ from typing import Any, Dict, Optional, Tuple, Union
 import aiohttp
 
 from .deviceconfig import DeviceConfig
-from .exceptions import ConnectionException, SmartDeviceException, TimeoutException
+from .exceptions import (
+    ConnectionException,
+    SmartDeviceException,
+    TimeoutException,
+)
 from .json import loads as json_loads
 
 
@@ -78,7 +82,7 @@ class HttpClient:
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
             raise ConnectionException(
-                f"Unable to connect to the device: {self._config.host}: {ex}", ex
+                f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
         except (aiohttp.ServerTimeoutError, asyncio.TimeoutError) as ex:
             raise TimeoutException(

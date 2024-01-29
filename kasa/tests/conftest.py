@@ -15,13 +15,14 @@ from kasa import (
     Credentials,
     Discover,
     SmartBulb,
+    SmartDevice,
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
     SmartStrip,
-    TPLinkSmartHomeProtocol,
 )
 from kasa.tapo import TapoBulb, TapoDevice, TapoPlug
+from kasa.xortransport import XorEncryption
 
 from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
@@ -43,10 +44,10 @@ SUPPORTED_SMART_DEVICES = [
 SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
 
 # Tapo bulbs
-BULBS_SMART_VARIABLE_TEMP = {"L530E"}
-BULBS_SMART_LIGHT_STRIP = {"L900-5", "L900-10", "L920-5"}
+BULBS_SMART_VARIABLE_TEMP = {"L530E", "L930-5"}
+BULBS_SMART_LIGHT_STRIP = {"L900-5", "L900-10", "L920-5", "L930-5"}
 BULBS_SMART_COLOR = {"L530E", *BULBS_SMART_LIGHT_STRIP}
-BULBS_SMART_DIMMABLE = {"KS225", "L510B"}
+BULBS_SMART_DIMMABLE = {"KS225", "L510B", "L510E"}
 BULBS_SMART = (
     BULBS_SMART_VARIABLE_TEMP.union(BULBS_SMART_COLOR)
     .union(BULBS_SMART_DIMMABLE)
@@ -100,7 +101,7 @@ PLUGS_IOT = {
 }
 # P135 supports dimming, but its not currently support
 # by the library
-PLUGS_SMART = {"P100", "P110", "KP125M", "EP25", "KS205", "P125M", "P135"}
+PLUGS_SMART = {"P100", "P110", "KP125M", "EP25", "KS205", "P125M", "P135", "S505"}
 PLUGS = {
     *PLUGS_IOT,
     *PLUGS_SMART,
@@ -110,7 +111,7 @@ STRIPS_SMART: Set[str] = set()
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
-DIMMERS_SMART: Set[str] = set()
+DIMMERS_SMART = {"S500D"}
 DIMMERS = {
     *DIMMERS_IOT,
     *DIMMERS_SMART,
@@ -239,6 +240,9 @@ bulb_iot = parametrize("bulb devices iot", BULBS_IOT, protocol_filter={"IOT"})
 
 plug_smart = parametrize("plug devices smart", PLUGS_SMART, protocol_filter={"SMART"})
 bulb_smart = parametrize("bulb devices smart", BULBS_SMART, protocol_filter={"SMART"})
+dimmers_smart = parametrize(
+    "dimmer devices smart", DIMMERS_SMART, protocol_filter={"SMART"}
+)
 device_smart = parametrize(
     "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
@@ -299,6 +303,7 @@ def check_categories():
         + lightstrip.args[1]
         + plug_smart.args[1]
         + bulb_smart.args[1]
+        + dimmers_smart.args[1]
     )
     diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
     if diff:
@@ -328,6 +333,9 @@ def device_for_file(model, protocol):
             if d in model:
                 return TapoPlug
         for d in BULBS_SMART:
+            if d in model:
+                return TapoBulb
+        for d in DIMMERS_SMART:
             if d in model:
                 return TapoBulb
     else:
@@ -416,9 +424,15 @@ async def dev(request):
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        return d if d else await _discover_update_and_close(ip, username, password)
+        dev: SmartDevice = (
+            d if d else await _discover_update_and_close(ip, username, password)
+        )
+    else:
+        dev: SmartDevice = await get_device_for_file(file, protocol)
 
-    return await get_device_for_file(file, protocol)
+    yield dev
+
+    await dev.disconnect()
 
 
 @pytest.fixture
@@ -464,7 +478,7 @@ def discovery_mock(all_fixture_data, mocker):
         device_type = sys_info.get("mic_type") or sys_info.get("type")
         encrypt_type = "XOR"
         login_version = None
-        datagram = TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:]
+        datagram = XorEncryption.encrypt(json_dumps(discovery_data))[4:]
         dm = _DiscoveryMock(
             "127.0.0.123",
             9999,
@@ -503,7 +517,6 @@ def discovery_mock(all_fixture_data, mocker):
 
     mocker.patch("kasa.IotProtocol.query", side_effect=_query)
     mocker.patch("kasa.SmartProtocol.query", side_effect=_query)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", side_effect=_query)
 
     yield dm
 

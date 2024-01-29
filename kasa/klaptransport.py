@@ -46,11 +46,12 @@ import datetime
 import hashlib
 import logging
 import secrets
+import struct
 import time
 from pprint import pformat as pf
 from typing import Any, Dict, Optional, Tuple, cast
 
-from cryptography.hazmat.primitives import hashes, padding
+from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .credentials import Credentials
@@ -63,17 +64,18 @@ from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credential
 _LOGGER = logging.getLogger(__name__)
 
 
+ONE_DAY_SECONDS = 86400
+SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+
+PACK_SIGNED_LONG = struct.Struct(">l").pack
+
+
 def _sha256(payload: bytes) -> bytes:
-    digest = hashes.Hash(hashes.SHA256())  # noqa: S303
-    digest.update(payload)
-    hash = digest.finalize()
-    return hash
+    return hashlib.sha256(payload).digest()  # noqa: S324
 
 
 def _sha1(payload: bytes) -> bytes:
-    digest = hashes.Hash(hashes.SHA1())  # noqa: S303
-    digest.update(payload)
-    return digest.finalize()
+    return hashlib.sha1(payload).digest()  # noqa: S324
 
 
 class KlapTransport(BaseTransport):
@@ -86,6 +88,7 @@ class KlapTransport(BaseTransport):
     DEFAULT_PORT: int = 80
     DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
     SESSION_COOKIE_NAME = "TP_SESSIONID"
+    TIMEOUT_COOKIE_NAME = "TIMEOUT"
 
     def __init__(
         self,
@@ -271,14 +274,18 @@ class KlapTransport(BaseTransport):
         self._session_cookie = None
 
         local_seed, remote_seed, auth_hash = await self.perform_handshake1()
-        if cookie := self._http_client.get_cookie(  # type: ignore
-            self.SESSION_COOKIE_NAME
-        ):
+        http_client = self._http_client
+        if cookie := http_client.get_cookie(self.SESSION_COOKIE_NAME):  # type: ignore
             self._session_cookie = {self.SESSION_COOKIE_NAME: cookie}
         # The device returns a TIMEOUT cookie on handshake1 which
         # it doesn't like to get back so we store the one we want
-
-        self._session_expire_at = time.time() + 86400
+        timeout = int(
+            http_client.get_cookie(self.TIMEOUT_COOKIE_NAME) or ONE_DAY_SECONDS
+        )
+        # There is a 24 hour timeout on the session cookie
+        # but the clock on the device is not always accurate
+        # so we set the expiry to 24 hours from now minus a buffer
+        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
         self._encryption_session = await self.perform_handshake2(
             local_seed, remote_seed, auth_hash
         )
@@ -348,7 +355,12 @@ class KlapTransport(BaseTransport):
             return json_payload
 
     async def close(self) -> None:
-        """Mark the handshake as not done since we likely lost the connection."""
+        """Close the http client and reset internal state."""
+        await self.reset()
+        await self._http_client.close()
+
+    async def reset(self) -> None:
+        """Reset internal handshake state."""
         self._handshake_done = False
 
     @staticmethod
@@ -412,12 +424,15 @@ class KlapEncryptionSession:
     i.e. sequence number which the device expects to increment.
     """
 
+    _cipher: Cipher
+
     def __init__(self, local_seed, remote_seed, user_hash):
         self.local_seed = local_seed
         self.remote_seed = remote_seed
         self.user_hash = user_hash
         self._key = self._key_derive(local_seed, remote_seed, user_hash)
         (self._iv, self._seq) = self._iv_derive(local_seed, remote_seed, user_hash)
+        self._aes = algorithms.AES(self._key)
         self._sig = self._sig_derive(local_seed, remote_seed, user_hash)
 
     def _key_derive(self, local_seed, remote_seed, user_hash):
@@ -437,35 +452,31 @@ class KlapEncryptionSession:
         payload = b"ldk" + local_seed + remote_seed + user_hash
         return hashlib.sha256(payload).digest()[:28]
 
-    def _iv_seq(self):
-        seq = self._seq.to_bytes(4, "big", signed=True)
-        iv = self._iv + seq
-        return iv
+    def _generate_cipher(self):
+        iv_seq = self._iv + PACK_SIGNED_LONG(self._seq)
+        cbc = modes.CBC(iv_seq)
+        self._cipher = Cipher(self._aes, cbc)
 
     def encrypt(self, msg):
         """Encrypt the data and increment the sequence number."""
-        self._seq = self._seq + 1
+        self._seq += 1
+        self._generate_cipher()
+
         if isinstance(msg, str):
             msg = msg.encode("utf-8")
 
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(self._iv_seq()))
-        encryptor = cipher.encryptor()
+        encryptor = self._cipher.encryptor()
         padder = padding.PKCS7(128).padder()
         padded_data = padder.update(msg) + padder.finalize()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
-
-        digest = hashes.Hash(hashes.SHA256())
-        digest.update(
-            self._sig + self._seq.to_bytes(4, "big", signed=True) + ciphertext
-        )
-        signature = digest.finalize()
-
+        signature = hashlib.sha256(
+            self._sig + PACK_SIGNED_LONG(self._seq) + ciphertext
+        ).digest()
         return (signature + ciphertext, self._seq)
 
     def decrypt(self, msg):
         """Decrypt the data."""
-        cipher = Cipher(algorithms.AES(self._key), modes.CBC(self._iv_seq()))
-        decryptor = cipher.decryptor()
+        decryptor = self._cipher.decryptor()
         dp = decryptor.update(msg[32:]) + decryptor.finalize()
         unpadder = padding.PKCS7(128).unpadder()
         plaintextbytes = unpadder.update(dp) + unpadder.finalize()

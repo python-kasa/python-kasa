@@ -54,7 +54,6 @@ async def test_connect(
 
     mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
 
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
@@ -68,6 +67,8 @@ async def test_connect(
     assert isinstance(dev.protocol, protocol_class)
 
     assert dev.config == config
+
+    await dev.disconnect()
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
@@ -85,7 +86,6 @@ async def test_connect_custom_port(all_fixture_data: dict, mocker, custom_port):
     default_port = 80 if "discovery_result" in all_fixture_data else 9999
 
     ctype, _ = _get_connection_type_device_class(all_fixture_data)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
     dev = await connect(config=config)
@@ -100,7 +100,6 @@ async def test_connect_logs_connect_time(
     ctype, _ = _get_connection_type_device_class(all_fixture_data)
     mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
 
     host = "127.0.0.1"
     config = DeviceConfig(
@@ -116,7 +115,6 @@ async def test_connect_logs_connect_time(
 async def test_connect_query_fails(all_fixture_data: dict, mocker):
     """Make sure that connect fails when query fails."""
     host = "127.0.0.1"
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", side_effect=SmartDeviceException)
     mocker.patch("kasa.IotProtocol.query", side_effect=SmartDeviceException)
     mocker.patch("kasa.SmartProtocol.query", side_effect=SmartDeviceException)
 
@@ -136,7 +134,6 @@ async def test_connect_http_client(all_fixture_data, mocker):
 
     mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", return_value=all_fixture_data)
 
     http_client = aiohttp.ClientSession()
 

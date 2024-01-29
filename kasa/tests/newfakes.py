@@ -19,8 +19,10 @@ from voluptuous import (
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
-from ..protocol import BaseTransport, TPLinkSmartHomeProtocol, _XorTransport
+from ..iotprotocol import IotProtocol
+from ..protocol import BaseTransport
 from ..smartprotocol import SmartProtocol
+from ..xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -377,11 +379,14 @@ class FakeSmartTransport(BaseTransport):
     async def close(self) -> None:
         pass
 
+    async def reset(self) -> None:
+        pass
 
-class FakeTransportProtocol(TPLinkSmartHomeProtocol):
+
+class FakeTransportProtocol(IotProtocol):
     def __init__(self, info):
         super().__init__(
-            transport=_XorTransport(
+            transport=XorTransport(
                 config=DeviceConfig("127.0.0.123"),
             )
         )

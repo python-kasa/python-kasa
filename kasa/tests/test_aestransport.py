@@ -1,16 +1,19 @@
 import base64
 import json
+import random
+import string
 import time
 from contextlib import nullcontext as does_not_raise
 from json import dumps as json_dumps
 from json import loads as json_loads
+from typing import Any, Dict, Optional
 
 import aiohttp
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 
-from ..aestransport import AesEncyptionSession, AesTransport
+from ..aestransport import AesEncyptionSession, AesTransport, TransportState
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
@@ -66,11 +69,11 @@ async def test_handshake(
     )
 
     assert transport._encryption_session is None
-    assert transport._handshake_done is False
+    assert transport._state is TransportState.HANDSHAKE_REQUIRED
     with expectation:
         await transport.perform_handshake()
         assert transport._encryption_session is not None
-        assert transport._handshake_done is True
+        assert transport._state is TransportState.LOGIN_REQUIRED
 
 
 @status_parameters
@@ -82,7 +85,7 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
-    transport._handshake_done = True
+    transport._state = TransportState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
@@ -106,8 +109,18 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
             pytest.raises(AuthenticationException),
             1,
         ),
+        (
+            [SmartErrorCode.LOGIN_ERROR, SmartErrorCode.SESSION_TIMEOUT_ERROR],
+            pytest.raises(SmartDeviceException),
+            3,
+        ),
     ],
-    ids=("LOGIN_ERROR-success", "LOGIN_ERROR-LOGIN_ERROR", "LOGIN_FAILED_ERROR"),
+    ids=(
+        "LOGIN_ERROR-success",
+        "LOGIN_ERROR-LOGIN_ERROR",
+        "LOGIN_FAILED_ERROR",
+        "LOGIN_ERROR-SESSION_TIMEOUT_ERROR",
+    ),
 )
 async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     host = "127.0.0.1"
@@ -119,7 +132,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     transport = AesTransport(
         config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
     )
-    transport._handshake_done = True
+    transport._state = TransportState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
 
@@ -137,6 +150,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
         await transport.send(json_dumps(request))
         assert transport._login_token == mock_aes_device.token
         assert post_mock.call_count == call_count  # Login, Handshake, Login
+        await transport.close()
 
 
 @status_parameters
@@ -208,7 +222,6 @@ class MockAesDevice:
             return json_dumps(self._json).encode()
 
     encryption_session = AesEncyptionSession(KEY_IV[:16], KEY_IV[16:])
-    token = "test_token"  # noqa
 
     def __init__(self, host, status_code=200, error_code=0, inner_error_code=0):
         self.host = host
@@ -217,6 +230,7 @@ class MockAesDevice:
         self._inner_error_code = inner_error_code
         self.http_client = HttpClient(DeviceConfig(self.host))
         self.inner_call_count = 0
+        self.token = "".join(random.choices(string.ascii_uppercase, k=32))  # noqa: S311
 
     @property
     def inner_error_code(self):
@@ -231,7 +245,7 @@ class MockAesDevice:
                 json = json_loads(item.decode())
         return await self._post(url, json)
 
-    async def _post(self, url, json):
+    async def _post(self, url: str, json: Dict[str, Any]):
         if json["method"] == "handshake":
             return await self._return_handshake_response(url, json)
         elif json["method"] == "securePassthrough":
@@ -242,7 +256,7 @@ class MockAesDevice:
             assert url == f"http://{self.host}/app?token={self.token}"
             return await self._return_send_response(url, json)
 
-    async def _return_handshake_response(self, url, json):
+    async def _return_handshake_response(self, url: str, json: Dict[str, Any]):
         start = len("-----BEGIN PUBLIC KEY-----\n")
         end = len("\n-----END PUBLIC KEY-----\n")
         client_pub_key = json["params"]["key"][start:-end]
@@ -255,7 +269,7 @@ class MockAesDevice:
             self.status_code, {"result": {"key": key_64}, "error_code": self.error_code}
         )
 
-    async def _return_secure_passthrough_response(self, url, json):
+    async def _return_secure_passthrough_response(self, url: str, json: Dict[str, Any]):
         encrypted_request = json["params"]["request"]
         decrypted_request = self.encryption_session.decrypt(encrypted_request.encode())
         decrypted_request_dict = json_loads(decrypted_request)
@@ -272,12 +286,15 @@ class MockAesDevice:
         }
         return self._mock_response(self.status_code, result)
 
-    async def _return_login_response(self, url, json):
+    async def _return_login_response(self, url: str, json: Dict[str, Any]):
+        if "token=" in url:
+            raise Exception("token should not be in url for a login request")
+        self.token = "".join(random.choices(string.ascii_uppercase, k=32))  # noqa: S311
         result = {"result": {"token": self.token}, "error_code": self.inner_error_code}
         self.inner_call_count += 1
         return self._mock_response(self.status_code, result)
 
-    async def _return_send_response(self, url, json):
+    async def _return_send_response(self, url: str, json: Dict[str, Any]):
         result = {"result": {"method": None}, "error_code": self.inner_error_code}
         self.inner_call_count += 1
         return self._mock_response(self.status_code, result)
