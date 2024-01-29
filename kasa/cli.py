@@ -452,19 +452,8 @@ async def discover(ctx):
         credentials=credentials,
     )
 
-    # TimeoutError could have cancelled discover() before all
-    # discovered devices can print
-    not_printed = [
-        device
-        for ip, device in discovered_devices.items()
-        if ip not in discovered and ip not in auth_failed
-    ]
-    try:
-        for device in not_printed:
-            await print_discovered(device)
-    finally:
-        for device in discovered_devices.values():
-            await device.protocol.close()
+    for device in discovered_devices.values():
+        await device.protocol.close()
 
     echo(f"Found {len(discovered)} devices")
     if unsupported:

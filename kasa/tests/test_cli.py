@@ -396,7 +396,7 @@ async def test_discover(discovery_mock, mocker):
         cli,
         [
             "--discovery-timeout",
-            1,
+            0,
             "--username",
             "foo",
             "--password",
@@ -415,7 +415,7 @@ async def test_discover_host(discovery_mock, mocker):
         cli,
         [
             "--discovery-timeout",
-            1,
+            0,
             "--host",
             "127.0.0.123",
             "--username",

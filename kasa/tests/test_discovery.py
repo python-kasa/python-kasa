@@ -401,7 +401,7 @@ class FakeDatagramTransport(asyncio.DatagramTransport):
 async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
     """Make sure that discover_single handles authenticating devices correctly."""
     host = "127.0.0.1"
-    discovery_timeout = 1
+    discovery_timeout = 0.1
 
     event = asyncio.Event()
     dp = _DiscoverProtocol(
@@ -432,9 +432,9 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
     ids=["unknownport", "unsupporteddevice"],
 )
 async def test_do_discover_invalid(mocker, port, will_timeout):
-    """Make sure that discover_single handles authenticating devices correctly."""
+    """Make sure that discover_single handles invalid devices correctly."""
     host = "127.0.0.1"
-    discovery_timeout = 1
+    discovery_timeout = 0.1
 
     event = asyncio.Event()
     dp = _DiscoverProtocol(
@@ -448,7 +448,7 @@ async def test_do_discover_invalid(mocker, port, will_timeout):
 
     timed_out = False
     try:
-        async with asyncio_timeout(15):
+        async with asyncio_timeout(discovery_timeout):
             await event.wait()
     except asyncio.TimeoutError:
         timed_out = True
@@ -460,7 +460,7 @@ async def test_do_discover_invalid(mocker, port, will_timeout):
 
 async def test_discover_propogates_task_exceptions(discovery_mock):
     """Make sure that discover propogates callback exceptions."""
-    discovery_timeout = 0
+    discovery_timeout = 0.1
 
     async def on_discovered(dev):
         raise SmartDeviceException("Dummy exception")

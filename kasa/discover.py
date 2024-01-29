@@ -145,7 +145,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
             self.unsupported_device_exceptions[ip] = udex
             if self.on_unsupported is not None:
-                asyncio.ensure_future(self.on_unsupported(udex))
+                self._run_callback_task(self.on_unsupported(udex))
             self._handle_discovered_event()
             return
         except SmartDeviceException as ex:
@@ -293,6 +293,9 @@ class Discover:
                 while not protocol.discover_task:
                     await asyncio.sleep(0)
                 await protocol.discover_task
+            # Give the last sent packet time to respond
+            await asyncio.sleep(discovery_timeout / discovery_packets)
+            # Wait for any pending callbacks to complete
             await asyncio.gather(*protocol.callback_tasks)
         except SmartDeviceException as ex:
             for device in protocol.discovered_devices.values():
