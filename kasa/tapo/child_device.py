@@ -31,7 +31,7 @@ class ChildDevice(TapoDevice):
         def _get_child_info() -> Dict:
             """Return the subdevice information for this device."""
             for child in self._parent._last_update["child_info"]["child_device_list"]:
-                if child["position"] == self._id:
+                if child["device_id"] == self._id:
                     return child
 
             raise SmartDeviceException(
