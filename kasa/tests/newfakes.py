@@ -354,9 +354,36 @@ class FakeSmartTransport(BaseTransport):
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
         params = request_dict["params"]
+
+        info = self.info
+        if method == "control_child":
+            device_id = params.get("device_id")
+            request_data = params.get("requestData")
+
+            child_method = request_data.get("method")
+            child_params = request_data.get("params")
+
+            children = info["get_child_device_list"]["child_device_list"]
+
+            for child in children:
+                if child["device_id"] == device_id:
+                    info = child
+                    break
+
+            # We only support get & set device info for now.
+            if child_method == "get_device_info":
+                return {"result": info, "error_code": 0}
+            elif child_method == "set_device_info":
+                info.update(child_params)
+                return {"error_code": 0}
+
+            raise NotImplementedError(
+                "Method %s not implemented for children" % child_method
+            )
+
         if method == "component_nego" or method[:4] == "get_":
-            if method in self.info:
-                return {"result": self.info[method], "error_code": 0}
+            if method in info:
+                return {"result": info[method], "error_code": 0}
             elif (
                 missing_result := self.FIXTURE_MISSING_MAP.get(method)
             ) and missing_result[0] in self.components:
@@ -373,7 +400,7 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
-            self.info[target_method].update(params)
+            info[target_method].update(params)
             return {"error_code": 0}
 
     async def close(self) -> None:

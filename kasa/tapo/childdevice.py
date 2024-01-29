@@ -35,7 +35,7 @@ class ChildDevice(TapoDevice):
                     return child
 
             raise SmartDeviceException(
-                f"Unable to find child device with position {self._id}"
+                f"Unable to find child device with id {self._id}"
             )
 
         self._last_update = self._sys_info = self._info = _get_child_info()

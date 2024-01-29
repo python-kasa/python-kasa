@@ -22,35 +22,6 @@ DUMMY_MULTIPLE_QUERY = {
 ERRORS = [e for e in SmartErrorCode if e != 0]
 
 
-# TODO: this could be moved to conftest to make it available for other tests?
-@pytest.fixture()
-def dummy_protocol():
-    """Return a smart protocol instance with a mocking-ready dummy transport."""
-
-    class DummyTransport(BaseTransport):
-        @property
-        def default_port(self) -> int:
-            return -1
-
-        @property
-        def credentials_hash(self) -> str:
-            return "dummy hash"
-
-        async def send(self, request: str) -> Dict:
-            return {}
-
-        async def close(self) -> None:
-            pass
-
-        async def reset(self) -> None:
-            pass
-
-    transport = DummyTransport(config=DeviceConfig(host="127.0.0.123"))
-    protocol = SmartProtocol(transport=transport)
-
-    return protocol
-
-
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
 async def test_smart_device_errors(dummy_protocol, mocker, error_code):
     mock_response = {"result": {"great": "success"}, "error_code": error_code.value}
