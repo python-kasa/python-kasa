@@ -27,7 +27,8 @@ from kasa.protocol import BaseTransport
 from kasa.tapo import TapoBulb, TapoPlug
 from kasa.xortransport import XorEncryption
 
-from .newfakes import FakeSmartProtocol, FakeTransportProtocol
+from .fakeprotocol_iot import FakeIotProtocol
+from .fakeprotocol_smart import FakeSmartProtocol
 
 SUPPORTED_IOT_DEVICES = [
     (device, "IOT")
@@ -410,7 +411,7 @@ async def get_device_for_file(file, protocol):
     if protocol == "SMART":
         d.protocol = FakeSmartProtocol(sysinfo)
     else:
-        d.protocol = FakeTransportProtocol(sysinfo)
+        d.protocol = FakeIotProtocol(sysinfo)
     await _update_and_close(d)
     return d
 
@@ -521,7 +522,7 @@ def discovery_mock(all_fixture_data, mocker):
     if "component_nego" in dm.query_data:
         proto = FakeSmartProtocol(dm.query_data)
     else:
-        proto = FakeTransportProtocol(dm.query_data)
+        proto = FakeIotProtocol(dm.query_data)
 
     async def _query(request, retry_count: int = 3):
         return await proto.query(request)
