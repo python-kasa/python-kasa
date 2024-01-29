@@ -1,13 +1,17 @@
 from kasa import DeviceType
 
 from .conftest import plug, plug_smart
-from .newfakes import PLUG_SCHEMA
+from .test_smartdevice import SYSINFO_SCHEMA
+
+# these schemas should go to the mainlib as
+# they can be useful when adding support for new features/devices
+# as well as to check that faked devices are operating properly.
 
 
 @plug
 async def test_plug_sysinfo(dev):
     assert dev.sys_info is not None
-    PLUG_SCHEMA(dev.sys_info)
+    SYSINFO_SCHEMA(dev.sys_info)
 
     assert dev.model is not None
 
