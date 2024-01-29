@@ -10,7 +10,7 @@ import logging
 import time
 import uuid
 from pprint import pformat as pf
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -33,6 +33,7 @@ class SmartProtocol(BaseProtocol):
     """Class for the new TPLink SMART protocol."""
 
     BACKOFF_SECONDS_AFTER_TIMEOUT = 1
+    DEFAULT_MULTI_REQUEST_BATCH_SIZE = 5
 
     def __init__(
         self,
@@ -101,51 +102,81 @@ class SmartProtocol(BaseProtocol):
         # make mypy happy, this should never be reached..
         raise SmartDeviceException("Query reached somehow to unreachable")
 
+    async def _execute_multiple_query(self, request: Dict, retry_count: int) -> Dict:
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+        multi_result: Dict[str, Any] = {}
+        smart_method = "multipleRequest"
+        requests = [
+            {"method": method, "params": params} for method, params in request.items()
+        ]
+
+        end = len(requests)
+        # Break the requests down as there can be a size limit
+        step = (
+            self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
+        )
+        for i in range(0, end, step):
+            requests_step = requests[i : i + step]
+
+            smart_params = {"requests": requests_step}
+            smart_request = self.get_smart_request(smart_method, smart_params)
+            if debug_enabled:
+                _LOGGER.debug(
+                    "%s multi-request-batch-%s >> %s",
+                    self._host,
+                    i + 1,
+                    pf(smart_request),
+                )
+            response_step = await self._transport.send(smart_request)
+            if debug_enabled:
+                _LOGGER.debug(
+                    "%s multi-request-batch-%s << %s",
+                    self._host,
+                    i + 1,
+                    pf(response_step),
+                )
+            self._handle_response_error_code(response_step)
+            responses = response_step["result"]["responses"]
+            for response in responses:
+                self._handle_response_error_code(response)
+                result = response.get("result", None)
+                multi_result[response["method"]] = result
+        return multi_result
+
     async def _execute_query(self, request: Union[str, Dict], retry_count: int) -> Dict:
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+
         if isinstance(request, dict):
             if len(request) == 1:
                 smart_method = next(iter(request))
                 smart_params = request[smart_method]
             else:
-                requests = []
-                for method, params in request.items():
-                    requests.append({"method": method, "params": params})
-                smart_method = "multipleRequest"
-                smart_params = {"requests": requests}
+                return await self._execute_multiple_query(request, retry_count)
         else:
             smart_method = request
             smart_params = None
 
         smart_request = self.get_smart_request(smart_method, smart_params)
-        _LOGGER.debug(
-            "%s >> %s",
-            self._host,
-            _LOGGER.isEnabledFor(logging.DEBUG) and pf(smart_request),
-        )
+        if debug_enabled:
+            _LOGGER.debug(
+                "%s >> %s",
+                self._host,
+                pf(smart_request),
+            )
         response_data = await self._transport.send(smart_request)
 
-        _LOGGER.debug(
-            "%s << %s",
-            self._host,
-            _LOGGER.isEnabledFor(logging.DEBUG) and pf(response_data),
-        )
+        if debug_enabled:
+            _LOGGER.debug(
+                "%s << %s",
+                self._host,
+                pf(response_data),
+            )
 
         self._handle_response_error_code(response_data)
 
-        if (result := response_data.get("result")) is None:
-            # Single set_ requests do not return a result
-            return {smart_method: None}
-
-        if (responses := result.get("responses")) is None:
-            return {smart_method: result}
-
-        # responses is returned for multipleRequest
-        multi_result = {}
-        for response in responses:
-            self._handle_response_error_code(response)
-            result = response.get("result", None)
-            multi_result[response["method"]] = result
-        return multi_result
+        # Single set_ requests do not return a result
+        result = response_data.get("result")
+        return {smart_method: result}
 
     def _handle_response_error_code(self, resp_dict: dict):
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]

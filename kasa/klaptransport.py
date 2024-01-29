@@ -53,6 +53,7 @@ from typing import Any, Dict, Optional, Tuple, cast
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from yarl import URL
 
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
@@ -120,6 +121,8 @@ class KlapTransport(BaseTransport):
         self._session_cookie: Optional[Dict[str, Any]] = None
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
+        self._app_url = URL(f"http://{self._host}/app")
+        self._request_url = self._app_url / "request"
 
     @property
     def default_port(self):
@@ -141,7 +144,7 @@ class KlapTransport(BaseTransport):
 
         payload = local_seed
 
-        url = f"http://{self._host}/app/handshake1"
+        url = self._app_url / "handshake1"
 
         response_status, response_data = await self._http_client.post(url, data=payload)
 
@@ -236,7 +239,7 @@ class KlapTransport(BaseTransport):
         # Handshake 2 has the following payload:
         #    sha256(serverBytes | authenticator)
 
-        url = f"http://{self._host}/app/handshake2"
+        url = self._app_url / "handshake2"
 
         payload = self.handshake2_seed_auth_hash(local_seed, remote_seed, auth_hash)
 
@@ -309,10 +312,8 @@ class KlapTransport(BaseTransport):
         if self._encryption_session is not None:
             payload, seq = self._encryption_session.encrypt(request.encode())
 
-        url = f"http://{self._host}/app/request"
-
         response_status, response_data = await self._http_client.post(
-            url,
+            self._request_url,
             params={"seq": seq},
             data=payload,
             cookies_dict=self._session_cookie,

@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives import padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from yarl import URL
 
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
@@ -100,9 +101,9 @@ class AesTransport(BaseTransport):
 
         self._session_cookie: Optional[Dict[str, str]] = None
 
-        self._login_token: Optional[str] = None
-
         self._key_pair: Optional[KeyPair] = None
+        self._app_url = URL(f"http://{self._host}/app")
+        self._token_url: Optional[URL] = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
@@ -150,9 +151,10 @@ class AesTransport(BaseTransport):
 
     async def send_secure_passthrough(self, request: str) -> Dict[str, Any]:
         """Send encrypted message as passthrough."""
-        url = f"http://{self._host}/app"
-        if self._state is TransportState.ESTABLISHED and self._login_token:
-            url += f"?token={self._login_token}"
+        if self._state is TransportState.ESTABLISHED and self._token_url:
+            url = self._token_url
+        else:
+            url = self._app_url
 
         encrypted_payload = self._encryption_session.encrypt(request.encode())  # type: ignore
         passthrough_request = {
@@ -223,7 +225,8 @@ class AesTransport(BaseTransport):
 
         resp_dict = await self.send_secure_passthrough(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
-        self._login_token = resp_dict["result"]["token"]
+        login_token = resp_dict["result"]["token"]
+        self._token_url = self._app_url.with_query(f"token={login_token}")
         self._state = TransportState.ESTABLISHED
 
     async def _generate_key_pair_payload(self) -> AsyncGenerator:
@@ -250,7 +253,7 @@ class AesTransport(BaseTransport):
         _LOGGER.debug("Will perform handshaking...")
 
         self._key_pair = None
-        self._login_token = None
+        self._token_url = None
         self._session_expire_at = None
         self._session_cookie = None
 

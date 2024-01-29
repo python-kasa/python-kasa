@@ -1,13 +1,13 @@
 """python-kasa exceptions."""
 from asyncio import TimeoutError
 from enum import IntEnum
-from typing import Optional
+from typing import Any, Optional
 
 
 class SmartDeviceException(Exception):
     """Base exception for device errors."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.error_code: Optional["SmartErrorCode"] = kwargs.get("error_code", None)
         super().__init__(*args)
 
@@ -15,7 +15,7 @@ class SmartDeviceException(Exception):
 class UnsupportedDeviceException(SmartDeviceException):
     """Exception for trying to connect to unsupported devices."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.discovery_result = kwargs.get("discovery_result")
         super().__init__(*args, **kwargs)
 
