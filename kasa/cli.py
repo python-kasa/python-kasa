@@ -459,15 +459,12 @@ async def discover(ctx):
         for ip, device in discovered_devices.items()
         if ip not in discovered and ip not in auth_failed
     ]
-    for device in not_printed:
-        await print_discovered(device)
-
-    for device in discovered_devices.values():
-        await device.protocol.close()
-        # TODO transports need to permit close to avoid
-        # ERROR:asyncio:Unclosed client session
-        if hasattr(device.protocol._transport, "_http_client"):
-            await device.protocol._transport._http_client.close()
+    try:
+        for device in not_printed:
+            await print_discovered(device)
+    finally:
+        for device in discovered_devices.values():
+            await device.protocol.close()
 
     echo(f"Found {len(discovered)} devices")
     if unsupported:
@@ -561,6 +558,7 @@ async def state(ctx, dev: SmartDevice):
 
     echo("\n\t[bold]== Device specific information ==[/bold]")
     for info_name, info_data in dev.state_information.items():
+        # raise SmartDeviceException("Test exception msg")
         if isinstance(info_data, list):
             echo(f"\t{info_name}:")
             for item in info_data:

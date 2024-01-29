@@ -134,7 +134,7 @@ def get_device_class_from_family(device_type: str) -> Optional[Type[SmartDevice]
         "SMART.TAPOBULB": TapoBulb,
         "SMART.TAPOSWITCH": TapoBulb,
         "SMART.KASAPLUG": TapoPlug,
-        "SMART.KASASWITCH": TapoPlug,
+        "SMART.KASASWITCH": TapoBulb,
         "IOT.SMARTPLUGSWITCH": SmartPlug,
         "IOT.SMARTBULB": SmartBulb,
     }

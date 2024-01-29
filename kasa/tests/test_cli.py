@@ -396,13 +396,33 @@ async def test_discover(discovery_mock, mocker):
         cli,
         [
             "--discovery-timeout",
-            0,
+            1,
             "--username",
             "foo",
             "--password",
             "bar",
             "--verbose",
             "discover",
+        ],
+    )
+    assert res.exit_code == 0
+
+
+async def test_discover_host(discovery_mock, mocker):
+    """Test discovery output."""
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        [
+            "--discovery-timeout",
+            1,
+            "--host",
+            "127.0.0.123",
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--verbose",
         ],
     )
     assert res.exit_code == 0

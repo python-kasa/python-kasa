@@ -4,7 +4,7 @@ import binascii
 import ipaddress
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Optional, Set, Type, cast
+from typing import Awaitable, Callable, Dict, List, Optional, Set, Type, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -80,6 +80,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovery_timeout = discovery_timeout
         self.seen_hosts: Set[str] = set()
         self.discover_task: Optional[asyncio.Task] = None
+        self.callback_tasks: List[asyncio.Task] = []
+
+    def _run_callback_task(self, coro):
+        task = asyncio.create_task(coro)
+        self.callback_tasks.append(task)
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -152,7 +157,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discovered_devices[ip] = device
 
         if self.on_discovered is not None:
-            asyncio.ensure_future(self.on_discovered(device))
+            self._run_callback_task(self.on_discovered(device))
 
         self._handle_discovered_event()
 
@@ -284,7 +289,15 @@ class Discover:
 
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
-            await asyncio.sleep(discovery_timeout)
+            async with asyncio_timeout(discovery_timeout):
+                while not protocol.discover_task:
+                    await asyncio.sleep(0)
+                await protocol.discover_task
+            await asyncio.gather(*protocol.callback_tasks)
+        except SmartDeviceException as ex:
+            for device in protocol.discovered_devices.values():
+                await device.protocol.close()
+            raise ex
         finally:
             transport.close()
 

@@ -490,7 +490,7 @@ def discovery_mock(all_fixture_data, mocker):
             login_version,
         )
 
-    def mock_discover(self):
+    async def mock_discover(self):
         port = (
             dm.port_override
             if dm.port_override and dm.discovery_port != 20002
@@ -543,7 +543,7 @@ def unsupported_device_info(request, mocker):
     discovery_data = request.param
     host = "127.0.0.1"
 
-    def mock_discover(self):
+    async def mock_discover(self):
         if discovery_data:
             data = (
                 b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"

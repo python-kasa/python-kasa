@@ -456,3 +456,16 @@ async def test_do_discover_invalid(mocker, port, will_timeout):
     await asyncio.sleep(0)
     assert dp.discover_task.done()
     assert timed_out is will_timeout
+
+
+async def test_discover_propogates_task_exceptions(discovery_mock):
+    """Make sure that discover propogates callback exceptions."""
+    discovery_timeout = 0
+
+    async def on_discovered(dev):
+        raise SmartDeviceException("Dummy exception")
+
+    with pytest.raises(SmartDeviceException):
+        await Discover.discover(
+            discovery_timeout=discovery_timeout, on_discovered=on_discovered
+        )
