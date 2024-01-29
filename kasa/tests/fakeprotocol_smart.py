@@ -62,37 +62,41 @@ class FakeSmartTransport(BaseTransport):
         else:
             return self._send_request(request_dict)
 
+    def _handle_control_child(self, params: dict):
+        """Handle control_child command."""
+        device_id = params.get("device_id")
+        request_data = params.get("requestData", {})
+
+        child_method = request_data.get("method")
+        child_params = request_data.get("params")
+
+        info = self.info
+        children = info["get_child_device_list"]["child_device_list"]
+
+        for child in children:
+            if child["device_id"] == device_id:
+                info = child
+                break
+
+        # We only support get & set device info for now.
+        if child_method == "get_device_info":
+            return {"result": info, "error_code": 0}
+        elif child_method == "set_device_info":
+            info.update(child_params)
+            return {"error_code": 0}
+
+        raise NotImplementedError(
+            "Method %s not implemented for children" % child_method
+        )
+
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
         params = request_dict["params"]
 
         info = self.info
         if method == "control_child":
-            device_id = params.get("device_id")
-            request_data = params.get("requestData")
-
-            child_method = request_data.get("method")
-            child_params = request_data.get("params")
-
-            children = info["get_child_device_list"]["child_device_list"]
-
-            for child in children:
-                if child["device_id"] == device_id:
-                    info = child
-                    break
-
-            # We only support get & set device info for now.
-            if child_method == "get_device_info":
-                return {"result": info, "error_code": 0}
-            elif child_method == "set_device_info":
-                info.update(child_params)
-                return {"error_code": 0}
-
-            raise NotImplementedError(
-                "Method %s not implemented for children" % child_method
-            )
-
-        if method == "component_nego" or method[:4] == "get_":
+            self._handle_control_child(params)
+        elif method == "component_nego" or method[:4] == "get_":
             if method in info:
                 return {"result": info[method], "error_code": 0}
             elif (
