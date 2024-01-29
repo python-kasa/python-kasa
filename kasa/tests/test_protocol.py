@@ -461,8 +461,6 @@ def test_decrypt_unicode(decrypt_class):
 
 
 def _get_subclasses(of_class):
-    import kasa
-
     package = sys.modules["kasa"]
     subclasses = set()
     for _, modname, _ in pkgutil.iter_modules(package.__path__):

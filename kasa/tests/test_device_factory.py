@@ -1,20 +1,14 @@
 # type: ignore
 import logging
-from typing import Type
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
     Credentials,
-    DeviceType,
     Discover,
-    SmartBulb,
     SmartDevice,
     SmartDeviceException,
-    SmartDimmer,
-    SmartLightStrip,
-    SmartPlug,
 )
 from kasa.device_factory import connect, get_protocol
 from kasa.deviceconfig import (
