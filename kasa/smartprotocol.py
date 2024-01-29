@@ -279,3 +279,70 @@ class SnowflakeId:
         while timestamp <= last_timestamp:
             timestamp = self._current_millis()
         return timestamp
+
+
+class _ChildProtocolWrapper(SmartProtocol):
+    """Protocol wrapper for controlling child devices.
+
+    This is an internal class used to communicate with child devices,
+    and should not be used directly.
+
+    This class overrides query() method of the protocol to modify all
+    outgoing queries to use ``control_child`` command, and unwraps the
+    device responses before returning to the caller.
+    """
+
+    def __init__(self, device_id: str, base_protocol: SmartProtocol):
+        self._device_id = device_id
+        self._protocol = base_protocol
+        self._transport = base_protocol._transport
+
+    def _get_method_and_params_for_request(self, request):
+        """Return payload for wrapping.
+
+        TODO: this does not support batches and requires refactoring in the future.
+        """
+        if isinstance(request, dict):
+            if len(request) == 1:
+                smart_method = next(iter(request))
+                smart_params = request[smart_method]
+            else:
+                smart_method = "multipleRequest"
+                requests = [
+                    {"method": method, "params": params}
+                    for method, params in request.items()
+                ]
+                smart_params = {"requests": requests}
+        else:
+            smart_method = request
+            smart_params = None
+
+        return smart_method, smart_params
+
+    async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
+        """Wrap request inside control_child envelope."""
+        method, params = self._get_method_and_params_for_request(request)
+        request_data = {
+            "method": method,
+            "params": params,
+        }
+        wrapped_payload = {
+            "control_child": {
+                "device_id": self._device_id,
+                "requestData": request_data,
+            }
+        }
+
+        response = await self._protocol.query(wrapped_payload, retry_count)
+        result = response.get("control_child")
+        # Unwrap responseData for control_child
+        if result and (response_data := result.get("responseData")):
+            self._handle_response_error_code(response_data)
+            result = response_data.get("result")
+
+        # TODO: handle multipleRequest unwrapping
+
+        return {method: result}
+
+    async def close(self) -> None:
+        """Do nothing as the parent owns the protocol."""
