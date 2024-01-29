@@ -39,7 +39,7 @@ class TapoDevice(SmartDevice):
         children = self._last_update["child_info"]["child_device_list"]
         # TODO: Use the type information to construct children,
         #  as hubs can also have them.
-        from .child_device import ChildDevice
+        from .childdevice import ChildDevice
 
         self.children = [
             ChildDevice(parent=self, child_id=child["device_id"]) for child in children
