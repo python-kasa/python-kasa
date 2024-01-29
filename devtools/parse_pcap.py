@@ -9,7 +9,7 @@ import dpkt
 from dpkt.ethernet import ETH_TYPE_IP, Ethernet
 
 from kasa.cli import echo
-from kasa.protocol import TPLinkSmartHomeProtocol
+from kasa.xortransport import XorEncryption
 
 
 def read_payloads_from_file(file):
@@ -34,7 +34,7 @@ def read_payloads_from_file(file):
         data = transport.data
 
         try:
-            decrypted = TPLinkSmartHomeProtocol.decrypt(data[4:])
+            decrypted = XorEncryption.decrypt(data[4:])
         except Exception as ex:
             echo(f"[red]Unable to decrypt the data, ignoring: {ex}[/red]")
             continue

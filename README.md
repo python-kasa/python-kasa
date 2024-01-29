@@ -301,6 +301,7 @@ At the moment, the following devices have been confirmed to work:
 #### Wall switches
 
 * Tapo S500D
+* Tapo S505
 
 ### Newer Kasa branded devices
 

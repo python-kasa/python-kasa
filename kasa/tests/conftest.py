@@ -20,9 +20,9 @@ from kasa import (
     SmartLightStrip,
     SmartPlug,
     SmartStrip,
-    TPLinkSmartHomeProtocol,
 )
 from kasa.tapo import TapoBulb, TapoDevice, TapoPlug
+from kasa.xortransport import XorEncryption
 
 from .newfakes import FakeSmartProtocol, FakeTransportProtocol
 
@@ -101,7 +101,7 @@ PLUGS_IOT = {
 }
 # P135 supports dimming, but its not currently support
 # by the library
-PLUGS_SMART = {"P100", "P110", "KP125M", "EP25", "KS205", "P125M", "P135"}
+PLUGS_SMART = {"P100", "P110", "KP125M", "EP25", "KS205", "P125M", "P135", "S505"}
 PLUGS = {
     *PLUGS_IOT,
     *PLUGS_SMART,
@@ -478,7 +478,7 @@ def discovery_mock(all_fixture_data, mocker):
         device_type = sys_info.get("mic_type") or sys_info.get("type")
         encrypt_type = "XOR"
         login_version = None
-        datagram = TPLinkSmartHomeProtocol.encrypt(json_dumps(discovery_data))[4:]
+        datagram = XorEncryption.encrypt(json_dumps(discovery_data))[4:]
         dm = _DiscoveryMock(
             "127.0.0.123",
             9999,
@@ -517,7 +517,6 @@ def discovery_mock(all_fixture_data, mocker):
 
     mocker.patch("kasa.IotProtocol.query", side_effect=_query)
     mocker.patch("kasa.SmartProtocol.query", side_effect=_query)
-    mocker.patch("kasa.TPLinkSmartHomeProtocol.query", side_effect=_query)
 
     yield dm
 
