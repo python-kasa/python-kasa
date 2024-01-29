@@ -95,7 +95,7 @@ class FakeSmartTransport(BaseTransport):
 
         info = self.info
         if method == "control_child":
-            self._handle_control_child(params)
+            return self._handle_control_child(params)
         elif method == "component_nego" or method[:4] == "get_":
             if method in info:
                 return {"result": info[method], "error_code": 0}
