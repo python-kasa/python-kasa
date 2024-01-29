@@ -1,17 +1,8 @@
-import errno
-import json
-import logging
-import secrets
-import struct
-import sys
-import time
-from contextlib import nullcontext as does_not_raise
 from itertools import chain
 from typing import Dict
 
 import pytest
 
-from ..aestransport import AesTransport
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
@@ -20,8 +11,7 @@ from ..exceptions import (
     SmartDeviceException,
     SmartErrorCode,
 )
-from ..iotprotocol import IotProtocol
-from ..klaptransport import KlapEncryptionSession, KlapTransport, _sha256
+from ..protocol import BaseTransport
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
@@ -36,7 +26,6 @@ ERRORS = [e for e in SmartErrorCode if e != 0]
 @pytest.fixture()
 def dummy_protocol():
     """Return a smart protocol instance with a mocking-ready dummy transport."""
-    from kasa.protocol import BaseTransport
 
     class DummyTransport(BaseTransport):
         @property
