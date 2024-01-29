@@ -10,13 +10,12 @@ from typing import cast
 
 import typer
 
-from kasa import Discover
-from kasa import iot as Iot
+from kasa import Discover, iot
 
 app = typer.Typer()
 
 
-def create_fixtures(dev: Iot.Device, outputdir: Path):
+def create_fixtures(dev: iot.Device, outputdir: Path):
     """Iterate over supported modules and create version-specific fixture files."""
     for name, module in dev.modules.items():
         module_dir = outputdir / name
@@ -45,14 +44,14 @@ def create_module_fixtures(
     """Create module fixtures for given host/network."""
     devs = []
     if host is not None:
-        dev: Iot.Device = cast(Iot.Device, asyncio.run(Discover.discover_single(host)))
+        dev: iot.Device = cast(iot.Device, asyncio.run(Discover.discover_single(host)))
         devs.append(dev)
     else:
         if network is None:
             network = "255.255.255.255"
         devs = asyncio.run(Discover.discover(target=network)).values()
         for dev in devs:
-            dev = cast(Iot.Device, dev)
+            dev = cast(iot.Device, dev)
             asyncio.run(dev.update())
 
     for dev in devs:

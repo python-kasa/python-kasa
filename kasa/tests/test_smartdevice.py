@@ -8,9 +8,7 @@ from unittest.mock import Mock, patch
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 import kasa
-from kasa import Credentials, Device, DeviceConfig, SmartDeviceException
-from kasa import iot as Iot
-from kasa import smart as Smart
+from kasa import Credentials, Device, DeviceConfig, SmartDeviceException, iot, smart
 
 from .conftest import device_iot, handle_turn_on, has_emeter_iot, no_emeter_iot, turn_on
 from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
@@ -240,7 +238,7 @@ async def test_device_class_ctors(device_class_name_obj):
 
 
 @device_iot
-async def test_modules_preserved(dev: Iot.Device):
+async def test_modules_preserved(dev: iot.Device):
     """Make modules that are not being updated are preserved between updates."""
     dev._last_update["some_module_not_being_updated"] = "should_be_kept"
     await dev.update()
@@ -250,9 +248,9 @@ async def test_modules_preserved(dev: Iot.Device):
 async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
     host = "127.0.0.1"
-    dev = Iot.Device(host, config=DeviceConfig(host, timeout=100))
+    dev = iot.Device(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
-    dev = Smart.Device(host, config=DeviceConfig(host, timeout=100))
+    dev = smart.Device(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
 
 
@@ -276,7 +274,7 @@ async def test_create_thin_wrapper():
 
 
 @device_iot
-async def test_modules_not_supported(dev: Iot.Device):
+async def test_modules_not_supported(dev: iot.Device):
     """Test that unsupported modules do not break the device."""
     for module in dev.modules.values():
         assert module.is_supported is not None

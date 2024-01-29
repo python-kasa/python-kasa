@@ -21,8 +21,8 @@ from kasa import (
     Discover,
     EncryptType,
     UnsupportedDeviceException,
+    iot,
 )
-from kasa import iot as Iot
 from kasa.discover import DiscoveryResult
 
 try:
@@ -58,11 +58,11 @@ echo = _do_echo
 
 
 TYPE_TO_CLASS = {
-    "plug": Iot.Plug,
-    "bulb": Iot.Bulb,
-    "dimmer": Iot.Dimmer,
-    "strip": Iot.Strip,
-    "lightstrip": Iot.LightStrip,
+    "plug": iot.Plug,
+    "bulb": iot.Bulb,
+    "dimmer": iot.Dimmer,
+    "strip": iot.Strip,
+    "lightstrip": iot.LightStrip,
 }
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
@@ -76,7 +76,7 @@ SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
 
 click.anyio_backend = "asyncio"
 
-pass_dev = click.make_pass_decorator(Iot.Device)
+pass_dev = click.make_pass_decorator(iot.Device)
 
 
 class ExceptionHandlerGroup(click.Group):
@@ -107,7 +107,7 @@ def json_formatter_cb(result, **kwargs):
         return str(val)
 
     @to_serializable.register(Device)
-    def _device_to_serializable(val: Iot.Device):
+    def _device_to_serializable(val: iot.Device):
         """Serialize smart device data, just using the last update raw payload."""
         return val.internal_state
 
@@ -379,7 +379,7 @@ async def scan(dev):
 @click.option("--keytype", prompt=True)
 @click.option("--password", prompt=True, hide_input=True)
 @pass_dev
-async def join(dev: Iot.Device, ssid: str, password: str, keytype: str):
+async def join(dev: iot.Device, ssid: str, password: str, keytype: str):
     """Join the given wifi network."""
     echo(f"Asking the device to connect to {ssid}..")
     res = await dev.wifi_join(ssid, password, keytype=keytype)
@@ -423,7 +423,7 @@ async def discover(ctx):
 
     echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
 
-    async def print_discovered(dev: Iot.Device):
+    async def print_discovered(dev: iot.Device):
         async with sem:
             try:
                 await dev.update()
@@ -517,7 +517,7 @@ async def sysinfo(dev):
 @cli.command()
 @pass_dev
 @click.pass_context
-async def state(ctx, dev: Iot.Device):
+async def state(ctx, dev: iot.Device):
     """Print out device state and versions."""
     verbose = ctx.parent.params.get("verbose", False) if ctx.parent else False
 
@@ -580,7 +580,7 @@ async def alias(dev, new_alias, index):
         if not dev.is_strip:
             echo("Index can only used for power strips!")
             return
-        dev = cast(Iot.Strip, dev)
+        dev = cast(iot.Strip, dev)
         dev = dev.get_plug_by_index(index)
 
     if new_alias is not None:
@@ -602,7 +602,7 @@ async def alias(dev, new_alias, index):
 @click.argument("module")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def raw_command(ctx, dev: Iot.Device, module, command, parameters):
+async def raw_command(ctx, dev: iot.Device, module, command, parameters):
     """Run a raw command on the device."""
     logging.warning("Deprecated, use 'kasa command --module %s %s'", module, command)
     return await ctx.forward(cmd_command)
@@ -613,7 +613,7 @@ async def raw_command(ctx, dev: Iot.Device, module, command, parameters):
 @click.option("--module", required=False, help="Module for IOT protocol.")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def cmd_command(dev: Iot.Device, module, command, parameters):
+async def cmd_command(dev: iot.Device, module, command, parameters):
     """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
@@ -630,7 +630,7 @@ async def cmd_command(dev: Iot.Device, module, command, parameters):
 @click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
-async def emeter(dev: Iot.Device, index: int, name: str, year, month, erase):
+async def emeter(dev: iot.Device, index: int, name: str, year, month, erase):
     """Query emeter for historical consumption.
 
     Daily and monthly data provided in CSV format.
@@ -640,7 +640,7 @@ async def emeter(dev: Iot.Device, index: int, name: str, year, month, erase):
             echo("Index and name are only for power strips!")
             return
 
-        dev = cast(Iot.Strip, dev)
+        dev = cast(iot.Strip, dev)
         if index is not None:
             dev = dev.get_plug_by_index(index)
         elif name:
@@ -692,7 +692,7 @@ async def emeter(dev: Iot.Device, index: int, name: str, year, month, erase):
 @click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
-async def usage(dev: Iot.Device, year, month, erase):
+async def usage(dev: iot.Device, year, month, erase):
     """Query usage for historical consumption.
 
     Daily and monthly data provided in CSV format.
@@ -730,7 +730,7 @@ async def usage(dev: Iot.Device, year, month, erase):
 @click.argument("brightness", type=click.IntRange(0, 100), default=None, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def brightness(dev: Iot.Bulb, brightness: int, transition: int):
+async def brightness(dev: iot.Bulb, brightness: int, transition: int):
     """Get or set brightness."""
     if not dev.is_dimmable:
         echo("This device does not support brightness.")
@@ -750,7 +750,7 @@ async def brightness(dev: Iot.Bulb, brightness: int, transition: int):
 )
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def temperature(dev: Iot.Bulb, temperature: int, transition: int):
+async def temperature(dev: iot.Bulb, temperature: int, transition: int):
     """Get or set color temperature."""
     if not dev.is_variable_color_temp:
         echo("Device does not support color temperature")
@@ -843,14 +843,14 @@ async def time(dev):
 @click.option("--name", type=str, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def on(dev: Iot.Device, index: int, name: str, transition: int):
+async def on(dev: iot.Device, index: int, name: str, transition: int):
     """Turn the device on."""
     if index is not None or name is not None:
         if not dev.is_strip:
             echo("Index and name are only for power strips!")
             return
 
-        dev = cast(Iot.Strip, dev)
+        dev = cast(iot.Strip, dev)
         if index is not None:
             dev = dev.get_plug_by_index(index)
         elif name:
@@ -865,14 +865,14 @@ async def on(dev: Iot.Device, index: int, name: str, transition: int):
 @click.option("--name", type=str, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def off(dev: Iot.Device, index: int, name: str, transition: int):
+async def off(dev: iot.Device, index: int, name: str, transition: int):
     """Turn the device off."""
     if index is not None or name is not None:
         if not dev.is_strip:
             echo("Index and name are only for power strips!")
             return
 
-        dev = cast(Iot.Strip, dev)
+        dev = cast(iot.Strip, dev)
         if index is not None:
             dev = dev.get_plug_by_index(index)
         elif name:
@@ -887,14 +887,14 @@ async def off(dev: Iot.Device, index: int, name: str, transition: int):
 @click.option("--name", type=str, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def toggle(dev: Iot.Device, index: int, name: str, transition: int):
+async def toggle(dev: iot.Device, index: int, name: str, transition: int):
     """Toggle the device on/off."""
     if index is not None or name is not None:
         if not dev.is_strip:
             echo("Index and name are only for power strips!")
             return
 
-        dev = cast(Iot.Strip, dev)
+        dev = cast(iot.Strip, dev)
         if index is not None:
             dev = dev.get_plug_by_index(index)
         elif name:
@@ -961,7 +961,7 @@ async def presets(ctx):
 
 @presets.command(name="list")
 @pass_dev
-def presets_list(dev: Iot.Bulb):
+def presets_list(dev: iot.Bulb):
     """List presets."""
     if not dev.is_bulb:
         echo("Presets only supported on bulbs")
@@ -981,7 +981,7 @@ def presets_list(dev: Iot.Bulb):
 @click.option("--temperature", type=int)
 @pass_dev
 async def presets_modify(
-    dev: Iot.Bulb, index, brightness, hue, saturation, temperature
+    dev: iot.Bulb, index, brightness, hue, saturation, temperature
 ):
     """Modify a preset."""
     for preset in dev.presets:
@@ -1010,7 +1010,7 @@ async def presets_modify(
 @click.option("--type", type=click.Choice(["soft", "hard"], case_sensitive=False))
 @click.option("--last", is_flag=True)
 @click.option("--preset", type=int)
-async def turn_on_behavior(dev: Iot.Bulb, type, last, preset):
+async def turn_on_behavior(dev: iot.Bulb, type, last, preset):
     """Modify bulb turn-on behavior."""
     settings = await dev.get_turn_on_behavior()
     echo(f"Current turn on behavior: {settings}")

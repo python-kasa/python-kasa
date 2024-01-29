@@ -11,8 +11,8 @@ from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
-import kasa.iot as Iot
-import kasa.smart as Smart
+import kasa.iot as iot
+import kasa.smart as smart
 from kasa import (
     Credentials,
     Device,
@@ -327,34 +327,34 @@ def device_for_file(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
-                return Smart.Plug
+                return smart.Plug
         for d in BULBS_SMART:
             if d in model:
-                return Smart.Bulb
+                return smart.Bulb
         for d in DIMMERS_SMART:
             if d in model:
-                return Smart.Bulb
+                return smart.Bulb
     else:
         for d in STRIPS_IOT:
             if d in model:
-                return Iot.Strip
+                return iot.Strip
 
         for d in PLUGS_IOT:
             if d in model:
-                return Iot.Plug
+                return iot.Plug
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:
             if d in model:
-                return Iot.LightStrip
+                return iot.LightStrip
 
         for d in BULBS_IOT:
             if d in model:
-                return Iot.Bulb
+                return iot.Bulb
 
         for d in DIMMERS_IOT:
             if d in model:
-                return Iot.Dimmer
+                return iot.Dimmer
 
     raise Exception("Unable to find type for %s", model)
 

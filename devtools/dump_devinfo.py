@@ -19,8 +19,8 @@ from typing import Dict, List, Union
 
 import asyncclick as click
 
-import kasa.iot as Iot
-import kasa.smart as Smart
+import kasa.iot as iot
+import kasa.smart as smart
 from devtools.helpers.smartrequests import COMPONENT_REQUESTS, SmartRequest
 from kasa import (
     AuthenticationException,
@@ -113,9 +113,9 @@ def default_to_regular(d):
     return d
 
 
-async def handle_device(basedir, autosave, device: Iot.Device, batch_size: int):
+async def handle_device(basedir, autosave, device: iot.Device, batch_size: int):
     """Create a fixture for a single device instance."""
-    if isinstance(device, Smart.Device):
+    if isinstance(device, smart.Device):
         filename, copy_folder, final = await get_smart_fixture(device, batch_size)
     else:
         filename, copy_folder, final = await get_legacy_fixture(device)
@@ -268,7 +268,7 @@ def _echo_error(msg: str):
 
 
 async def _make_requests_or_exit(
-    device: Smart.Device,
+    device: smart.Device,
     requests: List[SmartRequest],
     name: str,
     batch_size: int,
@@ -313,7 +313,7 @@ async def _make_requests_or_exit(
         exit(1)
 
 
-async def get_smart_fixture(device: Smart.Device, batch_size: int):
+async def get_smart_fixture(device: smart.Device, batch_size: int):
     """Get fixture for new TAPO style protocol."""
     extra_test_calls = [
         SmartCall(

@@ -64,17 +64,17 @@ __all__ = [
     "DeviceFamilyType",
 ]
 
-from . import iot as Iot
+from . import iot
 
 deprecated_names = ["TPLinkSmartHomeProtocol"]
 deprecated_smart_devices = {
-    "SmartDevice": Iot.Device,
-    "SmartPlug": Iot.Plug,
-    "SmartBulb": Iot.Bulb,
-    "SmartLightStrip": Iot.LightStrip,
-    "SmartStrip": Iot.Strip,
-    "SmartDimmer": Iot.Dimmer,
-    "SmartBulbPreset": Iot.bulb.BulbPreset,
+    "SmartDevice": iot.Device,
+    "SmartPlug": iot.Plug,
+    "SmartBulb": iot.Bulb,
+    "SmartLightStrip": iot.LightStrip,
+    "SmartStrip": iot.Strip,
+    "SmartDimmer": iot.Dimmer,
+    "SmartBulbPreset": iot.bulb.BulbPreset,
 }
 
 
