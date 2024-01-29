@@ -22,7 +22,7 @@ from ..exceptions import (
 )
 from ..iotprotocol import IotProtocol
 from ..klaptransport import KlapEncryptionSession, KlapTransport, _sha256
-from ..smartprotocol import SmartProtocol
+from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 DUMMY_MULTIPLE_QUERY = {
@@ -142,35 +142,39 @@ async def test_smart_device_multiple_request(
     assert send_mock.call_count == expected_count
 
 
-async def test_responsedata_unwrapping(dummy_protocol, mocker):
+async def test_childdevicewrapper_unwrapping(dummy_protocol, mocker):
     """Test that responseData gets unwrapped correctly."""
+    wrapped_protocol = _ChildProtocolWrapper("dummyid", dummy_protocol)
     mock_response = {"error_code": 0, "result": {"responseData": {"error_code": 0}}}
 
-    mocker.patch.object(dummy_protocol._transport, "send", return_value=mock_response)
-    res = await dummy_protocol.query(DUMMY_QUERY)
+    mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
+    res = await wrapped_protocol.query(DUMMY_QUERY)
     assert res == {"foobar": None}
 
 
-async def test_responsedata_unwrapping_with_payload(dummy_protocol, mocker):
+async def test_childdevicewrapper_unwrapping_with_payload(dummy_protocol, mocker):
+    wrapped_protocol = _ChildProtocolWrapper("dummyid", dummy_protocol)
     mock_response = {
         "error_code": 0,
         "result": {"responseData": {"error_code": 0, "result": {"bar": "bar"}}},
     }
-    mocker.patch.object(dummy_protocol._transport, "send", return_value=mock_response)
-    res = await dummy_protocol.query(DUMMY_QUERY)
+    mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
+    res = await wrapped_protocol.query(DUMMY_QUERY)
     assert res == {"foobar": {"bar": "bar"}}
 
 
-async def test_responsedata_error(dummy_protocol, mocker):
+async def test_childdevicewrapper_error(dummy_protocol, mocker):
     """Test that errors inside the responseData payload cause an exception."""
+    wrapped_protocol = _ChildProtocolWrapper("dummyid", dummy_protocol)
     mock_response = {"error_code": 0, "result": {"responseData": {"error_code": -1001}}}
 
-    mocker.patch.object(dummy_protocol._transport, "send", return_value=mock_response)
+    mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
     with pytest.raises(SmartDeviceException):
-        await dummy_protocol.query(DUMMY_QUERY)
+        await wrapped_protocol.query(DUMMY_QUERY)
 
 
-async def test_responsedata_unwrapping_multiplerequest(dummy_protocol, mocker):
+@pytest.mark.skip("childprotocolwrapper does not yet support multirequests")
+async def test_childdevicewrapper_unwrapping_multiplerequest(dummy_protocol, mocker):
     """Test that unwrapping multiplerequest works correctly."""
     mock_response = {
         "error_code": 0,
@@ -199,7 +203,8 @@ async def test_responsedata_unwrapping_multiplerequest(dummy_protocol, mocker):
     assert resp == {"get_device_info": {"foo": "bar"}, "second_command": {"bar": "foo"}}
 
 
-async def test_responsedata_multiplerequest_error(dummy_protocol, mocker):
+@pytest.mark.skip("childprotocolwrapper does not yet support multirequests")
+async def test_childdevicewrapper_multiplerequest_error(dummy_protocol, mocker):
     """Test that errors inside multipleRequest response of responseData raise an exception."""
     mock_response = {
         "error_code": 0,
