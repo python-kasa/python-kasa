@@ -6,7 +6,7 @@ import time
 from contextlib import nullcontext as does_not_raise
 from json import dumps as json_dumps
 from json import loads as json_loads
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import aiohttp
 import pytest
@@ -18,8 +18,6 @@ from ..aestransport import AesEncyptionSession, AesTransport, TransportState
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
-    SMART_RETRYABLE_ERRORS,
-    SMART_TIMEOUT_ERRORS,
     AuthenticationException,
     SmartDeviceException,
     SmartErrorCode,

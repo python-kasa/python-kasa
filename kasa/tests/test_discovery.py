@@ -1,6 +1,5 @@
 # type: ignore
 import asyncio
-import logging
 import re
 import socket
 from unittest.mock import MagicMock
@@ -15,26 +14,21 @@ from kasa import (
     Discover,
     SmartDevice,
     SmartDeviceException,
-    protocol,
 )
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
-    DeviceFamilyType,
-    EncryptType,
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
 from kasa.xortransport import XorEncryption
 
 from .conftest import (
-    bulb,
     bulb_iot,
     dimmer,
     lightstrip,
     new_discovery,
     plug,
-    strip,
     strip_iot,
 )
 

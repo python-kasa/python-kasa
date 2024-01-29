@@ -6,10 +6,7 @@ import pytest
 
 from kasa.credentials import Credentials
 from kasa.deviceconfig import (
-    ConnectionType,
     DeviceConfig,
-    DeviceFamilyType,
-    EncryptType,
 )
 from kasa.exceptions import SmartDeviceException
 

@@ -1,5 +1,4 @@
 from itertools import chain
-from typing import Dict
 
 import pytest
 
@@ -11,8 +10,7 @@ from ..exceptions import (
     SmartDeviceException,
     SmartErrorCode,
 )
-from ..protocol import BaseTransport
-from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
+from ..smartprotocol import _ChildProtocolWrapper
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 DUMMY_MULTIPLE_QUERY = {

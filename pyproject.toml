@@ -121,7 +121,6 @@ convention = "pep257"
     "D102",
     "D103",
     "D104",
-    "F401",
     "S101", # allow asserts
     "E501", # ignore line-too-longs
 ]

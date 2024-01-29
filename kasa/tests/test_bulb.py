@@ -1,11 +1,7 @@
 import pytest
 from voluptuous import (
-    REMOVE_EXTRA,
     All,
-    Any,
     Boolean,
-    Coerce,  # type: ignore
-    Invalid,
     Optional,
     Range,
     Schema,
