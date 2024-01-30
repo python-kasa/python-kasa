@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
+from async_timeout import timeout as asyncio_timeout
 
 from kasa import (
     Credentials,
@@ -298,6 +299,7 @@ async def test_discover_single_authentication(discovery_mock, mocker):
 
 @new_discovery
 async def test_device_update_from_new_discovery_info(discovery_data):
+    """Make sure that new discovery devices update from discovery info correctly."""
     device = SmartDevice("127.0.0.7")
     discover_info = DiscoveryResult(**discovery_data["result"])
     discover_dump = discover_info.get_dict()
@@ -334,7 +336,7 @@ async def test_discover_single_http_client(discovery_mock, mocker):
 
 
 async def test_discover_http_client(discovery_mock, mocker):
-    """Make sure that discover_single returns an initialized SmartDevice instance."""
+    """Make sure that discover returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
     discovery_mock.ip = host
 
@@ -402,7 +404,7 @@ class FakeDatagramTransport(asyncio.DatagramTransport):
 @pytest.mark.parametrize("port", [9999, 20002])
 @pytest.mark.parametrize("do_not_reply_count", [0, 1, 2, 3, 4])
 async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
-    """Make sure that discover_single handles authenticating devices correctly."""
+    """Make sure that _DiscoverProtocol handles authenticating devices correctly."""
     host = "127.0.0.1"
     discovery_timeout = 0
 
@@ -428,7 +430,7 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
     ids=["unknownport", "unsupporteddevice"],
 )
 async def test_do_discover_invalid(mocker, port, will_timeout):
-    """Make sure that discover_single handles invalid devices correctly."""
+    """Make sure that _DiscoverProtocol handles invalid devices correctly."""
     host = "127.0.0.1"
     discovery_timeout = 0
 
@@ -457,3 +459,40 @@ async def test_discover_propogates_task_exceptions(discovery_mock):
         await Discover.discover(
             discovery_timeout=discovery_timeout, on_discovered=on_discovered
         )
+
+
+async def test_do_discover_no_connection(mocker):
+    """Make sure that if the datagram connection doesnt start a TimeoutError is raised."""
+    host = "127.0.0.1"
+    discovery_timeout = 0
+    mocker.patch.object(_DiscoverProtocol, "DISCOVERY_START_TIMEOUT", 0)
+    dp = _DiscoverProtocol(
+        target=host,
+        discovery_timeout=discovery_timeout,
+        discovery_packets=5,
+    )
+    # Normally tests would simulate connection as per below
+    # ft = FakeDatagramTransport(dp, port, 0, unsupported=True)
+    # dp.connection_made(ft)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await dp.wait_for_discovery_to_complete()
+
+
+async def test_do_discover_external_cancel(mocker):
+    """Make sure that a cancel other than when target is discovered propogates."""
+    host = "127.0.0.1"
+    discovery_timeout = 1
+
+    dp = _DiscoverProtocol(
+        target=host,
+        discovery_timeout=discovery_timeout,
+        discovery_packets=1,
+    )
+    # Normally tests would simulate connection as per below
+    ft = FakeDatagramTransport(dp, 9999, 1, unsupported=True)
+    dp.connection_made(ft)
+
+    with pytest.raises(asyncio.TimeoutError):
+        async with asyncio_timeout(0):
+            await dp.wait_for_discovery_to_complete()

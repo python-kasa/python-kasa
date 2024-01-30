@@ -547,7 +547,6 @@ async def state(ctx, dev: SmartDevice):
 
     echo("\n\t[bold]== Device specific information ==[/bold]")
     for info_name, info_data in dev.state_information.items():
-        # raise SmartDeviceException("Test exception msg")
         if isinstance(info_data, list):
             echo(f"\t{info_name}:")
             for item in info_data:
