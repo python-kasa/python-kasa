@@ -461,8 +461,6 @@ def test_decrypt_unicode(decrypt_class):
 
 
 def _get_subclasses(of_class):
-    import kasa
-
     package = sys.modules["kasa"]
     subclasses = set()
     for _, modname, _ in pkgutil.iter_modules(package.__path__):
@@ -482,6 +480,9 @@ def _get_subclasses(of_class):
     "class_name_obj", _get_subclasses(BaseProtocol), ids=lambda t: t[0]
 )
 def test_protocol_init_signature(class_name_obj):
+    if class_name_obj[0].startswith("_"):
+        pytest.skip("Skipping internal protocols")
+        return
     params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
 
     assert len(params) == 2

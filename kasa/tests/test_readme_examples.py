@@ -1,7 +1,5 @@
 import asyncio
-import sys
 
-import pytest
 import xdoctest
 
 from kasa.tests.conftest import get_device_for_file

@@ -1,6 +1,5 @@
 # type: ignore
 import asyncio
-import logging
 import re
 import socket
 from unittest.mock import MagicMock
@@ -15,19 +14,23 @@ from kasa import (
     Discover,
     SmartDevice,
     SmartDeviceException,
-    protocol,
 )
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
-    DeviceFamilyType,
-    EncryptType,
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
 from kasa.xortransport import XorEncryption
 
-from .conftest import bulb, bulb_iot, dimmer, lightstrip, new_discovery, plug, strip
+from .conftest import (
+    bulb_iot,
+    dimmer,
+    lightstrip,
+    new_discovery,
+    plug,
+    strip_iot,
+)
 
 UNSUPPORTED = {
     "result": {
@@ -67,7 +70,7 @@ async def test_type_detection_bulb(dev: SmartDevice):
         assert d.device_type == DeviceType.Bulb
 
 
-@strip
+@strip_iot
 async def test_type_detection_strip(dev: SmartDevice):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_strip

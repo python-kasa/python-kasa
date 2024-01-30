@@ -5,26 +5,30 @@ import os
 from dataclasses import dataclass
 from json import dumps as json_dumps
 from os.path import basename
-from pathlib import Path, PurePath
-from typing import Dict, Optional, Set
+from pathlib import Path
+from typing import Dict, Optional
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
     Credentials,
+    DeviceConfig,
     Discover,
     SmartBulb,
     SmartDevice,
     SmartDimmer,
     SmartLightStrip,
     SmartPlug,
+    SmartProtocol,
     SmartStrip,
 )
-from kasa.tapo import TapoBulb, TapoDevice, TapoPlug
+from kasa.protocol import BaseTransport
+from kasa.tapo import TapoBulb, TapoPlug
 from kasa.xortransport import XorEncryption
 
-from .newfakes import FakeSmartProtocol, FakeTransportProtocol
+from .fakeprotocol_iot import FakeIotProtocol
+from .fakeprotocol_smart import FakeSmartProtocol
 
 SUPPORTED_IOT_DEVICES = [
     (device, "IOT")
@@ -107,7 +111,7 @@ PLUGS = {
     *PLUGS_SMART,
 }
 STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
-STRIPS_SMART: Set[str] = set()
+STRIPS_SMART = {"P300"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
@@ -210,7 +214,7 @@ no_emeter_iot = parametrize(
 
 bulb = parametrize("bulbs", BULBS, protocol_filter={"SMART", "IOT"})
 plug = parametrize("plugs", PLUGS, protocol_filter={"IOT"})
-strip = parametrize("strips", STRIPS, protocol_filter={"IOT"})
+strip = parametrize("strips", STRIPS, protocol_filter={"SMART", "IOT"})
 dimmer = parametrize("dimmers", DIMMERS, protocol_filter={"IOT"})
 lightstrip = parametrize("lightstrips", LIGHT_STRIPS, protocol_filter={"IOT"})
 
@@ -237,6 +241,11 @@ variable_temp_iot = parametrize(
     "variable color temp iot", BULBS_IOT_VARIABLE_TEMP, protocol_filter={"IOT"}
 )
 bulb_iot = parametrize("bulb devices iot", BULBS_IOT, protocol_filter={"IOT"})
+
+strip_iot = parametrize("strip devices iot", STRIPS_IOT, protocol_filter={"IOT"})
+strip_smart = parametrize(
+    "strip devices smart", STRIPS_SMART, protocol_filter={"SMART"}
+)
 
 plug_smart = parametrize("plug devices smart", PLUGS_SMART, protocol_filter={"SMART"})
 bulb_smart = parametrize("bulb devices smart", BULBS_SMART, protocol_filter={"SMART"})
@@ -338,6 +347,9 @@ def device_for_file(model, protocol):
         for d in DIMMERS_SMART:
             if d in model:
                 return TapoBulb
+        for d in STRIPS_SMART:
+            if d in model:
+                return TapoPlug
     else:
         for d in STRIPS_IOT:
             if d in model:
@@ -399,7 +411,7 @@ async def get_device_for_file(file, protocol):
     if protocol == "SMART":
         d.protocol = FakeSmartProtocol(sysinfo)
     else:
-        d.protocol = FakeTransportProtocol(sysinfo)
+        d.protocol = FakeIotProtocol(sysinfo)
     await _update_and_close(d)
     return d
 
@@ -510,7 +522,7 @@ def discovery_mock(all_fixture_data, mocker):
     if "component_nego" in dm.query_data:
         proto = FakeSmartProtocol(dm.query_data)
     else:
-        proto = FakeTransportProtocol(dm.query_data)
+        proto = FakeIotProtocol(dm.query_data)
 
     async def _query(request, retry_count: int = 3):
         return await proto.query(request)
@@ -554,6 +566,34 @@ def unsupported_device_info(request, mocker):
     mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
 
     yield discovery_data
+
+
+@pytest.fixture()
+def dummy_protocol():
+    """Return a smart protocol instance with a mocking-ready dummy transport."""
+
+    class DummyTransport(BaseTransport):
+        @property
+        def default_port(self) -> int:
+            return -1
+
+        @property
+        def credentials_hash(self) -> str:
+            return "dummy hash"
+
+        async def send(self, request: str) -> Dict:
+            return {}
+
+        async def close(self) -> None:
+            pass
+
+        async def reset(self) -> None:
+            pass
+
+    transport = DummyTransport(config=DeviceConfig(host="127.0.0.123"))
+    protocol = SmartProtocol(transport=transport)
+
+    return protocol
 
 
 def pytest_addoption(parser):

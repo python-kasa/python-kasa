@@ -1,12 +1,8 @@
-import errno
 import json
 import logging
 import secrets
-import struct
-import sys
 import time
 from contextlib import nullcontext as does_not_raise
-from unittest.mock import PropertyMock
 
 import aiohttp
 import pytest

@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, cast
 
 from ..deviceconfig import DeviceConfig
-from ..protocol import BaseProtocol
 from ..smartdevice import DeviceType
+from ..smartprotocol import SmartProtocol
 from .tapodevice import TapoDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class TapoPlug(TapoDevice):
         host: str,
         *,
         config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        protocol: Optional[SmartProtocol] = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug

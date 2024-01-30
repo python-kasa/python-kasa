@@ -7,7 +7,6 @@ from asyncclick.testing import CliRunner
 
 from kasa import (
     AuthenticationException,
-    Credentials,
     EmeterStatus,
     SmartDevice,
     SmartDeviceException,
@@ -28,7 +27,6 @@ from kasa.cli import (
     wifi,
 )
 from kasa.discover import Discover, DiscoveryResult
-from kasa.smartprotocol import SmartProtocol
 
 from .conftest import device_iot, device_smart, handle_turn_on, new_discovery, turn_on
 

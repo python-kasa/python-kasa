@@ -2,12 +2,35 @@ import datetime
 from unittest.mock import Mock
 
 import pytest
+from voluptuous import (
+    All,
+    Any,
+    Coerce,  # type: ignore
+    Range,
+    Schema,
+)
 
 from kasa import EmeterStatus, SmartDeviceException
 from kasa.modules.emeter import Emeter
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
-from .newfakes import CURRENT_CONSUMPTION_SCHEMA
+
+CURRENT_CONSUMPTION_SCHEMA = Schema(
+    Any(
+        {
+            "voltage": Any(All(float, Range(min=0, max=300)), None),
+            "power": Any(Coerce(float, Range(min=0)), None),
+            "total": Any(Coerce(float, Range(min=0)), None),
+            "current": Any(All(float, Range(min=0)), None),
+            "voltage_mv": Any(All(float, Range(min=0, max=300000)), int, None),
+            "power_mw": Any(Coerce(float, Range(min=0)), None),
+            "total_wh": Any(Coerce(float, Range(min=0)), None),
+            "current_ma": Any(All(float, Range(min=0)), int, None),
+            "slot_id": Any(Coerce(int, Range(min=0)), None),
+        },
+        None,
+    )
+)
 
 
 @no_emeter
