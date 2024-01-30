@@ -41,6 +41,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     This is internal class, use :func:`Discover.discover`: instead.
     """
 
+    DISCOVERY_START_TIMEOUT = 1
+
     discovered_devices: DeviceDict
 
     def __init__(
@@ -55,7 +57,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             Callable[[UnsupportedDeviceException], Awaitable[None]]
         ] = None,
         port: Optional[int] = None,
-        discovered_event: Optional[asyncio.Event] = None,
         credentials: Optional[Credentials] = None,
         timeout: Optional[int] = None,
     ) -> None:
@@ -74,17 +75,32 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.unsupported_device_exceptions: Dict = {}
         self.invalid_device_exceptions: Dict = {}
         self.on_unsupported = on_unsupported
-        self.discovered_event = discovered_event
         self.credentials = credentials
         self.timeout = timeout
         self.discovery_timeout = discovery_timeout
         self.seen_hosts: Set[str] = set()
         self.discover_task: Optional[asyncio.Task] = None
         self.callback_tasks: List[asyncio.Task] = []
+        self.target_discovered: bool = False
 
     def _run_callback_task(self, coro):
         task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
+
+    async def wait_for_discovery_to_complete(self):
+        """Wait for the discovery task to complete."""
+        # Give some time for connection_made event to be received
+        async with asyncio_timeout(self.DISCOVERY_START_TIMEOUT):
+            while not self.discover_task:
+                await asyncio.sleep(0)
+        try:
+            await self.discover_task
+        except asyncio.CancelledError:
+            # if target_discovered then cancel was called internally
+            if not self.target_discovered:
+                raise
+        # Wait for any pending callbacks to complete
+        await asyncio.gather(*self.callback_tasks)
 
     def connection_made(self, transport) -> None:
         """Set socket options for broadcasting."""
@@ -110,13 +126,12 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = XorEncryption.encrypt(req)
         sleep_between_packets = self.discovery_timeout / self.discovery_packets
-        for i in range(self.discovery_packets):
+        for _ in range(self.discovery_packets):
             if self.target in self.seen_hosts:  # Stop sending for discover_single
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
             self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
-            if i < self.discovery_packets - 1:
-                await asyncio.sleep(sleep_between_packets)
+            await asyncio.sleep(sleep_between_packets)
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
@@ -162,11 +177,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self._handle_discovered_event()
 
     def _handle_discovered_event(self):
-        """If discovered_event is available set it and cancel discover_task."""
-        if self.discovered_event is not None:
+        """If target is in seen_hosts cancel discover_task."""
+        if self.target in self.seen_hosts:
+            self.target_discovered = True
             if self.discover_task:
                 self.discover_task.cancel()
-            self.discovered_event.set()
 
     def error_received(self, ex):
         """Handle asyncio.Protocol errors."""
@@ -289,14 +304,7 @@ class Discover:
 
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
-            async with asyncio_timeout(discovery_timeout):
-                while not protocol.discover_task:
-                    await asyncio.sleep(0)
-                await protocol.discover_task
-            # Give the last sent packet time to respond
-            await asyncio.sleep(discovery_timeout / discovery_packets)
-            # Wait for any pending callbacks to complete
-            await asyncio.gather(*protocol.callback_tasks)
+            await protocol.wait_for_discovery_to_complete()
         except SmartDeviceException as ex:
             for device in protocol.discovered_devices.values():
                 await device.protocol.close()
@@ -333,7 +341,6 @@ class Discover:
         :return: Object for querying/controlling found device.
         """
         loop = asyncio.get_event_loop()
-        event = asyncio.Event()
 
         try:
             ipaddress.ip_address(host)
@@ -363,7 +370,6 @@ class Discover:
             lambda: _DiscoverProtocol(
                 target=ip,
                 port=port,
-                discovered_event=event,
                 credentials=credentials,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
@@ -376,13 +382,7 @@ class Discover:
             _LOGGER.debug(
                 "Waiting a total of %s seconds for responses...", discovery_timeout
             )
-
-            async with asyncio_timeout(discovery_timeout):
-                await event.wait()
-        except asyncio.TimeoutError as ex:
-            raise TimeoutException(
-                f"Timed out getting discovery response for {host}"
-            ) from ex
+            await protocol.wait_for_discovery_to_complete()
         finally:
             transport.close()
 
@@ -395,7 +395,7 @@ class Discover:
         elif ip in protocol.invalid_device_exceptions:
             raise protocol.invalid_device_exceptions[ip]
         else:
-            raise SmartDeviceException(f"Unable to get discovery response for {host}")
+            raise TimeoutException(f"Timed out getting discovery response for {host}")
 
     @staticmethod
     def _get_device_class(info: dict) -> Type[SmartDevice]:

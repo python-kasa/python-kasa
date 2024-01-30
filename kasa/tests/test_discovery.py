@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
-from async_timeout import timeout as asyncio_timeout
 
 from kasa import (
     Credentials,
@@ -190,7 +189,7 @@ async def test_discover_invalid_info(msg, data, mocker):
     """Make sure that invalid discovery information raises an exception."""
     host = "127.0.0.1"
 
-    def mock_discover(self):
+    async def mock_discover(self):
         self.datagram_received(
             XorEncryption.encrypt(json_dumps(data))[4:], (host, 9999)
         )
@@ -203,7 +202,7 @@ async def test_discover_invalid_info(msg, data, mocker):
 
 async def test_discover_send(mocker):
     """Test discovery parameters."""
-    discovery_timeout = 0.1
+    discovery_timeout = 0
     proto = _DiscoverProtocol(discovery_timeout=discovery_timeout)
     assert proto.discovery_packets == 3
     assert proto.target_1 == ("255.255.255.255", 9999)
@@ -405,29 +404,22 @@ class FakeDatagramTransport(asyncio.DatagramTransport):
 async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
     """Make sure that discover_single handles authenticating devices correctly."""
     host = "127.0.0.1"
-    discovery_timeout = 0.1
+    discovery_timeout = 0
 
-    event = asyncio.Event()
     dp = _DiscoverProtocol(
         target=host,
         discovery_timeout=discovery_timeout,
         discovery_packets=5,
-        discovered_event=event,
     )
     ft = FakeDatagramTransport(dp, port, do_not_reply_count)
     dp.connection_made(ft)
 
-    timed_out = False
-    try:
-        async with asyncio_timeout(discovery_timeout):
-            await event.wait()
-    except asyncio.TimeoutError:
-        timed_out = True
+    await dp.wait_for_discovery_to_complete()
 
     await asyncio.sleep(0)
     assert ft.send_count == do_not_reply_count + 1
     assert dp.discover_task.done()
-    assert timed_out is False
+    assert dp.discover_task.cancelled()
 
 
 @pytest.mark.parametrize(
@@ -438,33 +430,25 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
 async def test_do_discover_invalid(mocker, port, will_timeout):
     """Make sure that discover_single handles invalid devices correctly."""
     host = "127.0.0.1"
-    discovery_timeout = 0.1
+    discovery_timeout = 0
 
-    event = asyncio.Event()
     dp = _DiscoverProtocol(
         target=host,
         discovery_timeout=discovery_timeout,
         discovery_packets=5,
-        discovered_event=event,
     )
     ft = FakeDatagramTransport(dp, port, 0, unsupported=True)
     dp.connection_made(ft)
 
-    timed_out = False
-    try:
-        async with asyncio_timeout(discovery_timeout):
-            await event.wait()
-    except asyncio.TimeoutError:
-        timed_out = True
-
+    await dp.wait_for_discovery_to_complete()
     await asyncio.sleep(0)
     assert dp.discover_task.done()
-    assert timed_out is will_timeout
+    assert dp.discover_task.cancelled() != will_timeout
 
 
 async def test_discover_propogates_task_exceptions(discovery_mock):
     """Make sure that discover propogates callback exceptions."""
-    discovery_timeout = 0.1
+    discovery_timeout = 0
 
     async def on_discovered(dev):
         raise SmartDeviceException("Dummy exception")
