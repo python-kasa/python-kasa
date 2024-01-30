@@ -2,10 +2,11 @@
 import logging
 from typing import Any, Dict, Optional
 
-from kasa.deviceconfig import DeviceConfig
-from kasa.iot.device import Device, DeviceType, requires_update
-from kasa.iot.modules import Antitheft, Cloud, Schedule, Time, Usage
-from kasa.protocol import BaseProtocol
+from ..device_type import DeviceType
+from ..deviceconfig import DeviceConfig
+from ..protocol import BaseProtocol
+from .device import Device, requires_update
+from .modules import Antitheft, Cloud, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -16,6 +16,7 @@ from warnings import warn
 
 from kasa.credentials import Credentials
 from kasa.device import Device
+from kasa.device_type import DeviceType
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
@@ -31,7 +32,6 @@ from kasa.exceptions import (
     UnsupportedDeviceException,
 )
 from kasa.iot.bulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
-from kasa.iot.device import DeviceType
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
@@ -74,7 +74,7 @@ deprecated_smart_devices = {
     "SmartLightStrip": iot.LightStrip,
     "SmartStrip": iot.Strip,
     "SmartDimmer": iot.Dimmer,
-    "SmartBulbPreset": iot.bulb.BulbPreset,
+    "SmartBulbPreset": iot.BulbPreset,
 }
 
 
@@ -83,6 +83,14 @@ def __getattr__(name):
         warn(f"{name} is deprecated", DeprecationWarning, stacklevel=1)
         return globals()[f"_deprecated_{name}"]
     if name in deprecated_smart_devices:
-        warn(f"{name} is deprecated", DeprecationWarning, stacklevel=1)
-        return deprecated_smart_devices[name]
+        new_class = deprecated_smart_devices[name]
+        new_name = (
+            ".".join(new_class.__module__.split(".")[:-1]) + "." + new_class.__name__
+        )
+        warn(
+            f"{name} is deprecated, use {new_name} instead",
+            DeprecationWarning,
+            stacklevel=1,
+        )
+        return new_class
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

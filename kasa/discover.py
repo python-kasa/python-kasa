@@ -22,8 +22,12 @@ from kasa.device_factory import (
     get_protocol,
 )
 from kasa.deviceconfig import ConnectionType, DeviceConfig, EncryptType
-from kasa.exceptions import TimeoutException, UnsupportedDeviceException
-from kasa.iot.device import Device, SmartDeviceException
+from kasa.exceptions import (
+    SmartDeviceException,
+    TimeoutException,
+    UnsupportedDeviceException,
+)
+from kasa.iot.device import Device
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.xortransport import XorEncryption

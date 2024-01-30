@@ -4,19 +4,18 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, DefaultDict, Dict, Optional
 
-from kasa.iot.device import (
+from ..device_type import DeviceType
+from ..deviceconfig import DeviceConfig
+from ..exceptions import SmartDeviceException
+from ..protocol import BaseProtocol
+from .device import (
     Device,
-    DeviceType,
     EmeterStatus,
-    SmartDeviceException,
     merge,
     requires_update,
 )
-from kasa.iot.modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
-from kasa.iot.plug import Plug
-
-from ..deviceconfig import DeviceConfig
-from ..protocol import BaseProtocol
+from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
+from .plug import Plug
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -118,7 +117,7 @@ class Strip(Device):
             _LOGGER.debug("Initializing %s child sockets", len(children))
             for child in children:
                 self.children.append(
-                    SmartStripPlug(self.host, parent=self, child_id=child["id"])
+                    StripPlug(self.host, parent=self, child_id=child["id"])
                 )
 
         if update_children and self.has_emeter:
@@ -244,7 +243,7 @@ class Strip(Device):
         return EmeterStatus(emeter)
 
 
-class SmartStripPlug(Plug):
+class StripPlug(Plug):
     """Representation of a single socket in a power strip.
 
     This allows you to use the sockets as they were SmartPlug objects.

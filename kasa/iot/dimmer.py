@@ -2,11 +2,12 @@
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from kasa.deviceconfig import DeviceConfig
-from kasa.iot.device import DeviceType, SmartDeviceException, requires_update
-from kasa.iot.modules import AmbientLight, Motion
-from kasa.iot.plug import Plug
-from kasa.protocol import BaseProtocol
+from ..device_type import DeviceType
+from ..deviceconfig import DeviceConfig
+from ..protocol import BaseProtocol
+from .device import SmartDeviceException, requires_update
+from .modules import AmbientLight, Motion
+from .plug import Plug
 
 
 class ButtonAction(Enum):

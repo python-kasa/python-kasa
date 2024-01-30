@@ -1,11 +1,12 @@
 """Module for light strips (KL430)."""
 from typing import Any, Dict, List, Optional
 
+from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..protocol import BaseProtocol
 from .bulb import Bulb
-from .device import DeviceType, SmartDeviceException, requires_update
+from .device import SmartDeviceException, requires_update
 
 
 class LightStrip(Bulb):

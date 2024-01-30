@@ -9,11 +9,11 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field, root_validator
 
-from kasa.iot.modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
-
+from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .device import Device, DeviceType, SmartDeviceException, requires_update
+from .device import Device, SmartDeviceException, requires_update
+from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
 
 
 class ColorTempRange(NamedTuple):
