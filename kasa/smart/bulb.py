@@ -244,9 +244,10 @@ class Bulb(Device, IotBulb):
         info: Dict[str, Any] = {
             # TODO: re-enable after we don't inherit from smartbulb
             # **super().state_information
-            "Brightness": self.brightness,
             "Is dimmable": self.is_dimmable,
         }
+        if self.is_dimmable:
+            info["Brightness"] = self.brightness
         if self.is_variable_color_temp:
             info["Color temperature"] = self.color_temp
             info["Valid temperature range"] = self.valid_temperature_range

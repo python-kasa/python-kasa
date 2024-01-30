@@ -1,8 +1,6 @@
 import datetime
 from unittest.mock import Mock
 
-import pytest
-
 from kasa.iot.modules import Usage
 
 

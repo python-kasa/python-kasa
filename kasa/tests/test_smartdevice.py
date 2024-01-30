@@ -1,22 +1,32 @@
 import importlib
 import inspect
 import pkgutil
+import re
 import sys
 from datetime import datetime
 from unittest.mock import Mock, patch
 
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
+from voluptuous import (
+    REMOVE_EXTRA,
+    All,
+    Any,
+    Boolean,
+    In,
+    Invalid,
+    Optional,
+    Range,
+    Schema,
+)
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, SmartDeviceException, iot, smart
 
 from .conftest import device_iot, handle_turn_on, has_emeter_iot, no_emeter_iot, turn_on
-from .newfakes import PLUG_SCHEMA, TZ_SCHEMA, FakeTransportProtocol
+from .fakeprotocol_iot import FakeIotProtocol
 
 
 def _get_subclasses(of_class):
-    import kasa
-
     package = sys.modules["kasa"]
     subclasses = set()
     for _, modname, _ in pkgutil.iter_modules(package.__path__):
@@ -46,7 +56,7 @@ async def test_state_info(dev):
 @device_iot
 async def test_invalid_connection(dev):
     with patch.object(
-        FakeTransportProtocol, "query", side_effect=SmartDeviceException
+        FakeIotProtocol, "query", side_effect=SmartDeviceException
     ), pytest.raises(SmartDeviceException):
         await dev.update()
 
@@ -149,22 +159,22 @@ async def test_timezone(dev):
 
 @device_iot
 async def test_hw_info(dev):
-    PLUG_SCHEMA(dev.hw_info)
+    SYSINFO_SCHEMA(dev.hw_info)
 
 
 @device_iot
 async def test_location(dev):
-    PLUG_SCHEMA(dev.location)
+    SYSINFO_SCHEMA(dev.location)
 
 
 @device_iot
 async def test_rssi(dev):
-    PLUG_SCHEMA({"rssi": dev.rssi})  # wrapping for vol
+    SYSINFO_SCHEMA({"rssi": dev.rssi})  # wrapping for vol
 
 
 @device_iot
 async def test_mac(dev):
-    PLUG_SCHEMA({"mac": dev.mac})  # wrapping for val
+    SYSINFO_SCHEMA({"mac": dev.mac})  # wrapping for val
 
 
 @device_iot
@@ -231,7 +241,12 @@ async def test_device_class_ctors(device_class_name_obj):
     port = 1234
     credentials = Credentials("foo", "bar")
     config = DeviceConfig(host, port_override=port, credentials=credentials)
-    dev = device_class_name_obj[1](host, config=config)
+    klass = device_class_name_obj[1]
+    if issubclass(klass, smart.ChildDevice):
+        parent = smart.Device(host, config=config)
+        dev = klass(parent, 1)
+    else:
+        dev = klass(host, config=config)
     assert dev.host == host
     assert dev.port == port
     assert dev.credentials == credentials
@@ -287,3 +302,63 @@ async def test_modules_not_supported(dev: iot.Device):
 def test_deprecated_devices(device_class):
     with pytest.deprecated_call():
         getattr(kasa, device_class)
+
+
+def check_mac(x):
+    if re.match("[0-9a-f]{2}([-:])[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", x.lower()):
+        return x
+    raise Invalid(x)
+
+
+TZ_SCHEMA = Schema(
+    {"zone_str": str, "dst_offset": int, "index": All(int, Range(min=0)), "tz_str": str}
+)
+
+
+SYSINFO_SCHEMA = Schema(
+    {
+        "active_mode": In(["schedule", "none", "count_down"]),
+        "alias": str,
+        "dev_name": str,
+        "deviceId": str,
+        "feature": str,
+        "fwId": str,
+        "hwId": str,
+        "hw_ver": str,
+        "icon_hash": str,
+        "led_off": Boolean,
+        "latitude": Any(All(float, Range(min=-90, max=90)), 0, None),
+        "latitude_i": Any(
+            All(int, Range(min=-900000, max=900000)),
+            All(float, Range(min=-900000, max=900000)),
+            0,
+            None,
+        ),
+        "longitude": Any(All(float, Range(min=-180, max=180)), 0, None),
+        "longitude_i": Any(
+            All(int, Range(min=-18000000, max=18000000)),
+            All(float, Range(min=-18000000, max=18000000)),
+            0,
+            None,
+        ),
+        "mac": check_mac,
+        "model": str,
+        "oemId": str,
+        "on_time": int,
+        "relay_state": int,
+        "rssi": Any(int, None),  # rssi can also be positive, see #54
+        "sw_ver": str,
+        "type": str,
+        "mic_type": str,
+        "updating": Boolean,
+        # these are available on hs220
+        "brightness": int,
+        "preferred_state": [
+            {"brightness": All(int, Range(min=0, max=100)), "index": int}
+        ],
+        "next_action": {"type": int},
+        "child_num": Optional(Any(None, int)),
+        "children": Optional(list),
+    },
+    extra=REMOVE_EXTRA,
+)

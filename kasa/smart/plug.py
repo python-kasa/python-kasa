@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, cast
 
 from ..deviceconfig import DeviceConfig
 from ..iot.device import DeviceType
-from ..protocol import BaseProtocol
+from ..smartprotocol import SmartProtocol
 from .device import Device
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class Plug(Device):
         host: str,
         *,
         config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        protocol: Optional[SmartProtocol] = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug

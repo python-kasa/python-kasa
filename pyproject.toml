@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-kasa"
-version = "0.6.1"
+version = "0.6.2"
 description = "Python API for TP-Link Kasa Smarthome devices"
 license = "GPL-3.0-or-later"
 authors = ["python-kasa developers"]
@@ -121,7 +121,6 @@ convention = "pep257"
     "D102",
     "D103",
     "D104",
-    "F401",
     "S101", # allow asserts
     "E501", # ignore line-too-longs
 ]

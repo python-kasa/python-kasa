@@ -5,12 +5,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set, cast
 
 from ..aestransport import AesTransport
+from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
 from ..iot.device import Device as IotDevice
 from ..iot.device import WifiNetwork
-from ..protocol import BaseProtocol
 from ..smartprotocol import SmartProtocol
 from .modules.emeter import Emeter
 
@@ -25,17 +25,27 @@ class Device(IotDevice):
         host: str,
         *,
         config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        protocol: Optional[SmartProtocol] = None,
     ) -> None:
         _protocol = protocol or SmartProtocol(
             transport=AesTransport(config=config or DeviceConfig(host=host)),
         )
         super().__init__(host=host, config=config, protocol=_protocol)
+        self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int]
         self._state_information: Dict[str, Any] = {}
-        self._discovery_info: Optional[Dict[str, Any]] = None
-        self.modules: Dict[str, Any] = {}
+
+    async def _initialize_children(self):
+        children = self._last_update["child_info"]["child_device_list"]
+        # TODO: Use the type information to construct children,
+        #  as hubs can also have them.
+        from .childdevice import ChildDevice
+
+        self.children = [
+            ChildDevice(parent=self, child_id=child["device_id"]) for child in children
+        ]
+        self._device_type = DeviceType.Strip
 
     async def update(self, update_children: bool = True):
         """Update the device."""
@@ -52,6 +62,10 @@ class Device(IotDevice):
             await self._initialize_modules()
 
         extra_reqs: Dict[str, Any] = {}
+
+        if "child_device" in self._components:
+            extra_reqs = {**extra_reqs, "get_child_device_list": None}
+
         if "energy_monitoring" in self._components:
             extra_reqs = {
                 **extra_reqs,
@@ -82,7 +96,14 @@ class Device(IotDevice):
             "time": self._time,
             "energy": self._energy,
             "emeter": self._emeter,
+            "child_info": resp.get("get_child_device_list", {}),
         }
+
+        if self._last_update["child_info"]:
+            if not self.children:
+                await self._initialize_children()
+            for child in self.children:
+                await child.update()
 
         _LOGGER.debug("Got an update: %s", self._data)
 

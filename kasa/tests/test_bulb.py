@@ -1,4 +1,11 @@
 import pytest
+from voluptuous import (
+    All,
+    Boolean,
+    Optional,
+    Range,
+    Schema,
+)
 
 from kasa import BulbPreset, DeviceType, SmartDeviceException
 from kasa.iot import Bulb
@@ -17,13 +24,13 @@ from .conftest import (
     variable_temp,
     variable_temp_iot,
 )
-from .newfakes import BULB_SCHEMA, LIGHT_STATE_SCHEMA
+from .test_smartdevice import SYSINFO_SCHEMA
 
 
 @bulb
 async def test_bulb_sysinfo(dev: Bulb):
     assert dev.sys_info is not None
-    BULB_SCHEMA(dev.sys_info)
+    SYSINFO_SCHEMA_BULB(dev.sys_info)
 
     assert dev.model is not None
 
@@ -317,3 +324,49 @@ async def test_modify_preset_payloads(dev: Bulb, preset, payload, mocker):
     query_helper = mocker.patch("kasa.iot.Bulb._query_helper")
     await dev.save_preset(preset)
     query_helper.assert_called_with(dev.LIGHT_SERVICE, "set_preferred_state", payload)
+
+
+LIGHT_STATE_SCHEMA = Schema(
+    {
+        "brightness": All(int, Range(min=0, max=100)),
+        "color_temp": int,
+        "hue": All(int, Range(min=0, max=360)),
+        "mode": str,
+        "on_off": Boolean,
+        "saturation": All(int, Range(min=0, max=100)),
+        "dft_on_state": Optional(
+            {
+                "brightness": All(int, Range(min=0, max=100)),
+                "color_temp": All(int, Range(min=0, max=9000)),
+                "hue": All(int, Range(min=0, max=360)),
+                "mode": str,
+                "saturation": All(int, Range(min=0, max=100)),
+            }
+        ),
+        "err_code": int,
+    }
+)
+
+SYSINFO_SCHEMA_BULB = SYSINFO_SCHEMA.extend(
+    {
+        "ctrl_protocols": Optional(dict),
+        "description": Optional(str),  # Seen on LBxxx, similar to dev_name
+        "dev_state": str,
+        "disco_ver": str,
+        "heapsize": int,
+        "is_color": Boolean,
+        "is_dimmable": Boolean,
+        "is_factory": Boolean,
+        "is_variable_color_temp": Boolean,
+        "light_state": LIGHT_STATE_SCHEMA,
+        "preferred_state": [
+            {
+                "brightness": All(int, Range(min=0, max=100)),
+                "color_temp": int,
+                "hue": All(int, Range(min=0, max=360)),
+                "index": int,
+                "saturation": All(int, Range(min=0, max=100)),
+            }
+        ],
+    }
+)
