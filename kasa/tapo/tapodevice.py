@@ -41,8 +41,27 @@ class TapoDevice(SmartDevice):
         #  as hubs can also have them.
         from .childdevice import ChildDevice
 
+        async def _get_child_components():
+            resp = await self.protocol.query("get_child_device_component_list")
+            components_raw = resp["get_child_device_component_list"][
+                "child_component_list"
+            ]
+            return {
+                child["device_id"]: {
+                    comp["id"]: comp["ver_code"] for comp in child["component_list"]
+                }
+                for child in components_raw
+            }
+
+        components = await _get_child_components()
+
         self.children = [
-            ChildDevice(parent=self, child_id=child["device_id"]) for child in children
+            ChildDevice(
+                parent=self,
+                child_id=child["device_id"],
+                components=components[child["device_id"]],
+            )
+            for child in children
         ]
         self._device_type = DeviceType.Strip
 
@@ -58,6 +77,7 @@ class TapoDevice(SmartDevice):
                 comp["id"]: comp["ver_code"]
                 for comp in self._components_raw["component_list"]
             }
+
             await self._initialize_modules()
 
         extra_reqs: Dict[str, Any] = {}

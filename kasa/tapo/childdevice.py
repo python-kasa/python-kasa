@@ -17,6 +17,7 @@ class ChildDevice(TapoDevice):
         self,
         parent: TapoDevice,
         child_id: str,
+        components: Dict,
         config: Optional[DeviceConfig] = None,
         protocol: Optional[SmartProtocol] = None,
     ) -> None:
@@ -24,6 +25,7 @@ class ChildDevice(TapoDevice):
         self._parent = parent
         self._id = child_id
         self.protocol = _ChildProtocolWrapper(child_id, parent.protocol)
+        self._components = components
 
     async def update(self, update_children: bool = True):
         """We just set the info here accordingly."""
