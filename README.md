@@ -306,6 +306,7 @@ At the moment, the following devices have been confirmed to work:
 #### Power strips
 
 * Tapo P300
+* Tapo TP25
 
 
 ### Newer Kasa branded devices
