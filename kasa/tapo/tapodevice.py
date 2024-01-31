@@ -32,7 +32,8 @@ class TapoDevice(SmartDevice):
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
-        self._components: Dict[str, int]
+        self._components: Dict[str, int] = {}
+        self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
 
     async def _initialize_children(self):
@@ -204,10 +205,13 @@ class TapoDevice(SmartDevice):
     @property
     def state_information(self) -> Dict[str, Any]:
         """Return the key state information."""
+        ssid = self._info.get("ssid")
+        ssid = base64.b64decode(ssid).decode() if ssid else "No SSID"
+
         return {
             "overheated": self._info.get("overheated"),
             "signal_level": self._info.get("signal_level"),
-            "SSID": base64.b64decode(str(self._info.get("ssid"))).decode(),
+            "SSID": ssid,
         }
 
     @property

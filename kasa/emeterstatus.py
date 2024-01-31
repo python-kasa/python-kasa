@@ -79,8 +79,11 @@ class EmeterStatus(dict):
                 return super().__getitem__(item[: item.find("_")]) * 1000
             else:  # downscale
                 for i in super().keys():  # noqa: SIM118
-                    if i.startswith(item):
-                        return self.__getitem__(i) / 1000
+                    if (
+                        i.startswith(item)
+                        and (value := self.__getitem__(i)) is not None
+                    ):
+                        return value / 1000
 
                 _LOGGER.debug(f"Unable to find value for '{item}'")
                 return None
