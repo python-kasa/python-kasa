@@ -235,7 +235,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000000"
+                "device_id": "000000000000000000000000000000000000000001"
             }
         ],
         "start_index": 0,
@@ -264,7 +264,7 @@
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
                 "on_time": 0,
-                "original_device_id": "80221F3C50CFB140962DBF36F8C9DACD21BC6DC1",
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 1,
                 "region": "America/Chicago",
@@ -279,7 +279,7 @@
                 "default_states": {
                     "type": "last_states"
                 },
-                "device_id": "000000000000000000000000000000000000000000",
+                "device_id": "000000000000000000000000000000000000000001",
                 "device_on": true,
                 "fw_id": "00000000000000000000000000000000",
                 "fw_ver": "1.0.2 Build 230206 Rel.095245",
@@ -292,8 +292,8 @@
                 "model": "TP25",
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
-                "on_time": 136,
-                "original_device_id": "80221F3C50CFB140962DBF36F8C9DACD21BC6DC1",
+                "on_time": 63159,
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 2,
                 "region": "America/Chicago",
@@ -325,7 +325,7 @@
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
         "region": "America/Chicago",
-        "rssi": -38,
+        "rssi": -39,
         "signal_level": 3,
         "specs": "",
         "ssid": "I01BU0tFRF9TU0lEIw==",
@@ -335,13 +335,13 @@
     "get_device_time": {
         "region": "America/Chicago",
         "time_diff": -360,
-        "timestamp": 1706719580
+        "timestamp": 1706812337
     },
     "get_device_usage": {
         "time_usage": {
             "past30": 1,
             "past7": 1,
-            "today": 1
+            "today": 0
         }
     },
     "get_fw_download_state": {
@@ -365,64 +365,15 @@
         "led_rule": "always",
         "led_status": true,
         "night_mode": {
-            "end_time": 433,
+            "end_time": 432,
             "night_mode_type": "sunrise_sunset",
-            "start_time": 1079,
+            "start_time": 1080,
             "sunrise_offset": 0,
             "sunset_offset": 0
         }
     },
     "get_wireless_scan_info": {
-        "ap_list": [
-            {
-                "bssid": "000000000000",
-                "channel": 0,
-                "cipher_type": 2,
-                "key_type": "wpa_psk",
-                "signal_level": 2,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "bssid": "000000000000",
-                "channel": 0,
-                "cipher_type": 2,
-                "key_type": "wpa_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "bssid": "000000000000",
-                "channel": 0,
-                "cipher_type": 2,
-                "key_type": "wpa_psk",
-                "signal_level": 2,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "bssid": "000000000000",
-                "channel": 0,
-                "cipher_type": 2,
-                "key_type": "wpa_psk",
-                "signal_level": 2,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "bssid": "000000000000",
-                "channel": 0,
-                "cipher_type": 2,
-                "key_type": "wpa_psk",
-                "signal_level": 1,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            },
-            {
-                "bssid": "000000000000",
-                "channel": 0,
-                "cipher_type": 2,
-                "key_type": "wpa_psk",
-                "signal_level": 3,
-                "ssid": "I01BU0tFRF9TU0lEIw=="
-            }
-        ],
+        "ap_list": [],
         "wep_supported": false
     },
     "qs_component_nego": {
