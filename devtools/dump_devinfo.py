@@ -60,6 +60,7 @@ def scrub(res):
         "alias",
         "bssid",
         "channel",
+        "original_device_id",  # for child devices
     ]
 
     for k, v in res.items():
@@ -96,6 +97,11 @@ def scrub(res):
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
+                elif k == "device_id" and len(v) > 40:
+                    # retain the last two chars when scrubbing child ids
+                    end = v[-2:]
+                    v = re.sub(r"\w", "0", v)
+                    v = v[:40] + end
                 else:
                     v = re.sub(r"\w", "0", v)
 

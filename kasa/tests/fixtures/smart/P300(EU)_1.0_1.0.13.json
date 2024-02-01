@@ -170,7 +170,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000000"
+                "device_id": "000000000000000000000000000000000000000002"
             },
             {
                 "component_list": [
@@ -235,7 +235,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000000"
+                "device_id": "000000000000000000000000000000000000000001"
             },
             {
                 "component_list": [
@@ -318,7 +318,7 @@
                     },
                     "type": "custom"
                 },
-                "device_id": "000000000000000000000000000000000000000000",
+                "device_id": "000000000000000000000000000000000000000002",
                 "device_on": false,
                 "fw_id": "00000000000000000000000000000000",
                 "fw_ver": "1.0.13 Build 230925 Rel.150200",
@@ -332,7 +332,7 @@
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
                 "on_time": 0,
-                "original_device_id": "8022852468EC205A8178C7CBE81FC119213BC020",
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 3,
                 "region": "Europe/Berlin",
@@ -347,7 +347,7 @@
                 "default_states": {
                     "type": "last_states"
                 },
-                "device_id": "000000000000000000000000000000000000000000",
+                "device_id": "000000000000000000000000000000000000000001",
                 "device_on": false,
                 "fw_id": "00000000000000000000000000000000",
                 "fw_ver": "1.0.13 Build 230925 Rel.150200",
@@ -361,7 +361,7 @@
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
                 "on_time": 0,
-                "original_device_id": "8022852468EC205A8178C7CBE81FC119213BC020",
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 2,
                 "region": "Europe/Berlin",
@@ -393,7 +393,7 @@
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
                 "on_time": 0,
-                "original_device_id": "8022852468EC205A8178C7CBE81FC119213BC020",
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 1,
                 "region": "Europe/Berlin",
@@ -406,7 +406,7 @@
         "sum": 3
     },
     "get_connect_cloud_state": {
-        "status": 0
+        "status": 2
     },
     "get_device_info": {
         "avatar": "",
@@ -435,12 +435,12 @@
     "get_device_time": {
         "region": "Europe/Berlin",
         "time_diff": 60,
-        "timestamp": 1706320181
+        "timestamp": 1706810351
     },
     "get_device_usage": {
         "time_usage": {
-            "past30": 0,
-            "past7": 0,
+            "past30": 134,
+            "past7": 134,
             "today": 0
         }
     },
@@ -451,23 +451,13 @@
         "status": 0,
         "upgrade_time": 5
     },
-    "get_latest_fw": {
-        "fw_size": 0,
-        "fw_ver": "1.0.13 Build 230925 Rel.150200",
-        "hw_id": "",
-        "need_to_upgrade": false,
-        "oem_id": "",
-        "release_date": "",
-        "release_note": "",
-        "type": 0
-    },
     "get_led_info": {
         "led_rule": "night_mode",
         "led_status": false,
         "night_mode": {
-            "end_time": 496,
+            "end_time": 489,
             "night_mode_type": "sunrise_sunset",
-            "start_time": 1034,
+            "start_time": 1043,
             "sunrise_offset": 0,
             "sunset_offset": 0
         }
