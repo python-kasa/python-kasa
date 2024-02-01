@@ -1,5 +1,6 @@
 """Module for HttpClientSession class."""
 import asyncio
+import logging
 from typing import Any, Dict, Optional, Tuple, Union
 
 import aiohttp
@@ -12,6 +13,8 @@ from .exceptions import (
     TimeoutException,
 )
 from .json import loads as json_loads
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def get_cookie_jar() -> aiohttp.CookieJar:
@@ -54,6 +57,7 @@ class HttpClient:
 
         If the request is provided via the json parameter json will be returned.
         """
+        _LOGGER.debug("Posting to %s", url)
         response_data = None
         self._last_url = url
         self.client.cookie_jar.clear()
