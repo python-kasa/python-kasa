@@ -470,6 +470,10 @@ def _echo_dictionary(discovery_info: dict):
 
 
 def _echo_discovery_info(discovery_info):
+    # We don't have discovery info when all connection params are passed manually
+    if discovery_info is None:
+        return
+
     if "system" in discovery_info and "get_sysinfo" in discovery_info["system"]:
         _echo_dictionary(discovery_info["system"]["get_sysinfo"])
         return
