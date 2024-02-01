@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, cast
 
 from ..aestransport import AesTransport
 from ..device_type import DeviceType
@@ -14,6 +14,9 @@ from ..smartdevice import SmartDevice, WifiNetwork
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from .childdevice import ChildDevice
 
 
 class TapoDevice(SmartDevice):
@@ -33,19 +36,38 @@ class TapoDevice(SmartDevice):
         self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int] = {}
+        self._children: Dict[str, "ChildDevice"] = {}
         self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
 
     async def _initialize_children(self):
+        """Initialize children for power strips."""
         children = self._last_update["child_info"]["child_device_list"]
         # TODO: Use the type information to construct children,
         #  as hubs can also have them.
         from .childdevice import ChildDevice
 
-        self.children = [
-            ChildDevice(parent=self, child_id=child["device_id"]) for child in children
-        ]
+        self._children = {
+            child["device_id"]: ChildDevice(parent=self, child_id=child["device_id"])
+            for child in children
+        }
         self._device_type = DeviceType.Strip
+
+    @property
+    def children(self):
+        """Return list of children.
+
+        This is just to keep the existing SmartDevice API intact.
+        """
+        return list(self._children.values())
+
+    @children.setter
+    def children(self, children):
+        """Initialize from a list of children.
+
+        This is just to keep the existing SmartDevice API intact.
+        """
+        self._children = {child["device_id"]: child for child in children}
 
     async def update(self, update_children: bool = True):
         """Update the device."""
@@ -89,7 +111,7 @@ class TapoDevice(SmartDevice):
         self._energy = resp.get("get_energy_usage", {})
         self._emeter = resp.get("get_current_power", {})
 
-        self._last_update = self._data = {
+        self._last_update = {
             "components": self._components_raw,
             "info": self._info,
             "usage": self._usage,
@@ -99,13 +121,13 @@ class TapoDevice(SmartDevice):
             "child_info": resp.get("get_child_device_list", {}),
         }
 
-        if self._last_update["child_info"]:
+        if child_info := self._last_update.get("child_info"):
             if not self.children:
                 await self._initialize_children()
-            for child in self.children:
-                await child.update()
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]].update_internal_state(info)
 
-        _LOGGER.debug("Got an update: %s", self._data)
+        _LOGGER.debug("Got an update: %s", self._last_update)
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
@@ -193,7 +215,7 @@ class TapoDevice(SmartDevice):
     @property
     def internal_state(self) -> Any:
         """Return all the internal state data."""
-        return self._data
+        return self._last_update
 
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None

@@ -25,15 +25,16 @@ def test_childdevice_init(dev, dummy_protocol, mocker):
 @strip_smart
 async def test_childdevice_update(dev, dummy_protocol, mocker):
     """Test that parent update updates children."""
-    assert len(dev.children) > 0
+    child_info = dev._last_update["child_info"]
+    child_list = child_info["child_device_list"]
+
+    assert len(dev.children) == child_info["sum"]
     first = dev.children[0]
 
-    child_update = mocker.patch.object(first, "update")
     await dev.update()
-    child_update.assert_called()
 
     assert dev._last_update != first._last_update
-    assert dev._last_update["child_info"]["child_device_list"][0] == first._last_update
+    assert child_list[0] == first._last_update
 
 
 @strip_smart
@@ -46,7 +47,7 @@ async def test_childdevice_properties(dev: ChildDevice):
     assert len(dev.children) > 0
 
     first = dev.children[0]
-    assert first.is_plug
+    assert first.is_strip_socket
 
     # children do not have children
     assert not first.children
