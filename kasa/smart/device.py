@@ -285,11 +285,6 @@ class SmartDevice(Device):
         return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
 
     @property
-    def has_emeter_history(self) -> bool:
-        """Return if the device provides emeter stats."""
-        return False
-
-    @property
     def on_since(self) -> Optional[datetime]:
         """Return the time that the device was turned on or None if turned off."""
         if (

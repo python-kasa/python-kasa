@@ -257,11 +257,6 @@ class Device:
 
     @property
     @abstractmethod
-    def has_emeter_history(self) -> bool:
-        """Return if the device provides emeter stats."""
-
-    @property
-    @abstractmethod
     def is_on(self) -> bool:
         """Return true if the device is on."""
 

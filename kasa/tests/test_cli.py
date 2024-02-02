@@ -27,6 +27,7 @@ from kasa.cli import (
     wifi,
 )
 from kasa.discover import Discover, DiscoveryResult
+from kasa.iot import IotDevice
 
 from .conftest import device_iot, device_smart, handle_turn_on, new_discovery, turn_on
 
@@ -245,22 +246,22 @@ async def test_emeter(dev: Device, mocker):
         assert "Voltage: 122.066 V" in res.output
         assert realtime_emeter.call_count == 2
 
-    if dev.has_emeter_history:
+    if isinstance(dev, IotDevice):
         monthly = mocker.patch.object(dev, "get_emeter_monthly")
         monthly.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
-    if not dev.has_emeter_history:
+    if not isinstance(dev, IotDevice):
         assert "Device has no historical statistics" in res.output
         return
     assert "For year" in res.output
     assert "1, 1234" in res.output
     monthly.assert_called_with(year=1900)
 
-    if dev.has_emeter_history:
+    if isinstance(dev, IotDevice):
         daily = mocker.patch.object(dev, "get_emeter_daily")
         daily.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
-    if not dev.has_emeter_history:
+    if not isinstance(dev, IotDevice):
         assert "Device has no historical statistics" in res.output
         return
     assert "For month" in res.output

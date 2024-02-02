@@ -658,7 +658,7 @@ async def emeter(dev: Device, index: int, name: str, year, month, erase):
         echo("Device has no emeter")
         return
 
-    if (year or month or erase) and not dev.has_emeter_history:
+    if (year or month or erase) and not isinstance(dev, iot.IotDevice):
         echo("Device has no historical statistics")
         return
     else:

@@ -271,12 +271,6 @@ class IotDevice(Device):
         """Return True if device has an energy meter."""
         return "ENE" in self.features
 
-    @property
-    @requires_update
-    def has_emeter_history(self) -> bool:
-        """Return if the device provides emeter stats."""
-        return self.has_emeter
-
     async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
