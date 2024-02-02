@@ -1,8 +1,8 @@
 """Child device implementation."""
-from typing import Dict, Optional
+from typing import Optional
 
+from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..exceptions import SmartDeviceException
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from .tapodevice import TapoDevice
 
@@ -24,21 +24,18 @@ class ChildDevice(TapoDevice):
         self._parent = parent
         self._id = child_id
         self.protocol = _ChildProtocolWrapper(child_id, parent.protocol)
+        # TODO: remove the assignment after modularization is done,
+        #  currently required to allow accessing time-related properties
+        self._time = parent._time
+        self._device_type = DeviceType.StripSocket
 
     async def update(self, update_children: bool = True):
-        """We just set the info here accordingly."""
+        """Noop update. The parent updates our internals."""
 
-        def _get_child_info() -> Dict:
-            """Return the subdevice information for this device."""
-            for child in self._parent._last_update["child_info"]["child_device_list"]:
-                if child["device_id"] == self._id:
-                    return child
-
-            raise SmartDeviceException(
-                f"Unable to find child device with id {self._id}"
-            )
-
-        self._last_update = self._sys_info = self._info = _get_child_info()
+    def update_internal_state(self, info):
+        """Set internal state for the child."""
+        # TODO: cleanup the _last_update, _sys_info, _info, _data mess.
+        self._last_update = self._sys_info = self._info = info
 
     def __repr__(self):
         return f"<ChildDevice {self.alias} of {self._parent}>"
