@@ -10,6 +10,24 @@ MANUAL_ENTRIES = {
 }
 
 
+def get_homeassistant_entries(manifest_file):
+    """Create a listing from the integration manifest file."""
+
+    def parse_dhcp(data):
+        macs = dict()
+        for obj in data:
+            if "macaddress" not in obj:
+                continue
+            mac = macs.setdefault(obj["macaddress"], set())
+            mac.add(obj["hostname"])
+
+        return macs
+
+    with open(manifest_file) as f:
+        data = json.load(f)
+        return parse_dhcp(data["dhcp"])
+
+
 def _get_mac_and_model(fixture_data):
     def _legacy(sysinfo):
         mac = sysinfo.get("mac", sysinfo.get("mic_mac"))
@@ -31,7 +49,8 @@ def _get_mac_and_model(fixture_data):
 
 @click.command()
 @click.option("--fixture-path", default="kasa/tests/fixtures/")
-async def cli(fixture_path):
+@click.option("--manifest-file", required=False)
+async def cli(fixture_path, manifest_file):
     """Generate dhcp discovery entries for homeassistant."""
     fixtures = Path(fixture_path)
     mac_to_model = {}
@@ -49,8 +68,13 @@ async def cli(fixture_path):
             entries = mac_to_model.setdefault(mac, set())
             entries.add(model)
 
-    # TODO: fill mac_to_model from static, non-fixture data from homeassistant
-    # TODO: generate entries directly to the manifest.json
+    if manifest_file:
+        macs = get_homeassistant_entries(manifest_file)
+        for mac, model in macs.items():
+            mac = mac.lower().rstrip("*")
+            entries = mac_to_model.setdefault(mac, set())
+            entries |= model
+
     pp(mac_to_model)
 
 
