@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.2.1](https://github.com/python-kasa/python-kasa/tree/0.6.2.1) (2024-02-02)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.2...0.6.2.1)
+
+**Fixed bugs:**
+
+- Avoid crashing on childdevice property accesses [\#732](https://github.com/python-kasa/python-kasa/pull/732) (@rytilahti)
+
+**Merged pull requests:**
+
+- Retain last two chars for children device\_id [\#733](https://github.com/python-kasa/python-kasa/pull/733) (@rytilahti)
+- Add TP15 fixture [\#730](https://github.com/python-kasa/python-kasa/pull/730) (@bdraco)
+- Add TP25 fixtures [\#729](https://github.com/python-kasa/python-kasa/pull/729) (@bdraco)
+- Various test code cleanups [\#725](https://github.com/python-kasa/python-kasa/pull/725) (@rytilahti)
+- Unignore F401 for tests [\#724](https://github.com/python-kasa/python-kasa/pull/724) (@rytilahti)
+
 ## [0.6.2](https://github.com/python-kasa/python-kasa/tree/0.6.2) (2024-01-29)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.1...0.6.2)
@@ -11,18 +27,33 @@ Release highlights:
 **Implemented enhancements:**
 
 - Implement alias set for tapodevice [\#721](https://github.com/python-kasa/python-kasa/pull/721) (@rytilahti)
-- Initial support for tapos with child devices [\#720](https://github.com/python-kasa/python-kasa/pull/720) (@rytilahti)
-- Avoid rebuilding urls for every request [\#715](https://github.com/python-kasa/python-kasa/pull/715) (@bdraco)
 - Reduce the number of times creating the cipher in klap [\#712](https://github.com/python-kasa/python-kasa/pull/712) (@bdraco)
 - Use hashlib for klap [\#711](https://github.com/python-kasa/python-kasa/pull/711) (@bdraco)
+- Initial support for tapos with child devices [\#720](https://github.com/python-kasa/python-kasa/pull/720) (@rytilahti)
+- Avoid rebuilding urls for every request [\#715](https://github.com/python-kasa/python-kasa/pull/715) (@bdraco)
 - Enable batching of multiple requests [\#662](https://github.com/python-kasa/python-kasa/pull/662) (@sdb9696)
+- Sleep between discovery packets [\#656](https://github.com/python-kasa/python-kasa/pull/656) (@sdb9696)
+
+**Fixed bugs:**
+
+- Fix TapoBulb state information for non-dimmable SMARTSWITCH [\#726](https://github.com/python-kasa/python-kasa/pull/726) (@sdb9696)
+
+**Documentation updates:**
+
+- Add protocol and transport documentation [\#663](https://github.com/python-kasa/python-kasa/pull/663) (@sdb9696)
+
+**Closed issues:**
+
+- Need to be able to both close and reset transports [\#671](https://github.com/python-kasa/python-kasa/issues/671)
+- Improve re-use of protocol code, particularly around retry logic and the IotProtocol [\#649](https://github.com/python-kasa/python-kasa/issues/649)
 
 **Merged pull requests:**
 
+- Prepare 0.6.2 [\#728](https://github.com/python-kasa/python-kasa/pull/728) (@rytilahti)
 - Update L510E\(US\) fixture with mac prefix [\#722](https://github.com/python-kasa/python-kasa/pull/722) (@sdb9696)
-- Add P300 fixture [\#717](https://github.com/python-kasa/python-kasa/pull/717) (@rytilahti)
 - Use hashlib in place of hashes.Hash [\#714](https://github.com/python-kasa/python-kasa/pull/714) (@bdraco)
 - Switch from TPLinkSmartHomeProtocol to IotProtocol/XorTransport [\#710](https://github.com/python-kasa/python-kasa/pull/710) (@sdb9696)
+- Add P300 fixture [\#717](https://github.com/python-kasa/python-kasa/pull/717) (@rytilahti)
 - Add concrete XorTransport class with full implementation [\#646](https://github.com/python-kasa/python-kasa/pull/646) (@sdb9696)
 
 ## [0.6.1](https://github.com/python-kasa/python-kasa/tree/0.6.1) (2024-01-25)
@@ -41,7 +72,6 @@ Release highlights:
 - Allow raw-command and wifi without update [\#688](https://github.com/python-kasa/python-kasa/pull/688) (@rytilahti)
 - Generate AES KeyPair lazily [\#687](https://github.com/python-kasa/python-kasa/pull/687) (@sdb9696)
 - Add reboot and factory\_reset to tapodevice [\#686](https://github.com/python-kasa/python-kasa/pull/686) (@rytilahti)
-- Sleep between discovery packets [\#656](https://github.com/python-kasa/python-kasa/pull/656) (@sdb9696)
 - Try default tapo credentials for klap and aes [\#685](https://github.com/python-kasa/python-kasa/pull/685) (@sdb9696)
 
 **Fixed bugs:**
@@ -51,7 +81,6 @@ Release highlights:
 
 **Documentation updates:**
 
-- Add protocol and transport documentation [\#663](https://github.com/python-kasa/python-kasa/pull/663) (@sdb9696)
 - Document authenticated provisioning [\#634](https://github.com/python-kasa/python-kasa/pull/634) (@rytilahti)
 
 **Closed issues:**
