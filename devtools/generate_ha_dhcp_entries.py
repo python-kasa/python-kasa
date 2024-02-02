@@ -5,6 +5,10 @@ from pprint import pprint as pp
 
 import asyncclick as click
 
+MANUAL_ENTRIES = {
+    "P115(EU)": ["50-91-E3-00-00-00", "3C-52-A1-00-00-00", "30-DE-4B-00-00-00"],
+}
+
 
 def _get_mac_and_model(fixture_data):
     def _legacy(sysinfo):
@@ -38,6 +42,12 @@ async def cli(fixture_path):
             print("No valid mac for %s" % file)
             continue
         entries.add(model)
+
+    for model, macs in MANUAL_ENTRIES.items():
+        for mac in macs:
+            mac = mac.replace("-", "")[:6].lower()
+            entries = mac_to_model.setdefault(mac, set())
+            entries.add(model)
 
     # TODO: fill mac_to_model from static, non-fixture data from homeassistant
     # TODO: generate entries directly to the manifest.json
