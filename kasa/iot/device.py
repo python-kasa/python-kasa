@@ -188,7 +188,17 @@ class IotDevice(Device):
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self._features: Set[str] = set()
-        self.children: Sequence["IotDevice"]
+        self._children: Sequence["IotDevice"] = []
+
+    @property
+    def children(self) -> Sequence["IotDevice"]:
+        """Return list of children."""
+        return self._children
+
+    @children.setter
+    def children(self, children):
+        """Initialize from a list of children."""
+        self._children = children
 
     def add_module(self, name: str, module: BaseModule):
         """Register a module."""

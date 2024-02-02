@@ -1,6 +1,6 @@
 """Module for Device base class."""
 import logging
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
@@ -34,7 +34,7 @@ class WifiNetwork:
 _LOGGER = logging.getLogger(__name__)
 
 
-class Device:
+class Device(ABC):
     """Placeholder for interface or base class."""
 
     def __init__(
@@ -62,7 +62,6 @@ class Device:
         self._discovery_info: Optional[Dict[str, Any]] = None
 
         self.modules: Dict[str, Any] = {}
-        self.children: Sequence["Device"] = []
 
     @property
     def host(self) -> str:
@@ -184,6 +183,11 @@ class Device:
     @abstractmethod
     async def update(self, update_children: bool = True):
         """Update the device."""
+
+    @property
+    @abstractmethod
+    def children(self) -> Sequence["Device"]:
+        """Returns the child devices."""
 
     @property
     @abstractmethod

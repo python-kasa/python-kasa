@@ -109,3 +109,15 @@ if TYPE_CHECKING:
     SmartStrip = iot.IotStrip
     SmartDimmer = iot.IotDimmer
     SmartBulbPreset = BulbPreset
+    # Instanstiate all classes so the type checkers catch abstract issues
+    from . import smart
+
+    smart.SmartDevice("127.0.0.1")
+    smart.SmartPlug("127.0.0.1")
+    smart.SmartBulb("127.0.0.1")
+    iot.IotDevice("127.0.0.1")
+    iot.IotPlug("127.0.0.1")
+    iot.IotBulb("127.0.0.1")
+    iot.IotLightStrip("127.0.0.1")
+    iot.IotStrip("127.0.0.1")
+    iot.IotDimmer("127.0.0.1")

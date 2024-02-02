@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Sequence, Set, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -13,6 +13,9 @@ from ..exceptions import AuthenticationException, SmartDeviceException
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from .childdevice import SmartChildDevice
 
 
 class SmartDevice(Device):
@@ -30,22 +33,31 @@ class SmartDevice(Device):
         )
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
-        self.children: Sequence["SmartDevice"]
         self._components_raw: Optional[Dict[str, Any]] = None
-        self._components: Dict[str, int]
+        self._components: Dict[str, int] = {}
+        self._children: Dict[str, "SmartChildDevice"] = {}
+        self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
 
     async def _initialize_children(self):
+        """Initialize children for power strips."""
         children = self._last_update["child_info"]["child_device_list"]
         # TODO: Use the type information to construct children,
         #  as hubs can also have them.
         from .childdevice import SmartChildDevice
 
-        self.children = [
-            SmartChildDevice(parent=self, child_id=child["device_id"])
+        self._children = {
+            child["device_id"]: SmartChildDevice(
+                parent=self, child_id=child["device_id"]
+            )
             for child in children
-        ]
+        }
         self._device_type = DeviceType.Strip
+
+    @property
+    def children(self) -> Sequence["SmartDevice"]:
+        """Return list of children."""
+        return list(self._children.values())
 
     async def update(self, update_children: bool = True):
         """Update the device."""
@@ -89,7 +101,7 @@ class SmartDevice(Device):
         self._energy = resp.get("get_energy_usage", {})
         self._emeter = resp.get("get_current_power", {})
 
-        self._last_update = self._data = {
+        self._last_update = {
             "components": self._components_raw,
             "info": self._info,
             "usage": self._usage,
@@ -98,14 +110,15 @@ class SmartDevice(Device):
             "emeter": self._emeter,
             "child_info": resp.get("get_child_device_list", {}),
         }
-
-        if self._last_update["child_info"]:
+        if not self.children:
+            pass
+        if child_info := self._last_update.get("child_info"):
             if not self.children:
                 await self._initialize_children()
-            for child in self.children:
-                await child.update()
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]].update_internal_state(info)
 
-        _LOGGER.debug("Got an update: %s", self._data)
+        _LOGGER.debug("Got an update: %s", self._last_update)
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
@@ -192,7 +205,7 @@ class SmartDevice(Device):
     @property
     def internal_state(self) -> Any:
         """Return all the internal state data."""
-        return self._data
+        return self._last_update
 
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
@@ -204,10 +217,13 @@ class SmartDevice(Device):
     @property
     def state_information(self) -> Dict[str, Any]:
         """Return the key state information."""
+        ssid = self._info.get("ssid")
+        ssid = base64.b64decode(ssid).decode() if ssid else "No SSID"
+
         return {
             "overheated": self._info.get("overheated"),
             "signal_level": self._info.get("signal_level"),
-            "SSID": base64.b64decode(str(self._info.get("ssid"))).decode(),
+            "SSID": ssid,
         }
 
     @property
