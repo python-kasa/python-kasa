@@ -24,7 +24,7 @@ def merge(d, u):
     return d
 
 
-class Module(ABC):
+class BaseModule(ABC):
     """Base class implemention for all modules.
 
     The base classes should implement `query` to return the query they want to be

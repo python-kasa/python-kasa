@@ -2,10 +2,10 @@
 from datetime import datetime
 
 from ...exceptions import SmartDeviceException
-from .module import Module, merge
+from .module import BaseModule, merge
 
 
-class Time(Module):
+class Time(BaseModule):
     """Implements the timezone settings."""
 
     def query(self):
