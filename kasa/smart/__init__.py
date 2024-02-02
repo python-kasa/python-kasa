@@ -1,7 +1,7 @@
 """Package for supporting tapo-branded and newer kasa devices."""
-from .bulb import Bulb
-from .childdevice import ChildDevice
-from .device import Device
-from .plug import Plug
+from .bulb import SmartBulb
+from .childdevice import SmartChildDevice
+from .device import SmartDevice
+from .plug import SmartPlug
 
-__all__ = ["Device", "Plug", "Bulb", "ChildDevice"]
+__all__ = ["SmartDevice", "SmartPlug", "SmartBulb", "SmartChildDevice"]

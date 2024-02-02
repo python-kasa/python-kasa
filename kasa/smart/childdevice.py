@@ -4,10 +4,10 @@ from typing import Dict, Optional
 from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
-from .device import Device
+from .device import SmartDevice
 
 
-class ChildDevice(Device):
+class SmartChildDevice(SmartDevice):
     """Presentation of a child device.
 
     This wraps the protocol communications and sets internal data for the child.
@@ -15,7 +15,7 @@ class ChildDevice(Device):
 
     def __init__(
         self,
-        parent: Device,
+        parent: SmartDevice,
         child_id: str,
         config: Optional[DeviceConfig] = None,
         protocol: Optional[SmartProtocol] = None,

@@ -15,38 +15,17 @@ import collections.abc
 import functools
 import inspect
 import logging
-from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Sequence, Set
 
-from ..credentials import Credentials
-from ..device import Device as BaseDevice
-from ..device_type import DeviceType
+from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import SmartDeviceException
-from ..iotprotocol import IotProtocol
 from ..protocol import BaseProtocol
-from ..xortransport import XorTransport
 from .modules import Emeter, Module
 
 _LOGGER = logging.getLogger(__name__)
-
-
-@dataclass
-class WifiNetwork:
-    """Wifi network container."""
-
-    ssid: str
-    key_type: int
-    # These are available only on softaponboarding
-    cipher_type: Optional[int] = None
-    bssid: Optional[str] = None
-    channel: Optional[int] = None
-    rssi: Optional[int] = None
-
-    # For SMART devices
-    signal_level: Optional[int] = None
 
 
 def merge(d, u):
@@ -93,17 +72,17 @@ def _parse_features(features: str) -> Set[str]:
     return set(features.split(":"))
 
 
-class Device(BaseDevice):
+class IotDevice(Device):
     """Base class for all supported device types.
 
     You don't usually want to initialize this class manually,
     but either use :class:`Discover` class, or use one of the subclasses:
 
-    * :class:`SmartPlug`
-    * :class:`SmartBulb`
-    * :class:`SmartStrip`
-    * :class:`SmartDimmer`
-    * :class:`SmartLightStrip`
+    * :class:`IotPlug`
+    * :class:`IotBulb`
+    * :class:`IotStrip`
+    * :class:`IotDimmer`
+    * :class:`IotLightStrip`
 
     To initialize, you have to await :func:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
@@ -116,7 +95,7 @@ class Device(BaseDevice):
 
     Examples:
         >>> import asyncio
-        >>> dev = Device("127.0.0.1")
+        >>> dev = IotDevice("127.0.0.1")
         >>> asyncio.run(dev.update())
 
         All devices provide several informational properties:
@@ -201,57 +180,15 @@ class Device(BaseDevice):
         config: Optional[DeviceConfig] = None,
         protocol: Optional[BaseProtocol] = None,
     ) -> None:
-        """Create a new SmartDevice instance.
+        """Create a new IotDevice instance.
 
         :param str host: host name or ip address on which the device listens
         """
-        if config and protocol:
-            protocol._transport._config = config
-        self.protocol: BaseProtocol = protocol or IotProtocol(
-            transport=XorTransport(config=config or DeviceConfig(host=host)),
-        )
-        _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
-        self._device_type = DeviceType.Unknown
-        # TODO: typing Any is just as using Optional[Dict] would require separate
-        #       checks in accessors. the @updated_required decorator does not ensure
-        #       mypy that these are not accessed incorrectly.
-        self._last_update: Any = None
-        self._discovery_info: Optional[Dict[str, Any]] = None
+        super().__init__(host=host, config=config, protocol=protocol)
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self._features: Set[str] = set()
-        self.modules: Dict[str, Any] = {}
-
-        self.children: List["Device"] = []
-
-    @property
-    def host(self) -> str:
-        """The device host."""
-        return self.protocol._transport._host
-
-    @host.setter
-    def host(self, value):
-        """Set the device host.
-
-        Generally used by discovery to set the hostname after ip discovery.
-        """
-        self.protocol._transport._host = value
-        self.protocol._transport._config.host = value
-
-    @property
-    def port(self) -> int:
-        """The device port."""
-        return self.protocol._transport._port
-
-    @property
-    def credentials(self) -> Optional[Credentials]:
-        """The device credentials."""
-        return self.protocol._transport._credentials
-
-    @property
-    def credentials_hash(self) -> Optional[str]:
-        """The protocol specific hash of the credentials the device is using."""
-        return self.protocol._transport.credentials_hash
+        self.children: Sequence["IotDevice"]
 
     def add_module(self, name: str, module: Module):
         """Register a module."""
@@ -292,7 +229,7 @@ class Device(BaseDevice):
         request = self._create_request(target, cmd, arg, child_ids)
 
         try:
-            response = await self.protocol.query(request=request)
+            response = await self._raw_query(request=request)
         except Exception as ex:
             raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
 
@@ -333,6 +270,12 @@ class Device(BaseDevice):
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
         return "ENE" in self.features
+
+    @property
+    @requires_update
+    def has_emeter_history(self) -> bool:
+        """Return if the device provides emeter stats."""
+        return self.has_emeter
 
     async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information."""
@@ -638,7 +581,7 @@ class Device(BaseDevice):
         """Return True if device is off."""
         return not self.is_on
 
-    async def turn_on(self, **kwargs) -> Dict:
+    async def turn_on(self, **kwargs) -> Optional[Dict]:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
@@ -715,76 +658,10 @@ class Device(BaseDevice):
             )
             return await _join("smartlife.iot.common.softaponboarding", payload)
 
-    def get_plug_by_name(self, name: str) -> "Device":
-        """Return child device for the given name."""
-        for p in self.children:
-            if p.alias == name:
-                return p
-
-        raise SmartDeviceException(f"Device has no child with {name}")
-
-    def get_plug_by_index(self, index: int) -> "Device":
-        """Return child device for the given index."""
-        if index + 1 > len(self.children) or index < 0:
-            raise SmartDeviceException(
-                f"Invalid index {index}, device has {len(self.children)} plugs"
-            )
-        return self.children[index]
-
     @property
     def max_device_response_size(self) -> int:
         """Returns the maximum response size the device can safely construct."""
         return 16 * 1024
-
-    @property
-    def device_type(self) -> DeviceType:
-        """Return the device type."""
-        return self._device_type
-
-    @property
-    def is_bulb(self) -> bool:
-        """Return True if the device is a bulb."""
-        return self._device_type == DeviceType.Bulb
-
-    @property
-    def is_light_strip(self) -> bool:
-        """Return True if the device is a led strip."""
-        return self._device_type == DeviceType.LightStrip
-
-    @property
-    def is_plug(self) -> bool:
-        """Return True if the device is a plug."""
-        return self._device_type == DeviceType.Plug
-
-    @property
-    def is_strip(self) -> bool:
-        """Return True if the device is a strip."""
-        return self._device_type == DeviceType.Strip
-
-    @property
-    def is_strip_socket(self) -> bool:
-        """Return True if the device is a strip socket."""
-        return self._device_type == DeviceType.StripSocket
-
-    @property
-    def is_dimmer(self) -> bool:
-        """Return True if the device is a dimmer."""
-        return self._device_type == DeviceType.Dimmer
-
-    @property
-    def is_dimmable(self) -> bool:
-        """Return  True if the device is dimmable."""
-        return False
-
-    @property
-    def is_variable_color_temp(self) -> bool:
-        """Return True if the device supports color temperature."""
-        return False
-
-    @property
-    def is_color(self) -> bool:
-        """Return True if the device supports color changes."""
-        return False
 
     @property
     def internal_state(self) -> Any:
@@ -794,21 +671,3 @@ class Device(BaseDevice):
         This should only be used for debugging purposes.
         """
         return self._last_update or self._discovery_info
-
-    def __repr__(self):
-        if self._last_update is None:
-            return f"<{self._device_type} at {self.host} - update() needed>"
-        return (
-            f"<{self._device_type} model {self.model} at {self.host}"
-            f" ({self.alias}), is_on: {self.is_on}"
-            f" - dev specific: {self.state_information}>"
-        )
-
-    @property
-    def config(self) -> DeviceConfig:
-        """Return the device configuration."""
-        return self.protocol.config
-
-    async def disconnect(self):
-        """Disconnect and close any underlying connection resources."""
-        await self.protocol.close()

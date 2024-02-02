@@ -12,8 +12,10 @@ Module-specific errors are raised as `SmartDeviceException` and are expected
 to be handled by the user of the library.
 """
 from importlib.metadata import version
+from typing import TYPE_CHECKING
 from warnings import warn
 
+from kasa.bulb import Bulb
 from kasa.credentials import Credentials
 from kasa.device import Device
 from kasa.device_type import DeviceType
@@ -36,6 +38,7 @@ from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
 )
+from kasa.plug import Plug
 from kasa.protocol import BaseProtocol
 from kasa.smartprotocol import SmartProtocol
 
@@ -53,6 +56,8 @@ __all__ = [
     "DeviceType",
     "EmeterStatus",
     "Device",
+    "Bulb",
+    "Plug",
     "SmartDeviceException",
     "AuthenticationException",
     "UnsupportedDeviceException",
@@ -68,12 +73,12 @@ from . import iot
 
 deprecated_names = ["TPLinkSmartHomeProtocol"]
 deprecated_smart_devices = {
-    "SmartDevice": iot.Device,
-    "SmartPlug": iot.Plug,
-    "SmartBulb": iot.Bulb,
-    "SmartLightStrip": iot.LightStrip,
-    "SmartStrip": iot.Strip,
-    "SmartDimmer": iot.Dimmer,
+    "SmartDevice": iot.IotDevice,
+    "SmartPlug": iot.IotPlug,
+    "SmartBulb": iot.IotBulb,
+    "SmartLightStrip": iot.IotLightStrip,
+    "SmartStrip": iot.IotStrip,
+    "SmartDimmer": iot.IotDimmer,
     "SmartBulbPreset": iot.BulbPreset,
 }
 
@@ -94,3 +99,13 @@ def __getattr__(name):
         )
         return new_class
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+if TYPE_CHECKING:
+    SmartDevice = Device
+    SmartBulb = iot.IotBulb
+    SmartPlug = iot.IotPlug
+    SmartLightStrip = iot.IotLightStrip
+    SmartStrip = iot.IotStrip
+    SmartDimmer = iot.IotDimmer
+    SmartBulbPreset = BulbPreset

@@ -1,6 +1,6 @@
 import pytest
 
-from kasa.iot import Dimmer
+from kasa.iot import IotDimmer
 
 from .conftest import dimmer, handle_turn_on, turn_on
 
@@ -23,7 +23,7 @@ async def test_set_brightness(dev, turn_on):
 @turn_on
 async def test_set_brightness_transition(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
-    query_helper = mocker.spy(Dimmer, "_query_helper")
+    query_helper = mocker.spy(IotDimmer, "_query_helper")
 
     await dev.set_brightness(99, transition=1000)
 
@@ -53,7 +53,7 @@ async def test_set_brightness_invalid(dev):
 
 @dimmer
 async def test_turn_on_transition(dev, mocker):
-    query_helper = mocker.spy(Dimmer, "_query_helper")
+    query_helper = mocker.spy(IotDimmer, "_query_helper")
     original_brightness = dev.brightness
 
     await dev.turn_on(transition=1000)
@@ -71,7 +71,7 @@ async def test_turn_on_transition(dev, mocker):
 @dimmer
 async def test_turn_off_transition(dev, mocker):
     await handle_turn_on(dev, True)
-    query_helper = mocker.spy(Dimmer, "_query_helper")
+    query_helper = mocker.spy(IotDimmer, "_query_helper")
     original_brightness = dev.brightness
 
     await dev.turn_off(transition=1000)
@@ -90,7 +90,7 @@ async def test_turn_off_transition(dev, mocker):
 @turn_on
 async def test_set_dimmer_transition(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
-    query_helper = mocker.spy(Dimmer, "_query_helper")
+    query_helper = mocker.spy(IotDimmer, "_query_helper")
 
     await dev.set_dimmer_transition(99, 1000)
 
@@ -109,7 +109,7 @@ async def test_set_dimmer_transition(dev, turn_on, mocker):
 async def test_set_dimmer_transition_to_off(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
     original_brightness = dev.brightness
-    query_helper = mocker.spy(Dimmer, "_query_helper")
+    query_helper = mocker.spy(IotDimmer, "_query_helper")
 
     await dev.set_dimmer_transition(0, 1000)
 

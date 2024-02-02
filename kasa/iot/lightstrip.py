@@ -5,11 +5,11 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..protocol import BaseProtocol
-from .bulb import Bulb
+from .bulb import IotBulb
 from .device import SmartDeviceException, requires_update
 
 
-class LightStrip(Bulb):
+class IotLightStrip(IotBulb):
     """Representation of a TP-Link Smart light strip.
 
     Light strips work similarly to bulbs, but use a different service for controlling,
@@ -18,7 +18,7 @@ class LightStrip(Bulb):
 
     Examples:
         >>> import asyncio
-        >>> strip = LightStrip("127.0.0.1")
+        >>> strip = IotLightStrip("127.0.0.1")
         >>> asyncio.run(strip.update())
         >>> print(strip.alias)
         KL430 pantry lightstrip

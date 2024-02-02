@@ -1,10 +1,13 @@
 """Module for tapo-branded smart bulbs (L5**)."""
 from typing import Any, Dict, List, Optional
 
+from ..bulb import Bulb
+from ..device_type import DeviceType
+from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
 from ..iot.bulb import HSV, BulbPreset, ColorTempRange
-from ..iot.bulb import Bulb as IotBulb
-from .device import Device
+from ..smartprotocol import SmartProtocol
+from .device import SmartDevice
 
 AVAILABLE_EFFECTS = {
     "L1": "Party",
@@ -12,11 +15,21 @@ AVAILABLE_EFFECTS = {
 }
 
 
-class Bulb(Device, IotBulb):
+class SmartBulb(SmartDevice, Bulb):
     """Representation of a TP-Link Tapo Bulb.
 
     Documentation TBD. See :class:`~kasa.iot.Bulb` for now.
     """
+
+    def __init__(
+        self,
+        host: str,
+        *,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[SmartProtocol] = None,
+    ) -> None:
+        super().__init__(host=host, config=config, protocol=protocol)
+        self._device_type = DeviceType.Bulb
 
     @property
     def is_color(self) -> bool:

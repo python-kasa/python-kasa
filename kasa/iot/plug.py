@@ -5,13 +5,13 @@ from typing import Any, Dict, Optional
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .device import Device, requires_update
+from .device import IotDevice, requires_update
 from .modules import Antitheft, Cloud, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Plug(Device):
+class IotPlug(IotDevice):
     r"""Representation of a TP-Link Smart Switch.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -26,7 +26,7 @@ class Plug(Device):
 
     Examples:
         >>> import asyncio
-        >>> plug = Plug("127.0.0.1")
+        >>> plug = IotPlug("127.0.0.1")
         >>> asyncio.run(plug.update())
         >>> plug.alias
         Kitchen

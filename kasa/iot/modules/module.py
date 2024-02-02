@@ -5,10 +5,9 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from ...exceptions import SmartDeviceException
-from ...module import Module as BaseModule
 
 if TYPE_CHECKING:
-    from kasa.iot import Device as IotDevice
+    from kasa.iot import IotDevice as IotDevice
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ def merge(d, u):
     return d
 
 
-class Module(BaseModule, ABC):
+class Module(ABC):
     """Base class implemention for all modules.
 
     The base classes should implement `query` to return the query they want to be

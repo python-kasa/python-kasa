@@ -346,37 +346,37 @@ def device_for_file(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
-                return smart.Plug
+                return smart.SmartPlug
         for d in BULBS_SMART:
             if d in model:
-                return smart.Bulb
+                return smart.SmartBulb
         for d in DIMMERS_SMART:
             if d in model:
-                return smart.Bulb
+                return smart.SmartBulb
         for d in STRIPS_SMART:
             if d in model:
-                return smart.Plug
+                return smart.SmartPlug
     else:
         for d in STRIPS_IOT:
             if d in model:
-                return iot.Strip
+                return iot.IotStrip
 
         for d in PLUGS_IOT:
             if d in model:
-                return iot.Plug
+                return iot.IotPlug
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:
             if d in model:
-                return iot.LightStrip
+                return iot.IotLightStrip
 
         for d in BULBS_IOT:
             if d in model:
-                return iot.Bulb
+                return iot.IotBulb
 
         for d in DIMMERS_IOT:
             if d in model:
-                return iot.Dimmer
+                return iot.IotDimmer
 
     raise Exception("Unable to find type for %s", model)
 

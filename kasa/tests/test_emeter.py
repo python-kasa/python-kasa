@@ -11,6 +11,7 @@ from voluptuous import (
 )
 
 from kasa import EmeterStatus, SmartDeviceException
+from kasa.iot import IotDevice
 from kasa.iot.modules.emeter import Emeter
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
@@ -39,12 +40,13 @@ async def test_no_emeter(dev):
 
     with pytest.raises(SmartDeviceException):
         await dev.get_emeter_realtime()
-    with pytest.raises(SmartDeviceException):
-        await dev.get_emeter_daily()
-    with pytest.raises(SmartDeviceException):
-        await dev.get_emeter_monthly()
-    with pytest.raises(SmartDeviceException):
-        await dev.erase_emeter_stats()
+    if isinstance(dev, IotDevice):
+        with pytest.raises(SmartDeviceException):
+            await dev.get_emeter_daily()
+        with pytest.raises(SmartDeviceException):
+            await dev.get_emeter_monthly()
+        with pytest.raises(SmartDeviceException):
+            await dev.erase_emeter_stats()
 
 
 @has_emeter
@@ -121,7 +123,7 @@ async def test_erase_emeter_stats(dev):
     await dev.erase_emeter()
 
 
-@has_emeter
+@has_emeter_iot
 async def test_current_consumption(dev):
     if dev.has_emeter:
         x = await dev.current_consumption()

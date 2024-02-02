@@ -9,13 +9,13 @@ from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
 from ..protocol import BaseProtocol
 from .device import (
-    Device,
     EmeterStatus,
+    IotDevice,
     merge,
     requires_update,
 )
 from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
-from .plug import Plug
+from .plug import IotPlug
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def merge_sums(dicts):
     return total_dict
 
 
-class Strip(Device):
+class IotStrip(IotDevice):
     r"""Representation of a TP-Link Smart Power Strip.
 
     A strip consists of the parent device and its children.
@@ -48,7 +48,7 @@ class Strip(Device):
 
     Examples:
         >>> import asyncio
-        >>> strip = Strip("127.0.0.1")
+        >>> strip = IotStrip("127.0.0.1")
         >>> asyncio.run(strip.update())
         >>> strip.alias
         TP-LINK_Power Strip_CF69
@@ -115,10 +115,10 @@ class Strip(Device):
         if not self.children:
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
-            for child in children:
-                self.children.append(
-                    StripPlug(self.host, parent=self, child_id=child["id"])
-                )
+            self.children = [
+                IotStripPlug(self.host, parent=self, child_id=child["id"])
+                for child in children
+            ]
 
         if update_children and self.has_emeter:
             for plug in self.children:
@@ -243,7 +243,7 @@ class Strip(Device):
         return EmeterStatus(emeter)
 
 
-class StripPlug(Plug):
+class IotStripPlug(IotPlug):
     """Representation of a single socket in a power strip.
 
     This allows you to use the sockets as they were SmartPlug objects.
@@ -253,7 +253,7 @@ class StripPlug(Plug):
     The plug inherits (most of) the system information from the parent.
     """
 
-    def __init__(self, host: str, parent: "Strip", child_id: str) -> None:
+    def __init__(self, host: str, parent: "IotStrip", child_id: str) -> None:
         super().__init__(host)
 
         self.parent = parent

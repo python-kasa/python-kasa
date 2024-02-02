@@ -2,23 +2,21 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, Dict, List, Optional, Sequence, Set, cast
 
 from ..aestransport import AesTransport
+from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
-from ..iot.device import Device as IotDevice
-from ..iot.device import WifiNetwork
 from ..smartprotocol import SmartProtocol
-from .modules.emeter import Emeter
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Device(IotDevice):
-    """Base class to represent a TAPO device."""
+class SmartDevice(Device):
+    """Base class to represent a SMART protocol based device."""
 
     def __init__(
         self,
@@ -32,6 +30,7 @@ class Device(IotDevice):
         )
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
+        self.children: Sequence["SmartDevice"]
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int]
         self._state_information: Dict[str, Any] = {}
@@ -40,10 +39,11 @@ class Device(IotDevice):
         children = self._last_update["child_info"]["child_device_list"]
         # TODO: Use the type information to construct children,
         #  as hubs can also have them.
-        from .childdevice import ChildDevice
+        from .childdevice import SmartChildDevice
 
         self.children = [
-            ChildDevice(parent=self, child_id=child["device_id"]) for child in children
+            SmartChildDevice(parent=self, child_id=child["device_id"])
+            for child in children
         ]
         self._device_type = DeviceType.Strip
 
@@ -111,7 +111,6 @@ class Device(IotDevice):
         """Initialize modules based on component negotiation response."""
         if "energy_monitoring" in self._components:
             self.emeter_type = "emeter"
-            self.modules["emeter"] = Emeter(self, self.emeter_type)
 
     @property
     def sys_info(self) -> Dict[str, Any]:
@@ -227,6 +226,11 @@ class Device(IotDevice):
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))
 
+    @property
+    def is_off(self) -> bool:
+        """Return true if the device is on."""
+        return not self.is_on
+
     async def turn_on(self, **kwargs):
         """Turn on the device."""
         await self.protocol.query({"set_device_info": {"device_on": True}})
@@ -251,6 +255,13 @@ class Device(IotDevice):
         """Return adjusted emeter information."""
         return data if not data else data * scale
 
+    def _verify_emeter(self) -> None:
+        """Raise an exception if there is no emeter."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+        if self.emeter_type not in self._last_update:
+            raise SmartDeviceException("update() required prior accessing emeter")
+
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
@@ -272,6 +283,22 @@ class Device(IotDevice):
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
         return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
+
+    @property
+    def has_emeter_history(self) -> bool:
+        """Return if the device provides emeter stats."""
+        return False
+
+    @property
+    def on_since(self) -> Optional[datetime]:
+        """Return the time that the device was turned on or None if turned off."""
+        if (
+            not self._info.get("device_on")
+            or (on_time := self._info.get("on_time")) is None
+        ):
+            return None
+        on_time = cast(float, on_time)
+        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     async def wifi_scan(self) -> List[WifiNetwork]:
         """Scan for available wifi networks."""

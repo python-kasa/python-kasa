@@ -1,17 +1,17 @@
 """Module for a TAPO Plug."""
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
+from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..iot.device import DeviceType
+from ..plug import Plug
 from ..smartprotocol import SmartProtocol
-from .device import Device
+from .device import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Plug(Device):
+class SmartPlug(SmartDevice, Plug):
     """Class to represent a TAPO Plug."""
 
     def __init__(
@@ -35,11 +35,3 @@ class Plug(Device):
                 "auto_off_remain_time": self._info.get("auto_off_remain_time"),
             },
         }
-
-    @property
-    def on_since(self) -> Optional[datetime]:
-        """Return the time that the device was turned on or None if turned off."""
-        if not self._info.get("device_on"):
-            return None
-        on_time = cast(float, self._info.get("on_time"))
-        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)

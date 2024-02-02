@@ -2,50 +2,19 @@
 import logging
 import re
 from enum import Enum
-from typing import Any, Dict, List, NamedTuple, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 try:
     from pydantic.v1 import BaseModel, Field, root_validator
 except ImportError:
     from pydantic import BaseModel, Field, root_validator
 
+from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .device import Device, SmartDeviceException, requires_update
+from .device import IotDevice, SmartDeviceException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
-
-
-class ColorTempRange(NamedTuple):
-    """Color temperature range."""
-
-    min: int
-    max: int
-
-
-class HSV(NamedTuple):
-    """Hue-saturation-value."""
-
-    hue: int
-    saturation: int
-    value: int
-
-
-class BulbPreset(BaseModel):
-    """Bulb configuration preset."""
-
-    index: int
-    brightness: int
-
-    # These are not available for effect mode presets on light strips
-    hue: Optional[int]
-    saturation: Optional[int]
-    color_temp: Optional[int]
-
-    # Variables for effect mode presets
-    custom: Optional[int]
-    id: Optional[str]
-    mode: Optional[int]
 
 
 class BehaviorMode(str, Enum):
@@ -117,7 +86,7 @@ NON_COLOR_MODE_FLAGS = {"transition_period", "on_off"}
 _LOGGER = logging.getLogger(__name__)
 
 
-class Bulb(Device):
+class IotBulb(IotDevice, Bulb):
     r"""Representation of a TP-Link Smart Bulb.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -133,7 +102,7 @@ class Bulb(Device):
 
     Examples:
         >>> import asyncio
-        >>> bulb = Bulb("127.0.0.1")
+        >>> bulb = IotBulb("127.0.0.1")
         >>> asyncio.run(bulb.update())
         >>> print(bulb.alias)
         Bulb2
@@ -373,10 +342,6 @@ class Bulb(Device):
         value = light_state["brightness"]
 
         return HSV(hue, saturation, value)
-
-    def _raise_for_invalid_brightness(self, value):
-        if not isinstance(value, int) or not (0 <= value <= 100):
-            raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     @requires_update
     async def set_hsv(

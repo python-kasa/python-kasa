@@ -113,9 +113,9 @@ def default_to_regular(d):
     return d
 
 
-async def handle_device(basedir, autosave, device: iot.Device, batch_size: int):
+async def handle_device(basedir, autosave, device: iot.IotDevice, batch_size: int):
     """Create a fixture for a single device instance."""
-    if isinstance(device, smart.Device):
+    if isinstance(device, smart.SmartDevice):
         filename, copy_folder, final = await get_smart_fixture(device, batch_size)
     else:
         filename, copy_folder, final = await get_legacy_fixture(device)
@@ -268,7 +268,7 @@ def _echo_error(msg: str):
 
 
 async def _make_requests_or_exit(
-    device: smart.Device,
+    device: smart.SmartDevice,
     requests: List[SmartRequest],
     name: str,
     batch_size: int,
@@ -313,7 +313,7 @@ async def _make_requests_or_exit(
         exit(1)
 
 
-async def get_smart_fixture(device: smart.Device, batch_size: int):
+async def get_smart_fixture(device: smart.SmartDevice, batch_size: int):
     """Get fixture for new TAPO style protocol."""
     extra_test_calls = [
         SmartCall(

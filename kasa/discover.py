@@ -15,6 +15,7 @@ try:
 except ImportError:
     from pydantic import BaseModel, ValidationError  # pragma: no cover
 
+from kasa import Device
 from kasa.credentials import Credentials
 from kasa.device_factory import (
     get_device_class_from_family,
@@ -27,7 +28,7 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
-from kasa.iot.device import Device
+from kasa.iot.device import IotDevice
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.xortransport import XorEncryption
@@ -125,7 +126,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             return
         self.seen_hosts.add(ip)
 
-        device = None
+        device: Optional[Device] = None
 
         config = DeviceConfig(host=ip, port_override=self.port)
         if self.credentials:
@@ -401,7 +402,7 @@ class Discover:
             return get_device_class_from_sys_info(info)
 
     @staticmethod
-    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> Device:
+    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> IotDevice:
         """Get SmartDevice from legacy 9999 response."""
         try:
             info = json_loads(XorEncryption.decrypt(data))
@@ -412,7 +413,7 @@ class Discover:
 
         _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
 
-        device_class = Discover._get_device_class(info)
+        device_class = cast(Type[IotDevice], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
         sys_info = info["system"]["get_sysinfo"]
         if device_type := sys_info.get("mic_type", sys_info.get("type")):

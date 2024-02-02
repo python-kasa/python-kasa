@@ -1,9 +1,17 @@
 """Package for supporting legacy kasa devices."""
-from .bulb import Bulb, BulbPreset
-from .device import Device
-from .dimmer import Dimmer
-from .lightstrip import LightStrip
-from .plug import Plug
-from .strip import Strip
+from .bulb import BulbPreset, IotBulb
+from .device import IotDevice
+from .dimmer import IotDimmer
+from .lightstrip import IotLightStrip
+from .plug import IotPlug
+from .strip import IotStrip
 
-__all__ = ["Device", "Plug", "Bulb", "Strip", "Dimmer", "LightStrip", "BulbPreset"]
+__all__ = [
+    "IotDevice",
+    "IotPlug",
+    "IotBulb",
+    "IotStrip",
+    "IotDimmer",
+    "IotLightStrip",
+    "BulbPreset",
+]
