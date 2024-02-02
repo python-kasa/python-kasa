@@ -38,6 +38,7 @@ class SmartDevice(Device):
         self._children: Dict[str, "SmartChildDevice"] = {}
         self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
+        self._time: Dict[str, Any] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
