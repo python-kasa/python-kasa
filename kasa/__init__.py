@@ -17,6 +17,7 @@ from warnings import warn
 
 from kasa.bulb import Bulb
 from kasa.credentials import Credentials
+from kasa.descriptors import Descriptor, DescriptorCategory, DescriptorType
 from kasa.device import Device
 from kasa.device_type import DeviceType
 from kasa.deviceconfig import (
@@ -54,6 +55,9 @@ __all__ = [
     "TurnOnBehaviors",
     "TurnOnBehavior",
     "DeviceType",
+    "Descriptor",
+    "DescriptorType",
+    "DescriptorCategory",
     "EmeterStatus",
     "Device",
     "Bulb",

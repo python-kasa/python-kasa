@@ -565,6 +565,10 @@ async def state(ctx, dev: Device):
         else:
             echo(f"\t{info_name}: {info_data}")
 
+    echo("\n\t[bold]== Descriptors == [/bold]")
+    for id_, descriptor in dev.descriptors.items():
+        echo(f"\t{descriptor.name} ({id_}): {descriptor.value}")
+
     if dev.has_emeter:
         echo("\n\t[bold]== Current State ==[/bold]")
         emeter_status = dev.emeter_realtime
@@ -1100,6 +1104,38 @@ async def shell(dev: Device):
         )
     except EOFError:
         loop.stop()
+
+
+@cli.command(name="descriptor")
+@click.argument("name", required=False)
+@click.argument("value", required=False)
+@pass_dev
+async def descriptor(dev, name: str, value):
+    """Access and modify descriptor values.
+
+    If no *name* is given, lists available descriptors and their values.
+    If only *name* is given, the value of named descriptor is returned.
+    If both *name* and *value* are set, the described setting is changed.
+    """
+    if not name:
+        echo("[bold]== Descriptors ==[/bold]")
+        for name, desc in dev.descriptors.items():
+            echo(f"{desc.name} ({name}): {desc.value}")
+        return
+
+    if name not in dev.descriptors:
+        echo(f"No descriptor by name {name}")
+        return
+
+    desc = dev.descriptors[name]
+
+    if value is None:
+        echo(f"{desc.name} ({name}): {desc.value}")
+        return desc.value
+
+    echo(f"Setting {name} to {value}")
+    value = ast.literal_eval(value)
+    return await dev.descriptors[name].set_value(value)
 
 
 if __name__ == "__main__":

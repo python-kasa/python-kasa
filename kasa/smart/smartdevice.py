@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, cast
 
 from ..aestransport import AesTransport
+from ..descriptors import Descriptor, DescriptorType
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -118,12 +119,61 @@ class SmartDevice(Device):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]].update_internal_state(info)
 
+        # We can first initialize the descriptors after the first update.
+        # We make here an assumption that every device has at least a single descriptor.
+        if not self._descriptors:
+            await self._initialize_descriptors()
+
         _LOGGER.debug("Got an update: %s", self._last_update)
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
         if "energy_monitoring" in self._components:
             self.emeter_type = "emeter"
+
+    async def _initialize_descriptors(self):
+        """Initialize device descriptors."""
+        self.add_descriptor(
+            Descriptor(
+                self,
+                "Signal Level",
+                attribute_getter=lambda x: x._info["signal_level"],
+                icon="mdi:signal",
+            )
+        )
+        self.add_descriptor(
+            Descriptor(
+                device=self, name="Time", attribute_getter="time", show_in_hass=False
+            )
+        )
+        self.add_descriptor(
+            Descriptor(
+                device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi"
+            )
+        )
+
+        if "overheated" in self._info:
+            self.add_descriptor(
+                Descriptor(
+                    self,
+                    "Overheated",
+                    attribute_getter=lambda x: x._info["overheated"],
+                    icon="mdi:heat-wave",
+                    type=DescriptorType.BinarySensor,
+                )
+            )
+
+        # We check for the key available, and not for the property truthiness,
+        # as the value is falsy when the device is off.
+        if "on_since" in self._info:
+            self.add_descriptor(
+                Descriptor(
+                    device=self,
+                    name="On since",
+                    attribute_getter="on_since",
+                    icon="mdi:clock",
+                )
+            )
 
     @property
     def sys_info(self) -> Dict[str, Any]:
@@ -215,15 +265,19 @@ class SmartDevice(Device):
         return res
 
     @property
-    def state_information(self) -> Dict[str, Any]:
-        """Return the key state information."""
+    def ssid(self) -> str:
+        """Return ssid of the connected wifi ap."""
         ssid = self._info.get("ssid")
         ssid = base64.b64decode(ssid).decode() if ssid else "No SSID"
+        return ssid
 
+    @property
+    def state_information(self) -> Dict[str, Any]:
+        """Return the key state information."""
         return {
             "overheated": self._info.get("overheated"),
             "signal_level": self._info.get("signal_level"),
-            "SSID": ssid,
+            "SSID": self.ssid,
         }
 
     @property

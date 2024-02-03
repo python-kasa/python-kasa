@@ -2,6 +2,7 @@
 import logging
 from typing import Any, Dict, Optional
 
+from ..descriptors import Descriptor, DescriptorCategory, DescriptorType
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
@@ -56,6 +57,18 @@ class IotPlug(IotDevice):
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
 
+        self.add_descriptor(
+            Descriptor(
+                device=self,
+                name="LED",
+                icon="mdi:led-{state}",
+                attribute_getter="led",
+                attribute_setter="set_led",
+                category=DescriptorCategory.Config,
+                type=DescriptorType.Switch,
+            )
+        )
+
     @property  # type: ignore
     @requires_update
     def is_on(self) -> bool:
@@ -88,5 +101,4 @@ class IotPlug(IotDevice):
     @requires_update
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information."""
-        info = {"LED state": self.led, "On since": self.on_since}
-        return info
+        return {}

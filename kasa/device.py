@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence, Set, Union
 
 from .credentials import Credentials
+from .descriptors import Descriptor
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
@@ -69,6 +70,7 @@ class Device(ABC):
         self._discovery_info: Optional[Dict[str, Any]] = None
 
         self.modules: Dict[str, Any] = {}
+        self._descriptors: Dict[str, Descriptor] = {}
 
     @staticmethod
     async def connect(
@@ -342,6 +344,18 @@ class Device(ABC):
     @abstractmethod
     async def set_alias(self, alias: str):
         """Set the device name (alias)."""
+
+    @property
+    def descriptors(self) -> Dict[str, Descriptor]:
+        """Return the list of descriptors."""
+        return self._descriptors
+
+    def add_descriptor(self, descriptor: "Descriptor"):
+        """Add a new descriptor to the device."""
+        desc_name = descriptor.name.lower().replace(" ", "_")
+        if desc_name in self._descriptors:
+            raise SmartDeviceException("Duplicate descriptor name %s" % desc_name)
+        self._descriptors[desc_name] = descriptor
 
     def __repr__(self):
         if self._last_update is None:
