@@ -65,7 +65,10 @@ def scrub(res):
         "alias",
         "bssid",
         "channel",
-        "original_device_id",  # for child devices
+        "original_device_id",  # for child devices on strips
+        "parent_device_id",  # for hub children
+        "setup_code",  # matter
+        "setup_payload",  # matter
     ]
 
     for k, v in res.items():
