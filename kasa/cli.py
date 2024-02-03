@@ -334,6 +334,7 @@ async def cli(
         )
         config = DeviceConfig(
             host=host,
+            port_override=port,
             credentials=credentials,
             credentials_hash=credentials_hash,
             timeout=timeout,

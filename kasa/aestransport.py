@@ -102,7 +102,7 @@ class AesTransport(BaseTransport):
         self._session_cookie: Optional[Dict[str, str]] = None
 
         self._key_pair: Optional[KeyPair] = None
-        self._app_url = URL(f"http://{self._host}/app")
+        self._app_url = URL(f"http://{self._host}:{self._port}/app")
         self._token_url: Optional[URL] = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
@@ -257,7 +257,6 @@ class AesTransport(BaseTransport):
         self._session_expire_at = None
         self._session_cookie = None
 
-        url = f"http://{self._host}/app"
         # Device needs the content length or it will response with 500
         headers = {
             **self.COMMON_HEADERS,
@@ -266,7 +265,7 @@ class AesTransport(BaseTransport):
         http_client = self._http_client
 
         status_code, resp_dict = await http_client.post(
-            url,
+            self._app_url,
             json=self._generate_key_pair_payload(),
             headers=headers,
             cookies_dict=self._session_cookie,
