@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .device import IotDevice, requires_update
+from .iotdevice import IotDevice, requires_update
 from .modules import Antitheft, Cloud, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)

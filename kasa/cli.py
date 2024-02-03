@@ -21,11 +21,12 @@ from kasa import (
     DeviceFamilyType,
     Discover,
     EncryptType,
+    SmartDeviceException,
     UnsupportedDeviceException,
-    iot,
-    smart,
 )
 from kasa.discover import DiscoveryResult
+from kasa.iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
+from kasa.smart import SmartBulb, SmartDevice, SmartPlug
 
 try:
     from pydantic.v1 import ValidationError
@@ -60,18 +61,18 @@ echo = _do_echo
 
 
 TYPE_TO_CLASS = {
-    "plug": iot.IotPlug,
-    "bulb": iot.IotBulb,
-    "dimmer": iot.IotDimmer,
-    "strip": iot.IotStrip,
-    "lightstrip": iot.IotLightStrip,
-    "iot.plug": iot.IotPlug,
-    "iot.bulb": iot.IotBulb,
-    "iot.dimmer": iot.IotDimmer,
-    "iot.strip": iot.IotStrip,
-    "iot.lightstrip": iot.IotLightStrip,
-    "smart.plug": smart.SmartPlug,
-    "smart.bulb": smart.SmartBulb,
+    "plug": IotPlug,
+    "bulb": IotBulb,
+    "dimmer": IotDimmer,
+    "strip": IotStrip,
+    "lightstrip": IotLightStrip,
+    "iot.plug": IotPlug,
+    "iot.bulb": IotBulb,
+    "iot.dimmer": IotDimmer,
+    "iot.strip": IotStrip,
+    "iot.lightstrip": IotLightStrip,
+    "smart.plug": SmartPlug,
+    "smart.bulb": SmartBulb,
 }
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
@@ -621,12 +622,17 @@ async def raw_command(ctx, dev: Device, module, command, parameters):
 @click.option("--module", required=False, help="Module for IOT protocol.")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def cmd_command(dev: iot.IotDevice, module, command, parameters):
+async def cmd_command(dev: Device, module, command, parameters):
     """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
 
-    res = await dev._query_helper(module, command, parameters)
+    if isinstance(dev, IotDevice):
+        res = await dev._query_helper(module, command, parameters)
+    elif isinstance(dev, SmartDevice):
+        res = await dev._query_helper(command, parameters)
+    else:
+        raise SmartDeviceException("Unexpected device type %s.", dev)
     echo(json.dumps(res))
     return res
 
@@ -658,11 +664,11 @@ async def emeter(dev: Device, index: int, name: str, year, month, erase):
         echo("Device has no emeter")
         return
 
-    if (year or month or erase) and not isinstance(dev, iot.IotDevice):
+    if (year or month or erase) and not isinstance(dev, IotDevice):
         echo("Device has no historical statistics")
         return
     else:
-        dev = cast(iot.IotDevice, dev)
+        dev = cast(IotDevice, dev)
 
     if erase:
         echo("Erasing emeter statistics..")
@@ -971,9 +977,9 @@ async def presets(ctx):
 
 @presets.command(name="list")
 @pass_dev
-def presets_list(dev: iot.IotBulb):
+def presets_list(dev: IotBulb):
     """List presets."""
-    if not dev.is_bulb or not isinstance(dev, iot.IotBulb):
+    if not dev.is_bulb or not isinstance(dev, IotBulb):
         echo("Presets only supported on iot bulbs")
         return
 
@@ -990,9 +996,7 @@ def presets_list(dev: iot.IotBulb):
 @click.option("--saturation", type=int)
 @click.option("--temperature", type=int)
 @pass_dev
-async def presets_modify(
-    dev: iot.IotBulb, index, brightness, hue, saturation, temperature
-):
+async def presets_modify(dev: IotBulb, index, brightness, hue, saturation, temperature):
     """Modify a preset."""
     for preset in dev.presets:
         if preset.index == index:
@@ -1020,9 +1024,9 @@ async def presets_modify(
 @click.option("--type", type=click.Choice(["soft", "hard"], case_sensitive=False))
 @click.option("--last", is_flag=True)
 @click.option("--preset", type=int)
-async def turn_on_behavior(dev: iot.IotBulb, type, last, preset):
+async def turn_on_behavior(dev: IotBulb, type, last, preset):
     """Modify bulb turn-on behavior."""
-    if not dev.is_bulb or not isinstance(dev, iot.IotBulb):
+    if not dev.is_bulb or not isinstance(dev, IotBulb):
         echo("Presets only supported on iot bulbs")
         return
     settings = await dev.get_turn_on_behavior()

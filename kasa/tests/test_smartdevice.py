@@ -298,10 +298,19 @@ async def test_modules_not_supported(dev: iot.IotDevice):
         assert module.is_supported is not None
 
 
-@pytest.mark.parametrize("device_class", kasa.deprecated_smart_devices.keys())
-def test_deprecated_devices(device_class):
-    with pytest.deprecated_call():
+@pytest.mark.parametrize(
+    "device_class, use_class", kasa.deprecated_smart_devices.items()
+)
+def test_deprecated_devices(device_class, use_class):
+    package_name = ".".join(use_class.__module__.split(".")[:-1])
+    msg = f"{device_class} is deprecated, use {use_class.__name__} from package {package_name} instead"
+    with pytest.deprecated_call(match=msg):
         getattr(kasa, device_class)
+    packages = package_name.split(".")
+    module = __import__(packages[0])
+    for _ in packages[1:]:
+        module = importlib.import_module(package_name, package=module.__name__)
+    getattr(module, use_class.__name__)
 
 
 def check_mac(x):

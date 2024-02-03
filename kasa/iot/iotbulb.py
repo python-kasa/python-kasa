@@ -13,7 +13,7 @@ from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .device import IotDevice, SmartDeviceException, requires_update
+from .iotdevice import IotDevice, SmartDeviceException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
 
 

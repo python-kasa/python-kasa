@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from kasa.smart.childdevice import SmartChildDevice
+from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smartprotocol import _ChildProtocolWrapper
 
 from .conftest import strip_smart

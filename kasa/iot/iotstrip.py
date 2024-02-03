@@ -8,14 +8,14 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import SmartDeviceException
 from ..protocol import BaseProtocol
-from .device import (
+from .iotdevice import (
     EmeterStatus,
     IotDevice,
     merge,
     requires_update,
 )
+from .iotplug import IotPlug
 from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
-from .plug import IotPlug
 
 _LOGGER = logging.getLogger(__name__)
 

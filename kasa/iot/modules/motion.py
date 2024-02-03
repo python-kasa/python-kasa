@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional
 
 from ...exceptions import SmartDeviceException
-from .module import BaseModule
+from .module import IotModule
 
 
 class Range(Enum):
@@ -20,7 +20,7 @@ class Range(Enum):
 # "min_adc":0,"max_adc":4095,"array":[80,50,20,0],"err_code":0}}}
 
 
-class Motion(BaseModule):
+class Motion(IotModule):
     """Implements the motion detection (PIR) module."""
 
     def query(self):

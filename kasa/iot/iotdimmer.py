@@ -5,9 +5,9 @@ from typing import Any, Dict, Optional
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .device import SmartDeviceException, requires_update
+from .iotdevice import SmartDeviceException, requires_update
+from .iotplug import IotPlug
 from .modules import AmbientLight, Motion
-from .plug import IotPlug
 
 
 class ButtonAction(Enum):

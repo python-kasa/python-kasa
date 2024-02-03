@@ -9,7 +9,7 @@ except ImportError:
     from pydantic import BaseModel
 
 
-from .module import BaseModule, merge
+from .module import IotModule, merge
 
 
 class Action(Enum):
@@ -55,7 +55,7 @@ class Rule(BaseModel):
 _LOGGER = logging.getLogger(__name__)
 
 
-class RuleModule(BaseModule):
+class RuleModule(IotModule):
     """Base class for rule-based modules, such as countdown and antitheft."""
 
     def query(self):

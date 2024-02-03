@@ -6,7 +6,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..plug import Plug
 from ..smartprotocol import SmartProtocol
-from .device import SmartDevice
+from .smartdevice import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
 

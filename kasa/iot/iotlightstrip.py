@@ -5,8 +5,8 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..protocol import BaseProtocol
-from .bulb import IotBulb
-from .device import SmartDeviceException, requires_update
+from .iotbulb import IotBulb
+from .iotdevice import SmartDeviceException, requires_update
 
 
 class IotLightStrip(IotBulb):

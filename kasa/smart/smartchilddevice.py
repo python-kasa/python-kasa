@@ -4,7 +4,7 @@ from typing import Optional
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
-from .device import SmartDevice
+from .smartdevice import SmartDevice
 
 
 class SmartChildDevice(SmartDevice):

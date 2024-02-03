@@ -23,7 +23,7 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import SmartDeviceException
 from ..protocol import BaseProtocol
-from .modules import BaseModule, Emeter
+from .modules import Emeter, IotModule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -200,7 +200,7 @@ class IotDevice(Device):
         """Initialize from a list of children."""
         self._children = children
 
-    def add_module(self, name: str, module: BaseModule):
+    def add_module(self, name: str, module: IotModule):
         """Register a module."""
         if name in self.modules:
             _LOGGER.debug("Module %s already registered, ignoring..." % name)

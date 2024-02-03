@@ -28,7 +28,7 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
-from kasa.iot.device import IotDevice
+from kasa.iot.iotdevice import IotDevice
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.xortransport import XorEncryption

@@ -15,7 +15,7 @@ from ..smartprotocol import SmartProtocol
 _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from .childdevice import SmartChildDevice
+    from .smartchilddevice import SmartChildDevice
 
 
 class SmartDevice(Device):
@@ -45,7 +45,7 @@ class SmartDevice(Device):
         children = self._last_update["child_info"]["child_device_list"]
         # TODO: Use the type information to construct children,
         #  as hubs can also have them.
-        from .childdevice import SmartChildDevice
+        from .smartchilddevice import SmartChildDevice
 
         self._children = {
             child["device_id"]: SmartChildDevice(
@@ -111,8 +111,6 @@ class SmartDevice(Device):
             "emeter": self._emeter,
             "child_info": resp.get("get_child_device_list", {}),
         }
-        if not self.children:
-            pass
         if child_info := self._last_update.get("child_info"):
             if not self.children:
                 await self._initialize_children()
@@ -209,9 +207,9 @@ class SmartDevice(Device):
         return self._last_update
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+        self, method: str, params: Optional[Dict] = None, child_ids=None
     ) -> Any:
-        res = await self.protocol.query({cmd: arg})
+        res = await self.protocol.query({method: params})
 
         return res
 

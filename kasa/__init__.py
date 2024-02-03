@@ -33,7 +33,7 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
-from kasa.iot.bulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
+from kasa.iot.iotbulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
@@ -79,7 +79,7 @@ deprecated_smart_devices = {
     "SmartLightStrip": iot.IotLightStrip,
     "SmartStrip": iot.IotStrip,
     "SmartDimmer": iot.IotDimmer,
-    "SmartBulbPreset": iot.BulbPreset,
+    "SmartBulbPreset": BulbPreset,
 }
 
 
@@ -89,11 +89,10 @@ def __getattr__(name):
         return globals()[f"_deprecated_{name}"]
     if name in deprecated_smart_devices:
         new_class = deprecated_smart_devices[name]
-        new_name = (
-            ".".join(new_class.__module__.split(".")[:-1]) + "." + new_class.__name__
-        )
+        package_name = ".".join(new_class.__module__.split(".")[:-1])
         warn(
-            f"{name} is deprecated, use {new_name} instead",
+            f"{name} is deprecated, use {new_class.__name__} "
+            + f"from package {package_name} instead",
             DeprecationWarning,
             stacklevel=1,
         )
