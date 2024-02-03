@@ -127,11 +127,13 @@ class SmartStrip(SmartDevice):
 
     async def turn_on(self, **kwargs):
         """Turn the strip on."""
-        await self._query_helper("system", "set_relay_state", {"state": 1})
+        for plug in self.children:
+            await plug.turn_on()
 
     async def turn_off(self, **kwargs):
         """Turn the strip off."""
-        await self._query_helper("system", "set_relay_state", {"state": 0})
+        for plug in self.children:
+            await plug.turn_off()
 
     @property  # type: ignore
     @requires_update
