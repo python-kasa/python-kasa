@@ -14,7 +14,6 @@ from kasa import (
     DeviceType,
     Discover,
     SmartDeviceException,
-    iot,
 )
 from kasa.deviceconfig import (
     ConnectionType,
@@ -22,6 +21,7 @@ from kasa.deviceconfig import (
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
+from kasa.iot import IotDevice
 from kasa.xortransport import XorEncryption
 
 from .conftest import (
@@ -299,7 +299,7 @@ async def test_discover_single_authentication(discovery_mock, mocker):
 
 @new_discovery
 async def test_device_update_from_new_discovery_info(discovery_data):
-    device = iot.IotDevice("127.0.0.7")
+    device = IotDevice("127.0.0.7")
     discover_info = DiscoveryResult(**discovery_data["result"])
     discover_dump = discover_info.get_dict()
     discover_dump["alias"] = "foobar"

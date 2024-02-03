@@ -11,8 +11,6 @@ from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
 
-import kasa.iot as iot
-import kasa.smart as smart
 from kasa import (
     Credentials,
     Device,
@@ -20,7 +18,9 @@ from kasa import (
     Discover,
     SmartProtocol,
 )
+from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip
 from kasa.protocol import BaseTransport
+from kasa.smart import SmartBulb, SmartPlug
 from kasa.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -346,37 +346,37 @@ def device_for_file(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
-                return smart.SmartPlug
+                return SmartPlug
         for d in BULBS_SMART:
             if d in model:
-                return smart.SmartBulb
+                return SmartBulb
         for d in DIMMERS_SMART:
             if d in model:
-                return smart.SmartBulb
+                return SmartBulb
         for d in STRIPS_SMART:
             if d in model:
-                return smart.SmartPlug
+                return SmartPlug
     else:
         for d in STRIPS_IOT:
             if d in model:
-                return iot.IotStrip
+                return IotStrip
 
         for d in PLUGS_IOT:
             if d in model:
-                return iot.IotPlug
+                return IotPlug
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:
             if d in model:
-                return iot.IotLightStrip
+                return IotLightStrip
 
         for d in BULBS_IOT:
             if d in model:
-                return iot.IotBulb
+                return IotBulb
 
         for d in DIMMERS_IOT:
             if d in model:
-                return iot.IotDimmer
+                return IotDimmer
 
     raise Exception("Unable to find type for %s", model)
 

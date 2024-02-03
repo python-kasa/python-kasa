@@ -20,7 +20,9 @@ from voluptuous import (
 )
 
 import kasa
-from kasa import Credentials, Device, DeviceConfig, SmartDeviceException, iot, smart
+from kasa import Credentials, Device, DeviceConfig, SmartDeviceException
+from kasa.iot import IotDevice
+from kasa.smart import SmartChildDevice, SmartDevice
 
 from .conftest import device_iot, handle_turn_on, has_emeter_iot, no_emeter_iot, turn_on
 from .fakeprotocol_iot import FakeIotProtocol
@@ -242,8 +244,8 @@ async def test_device_class_ctors(device_class_name_obj):
     credentials = Credentials("foo", "bar")
     config = DeviceConfig(host, port_override=port, credentials=credentials)
     klass = device_class_name_obj[1]
-    if issubclass(klass, smart.SmartChildDevice):
-        parent = smart.SmartDevice(host, config=config)
+    if issubclass(klass, SmartChildDevice):
+        parent = SmartDevice(host, config=config)
         dev = klass(parent, 1)
     else:
         dev = klass(host, config=config)
@@ -253,7 +255,7 @@ async def test_device_class_ctors(device_class_name_obj):
 
 
 @device_iot
-async def test_modules_preserved(dev: iot.IotDevice):
+async def test_modules_preserved(dev: IotDevice):
     """Make modules that are not being updated are preserved between updates."""
     dev._last_update["some_module_not_being_updated"] = "should_be_kept"
     await dev.update()
@@ -263,9 +265,9 @@ async def test_modules_preserved(dev: iot.IotDevice):
 async def test_create_smart_device_with_timeout():
     """Make sure timeout is passed to the protocol."""
     host = "127.0.0.1"
-    dev = iot.IotDevice(host, config=DeviceConfig(host, timeout=100))
+    dev = IotDevice(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
-    dev = smart.SmartDevice(host, config=DeviceConfig(host, timeout=100))
+    dev = SmartDevice(host, config=DeviceConfig(host, timeout=100))
     assert dev.protocol._transport._timeout == 100
 
 
@@ -289,7 +291,7 @@ async def test_create_thin_wrapper():
 
 
 @device_iot
-async def test_modules_not_supported(dev: iot.IotDevice):
+async def test_modules_not_supported(dev: IotDevice):
     """Test that unsupported modules do not break the device."""
     for module in dev.modules.values():
         assert module.is_supported is not None

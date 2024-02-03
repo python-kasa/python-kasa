@@ -3,17 +3,18 @@ import logging
 import time
 from typing import Any, Dict, Optional, Tuple, Type
 
-from . import iot, smart
 from .aestransport import AesTransport
 from .device import Device
 from .deviceconfig import DeviceConfig
 from .exceptions import SmartDeviceException, UnsupportedDeviceException
+from .iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
 from .iotprotocol import IotProtocol
 from .klaptransport import KlapTransport, KlapTransportV2
 from .protocol import (
     BaseProtocol,
     BaseTransport,
 )
+from .smart import SmartBulb, SmartPlug
 from .smartprotocol import SmartProtocol
 from .xortransport import XorTransport
 
@@ -96,7 +97,7 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Devic
         )
 
 
-def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[iot.IotDevice]:
+def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[IotDevice]:
     """Find SmartDevice subclass for device described by passed data."""
     if "system" not in info or "get_sysinfo" not in info["system"]:
         raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
@@ -107,32 +108,32 @@ def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[iot.IotDevice]:
         raise SmartDeviceException("Unable to find the device type field!")
 
     if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
-        return iot.IotDimmer
+        return IotDimmer
 
     if "smartplug" in type_.lower():
         if "children" in sysinfo:
-            return iot.IotStrip
+            return IotStrip
 
-        return iot.IotPlug
+        return IotPlug
 
     if "smartbulb" in type_.lower():
         if "length" in sysinfo:  # strips have length
-            return iot.IotLightStrip
+            return IotLightStrip
 
-        return iot.IotBulb
+        return IotBulb
     raise UnsupportedDeviceException("Unknown device type: %s" % type_)
 
 
 def get_device_class_from_family(device_type: str) -> Optional[Type[Device]]:
     """Return the device class from the type name."""
     supported_device_types: Dict[str, Type[Device]] = {
-        "SMART.TAPOPLUG": smart.SmartPlug,
-        "SMART.TAPOBULB": smart.SmartBulb,
-        "SMART.TAPOSWITCH": smart.SmartBulb,
-        "SMART.KASAPLUG": smart.SmartPlug,
-        "SMART.KASASWITCH": smart.SmartBulb,
-        "IOT.SMARTPLUGSWITCH": iot.IotPlug,
-        "IOT.SMARTBULB": iot.IotBulb,
+        "SMART.TAPOPLUG": SmartPlug,
+        "SMART.TAPOBULB": SmartBulb,
+        "SMART.TAPOSWITCH": SmartBulb,
+        "SMART.KASAPLUG": SmartPlug,
+        "SMART.KASASWITCH": SmartBulb,
+        "IOT.SMARTPLUGSWITCH": IotPlug,
+        "IOT.SMARTBULB": IotBulb,
     }
     return supported_device_types.get(device_type)
 
