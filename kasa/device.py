@@ -35,7 +35,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Device(ABC):
-    """Placeholder for interface or base class."""
+    """Common device interface."""
 
     def __init__(
         self,
@@ -44,9 +44,11 @@ class Device(ABC):
         config: Optional[DeviceConfig] = None,
         protocol: Optional[BaseProtocol] = None,
     ) -> None:
-        """Create a new SmartDevice instance.
+        """Create a new Device instance.
 
-        :param str host: host name or ip address on which the device listens
+        :param str host: host name or IP address of the device
+        :param DeviceConfig config: device configuration
+        :param BaseProtocol protocol: protocol for communicating with the device
         """
         if config and protocol:
             protocol._transport._config = config
@@ -62,6 +64,58 @@ class Device(ABC):
         self._discovery_info: Optional[Dict[str, Any]] = None
 
         self.modules: Dict[str, Any] = {}
+
+    @staticmethod
+    async def connect(
+        *,
+        host: Optional[str] = None,
+        config: Optional[DeviceConfig] = None,
+    ) -> "Device":
+        """Connect to a single device by the given hostname or device configuration.
+
+        This method avoids the UDP based discovery process and
+        will connect directly to the device.
+
+        It is generally preferred to avoid :func:`discover_single()` and
+        use this function instead as it should perform better when
+        the WiFi network is congested or the device is not responding
+        to discovery requests.
+
+        :param host: Hostname of device to query
+        :param config: Connection parameters to ensure the correct protocol
+            and connection options are used.
+        :rtype: SmartDevice
+        :return: Object for querying/controlling found device.
+        """
+        from .device_factory import connect  # pylint: disable=import-outside-toplevel
+
+        return await connect(host=host, config=config)  # type: ignore[arg-type]
+
+    @abstractmethod
+    async def update(self, update_children: bool = True):
+        """Update the device."""
+
+    async def disconnect(self):
+        """Disconnect and close any underlying connection resources."""
+        await self.protocol.close()
+
+    @property
+    @abstractmethod
+    def is_on(self) -> bool:
+        """Return true if the device is on."""
+
+    @property
+    def is_off(self) -> bool:
+        """Return True if device is off."""
+        return not self.is_on
+
+    @abstractmethod
+    async def turn_on(self, **kwargs) -> Optional[Dict]:
+        """Turn on the device."""
+
+    @abstractmethod
+    async def turn_off(self, **kwargs) -> Optional[Dict]:
+        """Turn off the device."""
 
     @property
     def host(self) -> str:
@@ -96,6 +150,39 @@ class Device(ABC):
     def device_type(self) -> DeviceType:
         """Return the device type."""
         return self._device_type
+
+    @abstractmethod
+    def update_from_discover_info(self, info):
+        """Update state from info from the discover call."""
+
+    @property
+    def config(self) -> DeviceConfig:
+        """Return the device configuration."""
+        return self.protocol.config
+
+    @property
+    @abstractmethod
+    def model(self) -> str:
+        """Returns the device model."""
+
+    @property
+    @abstractmethod
+    def alias(self) -> Optional[str]:
+        """Returns the device alias or nickname."""
+
+    async def _raw_query(self, request: Union[str, Dict]) -> Any:
+        """Send a raw query to the device."""
+        return await self.protocol.query(request=request)
+
+    @property
+    @abstractmethod
+    def children(self) -> Sequence["Device"]:
+        """Returns the child devices."""
+
+    @property
+    @abstractmethod
+    def sys_info(self) -> Dict[str, Any]:
+        """Returns the device info."""
 
     @property
     def is_bulb(self) -> bool:
@@ -158,52 +245,6 @@ class Device(ABC):
             )
         return self.children[index]
 
-    def __repr__(self):
-        if self._last_update is None:
-            return f"<{self._device_type} at {self.host} - update() needed>"
-        return (
-            f"<{self._device_type} model {self.model} at {self.host}"
-            f" ({self.alias}), is_on: {self.is_on}"
-            f" - dev specific: {self.state_information}>"
-        )
-
-    @property
-    def config(self) -> DeviceConfig:
-        """Return the device configuration."""
-        return self.protocol.config
-
-    async def disconnect(self):
-        """Disconnect and close any underlying connection resources."""
-        await self.protocol.close()
-
-    async def _raw_query(self, request: Union[str, Dict]) -> Any:
-        """Send a raw query to the device."""
-        return await self.protocol.query(request=request)
-
-    @abstractmethod
-    async def update(self, update_children: bool = True):
-        """Update the device."""
-
-    @property
-    @abstractmethod
-    def children(self) -> Sequence["Device"]:
-        """Returns the child devices."""
-
-    @property
-    @abstractmethod
-    def sys_info(self) -> Dict[str, Any]:
-        """Returns the device info."""
-
-    @property
-    @abstractmethod
-    def model(self) -> str:
-        """Returns the device model."""
-
-    @property
-    @abstractmethod
-    def alias(self) -> Optional[str]:
-        """Returns the device alias or nickname."""
-
     @property
     @abstractmethod
     def time(self) -> datetime:
@@ -261,30 +302,8 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def is_on(self) -> bool:
-        """Return true if the device is on."""
-
-    @property
-    @abstractmethod
-    def is_off(self) -> bool:
-        """Return true if the device is off."""
-
-    @property
-    @abstractmethod
     def on_since(self) -> Optional[datetime]:
         """Return the time that the device was turned on or None if turned off."""
-
-    @abstractmethod
-    async def turn_on(self, **kwargs) -> Optional[Dict]:
-        """Turn on the device."""
-
-    @abstractmethod
-    async def turn_off(self, **kwargs) -> Optional[Dict]:
-        """Turn off the device."""
-
-    @abstractmethod
-    def update_from_discover_info(self, info):
-        """Update state from info from the discover call."""
 
     @abstractmethod
     async def get_emeter_realtime(self) -> EmeterStatus:
@@ -319,28 +338,11 @@ class Device(ABC):
     async def set_alias(self, alias: str):
         """Set the device name (alias)."""
 
-    @staticmethod
-    async def connect(
-        *,
-        host: Optional[str] = None,
-        config: Optional[DeviceConfig] = None,
-    ) -> "Device":
-        """Connect to a single device by the given hostname or device configuration.
-
-        This method avoids the UDP based discovery process and
-        will connect directly to the device.
-
-        It is generally preferred to avoid :func:`discover_single()` and
-        use this function instead as it should perform better when
-        the WiFi network is congested or the device is not responding
-        to discovery requests.
-
-        :param host: Hostname of device to query
-        :param config: Connection parameters to ensure the correct protocol
-            and connection options are used.
-        :rtype: SmartDevice
-        :return: Object for querying/controlling found device.
-        """
-        from .device_factory import connect  # pylint: disable=import-outside-toplevel
-
-        return await connect(host=host, config=config)  # type: ignore[arg-type]
+    def __repr__(self):
+        if self._last_update is None:
+            return f"<{self._device_type} at {self.host} - update() needed>"
+        return (
+            f"<{self._device_type} model {self.model} at {self.host}"
+            f" ({self.alias}), is_on: {self.is_on}"
+            f" - dev specific: {self.state_information}>"
+        )

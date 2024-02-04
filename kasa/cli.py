@@ -1063,9 +1063,6 @@ async def turn_on_behavior(dev: IotBulb, type, last, preset):
 )
 async def update_credentials(dev, username, password):
     """Update device credentials for authenticated devices."""
-    # Importing here as this is not really a public interface for now
-    from kasa.smart import SmartDevice
-
     if not isinstance(dev, SmartDevice):
         raise NotImplementedError(
             "Credentials can only be updated on authenticated devices."

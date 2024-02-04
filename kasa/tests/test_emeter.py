@@ -40,6 +40,8 @@ async def test_no_emeter(dev):
 
     with pytest.raises(SmartDeviceException):
         await dev.get_emeter_realtime()
+    # Only iot devices support the historical stats so other
+    # devices will not implement the methods below
     if isinstance(dev, IotDevice):
         with pytest.raises(SmartDeviceException):
             await dev.get_emeter_daily()

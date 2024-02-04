@@ -111,6 +111,7 @@ class SmartDevice(Device):
             "emeter": self._emeter,
             "child_info": resp.get("get_child_device_list", {}),
         }
+
         if child_info := self._last_update.get("child_info"):
             if not self.children:
                 await self._initialize_children()
@@ -240,11 +241,6 @@ class SmartDevice(Device):
     def is_on(self) -> bool:
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))
-
-    @property
-    def is_off(self) -> bool:
-        """Return true if the device is on."""
-        return not self.is_on
 
     async def turn_on(self, **kwargs):
         """Turn on the device."""

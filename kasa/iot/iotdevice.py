@@ -180,10 +180,7 @@ class IotDevice(Device):
         config: Optional[DeviceConfig] = None,
         protocol: Optional[BaseProtocol] = None,
     ) -> None:
-        """Create a new IotDevice instance.
-
-        :param str host: host name or ip address on which the device listens
-        """
+        """Create a new IotDevice instance."""
         super().__init__(host=host, config=config, protocol=protocol)
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
@@ -578,12 +575,6 @@ class IotDevice(Device):
     async def turn_off(self, **kwargs) -> Dict:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
-
-    @property  # type: ignore
-    @requires_update
-    def is_off(self) -> bool:
-        """Return True if device is off."""
-        return not self.is_on
 
     async def turn_on(self, **kwargs) -> Optional[Dict]:
         """Turn device on."""

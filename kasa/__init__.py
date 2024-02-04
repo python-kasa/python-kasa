@@ -92,7 +92,8 @@ def __getattr__(name):
         package_name = ".".join(new_class.__module__.split(".")[:-1])
         warn(
             f"{name} is deprecated, use {new_class.__name__} "
-            + f"from package {package_name} instead",
+            + f"from package {package_name} instead or use Discover.discover_single()"
+            + " and Device.connect() to support new protocols",
             DeprecationWarning,
             stacklevel=1,
         )
