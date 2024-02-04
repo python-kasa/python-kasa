@@ -35,7 +35,12 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Device(ABC):
-    """Common device interface."""
+    """Common device interface.
+
+    Do not instantiate this class directly, instead get a device instance from
+    :func:`Device.connect()`, :func:`Discover.discover()`
+    or :func:`Discover.discover_single()`.
+    """
 
     def __init__(
         self,
