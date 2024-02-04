@@ -1,8 +1,8 @@
 """Module for a SMART device."""
 import base64
 import logging
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -12,7 +12,8 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
 from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
-from .modules import *
+from .modules import *  # noqa: F403  # This registers all our modules
+from .smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class SmartDevice(Device):
         self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
         self._time: Dict[str, Any] = {}
-        self.modules: Dict[str, "SmartModule"] = {}
+        self.modules: Dict[str, SmartModule] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -85,7 +86,6 @@ class SmartDevice(Device):
         for module in self.modules.values():
             extra_reqs.update(module.query())
 
-
         req = {
             "get_device_info": None,
             **extra_reqs,
@@ -104,9 +104,10 @@ class SmartDevice(Device):
             "child_info": resp.get("get_child_device_list", {}),
         }
 
-        _LOGGER.debug("Got an update: %s", pf(self._data))
+        if child_info := self._last_update.get("child_info"):
             if not self.children:
                 await self._initialize_children()
+
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]].update_internal_state(info)
 

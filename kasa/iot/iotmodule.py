@@ -1,20 +1,16 @@
-"""Base class for all module implementations."""
+"""Base class for IOT module implementations."""
 import collections
 import logging
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict
-
-from ...exceptions import SmartDeviceException
 from ...feature import Feature
 
-if TYPE_CHECKING:
-    from kasa.iot import IotDevice
-
+from ..exceptions import SmartDeviceException
+from ..module import Module
 
 _LOGGER = logging.getLogger(__name__)
 
 
-# TODO: This is used for query construcing
+# TODO: This is used for query constructing, check for a better place
 def merge(d, u):
     """Update dict recursively."""
     for k, v in u.items():
@@ -25,16 +21,8 @@ def merge(d, u):
     return d
 
 
-class IotModule(ABC):
-    """Base class implemention for all modules.
-
-    The base classes should implement `query` to return the query they want to be
-    executed during the regular update cycle.
-    """
-
-    def __init__(self, device: "IotDevice", module: str):
-        self._device = device
-        self._module = module
+class IotModule(Module):
+    """Base class implemention for all IOT modules."""
         self._module_features: Dict[str, Feature] = {}
 
     def add_feature(self, feature: Feature):
@@ -44,14 +32,6 @@ class IotModule(ABC):
             raise SmartDeviceException("Duplicate name detected %s" % feature_name)
         self._module_features[feature_name] = feature
 
-    @abstractmethod
-    def query(self):
-        """Query to execute during the update cycle.
-
-        The inheriting modules implement this to include their wanted
-        queries to the query that gets executed when Device.update() gets called.
-        """
-
     @property
     def estimated_query_response_size(self):
         """Estimated maximum size of query response.
@@ -60,6 +40,14 @@ class IotModule(ABC):
         will be so that queries can be split should an estimated response be too large
         """
         return 256  # Estimate for modules that don't specify
+
+    def call(self, method, params=None):
+        """Call the given method with the given parameters."""
+        return self._device._query_helper(self._module, method, params)
+
+    def query_for_command(self, query, params=None):
+        """Create a request object for the given parameters."""
+        return self._device._create_request(self._module, query, params)
 
     @property
     def data(self):
@@ -80,17 +68,3 @@ class IotModule(ABC):
             return True
 
         return "err_code" not in self.data
-
-    def call(self, method, params=None):
-        """Call the given method with the given parameters."""
-        return self._device._query_helper(self._module, method, params)
-
-    def query_for_command(self, query, params=None):
-        """Create a request object for the given parameters."""
-        return self._device._create_request(self._module, query, params)
-
-    def __repr__(self) -> str:
-        return (
-            f"<Module {self.__class__.__name__} ({self._module})"
-            f" for {self._device.host}>"
-        )

@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional
 
 from ...exceptions import SmartDeviceException
-from .module import IotModule
+from ..iotmodule import IotModule
 
 
 class Range(Enum):

@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Type
 
 from ..exceptions import SmartDeviceException
-from ..modules import Module
+from ..module import Module
 
 _LOGGER = logging.getLogger(__name__)
 
