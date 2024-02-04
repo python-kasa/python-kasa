@@ -4,10 +4,10 @@ from typing import Optional
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
-from .tapodevice import TapoDevice
+from .smartdevice import SmartDevice
 
 
-class ChildDevice(TapoDevice):
+class SmartChildDevice(SmartDevice):
     """Presentation of a child device.
 
     This wraps the protocol communications and sets internal data for the child.
@@ -15,7 +15,7 @@ class ChildDevice(TapoDevice):
 
     def __init__(
         self,
-        parent: TapoDevice,
+        parent: SmartDevice,
         child_id: str,
         config: Optional[DeviceConfig] = None,
         protocol: Optional[SmartProtocol] = None,

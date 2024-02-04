@@ -1,11 +1,11 @@
 """Provides the current time and timezone information."""
 from datetime import datetime
 
-from ..exceptions import SmartDeviceException
-from .module import Module, merge
+from ...exceptions import SmartDeviceException
+from .module import IotModule, merge
 
 
-class Time(Module):
+class Time(IotModule):
     """Implements the timezone settings."""
 
     def query(self):

@@ -10,9 +10,9 @@ from async_timeout import timeout as asyncio_timeout
 
 from kasa import (
     Credentials,
+    Device,
     DeviceType,
     Discover,
-    SmartDevice,
     SmartDeviceException,
 )
 from kasa.deviceconfig import (
@@ -21,6 +21,7 @@ from kasa.deviceconfig import (
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
+from kasa.iot import IotDevice
 from kasa.xortransport import XorEncryption
 
 from .conftest import (
@@ -55,14 +56,14 @@ UNSUPPORTED = {
 
 
 @plug
-async def test_type_detection_plug(dev: SmartDevice):
+async def test_type_detection_plug(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_plug
     assert d.device_type == DeviceType.Plug
 
 
 @bulb_iot
-async def test_type_detection_bulb(dev: SmartDevice):
+async def test_type_detection_bulb(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     # TODO: light_strip is a special case for now to force bulb tests on it
     if not d.is_light_strip:
@@ -71,21 +72,21 @@ async def test_type_detection_bulb(dev: SmartDevice):
 
 
 @strip_iot
-async def test_type_detection_strip(dev: SmartDevice):
+async def test_type_detection_strip(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_strip
     assert d.device_type == DeviceType.Strip
 
 
 @dimmer
-async def test_type_detection_dimmer(dev: SmartDevice):
+async def test_type_detection_dimmer(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_dimmer
     assert d.device_type == DeviceType.Dimmer
 
 
 @lightstrip
-async def test_type_detection_lightstrip(dev: SmartDevice):
+async def test_type_detection_lightstrip(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_light_strip
     assert d.device_type == DeviceType.LightStrip
@@ -111,7 +112,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     x = await Discover.discover_single(
         host, port=custom_port, credentials=Credentials()
     )
-    assert issubclass(x.__class__, SmartDevice)
+    assert issubclass(x.__class__, Device)
     assert x._discovery_info is not None
     assert x.port == custom_port or x.port == discovery_mock.default_port
     assert update_mock.call_count == 0
@@ -144,7 +145,7 @@ async def test_discover_single_hostname(discovery_mock, mocker):
     update_mock = mocker.patch.object(device_class, "update")
 
     x = await Discover.discover_single(host, credentials=Credentials())
-    assert issubclass(x.__class__, SmartDevice)
+    assert issubclass(x.__class__, Device)
     assert x._discovery_info is not None
     assert x.host == host
     assert update_mock.call_count == 0
@@ -232,7 +233,7 @@ async def test_discover_datagram_received(mocker, discovery_data):
     # Check that unsupported device is 1
     assert len(proto.unsupported_device_exceptions) == 1
     dev = proto.discovered_devices[addr]
-    assert issubclass(dev.__class__, SmartDevice)
+    assert issubclass(dev.__class__, Device)
     assert dev.host == addr
 
 
@@ -298,7 +299,7 @@ async def test_discover_single_authentication(discovery_mock, mocker):
 
 @new_discovery
 async def test_device_update_from_new_discovery_info(discovery_data):
-    device = SmartDevice("127.0.0.7")
+    device = IotDevice("127.0.0.7")
     discover_info = DiscoveryResult(**discovery_data["result"])
     discover_dump = discover_info.get_dict()
     discover_dump["alias"] = "foobar"
@@ -323,7 +324,7 @@ async def test_discover_single_http_client(discovery_mock, mocker):
 
     http_client = aiohttp.ClientSession()
 
-    x: SmartDevice = await Discover.discover_single(host)
+    x: Device = await Discover.discover_single(host)
 
     assert x.config.uses_http == (discovery_mock.default_port == 80)
 
@@ -341,7 +342,7 @@ async def test_discover_http_client(discovery_mock, mocker):
     http_client = aiohttp.ClientSession()
 
     devices = await Discover.discover(discovery_timeout=0)
-    x: SmartDevice = devices[host]
+    x: Device = devices[host]
     assert x.config.uses_http == (discovery_mock.default_port == 80)
 
     if discovery_mock.default_port == 80:

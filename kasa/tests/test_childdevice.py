@@ -3,8 +3,8 @@ import sys
 
 import pytest
 
+from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smartprotocol import _ChildProtocolWrapper
-from kasa.tapo.childdevice import ChildDevice
 
 from .conftest import strip_smart
 
@@ -42,7 +42,7 @@ async def test_childdevice_update(dev, dummy_protocol, mocker):
     sys.version_info < (3, 11),
     reason="exceptiongroup requires python3.11+",
 )
-async def test_childdevice_properties(dev: ChildDevice):
+async def test_childdevice_properties(dev: SmartChildDevice):
     """Check that accessing childdevice properties do not raise exceptions."""
     assert len(dev.children) > 0
 
