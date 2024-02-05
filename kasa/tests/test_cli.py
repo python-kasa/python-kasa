@@ -538,3 +538,18 @@ async def test_type_param(device_type, mocker):
     )
     assert res.exit_code == 0
     assert isinstance(result_device, expected_type)
+
+
+async def test_shell(dev: Device, mocker):
+    """Test that the shell commands tries to embed a shell."""
+    mocker.patch("kasa.Discover.discover", return_value=[dev])
+    # repl = mocker.patch("ptpython.repl")
+    mocker.patch.dict(
+        "sys.modules",
+        {"ptpython": mocker.MagicMock(), "ptpython.repl": mocker.MagicMock()},
+    )
+    embed = mocker.patch("ptpython.repl.embed")
+    runner = CliRunner()
+    res = await runner.invoke(cli, ["shell"], obj=dev)
+    assert res.exit_code == 0
+    embed.assert_called()
