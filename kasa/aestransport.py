@@ -208,9 +208,9 @@ class AesTransport(BaseTransport):
             except AuthenticationException:
                 raise
             except Exception as ex:
-                raise AuthenticationException(
+                raise SmartDeviceException(
                     "Unable to login and trying default "
-                    + "login raised another exception: %s",
+                    + f"login raised another exception: {ex}",
                     ex,
                 ) from ex
 
