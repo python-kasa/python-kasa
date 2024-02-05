@@ -540,6 +540,9 @@ async def test_type_param(device_type, mocker):
     assert isinstance(result_device, expected_type)
 
 
+@pytest.mark.skip(
+    "Skip until pytest-asyncio supports pytest 8.0, https://github.com/pytest-dev/pytest-asyncio/issues/737"
+)
 async def test_shell(dev: Device, mocker):
     """Test that the shell commands tries to embed a shell."""
     mocker.patch("kasa.Discover.discover", return_value=[dev])
