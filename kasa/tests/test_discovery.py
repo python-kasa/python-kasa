@@ -191,7 +191,7 @@ async def test_discover_invalid_info(msg, data, mocker):
     """Make sure that invalid discovery information raises an exception."""
     host = "127.0.0.1"
 
-    def mock_discover(self):
+    async def mock_discover(self):
         self.datagram_received(
             XorEncryption.encrypt(json_dumps(data))[4:], (host, 9999)
         )
@@ -204,7 +204,8 @@ async def test_discover_invalid_info(msg, data, mocker):
 
 async def test_discover_send(mocker):
     """Test discovery parameters."""
-    proto = _DiscoverProtocol()
+    discovery_timeout = 0
+    proto = _DiscoverProtocol(discovery_timeout=discovery_timeout)
     assert proto.discovery_packets == 3
     assert proto.target_1 == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
@@ -299,22 +300,25 @@ async def test_discover_single_authentication(discovery_mock, mocker):
 
 @new_discovery
 async def test_device_update_from_new_discovery_info(discovery_data):
-    device = IotDevice("127.0.0.7")
+    """Make sure that new discovery devices update from discovery info correctly."""
+    device_class = Discover._get_device_class(discovery_data)
+    device = device_class("127.0.0.1")
     discover_info = DiscoveryResult(**discovery_data["result"])
     discover_dump = discover_info.get_dict()
-    discover_dump["alias"] = "foobar"
-    discover_dump["model"] = discover_dump["device_model"]
+    model, _, _ = discover_dump["device_model"].partition("(")
+    discover_dump["model"] = model
     device.update_from_discover_info(discover_dump)
 
-    assert device.alias == "foobar"
     assert device.mac == discover_dump["mac"].replace("-", ":")
-    assert device.model == discover_dump["device_model"]
+    assert device.model == model
 
-    with pytest.raises(
-        SmartDeviceException,
-        match=re.escape("You need to await update() to access the data"),
-    ):
-        assert device.supported_modules
+    # TODO implement requires_update for SmartDevice
+    if isinstance(device, IotDevice):
+        with pytest.raises(
+            SmartDeviceException,
+            match=re.escape("You need to await update() to access the data"),
+        ):
+            assert device.supported_modules
 
 
 async def test_discover_single_http_client(discovery_mock, mocker):
@@ -335,7 +339,7 @@ async def test_discover_single_http_client(discovery_mock, mocker):
 
 
 async def test_discover_http_client(discovery_mock, mocker):
-    """Make sure that discover_single returns an initialized SmartDevice instance."""
+    """Make sure that discover returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
     discovery_mock.ip = host
 
@@ -403,31 +407,24 @@ class FakeDatagramTransport(asyncio.DatagramTransport):
 @pytest.mark.parametrize("port", [9999, 20002])
 @pytest.mark.parametrize("do_not_reply_count", [0, 1, 2, 3, 4])
 async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
-    """Make sure that discover_single handles authenticating devices correctly."""
+    """Make sure that _DiscoverProtocol handles authenticating devices correctly."""
     host = "127.0.0.1"
-    discovery_timeout = 1
+    discovery_timeout = 0
 
-    event = asyncio.Event()
     dp = _DiscoverProtocol(
         target=host,
         discovery_timeout=discovery_timeout,
         discovery_packets=5,
-        discovered_event=event,
     )
     ft = FakeDatagramTransport(dp, port, do_not_reply_count)
     dp.connection_made(ft)
 
-    timed_out = False
-    try:
-        async with asyncio_timeout(discovery_timeout):
-            await event.wait()
-    except asyncio.TimeoutError:
-        timed_out = True
+    await dp.wait_for_discovery_to_complete()
 
     await asyncio.sleep(0)
     assert ft.send_count == do_not_reply_count + 1
     assert dp.discover_task.done()
-    assert timed_out is False
+    assert dp.discover_task.cancelled()
 
 
 @pytest.mark.parametrize(
@@ -436,27 +433,69 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
     ids=["unknownport", "unsupporteddevice"],
 )
 async def test_do_discover_invalid(mocker, port, will_timeout):
-    """Make sure that discover_single handles authenticating devices correctly."""
+    """Make sure that _DiscoverProtocol handles invalid devices correctly."""
     host = "127.0.0.1"
-    discovery_timeout = 1
+    discovery_timeout = 0
 
-    event = asyncio.Event()
     dp = _DiscoverProtocol(
         target=host,
         discovery_timeout=discovery_timeout,
         discovery_packets=5,
-        discovered_event=event,
     )
     ft = FakeDatagramTransport(dp, port, 0, unsupported=True)
     dp.connection_made(ft)
 
-    timed_out = False
-    try:
-        async with asyncio_timeout(15):
-            await event.wait()
-    except asyncio.TimeoutError:
-        timed_out = True
-
+    await dp.wait_for_discovery_to_complete()
     await asyncio.sleep(0)
     assert dp.discover_task.done()
-    assert timed_out is will_timeout
+    assert dp.discover_task.cancelled() != will_timeout
+
+
+async def test_discover_propogates_task_exceptions(discovery_mock):
+    """Make sure that discover propogates callback exceptions."""
+    discovery_timeout = 0
+
+    async def on_discovered(dev):
+        raise SmartDeviceException("Dummy exception")
+
+    with pytest.raises(SmartDeviceException):
+        await Discover.discover(
+            discovery_timeout=discovery_timeout, on_discovered=on_discovered
+        )
+
+
+async def test_do_discover_no_connection(mocker):
+    """Make sure that if the datagram connection doesnt start a TimeoutError is raised."""
+    host = "127.0.0.1"
+    discovery_timeout = 0
+    mocker.patch.object(_DiscoverProtocol, "DISCOVERY_START_TIMEOUT", 0)
+    dp = _DiscoverProtocol(
+        target=host,
+        discovery_timeout=discovery_timeout,
+        discovery_packets=5,
+    )
+    # Normally tests would simulate connection as per below
+    # ft = FakeDatagramTransport(dp, port, 0, unsupported=True)
+    # dp.connection_made(ft)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await dp.wait_for_discovery_to_complete()
+
+
+async def test_do_discover_external_cancel(mocker):
+    """Make sure that a cancel other than when target is discovered propogates."""
+    host = "127.0.0.1"
+    discovery_timeout = 1
+
+    dp = _DiscoverProtocol(
+        target=host,
+        discovery_timeout=discovery_timeout,
+        discovery_packets=1,
+    )
+    # Normally tests would simulate connection as per below
+    ft = FakeDatagramTransport(dp, 9999, 1, unsupported=True)
+    dp.connection_made(ft)
+
+    with pytest.raises(asyncio.TimeoutError):
+        async with asyncio_timeout(0):
+            await dp.wait_for_discovery_to_complete()

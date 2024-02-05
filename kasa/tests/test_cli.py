@@ -290,7 +290,7 @@ async def test_brightness(dev):
 @device_iot
 async def test_json_output(dev: Device, mocker):
     """Test that the json output produces correct output."""
-    mocker.patch("kasa.Discover.discover", return_value=[dev])
+    mocker.patch("kasa.Discover.discover", return_value={"127.0.0.1": dev})
     runner = CliRunner()
     res = await runner.invoke(cli, ["--json", "state"], obj=dev)
     assert res.exit_code == 0
@@ -410,6 +410,26 @@ async def test_discover(discovery_mock, mocker):
             "bar",
             "--verbose",
             "discover",
+        ],
+    )
+    assert res.exit_code == 0
+
+
+async def test_discover_host(discovery_mock, mocker):
+    """Test discovery output."""
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        [
+            "--discovery-timeout",
+            0,
+            "--host",
+            "127.0.0.123",
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--verbose",
         ],
     )
     assert res.exit_code == 0

@@ -444,12 +444,12 @@ async def discover(ctx):
                 _echo_discovery_info(dev._discovery_info)
                 echo()
             else:
-                discovered[dev.host] = dev.internal_state
                 ctx.parent.obj = dev
                 await ctx.parent.invoke(state)
+                discovered[dev.host] = dev.internal_state
             echo()
 
-    await Discover.discover(
+    discovered_devices = await Discover.discover(
         target=target,
         discovery_timeout=discovery_timeout,
         on_discovered=print_discovered,
@@ -458,6 +458,9 @@ async def discover(ctx):
         timeout=timeout,
         credentials=credentials,
     )
+
+    for device in discovered_devices.values():
+        await device.protocol.close()
 
     echo(f"Found {len(discovered)} devices")
     if unsupported:
