@@ -209,6 +209,17 @@ async def test_passthrough_errors(mocker, error_code):
         await transport.send(json_dumps(request))
 
 
+async def test_port_override():
+    """Test that port override sets the app_url."""
+    host = "127.0.0.1"
+    config = DeviceConfig(
+        host, credentials=Credentials("foo", "bar"), port_override=12345
+    )
+    transport = AesTransport(config=config)
+
+    assert str(transport._app_url) == "http://127.0.0.1:12345/app"
+
+
 class MockAesDevice:
     class _mock_response:
         def __init__(self, status, json: dict):
@@ -256,7 +267,7 @@ class MockAesDevice:
         elif json["method"] == "login_device":
             return await self._return_login_response(url, json)
         else:
-            assert str(url) == f"http://{self.host}/app?token={self.token}"
+            assert str(url) == f"http://{self.host}:80/app?token={self.token}"
             return await self._return_send_response(url, json)
 
     async def _return_handshake_response(self, url: URL, json: Dict[str, Any]):

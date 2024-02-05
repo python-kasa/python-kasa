@@ -1,14 +1,15 @@
 """Module for light strips (KL430)."""
 from typing import Any, Dict, List, Optional
 
-from .deviceconfig import DeviceConfig
-from .effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
-from .protocol import BaseProtocol
-from .smartbulb import SmartBulb
-from .smartdevice import DeviceType, SmartDeviceException, requires_update
+from ..device_type import DeviceType
+from ..deviceconfig import DeviceConfig
+from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
+from ..protocol import BaseProtocol
+from .iotbulb import IotBulb
+from .iotdevice import SmartDeviceException, requires_update
 
 
-class SmartLightStrip(SmartBulb):
+class IotLightStrip(IotBulb):
     """Representation of a TP-Link Smart light strip.
 
     Light strips work similarly to bulbs, but use a different service for controlling,
@@ -17,7 +18,7 @@ class SmartLightStrip(SmartBulb):
 
     Examples:
         >>> import asyncio
-        >>> strip = SmartLightStrip("127.0.0.1")
+        >>> strip = IotLightStrip("127.0.0.1")
         >>> asyncio.run(strip.update())
         >>> print(strip.alias)
         KL430 pantry lightstrip

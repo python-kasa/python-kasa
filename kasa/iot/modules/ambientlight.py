@@ -1,5 +1,5 @@
 """Implementation of the ambient light (LAS) module found in some dimmers."""
-from .module import Module
+from .module import IotModule
 
 # TODO create tests and use the config reply there
 # [{"hw_id":0,"enable":0,"dark_index":1,"min_adc":0,"max_adc":2450,
@@ -11,7 +11,7 @@ from .module import Module
 # {"name":"custom","adc":2400,"value":97}]}]
 
 
-class AmbientLight(Module):
+class AmbientLight(IotModule):
     """Implements ambient light controls for the motion sensor."""
 
     def query(self):

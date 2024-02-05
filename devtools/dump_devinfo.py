@@ -23,14 +23,14 @@ from devtools.helpers.smartrequests import COMPONENT_REQUESTS, SmartRequest
 from kasa import (
     AuthenticationException,
     Credentials,
+    Device,
     Discover,
-    SmartDevice,
     SmartDeviceException,
     TimeoutException,
 )
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
-from kasa.tapo.tapodevice import TapoDevice
+from kasa.smart import SmartDevice
 
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed")
@@ -60,6 +60,7 @@ def scrub(res):
         "alias",
         "bssid",
         "channel",
+        "original_device_id",  # for child devices
     ]
 
     for k, v in res.items():
@@ -96,6 +97,11 @@ def scrub(res):
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
+                elif k == "device_id" and len(v) > 40:
+                    # retain the last two chars when scrubbing child ids
+                    end = v[-2:]
+                    v = re.sub(r"\w", "0", v)
+                    v = v[:40] + end
                 else:
                     v = re.sub(r"\w", "0", v)
 
@@ -113,9 +119,9 @@ def default_to_regular(d):
     return d
 
 
-async def handle_device(basedir, autosave, device: SmartDevice, batch_size: int):
+async def handle_device(basedir, autosave, device: Device, batch_size: int):
     """Create a fixture for a single device instance."""
-    if isinstance(device, TapoDevice):
+    if isinstance(device, SmartDevice):
         filename, copy_folder, final = await get_smart_fixture(device, batch_size)
     else:
         filename, copy_folder, final = await get_legacy_fixture(device)
@@ -313,7 +319,7 @@ async def _make_requests_or_exit(
         exit(1)
 
 
-async def get_smart_fixture(device: TapoDevice, batch_size: int):
+async def get_smart_fixture(device: SmartDevice, batch_size: int):
     """Get fixture for new TAPO style protocol."""
     extra_test_calls = [
         SmartCall(

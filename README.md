@@ -284,6 +284,7 @@ At the moment, the following devices have been confirmed to work:
 * Tapo P110
 * Tapo P125M
 * Tapo P135 (dimming not yet supported)
+* Tapo TP15
 
 #### Bulbs
 
@@ -306,6 +307,7 @@ At the moment, the following devices have been confirmed to work:
 #### Power strips
 
 * Tapo P300
+* Tapo TP25
 
 
 ### Newer Kasa branded devices

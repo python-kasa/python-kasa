@@ -1,4 +1,4 @@
-from kasa.smartdevice import DeviceType
+from kasa.device_type import DeviceType
 
 
 async def test_device_type_from_value():

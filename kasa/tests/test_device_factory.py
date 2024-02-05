@@ -6,8 +6,8 @@ import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
     Credentials,
+    Device,
     Discover,
-    SmartDevice,
     SmartDeviceException,
 )
 from kasa.device_factory import connect, get_protocol
@@ -83,7 +83,7 @@ async def test_connect_custom_port(all_fixture_data: dict, mocker, custom_port):
     mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
     dev = await connect(config=config)
-    assert issubclass(dev.__class__, SmartDevice)
+    assert issubclass(dev.__class__, Device)
     assert dev.port == custom_port or dev.port == default_port
 
 

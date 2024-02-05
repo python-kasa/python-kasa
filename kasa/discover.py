@@ -15,6 +15,7 @@ try:
 except ImportError:
     from pydantic import BaseModel, ValidationError  # pragma: no cover
 
+from kasa import Device
 from kasa.credentials import Credentials
 from kasa.device_factory import (
     get_device_class_from_family,
@@ -22,17 +23,21 @@ from kasa.device_factory import (
     get_protocol,
 )
 from kasa.deviceconfig import ConnectionType, DeviceConfig, EncryptType
-from kasa.exceptions import TimeoutException, UnsupportedDeviceException
+from kasa.exceptions import (
+    SmartDeviceException,
+    TimeoutException,
+    UnsupportedDeviceException,
+)
+from kasa.iot.iotdevice import IotDevice
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
-from kasa.smartdevice import SmartDevice, SmartDeviceException
 from kasa.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
 
 
-OnDiscoveredCallable = Callable[[SmartDevice], Awaitable[None]]
-DeviceDict = Dict[str, SmartDevice]
+OnDiscoveredCallable = Callable[[Device], Awaitable[None]]
+DeviceDict = Dict[str, Device]
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -141,7 +146,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             return
         self.seen_hosts.add(ip)
 
-        device = None
+        device: Optional[Device] = None
 
         config = DeviceConfig(host=ip, port_override=self.port)
         if self.credentials:
@@ -324,7 +329,7 @@ class Discover:
         port: Optional[int] = None,
         timeout: Optional[int] = None,
         credentials: Optional[Credentials] = None,
-    ) -> SmartDevice:
+    ) -> Device:
         """Discover a single device by the given IP address.
 
         It is generally preferred to avoid :func:`discover_single()` and
@@ -398,7 +403,7 @@ class Discover:
             raise TimeoutException(f"Timed out getting discovery response for {host}")
 
     @staticmethod
-    def _get_device_class(info: dict) -> Type[SmartDevice]:
+    def _get_device_class(info: dict) -> Type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult(**info["result"])
@@ -413,7 +418,7 @@ class Discover:
             return get_device_class_from_sys_info(info)
 
     @staticmethod
-    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> SmartDevice:
+    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> IotDevice:
         """Get SmartDevice from legacy 9999 response."""
         try:
             info = json_loads(XorEncryption.decrypt(data))
@@ -424,7 +429,7 @@ class Discover:
 
         _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
 
-        device_class = Discover._get_device_class(info)
+        device_class = cast(Type[IotDevice], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
         sys_info = info["system"]["get_sysinfo"]
         if device_type := sys_info.get("mic_type", sys_info.get("type")):
@@ -439,7 +444,7 @@ class Discover:
     def _get_device_instance(
         data: bytes,
         config: DeviceConfig,
-    ) -> SmartDevice:
+    ) -> Device:
         """Get SmartDevice from the new 20002 response."""
         try:
             info = json_loads(data[16:])

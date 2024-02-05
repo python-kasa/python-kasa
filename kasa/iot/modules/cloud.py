@@ -4,7 +4,7 @@ try:
 except ImportError:
     from pydantic import BaseModel
 
-from .module import Module
+from .module import IotModule
 
 
 class CloudInfo(BaseModel):
@@ -22,7 +22,7 @@ class CloudInfo(BaseModel):
     username: str
 
 
-class Cloud(Module):
+class Cloud(IotModule):
     """Module implementing support for cloud services."""
 
     def query(self):

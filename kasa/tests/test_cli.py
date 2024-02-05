@@ -7,8 +7,8 @@ from asyncclick.testing import CliRunner
 
 from kasa import (
     AuthenticationException,
+    Device,
     EmeterStatus,
-    SmartDevice,
     SmartDeviceException,
     UnsupportedDeviceException,
 )
@@ -27,6 +27,7 @@ from kasa.cli import (
     wifi,
 )
 from kasa.discover import Discover, DiscoveryResult
+from kasa.iot import IotDevice
 
 from .conftest import device_iot, device_smart, handle_turn_on, new_discovery, turn_on
 
@@ -107,9 +108,9 @@ async def test_alias(dev):
 async def test_raw_command(dev, mocker):
     runner = CliRunner()
     update = mocker.patch.object(dev, "update")
-    from kasa.tapo import TapoDevice
+    from kasa.smart import SmartDevice
 
-    if isinstance(dev, TapoDevice):
+    if isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
     else:
         params = ["system", "get_sysinfo"]
@@ -216,7 +217,7 @@ async def test_update_credentials(dev):
     )
 
 
-async def test_emeter(dev: SmartDevice, mocker):
+async def test_emeter(dev: Device, mocker):
     runner = CliRunner()
 
     res = await runner.invoke(emeter, obj=dev)
@@ -245,16 +246,24 @@ async def test_emeter(dev: SmartDevice, mocker):
         assert "Voltage: 122.066 V" in res.output
         assert realtime_emeter.call_count == 2
 
-    monthly = mocker.patch.object(dev, "get_emeter_monthly")
-    monthly.return_value = {1: 1234}
+    if isinstance(dev, IotDevice):
+        monthly = mocker.patch.object(dev, "get_emeter_monthly")
+        monthly.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
+    if not isinstance(dev, IotDevice):
+        assert "Device has no historical statistics" in res.output
+        return
     assert "For year" in res.output
     assert "1, 1234" in res.output
     monthly.assert_called_with(year=1900)
 
-    daily = mocker.patch.object(dev, "get_emeter_daily")
-    daily.return_value = {1: 1234}
+    if isinstance(dev, IotDevice):
+        daily = mocker.patch.object(dev, "get_emeter_daily")
+        daily.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
+    if not isinstance(dev, IotDevice):
+        assert "Device has no historical statistics" in res.output
+        return
     assert "For month" in res.output
     assert "1, 1234" in res.output
     daily.assert_called_with(year=1900, month=12)
@@ -279,7 +288,7 @@ async def test_brightness(dev):
 
 
 @device_iot
-async def test_json_output(dev: SmartDevice, mocker):
+async def test_json_output(dev: Device, mocker):
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover", return_value={"127.0.0.1": dev})
     runner = CliRunner()
@@ -292,10 +301,10 @@ async def test_json_output(dev: SmartDevice, mocker):
 async def test_credentials(discovery_mock, mocker):
     """Test credentials are passed correctly from cli to device."""
     # Patch state to echo username and password
-    pass_dev = click.make_pass_decorator(SmartDevice)
+    pass_dev = click.make_pass_decorator(Device)
 
     @pass_dev
-    async def _state(dev: SmartDevice):
+    async def _state(dev: Device):
         if dev.credentials:
             click.echo(
                 f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
@@ -533,10 +542,10 @@ async def test_type_param(device_type, mocker):
     runner = CliRunner()
 
     result_device = FileNotFoundError
-    pass_dev = click.make_pass_decorator(SmartDevice)
+    pass_dev = click.make_pass_decorator(Device)
 
     @pass_dev
-    async def _state(dev: SmartDevice):
+    async def _state(dev: Device):
         nonlocal result_device
         result_device = dev
 

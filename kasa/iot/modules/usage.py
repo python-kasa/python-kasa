@@ -2,10 +2,10 @@
 from datetime import datetime
 from typing import Dict
 
-from .module import Module, merge
+from .module import IotModule, merge
 
 
-class Usage(Module):
+class Usage(IotModule):
     """Baseclass for emeter/usage interfaces."""
 
     def query(self):

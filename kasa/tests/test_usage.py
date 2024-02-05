@@ -1,7 +1,7 @@
 import datetime
 from unittest.mock import Mock
 
-from kasa.modules import Usage
+from kasa.iot.modules import Usage
 
 
 def test_usage_convert_stat_data():

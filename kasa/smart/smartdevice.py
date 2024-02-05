@@ -1,23 +1,25 @@
-"""Module for a TAPO device."""
+"""Module for a SMART device."""
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, cast
 
 from ..aestransport import AesTransport
+from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
-from ..modules import Emeter
-from ..smartdevice import SmartDevice, WifiNetwork
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from .smartchilddevice import SmartChildDevice
 
-class TapoDevice(SmartDevice):
-    """Base class to represent a TAPO device."""
+
+class SmartDevice(Device):
+    """Base class to represent a SMART protocol based device."""
 
     def __init__(
         self,
@@ -32,19 +34,31 @@ class TapoDevice(SmartDevice):
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
-        self._components: Dict[str, int]
+        self._components: Dict[str, int] = {}
+        self._children: Dict[str, "SmartChildDevice"] = {}
+        self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
+        self._time: Dict[str, Any] = {}
 
     async def _initialize_children(self):
+        """Initialize children for power strips."""
         children = self._last_update["child_info"]["child_device_list"]
         # TODO: Use the type information to construct children,
         #  as hubs can also have them.
-        from .childdevice import ChildDevice
+        from .smartchilddevice import SmartChildDevice
 
-        self.children = [
-            ChildDevice(parent=self, child_id=child["device_id"]) for child in children
-        ]
+        self._children = {
+            child["device_id"]: SmartChildDevice(
+                parent=self, child_id=child["device_id"]
+            )
+            for child in children
+        }
         self._device_type = DeviceType.Strip
+
+    @property
+    def children(self) -> Sequence["SmartDevice"]:
+        """Return list of children."""
+        return list(self._children.values())
 
     async def update(self, update_children: bool = True):
         """Update the device."""
@@ -88,7 +102,7 @@ class TapoDevice(SmartDevice):
         self._energy = resp.get("get_energy_usage", {})
         self._emeter = resp.get("get_current_power", {})
 
-        self._last_update = self._data = {
+        self._last_update = {
             "components": self._components_raw,
             "info": self._info,
             "usage": self._usage,
@@ -98,19 +112,18 @@ class TapoDevice(SmartDevice):
             "child_info": resp.get("get_child_device_list", {}),
         }
 
-        if self._last_update["child_info"]:
+        if child_info := self._last_update.get("child_info"):
             if not self.children:
                 await self._initialize_children()
-            for child in self.children:
-                await child.update()
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]].update_internal_state(info)
 
-        _LOGGER.debug("Got an update: %s", self._data)
+        _LOGGER.debug("Got an update: %s", self._last_update)
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
         if "energy_monitoring" in self._components:
             self.emeter_type = "emeter"
-            self.modules["emeter"] = Emeter(self, self.emeter_type)
 
     @property
     def sys_info(self) -> Dict[str, Any]:
@@ -192,22 +205,25 @@ class TapoDevice(SmartDevice):
     @property
     def internal_state(self) -> Any:
         """Return all the internal state data."""
-        return self._data
+        return self._last_update
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+        self, method: str, params: Optional[Dict] = None, child_ids=None
     ) -> Any:
-        res = await self.protocol.query({cmd: arg})
+        res = await self.protocol.query({method: params})
 
         return res
 
     @property
     def state_information(self) -> Dict[str, Any]:
         """Return the key state information."""
+        ssid = self._info.get("ssid")
+        ssid = base64.b64decode(ssid).decode() if ssid else "No SSID"
+
         return {
             "overheated": self._info.get("overheated"),
             "signal_level": self._info.get("signal_level"),
-            "SSID": base64.b64decode(str(self._info.get("ssid"))).decode(),
+            "SSID": ssid,
         }
 
     @property
@@ -250,6 +266,13 @@ class TapoDevice(SmartDevice):
         """Return adjusted emeter information."""
         return data if not data else data * scale
 
+    def _verify_emeter(self) -> None:
+        """Raise an exception if there is no emeter."""
+        if not self.has_emeter:
+            raise SmartDeviceException("Device has no emeter")
+        if self.emeter_type not in self._last_update:
+            raise SmartDeviceException("update() required prior accessing emeter")
+
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
@@ -271,6 +294,17 @@ class TapoDevice(SmartDevice):
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
         return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
+
+    @property
+    def on_since(self) -> Optional[datetime]:
+        """Return the time that the device was turned on or None if turned off."""
+        if (
+            not self._info.get("device_on")
+            or (on_time := self._info.get("on_time")) is None
+        ):
+            return None
+        on_time = cast(float, on_time)
+        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     async def wifi_scan(self) -> List[WifiNetwork]:
         """Scan for available wifi networks."""

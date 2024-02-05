@@ -2,7 +2,8 @@ from datetime import datetime
 
 import pytest
 
-from kasa import SmartDeviceException, SmartStrip
+from kasa import SmartDeviceException
+from kasa.iot import IotStrip
 
 from .conftest import handle_turn_on, strip, turn_on
 
@@ -68,7 +69,7 @@ async def test_children_on_since(dev):
 
 
 @strip
-async def test_get_plug_by_name(dev: SmartStrip):
+async def test_get_plug_by_name(dev: IotStrip):
     name = dev.children[0].alias
     assert dev.get_plug_by_name(name) == dev.children[0]  # type: ignore[arg-type]
 
@@ -77,7 +78,7 @@ async def test_get_plug_by_name(dev: SmartStrip):
 
 
 @strip
-async def test_get_plug_by_index(dev: SmartStrip):
+async def test_get_plug_by_index(dev: IotStrip):
     assert dev.get_plug_by_index(0) == dev.children[0]
 
     with pytest.raises(SmartDeviceException):

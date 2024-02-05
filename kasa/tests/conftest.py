@@ -13,18 +13,14 @@ import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/
 
 from kasa import (
     Credentials,
+    Device,
     DeviceConfig,
     Discover,
-    SmartBulb,
-    SmartDevice,
-    SmartDimmer,
-    SmartLightStrip,
-    SmartPlug,
     SmartProtocol,
-    SmartStrip,
 )
+from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip
 from kasa.protocol import BaseTransport
-from kasa.tapo import TapoBulb, TapoPlug
+from kasa.smart import SmartBulb, SmartPlug
 from kasa.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -105,13 +101,23 @@ PLUGS_IOT = {
 }
 # P135 supports dimming, but its not currently support
 # by the library
-PLUGS_SMART = {"P100", "P110", "KP125M", "EP25", "KS205", "P125M", "P135", "S505"}
+PLUGS_SMART = {
+    "P100",
+    "P110",
+    "KP125M",
+    "EP25",
+    "KS205",
+    "P125M",
+    "P135",
+    "S505",
+    "TP15",
+}
 PLUGS = {
     *PLUGS_IOT,
     *PLUGS_SMART,
 }
 STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
-STRIPS_SMART = {"P300"}
+STRIPS_SMART = {"P300", "TP25"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
@@ -340,37 +346,37 @@ def device_for_file(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
-                return TapoPlug
+                return SmartPlug
         for d in BULBS_SMART:
             if d in model:
-                return TapoBulb
+                return SmartBulb
         for d in DIMMERS_SMART:
             if d in model:
-                return TapoBulb
+                return SmartBulb
         for d in STRIPS_SMART:
             if d in model:
-                return TapoPlug
+                return SmartPlug
     else:
         for d in STRIPS_IOT:
             if d in model:
-                return SmartStrip
+                return IotStrip
 
         for d in PLUGS_IOT:
             if d in model:
-                return SmartPlug
+                return IotPlug
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:
             if d in model:
-                return SmartLightStrip
+                return IotLightStrip
 
         for d in BULBS_IOT:
             if d in model:
-                return SmartBulb
+                return IotBulb
 
         for d in DIMMERS_IOT:
             if d in model:
-                return SmartDimmer
+                return IotDimmer
 
     raise Exception("Unable to find type for %s", model)
 
@@ -436,11 +442,11 @@ async def dev(request):
             IP_MODEL_CACHE[ip] = model = d.model
         if model not in file:
             pytest.skip(f"skipping file {file}")
-        dev: SmartDevice = (
+        dev: Device = (
             d if d else await _discover_update_and_close(ip, username, password)
         )
     else:
-        dev: SmartDevice = await get_device_for_file(file, protocol)
+        dev: Device = await get_device_for_file(file, protocol)
 
     yield dev
 
