@@ -350,7 +350,7 @@ async def test_handshake(
     assert protocol._transport._handshake_done is True
 
     response_status = 403
-    with pytest.raises(AuthenticationException):
+    with pytest.raises(SmartDeviceException):
         await protocol._transport.perform_handshake()
     assert protocol._transport._handshake_done is False
     await protocol.close()
@@ -400,34 +400,80 @@ async def test_query(mocker):
 
 
 @pytest.mark.parametrize(
-    "response_status, expectation",
+    "response_status, credentials_match, expectation",
     [
-        ((403, 403, 403), pytest.raises(AuthenticationException)),
-        ((200, 403, 403), pytest.raises(AuthenticationException)),
-        ((200, 200, 403), pytest.raises(AuthenticationException)),
-        ((200, 200, 400), pytest.raises(SmartDeviceException)),
+        pytest.param(
+            (403, 403, 403),
+            True,
+            pytest.raises(SmartDeviceException),
+            id="handshake1-403-status",
+        ),
+        pytest.param(
+            (200, 403, 403),
+            True,
+            pytest.raises(SmartDeviceException),
+            id="handshake2-403-status",
+        ),
+        pytest.param(
+            (200, 200, 403),
+            True,
+            pytest.raises(AuthenticationException),
+            id="request-403-status",
+        ),
+        pytest.param(
+            (200, 200, 400),
+            True,
+            pytest.raises(SmartDeviceException),
+            id="request-400-status",
+        ),
+        pytest.param(
+            (200, 200, 200),
+            False,
+            pytest.raises(AuthenticationException),
+            id="handshake1-wrong-auth",
+        ),
+        pytest.param(
+            (200, 200, 200),
+            secrets.token_bytes(16),
+            pytest.raises(SmartDeviceException),
+            id="handshake1-bad-auth-length",
+        ),
     ],
-    ids=("handshake1", "handshake2", "request", "non_auth_error"),
 )
-async def test_authentication_failures(mocker, response_status, expectation):
+async def test_authentication_failures(
+    mocker, response_status, credentials_match, expectation
+):
     client_seed = None
 
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
-    device_auth_hash = KlapTransport.generate_auth_hash(client_credentials)
+    device_credentials = (
+        client_credentials if credentials_match else Credentials("bar", "foo")
+    )
+    device_auth_hash = KlapTransport.generate_auth_hash(device_credentials)
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
-        nonlocal client_seed, server_seed, device_auth_hash, response_status
+        nonlocal \
+            client_seed, \
+            server_seed, \
+            device_auth_hash, \
+            response_status, \
+            credentials_match
 
         if str(url) == "http://127.0.0.1:80/app/handshake1":
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
-
+            if credentials_match is not False and credentials_match is not True:
+                client_seed_auth_hash += credentials_match
             return _mock_response(
                 response_status[0], server_seed + client_seed_auth_hash
             )
         elif str(url) == "http://127.0.0.1:80/app/handshake2":
-            return _mock_response(response_status[1], b"")
+            client_seed = data
+            client_seed_auth_hash = _sha256(data + device_auth_hash)
+            return _mock_response(
+                response_status[1], server_seed + client_seed_auth_hash
+            )
         elif str(url) == "http://127.0.0.1:80/app/request":
             return _mock_response(response_status[2], b"")
 

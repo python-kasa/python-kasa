@@ -159,13 +159,19 @@ class KlapTransport(BaseTransport):
             )
 
         if response_status != 200:
-            raise AuthenticationException(
+            raise SmartDeviceException(
                 f"Device {self._host} responded with {response_status} to handshake1"
             )
 
         response_data = cast(bytes, response_data)
         remote_seed: bytes = response_data[0:16]
         server_hash = response_data[16:]
+
+        if len(server_hash) != 32:
+            raise SmartDeviceException(
+                f"Device {self._host} responded with unexpected klap response "
+                + f"{response_data!r} to handshake1"
+            )
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
@@ -260,7 +266,9 @@ class KlapTransport(BaseTransport):
             )
 
         if response_status != 200:
-            raise AuthenticationException(
+            # This shouldn't be caused by incorrect
+            # credentials so don't raise AuthenticationException
+            raise SmartDeviceException(
                 f"Device {self._host} responded with {response_status} to handshake2"
             )
 
