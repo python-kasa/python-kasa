@@ -418,7 +418,7 @@ async def discover(ctx):
     sem = asyncio.Semaphore()
     discovered = dict()
     unsupported = []
-    auth_failed = {}
+    auth_failed = []
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceException):
         unsupported.append(unsupported_exception)
@@ -439,7 +439,7 @@ async def discover(ctx):
             try:
                 await dev.update()
             except AuthenticationException:
-                auth_failed[dev.host] = dev._discovery_info
+                auth_failed.append(dev._discovery_info)
                 echo("== Authentication failed for device ==")
                 _echo_discovery_info(dev._discovery_info)
                 echo()

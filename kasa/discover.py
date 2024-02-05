@@ -87,6 +87,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.discover_task: Optional[asyncio.Task] = None
         self.callback_tasks: List[asyncio.Task] = []
         self.target_discovered: bool = False
+        self._started_event = asyncio.Event()
 
     def _run_callback_task(self, coro):
         task = asyncio.create_task(coro)
@@ -96,8 +97,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         """Wait for the discovery task to complete."""
         # Give some time for connection_made event to be received
         async with asyncio_timeout(self.DISCOVERY_START_TIMEOUT):
-            while not self.discover_task:
-                await asyncio.sleep(0)
+            await self._started_event.wait()
         try:
             await self.discover_task
         except asyncio.CancelledError:
@@ -124,6 +124,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             )
 
         self.discover_task = asyncio.create_task(self.do_discover())
+        self._started_event.set()
 
     async def do_discover(self) -> None:
         """Send number of discovery datagrams."""
