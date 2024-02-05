@@ -430,7 +430,13 @@ async def test_query(mocker):
             (200, 200, 200),
             False,
             pytest.raises(AuthenticationException),
-            id="handshake1-bad-auth",
+            id="handshake1-wrong-auth",
+        ),
+        pytest.param(
+            (200, 200, 200),
+            secrets.token_bytes(16),
+            pytest.raises(SmartDeviceException),
+            id="handshake1-bad-auth-length",
         ),
     ],
 )
@@ -457,7 +463,8 @@ async def test_authentication_failures(
         if str(url) == "http://127.0.0.1:80/app/handshake1":
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
-
+            if credentials_match is not False and credentials_match is not True:
+                client_seed_auth_hash += credentials_match
             return _mock_response(
                 response_status[0], server_seed + client_seed_auth_hash
             )
