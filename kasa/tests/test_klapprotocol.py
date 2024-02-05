@@ -402,13 +402,37 @@ async def test_query(mocker):
 @pytest.mark.parametrize(
     "response_status, credentials_match, expectation",
     [
-        ((403, 403, 403), True, pytest.raises(SmartDeviceException)),
-        ((200, 403, 403), True, pytest.raises(SmartDeviceException)),
-        ((200, 200, 403), True, pytest.raises(AuthenticationException)),
-        ((200, 200, 400), True, pytest.raises(SmartDeviceException)),
-        ((200, 200, 200), False, pytest.raises(AuthenticationException)),
+        pytest.param(
+            (403, 403, 403),
+            True,
+            pytest.raises(SmartDeviceException),
+            id="handshake1-403-status",
+        ),
+        pytest.param(
+            (200, 403, 403),
+            True,
+            pytest.raises(SmartDeviceException),
+            id="handshake2-403-status",
+        ),
+        pytest.param(
+            (200, 200, 403),
+            True,
+            pytest.raises(AuthenticationException),
+            id="request-403-status",
+        ),
+        pytest.param(
+            (200, 200, 400),
+            True,
+            pytest.raises(SmartDeviceException),
+            id="request-400-status",
+        ),
+        pytest.param(
+            (200, 200, 200),
+            False,
+            pytest.raises(AuthenticationException),
+            id="handshake1-bad-auth",
+        ),
     ],
-    ids=("handshake1", "handshake2", "request", "non_auth_error", "invalid_auth"),
 )
 async def test_authentication_failures(
     mocker, response_status, credentials_match, expectation
