@@ -1081,5 +1081,26 @@ async def update_credentials(dev, username, password):
     return await dev.update_credentials(username, password)
 
 
+@cli.command()
+@pass_dev
+async def shell(dev: Device):
+    """Open interactive shell."""
+    echo("Opening shell for %s" % dev)
+    from ptpython.repl import embed
+
+    logging.getLogger("parso").setLevel(logging.WARNING)  # prompt parsing
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+    loop = asyncio.get_event_loop()
+    try:
+        await embed(
+            globals=globals(),
+            locals=locals(),
+            return_asyncio_coroutine=True,
+            patch_stdout=True,
+        )
+    except EOFError:
+        loop.stop()
+
+
 if __name__ == "__main__":
     cli()
