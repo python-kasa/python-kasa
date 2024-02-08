@@ -216,7 +216,7 @@ def json_formatter_cb(result, **kwargs):
 @click.option(
     "--discovery-timeout",
     envvar="KASA_DISCOVERY_TIMEOUT",
-    default=3,
+    default=5,
     required=False,
     show_default=True,
     help="Timeout for discovery.",
@@ -348,11 +348,16 @@ async def cli(
         )
         dev = await Device.connect(config=config)
     else:
-        echo("No --type or --device-family and --encrypt-type defined, discovering..")
+        echo(
+            "No --type or --device-family and --encrypt-type defined, "
+            + f"discovering for {discovery_timeout} seconds.."
+        )
         dev = await Discover.discover_single(
             host,
             port=port,
             credentials=credentials,
+            timeout=timeout,
+            discovery_timeout=discovery_timeout,
         )
 
     # Skip update on specific commands, or if device factory,

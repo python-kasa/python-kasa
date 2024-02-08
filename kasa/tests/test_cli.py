@@ -7,6 +7,7 @@ from asyncclick.testing import CliRunner
 
 from kasa import (
     AuthenticationException,
+    Credentials,
     Device,
     EmeterStatus,
     SmartDeviceException,
@@ -341,7 +342,9 @@ async def test_credentials(discovery_mock, mocker):
 async def test_without_device_type(dev, mocker):
     """Test connecting without the device type."""
     runner = CliRunner()
-    mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
+    discovery_mock = mocker.patch(
+        "kasa.discover.Discover.discover_single", return_value=dev
+    )
     res = await runner.invoke(
         cli,
         [
@@ -351,9 +354,18 @@ async def test_without_device_type(dev, mocker):
             "foo",
             "--password",
             "bar",
+            "--discovery-timeout",
+            "7",
         ],
     )
     assert res.exit_code == 0
+    assert discovery_mock.called_once_with(
+        host="127.0.0.1",
+        port=None,
+        credentials=Credentials("foo", "bar"),
+        timeout=5,
+        discovery_timeout=7,
+    )
 
 
 @pytest.mark.parametrize("auth_param", ["--username", "--password"])
