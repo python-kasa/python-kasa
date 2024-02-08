@@ -173,7 +173,7 @@ class SmartDevice(Device):
 
         # We check for the key available, and not for the property truthiness,
         # as the value is falsy when the device is off.
-        if "on_since" in self._info:
+        if "on_time" in self._info:
             self.add_descriptor(
                 Descriptor(
                     device=self,
