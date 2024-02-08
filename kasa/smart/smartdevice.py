@@ -143,6 +143,14 @@ class SmartDevice(Device):
         )
         self.add_descriptor(
             Descriptor(
+                self,
+                "RSSI",
+                attribute_getter=lambda x: x._info["rssi"],
+                icon="mdi:signal",
+            )
+        )
+        self.add_descriptor(
+            Descriptor(
                 device=self, name="Time", attribute_getter="time", show_in_hass=False
             )
         )
