@@ -359,8 +359,8 @@ async def test_without_device_type(dev, mocker):
         ],
     )
     assert res.exit_code == 0
-    assert discovery_mock.called_once_with(
-        host="127.0.0.1",
+    discovery_mock.assert_called_once_with(
+        "127.0.0.1",
         port=None,
         credentials=Credentials("foo", "bar"),
         timeout=5,
