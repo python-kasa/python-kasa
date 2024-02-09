@@ -178,6 +178,10 @@ class SmartDevice(Device):
                 )
             )
 
+        for module in self.modules.values():
+            for desc in module._module_descriptors.values():
+                self.add_descriptor(desc)
+
     @property
     def sys_info(self) -> Dict[str, Any]:
         """Returns the device info."""
