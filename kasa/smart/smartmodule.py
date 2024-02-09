@@ -1,3 +1,4 @@
+"""Base implementation for SMART modules."""
 import logging
 from typing import Dict, Type
 
@@ -16,7 +17,7 @@ class SmartModule(Module):
     REGISTERED_MODULES: Dict[str, Type["SmartModule"]] = {}
 
     def __init_subclass__(cls, **kwargs):
-        assert cls.REQUIRED_COMPONENT is not None
+        assert cls.REQUIRED_COMPONENT is not None  # noqa: S101
 
         name = getattr(cls, "NAME", cls.__name__)
         _LOGGER.debug("Registering %s" % cls)
@@ -39,7 +40,7 @@ class SmartModule(Module):
 
         Just a helper method.
         """
-        return self._device._query_helper("", method, params)
+        return self._device._query_helper(method, params)
 
     @property
     def data(self):
