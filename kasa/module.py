@@ -1,7 +1,9 @@
 """Base class for all module implementations."""
 import logging
 from abc import ABC, abstractmethod
+from typing import Dict
 
+from .descriptors import Descriptor
 from .device import Device
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,6 +19,14 @@ class Module(ABC):
     def __init__(self, device: "Device", module: str):
         self._device = device
         self._module = module
+        self._module_descriptors: Dict[str, Descriptor] = {}
+
+    def add_descriptor(self, desc):
+        """Add module descriptor."""
+        module_desc_name = f"{self._module}_{desc.name}"
+        if module_desc_name in self._module_descriptors:
+            raise Exception("Duplicate name detected %s" % module_desc_name)
+        self._module_descriptors[module_desc_name] = desc
 
     @abstractmethod
     def query(self):

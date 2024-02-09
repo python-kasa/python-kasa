@@ -1,7 +1,6 @@
 """Base class for IOT module implementations."""
 import collections
 import logging
-from typing import TYPE_CHECKING, Dict
 from ...feature import Feature
 
 from ..exceptions import SmartDeviceException
@@ -23,8 +22,6 @@ def merge(d, u):
 
 class IotModule(Module):
     """Base class implemention for all IOT modules."""
-        self._module_features: Dict[str, Feature] = {}
-
     def add_feature(self, feature: Feature):
         """Add module feature."""
         feature_name = f"{self._module}_{feature.name}"

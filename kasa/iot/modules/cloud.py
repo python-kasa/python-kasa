@@ -5,7 +5,7 @@ except ImportError:
     from pydantic import BaseModel
 
 from ...feature import Feature, FeatureType
-from .module import IotModule
+from ..iotmodule import IotModule
 
 
 class CloudInfo(BaseModel):
