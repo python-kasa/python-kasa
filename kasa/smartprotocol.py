@@ -172,6 +172,9 @@ class SmartProtocol(BaseProtocol):
                 pf(response_data),
             )
 
+        if not response_data:
+            raise SmartDeviceException("Unexpected empty response")
+
         self._handle_response_error_code(response_data)
 
         # Single set_ requests do not return a result
