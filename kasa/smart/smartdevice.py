@@ -349,7 +349,10 @@ class SmartDevice(Device):
         ):
             return None
         on_time = cast(float, on_time)
-        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
+        if "DeviceTime" in self.modules:
+            return self.modules["DeviceTime"].time - timedelta(seconds=on_time)
+        else:  # We have no device time, use current local time.
+            return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     async def wifi_scan(self) -> List[WifiNetwork]:
         """Scan for available wifi networks."""
