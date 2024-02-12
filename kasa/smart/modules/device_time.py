@@ -1,8 +1,13 @@
+"""Implementation of device time module."""
 from datetime import datetime, timedelta, timezone
-from typing import cast
+from time import mktime
+from typing import TYPE_CHECKING, cast
 
 from ...descriptors import Descriptor
 from ..smartmodule import SmartModule
+
+if TYPE_CHECKING:
+    from ..smartdevice import SmartDevice
 
 
 class DeviceTime(SmartModule):
@@ -11,7 +16,7 @@ class DeviceTime(SmartModule):
     REQUIRED_COMPONENT = "device_local_time"
     QUERY_GETTER_NAME = "get_device_time"
 
-    def __init__(self, device: "Device", module: str):
+    def __init__(self, device: "SmartDevice", module: str):
         super().__init__(device, module)
         self.add_descriptor(
             Descriptor(
@@ -20,7 +25,8 @@ class DeviceTime(SmartModule):
         )
 
     @property
-    def time(self):
+    def time(self) -> datetime:
+        """Return device's current datetime."""
         td = timedelta(minutes=cast(float, self.data.get("time_diff")))
         if self.data.get("region"):
             tz = timezone(td, str(self.data.get("region")))
@@ -31,6 +37,14 @@ class DeviceTime(SmartModule):
         return datetime.fromtimestamp(
             cast(float, self.data.get("timestamp")),
             tz=tz,
+        )
+
+    async def set_time(self, dt: datetime):
+        """Set device time."""
+        unixtime = mktime(dt.timetuple())
+        return await self.call(
+            "set_device_time",
+            {"timestamp": unixtime, "time_diff": dt.utcoffset(), "region": dt.tzname()},
         )
 
     def __cli_output__(self):
