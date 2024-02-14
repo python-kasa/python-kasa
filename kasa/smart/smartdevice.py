@@ -119,10 +119,10 @@ class SmartDevice(Device):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]].update_internal_state(info)
 
-        # We can first initialize the descriptors after the first update.
-        # We make here an assumption that every device has at least a single descriptor.
+        # We can first initialize the features after the first update.
+        # We make here an assumption that every device has at least a single feature.
         if not self._features:
-            await self._initialize_descriptors()
+            await self._initialize_features()
 
         _LOGGER.debug("Got an update: %s", self._last_update)
 
@@ -131,8 +131,8 @@ class SmartDevice(Device):
         if "energy_monitoring" in self._components:
             self.emeter_type = "emeter"
 
-    async def _initialize_descriptors(self):
-        """Initialize device descriptors."""
+    async def _initialize_features(self):
+        """Initialize device features."""
         self.add_feature(
             Feature(
                 self,

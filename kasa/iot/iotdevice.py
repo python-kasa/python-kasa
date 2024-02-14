@@ -302,12 +302,12 @@ class IotDevice(Device):
             self._set_sys_info(response["system"]["get_sysinfo"])
 
         if not self._features:
-            await self._initialize_descriptors()
+            await self._initialize_features()
 
         await self._modular_update(req)
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
 
-    async def _initialize_descriptors(self):
+    async def _initialize_features(self):
         self.add_feature(
             Feature(
                 device=self, name="RSSI", attribute_getter="rssi", icon="mdi:signal"

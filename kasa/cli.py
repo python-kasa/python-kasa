@@ -1110,10 +1110,10 @@ async def shell(dev: Device):
 @click.argument("value", required=False)
 @pass_dev
 async def feature(dev, name: str, value):
-    """Access and modify descriptor values.
+    """Access and modify features.
 
-    If no *name* is given, lists available descriptors and their values.
-    If only *name* is given, the value of named descriptor is returned.
+    If no *name* is given, lists available features and their values.
+    If only *name* is given, the value of named feature is returned.
     If both *name* and *value* are set, the described setting is changed.
     """
     if not name:
@@ -1123,7 +1123,7 @@ async def feature(dev, name: str, value):
         return
 
     if name not in dev.features:
-        echo(f"No descriptor by name {name}")
+        echo(f"No feature by name {name}")
         return
 
     feat = dev.features[name]

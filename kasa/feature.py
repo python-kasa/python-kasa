@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 class FeatureCategory(Enum):
-    """Descriptor category."""
+    """Feature category."""
 
     # TODO: we could probably do better than using the scheme homeassistant is using
     Config = auto()
@@ -40,8 +40,6 @@ class Feature:
     container: Any = None
     #: Icon suggestion
     icon: str | None = None
-    #: Unit of the descriptor
-    unit: str | None = None
     #: Hint for homeassistant
     #: TODO: Replace with a set of flags to allow homeassistant make its own decision?
     show_in_hass: bool = True

@@ -38,7 +38,7 @@ class IotModule(ABC):
         self._module_features: Dict[str, Feature] = {}
 
     def add_feature(self, feature: Feature):
-        """Add module descriptor."""
+        """Add module feature."""
         feature_name = f"{self._module}_{feature.name}"
         if feature_name in self._module_features:
             raise SmartDeviceException("Duplicate name detected %s" % feature_name)
