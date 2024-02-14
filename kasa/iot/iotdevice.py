@@ -308,18 +308,18 @@ class IotDevice(Device):
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
 
     async def _initialize_features(self):
-        self.add_feature(
+        self._add_feature(
             Feature(
                 device=self, name="RSSI", attribute_getter="rssi", icon="mdi:signal"
             )
         )
-        self.add_feature(
+        self._add_feature(
             Feature(
                 device=self, name="Time", attribute_getter="time", show_in_hass=False
             )
         )
         if "on_time" in self._sys_info:
-            self.add_feature(
+            self._add_feature(
                 Feature(
                     device=self,
                     name="On since",
@@ -344,7 +344,7 @@ class IotDevice(Device):
                 if module.is_supported:
                     supported[module._module] = module
                 for module_feat in module._module_features.values():
-                    self.add_feature(module_feat)
+                    self._add_feature(module_feat)
 
             self._supported_modules = supported
 

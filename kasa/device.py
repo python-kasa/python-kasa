@@ -302,7 +302,7 @@ class Device(ABC):
         """Return the list of supported features."""
         return self._features
 
-    def add_feature(self, feature: Feature):
+    def _add_feature(self, feature: Feature):
         """Add a new feature to the device."""
         desc_name = feature.name.lower().replace(" ", "_")
         if desc_name in self._features:

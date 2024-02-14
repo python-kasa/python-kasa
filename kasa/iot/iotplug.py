@@ -57,7 +57,7 @@ class IotPlug(IotDevice):
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
 
-        self.add_feature(
+        self._add_feature(
             Feature(
                 device=self,
                 name="LED",

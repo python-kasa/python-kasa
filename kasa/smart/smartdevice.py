@@ -133,7 +133,7 @@ class SmartDevice(Device):
 
     async def _initialize_features(self):
         """Initialize device features."""
-        self.add_feature(
+        self._add_feature(
             Feature(
                 self,
                 "Signal Level",
@@ -141,7 +141,7 @@ class SmartDevice(Device):
                 icon="mdi:signal",
             )
         )
-        self.add_feature(
+        self._add_feature(
             Feature(
                 self,
                 "RSSI",
@@ -149,17 +149,17 @@ class SmartDevice(Device):
                 icon="mdi:signal",
             )
         )
-        self.add_feature(
+        self._add_feature(
             Feature(
                 device=self, name="Time", attribute_getter="time", show_in_hass=False
             )
         )
-        self.add_feature(
+        self._add_feature(
             Feature(device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi")
         )
 
         if "overheated" in self._info:
-            self.add_feature(
+            self._add_feature(
                 Feature(
                     self,
                     "Overheated",
@@ -172,7 +172,7 @@ class SmartDevice(Device):
         # We check for the key available, and not for the property truthiness,
         # as the value is falsy when the device is off.
         if "on_time" in self._info:
-            self.add_feature(
+            self._add_feature(
                 Feature(
                     device=self,
                     name="On since",
