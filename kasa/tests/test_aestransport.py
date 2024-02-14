@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import random
 import string
 import time
@@ -180,6 +181,36 @@ async def test_send(mocker, status_code, error_code, inner_error_code, expectati
         assert "result" in res
 
 
+async def test_response_is_unencrypted(mocker, caplog):
+    host = "127.0.0.1"
+    mock_aes_device = MockAesDevice(host, 200, 0, 0, do_not_encrypt_response=True)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
+
+    transport = AesTransport(
+        config=DeviceConfig(host, credentials=Credentials("foo", "bar"))
+    )
+    transport._handshake_done = True
+    transport._session_expire_at = time.time() + 86400
+    transport._encryption_session = mock_aes_device.encryption_session
+    transport._token_url = transport._app_url.with_query(
+        f"token={mock_aes_device.token}"
+    )
+
+    request = {
+        "method": "get_device_info",
+        "params": None,
+        "request_time_milis": round(time.time() * 1000),
+        "requestID": 1,
+        "terminal_uuid": "foobar",
+    }
+    caplog.set_level(logging.DEBUG)
+    res = await transport.send(json_dumps(request))
+    assert "result" in res
+    assert (
+        "127.0.0.1 Secure passthrough response was received unencrypted!" in caplog.text
+    )
+
+
 ERRORS = [e for e in SmartErrorCode if e != 0]
 
 
@@ -237,11 +268,20 @@ class MockAesDevice:
 
     encryption_session = AesEncyptionSession(KEY_IV[:16], KEY_IV[16:])
 
-    def __init__(self, host, status_code=200, error_code=0, inner_error_code=0):
+    def __init__(
+        self,
+        host,
+        status_code=200,
+        error_code=0,
+        inner_error_code=0,
+        *,
+        do_not_encrypt_response=False,
+    ):
         self.host = host
         self.status_code = status_code
         self.error_code = error_code
         self._inner_error_code = inner_error_code
+        self.do_not_encrypt_response = do_not_encrypt_response
         self.http_client = HttpClient(DeviceConfig(self.host))
         self.inner_call_count = 0
         self.token = "".join(random.choices(string.ascii_uppercase, k=32))  # noqa: S311
@@ -294,8 +334,9 @@ class MockAesDevice:
         encrypted_response = self.encryption_session.encrypt(
             json_dumps(decrypted_response_dict).encode()
         )
+        response = response_data if self.do_not_encrypt_response else encrypted_response
         result = {
-            "result": {"response": encrypted_response.decode()},
+            "result": {"response": response.decode()},
             "error_code": self.error_code,
         }
         return self._mock_response(self.status_code, result)

@@ -184,8 +184,25 @@ class AesTransport(BaseTransport):
             assert self._encryption_session is not None
 
         raw_response: str = resp_dict["result"]["response"]
-        response = self._encryption_session.decrypt(raw_response.encode())
-        return json_loads(response)  # type: ignore[return-value]
+
+        try:
+            response = self._encryption_session.decrypt(raw_response.encode())
+            ret_val = json_loads(response)
+        except Exception as ex:
+            try:
+                ret_val = json_loads(raw_response)
+                _LOGGER.debug(
+                    "%s Secure passthrough response was received unencrypted!",
+                    self._host,
+                )
+            except Exception:
+                raise SmartDeviceException(
+                    "Unable to decrypt response from %s, error: %s, response: %s",
+                    self._host,
+                    ex,
+                    raw_response,
+                ) from ex
+        return ret_val  # type: ignore[return-value]
 
     async def perform_login(self):
         """Login to the device."""

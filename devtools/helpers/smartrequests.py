@@ -133,11 +133,14 @@ class SmartRequest:
         return SmartRequest("get_device_usage")
 
     @staticmethod
-    def device_info_list() -> List["SmartRequest"]:
+    def device_info_list(ver_code) -> List["SmartRequest"]:
         """Get device info list."""
+        if ver_code == 1:
+            return [SmartRequest.get_device_info()]
         return [
             SmartRequest.get_device_info(),
             SmartRequest.get_device_usage(),
+            SmartRequest.get_auto_update_info(),
         ]
 
     @staticmethod
@@ -149,7 +152,6 @@ class SmartRequest:
     def firmware_info_list() -> List["SmartRequest"]:
         """Get info list."""
         return [
-            SmartRequest.get_auto_update_info(),
             SmartRequest.get_raw_request("get_fw_download_state"),
             SmartRequest.get_raw_request("get_latest_fw"),
         ]
@@ -165,9 +167,13 @@ class SmartRequest:
         return SmartRequest("get_device_time")
 
     @staticmethod
-    def get_wireless_scan_info() -> "SmartRequest":
+    def get_wireless_scan_info(
+        params: Optional[GetRulesParams] = None
+    ) -> "SmartRequest":
         """Get wireless scan info."""
-        return SmartRequest("get_wireless_scan_info")
+        return SmartRequest(
+            "get_wireless_scan_info", params or SmartRequest.GetRulesParams()
+        )
 
     @staticmethod
     def get_schedule_rules(params: Optional[GetRulesParams] = None) -> "SmartRequest":
@@ -294,9 +300,13 @@ class SmartRequest:
     @staticmethod
     def get_component_info_requests(component_nego_response) -> List["SmartRequest"]:
         """Get a list of requests based on the component info response."""
-        request_list = []
+        request_list: List["SmartRequest"] = []
         for component in component_nego_response["component_list"]:
-            if requests := COMPONENT_REQUESTS.get(component["id"]):
+            if (
+                requests := get_component_requests(
+                    component["id"], int(component["ver_code"])
+                )
+            ) is not None:
                 request_list.extend(requests)
         return request_list
 
@@ -314,8 +324,17 @@ class SmartRequest:
         return request
 
 
+def get_component_requests(component_id, ver_code):
+    """Get the requests supported by the component and version."""
+    if (cr := COMPONENT_REQUESTS.get(component_id)) is None:
+        return None
+    if callable(cr):
+        return cr(ver_code)
+    return cr
+
+
 COMPONENT_REQUESTS = {
-    "device": SmartRequest.device_info_list(),
+    "device": SmartRequest.device_info_list,
     "firmware": SmartRequest.firmware_info_list(),
     "quick_setup": [SmartRequest.qs_component_nego()],
     "inherit": [SmartRequest.get_raw_request("get_inherit_info")],
@@ -324,33 +343,33 @@ COMPONENT_REQUESTS = {
     "schedule": SmartRequest.schedule_info_list(),
     "countdown": [SmartRequest.get_countdown_rules()],
     "antitheft": [SmartRequest.get_antitheft_rules()],
-    "account": None,
-    "synchronize": None,  # sync_env
-    "sunrise_sunset": None,  # for schedules
+    "account": [],
+    "synchronize": [],  # sync_env
+    "sunrise_sunset": [],  # for schedules
     "led": [SmartRequest.get_led_info()],
     "cloud_connect": [SmartRequest.get_raw_request("get_connect_cloud_state")],
-    "iot_cloud": None,
-    "device_local_time": None,
-    "default_states": None,  # in device_info
+    "iot_cloud": [],
+    "device_local_time": [],
+    "default_states": [],  # in device_info
     "auto_off": [SmartRequest.get_auto_off_config()],
-    "localSmart": None,
+    "localSmart": [],
     "energy_monitoring": SmartRequest.energy_monitoring_list(),
     "power_protection": SmartRequest.power_protection_list(),
-    "current_protection": None,  # overcurrent in device_info
-    "matter": None,
+    "current_protection": [],  # overcurrent in device_info
+    "matter": [],
     "preset": [SmartRequest.get_preset_rules()],
-    "brightness": None,  # in device_info
-    "color": None,  # in device_info
-    "color_temperature": None,  # in device_info
+    "brightness": [],  # in device_info
+    "color": [],  # in device_info
+    "color_temperature": [],  # in device_info
     "auto_light": [SmartRequest.get_auto_light_info()],
     "light_effect": [SmartRequest.get_dynamic_light_effect_rules()],
-    "bulb_quick_control": None,
+    "bulb_quick_control": [],
     "on_off_gradually": [SmartRequest.get_raw_request("get_on_off_gradually_info")],
-    "light_strip": None,
+    "light_strip": [],
     "light_strip_lighting_effect": [
         SmartRequest.get_raw_request("get_lighting_effect")
     ],
-    "music_rhythm": None,  # music_rhythm_enable in device_info
+    "music_rhythm": [],  # music_rhythm_enable in device_info
     "segment": [SmartRequest.get_raw_request("get_device_segment")],
     "segment_effect": [SmartRequest.get_raw_request("get_segment_effect_rule")],
 }
