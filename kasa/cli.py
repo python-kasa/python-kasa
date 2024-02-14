@@ -101,6 +101,7 @@ class ExceptionHandlerGroup(click.Group):
             asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
         except Exception as ex:
             echo(f"Got error: {ex!r}")
+            raise
 
 
 def json_formatter_cb(result, **kwargs):
@@ -565,9 +566,9 @@ async def state(ctx, dev: Device):
         else:
             echo(f"\t{info_name}: {info_data}")
 
-    echo("\n\t[bold]== Descriptors == [/bold]")
-    for id_, descriptor in dev.descriptors.items():
-        echo(f"\t{descriptor.name} ({id_}): {descriptor.value}")
+    echo("\n\t[bold]== Features == [/bold]")
+    for id_, feature in dev.features.items():
+        echo(f"\t{feature.name} ({id_}): {feature.value}")
 
     if dev.has_emeter:
         echo("\n\t[bold]== Current State ==[/bold]")
@@ -585,8 +586,6 @@ async def state(ctx, dev: Device):
         echo("\n\t[bold]== Verbose information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
         echo(f"\tDevice ID:         {dev.device_id}")
-        for feature in dev.features:
-            echo(f"\tFeature:           {feature}")
         echo()
         _echo_discovery_info(dev._discovery_info)
     return dev.internal_state
@@ -1106,11 +1105,11 @@ async def shell(dev: Device):
         loop.stop()
 
 
-@cli.command(name="descriptor")
+@cli.command(name="feature")
 @click.argument("name", required=False)
 @click.argument("value", required=False)
 @pass_dev
-async def descriptor(dev, name: str, value):
+async def feature(dev, name: str, value):
     """Access and modify descriptor values.
 
     If no *name* is given, lists available descriptors and their values.
@@ -1118,24 +1117,24 @@ async def descriptor(dev, name: str, value):
     If both *name* and *value* are set, the described setting is changed.
     """
     if not name:
-        echo("[bold]== Descriptors ==[/bold]")
-        for name, desc in dev.descriptors.items():
-            echo(f"{desc.name} ({name}): {desc.value}")
+        echo("[bold]== Feature ==[/bold]")
+        for name, feat in dev.features.items():
+            echo(f"{feat.name} ({name}): {feat.value}")
         return
 
-    if name not in dev.descriptors:
+    if name not in dev.features:
         echo(f"No descriptor by name {name}")
         return
 
-    desc = dev.descriptors[name]
+    feat = dev.features[name]
 
     if value is None:
-        echo(f"{desc.name} ({name}): {desc.value}")
-        return desc.value
+        echo(f"{feat.name} ({name}): {feat.value}")
+        return feat.value
 
     echo(f"Setting {name} to {value}")
     value = ast.literal_eval(value)
-    return await dev.descriptors[name].set_value(value)
+    return await dev.features[name].set_value(value)
 
 
 if __name__ == "__main__":

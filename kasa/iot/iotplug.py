@@ -2,9 +2,9 @@
 import logging
 from typing import Any, Dict, Optional
 
-from ..descriptors import Descriptor, DescriptorCategory, DescriptorType
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
+from ..feature import Feature, FeatureCategory, FeatureType
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
 from .modules import Antitheft, Cloud, Schedule, Time, Usage
@@ -57,15 +57,15 @@ class IotPlug(IotDevice):
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
 
-        self.add_descriptor(
-            Descriptor(
+        self.add_feature(
+            Feature(
                 device=self,
                 name="LED",
                 icon="mdi:led-{state}",
                 attribute_getter="led",
                 attribute_setter="set_led",
-                category=DescriptorCategory.Config,
-                type=DescriptorType.Switch,
+                category=FeatureCategory.Config,
+                type=FeatureType.Switch,
             )
         )
 

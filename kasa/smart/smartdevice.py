@@ -2,15 +2,15 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
 
 from ..aestransport import AesTransport
-from ..descriptors import Descriptor, DescriptorType
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
+from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ class SmartDevice(Device):
 
         # We can first initialize the descriptors after the first update.
         # We make here an assumption that every device has at least a single descriptor.
-        if not self._descriptors:
+        if not self._features:
             await self._initialize_descriptors()
 
         _LOGGER.debug("Got an update: %s", self._last_update)
@@ -133,49 +133,47 @@ class SmartDevice(Device):
 
     async def _initialize_descriptors(self):
         """Initialize device descriptors."""
-        self.add_descriptor(
-            Descriptor(
+        self.add_feature(
+            Feature(
                 self,
                 "Signal Level",
                 attribute_getter=lambda x: x._info["signal_level"],
                 icon="mdi:signal",
             )
         )
-        self.add_descriptor(
-            Descriptor(
+        self.add_feature(
+            Feature(
                 self,
                 "RSSI",
                 attribute_getter=lambda x: x._info["rssi"],
                 icon="mdi:signal",
             )
         )
-        self.add_descriptor(
-            Descriptor(
+        self.add_feature(
+            Feature(
                 device=self, name="Time", attribute_getter="time", show_in_hass=False
             )
         )
-        self.add_descriptor(
-            Descriptor(
-                device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi"
-            )
+        self.add_feature(
+            Feature(device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi")
         )
 
         if "overheated" in self._info:
-            self.add_descriptor(
-                Descriptor(
+            self.add_feature(
+                Feature(
                     self,
                     "Overheated",
                     attribute_getter=lambda x: x._info["overheated"],
                     icon="mdi:heat-wave",
-                    type=DescriptorType.BinarySensor,
+                    type=FeatureType.BinarySensor,
                 )
             )
 
         # We check for the key available, and not for the property truthiness,
         # as the value is falsy when the device is off.
         if "on_time" in self._info:
-            self.add_descriptor(
-                Descriptor(
+            self.add_feature(
+                Feature(
                     device=self,
                     name="On since",
                     attribute_getter="on_since",
@@ -287,12 +285,6 @@ class SmartDevice(Device):
             "signal_level": self._info.get("signal_level"),
             "SSID": self.ssid,
         }
-
-    @property
-    def features(self) -> Set[str]:
-        """Return the list of supported features."""
-        # TODO:
-        return set()
 
     @property
     def has_emeter(self) -> bool:

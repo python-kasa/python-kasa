@@ -17,7 +17,6 @@ from warnings import warn
 
 from kasa.bulb import Bulb
 from kasa.credentials import Credentials
-from kasa.descriptors import Descriptor, DescriptorCategory, DescriptorType
 from kasa.device import Device
 from kasa.device_type import DeviceType
 from kasa.deviceconfig import (
@@ -34,6 +33,7 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
+from kasa.feature import Feature, FeatureCategory, FeatureType
 from kasa.iot.iotbulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.iotprotocol import (
     IotProtocol,
@@ -55,9 +55,9 @@ __all__ = [
     "TurnOnBehaviors",
     "TurnOnBehavior",
     "DeviceType",
-    "Descriptor",
-    "DescriptorType",
-    "DescriptorCategory",
+    "Feature",
+    "FeatureType",
+    "FeatureCategory",
     "EmeterStatus",
     "Device",
     "Bulb",

@@ -4,7 +4,7 @@ try:
 except ImportError:
     from pydantic import BaseModel
 
-from ...descriptors import Descriptor, DescriptorType
+from ...feature import Feature, FeatureType
 from .module import IotModule
 
 
@@ -28,13 +28,14 @@ class Cloud(IotModule):
 
     def __init__(self, device, module):
         super().__init__(device, module)
-        self.add_descriptor(
-            Descriptor(
-                device=self,
-                name="Cloud Connection",
+        self.add_feature(
+            Feature(
+                device=device,
+                container=self,
+                name="Cloud connection",
                 icon="mdi:cloud",
                 attribute_getter="is_connected",
-                type=DescriptorType.BinarySensor,
+                type=FeatureType.BinarySensor,
             )
         )
 

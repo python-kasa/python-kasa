@@ -3,14 +3,14 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence, Set, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from .credentials import Credentials
-from .descriptors import Descriptor
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
 from .exceptions import SmartDeviceException
+from .feature import Feature
 from .iotprotocol import IotProtocol
 from .protocol import BaseProtocol
 from .xortransport import XorTransport
@@ -70,7 +70,7 @@ class Device(ABC):
         self._discovery_info: Optional[Dict[str, Any]] = None
 
         self.modules: Dict[str, Any] = {}
-        self._descriptors: Dict[str, Descriptor] = {}
+        self._features: Dict[str, Feature] = {}
 
     @staticmethod
     async def connect(
@@ -298,9 +298,16 @@ class Device(ABC):
         """Return the key state information."""
 
     @property
-    @abstractmethod
-    def features(self) -> Set[str]:
+    def features(self) -> Dict[str, Feature]:
         """Return the list of supported features."""
+        return self._features
+
+    def add_feature(self, feature: Feature):
+        """Add a new feature to the device."""
+        desc_name = feature.name.lower().replace(" ", "_")
+        if desc_name in self._features:
+            raise SmartDeviceException("Duplicate feature name %s" % desc_name)
+        self._features[desc_name] = feature
 
     @property
     @abstractmethod
@@ -344,18 +351,6 @@ class Device(ABC):
     @abstractmethod
     async def set_alias(self, alias: str):
         """Set the device name (alias)."""
-
-    @property
-    def descriptors(self) -> Dict[str, Descriptor]:
-        """Return the list of descriptors."""
-        return self._descriptors
-
-    def add_descriptor(self, descriptor: "Descriptor"):
-        """Add a new descriptor to the device."""
-        desc_name = descriptor.name.lower().replace(" ", "_")
-        if desc_name in self._descriptors:
-            raise SmartDeviceException("Duplicate descriptor name %s" % desc_name)
-        self._descriptors[desc_name] = descriptor
 
     def __repr__(self):
         if self._last_update is None:

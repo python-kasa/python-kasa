@@ -1,10 +1,13 @@
 """Generic interface for defining device features."""
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
+
+if TYPE_CHECKING:
+    from .device import Device
 
 
-class DescriptorCategory(Enum):
+class FeatureCategory(Enum):
     """Descriptor category."""
 
     # TODO: we could probably do better than using the scheme homeassistant is using
@@ -12,8 +15,8 @@ class DescriptorCategory(Enum):
     Diagnostic = auto()
 
 
-class DescriptorType(Enum):
-    """Type of the information defined by the descriptor."""
+class FeatureType(Enum):
+    """Type to help decide how to present the feature."""
 
     Sensor = auto()
     BinarySensor = auto()
@@ -22,33 +25,39 @@ class DescriptorType(Enum):
 
 
 @dataclass
-class Descriptor:
-    """Descriptor defines a generic interface for device features."""
+class Feature:
+    """Feature defines a generic interface for device features."""
 
-    device: Any  # TODO: rename to something else, this can also be a module.
+    #: Device instance required for getting and setting values
+    device: "Device"
     #: User-friendly short description
     name: str
     #: Name of the property that allows accessing the value
     attribute_getter: str | Callable
     #: Name of the method that allows changing the value
     attribute_setter: str | None = None
-    #: Type of the information
+    #: Container storing the data, this overrides 'device' for getters
+    container: Any = None
+    #: Icon suggestion
     icon: str | None = None
     #: Unit of the descriptor
     unit: str | None = None
     #: Hint for homeassistant
     #: TODO: Replace with a set of flags to allow homeassistant make its own decision?
     show_in_hass: bool = True
-    category: DescriptorCategory = DescriptorCategory.Diagnostic
-    type: DescriptorType = DescriptorType.Sensor
+    category: FeatureCategory = FeatureCategory.Diagnostic
+    type: FeatureType = FeatureType.Sensor
 
     @property
     def value(self):
         """Return the current value."""
+        container = self.container if self.container is not None else self.device
         if isinstance(self.attribute_getter, Callable):
-            return self.attribute_getter(self.device)
-        return getattr(self.device, self.attribute_getter)
+            return self.attribute_getter(container)
+        return getattr(container, self.attribute_getter)
 
     async def set_value(self, value):
         """Set the value."""
+        if self.attribute_setter is None:
+            raise ValueError("Tried to set read-only feature.")
         return await getattr(self.device, self.attribute_setter)(value)

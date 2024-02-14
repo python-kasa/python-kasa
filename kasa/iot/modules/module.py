@@ -4,8 +4,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict
 
-from ...descriptors import Descriptor
 from ...exceptions import SmartDeviceException
+from ...feature import Feature
 
 if TYPE_CHECKING:
     from kasa.iot import IotDevice
@@ -35,14 +35,14 @@ class IotModule(ABC):
     def __init__(self, device: "IotDevice", module: str):
         self._device = device
         self._module = module
-        self._module_descriptors: Dict[str, Descriptor] = {}
+        self._module_features: Dict[str, Feature] = {}
 
-    def add_descriptor(self, desc):
+    def add_feature(self, feature: Feature):
         """Add module descriptor."""
-        module_desc_name = f"{self._module}_{desc.name}"
-        if module_desc_name in self._module_descriptors:
-            raise Exception("Duplicate name detected %s" % module_desc_name)
-        self._module_descriptors[module_desc_name] = desc
+        feature_name = f"{self._module}_{feature.name}"
+        if feature_name in self._module_features:
+            raise SmartDeviceException("Duplicate name detected %s" % feature_name)
+        self._module_features[feature_name] = feature
 
     @abstractmethod
     def query(self):
