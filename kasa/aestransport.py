@@ -3,7 +3,7 @@
 Based on the work of https://github.com/petretiandrea/plugp100
 under compatible GNU GPL3 license.
 """
-
+import asyncio
 import base64
 import hashlib
 import logging
@@ -39,6 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 
 ONE_DAY_SECONDS = 86400
 SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+BACKOFF_SECONDS_AFTER_LOGIN_ERROR = 1
 
 
 def _sha1(payload: bytes) -> str:
@@ -215,6 +216,7 @@ class AesTransport(BaseTransport):
                     self._default_credentials = get_default_credentials(
                         DEFAULT_CREDENTIALS["TAPO"]
                     )
+                    await asyncio.sleep(BACKOFF_SECONDS_AFTER_LOGIN_ERROR)
                 await self.perform_handshake()
                 await self.try_login(self._get_login_params(self._default_credentials))
                 _LOGGER.debug(
