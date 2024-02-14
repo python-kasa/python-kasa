@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import sys
+from contextlib import asynccontextmanager
 from functools import singledispatch, wraps
 from pprint import pformat as pf
 from typing import Any, Dict, cast
@@ -365,7 +366,14 @@ async def cli(
     if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_family:
         await dev.update()
 
-    ctx.obj = dev
+    @asynccontextmanager
+    async def async_wrapped_device(device: Device):
+        try:
+            yield device
+        finally:
+            await device.disconnect()
+
+    ctx.obj = await ctx.with_async_resource(async_wrapped_device(dev))
 
     if ctx.invoked_subcommand is None:
         return await ctx.invoke(state)

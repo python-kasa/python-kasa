@@ -49,6 +49,20 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Devic
     if host:
         config = DeviceConfig(host=host)
 
+    if (protocol := get_protocol(config=config)) is None:
+        raise UnsupportedDeviceException(
+            f"Unsupported device for {config.host}: "
+            + f"{config.connection_type.device_family.value}"
+        )
+
+    try:
+        return await _connect(config, protocol)
+    except:
+        await protocol.close()
+        raise
+
+
+async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> "Device":
     debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
     if debug_enabled:
         start_time = time.perf_counter()
@@ -62,12 +76,6 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Devic
                 + f"took {end_time - start_time:.2f} seconds to {perf_type}",
             )
             start_time = time.perf_counter()
-
-    if (protocol := get_protocol(config=config)) is None:
-        raise UnsupportedDeviceException(
-            f"Unsupported device for {config.host}: "
-            + f"{config.connection_type.device_family.value}"
-        )
 
     device_class: Optional[Type[Device]]
     device: Optional[Device] = None
