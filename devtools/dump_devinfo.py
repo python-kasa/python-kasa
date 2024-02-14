@@ -12,7 +12,6 @@ import collections.abc
 import json
 import logging
 import re
-import traceback
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from pprint import pprint
@@ -20,7 +19,7 @@ from typing import Dict, List, Union
 
 import asyncclick as click
 
-from devtools.helpers.smartrequests import SmartRequest, get_component_requests
+from devtools.helpers.smartrequests import COMPONENT_REQUESTS, SmartRequest
 from kasa import (
     AuthenticationException,
     Credentials,
@@ -35,8 +34,6 @@ from kasa.smart import SmartDevice
 
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed")
-
-_LOGGER = logging.getLogger(__name__)
 
 
 def scrub(res):
@@ -231,8 +228,6 @@ async def get_legacy_fixture(device):
             else:
                 click.echo(click.style("OK", fg="green"))
                 successes.append((test_call, info))
-        finally:
-            await device.protocol.close()
 
     final_query = defaultdict(defaultdict)
     final = defaultdict(defaultdict)
@@ -246,8 +241,7 @@ async def get_legacy_fixture(device):
         final = await device.protocol.query(final_query)
     except Exception as ex:
         _echo_error(f"Unable to query all successes at once: {ex}", bold=True, fg="red")
-    finally:
-        await device.protocol.close()
+
     if device._discovery_info and not device._discovery_info.get("system"):
         # Need to recreate a DiscoverResult here because we don't want the aliases
         # in the fixture, we want the actual field names as returned by the device.
@@ -322,11 +316,7 @@ async def _make_requests_or_exit(
         _echo_error(
             f"Unexpected exception querying {name} at once: {ex}",
         )
-        if _LOGGER.isEnabledFor(logging.DEBUG):
-            traceback.print_stack()
         exit(1)
-    finally:
-        await device.protocol.close()
 
 
 async def get_smart_fixture(device: SmartDevice, batch_size: int):
@@ -377,15 +367,14 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
 
     for item in component_info_response["component_list"]:
         component_id = item["id"]
-        ver_code = item["ver_code"]
-        if (requests := get_component_requests(component_id, ver_code)) is not None:
+        if requests := COMPONENT_REQUESTS.get(component_id):
             component_test_calls = [
                 SmartCall(module=component_id, request=request, should_succeed=True)
                 for request in requests
             ]
             test_calls.extend(component_test_calls)
             should_succeed.extend(component_test_calls)
-        else:
+        elif component_id not in COMPONENT_REQUESTS:
             click.echo(f"Skipping {component_id}..", nl=False)
             click.echo(click.style("UNSUPPORTED", fg="yellow"))
 
@@ -407,11 +396,7 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
             if (
                 not test_call.should_succeed
                 and hasattr(ex, "error_code")
-                and ex.error_code
-                in [
-                    SmartErrorCode.UNKNOWN_METHOD_ERROR,
-                    SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
-                ]
+                and ex.error_code == SmartErrorCode.UNKNOWN_METHOD_ERROR
             ):
                 click.echo(click.style("FAIL - EXPECTED", fg="green"))
             else:
@@ -425,8 +410,6 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
                 else:
                     click.echo(click.style("OK", fg="green"))
                 successes.append(test_call)
-        finally:
-            await device.protocol.close()
 
     requests = []
     for succ in successes:
