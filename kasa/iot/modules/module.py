@@ -37,7 +37,7 @@ class IotModule(ABC):
         self._module = module
         self._module_features: Dict[str, Feature] = {}
 
-    def add_feature(self, feature: Feature):
+    def _add_feature(self, feature: Feature):
         """Add module feature."""
         feature_name = f"{self._module}_{feature.name}"
         if feature_name in self._module_features:
