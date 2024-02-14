@@ -193,7 +193,7 @@ class AesTransport(BaseTransport):
             try:
                 ret_val = json_loads(raw_response)
                 _LOGGER.debug(
-                    "%s Secure passthrough response was received unencrypted!",
+                    "Received unencrypted response over secure passthrough from %s",
                     self._host,
                 )
             except Exception:
