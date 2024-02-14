@@ -1,9 +1,9 @@
 """Base class for IOT module implementations."""
 import collections
 import logging
-from ...feature import Feature
 
 from ..exceptions import SmartDeviceException
+from ..feature import Feature
 from ..module import Module
 
 _LOGGER = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ def merge(d, u):
 
 class IotModule(Module):
     """Base class implemention for all IOT modules."""
+
     def add_feature(self, feature: Feature):
         """Add module feature."""
         feature_name = f"{self._module}_{feature.name}"

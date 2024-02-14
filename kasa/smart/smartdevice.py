@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -179,8 +179,8 @@ class SmartDevice(Device):
             )
 
         for module in self.modules.values():
-            for desc in module._module_descriptors.values():
-                self.add_descriptor(desc)
+            for feat in module._module_features.values():
+                self._add_feature(feat)
 
     @property
     def sys_info(self) -> Dict[str, Any]:

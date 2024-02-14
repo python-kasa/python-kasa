@@ -1,8 +1,8 @@
 """Module for led controls."""
 from typing import Dict
 
-from ...descriptors import Descriptor, DescriptorCategory, DescriptorType
 from ...device import Device
+from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
 
 
@@ -14,15 +14,15 @@ class Led(SmartModule):
 
     def __init__(self, device: Device, module: str):
         super().__init__(device, module)
-        self.add_descriptor(
-            Descriptor(
-                device=self,
+        self._add_feature(
+            Feature(
+                device=device,
+                container=self,
                 name="LED",
                 icon="mdi:led-{state}",
                 attribute_getter="led",
                 attribute_setter="set_led",
-                category=DescriptorCategory.Config,
-                type=DescriptorType.Switch,
+                type=FeatureType.Switch,
             )
         )
 

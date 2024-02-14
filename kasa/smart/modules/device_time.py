@@ -3,11 +3,10 @@ from datetime import datetime, timedelta, timezone
 from time import mktime
 from typing import TYPE_CHECKING, cast
 
-from ...descriptors import Descriptor
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
+    pass
 
 
 class DeviceTime(SmartModule):
@@ -15,14 +14,6 @@ class DeviceTime(SmartModule):
 
     REQUIRED_COMPONENT = "device_local_time"
     QUERY_GETTER_NAME = "get_device_time"
-
-    def __init__(self, device: "SmartDevice", module: str):
-        super().__init__(device, module)
-        self.add_descriptor(
-            Descriptor(
-                device=self, name="Time", attribute_getter="time", show_in_hass=False
-            )
-        )
 
     @property
     def time(self) -> datetime:

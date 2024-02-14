@@ -3,8 +3,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Dict
 
-from .descriptors import Descriptor
 from .device import Device
+from .feature import Feature
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,14 +19,14 @@ class Module(ABC):
     def __init__(self, device: "Device", module: str):
         self._device = device
         self._module = module
-        self._module_descriptors: Dict[str, Descriptor] = {}
+        self._module_features: Dict[str, Feature] = {}
 
-    def add_descriptor(self, desc):
+    def _add_feature(self, feature: Feature):
         """Add module descriptor."""
-        module_desc_name = f"{self._module}_{desc.name}"
-        if module_desc_name in self._module_descriptors:
-            raise Exception("Duplicate name detected %s" % module_desc_name)
-        self._module_descriptors[module_desc_name] = desc
+        feat_name = f"{self._module}_{feature.name}"
+        if feat_name in self._module_features:
+            raise Exception("Duplicate name detected %s" % feat_name)
+        self._module_features[feat_name] = feature
 
     @abstractmethod
     def query(self):
