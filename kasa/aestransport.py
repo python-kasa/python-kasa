@@ -197,10 +197,9 @@ class AesTransport(BaseTransport):
                 )
             except Exception:
                 raise SmartDeviceException(
-                    "Unable to decrypt response from %s, error: %s, response: %s",
-                    self._host,
+                    f"Unable to decrypt response from {self._host}, "
+                    + f"error: {ex}, response: {raw_response}",
                     ex,
-                    raw_response,
                 ) from ex
         return ret_val  # type: ignore[return-value]
 
