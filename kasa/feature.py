@@ -7,14 +7,6 @@ if TYPE_CHECKING:
     from .device import Device
 
 
-class FeatureCategory(Enum):
-    """Feature category."""
-
-    # TODO: we could probably do better than using the scheme homeassistant is using
-    Config = auto()
-    Diagnostic = auto()
-
-
 class FeatureType(Enum):
     """Type to help decide how to present the feature."""
 
@@ -40,10 +32,7 @@ class Feature:
     container: Any = None
     #: Icon suggestion
     icon: str | None = None
-    #: Hint for homeassistant
-    #: TODO: Replace with a set of flags to allow homeassistant make its own decision?
-    show_in_hass: bool = True
-    category: FeatureCategory = FeatureCategory.Diagnostic
+    #: Type of the feature
     type: FeatureType = FeatureType.Sensor
 
     @property

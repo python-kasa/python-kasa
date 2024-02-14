@@ -150,11 +150,6 @@ class SmartDevice(Device):
             )
         )
         self._add_feature(
-            Feature(
-                device=self, name="Time", attribute_getter="time", show_in_hass=False
-            )
-        )
-        self._add_feature(
             Feature(device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi")
         )
 

@@ -313,11 +313,6 @@ class IotDevice(Device):
                 device=self, name="RSSI", attribute_getter="rssi", icon="mdi:signal"
             )
         )
-        self._add_feature(
-            Feature(
-                device=self, name="Time", attribute_getter="time", show_in_hass=False
-            )
-        )
         if "on_time" in self._sys_info:
             self._add_feature(
                 Feature(
