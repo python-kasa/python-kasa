@@ -207,7 +207,8 @@ async def test_unencrypted_response(mocker, caplog):
     res = await transport.send(json_dumps(request))
     assert "result" in res
     assert (
-        "127.0.0.1 Secure passthrough response was received unencrypted!" in caplog.text
+        "Received unencrypted response over secure passthrough from 127.0.0.1"
+        in caplog.text
     )
 
 
