@@ -53,7 +53,7 @@ async def test_connect(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
     protocol_class = get_protocol(config).__class__
-
+    close_mock = mocker.patch.object(protocol_class, "close")
     dev = await connect(
         config=config,
     )
@@ -61,8 +61,9 @@ async def test_connect(
     assert isinstance(dev.protocol, protocol_class)
 
     assert dev.config == config
-
+    assert close_mock.call_count == 0
     await dev.disconnect()
+    assert close_mock.call_count == 1
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
@@ -116,8 +117,12 @@ async def test_connect_query_fails(all_fixture_data: dict, mocker):
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
+    protocol_class = get_protocol(config).__class__
+    close_mock = mocker.patch.object(protocol_class, "close")
+    assert close_mock.call_count == 0
     with pytest.raises(SmartDeviceException):
         await connect(config=config)
+    assert close_mock.call_count == 1
 
 
 async def test_connect_http_client(all_fixture_data, mocker):
