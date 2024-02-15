@@ -33,6 +33,7 @@ from kasa.exceptions import (
     TimeoutException,
     UnsupportedDeviceException,
 )
+from kasa.feature import Feature, FeatureType
 from kasa.iot.iotbulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.iotprotocol import (
     IotProtocol,
@@ -54,6 +55,8 @@ __all__ = [
     "TurnOnBehaviors",
     "TurnOnBehavior",
     "DeviceType",
+    "Feature",
+    "FeatureType",
     "EmeterStatus",
     "Device",
     "Bulb",

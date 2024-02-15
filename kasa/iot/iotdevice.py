@@ -22,6 +22,7 @@ from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import SmartDeviceException
+from ..feature import Feature
 from ..protocol import BaseProtocol
 from .modules import Emeter, IotModule
 
@@ -184,8 +185,9 @@ class IotDevice(Device):
         super().__init__(host=host, config=config, protocol=protocol)
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
-        self._features: Set[str] = set()
         self._children: Sequence["IotDevice"] = []
+        self._supported_modules: Optional[Dict[str, IotModule]] = None
+        self._legacy_features: Set[str] = set()
 
     @property
     def children(self) -> Sequence["IotDevice"]:
@@ -260,7 +262,7 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def features(self) -> Set[str]:
+    def features(self) -> Dict[str, Feature]:
         """Return a set of features that the device supports."""
         return self._features
 
@@ -276,7 +278,7 @@ class IotDevice(Device):
     @requires_update
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
-        return "ENE" in self.features
+        return "ENE" in self._legacy_features
 
     async def get_sys_info(self) -> Dict[str, Any]:
         """Retrieve system information."""
@@ -299,8 +301,27 @@ class IotDevice(Device):
             self._last_update = response
             self._set_sys_info(response["system"]["get_sysinfo"])
 
+        if not self._features:
+            await self._initialize_features()
+
         await self._modular_update(req)
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
+
+    async def _initialize_features(self):
+        self._add_feature(
+            Feature(
+                device=self, name="RSSI", attribute_getter="rssi", icon="mdi:signal"
+            )
+        )
+        if "on_time" in self._sys_info:
+            self._add_feature(
+                Feature(
+                    device=self,
+                    name="On since",
+                    attribute_getter="on_since",
+                    icon="mdi:clock",
+                )
+            )
 
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
@@ -309,6 +330,18 @@ class IotDevice(Device):
                 "The device has emeter, querying its information along sysinfo"
             )
             self.add_module("emeter", Emeter(self, self.emeter_type))
+
+        # TODO: perhaps modules should not have unsupported modules,
+        #  making separate handling for this unnecessary
+        if self._supported_modules is None:
+            supported = {}
+            for module in self.modules.values():
+                if module.is_supported:
+                    supported[module._module] = module
+                for module_feat in module._module_features.values():
+                    self._add_feature(module_feat)
+
+            self._supported_modules = supported
 
         request_list = []
         est_response_size = 1024 if "system" in req else 0
@@ -357,9 +390,7 @@ class IotDevice(Device):
         """Set sys_info."""
         self._sys_info = sys_info
         if features := sys_info.get("feature"):
-            self._features = _parse_features(features)
-        else:
-            self._features = set()
+            self._legacy_features = _parse_features(features)
 
     @property  # type: ignore
     @requires_update

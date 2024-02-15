@@ -4,6 +4,7 @@ try:
 except ImportError:
     from pydantic import BaseModel
 
+from ...feature import Feature, FeatureType
 from .module import IotModule
 
 
@@ -24,6 +25,24 @@ class CloudInfo(BaseModel):
 
 class Cloud(IotModule):
     """Module implementing support for cloud services."""
+
+    def __init__(self, device, module):
+        super().__init__(device, module)
+        self._add_feature(
+            Feature(
+                device=device,
+                container=self,
+                name="Cloud connection",
+                icon="mdi:cloud",
+                attribute_getter="is_connected",
+                type=FeatureType.BinarySensor,
+            )
+        )
+
+    @property
+    def is_connected(self) -> bool:
+        """Return true if device is connected to the cloud."""
+        return self.info.binded
 
     def query(self):
         """Request cloud connectivity info."""

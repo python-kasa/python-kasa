@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Set, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -10,6 +10,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException
+from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -124,12 +125,62 @@ class SmartDevice(Device):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]].update_internal_state(info)
 
+        # We can first initialize the features after the first update.
+        # We make here an assumption that every device has at least a single feature.
+        if not self._features:
+            await self._initialize_features()
+
         _LOGGER.debug("Got an update: %s", self._last_update)
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
         if "energy_monitoring" in self._components:
             self.emeter_type = "emeter"
+
+    async def _initialize_features(self):
+        """Initialize device features."""
+        self._add_feature(
+            Feature(
+                self,
+                "Signal Level",
+                attribute_getter=lambda x: x._info["signal_level"],
+                icon="mdi:signal",
+            )
+        )
+        self._add_feature(
+            Feature(
+                self,
+                "RSSI",
+                attribute_getter=lambda x: x._info["rssi"],
+                icon="mdi:signal",
+            )
+        )
+        self._add_feature(
+            Feature(device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi")
+        )
+
+        if "overheated" in self._info:
+            self._add_feature(
+                Feature(
+                    self,
+                    "Overheated",
+                    attribute_getter=lambda x: x._info["overheated"],
+                    icon="mdi:heat-wave",
+                    type=FeatureType.BinarySensor,
+                )
+            )
+
+        # We check for the key available, and not for the property truthiness,
+        # as the value is falsy when the device is off.
+        if "on_time" in self._info:
+            self._add_feature(
+                Feature(
+                    device=self,
+                    name="On since",
+                    attribute_getter="on_since",
+                    icon="mdi:clock",
+                )
+            )
 
     @property
     def sys_info(self) -> Dict[str, Any]:
@@ -221,22 +272,20 @@ class SmartDevice(Device):
         return res
 
     @property
-    def state_information(self) -> Dict[str, Any]:
-        """Return the key state information."""
+    def ssid(self) -> str:
+        """Return ssid of the connected wifi ap."""
         ssid = self._info.get("ssid")
         ssid = base64.b64decode(ssid).decode() if ssid else "No SSID"
+        return ssid
 
+    @property
+    def state_information(self) -> Dict[str, Any]:
+        """Return the key state information."""
         return {
             "overheated": self._info.get("overheated"),
             "signal_level": self._info.get("signal_level"),
-            "SSID": ssid,
+            "SSID": self.ssid,
         }
-
-    @property
-    def features(self) -> Set[str]:
-        """Return the list of supported features."""
-        # TODO:
-        return set()
 
     @property
     def has_emeter(self) -> bool:

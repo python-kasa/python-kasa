@@ -102,6 +102,7 @@ class ExceptionHandlerGroup(click.Group):
             asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
         except Exception as ex:
             echo(f"Got error: {ex!r}")
+            raise
 
 
 def json_formatter_cb(result, **kwargs):
@@ -578,6 +579,10 @@ async def state(ctx, dev: Device):
         else:
             echo(f"\t{info_name}: {info_data}")
 
+    echo("\n\t[bold]== Features == [/bold]")
+    for id_, feature in dev.features.items():
+        echo(f"\t{feature.name} ({id_}): {feature.value}")
+
     if dev.has_emeter:
         echo("\n\t[bold]== Current State ==[/bold]")
         emeter_status = dev.emeter_realtime
@@ -594,8 +599,6 @@ async def state(ctx, dev: Device):
         echo("\n\t[bold]== Verbose information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
         echo(f"\tDevice ID:         {dev.device_id}")
-        for feature in dev.features:
-            echo(f"\tFeature:           {feature}")
         echo()
         _echo_discovery_info(dev._discovery_info)
     return dev.internal_state
@@ -1113,6 +1116,38 @@ async def shell(dev: Device):
         )
     except EOFError:
         loop.stop()
+
+
+@cli.command(name="feature")
+@click.argument("name", required=False)
+@click.argument("value", required=False)
+@pass_dev
+async def feature(dev, name: str, value):
+    """Access and modify features.
+
+    If no *name* is given, lists available features and their values.
+    If only *name* is given, the value of named feature is returned.
+    If both *name* and *value* are set, the described setting is changed.
+    """
+    if not name:
+        echo("[bold]== Features ==[/bold]")
+        for name, feat in dev.features.items():
+            echo(f"{feat.name} ({name}): {feat.value}")
+        return
+
+    if name not in dev.features:
+        echo(f"No feature by name {name}")
+        return
+
+    feat = dev.features[name]
+
+    if value is None:
+        echo(f"{feat.name} ({name}): {feat.value}")
+        return feat.value
+
+    echo(f"Setting {name} to {value}")
+    value = ast.literal_eval(value)
+    return await dev.features[name].set_value(value)
 
 
 if __name__ == "__main__":
