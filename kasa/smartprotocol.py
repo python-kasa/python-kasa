@@ -129,19 +129,21 @@ class SmartProtocol(BaseProtocol):
                     pf(smart_request),
                 )
             response_step = await self._transport.send(smart_request)
+            batch_name = f"multi-request-batch-{i+1}"
             if debug_enabled:
                 _LOGGER.debug(
-                    "%s multi-request-batch-%s << %s",
+                    "%s %s << %s",
                     self._host,
-                    i + 1,
+                    batch_name,
                     pf(response_step),
                 )
-            self._handle_response_error_code(response_step)
+            self._handle_response_error_code(response_step, batch_name)
             responses = response_step["result"]["responses"]
             for response in responses:
-                self._handle_response_error_code(response, raise_on_error=False)
+                method = response["method"]
+                self._handle_response_error_code(response, method, raise_on_error=False)
                 result = response.get("result", None)
-                multi_result[response["method"]] = result
+                multi_result[method] = result
         return multi_result
 
     async def _execute_query(self, request: Union[str, Dict], retry_count: int) -> Dict:
@@ -173,13 +175,13 @@ class SmartProtocol(BaseProtocol):
                 pf(response_data),
             )
 
-        self._handle_response_error_code(response_data)
+        self._handle_response_error_code(response_data, smart_method)
 
         # Single set_ requests do not return a result
         result = response_data.get("result")
         return {smart_method: result}
 
-    def _handle_response_error_code(self, resp_dict: dict, raise_on_error=True):
+    def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         if error_code == SmartErrorCode.SUCCESS:
             return
@@ -189,9 +191,8 @@ class SmartProtocol(BaseProtocol):
         msg = (
             f"Error querying device: {self._host}: "
             + f"{error_code.name}({error_code.value})"
+            + f" for method: {method}"
         )
-        if method := resp_dict.get("method"):
-            msg += f" for method: {method}"
         if error_code in SMART_TIMEOUT_ERRORS:
             raise TimeoutException(msg, error_code=error_code)
         if error_code in SMART_RETRYABLE_ERRORS:
@@ -341,7 +342,7 @@ class _ChildProtocolWrapper(SmartProtocol):
         result = response.get("control_child")
         # Unwrap responseData for control_child
         if result and (response_data := result.get("responseData")):
-            self._handle_response_error_code(response_data)
+            self._handle_response_error_code(response_data, "control_child")
             result = response_data.get("result")
 
         # TODO: handle multipleRequest unwrapping
