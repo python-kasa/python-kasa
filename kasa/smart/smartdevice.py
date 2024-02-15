@@ -9,7 +9,7 @@ from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
-from ..exceptions import AuthenticationException, SmartDeviceException
+from ..exceptions import AuthenticationException, SmartDeviceException, SmartErrorCode
 from ..smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,6 +60,24 @@ class SmartDevice(Device):
         """Return list of children."""
         return list(self._children.values())
 
+    def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
+        response = responses.get(request)
+        if isinstance(response, SmartErrorCode):
+            _LOGGER.debug(
+                "Error %s getting request %s for device %s",
+                response,
+                request,
+                self.host,
+            )
+            response = None
+        if response is not None:
+            return response
+        if default is not None:
+            return default
+        raise SmartDeviceException(
+            f"{request} not found in {responses} for device {self.host}"
+        )
+
     async def update(self, update_children: bool = True):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
@@ -86,7 +104,7 @@ class SmartDevice(Device):
                 "get_current_power": None,
             }
 
-        if self._components["device"] >= 2:
+        if self._components.get("device", 0) >= 2:
             extra_reqs = {
                 **extra_reqs,
                 "get_device_usage": None,
@@ -100,13 +118,13 @@ class SmartDevice(Device):
 
         resp = await self.protocol.query(req)
 
-        self._info = resp["get_device_info"]
-        self._time = resp["get_device_time"]
+        self._info = self._try_get_response(resp, "get_device_info")
+        self._time = self._try_get_response(resp, "get_device_time", {})
         # Device usage is not available on older firmware versions
-        self._usage = resp.get("get_device_usage", {})
+        self._usage = self._try_get_response(resp, "get_device_usage", {})
         # Emeter is not always available, but we set them still for now.
-        self._energy = resp.get("get_energy_usage", {})
-        self._emeter = resp.get("get_current_power", {})
+        self._energy = self._try_get_response(resp, "get_energy_usage", {})
+        self._emeter = self._try_get_response(resp, "get_current_power", {})
 
         self._last_update = {
             "components": self._components_raw,
@@ -115,7 +133,7 @@ class SmartDevice(Device):
             "time": self._time,
             "energy": self._energy,
             "emeter": self._emeter,
-            "child_info": resp.get("get_child_device_list", {}),
+            "child_info": self._try_get_response(resp, "get_child_device_list", {}),
         }
 
         if child_info := self._last_update.get("child_info"):

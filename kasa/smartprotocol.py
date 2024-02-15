@@ -139,7 +139,7 @@ class SmartProtocol(BaseProtocol):
             self._handle_response_error_code(response_step)
             responses = response_step["result"]["responses"]
             for response in responses:
-                self._handle_response_error_code(response)
+                self._handle_response_error_code(response, raise_on_error=False)
                 result = response.get("result", None)
                 multi_result[response["method"]] = result
         return multi_result
@@ -179,9 +179,12 @@ class SmartProtocol(BaseProtocol):
         result = response_data.get("result")
         return {smart_method: result}
 
-    def _handle_response_error_code(self, resp_dict: dict):
+    def _handle_response_error_code(self, resp_dict: dict, raise_on_error=True):
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         if error_code == SmartErrorCode.SUCCESS:
+            return
+        if not raise_on_error:
+            resp_dict["result"] = error_code
             return
         msg = (
             f"Error querying device: {self._host}: "
