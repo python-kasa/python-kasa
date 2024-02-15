@@ -45,6 +45,9 @@ class ConnectionException(SmartDeviceException):
 class SmartErrorCode(IntEnum):
     """Enum for SMART Error Codes."""
 
+    def __str__(self):
+        return f"{self.name}({self.value})"
+
     SUCCESS = 0
 
     # Transport Errors

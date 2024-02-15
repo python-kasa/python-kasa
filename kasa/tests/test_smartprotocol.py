@@ -60,13 +60,10 @@ async def test_smart_device_errors_in_multiple_request(
     send_mock = mocker.patch.object(
         dummy_protocol._transport, "send", return_value=mock_response
     )
-    with pytest.raises(SmartDeviceException):
-        await dummy_protocol.query(DUMMY_MULTIPLE_QUERY, retry_count=2)
-    if error_code in chain(SMART_TIMEOUT_ERRORS, SMART_RETRYABLE_ERRORS):
-        expected_calls = 3
-    else:
-        expected_calls = 1
-    assert send_mock.call_count == expected_calls
+
+    resp_dict = await dummy_protocol.query(DUMMY_MULTIPLE_QUERY, retry_count=2)
+    assert resp_dict["foobar2"] == error_code
+    assert send_mock.call_count == 1
 
 
 @pytest.mark.parametrize("request_size", [1, 3, 5, 10])
