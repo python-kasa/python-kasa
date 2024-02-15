@@ -1,7 +1,7 @@
 """Generic interface for defining device features."""
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 if TYPE_CHECKING:
     from .device import Device
@@ -25,13 +25,13 @@ class Feature:
     #: User-friendly short description
     name: str
     #: Name of the property that allows accessing the value
-    attribute_getter: str | Callable
+    attribute_getter: Union[str, Callable]
     #: Name of the method that allows changing the value
-    attribute_setter: str | None = None
+    attribute_setter: Optional[str] = None
     #: Container storing the data, this overrides 'device' for getters
     container: Any = None
     #: Icon suggestion
-    icon: str | None = None
+    icon: Optional[str] = None
     #: Type of the feature
     type: FeatureType = FeatureType.Sensor
 
