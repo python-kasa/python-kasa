@@ -40,7 +40,7 @@ async def test_smart_device_errors(dummy_protocol, mocker, error_code):
 
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
 async def test_smart_device_errors_in_multiple_request(
-    dummy_protocol, mocker, error_code, caplog
+    dummy_protocol, mocker, error_code
 ):
     mock_response = {
         "result": {
