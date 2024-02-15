@@ -67,7 +67,7 @@ async def test_invalid_connection(dev):
 async def test_initial_update_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = None
-    dev._features = set()
+    dev._legacy_features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
     # Devices with small buffers may require 3 queries
@@ -79,7 +79,7 @@ async def test_initial_update_emeter(dev, mocker):
 async def test_initial_update_no_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
     dev._last_update = None
-    dev._features = set()
+    dev._legacy_features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
     # 2 calls are necessary as some devices crash on unexpected modules
@@ -218,9 +218,9 @@ async def test_features(dev):
     """Make sure features is always accessible."""
     sysinfo = dev._last_update["system"]["get_sysinfo"]
     if "feature" in sysinfo:
-        assert dev.features == set(sysinfo["feature"].split(":"))
+        assert dev._legacy_features == set(sysinfo["feature"].split(":"))
     else:
-        assert dev.features == set()
+        assert dev._legacy_features == set()
 
 
 @device_iot

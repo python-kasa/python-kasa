@@ -1117,7 +1117,7 @@ async def feature(dev, name: str, value):
     If both *name* and *value* are set, the described setting is changed.
     """
     if not name:
-        echo("[bold]== Feature ==[/bold]")
+        echo("[bold]== Features ==[/bold]")
         for name, feat in dev.features.items():
             echo(f"{feat.name} ({name}): {feat.value}")
         return
