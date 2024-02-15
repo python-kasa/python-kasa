@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import sys
+from contextlib import asynccontextmanager
 from functools import singledispatch, wraps
 from pprint import pformat as pf
 from typing import Any, Dict, cast
@@ -217,7 +218,7 @@ def json_formatter_cb(result, **kwargs):
 @click.option(
     "--discovery-timeout",
     envvar="KASA_DISCOVERY_TIMEOUT",
-    default=3,
+    default=5,
     required=False,
     show_default=True,
     help="Timeout for discovery.",
@@ -349,11 +350,16 @@ async def cli(
         )
         dev = await Device.connect(config=config)
     else:
-        echo("No --type or --device-family and --encrypt-type defined, discovering..")
+        echo(
+            "No --type or --device-family and --encrypt-type defined, "
+            + f"discovering for {discovery_timeout} seconds.."
+        )
         dev = await Discover.discover_single(
             host,
             port=port,
             credentials=credentials,
+            timeout=timeout,
+            discovery_timeout=discovery_timeout,
         )
 
     # Skip update on specific commands, or if device factory,
@@ -361,7 +367,14 @@ async def cli(
     if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_family:
         await dev.update()
 
-    ctx.obj = dev
+    @asynccontextmanager
+    async def async_wrapped_device(device: Device):
+        try:
+            yield device
+        finally:
+            await device.disconnect()
+
+    ctx.obj = await ctx.with_async_resource(async_wrapped_device(dev))
 
     if ctx.invoked_subcommand is None:
         return await ctx.invoke(state)
@@ -1122,7 +1135,7 @@ async def feature(dev, name: str, value):
     If both *name* and *value* are set, the described setting is changed.
     """
     if not name:
-        echo("[bold]== Feature ==[/bold]")
+        echo("[bold]== Features ==[/bold]")
         for name, feat in dev.features.items():
             echo(f"{feat.name} ({name}): {feat.value}")
         return

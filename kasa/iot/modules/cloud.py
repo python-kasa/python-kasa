@@ -28,7 +28,7 @@ class Cloud(IotModule):
 
     def __init__(self, device, module):
         super().__init__(device, module)
-        self.add_feature(
+        self._add_feature(
             Feature(
                 device=device,
                 container=self,

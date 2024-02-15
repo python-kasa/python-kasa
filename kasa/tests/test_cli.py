@@ -7,6 +7,7 @@ from asyncclick.testing import CliRunner
 
 from kasa import (
     AuthenticationException,
+    Credentials,
     Device,
     EmeterStatus,
     SmartDeviceException,
@@ -36,6 +37,11 @@ async def test_update_called_by_cli(dev, mocker):
     """Test that device update is called on main."""
     runner = CliRunner()
     update = mocker.patch.object(dev, "update")
+
+    # These will mock the features to avoid accessing non-existing
+    mocker.patch("kasa.device.Device.features", return_value={})
+    mocker.patch("kasa.iot.iotdevice.IotDevice.features", return_value={})
+
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
 
     res = await runner.invoke(
@@ -48,6 +54,7 @@ async def test_update_called_by_cli(dev, mocker):
             "--password",
             "bar",
         ],
+        catch_exceptions=False,
     )
     assert res.exit_code == 0
     update.assert_called()
@@ -291,6 +298,10 @@ async def test_brightness(dev):
 async def test_json_output(dev: Device, mocker):
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover", return_value={"127.0.0.1": dev})
+    # These will mock the features to avoid accessing non-existing
+    mocker.patch("kasa.device.Device.features", return_value={})
+    mocker.patch("kasa.iot.iotdevice.IotDevice.features", return_value={})
+
     runner = CliRunner()
     res = await runner.invoke(cli, ["--json", "state"], obj=dev)
     assert res.exit_code == 0
@@ -341,7 +352,13 @@ async def test_credentials(discovery_mock, mocker):
 async def test_without_device_type(dev, mocker):
     """Test connecting without the device type."""
     runner = CliRunner()
-    mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
+    discovery_mock = mocker.patch(
+        "kasa.discover.Discover.discover_single", return_value=dev
+    )
+    # These will mock the features to avoid accessing non-existing
+    mocker.patch("kasa.device.Device.features", return_value={})
+    mocker.patch("kasa.iot.iotdevice.IotDevice.features", return_value={})
+
     res = await runner.invoke(
         cli,
         [
@@ -351,9 +368,18 @@ async def test_without_device_type(dev, mocker):
             "foo",
             "--password",
             "bar",
+            "--discovery-timeout",
+            "7",
         ],
     )
     assert res.exit_code == 0
+    discovery_mock.assert_called_once_with(
+        "127.0.0.1",
+        port=None,
+        credentials=Credentials("foo", "bar"),
+        timeout=5,
+        discovery_timeout=7,
+    )
 
 
 @pytest.mark.parametrize("auth_param", ["--username", "--password"])
@@ -398,6 +424,10 @@ async def test_duplicate_target_device():
 
 async def test_discover(discovery_mock, mocker):
     """Test discovery output."""
+    # These will mock the features to avoid accessing non-existing
+    mocker.patch("kasa.device.Device.features", return_value={})
+    mocker.patch("kasa.iot.iotdevice.IotDevice.features", return_value={})
+
     runner = CliRunner()
     res = await runner.invoke(
         cli,
@@ -417,6 +447,10 @@ async def test_discover(discovery_mock, mocker):
 
 async def test_discover_host(discovery_mock, mocker):
     """Test discovery output."""
+    # These will mock the features to avoid accessing non-existing
+    mocker.patch("kasa.device.Device.features", return_value={})
+    mocker.patch("kasa.iot.iotdevice.IotDevice.features", return_value={})
+
     runner = CliRunner()
     res = await runner.invoke(
         cli,

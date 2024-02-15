@@ -68,7 +68,7 @@ class SmartDevice(Device):
         resp = await self.protocol.query("component_nego")
         self._components_raw = resp["component_nego"]
         self._components = {
-            comp["id"]: comp["ver_code"]
+            comp["id"]: int(comp["ver_code"])
             for comp in self._components_raw["component_list"]
         }
 
@@ -86,6 +86,12 @@ class SmartDevice(Device):
         for module in self.modules.values():
             extra_reqs.update(module.query())
 
+        if self._components["device"] >= 2:
+            extra_reqs = {
+                **extra_reqs,
+                "get_device_usage": None,
+            }
+
         req = {
             "get_device_info": None,
             **extra_reqs,
@@ -94,6 +100,8 @@ class SmartDevice(Device):
         resp = await self.protocol.query(req)
 
         self._info = resp["get_device_info"]
+        # Device usage is not available on older firmware versions
+        self._usage = resp.get("get_device_usage", {})
         # Emeter is not always available, but we set them still for now.
         self._energy = resp.get("get_energy_usage", {})
         self._emeter = resp.get("get_current_power", {})
@@ -203,7 +211,7 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        return self.modules["DeviceTime"].time
+        return self.modules["DeviceTime"].time  # type: ignore[attr-defined]
 
     @property
     def timezone(self) -> Dict:
@@ -315,8 +323,6 @@ class SmartDevice(Device):
         """Raise an exception if there is no emeter."""
         if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
-        if self.emeter_type not in self._last_update:
-            raise SmartDeviceException("update() required prior accessing emeter")
 
     @property
     def emeter_realtime(self) -> EmeterStatus:
@@ -350,7 +356,7 @@ class SmartDevice(Device):
             return None
         on_time = cast(float, on_time)
         if "DeviceTime" in self.modules:
-            return self.modules["DeviceTime"].time - timedelta(seconds=on_time)
+            return self.modules["DeviceTime"].time - timedelta(seconds=on_time)  # type: ignore[attr-defined]
         else:  # We have no device time, use current local time.
             return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 

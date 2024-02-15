@@ -82,6 +82,7 @@ class SmartProtocol(BaseProtocol):
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
+                await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
             except TimeoutException as ex:
                 await self._transport.reset()

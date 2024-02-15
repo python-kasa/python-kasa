@@ -3,7 +3,7 @@
 Based on the work of https://github.com/petretiandrea/plugp100
 under compatible GNU GPL3 license.
 """
-
+import asyncio
 import base64
 import hashlib
 import logging
@@ -39,6 +39,7 @@ _LOGGER = logging.getLogger(__name__)
 
 ONE_DAY_SECONDS = 86400
 SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
+BACKOFF_SECONDS_AFTER_LOGIN_ERROR = 1
 
 
 def _sha1(payload: bytes) -> str:
@@ -184,8 +185,24 @@ class AesTransport(BaseTransport):
             assert self._encryption_session is not None
 
         raw_response: str = resp_dict["result"]["response"]
-        response = self._encryption_session.decrypt(raw_response.encode())
-        return json_loads(response)  # type: ignore[return-value]
+
+        try:
+            response = self._encryption_session.decrypt(raw_response.encode())
+            ret_val = json_loads(response)
+        except Exception as ex:
+            try:
+                ret_val = json_loads(raw_response)
+                _LOGGER.debug(
+                    "Received unencrypted response over secure passthrough from %s",
+                    self._host,
+                )
+            except Exception:
+                raise SmartDeviceException(
+                    f"Unable to decrypt response from {self._host}, "
+                    + f"error: {ex}, response: {raw_response}",
+                    ex,
+                ) from ex
+        return ret_val  # type: ignore[return-value]
 
     async def perform_login(self):
         """Login to the device."""
@@ -199,6 +216,7 @@ class AesTransport(BaseTransport):
                     self._default_credentials = get_default_credentials(
                         DEFAULT_CREDENTIALS["TAPO"]
                     )
+                    await asyncio.sleep(BACKOFF_SECONDS_AFTER_LOGIN_ERROR)
                 await self.perform_handshake()
                 await self.try_login(self._get_login_params(self._default_credentials))
                 _LOGGER.debug(
