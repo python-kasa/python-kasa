@@ -310,15 +310,13 @@ async def test_modules_not_supported(dev: IotDevice):
 
 
 @device_smart
-async def test_update_sub_errors(dev: SmartDevice, caplog):
+async def test_try_get_response(dev: SmartDevice, caplog):
     mock_response: dict = {
-        "get_device_info": {},
-        "get_child_device_list": SmartErrorCode.PARAMS_ERROR,
+        "get_device_info": SmartErrorCode.PARAMS_ERROR,
     }
     caplog.set_level(logging.DEBUG)
-    with patch.object(dev.protocol, "query", return_value=mock_response):
-        await dev.update()
-    msg = "Error PARAMS_ERROR(-1008) getting request get_child_device_list for device 127.0.0.123"
+    dev._try_get_response(mock_response, "get_device_info", {})
+    msg = "Error PARAMS_ERROR(-1008) getting request get_device_info for device 127.0.0.123"
     assert msg in caplog.text
 
 
