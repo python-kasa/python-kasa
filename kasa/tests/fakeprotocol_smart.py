@@ -1,7 +1,8 @@
 import warnings
 from json import loads as json_loads
 
-from kasa import Credentials, DeviceConfig, SmartDeviceException, SmartProtocol
+from kasa import Credentials, DeviceConfig, SmartProtocol
+from kasa.exceptions import SmartErrorCode
 from kasa.protocol import BaseTransport
 
 
@@ -99,18 +100,28 @@ class FakeSmartTransport(BaseTransport):
         elif method == "component_nego" or method[:4] == "get_":
             if method in info:
                 return {"result": info[method], "error_code": 0}
-            elif (
+            if (
+                # FIXTURE_MISSING is for service calls not in place when
+                # SMART fixtures started to be generated
                 missing_result := self.FIXTURE_MISSING_MAP.get(method)
             ) and missing_result[0] in self.components:
-                warnings.warn(
-                    UserWarning(
-                        f"Fixture missing expected method {method}, try to regenerate"
-                    ),
-                    stacklevel=1,
-                )
-                return {"result": missing_result[1], "error_code": 0}
+                retval = {"result": missing_result[1], "error_code": 0}
             else:
-                raise SmartDeviceException(f"Fixture doesn't support {method}")
+                # PARAMS error returned for KS240 when get_device_usage called
+                # on parent device.  Could be any error code though.
+                # TODO: Try to figure out if there's a way to prevent the KS240 smartdevice
+                # calling the unsupported device in the first place.
+                retval = {
+                    "error_code": SmartErrorCode.PARAMS_ERROR.value,
+                    "method": "get_device_usage",
+                }
+            warnings.warn(
+                UserWarning(
+                    f"Fixture missing expected method {method}, try to regenerate"
+                ),
+                stacklevel=1,
+            )
+            return retval
         elif method == "set_qs_info":
             return {"error_code": 0}
         elif method[:4] == "set_":

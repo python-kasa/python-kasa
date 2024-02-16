@@ -111,6 +111,7 @@ PLUGS_SMART = {
     "P135",
     "S505",
     "TP15",
+    "KS240",
 }
 PLUGS = {
     *PLUGS_IOT,
