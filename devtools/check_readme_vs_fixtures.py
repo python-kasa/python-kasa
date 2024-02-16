@@ -11,7 +11,7 @@ from kasa.tests.conftest import (
     STRIPS,
 )
 
-with open("README.md") as f:
+with open("SUPPORTED.md") as f:
     readme = f.read()
 
 typemap = {
@@ -33,7 +33,7 @@ def _get_device_type(dev, typemap):
 
 found_unlisted = False
 for dev in ALL_DEVICES:
-    regex = rf"^\*.*\s{dev}"
+    regex = dev
     match = re.search(regex, readme, re.MULTILINE)
     if match is None:
         print(f"{dev} not listed in {_get_device_type(dev, typemap)}")
