@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class TimeModule(SmartModule):
     """Implementation of device_local_time."""
 
-    REQUIRED_COMPONENT = "device_local_time"
+    REQUIRED_COMPONENT = "time"
     QUERY_GETTER_NAME = "get_device_time"
 
     def __init__(self, device: "SmartDevice", module: str):
