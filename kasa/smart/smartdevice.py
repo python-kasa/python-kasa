@@ -410,7 +410,7 @@ class SmartDevice(Device):
                 "password": base64.b64encode(password.encode()).decode(),
                 "ssid": base64.b64encode(ssid.encode()).decode(),
             },
-            "time": self.internal_state["time"],
+            "time": self.internal_state["get_device_time"],
         }
 
         # The device does not respond to the request but changes the settings
@@ -429,13 +429,13 @@ class SmartDevice(Device):
 
         This will replace the existing authentication credentials on the device.
         """
-        t = self.internal_state["time"]
+        time_data = self.internal_state["get_device_time"]
         payload = {
             "account": {
                 "username": base64.b64encode(username.encode()).decode(),
                 "password": base64.b64encode(password.encode()).decode(),
             },
-            "time": t,
+            "time": time_data,
         }
         return await self.protocol.query({"set_qs_info": payload})
 
