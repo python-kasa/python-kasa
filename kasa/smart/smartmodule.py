@@ -4,6 +4,7 @@ from typing import Dict, Type
 
 from ..exceptions import SmartDeviceException
 from ..module import Module
+from .smartdevice import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,6 +16,10 @@ class SmartModule(Module):
     REQUIRED_COMPONENT: str
     QUERY_GETTER_NAME: str
     REGISTERED_MODULES: Dict[str, Type["SmartModule"]] = {}
+
+    def __init__(self, device: "SmartDevice", module: str):
+        self._device: SmartDevice
+        super().__init__(device, module)
 
     def __init_subclass__(cls, **kwargs):
         assert cls.REQUIRED_COMPONENT is not None  # noqa: S101

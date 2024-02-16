@@ -1,24 +1,48 @@
-from typing import Dict, Optional, TYPE_CHECKING
+"""Implementation of energy monitoring module."""
+from typing import TYPE_CHECKING, Dict, Optional
 
-from ..smartmodule import SmartModule
-from ...feature import Feature
 from ...emeterstatus import EmeterStatus
-
+from ...feature import Feature
+from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
 class EnergyModule(SmartModule):
+    """Implementation of energy monitoring module."""
+
     REQUIRED_COMPONENT = "energy_monitoring"
 
     def __init__(self, device: "SmartDevice", module: str):
         super().__init__(device, module)
-        self._add_feature(Feature(device, name="Current consumption", attribute_getter="current_power", container=self)) # W or mW?
-        self._add_feature(Feature(device, name="Today's consumption", attribute_getter="emeter_today", container=self))  # Wh or kWh?
-        self._add_feature(Feature(device, name="This month's consumption", attribute_getter="emeter_this_month", container=self))  # Wh or kWH?
+        self._add_feature(
+            Feature(
+                device,
+                name="Current consumption",
+                attribute_getter="current_power",
+                container=self,
+            )
+        )  # W or mW?
+        self._add_feature(
+            Feature(
+                device,
+                name="Today's consumption",
+                attribute_getter="emeter_today",
+                container=self,
+            )
+        )  # Wh or kWh?
+        self._add_feature(
+            Feature(
+                device,
+                name="This month's consumption",
+                attribute_getter="emeter_this_month",
+                container=self,
+            )
+        )  # Wh or kWH?
 
     def query(self) -> Dict:
+        """Query to execute during the update cycle."""
         return {
             "get_energy_usage": None,
             # The current_power in get_energy_usage is more precise (mw vs. w),
@@ -58,14 +82,6 @@ class EnergyModule(SmartModule):
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
         return self._convert_energy_data(self.energy.get("today_energy"), 1 / 1000)
-
-    async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrieve current energy readings."""
-        # TODO: maybe we should just have a generic `update()` or similar,
-        #  to execute the query() and return the raw results?
-        resp = await self.call("get_energy_usage")
-        self._energy = resp["get_energy_usage"]
-        return self.emeter_realtime
 
     def _convert_energy_data(self, data, scale) -> Optional[float]:
         """Return adjusted emeter information."""

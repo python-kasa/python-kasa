@@ -22,6 +22,14 @@ def merge(d, u):
 class IotModule(Module):
     """Base class implemention for all IOT modules."""
 
+    def call(self, method, params=None):
+        """Call the given method with the given parameters."""
+        return self._device._query_helper(self._module, method, params)
+
+    def query_for_command(self, query, params=None):
+        """Create a request object for the given parameters."""
+        return self._device._create_request(self._module, query, params)
+
     @property
     def estimated_query_response_size(self):
         """Estimated maximum size of query response.
@@ -30,14 +38,6 @@ class IotModule(Module):
         will be so that queries can be split should an estimated response be too large
         """
         return 256  # Estimate for modules that don't specify
-
-    def call(self, method, params=None):
-        """Call the given method with the given parameters."""
-        return self._device._query_helper(self._module, method, params)
-
-    def query_for_command(self, query, params=None):
-        """Create a request object for the given parameters."""
-        return self._device._create_request(self._module, query, params)
 
     @property
     def data(self):

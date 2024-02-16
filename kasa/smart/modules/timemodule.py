@@ -1,8 +1,9 @@
-"""Implementation of device time module."""
+"""Implementation of time module."""
 from datetime import datetime, timedelta, timezone
 from time import mktime
 from typing import TYPE_CHECKING, cast
 
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -14,6 +15,18 @@ class TimeModule(SmartModule):
 
     REQUIRED_COMPONENT = "device_local_time"
     QUERY_GETTER_NAME = "get_device_time"
+
+    def __init__(self, device: "SmartDevice", module: str):
+        super().__init__(device, module)
+
+        self._add_feature(
+            Feature(
+                device=device,
+                name="Time",
+                attribute_getter="time",
+                container=self,
+            )
+        )
 
     @property
     def time(self) -> datetime:
@@ -37,6 +50,3 @@ class TimeModule(SmartModule):
             "set_device_time",
             {"timestamp": unixtime, "time_diff": dt.utcoffset(), "region": dt.tzname()},
         )
-
-    def __cli_output__(self):
-        return f"Time: {self.time}"

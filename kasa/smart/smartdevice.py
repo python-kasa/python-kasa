@@ -12,7 +12,7 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException, SmartErrorCode
 from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
-from .modules import DeviceModule, TimeModule, EnergyModule  # noqa: F403
+from .modules import DeviceModule, EnergyModule, TimeModule  # noqa: F401
 from .smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -212,7 +212,8 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        return self.modules["TimeModule"].time
+        _timemod = cast(TimeModule, self.modules["TimeModule"])
+        return _timemod.time
 
     @property
     def timezone(self) -> Dict:
@@ -311,28 +312,28 @@ class SmartDevice(Device):
 
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
-        _LOGGER.warning("Deprecated. Use `emeter_realtime` property accessor to avoid I/O.")
+        _LOGGER.warning("Deprecated, use `emeter_realtime`.")
         if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
-        await self.modules["EnergyModule"].get_emeter_realtime()
         return self.emeter_realtime
-
 
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        return self.modules["EnergyModule"].emeter_realtime
-
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> Optional[float]:
         """Get the emeter value for this month."""
-        return self.modules["EnergyModule"].emeter_this_month
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
-        return self.modules["EnergyModule"].emeter_today
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        return energy.emeter_today
 
     @property
     def on_since(self) -> Optional[datetime]:
@@ -343,8 +344,9 @@ class SmartDevice(Device):
         ):
             return None
         on_time = cast(float, on_time)
-        if "TimeModule" in self.modules:
-            return self.modules["TimeModule"].time - timedelta(seconds=on_time)
+        if (timemod := self.modules.get("TimeModule")) is not None:
+            timemod = cast(TimeModule, timemod)
+            return timemod.time - timedelta(seconds=on_time)
         else:  # We have no device time, use current local time.
             return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 

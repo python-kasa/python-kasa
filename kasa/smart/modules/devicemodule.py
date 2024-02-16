@@ -1,11 +1,16 @@
+"""Implementation of device module."""
 from typing import Dict
+
 from ..smartmodule import SmartModule
 
 
 class DeviceModule(SmartModule):
+    """Implementation of device module."""
+
     REQUIRED_COMPONENT = "device"
 
     def query(self) -> Dict:
+        """Query to execute during the update cycle."""
         query = {
             "get_device_info": None,
         }
