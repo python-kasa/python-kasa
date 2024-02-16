@@ -1,6 +1,6 @@
 """Base implementation for SMART modules."""
 import logging
-from typing import Dict, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Type
 
 from ..exceptions import SmartDeviceException
 from ..module import Module
