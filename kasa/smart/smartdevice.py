@@ -16,6 +16,7 @@ from .modules import (  # noqa: F401
     ChildDeviceModule,
     DeviceModule,
     EnergyModule,
+    LedModule,
     TimeModule,
 )
 from .smartmodule import SmartModule
