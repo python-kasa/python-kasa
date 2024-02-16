@@ -303,6 +303,7 @@ At the moment, the following devices have been confirmed to work:
 
 * Tapo S500D
 * Tapo S505
+* Tapo KS240
 
 #### Power strips
 
