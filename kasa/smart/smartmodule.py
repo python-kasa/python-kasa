@@ -1,10 +1,12 @@
 """Base implementation for SMART modules."""
 import logging
-from typing import Dict, Type
+from typing import Dict, Type, TYPE_CHECKING
 
 from ..exceptions import SmartDeviceException
 from ..module import Module
-from .smartdevice import SmartDevice
+
+if TYPE_CHECKING:
+    from .smartdevice import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,8 +71,3 @@ class SmartModule(Module):
             return next(iter(filtered_data.values()))
 
         return filtered_data
-
-    @property
-    def is_supported(self) -> bool:
-        """Return True modules are initialized if they are seen in the negotiation."""
-        return True
