@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -70,6 +70,7 @@ class Device(ABC):
         self._discovery_info: Optional[Dict[str, Any]] = None
 
         self.modules: Dict[str, Any] = {}
+        self._children: Dict[str, "Device"] = {}
         self._features: Dict[str, Feature] = {}
 
     @staticmethod
@@ -183,7 +184,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def children(self) -> Sequence["Device"]:
+    def children(self) -> Mapping[str, "Device"]:
         """Returns the child devices."""
 
     @property
@@ -238,7 +239,7 @@ class Device(ABC):
 
     def get_plug_by_name(self, name: str) -> "Device":
         """Return child device for the given name."""
-        for p in self.children:
+        for p in self.children.values():
             if p.alias == name:
                 return p
 
@@ -250,7 +251,7 @@ class Device(ABC):
             raise SmartDeviceException(
                 f"Invalid index {index}, device has {len(self.children)} plugs"
             )
-        return self.children[index]
+        return list(self.children.values())[index]
 
     @property
     @abstractmethod

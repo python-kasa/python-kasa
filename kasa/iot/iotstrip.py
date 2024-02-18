@@ -55,7 +55,7 @@ class IotStrip(IotDevice):
 
         All methods act on the whole strip:
 
-        >>> for plug in strip.children:
+        >>> for plug in strip.children.values():
         >>>    print(f"{plug.alias}: {plug.is_on}")
         Plug 1: True
         Plug 2: False
@@ -68,12 +68,12 @@ class IotStrip(IotDevice):
 
         >>> len(strip.children)
         3
-        >>> for plug in strip.children:
+        >>> for plug in strip.children.values():
         >>>    print(f"{plug.alias}: {plug.is_on}")
         Plug 1: False
         Plug 2: False
         Plug 3: False
-        >>> asyncio.run(strip.children[1].turn_on())
+        >>> asyncio.run(list(strip.children.values())[1].turn_on())
         >>> asyncio.run(strip.update())
         >>> strip.is_on
         True
@@ -102,7 +102,7 @@ class IotStrip(IotDevice):
     @requires_update
     def is_on(self) -> bool:
         """Return if any of the outlets are on."""
-        return any(plug.is_on for plug in self.children)
+        return any(plug.is_on for plug in self.children.values())
 
     async def update(self, update_children: bool = True):
         """Update some of the attributes.
@@ -115,13 +115,13 @@ class IotStrip(IotDevice):
         if not self.children:
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
-            self.children = [
-                IotStripPlug(self.host, parent=self, child_id=child["id"])
+            self._children = {
+                child["id"]: IotStripPlug(self.host, parent=self, child_id=child["id"])
                 for child in children
-            ]
+            }
 
         if update_children and self.has_emeter:
-            for plug in self.children:
+            for plug in self.children.values():
                 await plug.update()
 
     async def turn_on(self, **kwargs):
@@ -139,7 +139,11 @@ class IotStrip(IotDevice):
         if self.is_off:
             return None
 
-        return max(plug.on_since for plug in self.children if plug.on_since is not None)
+        return max(
+            plug.on_since
+            for plug in self.children.values()
+            if plug.on_since is not None
+        )
 
     @property  # type: ignore
     @requires_update
@@ -167,7 +171,9 @@ class IotStrip(IotDevice):
 
     async def current_consumption(self) -> float:
         """Get the current power consumption in watts."""
-        return sum([await plug.current_consumption() for plug in self.children])
+        return sum(
+            [await plug.current_consumption() for plug in self.children.values()]
+        )
 
     @requires_update
     async def get_emeter_realtime(self) -> EmeterStatus:
@@ -211,32 +217,32 @@ class IotStrip(IotDevice):
         """Retreive emeter stats for a time period from children."""
         self._verify_emeter()
         return merge_sums(
-            [await getattr(plug, func)(**kwargs) for plug in self.children]
+            [await getattr(plug, func)(**kwargs) for plug in self.children.values()]
         )
 
     @requires_update
     async def erase_emeter_stats(self):
         """Erase energy meter statistics for all plugs."""
-        for plug in self.children:
+        for plug in self.children.values():
             await plug.erase_emeter_stats()
 
     @property  # type: ignore
     @requires_update
     def emeter_this_month(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        return sum(plug.emeter_this_month for plug in self.children)
+        return sum(plug.emeter_this_month for plug in self.children.values())
 
     @property  # type: ignore
     @requires_update
     def emeter_today(self) -> Optional[float]:
         """Return this month's energy consumption in kWh."""
-        return sum(plug.emeter_today for plug in self.children)
+        return sum(plug.emeter_today for plug in self.children.values())
 
     @property  # type: ignore
     @requires_update
     def emeter_realtime(self) -> EmeterStatus:
         """Return current energy readings."""
-        emeter = merge_sums([plug.emeter_realtime for plug in self.children])
+        emeter = merge_sums([plug.emeter_realtime for plug in self.children.values()])
         # Voltage is averaged since each read will result
         # in a slightly different voltage since they are not atomic
         emeter["voltage_mv"] = int(emeter["voltage_mv"] / len(self.children))

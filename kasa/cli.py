@@ -559,7 +559,7 @@ async def state(ctx, dev: Device):
     echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
         echo("\t[bold]== Plugs ==[/bold]")
-        for plug in dev.children:  # type: ignore
+        for plug in dev.children.values():  # type: ignore
             echo(f"\t* Socket '{plug.alias}' state: {plug.is_on} since {plug.on_since}")
         echo()
 

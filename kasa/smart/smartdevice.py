@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -16,7 +16,7 @@ from ..smartprotocol import SmartProtocol
 _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from .smartchilddevice import SmartChildDevice
+    pass
 
 
 class SmartDevice(Device):
@@ -36,7 +36,6 @@ class SmartDevice(Device):
         self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int] = {}
-        self._children: Dict[str, "SmartChildDevice"] = {}
         self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
         self._time: Dict[str, Any] = {}
@@ -57,9 +56,9 @@ class SmartDevice(Device):
         self._device_type = DeviceType.Strip
 
     @property
-    def children(self) -> Sequence["SmartDevice"]:
+    def children(self) -> Mapping[str, "SmartDevice"]:
         """Return list of children."""
-        return list(self._children.values())
+        return cast(Mapping[str, "SmartDevice"], self._children)
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
@@ -141,7 +140,7 @@ class SmartDevice(Device):
             if not self.children:
                 await self._initialize_children()
             for info in child_info["child_device_list"]:
-                self._children[info["device_id"]].update_internal_state(info)
+                self.children[info["device_id"]].update_internal_state(info)  # type: ignore[attr-defined]
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.

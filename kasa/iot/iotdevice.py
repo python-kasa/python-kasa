@@ -16,7 +16,7 @@ import functools
 import inspect
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Sequence, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -185,19 +185,13 @@ class IotDevice(Device):
         super().__init__(host=host, config=config, protocol=protocol)
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
-        self._children: Sequence["IotDevice"] = []
         self._supported_modules: Optional[Dict[str, IotModule]] = None
         self._legacy_features: Set[str] = set()
 
     @property
-    def children(self) -> Sequence["IotDevice"]:
+    def children(self) -> Dict[str, "IotDevice"]:
         """Return list of children."""
-        return self._children
-
-    @children.setter
-    def children(self, children):
-        """Initialize from a list of children."""
-        self._children = children
+        return cast(Dict[str, "IotDevice"], self._children)
 
     def add_module(self, name: str, module: IotModule):
         """Register a module."""

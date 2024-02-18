@@ -241,7 +241,8 @@ async def test_emeter(dev: Device, mocker):
         assert "Index and name are only for power strips!" in res.output
 
     if dev.is_strip and len(dev.children) > 0:
-        realtime_emeter = mocker.patch.object(dev.children[0], "get_emeter_realtime")
+        first_child = list(dev.children.values())[0]
+        realtime_emeter = mocker.patch.object(first_child, "get_emeter_realtime")
         realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
 
         res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
@@ -249,7 +250,7 @@ async def test_emeter(dev: Device, mocker):
         realtime_emeter.assert_called()
         assert realtime_emeter.call_count == 1
 
-        res = await runner.invoke(emeter, ["--name", dev.children[0].alias], obj=dev)
+        res = await runner.invoke(emeter, ["--name", first_child.alias], obj=dev)
         assert "Voltage: 122.066 V" in res.output
         assert realtime_emeter.call_count == 2
 
