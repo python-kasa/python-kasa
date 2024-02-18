@@ -47,4 +47,5 @@ class Feature:
         """Set the value."""
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
-        return await getattr(self.device, self.attribute_setter)(value)
+        container = self.container if self.container is not None else self.device
+        return await getattr(container, self.attribute_setter)(value)
