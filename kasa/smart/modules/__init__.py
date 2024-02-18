@@ -15,6 +15,7 @@ __all__ = [
     "ChildDeviceModule",
     "AutoOffModule",
     "LedModule",
+    "Firmware",
     "CloudModule",
     "LightTransitionModule",
 ]
