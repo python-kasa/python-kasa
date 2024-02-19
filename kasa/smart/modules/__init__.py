@@ -5,4 +5,10 @@ from .energymodule import EnergyModule
 from .lighttransitionmodule import LightTransitionModule
 from .timemodule import TimeModule
 
-__all__ = ["TimeModule", "EnergyModule", "DeviceModule", "ChildDeviceModule", "LightTransitionModule"]
+__all__ = [
+    "TimeModule",
+    "EnergyModule",
+    "DeviceModule",
+    "ChildDeviceModule",
+    "LightTransitionModule",
+]
