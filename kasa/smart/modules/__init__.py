@@ -1,4 +1,5 @@
 """Modules for SMART devices."""
+from .autooffmodule import AutoOffModule
 from .childdevicemodule import ChildDeviceModule
 from .cloudmodule import CloudModule
 from .devicemodule import DeviceModule
@@ -12,6 +13,7 @@ __all__ = [
     "EnergyModule",
     "DeviceModule",
     "ChildDeviceModule",
+    "AutoOffModule",
     "LedModule",
     "CloudModule",
     "LightTransitionModule",

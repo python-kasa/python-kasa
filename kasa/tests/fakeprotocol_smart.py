@@ -46,6 +46,7 @@ class FakeSmartTransport(BaseTransport):
 
     FIXTURE_MISSING_MAP = {
         "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
+        "get_auto_off_config": ("auto_off", {'delay_min': 10, 'enable': False}),
         "get_led_info": (
             "led",
             {
