@@ -151,7 +151,13 @@ class SmartDevice(Device):
         """Initialize device features."""
         if "device_on" in self._info:
             self._add_feature(
-                Feature(self, "State", attribute_getter="is_on", attribute_setter="set_state", type=FeatureType.Switch)
+                Feature(
+                    self,
+                    "State",
+                    attribute_getter="is_on",
+                    attribute_setter="set_state",
+                    type=FeatureType.Switch,
+                )
             )
 
         self._add_feature(
