@@ -610,3 +610,53 @@ async def test_shell(dev: Device, mocker):
     res = await runner.invoke(cli, ["shell"], obj=dev)
     assert res.exit_code == 0
     embed.assert_called()
+
+
+async def test_error(mocker):
+    runner = CliRunner()
+    err = SmartDeviceException("Foobar")
+
+    # Test masking
+    mocker.patch("kasa.Discover.discover", side_effect=err)
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar"],
+    )
+    assert res.exit_code == 1
+    assert (
+        "Kasa:: Command line: cli --username USERNAME --password PASSWORD" in res.output
+    )
+    assert "Kasa:: Raised error: Foobar" in res.output
+    assert "SmartDeviceException" not in res.output
+
+    # Test --debug
+    res = await runner.invoke(
+        cli,
+        ["--debug"],
+    )
+    assert res.exit_code == 1
+    assert "Kasa:: Command line: cli --debug" in res.output
+    assert "Kasa:: Raised error: Foobar" in res.output
+    assert res.exception == err
+
+    # Test no device passed to subcommand
+    mocker.patch("kasa.Discover.discover", return_value={})
+    res = await runner.invoke(
+        cli,
+        ["sysinfo"],
+    )
+    assert res.exit_code == 1
+    assert "Kasa:: Command line: cli sysinfo" in res.output
+    assert (
+        "Kasa:: Raised error: Managed to invoke callback without a context object of type 'Device' existing."
+        in res.output
+    )
+    assert isinstance(res.exception, RuntimeError)
+
+    # Test click error
+    res = await runner.invoke(
+        cli,
+        ["foobar"],
+    )
+    assert res.exit_code == 2
+    assert "Kasa:: Raised error:" not in res.output

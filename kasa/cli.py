@@ -90,21 +90,60 @@ click.anyio_backend = "asyncio"
 pass_dev = click.make_pass_decorator(Device)
 
 
-class ExceptionHandlerGroup(click.Group):
-    """Group to capture all exceptions and print them nicely.
+def CatchAllExceptions(cls):
+    """Capture all exceptions and prints them nicely.
 
-    Idea from https://stackoverflow.com/a/44347763
+    Idea from https://stackoverflow.com/a/44347763 and
+    https://stackoverflow.com/questions/52213375
     """
 
-    def __call__(self, *args, **kwargs):
-        """Run the coroutine in the event loop and print any exceptions."""
-        try:
-            asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
-        except Exception as ex:
-            echo(f"Got error: {ex!r}")
-            if "--debug" in sys.argv or "-d" in sys.argv:
-                raise
-            echo("Run with --debug enabled to see stacktrace")
+    def _handle_exception(cmd, info_name, exc):
+        if isinstance(exc, click.ClickException):
+            raise
+        echo(f"Kasa:: Command line: {info_name} {cmd._masked_args}")
+        echo(f"Kasa:: Raised error: {exc}")
+        if cmd._debug:
+            raise
+        echo("Run with --debug enabled to see stacktrace")
+        sys.exit(1)
+
+    class Cls(cls):
+        _masked_args = None
+        _debug = False
+
+        def _parse_args(self, args):
+            masked_args = []
+            pw_index = un_index = None
+            for index, arg in enumerate(args):
+                if arg in ["--password", "-p"]:
+                    pw_index = index + 1
+                if arg in ["--username", "-u"]:
+                    un_index = index + 1
+                if arg in ["--debug", "-d", "--verbose", "-v"]:
+                    self._debug = True
+                masked_args.append(str(arg))
+            if pw_index:
+                masked_args[pw_index] = "PASSWORD"
+            if un_index:
+                masked_args[un_index] = "USERNAME"
+            self._masked_args = " ".join(masked_args)
+
+        async def make_context(self, info_name, args, parent=None, **extra):
+            self._parse_args(args)
+            try:
+                return await super().make_context(
+                    info_name, args, parent=parent, **extra
+                )
+            except Exception as exc:
+                _handle_exception(self, info_name, exc)
+
+        async def invoke(self, ctx):
+            try:
+                return await super().invoke(ctx)
+            except Exception as exc:
+                _handle_exception(self, ctx.info_name, exc)
+
+    return Cls
 
 
 def json_formatter_cb(result, **kwargs):
@@ -131,7 +170,7 @@ def json_formatter_cb(result, **kwargs):
 
 @click.group(
     invoke_without_command=True,
-    cls=ExceptionHandlerGroup,
+    cls=CatchAllExceptions(click.Group),
     result_callback=json_formatter_cb,
 )
 @click.option(
