@@ -46,6 +46,7 @@ _LOGGER = logging.getLogger(__name__)
 IOT_FOLDER = "kasa/tests/fixtures/"
 SMART_FOLDER = "kasa/tests/fixtures/smart/"
 SUPPORTED_FILENAME = "SUPPORTED.md"
+README_FILENAME = "README.md"
 
 PLUGS = "Plugs"
 POWER_STRIPS = "Power Strips"
@@ -487,7 +488,6 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
 @cli.command(name="generate-supported")
 async def generate_supported():
     """Generate the SUPPORTED.md from the fixtures."""
-    brands = {"kasa": {}, "tapo": {}}
     supported = {
         PLUGS: {"kasa": {}, "tapo": {}},
         POWER_STRIPS: {"kasa": {}, "tapo": {}},
@@ -498,17 +498,47 @@ async def generate_supported():
     _get_iot_supported(supported)
     _get_smart_supported(supported)
 
+    _update_supported_file(SUPPORTED_FILENAME, supported, False)
+    _update_supported_file(README_FILENAME, supported, True)
+
+
+def _update_supported_file(filename, supported, summary):
+    with open(filename) as f:
+        contents = f.readlines()
+
+    start_index = end_index = None
+    for index, line in enumerate(contents):
+        if line == "<!--SUPPORTED_START-->\n":
+            start_index = index + 1
+        if line == "<!--SUPPORTED_END-->\n":
+            end_index = index
+
+    new_contents = contents[:start_index]
+    end_contents = contents[end_index:]
+    new_contents.extend(_generate_supported(supported, "Kasa", summary))
+    new_contents.append("\n")
+    new_contents.extend(_generate_supported(supported, "Tapo", summary))
+    new_contents.append("\n")
+    new_contents.extend(end_contents)
+
+    with open(filename, "w") as f:
+        new_contents = "".join(new_contents)
+        f.write(new_contents)
+
+
+def _generate_supported(supported, target_brand, summary):
+    single_star = "<sup>\*</sup>" if summary else "<sup> *</sup>"
+    double_star = "<sup>\*\*</sup>" if summary else "<sup> **</sup>"
+    brand_auth = single_star if target_brand.lower() == "tapo" else ""
     lines = [
-        "<sub>&#x25B8;&nbsp; Expand to see tested versions</sub><br>\n",
-        "<sub><sup>*</sup>&nbsp; Model requires authentication</sub><br>\n",
-        "<sub><sup>**</sup> Newer versions require authentication</sub>\n",
+        f"### Supported {target_brand}{brand_auth} devices\n",
         "\n",
-        "| **Type**  | **Kasa**  | **Tapo** <sup>\*</sup>  |\n",
-        "|--- |--- |--- |\n",
     ]
     for type_, brands in supported.items():
-        models_text = {"kasa": "", "tapo": ""}
+        models_list = []
         for brand, models in brands.items():
+            if brand != target_brand.lower():
+                continue
             for model, versions in sorted(models.items()):
                 version_list = []
                 auth_count = 0
@@ -516,7 +546,7 @@ async def generate_supported():
                 for version in versions:
                     region_text = f"({version.region})" if version.region else ""
                     version_auth = (
-                        "<sup> *</sup>" if version.auth and brand == "kasa" else ""
+                        single_star if version.auth and brand == "kasa" else ""
                     )
                     version_text = (
                         f"Hardware {version.hw}{region_text} "
@@ -524,22 +554,28 @@ async def generate_supported():
                     )
                     version_list.append(version_text)
                     if version.auth:
-                        auth_symbol = " **"
                         auth_count += 1
+                        auth_symbol = double_star
+                auth_symbol = (
+                    single_star if auth_count == len(versions) else auth_symbol
+                )
+                auth_symbol = auth_symbol if brand == "kasa" else ""
                 versions_text = "<br>".join(version_list)
-                auth_symbol = " *" if auth_count == len(versions) else auth_symbol
-                auth_text = f"<sup>{auth_symbol}</sup>" if brand == "kasa" else ""
-                models_text[brand] += (
-                    f"<details><summary>{model}{auth_text}"
+                detail_model_text = (
+                    f"<details><summary>{model}{auth_symbol}"
                     + f"</summary>{versions_text}</details>"
                 )
-        line = (
-            f"| {type_}  | {models_text.get('kasa')}  | {models_text.get('tapo')}  |\n"
-        )
+                summary_model_text = model + auth_symbol
+                model_text = summary_model_text if summary else detail_model_text
+                models_list.append(model_text)
+        if summary:
+            models_text = ", ".join(models_list)
+            line = f"- **{type_}** - {models_text}\n"
+        else:
+            models_text = "\n".join(models_list)
+            line = f"**{type_}**\n\n{models_text}\n<br>\n\n"
         lines.append(line)
-    with open(SUPPORTED_FILENAME, "w") as the_file:
-        for line in lines:
-            the_file.write(line)
+    return lines
 
 
 def _get_smart_supported(supported):
