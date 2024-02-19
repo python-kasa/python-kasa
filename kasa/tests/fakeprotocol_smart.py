@@ -46,6 +46,7 @@ class FakeSmartTransport(BaseTransport):
 
     FIXTURE_MISSING_MAP = {
         "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
+        "get_on_off_gradually_info": ("on_off_gradually", {"enable": True}),
     }
 
     async def send(self, request: str):
