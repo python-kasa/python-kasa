@@ -108,11 +108,12 @@ def CatchAllExceptions(cls):
         sys.exit(1)
 
     class Cls(cls):
-        _masked_args = None
         _debug = False
+        _masked_args = None
 
         def _parse_args(self, args):
             masked_args = []
+            debug = False
             pw_index = un_index = None
             for index, arg in enumerate(args):
                 if arg in ["--password", "-p"]:
@@ -120,13 +121,14 @@ def CatchAllExceptions(cls):
                 if arg in ["--username", "-u"]:
                     un_index = index + 1
                 if arg in ["--debug", "-d", "--verbose", "-v"]:
-                    self._debug = True
+                    debug = True
                 masked_args.append(str(arg))
             if pw_index:
                 masked_args[pw_index] = "PASSWORD"
             if un_index:
                 masked_args[un_index] = "USERNAME"
             self._masked_args = " ".join(masked_args)
+            self._debug = debug
 
         async def make_context(self, info_name, args, parent=None, **extra):
             self._parse_args(args)

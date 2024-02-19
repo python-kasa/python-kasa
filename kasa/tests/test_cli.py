@@ -504,6 +504,7 @@ async def test_host_unsupported(unsupported_device_info):
             "foo",
             "--password",
             "bar",
+            "--debug",
         ],
     )
 
@@ -563,6 +564,7 @@ async def test_host_auth_failed(discovery_mock, mocker):
             "foo",
             "--password",
             "bar",
+            "--debug",
         ],
     )
 
@@ -612,7 +614,7 @@ async def test_shell(dev: Device, mocker):
     embed.assert_called()
 
 
-async def test_error(mocker):
+async def test_errors(mocker):
     runner = CliRunner()
     err = SmartDeviceException("Foobar")
 
@@ -628,6 +630,8 @@ async def test_error(mocker):
     )
     assert "Kasa:: Raised error: Foobar" in res.output
     assert "SmartDeviceException" not in res.output
+    assert "Run with --debug enabled to see stacktrace" in res.output
+    print(res.output)
 
     # Test --debug
     res = await runner.invoke(
@@ -651,12 +655,12 @@ async def test_error(mocker):
         "Kasa:: Raised error: Managed to invoke callback without a context object of type 'Device' existing."
         in res.output
     )
-    assert isinstance(res.exception, RuntimeError)
+    assert isinstance(res.exception, SystemExit)
 
     # Test click error
     res = await runner.invoke(
         cli,
-        ["foobar"],
+        ["--foobar"],
     )
     assert res.exit_code == 2
     assert "Kasa:: Raised error:" not in res.output
