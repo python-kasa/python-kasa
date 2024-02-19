@@ -47,6 +47,20 @@ class FakeSmartTransport(BaseTransport):
     FIXTURE_MISSING_MAP = {
         "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
         "get_auto_off_config": ("auto_off", {'delay_min': 10, 'enable': False}),
+        "get_led_info": (
+            "led",
+            {
+                "led_rule": "never",
+                "led_status": False,
+                "night_mode": {
+                    "end_time": 420,
+                    "night_mode_type": "sunrise_sunset",
+                    "start_time": 1140,
+                    "sunrise_offset": 0,
+                    "sunset_offset": 0,
+                },
+            },
+        ),
         "get_connect_cloud_state": ("cloud_connect", {"status": 1}),
         "get_on_off_gradually_info": ("on_off_gradually", {"enable": True}),
     }

@@ -15,8 +15,10 @@ from ..smartprotocol import SmartProtocol
 from .modules import (  # noqa: F401
     AutoOffModule,
     ChildDeviceModule,
+    CloudModule,
     DeviceModule,
     EnergyModule,
+    LedModule,
     LightTransitionModule,
     TimeModule,
 )
