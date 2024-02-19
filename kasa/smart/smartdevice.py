@@ -149,6 +149,17 @@ class SmartDevice(Device):
 
     async def _initialize_features(self):
         """Initialize device features."""
+        if "device_on" in self._info:
+            self._add_feature(
+                Feature(
+                    self,
+                    "State",
+                    attribute_getter="is_on",
+                    attribute_setter="set_state",
+                    type=FeatureType.Switch,
+                )
+            )
+
         self._add_feature(
             Feature(
                 self,
@@ -302,13 +313,20 @@ class SmartDevice(Device):
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))
 
+    async def set_state(self, on: bool):  # TODO: better name wanted.
+        """Set the device state.
+
+        See :meth:`is_on`.
+        """
+        return await self.protocol.query({"set_device_info": {"device_on": on}})
+
     async def turn_on(self, **kwargs):
         """Turn on the device."""
-        await self.protocol.query({"set_device_info": {"device_on": True}})
+        await self.set_state(True)
 
     async def turn_off(self, **kwargs):
         """Turn off the device."""
-        await self.protocol.query({"set_device_info": {"device_on": False}})
+        await self.set_state(False)
 
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
