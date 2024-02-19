@@ -27,7 +27,7 @@ from kasa import (
 )
 from kasa.discover import DiscoveryResult
 from kasa.iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
-from kasa.smart import SmartBulb, SmartDevice, SmartPlug
+from kasa.smart import SmartBulb, SmartDevice
 
 try:
     from pydantic.v1 import ValidationError
@@ -72,7 +72,7 @@ TYPE_TO_CLASS = {
     "iot.dimmer": IotDimmer,
     "iot.strip": IotStrip,
     "iot.lightstrip": IotLightStrip,
-    "smart.plug": SmartPlug,
+    "smart.plug": SmartDevice,
     "smart.bulb": SmartBulb,
 }
 

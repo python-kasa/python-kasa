@@ -14,7 +14,7 @@ from .protocol import (
     BaseProtocol,
     BaseTransport,
 )
-from .smart import SmartBulb, SmartPlug
+from .smart import SmartBulb, SmartDevice
 from .smartprotocol import SmartProtocol
 from .xortransport import XorTransport
 
@@ -135,10 +135,10 @@ def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[IotDevice]:
 def get_device_class_from_family(device_type: str) -> Optional[Type[Device]]:
     """Return the device class from the type name."""
     supported_device_types: Dict[str, Type[Device]] = {
-        "SMART.TAPOPLUG": SmartPlug,
+        "SMART.TAPOPLUG": SmartDevice,
         "SMART.TAPOBULB": SmartBulb,
         "SMART.TAPOSWITCH": SmartBulb,
-        "SMART.KASAPLUG": SmartPlug,
+        "SMART.KASAPLUG": SmartDevice,
         "SMART.KASASWITCH": SmartBulb,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,

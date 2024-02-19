@@ -20,7 +20,7 @@ from kasa import (
 )
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip
 from kasa.protocol import BaseTransport
-from kasa.smart import SmartBulb, SmartPlug
+from kasa.smart import SmartBulb, SmartDevice
 from kasa.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -346,7 +346,7 @@ def device_for_file(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
-                return SmartPlug
+                return SmartDevice
         for d in BULBS_SMART:
             if d in model:
                 return SmartBulb
@@ -355,7 +355,7 @@ def device_for_file(model, protocol):
                 return SmartBulb
         for d in STRIPS_SMART:
             if d in model:
-                return SmartPlug
+                return SmartDevice
     else:
         for d in STRIPS_IOT:
             if d in model:
