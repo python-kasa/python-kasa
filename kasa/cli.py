@@ -104,8 +104,7 @@ class ExceptionHandlerGroup(click.Group):
             echo(f"Got error: {ex!r}")
             if "--debug" in sys.argv or "-d" in sys.argv:
                 raise
-            else:
-                echo("Run with --debug enabled to see stacktrace")
+            echo("Run with --debug enabled to see stacktrace")
 
 
 def json_formatter_cb(result, **kwargs):
