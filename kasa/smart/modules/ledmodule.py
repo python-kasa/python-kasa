@@ -63,6 +63,3 @@ class LedModule(SmartModule):
             "sunrise_offset": self.data["sunrise_offset"],
             "sunset_offset": self.data["sunset_offset"],
         }
-
-    def __cli_output__(self):
-        return f"LED: {self.led} (mode: {self.mode})"
