@@ -149,7 +149,7 @@ class SmartDevice(Device):
 
     async def _initialize_features(self):
         """Initialize device features."""
-        if "device_on":
+        if "device_on" in self._info:
             self._add_feature(
                 Feature(self, "State", attribute_getter="is_on", attribute_setter="set_state", type=FeatureType.Switch)
             )
