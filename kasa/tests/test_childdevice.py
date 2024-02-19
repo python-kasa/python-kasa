@@ -13,7 +13,6 @@ from .conftest import strip_smart
 def test_childdevice_init(dev, dummy_protocol, mocker):
     """Test that child devices get initialized and use protocol wrapper."""
     assert len(dev.children) > 0
-    assert dev.is_strip
 
     first = dev.children[0]
     assert isinstance(first.protocol, _ChildProtocolWrapper)

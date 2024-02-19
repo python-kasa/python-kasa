@@ -581,7 +581,7 @@ async def state(ctx, dev: Device):
     echo(f"\tHost: {dev.host}")
     echo(f"\tPort: {dev.port}")
     echo(f"\tDevice state: {dev.is_on}")
-    if dev.is_strip:
+    if dev.children:
         echo("\t[bold]== Children ==[/bold]")
         for child in dev.children:
             echo(f"\t* {child.alias} ({child.model}, {child.device_type})")
