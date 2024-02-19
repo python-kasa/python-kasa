@@ -9,7 +9,7 @@ except ImportError:
     from pydantic import BaseModel
 
 
-from .module import IotModule, merge
+from ..iotmodule import IotModule, merge
 
 
 class Action(Enum):

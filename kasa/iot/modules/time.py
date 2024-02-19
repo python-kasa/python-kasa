@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from ...exceptions import SmartDeviceException
-from .module import IotModule, merge
+from ..iotmodule import IotModule, merge
 
 
 class Time(IotModule):

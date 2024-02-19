@@ -24,9 +24,6 @@ class SmartChildDevice(SmartDevice):
         self._parent = parent
         self._id = child_id
         self.protocol = _ChildProtocolWrapper(child_id, parent.protocol)
-        # TODO: remove the assignment after modularization is done,
-        #  currently required to allow accessing time-related properties
-        self._time = parent._time
         self._device_type = DeviceType.StripSocket
 
     async def update(self, update_children: bool = True):

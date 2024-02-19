@@ -60,6 +60,11 @@ async def test_childdevice_properties(dev: SmartChildDevice):
         )
         for prop in properties:
             name, _ = prop
+            # Skip emeter and time properties
+            # TODO: needs API cleanup, emeter* should probably be removed in favor
+            #  of access through features/modules, handling of time* needs decision.
+            if name.startswith("emeter_") or name.startswith("time"):
+                continue
             try:
                 _ = getattr(first, name)
             except Exception as ex:

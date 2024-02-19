@@ -590,10 +590,7 @@ async def state(ctx, dev: Device):
 
     echo("\n\t[bold]== Modules ==[/bold]")
     for module in dev.modules.values():
-        if module.is_supported:
-            echo(f"\t[green]+ {module}[/green]")
-        else:
-            echo(f"\t[red]- {module}[/red]")
+        echo(f"\t[green]+ {module}[/green]")
 
     if verbose:
         echo("\n\t[bold]== Verbose information ==[/bold]")
