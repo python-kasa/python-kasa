@@ -14,8 +14,10 @@ from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
 from .modules import (  # noqa: F401
     ChildDeviceModule,
+    CloudModule,
     DeviceModule,
     EnergyModule,
+    LedModule,
     LightTransitionModule,
     TimeModule,
 )
