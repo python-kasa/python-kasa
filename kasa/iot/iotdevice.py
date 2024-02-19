@@ -24,7 +24,8 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import SmartDeviceException
 from ..feature import Feature
 from ..protocol import BaseProtocol
-from .modules import Emeter, IotModule
+from .iotmodule import IotModule
+from .modules import Emeter
 
 _LOGGER = logging.getLogger(__name__)
 

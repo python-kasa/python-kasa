@@ -1,7 +1,7 @@
 """Module for a SMART device."""
 import base64
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
 
 from ..aestransport import AesTransport
@@ -12,6 +12,13 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationException, SmartDeviceException, SmartErrorCode
 from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
+from .modules import (  # noqa: F401
+    ChildDeviceModule,
+    DeviceModule,
+    EnergyModule,
+    TimeModule,
+)
+from .smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,9 +44,8 @@ class SmartDevice(Device):
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int] = {}
         self._children: Dict[str, "SmartChildDevice"] = {}
-        self._energy: Dict[str, Any] = {}
         self._state_information: Dict[str, Any] = {}
-        self._time: Dict[str, Any] = {}
+        self.modules: Dict[str, SmartModule] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -79,67 +85,43 @@ class SmartDevice(Device):
             f"{request} not found in {responses} for device {self.host}"
         )
 
+    async def _negotiate(self):
+        resp = await self.protocol.query("component_nego")
+        self._components_raw = resp["component_nego"]
+        self._components = {
+            comp["id"]: int(comp["ver_code"])
+            for comp in self._components_raw["component_list"]
+        }
+
     async def update(self, update_children: bool = True):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationException("Tapo plug requires authentication.")
 
         if self._components_raw is None:
-            resp = await self.protocol.query("component_nego")
-            self._components_raw = resp["component_nego"]
-            self._components = {
-                comp["id"]: int(comp["ver_code"])
-                for comp in self._components_raw["component_list"]
-            }
+            await self._negotiate()
             await self._initialize_modules()
 
-        extra_reqs: Dict[str, Any] = {}
+        req: Dict[str, Any] = {}
 
-        if "child_device" in self._components:
-            extra_reqs = {**extra_reqs, "get_child_device_list": None}
-
-        if "energy_monitoring" in self._components:
-            extra_reqs = {
-                **extra_reqs,
-                "get_energy_usage": None,
-                "get_current_power": None,
-            }
-
-        if self._components.get("device", 0) >= 2:
-            extra_reqs = {
-                **extra_reqs,
-                "get_device_usage": None,
-            }
-
-        req = {
-            "get_device_info": None,
-            "get_device_time": None,
-            **extra_reqs,
-        }
+        # TODO: this could be optimized by constructing the query only once
+        for module in self.modules.values():
+            req.update(module.query())
 
         resp = await self.protocol.query(req)
 
         self._info = self._try_get_response(resp, "get_device_info")
-        self._time = self._try_get_response(resp, "get_device_time", {})
-        # Device usage is not available on older firmware versions
-        self._usage = self._try_get_response(resp, "get_device_usage", {})
-        # Emeter is not always available, but we set them still for now.
-        self._energy = self._try_get_response(resp, "get_energy_usage", {})
-        self._emeter = self._try_get_response(resp, "get_current_power", {})
 
         self._last_update = {
             "components": self._components_raw,
-            "info": self._info,
-            "usage": self._usage,
-            "time": self._time,
-            "energy": self._energy,
-            "emeter": self._emeter,
+            **resp,
             "child_info": self._try_get_response(resp, "get_child_device_list", {}),
         }
 
         if child_info := self._last_update.get("child_info"):
             if not self.children:
                 await self._initialize_children()
+
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]].update_internal_state(info)
 
@@ -152,11 +134,32 @@ class SmartDevice(Device):
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
-        if "energy_monitoring" in self._components:
-            self.emeter_type = "emeter"
+        from .smartmodule import SmartModule
+
+        for mod in SmartModule.REGISTERED_MODULES.values():
+            _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
+            if mod.REQUIRED_COMPONENT in self._components:
+                _LOGGER.debug(
+                    "Found required %s, adding %s to modules.",
+                    mod.REQUIRED_COMPONENT,
+                    mod.__name__,
+                )
+                module = mod(self, mod.REQUIRED_COMPONENT)
+                self.modules[module.name] = module
 
     async def _initialize_features(self):
         """Initialize device features."""
+        if "device_on" in self._info:
+            self._add_feature(
+                Feature(
+                    self,
+                    "State",
+                    attribute_getter="is_on",
+                    attribute_setter="set_state",
+                    type=FeatureType.Switch,
+                )
+            )
+
         self._add_feature(
             Feature(
                 self,
@@ -200,6 +203,10 @@ class SmartDevice(Device):
                 )
             )
 
+        for module in self.modules.values():
+            for feat in module._module_features.values():
+                self._add_feature(feat)
+
     @property
     def sys_info(self) -> Dict[str, Any]:
         """Returns the device info."""
@@ -221,17 +228,8 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        td = timedelta(minutes=cast(float, self._time.get("time_diff")))
-        if self._time.get("region"):
-            tz = timezone(td, str(self._time.get("region")))
-        else:
-            # in case the device returns a blank region this will result in the
-            # tzname being a UTC offset
-            tz = timezone(td)
-        return datetime.fromtimestamp(
-            cast(float, self._time.get("timestamp")),
-            tz=tz,
-        )
+        _timemod = cast(TimeModule, self.modules["TimeModule"])
+        return _timemod.time
 
     @property
     def timezone(self) -> Dict:
@@ -308,20 +306,27 @@ class SmartDevice(Device):
     @property
     def has_emeter(self) -> bool:
         """Return if the device has emeter."""
-        return "energy_monitoring" in self._components
+        return "EnergyModule" in self.modules
 
     @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))
 
+    async def set_state(self, on: bool):  # TODO: better name wanted.
+        """Set the device state.
+
+        See :meth:`is_on`.
+        """
+        return await self.protocol.query({"set_device_info": {"device_on": on}})
+
     async def turn_on(self, **kwargs):
         """Turn on the device."""
-        await self.protocol.query({"set_device_info": {"device_on": True}})
+        await self.set_state(True)
 
     async def turn_off(self, **kwargs):
         """Turn off the device."""
-        await self.protocol.query({"set_device_info": {"device_on": False}})
+        await self.set_state(False)
 
     def update_from_discover_info(self, info):
         """Update state from info from the discover call."""
@@ -330,43 +335,28 @@ class SmartDevice(Device):
 
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
-        self._verify_emeter()
-        resp = await self.protocol.query("get_energy_usage")
-        self._energy = resp["get_energy_usage"]
-        return self.emeter_realtime
-
-    def _convert_energy_data(self, data, scale) -> Optional[float]:
-        """Return adjusted emeter information."""
-        return data if not data else data * scale
-
-    def _verify_emeter(self) -> None:
-        """Raise an exception if there is no emeter."""
+        _LOGGER.warning("Deprecated, use `emeter_realtime`.")
         if not self.has_emeter:
             raise SmartDeviceException("Device has no emeter")
-        if self.emeter_type not in self._last_update:
-            raise SmartDeviceException("update() required prior accessing emeter")
+        return self.emeter_realtime
 
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        return EmeterStatus(
-            {
-                "power_mw": self._energy.get("current_power"),
-                "total": self._convert_energy_data(
-                    self._energy.get("today_energy"), 1 / 1000
-                ),
-            }
-        )
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> Optional[float]:
         """Get the emeter value for this month."""
-        return self._convert_energy_data(self._energy.get("month_energy"), 1 / 1000)
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
-        return self._convert_energy_data(self._energy.get("today_energy"), 1 / 1000)
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        return energy.emeter_today
 
     @property
     def on_since(self) -> Optional[datetime]:
@@ -377,7 +367,11 @@ class SmartDevice(Device):
         ):
             return None
         on_time = cast(float, on_time)
-        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
+        if (timemod := self.modules.get("TimeModule")) is not None:
+            timemod = cast(TimeModule, timemod)
+            return timemod.time - timedelta(seconds=on_time)
+        else:  # We have no device time, use current local time.
+            return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     async def wifi_scan(self) -> List[WifiNetwork]:
         """Scan for available wifi networks."""
@@ -439,7 +433,7 @@ class SmartDevice(Device):
                 "password": base64.b64encode(password.encode()).decode(),
                 "ssid": base64.b64encode(ssid.encode()).decode(),
             },
-            "time": self.internal_state["time"],
+            "time": self.internal_state["get_device_time"],
         }
 
         # The device does not respond to the request but changes the settings
@@ -458,13 +452,13 @@ class SmartDevice(Device):
 
         This will replace the existing authentication credentials on the device.
         """
-        t = self.internal_state["time"]
+        time_data = self.internal_state["get_device_time"]
         payload = {
             "account": {
                 "username": base64.b64encode(username.encode()).decode(),
                 "password": base64.b64encode(password.encode()).decode(),
             },
-            "time": t,
+            "time": time_data,
         }
         return await self.protocol.query({"set_qs_info": payload})
 

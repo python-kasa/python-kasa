@@ -4,7 +4,6 @@ from .antitheft import Antitheft
 from .cloud import Cloud
 from .countdown import Countdown
 from .emeter import Emeter
-from .module import IotModule
 from .motion import Motion
 from .rulemodule import Rule, RuleModule
 from .schedule import Schedule
@@ -17,7 +16,6 @@ __all__ = [
     "Cloud",
     "Countdown",
     "Emeter",
-    "IotModule",
     "Motion",
     "Rule",
     "RuleModule",

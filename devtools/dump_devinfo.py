@@ -52,6 +52,8 @@ def scrub(res):
         "longitude_i",
         "latitude",
         "longitude",
+        "la",  # lat on ks240
+        "lo",  # lon on ks240
         "owner",
         "device_id",
         "ip",
