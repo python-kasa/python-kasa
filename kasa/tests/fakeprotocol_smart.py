@@ -60,6 +60,8 @@ class FakeSmartTransport(BaseTransport):
                 },
             },
         ),
+        "get_connect_cloud_state": ("cloud_connect", {"status": 1}),
+        "get_on_off_gradually_info": ("on_off_gradually", {"enable": True}),
     }
 
     async def send(self, request: str):
