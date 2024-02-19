@@ -71,6 +71,7 @@ class Device(ABC):
 
         self.modules: Dict[str, Any] = {}
         self._features: Dict[str, Feature] = {}
+        self._parent: Optional["Device"] = None
 
     @staticmethod
     async def connect(

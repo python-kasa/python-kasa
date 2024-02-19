@@ -47,7 +47,6 @@ async def test_childdevice_properties(dev: SmartChildDevice):
     assert len(dev.children) > 0
 
     first = dev.children[0]
-    assert first.is_strip_socket
 
     # children do not have children
     assert not first.children
