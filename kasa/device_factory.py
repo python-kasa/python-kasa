@@ -14,7 +14,7 @@ from .protocol import (
     BaseProtocol,
     BaseTransport,
 )
-from .smart import SmartBulb, SmartPlug
+from .smart import SmartBulb, SmartDevice, SmartPlug
 from .smartprotocol import SmartProtocol
 from .xortransport import XorTransport
 
@@ -138,6 +138,7 @@ def get_device_class_from_family(device_type: str) -> Optional[Type[Device]]:
         "SMART.TAPOPLUG": SmartPlug,
         "SMART.TAPOBULB": SmartBulb,
         "SMART.TAPOSWITCH": SmartBulb,
+        "SMART.TAPOHUB": SmartDevice,
         "SMART.KASAPLUG": SmartPlug,
         "SMART.KASASWITCH": SmartBulb,
         "IOT.SMARTPLUGSWITCH": IotPlug,
