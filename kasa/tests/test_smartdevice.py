@@ -255,7 +255,9 @@ async def test_device_class_ctors(device_class_name_obj):
     klass = device_class_name_obj[1]
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
-        dev = klass(parent, 1)
+        dev = klass(
+            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+        )
     else:
         dev = klass(host, config=config)
     assert dev.host == host
