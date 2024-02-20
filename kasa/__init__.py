@@ -116,7 +116,6 @@ if TYPE_CHECKING:
     from . import smart
 
     smart.SmartDevice("127.0.0.1")
-    smart.SmartPlug("127.0.0.1")
     smart.SmartBulb("127.0.0.1")
     iot.IotDevice("127.0.0.1")
     iot.IotPlug("127.0.0.1")
