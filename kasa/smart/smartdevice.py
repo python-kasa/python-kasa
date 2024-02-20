@@ -490,7 +490,7 @@ class SmartDevice(Device):
     @property
     def device_type(self) -> DeviceType:
         """Return the device type."""
-        if self._device_type is DeviceType.Unknown:
+        if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
         if self.children:
