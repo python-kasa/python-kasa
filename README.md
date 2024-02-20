@@ -20,7 +20,7 @@ You can install the most recent release using pip:
 pip install python-kasa
 ```
 
-For enhanced cli colour formatting install with `[shell]`:
+For enhanced cli tool support (coloring, embedded shell) install with `[shell]`:
 ```
 pip install python-kasa[shell]
 ```
