@@ -486,3 +486,26 @@ class SmartDevice(Device):
         Note, this does not downgrade the firmware.
         """
         await self.protocol.query("device_reset")
+
+    @property
+    def device_type(self) -> DeviceType:
+        """Return the device type."""
+        if self._device_type is DeviceType.Unknown:
+            return self._device_type
+
+        if self.children:
+            if "SMART.TAPOHUB" in self.sys_info["type"]:
+                pass  # TODO: placeholder for future hub PR
+            else:
+                self._device_type = DeviceType.Strip
+        elif "light_strip" in self._components:
+            self._device_type = DeviceType.LightStrip
+        elif "dimmer_calibration" in self._components:
+            self._device_type = DeviceType.Dimmer
+        elif "brightness" in self._components:
+            self._device_type = DeviceType.Bulb
+        else:
+            _LOGGER.warning("Unknown device type, falling back to plug")
+            self._device_type = DeviceType.Plug
+
+        return self._device_type
