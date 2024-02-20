@@ -315,13 +315,13 @@ async def cli(
     try:
         from rich.logging import RichHandler
 
-        rich_config = {
-            "show_time": False,
-        }
+        rich_config = {"log_time_format": lambda x: x.strftime("%H:%M:%S.%f")[:-3]}
+
         logging_config["handlers"] = [RichHandler(**rich_config)]
         logging_config["format"] = "%(message)s"
     except ImportError:
-        pass
+        logging_config["datefmt"] = "%H:%M:%S"
+        logging_config["format"] = "%(asctime)s.%(msecs)03d %(levelname)s %(message)s"
 
     # The configuration should be converted to use dictConfig,
     # but this keeps mypy happy for now
