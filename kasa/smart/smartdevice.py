@@ -14,10 +14,10 @@ from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
 from .modules import *  # noqa: F403
 
-
 _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from .smartchilddevice import SmartChildDevice
     from .smartmodule import SmartModule
 
 
@@ -170,7 +170,6 @@ class SmartDevice(Device):
             )
 
         if "signal_level" in self._info:
-
             self._add_feature(
                 Feature(
                     self,

@@ -74,9 +74,7 @@ class SmartModule(Module):
                     f" for '{self._module}'"
                 )
 
-        filtered_data = {
-            k: v for k, v in dev._last_update.items() if k in q_keys
-        }
+        filtered_data = {k: v for k, v in dev._last_update.items() if k in q_keys}
         if len(filtered_data) == 1:
             return next(iter(filtered_data.values()))
 

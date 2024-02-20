@@ -656,9 +656,10 @@ async def cmd_command(dev: Device, module, child, command, parameters):
 
     if child:
         echo(f"Selecting child {child} from {dev}")
-        # TODO: Update required to initialize children
+        # TODO: Update required to initialize children,
         await dev.update()
-        dev = dev._children[child]
+        # TODO: _children is not yet part of the Device API.
+        dev = dev._children[child]  # type: ignore[attr-defined]
 
     if isinstance(dev, IotDevice):
         res = await dev._query_helper(module, command, parameters)

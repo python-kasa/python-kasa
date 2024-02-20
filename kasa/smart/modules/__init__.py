@@ -8,7 +8,6 @@ from .firmware import Firmware
 from .ledmodule import LedModule
 from .lighttransitionmodule import LightTransitionModule
 from .timemodule import TimeModule
-from .firmware import Firmware
 
 __all__ = [
     "TimeModule",
