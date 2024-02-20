@@ -42,7 +42,6 @@ https://github.com/python-kasa/python-kasa/pull/117
 
 import asyncio
 import base64
-import datetime
 import hashlib
 import logging
 import secrets
@@ -150,9 +149,8 @@ class KlapTransport(BaseTransport):
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
-                "Handshake1 posted at %s. Host is %s, Response"
+                "Handshake1 posted. Host is %s, Response"
                 + "status is %s, Request was %s",
-                datetime.datetime.now(),
                 self._host,
                 response_status,
                 payload.hex(),
@@ -175,9 +173,8 @@ class KlapTransport(BaseTransport):
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
-                "Handshake1 success at %s. Host is %s, "
+                "Handshake1 success. Host is %s, "
                 + "Server remote_seed is: %s, server hash is: %s",
-                datetime.datetime.now(),
                 self._host,
                 remote_seed.hex(),
                 server_hash.hex(),
@@ -257,9 +254,8 @@ class KlapTransport(BaseTransport):
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
-                "Handshake2 posted %s.  Host is %s, Response status is %s, "
+                "Handshake2 posted.  Host is %s, Response status is %s, "
                 + "Request was %s",
-                datetime.datetime.now(),
                 self._host,
                 response_status,
                 payload.hex(),
