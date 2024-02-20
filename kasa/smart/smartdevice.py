@@ -13,9 +13,13 @@ from ..exceptions import AuthenticationException, SmartDeviceException, SmartErr
 from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
 from .modules import (  # noqa: F401
+    AutoOffModule,
     ChildDeviceModule,
+    CloudModule,
     DeviceModule,
     EnergyModule,
+    LedModule,
+    LightTransitionModule,
     TimeModule,
 )
 from .smartmodule import SmartModule
