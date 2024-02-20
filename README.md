@@ -20,11 +20,19 @@ You can install the most recent release using pip:
 pip install python-kasa
 ```
 
+For enhanced cli colour formatting install with `[shell]`:
+```
+pip install python-kasa[shell]
+```
+
 If you are using cpython, it is recommended to install with `[speedups]` to enable orjson (faster json support):
 ```
 pip install python-kasa[speedups]
 ```
-
+or for both:
+```
+pip install python-kasa[speedups, shell]
+```
 With `[speedups]`, the protocol overhead is roughly an order of magnitude lower (benchmarks available in devtools).
 
 Alternatively, you can clone this repository and use poetry to install the development version:
