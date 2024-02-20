@@ -625,13 +625,9 @@ async def test_errors(mocker):
         ["--username", "foo", "--password", "bar"],
     )
     assert res.exit_code == 1
-    assert (
-        "Kasa:: Command line: cli --username USERNAME --password PASSWORD" in res.output
-    )
-    assert "Kasa:: Raised error: Foobar" in res.output
-    assert "SmartDeviceException" not in res.output
+    assert "Raised error: Foobar" in res.output
     assert "Run with --debug enabled to see stacktrace" in res.output
-    print(res.output)
+    assert isinstance(res.exception, SystemExit)
 
     # Test --debug
     res = await runner.invoke(
@@ -639,8 +635,7 @@ async def test_errors(mocker):
         ["--debug"],
     )
     assert res.exit_code == 1
-    assert "Kasa:: Command line: cli --debug" in res.output
-    assert "Kasa:: Raised error: Foobar" in res.output
+    assert "Raised error: Foobar" in res.output
     assert res.exception == err
 
     # Test no device passed to subcommand
@@ -650,9 +645,8 @@ async def test_errors(mocker):
         ["sysinfo"],
     )
     assert res.exit_code == 1
-    assert "Kasa:: Command line: cli sysinfo" in res.output
     assert (
-        "Kasa:: Raised error: Managed to invoke callback without a context object of type 'Device' existing."
+        "Raised error: Managed to invoke callback without a context object of type 'Device' existing."
         in res.output
     )
     assert isinstance(res.exception, SystemExit)
@@ -663,4 +657,4 @@ async def test_errors(mocker):
         ["--foobar"],
     )
     assert res.exit_code == 2
-    assert "Kasa:: Raised error:" not in res.output
+    assert "Raised error:" not in res.output

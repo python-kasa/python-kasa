@@ -97,55 +97,36 @@ def CatchAllExceptions(cls):
     https://stackoverflow.com/questions/52213375
     """
 
-    def _handle_exception(cmd, info_name, exc):
+    def _handle_exception(debug, exc):
         if isinstance(exc, click.ClickException):
             raise
-        echo(f"Kasa:: Command line: {info_name} {cmd._masked_args}")
-        echo(f"Kasa:: Raised error: {exc}")
-        if cmd._debug:
+        echo(f"Raised error: {exc}")
+        if debug:
             raise
         echo("Run with --debug enabled to see stacktrace")
         sys.exit(1)
 
-    class Cls(cls):
+    class _CommandCls(cls):
         _debug = False
-        _masked_args = None
-
-        def _parse_args(self, args):
-            masked_args = []
-            debug = False
-            pw_index = un_index = None
-            for index, arg in enumerate(args):
-                if arg in ["--password", "-p"]:
-                    pw_index = index + 1
-                if arg in ["--username", "-u"]:
-                    un_index = index + 1
-                if arg in ["--debug", "-d", "--verbose", "-v"]:
-                    debug = True
-                masked_args.append(str(arg))
-            if pw_index:
-                masked_args[pw_index] = "PASSWORD"
-            if un_index:
-                masked_args[un_index] = "USERNAME"
-            self._masked_args = " ".join(masked_args)
-            self._debug = debug
 
         async def make_context(self, info_name, args, parent=None, **extra):
-            self._parse_args(args)
+            self._debug = any(
+                [arg for arg in args if arg in ["--debug", "-d", "--verbose", "-v"]]
+            )
             try:
                 return await super().make_context(
                     info_name, args, parent=parent, **extra
                 )
             except Exception as exc:
-                _handle_exception(self, info_name, exc)
+                _handle_exception(self._debug, exc)
 
         async def invoke(self, ctx):
             try:
                 return await super().invoke(ctx)
             except Exception as exc:
-                _handle_exception(self, ctx.info_name, exc)
+                _handle_exception(self._debug, exc)
 
-    return Cls
+    return _CommandCls
 
 
 def json_formatter_cb(result, **kwargs):
