@@ -647,7 +647,7 @@ async def test_errors(mocker):
     assert res.exit_code == 1
     assert (
         "Raised error: Managed to invoke callback without a context object of type 'Device' existing."
-        in res.output
+        in res.output.replace("\n", "")  # Remove newlines from rich formatting
     )
     assert isinstance(res.exception, SystemExit)
 
