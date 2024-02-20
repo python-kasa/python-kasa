@@ -90,19 +90,43 @@ click.anyio_backend = "asyncio"
 pass_dev = click.make_pass_decorator(Device)
 
 
-class ExceptionHandlerGroup(click.Group):
-    """Group to capture all exceptions and print them nicely.
+def CatchAllExceptions(cls):
+    """Capture all exceptions and prints them nicely.
 
-    Idea from https://stackoverflow.com/a/44347763
+    Idea from https://stackoverflow.com/a/44347763 and
+    https://stackoverflow.com/questions/52213375
     """
 
-    def __call__(self, *args, **kwargs):
-        """Run the coroutine in the event loop and print any exceptions."""
-        try:
-            asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
-        except Exception as ex:
-            echo(f"Got error: {ex!r}")
+    def _handle_exception(debug, exc):
+        if isinstance(exc, click.ClickException):
             raise
+        echo(f"Raised error: {exc}")
+        if debug:
+            raise
+        echo("Run with --debug enabled to see stacktrace")
+        sys.exit(1)
+
+    class _CommandCls(cls):
+        _debug = False
+
+        async def make_context(self, info_name, args, parent=None, **extra):
+            self._debug = any(
+                [arg for arg in args if arg in ["--debug", "-d", "--verbose", "-v"]]
+            )
+            try:
+                return await super().make_context(
+                    info_name, args, parent=parent, **extra
+                )
+            except Exception as exc:
+                _handle_exception(self._debug, exc)
+
+        async def invoke(self, ctx):
+            try:
+                return await super().invoke(ctx)
+            except Exception as exc:
+                _handle_exception(self._debug, exc)
+
+    return _CommandCls
 
 
 def json_formatter_cb(result, **kwargs):
@@ -129,7 +153,7 @@ def json_formatter_cb(result, **kwargs):
 
 @click.group(
     invoke_without_command=True,
-    cls=ExceptionHandlerGroup,
+    cls=CatchAllExceptions(click.Group),
     result_callback=json_formatter_cb,
 )
 @click.option(
