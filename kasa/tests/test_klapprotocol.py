@@ -12,11 +12,11 @@ from ..aestransport import AesTransport
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
-    AuthenticationException,
-    ConnectionException,
-    RetryableException,
-    SmartDeviceException,
-    TimeoutException,
+    AuthenticationError,
+    KasaException,
+    TimeoutError,
+    _ConnectionError,
+    _RetryableError,
 )
 from ..httpclient import HttpClient
 from ..iotprotocol import IotProtocol
@@ -68,7 +68,7 @@ async def test_protocol_retries_via_client_session(
     mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
 
     config = DeviceConfig(host)
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=retry_count
         )
@@ -80,11 +80,11 @@ async def test_protocol_retries_via_client_session(
 @pytest.mark.parametrize(
     "error, retry_expectation",
     [
-        (SmartDeviceException("dummy exception"), False),
-        (RetryableException("dummy exception"), True),
-        (TimeoutException("dummy exception"), True),
+        (KasaException("dummy exception"), False),
+        (_RetryableError("dummy exception"), True),
+        (TimeoutError("dummy exception"), True),
     ],
-    ids=("SmartDeviceException", "RetryableException", "TimeoutException"),
+    ids=("KasaException", "_RetryableError", "TimeoutError"),
 )
 @pytest.mark.parametrize("transport_class", [AesTransport, KlapTransport])
 @pytest.mark.parametrize("protocol_class", [IotProtocol, SmartProtocol])
@@ -97,7 +97,7 @@ async def test_protocol_retries_via_httpclient(
     mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
 
     config = DeviceConfig(host)
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=retry_count
         )
@@ -115,11 +115,11 @@ async def test_protocol_no_retry_on_connection_error(
     conn = mocker.patch.object(
         aiohttp.ClientSession,
         "post",
-        side_effect=AuthenticationException("foo"),
+        side_effect=AuthenticationError("foo"),
     )
     mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
     config = DeviceConfig(host)
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=5
         )
@@ -139,7 +139,7 @@ async def test_protocol_retry_recoverable_error(
         side_effect=aiohttp.ClientOSError("foo"),
     )
     config = DeviceConfig(host)
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             DUMMY_QUERY, retry_count=5
         )
@@ -159,7 +159,7 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
         nonlocal remaining
         remaining -= 1
         if remaining:
-            raise ConnectionException("Simulated connection failure")
+            raise _ConnectionError("Simulated connection failure")
 
         return mock_response
 
@@ -249,7 +249,7 @@ def test_encrypt_unicode():
         ),
         (
             Credentials("shouldfail", "shouldfail"),
-            pytest.raises(AuthenticationException),
+            pytest.raises(AuthenticationError),
         ),
     ],
     ids=("client", "blank", "kasa_setup", "shouldfail"),
@@ -350,7 +350,7 @@ async def test_handshake(
     assert protocol._transport._handshake_done is True
 
     response_status = 403
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol._transport.perform_handshake()
     assert protocol._transport._handshake_done is False
     await protocol.close()
@@ -405,37 +405,37 @@ async def test_query(mocker):
         pytest.param(
             (403, 403, 403),
             True,
-            pytest.raises(SmartDeviceException),
+            pytest.raises(KasaException),
             id="handshake1-403-status",
         ),
         pytest.param(
             (200, 403, 403),
             True,
-            pytest.raises(SmartDeviceException),
+            pytest.raises(KasaException),
             id="handshake2-403-status",
         ),
         pytest.param(
             (200, 200, 403),
             True,
-            pytest.raises(AuthenticationException),
+            pytest.raises(AuthenticationError),
             id="request-403-status",
         ),
         pytest.param(
             (200, 200, 400),
             True,
-            pytest.raises(SmartDeviceException),
+            pytest.raises(KasaException),
             id="request-400-status",
         ),
         pytest.param(
             (200, 200, 200),
             False,
-            pytest.raises(AuthenticationException),
+            pytest.raises(AuthenticationError),
             id="handshake1-wrong-auth",
         ),
         pytest.param(
             (200, 200, 200),
             secrets.token_bytes(16),
-            pytest.raises(SmartDeviceException),
+            pytest.raises(KasaException),
             id="handshake1-bad-auth-length",
         ),
     ],

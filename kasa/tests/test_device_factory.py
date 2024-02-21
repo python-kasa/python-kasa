@@ -8,7 +8,7 @@ from kasa import (
     Credentials,
     Device,
     Discover,
-    SmartDeviceException,
+    KasaException,
 )
 from kasa.device_factory import connect, get_protocol
 from kasa.deviceconfig import (
@@ -110,8 +110,8 @@ async def test_connect_logs_connect_time(
 async def test_connect_query_fails(all_fixture_data: dict, mocker):
     """Make sure that connect fails when query fails."""
     host = "127.0.0.1"
-    mocker.patch("kasa.IotProtocol.query", side_effect=SmartDeviceException)
-    mocker.patch("kasa.SmartProtocol.query", side_effect=SmartDeviceException)
+    mocker.patch("kasa.IotProtocol.query", side_effect=KasaException)
+    mocker.patch("kasa.SmartProtocol.query", side_effect=KasaException)
 
     ctype, _ = _get_connection_type_device_class(all_fixture_data)
     config = DeviceConfig(
@@ -120,7 +120,7 @@ async def test_connect_query_fails(all_fixture_data: dict, mocker):
     protocol_class = get_protocol(config).__class__
     close_mock = mocker.patch.object(protocol_class, "close")
     assert close_mock.call_count == 0
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await connect(config=config)
     assert close_mock.call_count == 1
 

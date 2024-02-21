@@ -22,12 +22,12 @@ import asyncclick as click
 
 from devtools.helpers.smartrequests import SmartRequest, get_component_requests
 from kasa import (
-    AuthenticationException,
+    AuthenticationError,
     Credentials,
     Device,
     Discover,
-    SmartDeviceException,
-    TimeoutException,
+    KasaException,
+    TimeoutError,
 )
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
@@ -303,19 +303,16 @@ async def _make_requests_or_exit(
             for method, result in responses.items():
                 final[method] = result
         return final
-    except AuthenticationException as ex:
+    except AuthenticationError as ex:
         _echo_error(
             f"Unable to query the device due to an authentication error: {ex}",
         )
         exit(1)
-    except SmartDeviceException as ex:
+    except KasaException as ex:
         _echo_error(
             f"Unable to query {name} at once: {ex}",
         )
-        if (
-            isinstance(ex, TimeoutException)
-            or ex.error_code == SmartErrorCode.SESSION_TIMEOUT_ERROR
-        ):
+        if isinstance(ex, TimeoutError):
             _echo_error(
                 "Timeout, try reducing the batch size via --batch-size option.",
             )
@@ -400,7 +397,7 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
             response = await device.protocol.query(
                 SmartRequest._create_request_dict(test_call.request)
             )
-        except AuthenticationException as ex:
+        except AuthenticationError as ex:
             _echo_error(
                 f"Unable to query the device due to an authentication error: {ex}",
             )

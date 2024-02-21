@@ -23,7 +23,7 @@ from typing import Dict, Generator, Optional
 from async_timeout import timeout as asyncio_timeout
 
 from .deviceconfig import DeviceConfig
-from .exceptions import RetryableException, SmartDeviceException
+from .exceptions import KasaException, _RetryableError
 from .json import loads as json_loads
 from .protocol import BaseTransport
 
@@ -129,24 +129,24 @@ class XorTransport(BaseTransport):
             await self._connect(self._timeout)
         except ConnectionRefusedError as ex:
             await self.reset()
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
             ) from ex
         except OSError as ex:
             await self.reset()
             if ex.errno in _NO_RETRY_ERRORS:
-                raise SmartDeviceException(
+                raise KasaException(
                     f"Unable to connect to the device:"
                     f" {self._host}:{self._port}: {ex}"
                 ) from ex
             else:
-                raise RetryableException(
+                raise _RetryableError(
                     f"Unable to connect to the device:"
                     f" {self._host}:{self._port}: {ex}"
                 ) from ex
         except Exception as ex:
             await self.reset()
-            raise RetryableException(
+            raise _RetryableError(
                 f"Unable to connect to the device:" f" {self._host}:{self._port}: {ex}"
             ) from ex
         except BaseException:
@@ -162,7 +162,7 @@ class XorTransport(BaseTransport):
                 return await self._execute_send(request)
         except Exception as ex:
             await self.reset()
-            raise RetryableException(
+            raise _RetryableError(
                 f"Unable to query the device {self._host}:{self._port}: {ex}"
             ) from ex
         except BaseException:

@@ -8,7 +8,7 @@ All common, shared functionalities are available through `SmartDevice` class::
 For device type specific actions `SmartBulb`, `SmartPlug`, or `SmartStrip`
  should be used instead.
 
-Module-specific errors are raised as `SmartDeviceException` and are expected
+Module-specific errors are raised as `KasaException` and are expected
 to be handled by the user of the library.
 """
 from importlib.metadata import version
@@ -28,10 +28,11 @@ from kasa.deviceconfig import (
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (
-    AuthenticationException,
-    SmartDeviceException,
-    TimeoutException,
-    UnsupportedDeviceException,
+    AuthenticationError,
+    DeviceError,
+    KasaException,
+    TimeoutError,
+    UnsupportedDeviceError,
 )
 from kasa.feature import Feature, FeatureType
 from kasa.iot.iotbulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
@@ -61,10 +62,11 @@ __all__ = [
     "Device",
     "Bulb",
     "Plug",
-    "SmartDeviceException",
-    "AuthenticationException",
-    "UnsupportedDeviceException",
-    "TimeoutException",
+    "KasaException",
+    "AuthenticationError",
+    "DeviceError",
+    "UnsupportedDeviceError",
+    "TimeoutError",
     "Credentials",
     "DeviceConfig",
     "ConnectionType",
@@ -84,6 +86,12 @@ deprecated_smart_devices = {
     "SmartDimmer": iot.IotDimmer,
     "SmartBulbPreset": BulbPreset,
 }
+deprecated_exceptions = {
+    "SmartDeviceException": KasaException,
+    "UnsupportedDeviceException": UnsupportedDeviceError,
+    "AuthenticationException": AuthenticationError,
+    "TimeoutException": TimeoutError,
+}
 
 
 def __getattr__(name):
@@ -101,6 +109,11 @@ def __getattr__(name):
             stacklevel=1,
         )
         return new_class
+    if name in deprecated_exceptions:
+        new_class = deprecated_exceptions[name]
+        msg = f"{name} is deprecated, use {new_class.__name__} instead"
+        warn(msg, DeprecationWarning, stacklevel=1)
+        return new_class
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -112,6 +125,11 @@ if TYPE_CHECKING:
     SmartStrip = iot.IotStrip
     SmartDimmer = iot.IotDimmer
     SmartBulbPreset = BulbPreset
+
+    SmartDeviceException = KasaException
+    UnsupportedDeviceException = UnsupportedDeviceError
+    AuthenticationException = AuthenticationError
+    TimeoutException = TimeoutError
     # Instanstiate all classes so the type checkers catch abstract issues
     from . import smart
 
