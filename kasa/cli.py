@@ -655,10 +655,11 @@ async def cmd_command(dev: Device, module, child, command, parameters):
         parameters = ast.literal_eval(parameters)
 
     if child:
-        echo(f"Selecting child {child} from {dev}")
-        # TODO: Update required to initialize children,
+        # The way child devices are accessed requires a ChildDevice to
+        # wrap the communications. Doing this properly would require creating
+        # a common interfaces for both IOT and SMART child devices.
+        # As a stop-gap solution, we perform an update instead.
         await dev.update()
-        # TODO: _children is not yet part of the Device API.
         dev = dev._children[child]  # type: ignore[attr-defined]
 
     if isinstance(dev, IotDevice):
