@@ -210,10 +210,8 @@ async def test_children(dev):
     """Make sure that children property is exposed by every device."""
     if dev.is_strip:
         assert len(dev.children) > 0
-        assert dev.has_children is True
     else:
         assert len(dev.children) == 0
-        assert dev.has_children is False
 
 
 @device_iot

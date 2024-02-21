@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, Union
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -35,7 +35,10 @@ class WifiNetwork:
 _LOGGER = logging.getLogger(__name__)
 
 
-class Device(ABC):
+T = TypeVar("T", bound="Device")
+
+
+class Device(ABC, Generic[T]):
     """Common device interface.
 
     Do not instantiate this class directly, instead get a device instance from
@@ -71,14 +74,15 @@ class Device(ABC):
 
         self.modules: Dict[str, Any] = {}
         self._features: Dict[str, Feature] = {}
-        self._parent: Optional["Device"] = None
+        self._parent: Optional[T] = None
+        self._children: Dict[str, T] = {}
 
     @staticmethod
     async def connect(
         *,
         host: Optional[str] = None,
         config: Optional[DeviceConfig] = None,
-    ) -> "Device":
+    ) -> T:
         """Connect to a single device by the given hostname or device configuration.
 
         This method avoids the UDP based discovery process and
@@ -97,7 +101,9 @@ class Device(ABC):
         """
         from .device_factory import connect  # pylint: disable=import-outside-toplevel
 
-        return await connect(host=host, config=config)  # type: ignore[arg-type]
+        # TODO: Incompatible return value type (got "Device[Any]", expected "T")
+        #  unclear how to type that properly for now.
+        return await connect(host=host, config=config)  # type: ignore[arg-type,return-value]
 
     @abstractmethod
     async def update(self, update_children: bool = True):
@@ -183,9 +189,13 @@ class Device(ABC):
         return await self.protocol.query(request=request)
 
     @property
-    @abstractmethod
-    def children(self) -> Sequence["Device"]:
+    def children(self) -> Sequence[T]:
         """Returns the child devices."""
+        return list(self._children.values())
+
+    def get_child_device(self, id_: str):
+        """Return child device by its ID."""
+        return self._children[id_]
 
     @property
     @abstractmethod
@@ -237,7 +247,7 @@ class Device(ABC):
         """Return True if the device supports color changes."""
         return False
 
-    def get_plug_by_name(self, name: str) -> "Device":
+    def get_plug_by_name(self, name: str) -> T:
         """Return child device for the given name."""
         for p in self.children:
             if p.alias == name:
@@ -245,7 +255,7 @@ class Device(ABC):
 
         raise SmartDeviceException(f"Device has no child with {name}")
 
-    def get_plug_by_index(self, index: int) -> "Device":
+    def get_plug_by_index(self, index: int) -> T:
         """Return child device for the given index."""
         if index + 1 > len(self.children) or index < 0:
             raise SmartDeviceException(

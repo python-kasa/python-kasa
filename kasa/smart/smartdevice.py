@@ -17,7 +17,6 @@ from .modules import *  # noqa: F403
 _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from .smartchilddevice import SmartChildDevice
     from .smartmodule import SmartModule
 
 
@@ -38,7 +37,6 @@ class SmartDevice(Device):
         self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int] = {}
-        self._children: Dict[str, "SmartChildDevice"] = {}
         self._state_information: Dict[str, Any] = {}
         self.modules: Dict[str, "SmartModule"] = {}
         self._parent: Optional["SmartDevice"] = None

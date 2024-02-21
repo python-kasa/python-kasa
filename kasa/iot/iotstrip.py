@@ -115,10 +115,10 @@ class IotStrip(IotDevice):
         if not self.children:
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
-            self.children = [
-                IotStripPlug(self.host, parent=self, child_id=child["id"])
+            self._children = {
+                child["id"]: IotStripPlug(self.host, parent=self, child_id=child["id"])
                 for child in children
-            ]
+            }
 
         if update_children and self.has_emeter:
             for plug in self.children:

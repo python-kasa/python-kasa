@@ -660,7 +660,7 @@ async def cmd_command(dev: Device, module, child, command, parameters):
         # a common interfaces for both IOT and SMART child devices.
         # As a stop-gap solution, we perform an update instead.
         await dev.update()
-        dev = dev._children[child]  # type: ignore[attr-defined]
+        dev = dev.get_child_device(child)
 
     if isinstance(dev, IotDevice):
         res = await dev._query_helper(module, command, parameters)
