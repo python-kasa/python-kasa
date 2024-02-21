@@ -504,6 +504,8 @@ class SmartDevice(Device):
             self._device_type = DeviceType.Dimmer
         elif "brightness" in self._components:
             self._device_type = DeviceType.Bulb
+        elif "PLUG" in self.sys_info["type"]:
+            self._device_type = DeviceType.Plug
         else:
             _LOGGER.warning("Unknown device type, falling back to plug")
             self._device_type = DeviceType.Plug
