@@ -28,12 +28,15 @@ from kasa.iot import IotDevice
 from kasa.smart import SmartChildDevice, SmartDevice
 
 from .conftest import (
+    bulb,
     device_iot,
     device_smart,
-    strip, bulb, lightstrip, dimmer, plug,
+    dimmer,
     handle_turn_on,
     has_emeter_iot,
+    lightstrip,
     no_emeter_iot,
+    plug,
     turn_on,
 )
 from .fakeprotocol_iot import FakeIotProtocol
@@ -410,7 +413,6 @@ SYSINFO_SCHEMA = Schema(
 )
 
 
-
 @dimmer
 def test_device_type_dimmer(dev):
     assert dev.device_type == DeviceType.Dimmer
@@ -421,6 +423,7 @@ def test_device_type_bulb(dev):
     if dev.is_light_strip:
         pytest.skip("bulb has also lightstrips to test the api")
     assert dev.device_type == DeviceType.Bulb
+
 
 @plug
 def test_device_type_plug(dev):
