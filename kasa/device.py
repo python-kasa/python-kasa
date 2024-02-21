@@ -194,32 +194,32 @@ class Device(ABC):
     @property
     def is_bulb(self) -> bool:
         """Return True if the device is a bulb."""
-        return self._device_type == DeviceType.Bulb
+        return self.device_type == DeviceType.Bulb
 
     @property
     def is_light_strip(self) -> bool:
         """Return True if the device is a led strip."""
-        return self._device_type == DeviceType.LightStrip
+        return self.device_type == DeviceType.LightStrip
 
     @property
     def is_plug(self) -> bool:
         """Return True if the device is a plug."""
-        return self._device_type == DeviceType.Plug
+        return self.device_type == DeviceType.Plug
 
     @property
     def is_strip(self) -> bool:
         """Return True if the device is a strip."""
-        return self._device_type == DeviceType.Strip
+        return self.device_type == DeviceType.Strip
 
     @property
     def is_strip_socket(self) -> bool:
         """Return True if the device is a strip socket."""
-        return self._device_type == DeviceType.StripSocket
+        return self.device_type == DeviceType.StripSocket
 
     @property
     def is_dimmer(self) -> bool:
         """Return True if the device is a dimmer."""
-        return self._device_type == DeviceType.Dimmer
+        return self.device_type == DeviceType.Dimmer
 
     @property
     def is_dimmable(self) -> bool:
@@ -354,9 +354,9 @@ class Device(ABC):
 
     def __repr__(self):
         if self._last_update is None:
-            return f"<{self._device_type} at {self.host} - update() needed>"
+            return f"<{self.device_type} at {self.host} - update() needed>"
         return (
-            f"<{self._device_type} model {self.model} at {self.host}"
+            f"<{self.device_type} model {self.model} at {self.host}"
             f" ({self.alias}), is_on: {self.is_on}"
             f" - dev specific: {self.state_information}>"
         )
