@@ -43,7 +43,7 @@ class DeviceError(KasaException):
 
     def __str__(self):
         err_code = f" (error_code={self.error_code.name})" if self.error_code else ""
-        return KasaException.__str__(self) + err_code
+        return super().__str__() + err_code
 
 
 class AuthenticationError(DeviceError):

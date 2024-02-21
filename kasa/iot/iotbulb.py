@@ -97,7 +97,7 @@ class IotBulb(IotDevice, Bulb):
     so you must await :func:`update()` to fetch updates values from the device.
 
     Errors reported by the device are raised as
-    :class:`SmartDeviceExceptions <kasa.exceptions.KasaException>`,
+    :class:`KasaException <kasa.exceptions.KasaException>`,
     and should be handled by the user of the library.
 
     Examples:

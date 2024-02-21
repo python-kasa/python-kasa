@@ -88,7 +88,8 @@ class IotDevice(Device):
     All changes to the device are done using awaitable methods,
     which will not change the cached values, but you must await update() separately.
 
-    Errors reported by the device are raised as SmartDeviceExceptions,
+    Errors reported by the device are raised as
+    :class:`KasaException <kasa.exceptions.KasaException>`,
     and should be handled by the user of the library.
 
     Examples:

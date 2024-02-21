@@ -100,6 +100,17 @@ The classes providing this functionality are:
 - :class:`KlapTransport <kasa.klaptransport.KlapTransport>`
 - :class:`KlapTransportV2 <kasa.klaptransport.KlapTransportV2>`
 
+Errors and Exceptions
+*********************
+
+The base exception for all library errors is :class:`KasaException <kasa.exceptions.KasaException>`.
+
+- If the device returns an error the library raises a :class:`DeviceError <kasa.exceptions.DeviceError>` which will usually contain an ``error_code`` with the detail.
+- If the device fails to authenticate the library raises an :class:`AuthenticationError <kasa.exceptions.AuthenticationError>` which is derived
+  from :class:`DeviceError <kasa.exceptions.DeviceError>` and could contain an ``error_code`` depending on the type of failure.
+- If the library encounters and unsupported deviceit raises an :class:`UnsupportedDeviceError <kasa.exceptions.UnsupportedDeviceError>`.
+- If the device fails to respond within a timeout the library raises a :class:`TimeoutError <kasa.exceptions.TimeoutError>`.
+- All other failures will raise the base :class:`KasaException <kasa.exceptions.KasaException>` class.
 
 API documentation for modules
 *****************************
@@ -153,4 +164,27 @@ API documentation for protocols and transports
 .. autoclass:: kasa.aestransport.AesTransport
     :members:
     :inherited-members:
+    :undoc-members:
+
+API documentation for errors and exceptions
+*******************************************
+
+.. autoclass:: kasa.exceptions.KasaException
+    :members:
+    :undoc-members:
+
+.. autoclass:: kasa.exceptions.DeviceError
+    :members:
+    :undoc-members:
+
+.. autoclass:: kasa.exceptions.AuthenticationError
+    :members:
+    :undoc-members:
+
+.. autoclass:: kasa.exceptions.UnsupportedDeviceError
+    :members:
+    :undoc-members:
+
+.. autoclass:: kasa.exceptions.TimeoutError
+    :members:
     :undoc-members:
