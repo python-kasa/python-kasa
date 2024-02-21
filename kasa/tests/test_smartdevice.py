@@ -22,6 +22,7 @@ from voluptuous import (
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, SmartDeviceException
+from kasa.device_type import DeviceType
 from kasa.exceptions import SmartErrorCode
 from kasa.iot import IotDevice
 from kasa.smart import SmartChildDevice, SmartDevice
@@ -29,6 +30,7 @@ from kasa.smart import SmartChildDevice, SmartDevice
 from .conftest import (
     device_iot,
     device_smart,
+    strip, bulb, lightstrip, dimmer, plug,
     handle_turn_on,
     has_emeter_iot,
     no_emeter_iot,
@@ -406,3 +408,25 @@ SYSINFO_SCHEMA = Schema(
     },
     extra=REMOVE_EXTRA,
 )
+
+
+
+@dimmer
+def test_device_type_dimmer(dev):
+    assert dev.device_type == DeviceType.Dimmer
+
+
+@bulb
+def test_device_type_bulb(dev):
+    if dev.is_light_strip:
+        pytest.skip("bulb has also lightstrips to test the api")
+    assert dev.device_type == DeviceType.Bulb
+
+@plug
+def test_device_type_plug(dev):
+    assert dev.device_type == DeviceType.Plug
+
+
+@lightstrip
+def test_device_type_lightstrip(dev):
+    assert dev.device_type == DeviceType.LightStrip
