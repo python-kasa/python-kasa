@@ -2,7 +2,7 @@
 import collections
 import logging
 
-from ..exceptions import SmartDeviceException
+from ..exceptions import KasaException
 from ..module import Module
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class IotModule(Module):
     def data(self):
         """Return the module specific raw data from the last update."""
         if self._module not in self._device._last_update:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"You need to call update() prior accessing module data"
                 f" for '{self._module}'"
             )

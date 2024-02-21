@@ -13,7 +13,7 @@ from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .iotdevice import IotDevice, SmartDeviceException, requires_update
+from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
 
 
@@ -97,7 +97,7 @@ class IotBulb(IotDevice, Bulb):
     so you must await :func:`update()` to fetch updates values from the device.
 
     Errors reported by the device are raised as
-    :class:`SmartDeviceExceptions <kasa.exceptions.SmartDeviceException>`,
+    :class:`SmartDeviceExceptions <kasa.exceptions.KasaException>`,
     and should be handled by the user of the library.
 
     Examples:
@@ -233,7 +233,7 @@ class IotBulb(IotDevice, Bulb):
         :return: White temperature range in Kelvin (minimum, maximum)
         """
         if not self.is_variable_color_temp:
-            raise SmartDeviceException("Color temperature not supported")
+            raise KasaException("Color temperature not supported")
 
         for model, temp_range in TPLINK_KELVIN.items():
             sys_info = self.sys_info
@@ -249,7 +249,7 @@ class IotBulb(IotDevice, Bulb):
         """Query the light state."""
         light_state = self.sys_info["light_state"]
         if light_state is None:
-            raise SmartDeviceException(
+            raise KasaException(
                 "The device has no light_state or you have not called update()"
             )
 
@@ -333,7 +333,7 @@ class IotBulb(IotDevice, Bulb):
         :return: hue, saturation and value (degrees, %, %)
         """
         if not self.is_color:
-            raise SmartDeviceException("Bulb does not support color.")
+            raise KasaException("Bulb does not support color.")
 
         light_state = cast(dict, self.light_state)
 
@@ -360,7 +360,7 @@ class IotBulb(IotDevice, Bulb):
         :param int transition: transition in milliseconds.
         """
         if not self.is_color:
-            raise SmartDeviceException("Bulb does not support color.")
+            raise KasaException("Bulb does not support color.")
 
         if not isinstance(hue, int) or not (0 <= hue <= 360):
             raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
@@ -387,7 +387,7 @@ class IotBulb(IotDevice, Bulb):
     def color_temp(self) -> int:
         """Return color temperature of the device in kelvin."""
         if not self.is_variable_color_temp:
-            raise SmartDeviceException("Bulb does not support colortemp.")
+            raise KasaException("Bulb does not support colortemp.")
 
         light_state = self.light_state
         return int(light_state["color_temp"])
@@ -402,7 +402,7 @@ class IotBulb(IotDevice, Bulb):
         :param int transition: transition in milliseconds.
         """
         if not self.is_variable_color_temp:
-            raise SmartDeviceException("Bulb does not support colortemp.")
+            raise KasaException("Bulb does not support colortemp.")
 
         valid_temperature_range = self.valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
@@ -423,7 +423,7 @@ class IotBulb(IotDevice, Bulb):
     def brightness(self) -> int:
         """Return the current brightness in percentage."""
         if not self.is_dimmable:  # pragma: no cover
-            raise SmartDeviceException("Bulb is not dimmable.")
+            raise KasaException("Bulb is not dimmable.")
 
         light_state = self.light_state
         return int(light_state["brightness"])
@@ -438,7 +438,7 @@ class IotBulb(IotDevice, Bulb):
         :param int transition: transition in milliseconds.
         """
         if not self.is_dimmable:  # pragma: no cover
-            raise SmartDeviceException("Bulb is not dimmable.")
+            raise KasaException("Bulb is not dimmable.")
 
         self._raise_for_invalid_brightness(brightness)
 
@@ -511,10 +511,10 @@ class IotBulb(IotDevice, Bulb):
         obtained using :func:`presets`.
         """
         if len(self.presets) == 0:
-            raise SmartDeviceException("Device does not supported saving presets")
+            raise KasaException("Device does not supported saving presets")
 
         if preset.index >= len(self.presets):
-            raise SmartDeviceException("Invalid preset index")
+            raise KasaException("Invalid preset index")
 
         return await self._query_helper(
             self.LIGHT_SERVICE, "set_preferred_state", preset.dict(exclude_none=True)

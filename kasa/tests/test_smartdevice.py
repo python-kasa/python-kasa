@@ -21,7 +21,7 @@ from voluptuous import (
 )
 
 import kasa
-from kasa import Credentials, Device, DeviceConfig, SmartDeviceException
+from kasa import Credentials, Device, DeviceConfig, KasaException
 from kasa.exceptions import SmartErrorCode
 from kasa.iot import IotDevice
 from kasa.smart import SmartChildDevice, SmartDevice
@@ -67,8 +67,8 @@ async def test_state_info(dev):
 @device_iot
 async def test_invalid_connection(dev):
     with patch.object(
-        FakeIotProtocol, "query", side_effect=SmartDeviceException
-    ), pytest.raises(SmartDeviceException):
+        FakeIotProtocol, "query", side_effect=KasaException
+    ), pytest.raises(KasaException):
         await dev.update()
 
 
@@ -98,7 +98,7 @@ async def test_initial_update_no_emeter(dev, mocker):
 
 @device_iot
 async def test_query_helper(dev):
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dev._query_helper("test", "testcmd", {})
     # TODO check for unwrapping?
 
@@ -328,7 +328,7 @@ async def test_update_no_device_info(dev: SmartDevice):
     }
     msg = f"get_device_info not found in {mock_response} for device 127.0.0.123"
     with patch.object(dev.protocol, "query", return_value=mock_response), pytest.raises(
-        SmartDeviceException, match=msg
+        KasaException, match=msg
     ):
         await dev.update()
 
@@ -346,6 +346,16 @@ def test_deprecated_devices(device_class, use_class):
     for _ in packages[1:]:
         module = importlib.import_module(package_name, package=module.__name__)
     getattr(module, use_class.__name__)
+
+
+@pytest.mark.parametrize(
+    "exceptions_class, use_class", kasa.deprecated_exceptions.items()
+)
+def test_deprecated_exceptions(exceptions_class, use_class):
+    msg = f"{exceptions_class} is deprecated, use {use_class.__name__} instead"
+    with pytest.deprecated_call(match=msg):
+        getattr(kasa, exceptions_class)
+    getattr(kasa, use_class.__name__)
 
 
 def check_mac(x):

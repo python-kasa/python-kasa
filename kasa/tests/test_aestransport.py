@@ -19,8 +19,8 @@ from ..aestransport import AesEncyptionSession, AesTransport, TransportState
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
-    AuthenticationException,
-    SmartDeviceException,
+    AuthenticationError,
+    KasaException,
     SmartErrorCode,
 )
 from ..httpclient import HttpClient
@@ -49,8 +49,8 @@ status_parameters = pytest.mark.parametrize(
     "status_code, error_code, inner_error_code, expectation",
     [
         (200, 0, 0, does_not_raise()),
-        (400, 0, 0, pytest.raises(SmartDeviceException)),
-        (200, -1, 0, pytest.raises(SmartDeviceException)),
+        (400, 0, 0, pytest.raises(KasaException)),
+        (200, -1, 0, pytest.raises(KasaException)),
     ],
     ids=("success", "status_code", "error_code"),
 )
@@ -101,17 +101,17 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
         ([SmartErrorCode.LOGIN_ERROR, 0, 0, 0], does_not_raise(), 4),
         (
             [SmartErrorCode.LOGIN_ERROR, SmartErrorCode.LOGIN_ERROR],
-            pytest.raises(AuthenticationException),
+            pytest.raises(AuthenticationError),
             3,
         ),
         (
             [SmartErrorCode.LOGIN_FAILED_ERROR],
-            pytest.raises(AuthenticationException),
+            pytest.raises(AuthenticationError),
             1,
         ),
         (
             [SmartErrorCode.LOGIN_ERROR, SmartErrorCode.SESSION_TIMEOUT_ERROR],
-            pytest.raises(SmartDeviceException),
+            pytest.raises(KasaException),
             3,
         ),
     ],
@@ -238,7 +238,7 @@ async def test_unencrypted_response_invalid_json(mocker, caplog):
     }
     caplog.set_level(logging.DEBUG)
     msg = f"Unable to decrypt response from {host}, error: Incorrect padding, response: Foobar"
-    with pytest.raises(SmartDeviceException, match=msg):
+    with pytest.raises(KasaException, match=msg):
         await transport.send(json_dumps(request))
 
 
@@ -267,7 +267,7 @@ async def test_passthrough_errors(mocker, error_code):
         "requestID": 1,
         "terminal_uuid": "foobar",
     }
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await transport.send(json_dumps(request))
 
 

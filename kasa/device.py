@@ -9,7 +9,7 @@ from .credentials import Credentials
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
-from .exceptions import SmartDeviceException
+from .exceptions import KasaException
 from .feature import Feature
 from .iotprotocol import IotProtocol
 from .protocol import BaseProtocol
@@ -242,12 +242,12 @@ class Device(ABC):
             if p.alias == name:
                 return p
 
-        raise SmartDeviceException(f"Device has no child with {name}")
+        raise KasaException(f"Device has no child with {name}")
 
     def get_plug_by_index(self, index: int) -> "Device":
         """Return child device for the given index."""
         if index + 1 > len(self.children) or index < 0:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Invalid index {index}, device has {len(self.children)} plugs"
             )
         return self.children[index]
@@ -306,7 +306,7 @@ class Device(ABC):
         """Add a new feature to the device."""
         desc_name = feature.name.lower().replace(" ", "_")
         if desc_name in self._features:
-            raise SmartDeviceException("Duplicate feature name %s" % desc_name)
+            raise KasaException("Duplicate feature name %s" % desc_name)
         self._features[desc_name] = feature
 
     @property

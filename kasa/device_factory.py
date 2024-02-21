@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional, Tuple, Type
 from .aestransport import AesTransport
 from .device import Device
 from .deviceconfig import DeviceConfig
-from .exceptions import SmartDeviceException, UnsupportedDeviceException
+from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
 from .iotprotocol import IotProtocol
 from .klaptransport import KlapTransport, KlapTransportV2
@@ -45,12 +45,12 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Devic
     :return: Object for querying/controlling found device.
     """
     if host and config or (not host and not config):
-        raise SmartDeviceException("One of host or config must be provded and not both")
+        raise KasaException("One of host or config must be provded and not both")
     if host:
         config = DeviceConfig(host=host)
 
     if (protocol := get_protocol(config=config)) is None:
-        raise UnsupportedDeviceException(
+        raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
             + f"{config.connection_type.device_family.value}"
         )
@@ -99,7 +99,7 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> "Device":
         _perf_log(True, "update")
         return device
     else:
-        raise UnsupportedDeviceException(
+        raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
             + f"{config.connection_type.device_family.value}"
         )
@@ -108,12 +108,12 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> "Device":
 def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[IotDevice]:
     """Find SmartDevice subclass for device described by passed data."""
     if "system" not in info or "get_sysinfo" not in info["system"]:
-        raise SmartDeviceException("No 'system' or 'get_sysinfo' in response")
+        raise KasaException("No 'system' or 'get_sysinfo' in response")
 
     sysinfo: Dict[str, Any] = info["system"]["get_sysinfo"]
     type_: Optional[str] = sysinfo.get("type", sysinfo.get("mic_type"))
     if type_ is None:
-        raise SmartDeviceException("Unable to find the device type field!")
+        raise KasaException("Unable to find the device type field!")
 
     if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
         return IotDimmer
@@ -129,7 +129,7 @@ def get_device_class_from_sys_info(info: Dict[str, Any]) -> Type[IotDevice]:
             return IotLightStrip
 
         return IotBulb
-    raise UnsupportedDeviceException("Unknown device type: %s" % type_)
+    raise UnsupportedDeviceError("Unknown device type: %s" % type_)
 
 
 def get_device_class_from_family(device_type: str) -> Optional[Type[Device]]:

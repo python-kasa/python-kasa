@@ -13,7 +13,7 @@ from typing import Any, Dict, cast
 import asyncclick as click
 
 from kasa import (
-    AuthenticationException,
+    AuthenticationError,
     Bulb,
     ConnectionType,
     Credentials,
@@ -22,8 +22,8 @@ from kasa import (
     DeviceFamilyType,
     Discover,
     EncryptType,
-    SmartDeviceException,
-    UnsupportedDeviceException,
+    KasaException,
+    UnsupportedDeviceError,
 )
 from kasa.discover import DiscoveryResult
 from kasa.iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
@@ -458,7 +458,7 @@ async def discover(ctx):
     unsupported = []
     auth_failed = []
 
-    async def print_unsupported(unsupported_exception: UnsupportedDeviceException):
+    async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
         unsupported.append(unsupported_exception)
         async with sem:
             if unsupported_exception.discovery_result:
@@ -476,7 +476,7 @@ async def discover(ctx):
         async with sem:
             try:
                 await dev.update()
-            except AuthenticationException:
+            except AuthenticationError:
                 auth_failed.append(dev._discovery_info)
                 echo("== Authentication failed for device ==")
                 _echo_discovery_info(dev._discovery_info)
@@ -677,7 +677,7 @@ async def cmd_command(dev: Device, module, command, parameters):
     elif isinstance(dev, SmartDevice):
         res = await dev._query_helper(command, parameters)
     else:
-        raise SmartDeviceException("Unexpected device type %s.", dev)
+        raise KasaException("Unexpected device type %s.", dev)
     echo(json.dumps(res))
     return res
 
