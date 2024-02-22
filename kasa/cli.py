@@ -582,9 +582,14 @@ async def state(ctx, dev: Device):
     echo(f"\tPort: {dev.port}")
     echo(f"\tDevice state: {dev.is_on}")
     if dev.is_strip:
-        echo("\t[bold]== Plugs ==[/bold]")
-        for plug in dev.children:  # type: ignore
-            echo(f"\t* Socket '{plug.alias}' state: {plug.is_on} since {plug.on_since}")
+        echo("\t[bold]== Children ==[/bold]")
+        for child in dev.children:
+            echo(f"\t* {child.alias} ({child.model}, {child.device_type})")
+            for feat in child.features.values():
+                try:
+                    echo(f"\t\t{feat.name}: {feat.value}")
+                except Exception as ex:
+                    echo(f"\t\t{feat.name}: got exception (%s)" % ex)
         echo()
 
     echo("\t[bold]== Generic information ==[/bold]")
@@ -665,12 +670,21 @@ async def raw_command(ctx, dev: Device, module, command, parameters):
 @cli.command(name="command")
 @pass_dev
 @click.option("--module", required=False, help="Module for IOT protocol.")
+@click.option("--child", required=False, help="Child ID for controlling sub-devices")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def cmd_command(dev: Device, module, command, parameters):
+async def cmd_command(dev: Device, module, child, command, parameters):
     """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
+
+    if child:
+        # The way child devices are accessed requires a ChildDevice to
+        # wrap the communications. Doing this properly would require creating
+        # a common interfaces for both IOT and SMART child devices.
+        # As a stop-gap solution, we perform an update instead.
+        await dev.update()
+        dev = dev.get_child_device(child)
 
     if isinstance(dev, IotDevice):
         res = await dev._query_helper(module, command, parameters)

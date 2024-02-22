@@ -16,7 +16,7 @@ import functools
 import inspect
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Sequence, Set
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -183,19 +183,14 @@ class IotDevice(Device):
         super().__init__(host=host, config=config, protocol=protocol)
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
-        self._children: Sequence["IotDevice"] = []
         self._supported_modules: Optional[Dict[str, IotModule]] = None
         self._legacy_features: Set[str] = set()
+        self._children: Mapping[str, "IotDevice"] = {}
 
     @property
     def children(self) -> Sequence["IotDevice"]:
         """Return list of children."""
-        return self._children
-
-    @children.setter
-    def children(self, children):
-        """Initialize from a list of children."""
-        self._children = children
+        return list(self._children.values())
 
     def add_module(self, name: str, module: IotModule):
         """Register a module."""
@@ -407,15 +402,6 @@ class IotDevice(Device):
         """Return device model."""
         sys_info = self._sys_info
         return str(sys_info["model"])
-
-    @property
-    def has_children(self) -> bool:
-        """Return true if the device has children devices."""
-        # Ideally we would check for the 'child_num' key in sys_info,
-        # but devices that speak klap do not populate this key via
-        # update_from_discover_info so we check for the devices
-        # we know have children instead.
-        return self.is_strip
 
     @property  # type: ignore
     def alias(self) -> Optional[str]:

@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -71,6 +71,8 @@ class Device(ABC):
 
         self.modules: Dict[str, Any] = {}
         self._features: Dict[str, Feature] = {}
+        self._parent: Optional["Device"] = None
+        self._children: Mapping[str, "Device"] = {}
 
     @staticmethod
     async def connect(
@@ -182,9 +184,13 @@ class Device(ABC):
         return await self.protocol.query(request=request)
 
     @property
-    @abstractmethod
     def children(self) -> Sequence["Device"]:
         """Returns the child devices."""
+        return list(self._children.values())
+
+    def get_child_device(self, id_: str) -> "Device":
+        """Return child device by its ID."""
+        return self._children[id_]
 
     @property
     @abstractmethod

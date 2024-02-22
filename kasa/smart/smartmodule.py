@@ -57,16 +57,25 @@ class SmartModule(Module):
         """
         q = self.query()
         q_keys = list(q.keys())
-        # TODO: hacky way to check if update has been called.
-        if q_keys[0] not in self._device._last_update:
-            raise KasaException(
-                f"You need to call update() prior accessing module data"
-                f" for '{self._module}'"
-            )
+        query_key = q_keys[0]
 
-        filtered_data = {
-            k: v for k, v in self._device._last_update.items() if k in q_keys
-        }
+        dev = self._device
+
+        # TODO: hacky way to check if update has been called.
+        #  The way this falls back to parent may not always be wanted.
+        #  Especially, devices can have their own firmware updates.
+        if query_key not in dev._last_update:
+            if dev._parent and query_key in dev._parent._last_update:
+                _LOGGER.debug("%s not found child, but found on parent", query_key)
+                dev = dev._parent
+            else:
+                raise KasaException(
+                    f"You need to call update() prior accessing module data"
+                    f" for '{self._module}'"
+                )
+
+        filtered_data = {k: v for k, v in dev._last_update.items() if k in q_keys}
+
         if len(filtered_data) == 1:
             return next(iter(filtered_data.values()))
 

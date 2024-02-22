@@ -37,6 +37,7 @@ from .conftest import (
     lightstrip,
     no_emeter_iot,
     plug,
+    strip,
     turn_on,
 )
 from .fakeprotocol_iot import FakeIotProtocol
@@ -201,13 +202,12 @@ async def test_representation(dev):
     assert pattern.match(str(dev))
 
 
-@device_iot
-async def test_childrens(dev):
-    """Make sure that children property is exposed by every device."""
-    if dev.is_strip:
-        assert len(dev.children) > 0
-    else:
-        assert len(dev.children) == 0
+@strip
+def test_children_api(dev):
+    """Test the child device API."""
+    first = dev.children[0]
+    first_by_get_child_device = dev.get_child_device(first.device_id)
+    assert first == first_by_get_child_device
 
 
 @device_iot
@@ -215,10 +215,8 @@ async def test_children(dev):
     """Make sure that children property is exposed by every device."""
     if dev.is_strip:
         assert len(dev.children) > 0
-        assert dev.has_children is True
     else:
         assert len(dev.children) == 0
-        assert dev.has_children is False
 
 
 @device_iot
@@ -260,7 +258,9 @@ async def test_device_class_ctors(device_class_name_obj):
     klass = device_class_name_obj[1]
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
-        dev = klass(parent, 1)
+        dev = klass(
+            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+        )
     else:
         dev = klass(host, config=config)
     assert dev.host == host

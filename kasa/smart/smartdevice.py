@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -12,22 +12,12 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
-from .modules import (  # noqa: F401
-    AutoOffModule,
-    ChildDeviceModule,
-    CloudModule,
-    DeviceModule,
-    EnergyModule,
-    LedModule,
-    LightTransitionModule,
-    TimeModule,
-)
-from .smartmodule import SmartModule
+from .modules import *  # noqa: F403
 
 _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from .smartchilddevice import SmartChildDevice
+    from .smartmodule import SmartModule
 
 
 class SmartDevice(Device):
@@ -47,23 +37,34 @@ class SmartDevice(Device):
         self.protocol: SmartProtocol
         self._components_raw: Optional[Dict[str, Any]] = None
         self._components: Dict[str, int] = {}
-        self._children: Dict[str, "SmartChildDevice"] = {}
         self._state_information: Dict[str, Any] = {}
-        self.modules: Dict[str, SmartModule] = {}
+        self.modules: Dict[str, "SmartModule"] = {}
+        self._parent: Optional["SmartDevice"] = None
+        self._children: Mapping[str, "SmartDevice"] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
-        children = self._last_update["child_info"]["child_device_list"]
-        # TODO: Use the type information to construct children,
-        #  as hubs can also have them.
+        children = self.internal_state["child_info"]["child_device_list"]
+        children_components = {
+            child["device_id"]: {
+                comp["id"]: int(comp["ver_code"]) for comp in child["component_list"]
+            }
+            for child in self.internal_state["get_child_device_component_list"][
+                "child_component_list"
+            ]
+        }
         from .smartchilddevice import SmartChildDevice
 
         self._children = {
-            child["device_id"]: SmartChildDevice(
-                parent=self, child_id=child["device_id"]
+            child_info["device_id"]: await SmartChildDevice.create(
+                parent=self,
+                child_info=child_info,
+                child_components=children_components[child_info["device_id"]],
             )
-            for child in children
+            for child_info in children
         }
+        # TODO: if all are sockets, then we are a strip, and otherwise a hub?
+        #  doesn't work for the walldimmer with fancontrol...
         self._device_type = DeviceType.Strip
 
     @property
@@ -126,8 +127,10 @@ class SmartDevice(Device):
             if not self.children:
                 await self._initialize_children()
 
+            # TODO: we don't currently perform queries on children based on modules,
+            #  but just update the information that is returned in the main query.
             for info in child_info["child_device_list"]:
-                self._children[info["device_id"]].update_internal_state(info)
+                self._children[info["device_id"]]._update_internal_state(info)
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
@@ -153,6 +156,7 @@ class SmartDevice(Device):
 
     async def _initialize_features(self):
         """Initialize device features."""
+        self._add_feature(Feature(self, "Device ID", attribute_getter="device_id"))
         if "device_on" in self._info:
             self._add_feature(
                 Feature(
@@ -164,25 +168,32 @@ class SmartDevice(Device):
                 )
             )
 
-        self._add_feature(
-            Feature(
-                self,
-                "Signal Level",
-                attribute_getter=lambda x: x._info["signal_level"],
-                icon="mdi:signal",
+        if "signal_level" in self._info:
+            self._add_feature(
+                Feature(
+                    self,
+                    "Signal Level",
+                    attribute_getter=lambda x: x._info["signal_level"],
+                    icon="mdi:signal",
+                )
             )
-        )
-        self._add_feature(
-            Feature(
-                self,
-                "RSSI",
-                attribute_getter=lambda x: x._info["rssi"],
-                icon="mdi:signal",
+
+        if "rssi" in self._info:
+            self._add_feature(
+                Feature(
+                    self,
+                    "RSSI",
+                    attribute_getter=lambda x: x._info["rssi"],
+                    icon="mdi:signal",
+                )
             )
-        )
-        self._add_feature(
-            Feature(device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi")
-        )
+
+        if "ssid" in self._info:
+            self._add_feature(
+                Feature(
+                    device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi"
+                )
+            )
 
         if "overheated" in self._info:
             self._add_feature(
@@ -232,7 +243,12 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        _timemod = cast(TimeModule, self.modules["TimeModule"])
+        # TODO: Default to parent's time module for child devices
+        if self._parent and "TimeModule" in self.modules:
+            _timemod = cast(TimeModule, self._parent.modules["TimeModule"])  # noqa: F405
+        else:
+            _timemod = cast(TimeModule, self.modules["TimeModule"])  # noqa: F405
+
         return _timemod.time
 
     @property
@@ -283,6 +299,14 @@ class SmartDevice(Device):
     def internal_state(self) -> Any:
         """Return all the internal state data."""
         return self._last_update
+
+    def _update_internal_state(self, info):
+        """Update internal state.
+
+        This is used by the parent to push updates to its children
+        """
+        # TODO: cleanup the _last_update, _info mess.
+        self._last_update = self._info = info
 
     async def _query_helper(
         self, method: str, params: Optional[Dict] = None, child_ids=None
@@ -347,19 +371,19 @@ class SmartDevice(Device):
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> Optional[float]:
         """Get the emeter value for this month."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> Optional[float]:
         """Get the emeter value for today."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_today
 
     @property
@@ -372,7 +396,7 @@ class SmartDevice(Device):
             return None
         on_time = cast(float, on_time)
         if (timemod := self.modules.get("TimeModule")) is not None:
-            timemod = cast(TimeModule, timemod)
+            timemod = cast(TimeModule, timemod)  # noqa: F405
             return timemod.time - timedelta(seconds=on_time)
         else:  # We have no device time, use current local time.
             return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
