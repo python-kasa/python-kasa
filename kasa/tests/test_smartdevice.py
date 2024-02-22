@@ -37,8 +37,8 @@ from .conftest import (
     lightstrip,
     no_emeter_iot,
     plug,
-    turn_on,
     strip,
+    turn_on,
 )
 from .fakeprotocol_iot import FakeIotProtocol
 
@@ -204,10 +204,11 @@ async def test_representation(dev):
 
 @strip
 def test_children_api(dev):
-    """Make sure the children api"""
+    """Test the child device API."""
     first = dev.children[0]
     first_by_get_child_device = dev.get_child_device(first.device_id)
     assert first == first_by_get_child_device
+
 
 @device_iot
 async def test_children(dev):

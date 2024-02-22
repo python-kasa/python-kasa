@@ -19,9 +19,9 @@ from kasa.cli import (
     alias,
     brightness,
     cli,
+    cmd_command,
     emeter,
     raw_command,
-    cmd_command,
     reboot,
     state,
     sysinfo,
@@ -143,15 +143,18 @@ async def test_command_with_child(dev, mocker):
     update_mock = mocker.patch.object(dev, "update")
 
     dummy_child = mocker.create_autospec(IotDevice)
-    query_mock = mocker.patch.object(dummy_child, "_query_helper", return_value={"dummy": "response"})
+    query_mock = mocker.patch.object(
+        dummy_child, "_query_helper", return_value={"dummy": "response"}
+    )
 
     mocker.patch.object(dev, "_children", {"XYZ": dummy_child})
-    get_child_device_mock = mocker.patch.object(dev, "get_child_device", return_value=dummy_child)
+    mocker.patch.object(dev, "get_child_device", return_value=dummy_child)
 
     res = await runner.invoke(
         cmd_command,
         ["--child", "XYZ", "command", "'params'"],
-        obj=dev,  catch_exceptions=False
+        obj=dev,
+        catch_exceptions=False,
     )
 
     update_mock.assert_called()

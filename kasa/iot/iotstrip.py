@@ -116,7 +116,9 @@ class IotStrip(IotDevice):
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
             self._children = {
-                f"{self.mac}_{child['id']}": IotStripPlug(self.host, parent=self, child_id=child["id"])
+                f"{self.mac}_{child['id']}": IotStripPlug(
+                    self.host, parent=self, child_id=child["id"]
+                )
                 for child in children
             }
 
