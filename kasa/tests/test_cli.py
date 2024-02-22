@@ -21,6 +21,7 @@ from kasa.cli import (
     cli,
     emeter,
     raw_command,
+    cmd_command,
     reboot,
     state,
     sysinfo,
@@ -134,6 +135,29 @@ async def test_raw_command(dev, mocker):
     res = await runner.invoke(raw_command, obj=dev)
     assert res.exit_code != 0
     assert "Usage" in res.output
+
+
+async def test_command_with_child(dev, mocker):
+    """Test 'command' command with --child."""
+    runner = CliRunner()
+    update_mock = mocker.patch.object(dev, "update")
+
+    dummy_child = mocker.create_autospec(IotDevice)
+    query_mock = mocker.patch.object(dummy_child, "_query_helper", return_value={"dummy": "response"})
+
+    mocker.patch.object(dev, "_children", {"XYZ": dummy_child})
+    get_child_device_mock = mocker.patch.object(dev, "get_child_device", return_value=dummy_child)
+
+    res = await runner.invoke(
+        cmd_command,
+        ["--child", "XYZ", "command", "'params'"],
+        obj=dev,  catch_exceptions=False
+    )
+
+    update_mock.assert_called()
+    query_mock.assert_called()
+    assert '{"dummy": "response"}' in res.output
+    assert res.exit_code == 0
 
 
 @device_smart

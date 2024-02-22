@@ -38,6 +38,7 @@ from .conftest import (
     no_emeter_iot,
     plug,
     turn_on,
+    strip,
 )
 from .fakeprotocol_iot import FakeIotProtocol
 
@@ -201,14 +202,12 @@ async def test_representation(dev):
     assert pattern.match(str(dev))
 
 
-@device_iot
-async def test_childrens(dev):
-    """Make sure that children property is exposed by every device."""
-    if dev.is_strip:
-        assert len(dev.children) > 0
-    else:
-        assert len(dev.children) == 0
-
+@strip
+def test_children_api(dev):
+    """Make sure the children api"""
+    first = dev.children[0]
+    first_by_get_child_device = dev.get_child_device(first.device_id)
+    assert first == first_by_get_child_device
 
 @device_iot
 async def test_children(dev):
