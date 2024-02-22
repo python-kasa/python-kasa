@@ -521,7 +521,7 @@ class SmartDevice(Device):
 
         if self.children:
             if "SMART.TAPOHUB" in self.sys_info["type"]:
-                pass  # TODO: placeholder for future hub PR
+                self._device_type = DeviceType.Hub
             else:
                 self._device_type = DeviceType.Strip
         elif "light_strip" in self._components:
