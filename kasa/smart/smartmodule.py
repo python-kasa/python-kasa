@@ -2,7 +2,7 @@
 import logging
 from typing import TYPE_CHECKING, Dict, Type
 
-from ..exceptions import SmartDeviceException
+from ..exceptions import KasaException
 from ..module import Module
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ class SmartModule(Module):
         q_keys = list(q.keys())
         # TODO: hacky way to check if update has been called.
         if q_keys[0] not in self._device._last_update:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"You need to call update() prior accessing module data"
                 f" for '{self._module}'"
             )

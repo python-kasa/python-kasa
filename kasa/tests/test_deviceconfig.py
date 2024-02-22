@@ -8,7 +8,7 @@ from kasa.credentials import Credentials
 from kasa.deviceconfig import (
     DeviceConfig,
 )
-from kasa.exceptions import SmartDeviceException
+from kasa.exceptions import KasaException
 
 
 async def test_serialization():
@@ -29,7 +29,7 @@ async def test_serialization():
     ids=["invalid-dict", "not-dict"],
 )
 def test_deserialization_errors(input_value, expected_msg):
-    with pytest.raises(SmartDeviceException, match=expected_msg):
+    with pytest.raises(KasaException, match=expected_msg):
         DeviceConfig.from_dict(input_value)
 
 

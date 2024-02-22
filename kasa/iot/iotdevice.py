@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
-from ..exceptions import SmartDeviceException
+from ..exceptions import KasaException
 from ..feature import Feature
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
@@ -48,9 +48,7 @@ def requires_update(f):
         async def wrapped(*args, **kwargs):
             self = args[0]
             if self._last_update is None and f.__name__ not in self._sys_info:
-                raise SmartDeviceException(
-                    "You need to await update() to access the data"
-                )
+                raise KasaException("You need to await update() to access the data")
             return await f(*args, **kwargs)
 
     else:
@@ -59,9 +57,7 @@ def requires_update(f):
         def wrapped(*args, **kwargs):
             self = args[0]
             if self._last_update is None and f.__name__ not in self._sys_info:
-                raise SmartDeviceException(
-                    "You need to await update() to access the data"
-                )
+                raise KasaException("You need to await update() to access the data")
             return f(*args, **kwargs)
 
     f.requires_update = True
@@ -92,7 +88,8 @@ class IotDevice(Device):
     All changes to the device are done using awaitable methods,
     which will not change the cached values, but you must await update() separately.
 
-    Errors reported by the device are raised as SmartDeviceExceptions,
+    Errors reported by the device are raised as
+    :class:`KasaException <kasa.exceptions.KasaException>`,
     and should be handled by the user of the library.
 
     Examples:
@@ -221,9 +218,9 @@ class IotDevice(Device):
     def _verify_emeter(self) -> None:
         """Raise an exception if there is no emeter."""
         if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
+            raise KasaException("Device has no emeter")
         if self.emeter_type not in self._last_update:
-            raise SmartDeviceException("update() required prior accessing emeter")
+            raise KasaException("update() required prior accessing emeter")
 
     async def _query_helper(
         self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
@@ -241,20 +238,20 @@ class IotDevice(Device):
         try:
             response = await self._raw_query(request=request)
         except Exception as ex:
-            raise SmartDeviceException(f"Communication error on {target}:{cmd}") from ex
+            raise KasaException(f"Communication error on {target}:{cmd}") from ex
 
         if target not in response:
-            raise SmartDeviceException(f"No required {target} in response: {response}")
+            raise KasaException(f"No required {target} in response: {response}")
 
         result = response[target]
         if "err_code" in result and result["err_code"] != 0:
-            raise SmartDeviceException(f"Error on {target}.{cmd}: {result}")
+            raise KasaException(f"Error on {target}.{cmd}: {result}")
 
         if cmd not in result:
-            raise SmartDeviceException(f"No command in response: {response}")
+            raise KasaException(f"No command in response: {response}")
         result = result[cmd]
         if "err_code" in result and result["err_code"] != 0:
-            raise SmartDeviceException(f"Error on {target} {cmd}: {result}")
+            raise KasaException(f"Error on {target} {cmd}: {result}")
 
         if "err_code" in result:
             del result["err_code"]
@@ -513,7 +510,7 @@ class IotDevice(Device):
         sys_info = self._sys_info
         mac = sys_info.get("mac", sys_info.get("mic_mac"))
         if not mac:
-            raise SmartDeviceException(
+            raise KasaException(
                 "Unknown mac, please submit a bug report with sys_info output."
             )
         mac = mac.replace("-", ":")
@@ -656,14 +653,14 @@ class IotDevice(Device):
 
         try:
             info = await _scan("netif")
-        except SmartDeviceException as ex:
+        except KasaException as ex:
             _LOGGER.debug(
                 "Unable to scan using 'netif', retrying with 'softaponboarding': %s", ex
             )
             info = await _scan("smartlife.iot.common.softaponboarding")
 
         if "ap_list" not in info:
-            raise SmartDeviceException("Invalid response for wifi scan: %s" % info)
+            raise KasaException("Invalid response for wifi scan: %s" % info)
 
         return [WifiNetwork(**x) for x in info["ap_list"]]
 
@@ -679,7 +676,7 @@ class IotDevice(Device):
         payload = {"ssid": ssid, "password": password, "key_type": int(keytype)}
         try:
             return await _join("netif", payload)
-        except SmartDeviceException as ex:
+        except KasaException as ex:
             _LOGGER.debug(
                 "Unable to join using 'netif', retrying with 'softaponboarding': %s", ex
             )

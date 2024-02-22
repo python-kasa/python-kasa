@@ -1,45 +1,57 @@
 """python-kasa exceptions."""
-from asyncio import TimeoutError
+from asyncio import TimeoutError as _asyncioTimeoutError
 from enum import IntEnum
 from typing import Any, Optional
 
 
-class SmartDeviceException(Exception):
+class KasaException(Exception):
+    """Base exception for library errors."""
+
+
+class TimeoutError(KasaException, _asyncioTimeoutError):
+    """Timeout exception for device errors."""
+
+    def __repr__(self):
+        return KasaException.__repr__(self)
+
+    def __str__(self):
+        return KasaException.__str__(self)
+
+
+class _ConnectionError(KasaException):
+    """Connection exception for device errors."""
+
+
+class UnsupportedDeviceError(KasaException):
+    """Exception for trying to connect to unsupported devices."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.discovery_result = kwargs.get("discovery_result")
+        super().__init__(*args)
+
+
+class DeviceError(KasaException):
     """Base exception for device errors."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.error_code: Optional["SmartErrorCode"] = kwargs.get("error_code", None)
         super().__init__(*args)
 
+    def __repr__(self):
+        err_code = self.error_code.__repr__() if self.error_code else ""
+        return f"{self.__class__.__name__}({err_code})"
 
-class UnsupportedDeviceException(SmartDeviceException):
-    """Exception for trying to connect to unsupported devices."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.discovery_result = kwargs.get("discovery_result")
-        super().__init__(*args, **kwargs)
+    def __str__(self):
+        err_code = f" (error_code={self.error_code.name})" if self.error_code else ""
+        return super().__str__() + err_code
 
 
-class AuthenticationException(SmartDeviceException):
+class AuthenticationError(DeviceError):
     """Base exception for device authentication errors."""
 
 
-class RetryableException(SmartDeviceException):
+class _RetryableError(DeviceError):
     """Retryable exception for device errors."""
-
-
-class TimeoutException(SmartDeviceException, TimeoutError):
-    """Timeout exception for device errors."""
-
-    def __repr__(self):
-        return SmartDeviceException.__repr__(self)
-
-    def __str__(self):
-        return SmartDeviceException.__str__(self)
-
-
-class ConnectionException(SmartDeviceException):
-    """Connection exception for device errors."""
 
 
 class SmartErrorCode(IntEnum):
@@ -109,6 +121,7 @@ SMART_RETRYABLE_ERRORS = [
     SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
     SmartErrorCode.HTTP_TRANSPORT_FAILED_ERROR,
     SmartErrorCode.UNSPECIFIC_ERROR,
+    SmartErrorCode.SESSION_TIMEOUT_ERROR,
 ]
 
 SMART_AUTHENTICATION_ERRORS = [
@@ -117,8 +130,4 @@ SMART_AUTHENTICATION_ERRORS = [
     SmartErrorCode.AES_DECODE_FAIL_ERROR,
     SmartErrorCode.HAND_SHAKE_FAILED_ERROR,
     SmartErrorCode.TRANSPORT_UNKNOWN_CREDENTIALS_ERROR,
-]
-
-SMART_TIMEOUT_ERRORS = [
-    SmartErrorCode.SESSION_TIMEOUT_ERROR,
 ]

@@ -1,7 +1,7 @@
 import warnings
 from json import loads as json_loads
 
-from kasa import Credentials, DeviceConfig, SmartDeviceException, SmartProtocol
+from kasa import Credentials, DeviceConfig, KasaException, SmartProtocol
 from kasa.protocol import BaseTransport
 
 
@@ -144,7 +144,7 @@ class FakeSmartTransport(BaseTransport):
                 )
                 return {"result": missing_result[1], "error_code": 0}
             else:
-                raise SmartDeviceException(f"Fixture doesn't support {method}")
+                raise KasaException(f"Fixture doesn't support {method}")
         elif method == "set_qs_info":
             return {"error_code": 0}
         elif method[:4] == "set_":

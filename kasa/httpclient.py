@@ -8,9 +8,9 @@ from yarl import URL
 
 from .deviceconfig import DeviceConfig
 from .exceptions import (
-    ConnectionException,
-    SmartDeviceException,
-    TimeoutException,
+    KasaException,
+    TimeoutError,
+    _ConnectionError,
 )
 from .json import loads as json_loads
 
@@ -86,17 +86,17 @@ class HttpClient:
                         response_data = json_loads(response_data.decode())
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
-            raise ConnectionException(
+            raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
         except (aiohttp.ServerTimeoutError, asyncio.TimeoutError) as ex:
-            raise TimeoutException(
+            raise TimeoutError(
                 "Unable to query the device, "
                 + f"timed out: {self._config.host}: {ex}",
                 ex,
             ) from ex
         except Exception as ex:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Unable to query the device: {self._config.host}: {ex}", ex
             ) from ex
 

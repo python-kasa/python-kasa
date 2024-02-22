@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Dict
 
 from .device import Device
-from .exceptions import SmartDeviceException
+from .exceptions import KasaException
 from .feature import Feature
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class Module(ABC):
         """Add module feature."""
         feat_name = f"{self._module}_{feature.name}"
         if feat_name in self._module_features:
-            raise SmartDeviceException("Duplicate name detected %s" % feat_name)
+            raise KasaException("Duplicate name detected %s" % feat_name)
         self._module_features[feat_name] = feature
 
     def __repr__(self) -> str:

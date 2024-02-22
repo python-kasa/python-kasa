@@ -24,9 +24,9 @@ from kasa.device_factory import (
 )
 from kasa.deviceconfig import ConnectionType, DeviceConfig, EncryptType
 from kasa.exceptions import (
-    SmartDeviceException,
-    TimeoutException,
-    UnsupportedDeviceException,
+    KasaException,
+    TimeoutError,
+    UnsupportedDeviceError,
 )
 from kasa.iot.iotdevice import IotDevice
 from kasa.json import dumps as json_dumps
@@ -59,7 +59,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         discovery_timeout: int = 5,
         interface: Optional[str] = None,
         on_unsupported: Optional[
-            Callable[[UnsupportedDeviceException], Awaitable[None]]
+            Callable[[UnsupportedDeviceError], Awaitable[None]]
         ] = None,
         port: Optional[int] = None,
         credentials: Optional[Credentials] = None,
@@ -162,14 +162,14 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 device = Discover._get_device_instance(data, config)
             else:
                 return
-        except UnsupportedDeviceException as udex:
+        except UnsupportedDeviceError as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
             self.unsupported_device_exceptions[ip] = udex
             if self.on_unsupported is not None:
                 self._run_callback_task(self.on_unsupported(udex))
             self._handle_discovered_event()
             return
-        except SmartDeviceException as ex:
+        except KasaException as ex:
             _LOGGER.debug(f"[DISCOVERY] Unable to find device type for {ip}: {ex}")
             self.invalid_device_exceptions[ip] = ex
             self._handle_discovered_event()
@@ -311,7 +311,7 @@ class Discover:
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
             await protocol.wait_for_discovery_to_complete()
-        except SmartDeviceException as ex:
+        except KasaException as ex:
             for device in protocol.discovered_devices.values():
                 await device.protocol.close()
             raise ex
@@ -368,9 +368,7 @@ class Discover:
                 # https://docs.python.org/3/library/socket.html#socket.getaddrinfo
                 ip = adrrinfo[0][4][0]
             except socket.gaierror as gex:
-                raise SmartDeviceException(
-                    f"Could not resolve hostname {host}"
-                ) from gex
+                raise KasaException(f"Could not resolve hostname {host}") from gex
 
         transport, protocol = await loop.create_datagram_endpoint(
             lambda: _DiscoverProtocol(
@@ -401,7 +399,7 @@ class Discover:
         elif ip in protocol.invalid_device_exceptions:
             raise protocol.invalid_device_exceptions[ip]
         else:
-            raise TimeoutException(f"Timed out getting discovery response for {host}")
+            raise TimeoutError(f"Timed out getting discovery response for {host}")
 
     @staticmethod
     def _get_device_class(info: dict) -> Type[Device]:
@@ -410,7 +408,7 @@ class Discover:
             discovery_result = DiscoveryResult(**info["result"])
             dev_class = get_device_class_from_family(discovery_result.device_type)
             if not dev_class:
-                raise UnsupportedDeviceException(
+                raise UnsupportedDeviceError(
                     "Unknown device type: %s" % discovery_result.device_type,
                     discovery_result=info,
                 )
@@ -424,7 +422,7 @@ class Discover:
         try:
             info = json_loads(XorEncryption.decrypt(data))
         except Exception as ex:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
 
@@ -451,7 +449,7 @@ class Discover:
             info = json_loads(data[16:])
         except Exception as ex:
             _LOGGER.debug("Got invalid response from device %s: %s", config.host, data)
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
         try:
@@ -460,7 +458,7 @@ class Discover:
             _LOGGER.debug(
                 "Unable to parse discovery from device %s: %s", config.host, info
             )
-            raise UnsupportedDeviceException(
+            raise UnsupportedDeviceError(
                 f"Unable to parse discovery from device: {config.host}: {ex}"
             ) from ex
 
@@ -472,15 +470,15 @@ class Discover:
                 discovery_result.mgt_encrypt_schm.encrypt_type,
                 discovery_result.mgt_encrypt_schm.lv,
             )
-        except SmartDeviceException as ex:
-            raise UnsupportedDeviceException(
+        except KasaException as ex:
+            raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
                 + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.get_dict(),
             ) from ex
         if (device_class := get_device_class_from_family(type_)) is None:
             _LOGGER.warning("Got unsupported device type: %s", type_)
-            raise UnsupportedDeviceException(
+            raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.get_dict(),
             )
@@ -488,7 +486,7 @@ class Discover:
             _LOGGER.warning(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
             )
-            raise UnsupportedDeviceException(
+            raise UnsupportedDeviceError(
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
                 discovery_result=discovery_result.get_dict(),

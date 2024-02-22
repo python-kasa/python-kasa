@@ -24,7 +24,7 @@ Methods changing the state of the device do not invalidate the cache (i.e., ther
 You can assume that the operation has succeeded if no exception is raised.
 These methods will return the device response, which can be useful for some use cases.
 
-Errors are raised as :class:`SmartDeviceException` instances for the library user to handle.
+Errors are raised as :class:`KasaException` instances for the library user to handle.
 
 Simple example script showing some functionality for legacy devices:
 
@@ -152,17 +152,5 @@ API documentation
     :member-order: bysource
 
 .. autoclass:: Credentials
-    :members:
-    :undoc-members:
-
-.. autoclass:: SmartDeviceException
-    :members:
-    :undoc-members:
-
-.. autoclass:: AuthenticationException
-    :members:
-    :undoc-members:
-
-.. autoclass:: UnsupportedDeviceException
     :members:
     :undoc-members:
