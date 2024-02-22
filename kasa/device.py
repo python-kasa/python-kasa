@@ -98,9 +98,7 @@ class Device(ABC):
         """
         from .device_factory import connect  # pylint: disable=import-outside-toplevel
 
-        # TODO: Incompatible return value type (got "Device[Any]", expected "T")
-        #  unclear how to type that properly for now.
-        return await connect(host=host, config=config)  # type: ignore[arg-type,return-value]
+        return await connect(host=host, config=config)  # type: ignore[arg-type]
 
     @abstractmethod
     async def update(self, update_children: bool = True):
