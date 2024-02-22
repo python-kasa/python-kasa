@@ -2,11 +2,8 @@
 from typing import Any, Dict, List, Optional
 
 from ..bulb import Bulb
-from ..device_type import DeviceType
-from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
 from ..iot.iotbulb import HSV, BulbPreset, ColorTempRange
-from ..smartprotocol import SmartProtocol
 from .smartdevice import SmartDevice
 
 AVAILABLE_EFFECTS = {
@@ -20,16 +17,6 @@ class SmartBulb(SmartDevice, Bulb):
 
     Documentation TBD. See :class:`~kasa.iot.Bulb` for now.
     """
-
-    def __init__(
-        self,
-        host: str,
-        *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[SmartProtocol] = None,
-    ) -> None:
-        super().__init__(host=host, config=config, protocol=protocol)
-        self._device_type = DeviceType.Bulb
 
     @property
     def is_color(self) -> bool:
