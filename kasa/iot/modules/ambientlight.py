@@ -1,5 +1,6 @@
 """Implementation of the ambient light (LAS) module found in some dimmers."""
-from ..iotmodule import IotModule
+from ...feature import Feature, FeatureType
+from ..iotmodule import IotModule, merge
 
 # TODO create tests and use the config reply there
 # [{"hw_id":0,"enable":0,"dark_index":1,"min_adc":0,"max_adc":2450,
@@ -14,9 +15,27 @@ from ..iotmodule import IotModule
 class AmbientLight(IotModule):
     """Implements ambient light controls for the motion sensor."""
 
+    def __init__(self, device, module):
+        super().__init__(device, module)
+        self._add_feature(
+            Feature(
+                device=device,
+                container=self,
+                name="Ambient Light",
+                icon="mdi:brightness-percent",
+                attribute_getter="ambientlight_brightness",
+                type=FeatureType.Sensor,
+            )
+        )
+
     def query(self):
         """Request configuration."""
-        return self.query_for_command("get_config")
+        req = merge(
+            self.query_for_command("get_config"),
+            self.query_for_command("get_current_brt"),
+        )
+
+        return req
 
     @property
     def presets(self) -> dict:
@@ -27,6 +46,11 @@ class AmbientLight(IotModule):
     def enabled(self) -> bool:
         """Return True if the module is enabled."""
         return bool(self.data["enable"])
+
+    @property
+    def ambientlight_brightness(self) -> int:
+        """Return True if the module is enabled."""
+        return int(self.data["get_current_brt"]["value"])
 
     async def set_enabled(self, state: bool):
         """Enable/disable LAS."""
