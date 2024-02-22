@@ -168,7 +168,7 @@ class SmartRequest:
 
     @staticmethod
     def get_wireless_scan_info(
-        params: Optional[GetRulesParams] = None
+        params: Optional[GetRulesParams] = None,
     ) -> "SmartRequest":
         """Get wireless scan info."""
         return SmartRequest(
@@ -273,7 +273,7 @@ class SmartRequest:
 
     @staticmethod
     def get_dynamic_light_effect_rules(
-        params: Optional[GetRulesParams] = None
+        params: Optional[GetRulesParams] = None,
     ) -> "SmartRequest":
         """Get dynamic light effect rules."""
         return SmartRequest(
@@ -292,7 +292,7 @@ class SmartRequest:
 
     @staticmethod
     def set_dynamic_light_effect_rule_enable(
-        params: DynamicLightEffectParams
+        params: DynamicLightEffectParams,
     ) -> "SmartRequest":
         """Enable dynamic light effect rule."""
         return SmartRequest("set_dynamic_light_effect_rule_enable", params)
@@ -312,7 +312,7 @@ class SmartRequest:
 
     @staticmethod
     def _create_request_dict(
-        smart_request: Union["SmartRequest", List["SmartRequest"]]
+        smart_request: Union["SmartRequest", List["SmartRequest"]],
     ) -> dict:
         """Create request dict to be passed to SmartProtocol.query()."""
         if isinstance(smart_request, list):

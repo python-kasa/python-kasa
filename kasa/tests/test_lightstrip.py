@@ -1,7 +1,7 @@
 import pytest
 
 from kasa import DeviceType
-from kasa.exceptions import SmartDeviceException
+from kasa.exceptions import KasaException
 from kasa.iot import IotLightStrip
 
 from .conftest import lightstrip
@@ -23,7 +23,7 @@ async def test_lightstrip_effect(dev: IotLightStrip):
 
 @lightstrip
 async def test_effects_lightstrip_set_effect(dev: IotLightStrip):
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dev.set_effect("Not real")
 
     await dev.set_effect("Candy Cane")

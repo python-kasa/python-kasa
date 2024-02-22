@@ -13,7 +13,7 @@ from typing import Any, Dict, cast
 import asyncclick as click
 
 from kasa import (
-    AuthenticationException,
+    AuthenticationError,
     Bulb,
     ConnectionType,
     Credentials,
@@ -22,12 +22,12 @@ from kasa import (
     DeviceFamilyType,
     Discover,
     EncryptType,
-    SmartDeviceException,
-    UnsupportedDeviceException,
+    KasaException,
+    UnsupportedDeviceError,
 )
 from kasa.discover import DiscoveryResult
 from kasa.iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
-from kasa.smart import SmartBulb, SmartDevice, SmartPlug
+from kasa.smart import SmartBulb, SmartDevice
 
 try:
     from pydantic.v1 import ValidationError
@@ -72,7 +72,7 @@ TYPE_TO_CLASS = {
     "iot.dimmer": IotDimmer,
     "iot.strip": IotStrip,
     "iot.lightstrip": IotLightStrip,
-    "smart.plug": SmartPlug,
+    "smart.plug": SmartDevice,
     "smart.bulb": SmartBulb,
 }
 
@@ -90,19 +90,43 @@ click.anyio_backend = "asyncio"
 pass_dev = click.make_pass_decorator(Device)
 
 
-class ExceptionHandlerGroup(click.Group):
-    """Group to capture all exceptions and print them nicely.
+def CatchAllExceptions(cls):
+    """Capture all exceptions and prints them nicely.
 
-    Idea from https://stackoverflow.com/a/44347763
+    Idea from https://stackoverflow.com/a/44347763 and
+    https://stackoverflow.com/questions/52213375
     """
 
-    def __call__(self, *args, **kwargs):
-        """Run the coroutine in the event loop and print any exceptions."""
-        try:
-            asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
-        except Exception as ex:
-            echo(f"Got error: {ex!r}")
+    def _handle_exception(debug, exc):
+        if isinstance(exc, click.ClickException):
             raise
+        echo(f"Raised error: {exc}")
+        if debug:
+            raise
+        echo("Run with --debug enabled to see stacktrace")
+        sys.exit(1)
+
+    class _CommandCls(cls):
+        _debug = False
+
+        async def make_context(self, info_name, args, parent=None, **extra):
+            self._debug = any(
+                [arg for arg in args if arg in ["--debug", "-d", "--verbose", "-v"]]
+            )
+            try:
+                return await super().make_context(
+                    info_name, args, parent=parent, **extra
+                )
+            except Exception as exc:
+                _handle_exception(self._debug, exc)
+
+        async def invoke(self, ctx):
+            try:
+                return await super().invoke(ctx)
+            except Exception as exc:
+                _handle_exception(self._debug, exc)
+
+    return _CommandCls
 
 
 def json_formatter_cb(result, **kwargs):
@@ -129,7 +153,7 @@ def json_formatter_cb(result, **kwargs):
 
 @click.group(
     invoke_without_command=True,
-    cls=ExceptionHandlerGroup,
+    cls=CatchAllExceptions(click.Group),
     result_callback=json_formatter_cb,
 )
 @click.option(
@@ -434,7 +458,7 @@ async def discover(ctx):
     unsupported = []
     auth_failed = []
 
-    async def print_unsupported(unsupported_exception: UnsupportedDeviceException):
+    async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
         unsupported.append(unsupported_exception)
         async with sem:
             if unsupported_exception.discovery_result:
@@ -452,7 +476,7 @@ async def discover(ctx):
         async with sem:
             try:
                 await dev.update()
-            except AuthenticationException:
+            except AuthenticationError:
                 auth_failed.append(dev._discovery_info)
                 echo("== Authentication failed for device ==")
                 _echo_discovery_info(dev._discovery_info)
@@ -667,7 +691,7 @@ async def cmd_command(dev: Device, module, child, command, parameters):
     elif isinstance(dev, SmartDevice):
         res = await dev._query_helper(command, parameters)
     else:
-        raise SmartDeviceException("Unexpected device type %s.", dev)
+        raise KasaException("Unexpected device type %s.", dev)
     echo(json.dumps(res))
     return res
 

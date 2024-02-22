@@ -14,7 +14,7 @@ import pytest
 from ..aestransport import AesTransport
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
-from ..exceptions import SmartDeviceException
+from ..exceptions import KasaException
 from ..iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
 from ..klaptransport import KlapTransport, KlapTransportV2
 from ..protocol import (
@@ -46,7 +46,7 @@ async def test_protocol_retries(mocker, retry_count, protocol_class, transport_c
 
     conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     config = DeviceConfig("127.0.0.1")
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=retry_count
         )
@@ -70,7 +70,7 @@ async def test_protocol_no_retry_on_unreachable(
         side_effect=OSError(errno.EHOSTUNREACH, "No route to host"),
     )
     config = DeviceConfig("127.0.0.1")
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=5
         )
@@ -94,7 +94,7 @@ async def test_protocol_no_retry_connection_refused(
         side_effect=ConnectionRefusedError,
     )
     config = DeviceConfig("127.0.0.1")
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=5
         )
@@ -118,7 +118,7 @@ async def test_protocol_retry_recoverable_error(
         side_effect=OSError(errno.ECONNRESET, "Connection reset by peer"),
     )
     config = DeviceConfig("127.0.0.1")
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=5
         )
@@ -553,7 +553,7 @@ async def test_protocol_will_retry_on_connect(
     retry_count = 2
     conn = mocker.patch("asyncio.open_connection", side_effect=error)
     config = DeviceConfig("127.0.0.1")
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=retry_count
         )
@@ -595,7 +595,7 @@ async def test_protocol_will_retry_on_write(
     conn = mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     write_mock = mocker.patch("asyncio.StreamWriter.write", side_effect=error)
     config = DeviceConfig("127.0.0.1")
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
             {}, retry_count=retry_count
         )
@@ -609,9 +609,7 @@ def test_deprecated_protocol():
     with pytest.deprecated_call():
         from kasa import TPLinkSmartHomeProtocol
 
-        with pytest.raises(
-            SmartDeviceException, match="host or transport must be supplied"
-        ):
+        with pytest.raises(KasaException, match="host or transport must be supplied"):
             proto = TPLinkSmartHomeProtocol()
         host = "127.0.0.1"
         proto = TPLinkSmartHomeProtocol(host=host)

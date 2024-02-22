@@ -2,7 +2,7 @@
 import logging
 from typing import TYPE_CHECKING, Dict, Type
 
-from ..exceptions import SmartDeviceException
+from ..exceptions import KasaException
 from ..module import Module
 
 if TYPE_CHECKING:
@@ -69,12 +69,13 @@ class SmartModule(Module):
                 _LOGGER.debug("%s not found child, but found on parent", query_key)
                 dev = dev._parent
             else:
-                raise SmartDeviceException(
+                raise KasaException(
                     f"You need to call update() prior accessing module data"
                     f" for '{self._module}'"
                 )
 
         filtered_data = {k: v for k, v in dev._last_update.items() if k in q_keys}
+
         if len(filtered_data) == 1:
             return next(iter(filtered_data.values()))
 

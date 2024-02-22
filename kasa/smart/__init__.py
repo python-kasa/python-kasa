@@ -2,6 +2,5 @@
 from .smartbulb import SmartBulb
 from .smartchilddevice import SmartChildDevice
 from .smartdevice import SmartDevice
-from .smartplug import SmartPlug
 
-__all__ = ["SmartDevice", "SmartPlug", "SmartBulb", "SmartChildDevice"]
+__all__ = ["SmartDevice", "SmartBulb", "SmartChildDevice"]

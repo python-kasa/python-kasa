@@ -5,11 +5,11 @@ from typing import Dict, Optional, Union
 
 from .deviceconfig import DeviceConfig
 from .exceptions import (
-    AuthenticationException,
-    ConnectionException,
-    RetryableException,
-    SmartDeviceException,
-    TimeoutException,
+    AuthenticationError,
+    KasaException,
+    TimeoutError,
+    _ConnectionError,
+    _RetryableError,
 )
 from .json import dumps as json_dumps
 from .protocol import BaseProtocol, BaseTransport
@@ -46,31 +46,31 @@ class IotProtocol(BaseProtocol):
         for retry in range(retry_count + 1):
             try:
                 return await self._execute_query(request, retry)
-            except ConnectionException as sdex:
+            except _ConnectionError as sdex:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise sdex
                 continue
-            except AuthenticationException as auex:
+            except AuthenticationError as auex:
                 await self._transport.reset()
                 _LOGGER.debug(
                     "Unable to authenticate with %s, not retrying", self._host
                 )
                 raise auex
-            except RetryableException as ex:
+            except _RetryableError as ex:
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 continue
-            except TimeoutException as ex:
+            except TimeoutError as ex:
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
-            except SmartDeviceException as ex:
+            except KasaException as ex:
                 await self._transport.reset()
                 _LOGGER.debug(
                     "Unable to query the device: %s, not retrying: %s",
@@ -80,7 +80,7 @@ class IotProtocol(BaseProtocol):
                 raise ex
 
         # make mypy happy, this should never be reached..
-        raise SmartDeviceException("Query reached somehow to unreachable")
+        raise KasaException("Query reached somehow to unreachable")
 
     async def _execute_query(self, request: str, retry_count: int) -> Dict:
         return await self._transport.send(request)
@@ -101,7 +101,7 @@ class _deprecated_TPLinkSmartHomeProtocol(IotProtocol):
     ) -> None:
         """Create a protocol object."""
         if not host and not transport:
-            raise SmartDeviceException("host or transport must be supplied")
+            raise KasaException("host or transport must be supplied")
         if not transport:
             config = DeviceConfig(
                 host=host,  # type: ignore[arg-type]

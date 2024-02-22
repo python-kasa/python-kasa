@@ -15,13 +15,13 @@ from typing import Any, Dict, Union
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
-    SMART_TIMEOUT_ERRORS,
-    AuthenticationException,
-    ConnectionException,
-    RetryableException,
-    SmartDeviceException,
+    AuthenticationError,
+    DeviceError,
+    KasaException,
     SmartErrorCode,
-    TimeoutException,
+    TimeoutError,
+    _ConnectionError,
+    _RetryableError,
 )
 from .json import dumps as json_dumps
 from .protocol import BaseProtocol, BaseTransport, md5
@@ -66,32 +66,32 @@ class SmartProtocol(BaseProtocol):
         for retry in range(retry_count + 1):
             try:
                 return await self._execute_query(request, retry)
-            except ConnectionException as sdex:
+            except _ConnectionError as sdex:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise sdex
                 continue
-            except AuthenticationException as auex:
+            except AuthenticationError as auex:
                 await self._transport.reset()
                 _LOGGER.debug(
                     "Unable to authenticate with %s, not retrying", self._host
                 )
                 raise auex
-            except RetryableException as ex:
+            except _RetryableError as ex:
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
-            except TimeoutException as ex:
+            except TimeoutError as ex:
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
-            except SmartDeviceException as ex:
+            except KasaException as ex:
                 await self._transport.reset()
                 _LOGGER.debug(
                     "Unable to query the device: %s, not retrying: %s",
@@ -101,7 +101,7 @@ class SmartProtocol(BaseProtocol):
                 raise ex
 
         # make mypy happy, this should never be reached..
-        raise SmartDeviceException("Query reached somehow to unreachable")
+        raise KasaException("Query reached somehow to unreachable")
 
     async def _execute_multiple_query(self, request: Dict, retry_count: int) -> Dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
@@ -193,13 +193,11 @@ class SmartProtocol(BaseProtocol):
             + f"{error_code.name}({error_code.value})"
             + f" for method: {method}"
         )
-        if error_code in SMART_TIMEOUT_ERRORS:
-            raise TimeoutException(msg, error_code=error_code)
         if error_code in SMART_RETRYABLE_ERRORS:
-            raise RetryableException(msg, error_code=error_code)
+            raise _RetryableError(msg, error_code=error_code)
         if error_code in SMART_AUTHENTICATION_ERRORS:
-            raise AuthenticationException(msg, error_code=error_code)
-        raise SmartDeviceException(msg, error_code=error_code)
+            raise AuthenticationError(msg, error_code=error_code)
+        raise DeviceError(msg, error_code=error_code)
 
     async def close(self) -> None:
         """Close the underlying transport."""

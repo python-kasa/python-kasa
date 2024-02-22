@@ -9,7 +9,7 @@ from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
-from ..exceptions import AuthenticationException, SmartDeviceException, SmartErrorCode
+from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature, FeatureType
 from ..smartprotocol import SmartProtocol
 from .modules import *  # noqa: F403
@@ -86,7 +86,7 @@ class SmartDevice(Device):
             return response
         if default is not None:
             return default
-        raise SmartDeviceException(
+        raise KasaException(
             f"{request} not found in {responses} for device {self.host}"
         )
 
@@ -101,7 +101,7 @@ class SmartDevice(Device):
     async def update(self, update_children: bool = True):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
-            raise AuthenticationException("Tapo plug requires authentication.")
+            raise AuthenticationError("Tapo plug requires authentication.")
 
         if self._components_raw is None:
             await self._negotiate()
@@ -365,7 +365,7 @@ class SmartDevice(Device):
         """Retrieve current energy readings."""
         _LOGGER.warning("Deprecated, use `emeter_realtime`.")
         if not self.has_emeter:
-            raise SmartDeviceException("Device has no emeter")
+            raise KasaException("Device has no emeter")
         return self.emeter_realtime
 
     @property
@@ -445,7 +445,7 @@ class SmartDevice(Device):
         after some delay.
         """
         if not self.credentials:
-            raise AuthenticationException("Device requires authentication.")
+            raise AuthenticationError("Device requires authentication.")
 
         payload = {
             "account": {
@@ -469,10 +469,9 @@ class SmartDevice(Device):
         # Thus, We limit retries and suppress the raised exception as useless.
         try:
             return await self.protocol.query({"set_qs_info": payload}, retry_count=0)
-        except SmartDeviceException as ex:
-            if ex.error_code:  # Re-raise on device-reported errors
-                raise
-
+        except DeviceError:
+            raise  # Re-raise on device-reported errors
+        except KasaException:
             _LOGGER.debug("Received an expected for wifi join, but this is expected")
 
     async def update_credentials(self, username: str, password: str):
@@ -510,3 +509,28 @@ class SmartDevice(Device):
         Note, this does not downgrade the firmware.
         """
         await self.protocol.query("device_reset")
+
+    @property
+    def device_type(self) -> DeviceType:
+        """Return the device type."""
+        if self._device_type is not DeviceType.Unknown:
+            return self._device_type
+
+        if self.children:
+            if "SMART.TAPOHUB" in self.sys_info["type"]:
+                pass  # TODO: placeholder for future hub PR
+            else:
+                self._device_type = DeviceType.Strip
+        elif "light_strip" in self._components:
+            self._device_type = DeviceType.LightStrip
+        elif "dimmer_calibration" in self._components:
+            self._device_type = DeviceType.Dimmer
+        elif "brightness" in self._components:
+            self._device_type = DeviceType.Bulb
+        elif "PLUG" in self.sys_info["type"]:
+            self._device_type = DeviceType.Plug
+        else:
+            _LOGGER.warning("Unknown device type, falling back to plug")
+            self._device_type = DeviceType.Plug
+
+        return self._device_type

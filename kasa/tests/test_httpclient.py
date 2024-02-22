@@ -6,9 +6,9 @@ import pytest
 
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
-    ConnectionException,
-    SmartDeviceException,
-    TimeoutException,
+    KasaException,
+    TimeoutError,
+    _ConnectionError,
 )
 from ..httpclient import HttpClient
 
@@ -18,28 +18,28 @@ from ..httpclient import HttpClient
     [
         (
             aiohttp.ServerDisconnectedError(),
-            ConnectionException,
+            _ConnectionError,
             "Device connection error: ",
         ),
         (
             aiohttp.ClientOSError(),
-            ConnectionException,
+            _ConnectionError,
             "Device connection error: ",
         ),
         (
             aiohttp.ServerTimeoutError(),
-            TimeoutException,
+            TimeoutError,
             "Unable to query the device, timed out: ",
         ),
         (
             asyncio.TimeoutError(),
-            TimeoutException,
+            TimeoutError,
             "Unable to query the device, timed out: ",
         ),
-        (Exception(), SmartDeviceException, "Unable to query the device: "),
+        (Exception(), KasaException, "Unable to query the device: "),
         (
             aiohttp.ServerFingerprintMismatch("exp", "got", "host", 1),
-            SmartDeviceException,
+            KasaException,
             "Unable to query the device: ",
         ),
     ],

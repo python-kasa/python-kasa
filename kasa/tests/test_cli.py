@@ -6,12 +6,13 @@ import pytest
 from asyncclick.testing import CliRunner
 
 from kasa import (
-    AuthenticationException,
+    AuthenticationError,
     Credentials,
     Device,
+    DeviceError,
     EmeterStatus,
-    SmartDeviceException,
-    UnsupportedDeviceException,
+    KasaException,
+    UnsupportedDeviceError,
 )
 from kasa.cli import (
     TYPE_TO_CLASS,
@@ -188,15 +189,13 @@ async def test_wifi_join_no_creds(dev):
     )
 
     assert res.exit_code != 0
-    assert isinstance(res.exception, AuthenticationException)
+    assert isinstance(res.exception, AuthenticationError)
 
 
 @device_smart
 async def test_wifi_join_exception(dev, mocker):
     runner = CliRunner()
-    mocker.patch.object(
-        dev.protocol, "query", side_effect=SmartDeviceException(error_code=9999)
-    )
+    mocker.patch.object(dev.protocol, "query", side_effect=DeviceError(error_code=9999))
     res = await runner.invoke(
         wifi,
         ["join", "FOOBAR", "--keytype", "wpa_psk", "--password", "foobar"],
@@ -204,7 +203,7 @@ async def test_wifi_join_exception(dev, mocker):
     )
 
     assert res.exit_code != 0
-    assert isinstance(res.exception, SmartDeviceException)
+    assert isinstance(res.exception, KasaException)
 
 
 @device_smart
@@ -504,11 +503,12 @@ async def test_host_unsupported(unsupported_device_info):
             "foo",
             "--password",
             "bar",
+            "--debug",
         ],
     )
 
     assert res.exit_code != 0
-    assert isinstance(res.exception, UnsupportedDeviceException)
+    assert isinstance(res.exception, UnsupportedDeviceError)
 
 
 @new_discovery
@@ -521,7 +521,7 @@ async def test_discover_auth_failed(discovery_mock, mocker):
     mocker.patch.object(
         device_class,
         "update",
-        side_effect=AuthenticationException("Failed to authenticate"),
+        side_effect=AuthenticationError("Failed to authenticate"),
     )
     res = await runner.invoke(
         cli,
@@ -552,7 +552,7 @@ async def test_host_auth_failed(discovery_mock, mocker):
     mocker.patch.object(
         device_class,
         "update",
-        side_effect=AuthenticationException("Failed to authenticate"),
+        side_effect=AuthenticationError("Failed to authenticate"),
     )
     res = await runner.invoke(
         cli,
@@ -563,11 +563,12 @@ async def test_host_auth_failed(discovery_mock, mocker):
             "foo",
             "--password",
             "bar",
+            "--debug",
         ],
     )
 
     assert res.exit_code != 0
-    assert isinstance(res.exception, AuthenticationException)
+    assert isinstance(res.exception, AuthenticationError)
 
 
 @pytest.mark.parametrize("device_type", list(TYPE_TO_CLASS))
@@ -610,3 +611,49 @@ async def test_shell(dev: Device, mocker):
     res = await runner.invoke(cli, ["shell"], obj=dev)
     assert res.exit_code == 0
     embed.assert_called()
+
+
+async def test_errors(mocker):
+    runner = CliRunner()
+    err = KasaException("Foobar")
+
+    # Test masking
+    mocker.patch("kasa.Discover.discover", side_effect=err)
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar"],
+    )
+    assert res.exit_code == 1
+    assert "Raised error: Foobar" in res.output
+    assert "Run with --debug enabled to see stacktrace" in res.output
+    assert isinstance(res.exception, SystemExit)
+
+    # Test --debug
+    res = await runner.invoke(
+        cli,
+        ["--debug"],
+    )
+    assert res.exit_code == 1
+    assert "Raised error: Foobar" in res.output
+    assert res.exception == err
+
+    # Test no device passed to subcommand
+    mocker.patch("kasa.Discover.discover", return_value={})
+    res = await runner.invoke(
+        cli,
+        ["sysinfo"],
+    )
+    assert res.exit_code == 1
+    assert (
+        "Raised error: Managed to invoke callback without a context object of type 'Device' existing."
+        in res.output.replace("\n", "")  # Remove newlines from rich formatting
+    )
+    assert isinstance(res.exception, SystemExit)
+
+    # Test click error
+    res = await runner.invoke(
+        cli,
+        ["--foobar"],
+    )
+    assert res.exit_code == 2
+    assert "Raised error:" not in res.output

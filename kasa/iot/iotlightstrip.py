@@ -6,7 +6,7 @@ from ..deviceconfig import DeviceConfig
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..protocol import BaseProtocol
 from .iotbulb import IotBulb
-from .iotdevice import SmartDeviceException, requires_update
+from .iotdevice import KasaException, requires_update
 
 
 class IotLightStrip(IotBulb):
@@ -117,7 +117,7 @@ class IotLightStrip(IotBulb):
         :param int transition: The wanted transition time
         """
         if effect not in EFFECT_MAPPING_V1:
-            raise SmartDeviceException(f"The effect {effect} is not a built in effect.")
+            raise KasaException(f"The effect {effect} is not a built in effect.")
         effect_dict = EFFECT_MAPPING_V1[effect]
         if brightness is not None:
             effect_dict["brightness"] = brightness
@@ -136,7 +136,7 @@ class IotLightStrip(IotBulb):
         :param str effect_dict: The custom effect dict to set
         """
         if not self.has_effects:
-            raise SmartDeviceException("Bulb does not support effects.")
+            raise KasaException("Bulb does not support effects.")
         await self._query_helper(
             "smartlife.iot.lighting_effect",
             "set_lighting_effect",

@@ -1,13 +1,10 @@
-from itertools import chain
-
 import pytest
 
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
-    SMART_TIMEOUT_ERRORS,
-    SmartDeviceException,
+    KasaException,
     SmartErrorCode,
 )
 from ..smartprotocol import _ChildProtocolWrapper
@@ -28,13 +25,10 @@ async def test_smart_device_errors(dummy_protocol, mocker, error_code):
         dummy_protocol._transport, "send", return_value=mock_response
     )
 
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dummy_protocol.query(DUMMY_QUERY, retry_count=2)
 
-    if error_code in chain(SMART_TIMEOUT_ERRORS, SMART_RETRYABLE_ERRORS):
-        expected_calls = 3
-    else:
-        expected_calls = 1
+    expected_calls = 3 if error_code in SMART_RETRYABLE_ERRORS else 1
     assert send_mock.call_count == expected_calls
 
 
@@ -124,7 +118,7 @@ async def test_childdevicewrapper_error(dummy_protocol, mocker):
     mock_response = {"error_code": 0, "result": {"responseData": {"error_code": -1001}}}
 
     mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await wrapped_protocol.query(DUMMY_QUERY)
 
 
@@ -180,5 +174,5 @@ async def test_childdevicewrapper_multiplerequest_error(dummy_protocol, mocker):
     }
 
     mocker.patch.object(dummy_protocol._transport, "send", return_value=mock_response)
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dummy_protocol.query(DUMMY_QUERY)
