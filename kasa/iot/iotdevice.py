@@ -16,7 +16,7 @@ import functools
 import inspect
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Sequence, Set
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -188,6 +188,7 @@ class IotDevice(Device):
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self._supported_modules: Optional[Dict[str, IotModule]] = None
         self._legacy_features: Set[str] = set()
+        self._children: Mapping[str, "IotDevice"] = {}
 
     @property
     def children(self) -> Sequence["IotDevice"]:

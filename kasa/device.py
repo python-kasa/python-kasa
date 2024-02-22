@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -35,10 +35,7 @@ class WifiNetwork:
 _LOGGER = logging.getLogger(__name__)
 
 
-T = TypeVar("T", bound="Device")
-
-
-class Device(ABC, Generic[T]):
+class Device(ABC):
     """Common device interface.
 
     Do not instantiate this class directly, instead get a device instance from
@@ -74,15 +71,15 @@ class Device(ABC, Generic[T]):
 
         self.modules: Dict[str, Any] = {}
         self._features: Dict[str, Feature] = {}
-        self._parent: Optional[T] = None
-        self._children: Dict[str, T] = {}
+        self._parent: Optional["Device"] = None
+        self._children: Mapping[str, "Device"] = {}
 
     @staticmethod
     async def connect(
         *,
         host: Optional[str] = None,
         config: Optional[DeviceConfig] = None,
-    ) -> T:
+    ) -> "Device":
         """Connect to a single device by the given hostname or device configuration.
 
         This method avoids the UDP based discovery process and
@@ -189,11 +186,11 @@ class Device(ABC, Generic[T]):
         return await self.protocol.query(request=request)
 
     @property
-    def children(self) -> Sequence[T]:
+    def children(self) -> Sequence["Device"]:
         """Returns the child devices."""
         return list(self._children.values())
 
-    def get_child_device(self, id_: str):
+    def get_child_device(self, id_: str) -> "Device":
         """Return child device by its ID."""
         return self._children[id_]
 
@@ -247,7 +244,7 @@ class Device(ABC, Generic[T]):
         """Return True if the device supports color changes."""
         return False
 
-    def get_plug_by_name(self, name: str) -> T:
+    def get_plug_by_name(self, name: str) -> "Device":
         """Return child device for the given name."""
         for p in self.children:
             if p.alias == name:
@@ -255,7 +252,7 @@ class Device(ABC, Generic[T]):
 
         raise SmartDeviceException(f"Device has no child with {name}")
 
-    def get_plug_by_index(self, index: int) -> T:
+    def get_plug_by_index(self, index: int) -> "Device":
         """Return child device for the given index."""
         if index + 1 > len(self.children) or index < 0:
             raise SmartDeviceException(

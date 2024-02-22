@@ -2,7 +2,7 @@
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -40,6 +40,7 @@ class SmartDevice(Device):
         self._state_information: Dict[str, Any] = {}
         self.modules: Dict[str, "SmartModule"] = {}
         self._parent: Optional["SmartDevice"] = None
+        self._children: Mapping[str, "SmartDevice"] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
