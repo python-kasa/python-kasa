@@ -31,7 +31,7 @@ class AmbientLight(IotModule):
     def query(self):
         """Request configuration."""
         req = merge(
-            self.query_for_command("get_realtime"),
+            self.query_for_command("get_config"),
             self.query_for_command("get_current_brt"),
         )
 
