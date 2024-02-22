@@ -63,9 +63,12 @@ class SmartDevice(Device):
             )
             for child_info in children
         }
-        # TODO: if all are sockets, then we are a strip, and otherwise a hub?
-        #  doesn't work for the walldimmer with fancontrol...
-        self._device_type = DeviceType.Strip
+        # TODO: This may not be the best approach, but it allows distinguishing
+        #  between power strips and hubs for the time being.
+        if all(child.is_plug for child in self._children.values()):
+            self._device_type = DeviceType.Strip
+        else:
+            self._device_type = DeviceType.Hub
 
     @property
     def children(self) -> Sequence["SmartDevice"]:
@@ -518,7 +521,7 @@ class SmartDevice(Device):
 
         if self.children:
             if "SMART.TAPOHUB" in self.sys_info["type"]:
-                pass  # TODO: placeholder for future hub PR
+                self._device_type = DeviceType.Hub
             else:
                 self._device_type = DeviceType.Strip
         elif "light_strip" in self._components:

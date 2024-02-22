@@ -15,6 +15,7 @@ class DeviceType(Enum):
     Dimmer = "dimmer"
     LightStrip = "lightstrip"
     Sensor = "sensor"
+    Hub = "hub"
     Unknown = "unknown"
 
     @staticmethod

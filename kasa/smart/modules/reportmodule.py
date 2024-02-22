@@ -1,0 +1,31 @@
+"""Implementation of report module."""
+from typing import TYPE_CHECKING
+
+from ...feature import Feature
+from ..smartmodule import SmartModule
+
+if TYPE_CHECKING:
+    from ..smartdevice import SmartDevice
+
+
+class ReportModule(SmartModule):
+    """Implementation of report module."""
+
+    REQUIRED_COMPONENT = "report_mode"
+    QUERY_GETTER_NAME = "get_report_mode"
+
+    def __init__(self, device: "SmartDevice", module: str):
+        super().__init__(device, module)
+        self._add_feature(
+            Feature(
+                device,
+                "Report interval",
+                container=self,
+                attribute_getter="report_interval",
+            )
+        )
+
+    @property
+    def report_interval(self):
+        """Reporting interval of a sensor device."""
+        return self._device.sys_info["report_interval"]

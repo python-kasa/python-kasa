@@ -31,6 +31,7 @@ class DeviceFamilyType(Enum):
     SmartTapoPlug = "SMART.TAPOPLUG"
     SmartTapoBulb = "SMART.TAPOBULB"
     SmartTapoSwitch = "SMART.TAPOSWITCH"
+    SmartTapoHub = "SMART.TAPOHUB"
 
 
 def _dataclass_from_dict(klass, in_val):
