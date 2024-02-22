@@ -57,7 +57,7 @@ from yarl import URL
 
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
-from .exceptions import AuthenticationError, KasaException
+from .exceptions import AuthenticationError, KasaException, _RetryableError
 from .httpclient import HttpClient
 from .json import loads as json_loads
 from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials, md5
@@ -337,7 +337,7 @@ class KlapTransport(BaseTransport):
             # If we failed with a security error, force a new handshake next time.
             if response_status == 403:
                 self._handshake_done = False
-                raise AuthenticationError(
+                raise _RetryableError(
                     f"Got a security error from {self._host} after handshake "
                     + "completed"
                 )

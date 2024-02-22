@@ -417,7 +417,7 @@ async def test_query(mocker):
         pytest.param(
             (200, 200, 403),
             True,
-            pytest.raises(AuthenticationError),
+            pytest.raises(_RetryableError),
             id="request-403-status",
         ),
         pytest.param(
