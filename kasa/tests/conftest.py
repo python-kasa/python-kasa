@@ -126,6 +126,8 @@ DIMMERS = {
     *DIMMERS_SMART,
 }
 
+HUBS_SMART = {"H100"}
+
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "KP125M", "EP25"}
 WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
@@ -134,7 +136,10 @@ DIMMABLE = {*BULBS, *DIMMERS}
 
 ALL_DEVICES_IOT = BULBS_IOT.union(PLUGS_IOT).union(STRIPS_IOT).union(DIMMERS_IOT)
 ALL_DEVICES_SMART = (
-    BULBS_SMART.union(PLUGS_SMART).union(STRIPS_SMART).union(DIMMERS_SMART)
+    BULBS_SMART.union(PLUGS_SMART)
+    .union(STRIPS_SMART)
+    .union(DIMMERS_SMART)
+    .union(HUBS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -257,6 +262,7 @@ bulb_smart = parametrize("bulb devices smart", BULBS_SMART, protocol_filter={"SM
 dimmers_smart = parametrize(
     "dimmer devices smart", DIMMERS_SMART, protocol_filter={"SMART"}
 )
+hubs_smart = parametrize("hubs smart", HUBS_SMART, protocol_filter={"SMART"})
 device_smart = parametrize(
     "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
@@ -318,6 +324,7 @@ def check_categories():
         + plug_smart.args[1]
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
+        + hubs_smart.args[1]
     )
     diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
     if diff:
@@ -353,6 +360,9 @@ def device_for_file(model, protocol):
             if d in model:
                 return SmartBulb
         for d in STRIPS_SMART:
+            if d in model:
+                return SmartDevice
+        for d in HUBS_SMART:
             if d in model:
                 return SmartDevice
     else:
