@@ -54,6 +54,7 @@ class Firmware(SmartModule):
                 "Auto update enabled",
                 container=self,
                 attribute_getter="auto_update_enabled",
+                attribute_setter="set_auto_update_enabled",
                 type=FeatureType.Switch,
             )
         )
@@ -101,4 +102,5 @@ class Firmware(SmartModule):
 
     async def set_auto_update_enabled(self, enabled: bool):
         """Change autoupdate setting."""
-        await self.call("set_auto_update_info", {"enable": enabled})
+        data = {**self.data["get_auto_update_info"], "enable": enabled}
+        await self.call("set_auto_update_info", data) #{"enable": enabled})
