@@ -39,7 +39,7 @@ def _get_connection_type_device_class(the_fixture_data):
 
 
 async def test_connect(
-    all_fixture_data: dict,
+    all_fixture_data,
     mocker,
 ):
     """Test that if the protocol is passed in it gets set correctly."""
@@ -107,7 +107,7 @@ async def test_connect_logs_connect_time(
     assert "seconds to update" in caplog.text
 
 
-async def test_connect_query_fails(all_fixture_data: dict, mocker):
+async def test_connect_query_fails(all_fixture_data, mocker):
     """Make sure that connect fails when query fails."""
     host = "127.0.0.1"
     mocker.patch("kasa.IotProtocol.query", side_effect=KasaException)

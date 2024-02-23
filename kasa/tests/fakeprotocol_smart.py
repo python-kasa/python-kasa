@@ -1,14 +1,17 @@
-import warnings
+import copy
 from json import loads as json_loads
 
-from kasa import Credentials, DeviceConfig, KasaException, SmartProtocol
+import pytest
+
+from kasa import Credentials, DeviceConfig, SmartProtocol
+from kasa.exceptions import SmartErrorCode
 from kasa.protocol import BaseTransport
 
 
 class FakeSmartProtocol(SmartProtocol):
-    def __init__(self, info):
+    def __init__(self, info, fixture_name):
         super().__init__(
-            transport=FakeSmartTransport(info),
+            transport=FakeSmartTransport(info, fixture_name),
         )
 
     async def query(self, request, retry_count: int = 3):
@@ -18,7 +21,7 @@ class FakeSmartProtocol(SmartProtocol):
 
 
 class FakeSmartTransport(BaseTransport):
-    def __init__(self, info):
+    def __init__(self, info, fixture_name):
         super().__init__(
             config=DeviceConfig(
                 "127.0.0.123",
@@ -28,7 +31,8 @@ class FakeSmartTransport(BaseTransport):
                 ),
             ),
         )
-        self.info = info
+        self.fixture_name = fixture_name
+        self.info = copy.deepcopy(info)
         self.components = {
             comp["id"]: comp["ver_code"]
             for comp in self.info["component_nego"]["component_list"]
@@ -133,18 +137,26 @@ class FakeSmartTransport(BaseTransport):
         elif method == "component_nego" or method[:4] == "get_":
             if method in info:
                 return {"result": info[method], "error_code": 0}
-            elif (
+            if (
+                # FIXTURE_MISSING is for service calls not in place when
+                # SMART fixtures started to be generated
                 missing_result := self.FIXTURE_MISSING_MAP.get(method)
             ) and missing_result[0] in self.components:
-                warnings.warn(
-                    UserWarning(
-                        f"Fixture missing expected method {method}, try to regenerate"
-                    ),
-                    stacklevel=1,
-                )
-                return {"result": missing_result[1], "error_code": 0}
+                retval = {"result": missing_result[1], "error_code": 0}
             else:
-                raise KasaException(f"Fixture doesn't support {method}")
+                # PARAMS error returned for KS240 when get_device_usage called
+                # on parent device.  Could be any error code though.
+                # TODO: Try to figure out if there's a way to prevent the KS240 smartdevice
+                # calling the unsupported device in the first place.
+                retval = {
+                    "error_code": SmartErrorCode.PARAMS_ERROR.value,
+                    "method": "get_device_usage",
+                }
+            # Reduce warning spam by consolidating and reporting at the end of the run
+            if self.fixture_name not in pytest.fixtures_missing_methods:
+                pytest.fixtures_missing_methods[self.fixture_name] = set()
+            pytest.fixtures_missing_methods[self.fixture_name].add(method)
+            return retval
         elif method == "set_qs_info":
             return {"error_code": 0}
         elif method[:4] == "set_":

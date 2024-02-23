@@ -1,12 +1,13 @@
-import asyncio
 import glob
 import json
 import os
+import warnings
+from collections import namedtuple
 from dataclasses import dataclass
 from json import dumps as json_dumps
 from os.path import basename
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Set
 from unittest.mock import MagicMock
 
 import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
@@ -25,6 +26,10 @@ from kasa.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
+
+FixtureInfo = namedtuple("FixtureInfo", "data protocol name")
+FixtureInfo.__hash__ = lambda x: hash((x.name, x.protocol))  # type: ignore[attr-defined, method-assign]
+FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assign]
 
 SUPPORTED_IOT_DEVICES = [
     (device, "IOT")
@@ -141,6 +146,71 @@ ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 IP_MODEL_CACHE: Dict[str, str] = {}
 
 
+def get_fixture_info() -> List[FixtureInfo]:
+    """Return raw discovery file contents as JSON. Used for discovery tests."""
+    fixture_data = []
+    for file, protocol in SUPPORTED_DEVICES:
+        p = Path(file)
+        if not p.is_absolute():
+            folder = Path(__file__).parent / "fixtures"
+            if protocol == "SMART":
+                folder = folder / "smart"
+            p = folder / file
+
+        with open(p) as f:
+            data = json.load(f)
+
+        fixture_name = basename(p)
+        fixture_data.append(
+            FixtureInfo(data=data, protocol=protocol, name=fixture_name)
+        )
+    return fixture_data
+
+
+FIXTURE_DATA: List[FixtureInfo] = get_fixture_info()
+
+
+def filter_fixtures(
+    desc,
+    *,
+    data_root_filter: Optional[str] = None,
+    protocol_filter: Optional[Set[str]] = None,
+    model_filter: Optional[Set[str]] = None,
+    component_filter: Optional[str] = None,
+):
+    filtered = []
+    if protocol_filter is None:
+        protocol_filter = {"IOT", "SMART"}
+    for fixture_data in FIXTURE_DATA:
+        match = True
+        if data_root_filter and data_root_filter not in fixture_data.data:
+            match = False
+        if fixture_data.protocol not in protocol_filter:
+            match = False
+        if model_filter is not None:
+            file_model_region = fixture_data.name.split("_")[0]
+            file_model = file_model_region.split("(")[0]
+            if file_model not in model_filter:
+                match = False
+        if component_filter:
+            if (component_nego := fixture_data.data.get("component_nego")) is None:
+                match = False
+            else:
+                components = {
+                    component["id"]: component["ver_code"]
+                    for component in component_nego["component_list"]
+                }
+                if component_filter not in components:
+                    match = False
+        if match:
+            filtered.append(fixture_data)
+
+    print(f"# {desc}")
+    for value in filtered:
+        print(f"\t{value.name}")
+    return filtered
+
+
 def _make_unsupported(device_family, encrypt_type):
     return {
         "result": {
@@ -172,135 +242,136 @@ UNSUPPORTED_DEVICES = {
 }
 
 
-def idgenerator(paramtuple):
+def idgenerator(paramtuple: FixtureInfo):
     try:
-        return basename(paramtuple[0]) + (
-            "" if paramtuple[1] == "IOT" else "-" + paramtuple[1]
+        return paramtuple.name + (
+            "" if paramtuple.protocol == "IOT" else "-" + paramtuple.protocol
         )
     except:  # TODO: HACK as idgenerator is now used by default  # noqa: E722
         return None
 
 
-def filter_model(desc, model_filter, protocol_filter=None):
-    if protocol_filter is None:
-        protocol_filter = {"IOT", "SMART"}
-    filtered = list()
-    for file, protocol in SUPPORTED_DEVICES:
-        if protocol in protocol_filter:
-            file_model_region = basename(file).split("_")[0]
-            file_model = file_model_region.split("(")[0]
-            for model in model_filter:
-                if model == file_model:
-                    filtered.append((file, protocol))
-
-    filtered_basenames = [basename(f) + "-" + p for f, p in filtered]
-    print(f"# {desc}")
-    for file in filtered_basenames:
-        print(f"\t{file}")
-    return filtered
-
-
-def parametrize(desc, devices, protocol_filter=None, ids=None):
+def parametrize(
+    desc,
+    *,
+    model_filter=None,
+    protocol_filter=None,
+    component_filter=None,
+    data_root_filter=None,
+    ids=None,
+):
     if ids is None:
         ids = idgenerator
     return pytest.mark.parametrize(
-        "dev", filter_model(desc, devices, protocol_filter), indirect=True, ids=ids
+        "dev",
+        filter_fixtures(
+            desc,
+            model_filter=model_filter,
+            protocol_filter=protocol_filter,
+            component_filter=component_filter,
+            data_root_filter=data_root_filter,
+        ),
+        indirect=True,
+        ids=ids,
     )
 
 
-has_emeter = parametrize("has emeter", WITH_EMETER, protocol_filter={"SMART", "IOT"})
-no_emeter = parametrize(
-    "no emeter", ALL_DEVICES - WITH_EMETER, protocol_filter={"SMART", "IOT"}
+has_emeter = parametrize(
+    "has emeter", model_filter=WITH_EMETER, protocol_filter={"SMART", "IOT"}
 )
-has_emeter_iot = parametrize("has emeter iot", WITH_EMETER_IOT, protocol_filter={"IOT"})
+no_emeter = parametrize(
+    "no emeter",
+    model_filter=ALL_DEVICES - WITH_EMETER,
+    protocol_filter={"SMART", "IOT"},
+)
+has_emeter_iot = parametrize(
+    "has emeter iot", model_filter=WITH_EMETER_IOT, protocol_filter={"IOT"}
+)
 no_emeter_iot = parametrize(
-    "no emeter iot", ALL_DEVICES_IOT - WITH_EMETER_IOT, protocol_filter={"IOT"}
+    "no emeter iot",
+    model_filter=ALL_DEVICES_IOT - WITH_EMETER_IOT,
+    protocol_filter={"IOT"},
 )
 
-bulb = parametrize("bulbs", BULBS, protocol_filter={"SMART", "IOT"})
-plug = parametrize("plugs", PLUGS, protocol_filter={"IOT"})
-strip = parametrize("strips", STRIPS, protocol_filter={"SMART", "IOT"})
-dimmer = parametrize("dimmers", DIMMERS, protocol_filter={"IOT"})
-lightstrip = parametrize("lightstrips", LIGHT_STRIPS, protocol_filter={"IOT"})
+bulb = parametrize("bulbs", model_filter=BULBS, protocol_filter={"SMART", "IOT"})
+plug = parametrize("plugs", model_filter=PLUGS, protocol_filter={"IOT"})
+strip = parametrize("strips", model_filter=STRIPS, protocol_filter={"SMART", "IOT"})
+dimmer = parametrize("dimmers", model_filter=DIMMERS, protocol_filter={"IOT"})
+lightstrip = parametrize(
+    "lightstrips", model_filter=LIGHT_STRIPS, protocol_filter={"IOT"}
+)
 
 # bulb types
-dimmable = parametrize("dimmable", DIMMABLE, protocol_filter={"IOT"})
-non_dimmable = parametrize("non-dimmable", BULBS - DIMMABLE, protocol_filter={"IOT"})
+dimmable = parametrize("dimmable", model_filter=DIMMABLE, protocol_filter={"IOT"})
+non_dimmable = parametrize(
+    "non-dimmable", model_filter=BULBS - DIMMABLE, protocol_filter={"IOT"}
+)
 variable_temp = parametrize(
-    "variable color temp", BULBS_VARIABLE_TEMP, protocol_filter={"SMART", "IOT"}
+    "variable color temp",
+    model_filter=BULBS_VARIABLE_TEMP,
+    protocol_filter={"SMART", "IOT"},
 )
 non_variable_temp = parametrize(
     "non-variable color temp",
-    BULBS - BULBS_VARIABLE_TEMP,
+    model_filter=BULBS - BULBS_VARIABLE_TEMP,
     protocol_filter={"SMART", "IOT"},
 )
-color_bulb = parametrize("color bulbs", BULBS_COLOR, protocol_filter={"SMART", "IOT"})
+color_bulb = parametrize(
+    "color bulbs", model_filter=BULBS_COLOR, protocol_filter={"SMART", "IOT"}
+)
 non_color_bulb = parametrize(
-    "non-color bulbs", BULBS - BULBS_COLOR, protocol_filter={"SMART", "IOT"}
+    "non-color bulbs",
+    model_filter=BULBS - BULBS_COLOR,
+    protocol_filter={"SMART", "IOT"},
 )
 
 color_bulb_iot = parametrize(
-    "color bulbs iot", BULBS_IOT_COLOR, protocol_filter={"IOT"}
+    "color bulbs iot", model_filter=BULBS_IOT_COLOR, protocol_filter={"IOT"}
 )
 variable_temp_iot = parametrize(
-    "variable color temp iot", BULBS_IOT_VARIABLE_TEMP, protocol_filter={"IOT"}
+    "variable color temp iot",
+    model_filter=BULBS_IOT_VARIABLE_TEMP,
+    protocol_filter={"IOT"},
 )
-bulb_iot = parametrize("bulb devices iot", BULBS_IOT, protocol_filter={"IOT"})
+bulb_iot = parametrize(
+    "bulb devices iot", model_filter=BULBS_IOT, protocol_filter={"IOT"}
+)
 
-strip_iot = parametrize("strip devices iot", STRIPS_IOT, protocol_filter={"IOT"})
+strip_iot = parametrize(
+    "strip devices iot", model_filter=STRIPS_IOT, protocol_filter={"IOT"}
+)
 strip_smart = parametrize(
-    "strip devices smart", STRIPS_SMART, protocol_filter={"SMART"}
+    "strip devices smart", model_filter=STRIPS_SMART, protocol_filter={"SMART"}
 )
 
-plug_smart = parametrize("plug devices smart", PLUGS_SMART, protocol_filter={"SMART"})
-bulb_smart = parametrize("bulb devices smart", BULBS_SMART, protocol_filter={"SMART"})
+plug_smart = parametrize(
+    "plug devices smart", model_filter=PLUGS_SMART, protocol_filter={"SMART"}
+)
+bulb_smart = parametrize(
+    "bulb devices smart", model_filter=BULBS_SMART, protocol_filter={"SMART"}
+)
 dimmers_smart = parametrize(
-    "dimmer devices smart", DIMMERS_SMART, protocol_filter={"SMART"}
+    "dimmer devices smart", model_filter=DIMMERS_SMART, protocol_filter={"SMART"}
 )
 device_smart = parametrize(
-    "devices smart", ALL_DEVICES_SMART, protocol_filter={"SMART"}
+    "devices smart", model_filter=ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
-device_iot = parametrize("devices iot", ALL_DEVICES_IOT, protocol_filter={"IOT"})
+device_iot = parametrize(
+    "devices iot", model_filter=ALL_DEVICES_IOT, protocol_filter={"IOT"}
+)
 
-
-def get_fixture_data():
-    """Return raw discovery file contents as JSON. Used for discovery tests."""
-    fixture_data = {}
-    for file, protocol in SUPPORTED_DEVICES:
-        p = Path(file)
-        if not p.is_absolute():
-            folder = Path(__file__).parent / "fixtures"
-            if protocol == "SMART":
-                folder = folder / "smart"
-            p = folder / file
-
-        with open(p) as f:
-            fixture_data[basename(p)] = json.load(f)
-    return fixture_data
-
-
-FIXTURE_DATA = get_fixture_data()
-
-
-def filter_fixtures(desc, root_filter):
-    filtered = {}
-    for key, val in FIXTURE_DATA.items():
-        if root_filter in val:
-            filtered[key] = val
-
-    print(f"# {desc}")
-    for key in filtered:
-        print(f"\t{key}")
-    return filtered
+brightness_smart = parametrize(
+    "brightness smart", component_filter="brightness", protocol_filter={"SMART"}
+)
 
 
 def parametrize_discovery(desc, root_key):
-    filtered_fixtures = filter_fixtures(desc, root_key)
+    filtered_fixtures = filter_fixtures(desc, data_root_filter=root_key)
     return pytest.mark.parametrize(
-        "all_fixture_data",
-        filtered_fixtures.values(),
+        "discovery_mock",
+        filtered_fixtures,
         indirect=True,
-        ids=filtered_fixtures.keys(),
+        ids=idgenerator,
     )
 
 
@@ -319,13 +390,14 @@ def check_categories():
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
     )
-    diff = set(SUPPORTED_DEVICES) - set(categorized_fixtures)
-    if diff:
-        for file, protocol in diff:
+    diffs: Set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
+    if diffs:
+        print(diffs)
+        for diff in diffs:
             print(
-                f"No category for file {file} protocol {protocol}, add to the corresponding set (BULBS, PLUGS, ..)"
+                f"No category for file {diff.name} protocol {diff.protocol}, add to the corresponding set (BULBS, PLUGS, ..)"
             )
-        raise Exception(f"Missing category for {diff}")
+        raise Exception(f"Missing category for {diff.name}")
 
 
 check_categories()
@@ -341,7 +413,7 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
-def device_for_file(model, protocol):
+def device_for_fixture_name(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
@@ -395,40 +467,38 @@ async def _discover_update_and_close(ip, username, password):
     return await _update_and_close(d)
 
 
-async def get_device_for_file(file, protocol):
+async def get_device_for_fixture(fixture_data: FixtureInfo):
     # if the wanted file is not an absolute path, prepend the fixtures directory
-    p = Path(file)
-    if not p.is_absolute():
-        folder = Path(__file__).parent / "fixtures"
-        if protocol == "SMART":
-            folder = folder / "smart"
-        p = folder / file
 
-    def load_file():
-        with open(p) as f:
-            return json.load(f)
-
-    loop = asyncio.get_running_loop()
-    sysinfo = await loop.run_in_executor(None, load_file)
-
-    model = basename(file)
-    d = device_for_file(model, protocol)(host="127.0.0.123")
-    if protocol == "SMART":
-        d.protocol = FakeSmartProtocol(sysinfo)
+    d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
+        host="127.0.0.123"
+    )
+    if fixture_data.protocol == "SMART":
+        d.protocol = FakeSmartProtocol(fixture_data.data, fixture_data.name)
     else:
-        d.protocol = FakeIotProtocol(sysinfo)
+        d.protocol = FakeIotProtocol(fixture_data.data)
     await _update_and_close(d)
     return d
 
 
-@pytest.fixture(params=SUPPORTED_DEVICES, ids=idgenerator)
+async def get_device_for_fixture_protocol(fixture, protocol):
+    # loop = asyncio.get_running_loop()
+
+    finfo = FixtureInfo(name=fixture, protocol=protocol, data={})
+    for fixture_info in FIXTURE_DATA:
+        if finfo == fixture_info:
+            # return await loop.run_in_executor(None, get_device_for_fixture(fixture_info))
+            return await get_device_for_fixture(fixture_info)
+
+
+@pytest.fixture(params=FIXTURE_DATA, ids=idgenerator)
 async def dev(request):
     """Device fixture.
 
     Provides a device (given --ip) or parametrized fixture for the supported devices.
     The initial update is called automatically before returning the device.
     """
-    file, protocol = request.param
+    fixture_data: FixtureInfo = request.param
 
     ip = request.config.getoption("--ip")
     username = request.config.getoption("--username")
@@ -439,21 +509,24 @@ async def dev(request):
         if not model:
             d = await _discover_update_and_close(ip, username, password)
             IP_MODEL_CACHE[ip] = model = d.model
-        if model not in file:
-            pytest.skip(f"skipping file {file}")
+        if model not in fixture_data.name:
+            pytest.skip(f"skipping file {fixture_data.name}")
         dev: Device = (
             d if d else await _discover_update_and_close(ip, username, password)
         )
     else:
-        dev: Device = await get_device_for_file(file, protocol)
+        dev: Device = await get_device_for_fixture(fixture_data)
 
     yield dev
 
     await dev.disconnect()
 
 
-@pytest.fixture
-def discovery_mock(all_fixture_data, mocker):
+@pytest.fixture(params=FIXTURE_DATA, ids=idgenerator)
+def discovery_mock(request, mocker):
+    fixture_info: FixtureInfo = request.param
+    fixture_data = fixture_info.data
+
     @dataclass
     class _DiscoveryMock:
         ip: str
@@ -466,15 +539,13 @@ def discovery_mock(all_fixture_data, mocker):
         login_version: Optional[int] = None
         port_override: Optional[int] = None
 
-    if "discovery_result" in all_fixture_data:
-        discovery_data = {"result": all_fixture_data["discovery_result"]}
-        device_type = all_fixture_data["discovery_result"]["device_type"]
-        encrypt_type = all_fixture_data["discovery_result"]["mgt_encrypt_schm"][
+    if "discovery_result" in fixture_data:
+        discovery_data = {"result": fixture_data["discovery_result"]}
+        device_type = fixture_data["discovery_result"]["device_type"]
+        encrypt_type = fixture_data["discovery_result"]["mgt_encrypt_schm"][
             "encrypt_type"
         ]
-        login_version = all_fixture_data["discovery_result"]["mgt_encrypt_schm"].get(
-            "lv"
-        )
+        login_version = fixture_data["discovery_result"]["mgt_encrypt_schm"].get("lv")
         datagram = (
             b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
             + json_dumps(discovery_data).encode()
@@ -484,13 +555,13 @@ def discovery_mock(all_fixture_data, mocker):
             80,
             20002,
             discovery_data,
-            all_fixture_data,
+            fixture_data,
             device_type,
             encrypt_type,
             login_version,
         )
     else:
-        sys_info = all_fixture_data["system"]["get_sysinfo"]
+        sys_info = fixture_data["system"]["get_sysinfo"]
         discovery_data = {"system": {"get_sysinfo": sys_info}}
         device_type = sys_info.get("mic_type") or sys_info.get("type")
         encrypt_type = "XOR"
@@ -501,7 +572,7 @@ def discovery_mock(all_fixture_data, mocker):
             9999,
             9999,
             discovery_data,
-            all_fixture_data,
+            fixture_data,
             device_type,
             encrypt_type,
             login_version,
@@ -524,10 +595,10 @@ def discovery_mock(all_fixture_data, mocker):
         side_effect=lambda *_, **__: [(None, None, None, None, (dm.ip, 0))],
     )
 
-    if "component_nego" in dm.query_data:
-        proto = FakeSmartProtocol(dm.query_data)
+    if fixture_info.protocol == "SMART":
+        proto = FakeSmartProtocol(fixture_data, fixture_info.name)
     else:
-        proto = FakeIotProtocol(dm.query_data)
+        proto = FakeIotProtocol(fixture_data)
 
     async def _query(request, retry_count: int = 3):
         return await proto.query(request)
@@ -538,20 +609,21 @@ def discovery_mock(all_fixture_data, mocker):
     yield dm
 
 
-@pytest.fixture
-def discovery_data(all_fixture_data):
+@pytest.fixture(params=FIXTURE_DATA, ids=idgenerator)
+def discovery_data(request):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
-    if "discovery_result" in all_fixture_data:
-        return {"result": all_fixture_data["discovery_result"]}
+    fixture_info = request.param
+    if "discovery_result" in fixture_info.data:
+        return {"result": fixture_info.data["discovery_result"]}
     else:
-        return {"system": {"get_sysinfo": all_fixture_data["system"]["get_sysinfo"]}}
+        return {"system": {"get_sysinfo": fixture_info.data["system"]["get_sysinfo"]}}
 
 
-@pytest.fixture(params=FIXTURE_DATA.values(), ids=FIXTURE_DATA.keys(), scope="session")
+@pytest.fixture(params=FIXTURE_DATA, ids=idgenerator)
 def all_fixture_data(request):
     """Return raw fixture file contents as JSON. Used for discovery tests."""
-    fixture_data = request.param
-    return fixture_data
+    fixture_info = request.param
+    return fixture_info.data
 
 
 @pytest.fixture(params=UNSUPPORTED_DEVICES.values(), ids=UNSUPPORTED_DEVICES.keys())
@@ -599,6 +671,22 @@ def dummy_protocol():
     protocol = SmartProtocol(transport=transport)
 
     return protocol
+
+
+def pytest_configure():
+    pytest.fixtures_missing_methods = {}
+
+
+def pytest_sessionfinish(session, exitstatus):
+    msg = "\n"
+    for fixture, methods in sorted(pytest.fixtures_missing_methods.items()):
+        method_list = ", ".join(methods)
+        msg += f"Fixture {fixture} missing: {method_list}\n"
+
+    warnings.warn(
+        UserWarning(msg),
+        stacklevel=1,
+    )
 
 
 def pytest_addoption(parser):
