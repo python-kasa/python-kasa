@@ -8,17 +8,20 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic.v1 import BaseModel, Field, validator
 
-from ...exceptions import SmartErrorCode
 from ...feature import Feature
-from ..smartmodule import SmartModule
-
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
+from ...exceptions import SmartErrorCode
+from ...feature import Feature, FeatureType
+from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class UpdateInfo(BaseModel):
@@ -78,10 +81,20 @@ class Firmware(SmartModule):
             )
         )
         self._add_feature(
-            Feature(device, "Current firmware version", container=self, attribute_getter="current_firmware")
+            Feature(
+                device,
+                "Current firmware version",
+                container=self,
+                attribute_getter="current_firmware",
+            )
         )
         self._add_feature(
-            Feature(device, "Available firmware version", container=self, attribute_getter="latest_firmware")
+            Feature(
+                device,
+                "Available firmware version",
+                container=self,
+                attribute_getter="latest_firmware",
+            )
         )
 
     def query(self) -> dict:
@@ -95,7 +108,6 @@ class Firmware(SmartModule):
     def current_firmware(self) -> str:
         """Return the current firmware version."""
         return self._device.hw_info["sw_ver"]
-
 
     @property
     def latest_firmware(self) -> str:
@@ -126,11 +138,15 @@ class Firmware(SmartModule):
     async def update(self):
         """Update the device firmware."""
         current_fw = self.current_firmware
-        _LOGGER.debug("Going to upgrade from %s to %s", current_fw, self.firmware_update_info.version)
+        _LOGGER.debug(
+            "Going to upgrade from %s to %s",
+            current_fw,
+            self.firmware_update_info.version,
+        )
         resp = await self.call("fw_download")
         _LOGGER.debug("Update request response: %s", resp)
         # TODO: read timeout from get_auto_update_info or from get_fw_download_state?
-        async with asyncio_timeout(60*5):
+        async with asyncio_timeout(60 * 5):
             while True:
                 await asyncio.sleep(0.5)
                 state = await self.get_update_state()
