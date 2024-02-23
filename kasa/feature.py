@@ -54,10 +54,11 @@ class Feature:
         """Set the value."""
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
-        if self.type == FeatureType.Number:
+        if self.type == FeatureType.Number:  # noqa: SIM102
             if value < self.minimum_value or value > self.maximum_value:
                 raise ValueError(
-                    f"Value {value} out of range [{self.minimum_value}, {self.maximum_value}]"
+                    f"Value {value} out of range "
+                    f"[{self.minimum_value}, {self.maximum_value}]"
                 )
 
         container = self.container if self.container is not None else self.device

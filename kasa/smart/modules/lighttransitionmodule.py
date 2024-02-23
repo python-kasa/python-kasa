@@ -38,7 +38,8 @@ class LightTransitionModule(SmartModule):
         elif self.supported_version >= 2:
             # v2 adds separate on & off states
             # v3 adds max_duration
-            # TODO: note, hardcoding  the maximums as the features get initialized before the first update..
+            # TODO: note, hardcoding the maximums for now as the features get
+            #  initialized before the first update.
             self._add_feature(
                 Feature(
                     self._device,
@@ -69,7 +70,7 @@ class LightTransitionModule(SmartModule):
         """Internal getter for turn on settings."""
         if "on_state" not in self.data:
             raise KasaException(
-                f"Unsupported for {self.REQUIRED_COMPONENT} version {self.supported_version}"
+                f"Unsupported for {self.REQUIRED_COMPONENT} v{self.supported_version}"
             )
 
         return self.data["on_state"]
@@ -79,7 +80,7 @@ class LightTransitionModule(SmartModule):
         """Internal getter for turn off settings."""
         if "off_state" not in self.data:
             raise KasaException(
-                f"Unsupported for {self.REQUIRED_COMPONENT} version {self.supported_version}"
+                f"Unsupported for {self.REQUIRED_COMPONENT} v{self.supported_version}"
             )
 
         return self.data["off_state"]
