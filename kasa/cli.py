@@ -13,7 +13,7 @@ from typing import Any, Dict, cast
 import asyncclick as click
 
 from kasa import (
-    AuthenticationException,
+    AuthenticationError,
     Bulb,
     ConnectionType,
     Credentials,
@@ -22,12 +22,12 @@ from kasa import (
     DeviceFamilyType,
     Discover,
     EncryptType,
-    SmartDeviceException,
-    UnsupportedDeviceException,
+    KasaException,
+    UnsupportedDeviceError,
 )
 from kasa.discover import DiscoveryResult
 from kasa.iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
-from kasa.smart import SmartBulb, SmartDevice, SmartPlug
+from kasa.smart import SmartBulb, SmartDevice
 
 try:
     from pydantic.v1 import ValidationError
@@ -72,7 +72,7 @@ TYPE_TO_CLASS = {
     "iot.dimmer": IotDimmer,
     "iot.strip": IotStrip,
     "iot.lightstrip": IotLightStrip,
-    "smart.plug": SmartPlug,
+    "smart.plug": SmartDevice,
     "smart.bulb": SmartBulb,
 }
 
@@ -90,19 +90,43 @@ click.anyio_backend = "asyncio"
 pass_dev = click.make_pass_decorator(Device)
 
 
-class ExceptionHandlerGroup(click.Group):
-    """Group to capture all exceptions and print them nicely.
+def CatchAllExceptions(cls):
+    """Capture all exceptions and prints them nicely.
 
-    Idea from https://stackoverflow.com/a/44347763
+    Idea from https://stackoverflow.com/a/44347763 and
+    https://stackoverflow.com/questions/52213375
     """
 
-    def __call__(self, *args, **kwargs):
-        """Run the coroutine in the event loop and print any exceptions."""
-        try:
-            asyncio.get_event_loop().run_until_complete(self.main(*args, **kwargs))
-        except Exception as ex:
-            echo(f"Got error: {ex!r}")
+    def _handle_exception(debug, exc):
+        if isinstance(exc, click.ClickException):
             raise
+        echo(f"Raised error: {exc}")
+        if debug:
+            raise
+        echo("Run with --debug enabled to see stacktrace")
+        sys.exit(1)
+
+    class _CommandCls(cls):
+        _debug = False
+
+        async def make_context(self, info_name, args, parent=None, **extra):
+            self._debug = any(
+                [arg for arg in args if arg in ["--debug", "-d", "--verbose", "-v"]]
+            )
+            try:
+                return await super().make_context(
+                    info_name, args, parent=parent, **extra
+                )
+            except Exception as exc:
+                _handle_exception(self._debug, exc)
+
+        async def invoke(self, ctx):
+            try:
+                return await super().invoke(ctx)
+            except Exception as exc:
+                _handle_exception(self._debug, exc)
+
+    return _CommandCls
 
 
 def json_formatter_cb(result, **kwargs):
@@ -129,7 +153,7 @@ def json_formatter_cb(result, **kwargs):
 
 @click.group(
     invoke_without_command=True,
-    cls=ExceptionHandlerGroup,
+    cls=CatchAllExceptions(click.Group),
     result_callback=json_formatter_cb,
 )
 @click.option(
@@ -434,7 +458,7 @@ async def discover(ctx):
     unsupported = []
     auth_failed = []
 
-    async def print_unsupported(unsupported_exception: UnsupportedDeviceException):
+    async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
         unsupported.append(unsupported_exception)
         async with sem:
             if unsupported_exception.discovery_result:
@@ -452,7 +476,7 @@ async def discover(ctx):
         async with sem:
             try:
                 await dev.update()
-            except AuthenticationException:
+            except AuthenticationError:
                 auth_failed.append(dev._discovery_info)
                 echo("== Authentication failed for device ==")
                 _echo_discovery_info(dev._discovery_info)
@@ -557,10 +581,15 @@ async def state(ctx, dev: Device):
     echo(f"\tHost: {dev.host}")
     echo(f"\tPort: {dev.port}")
     echo(f"\tDevice state: {dev.is_on}")
-    if dev.is_strip:
-        echo("\t[bold]== Plugs ==[/bold]")
-        for plug in dev.children:  # type: ignore
-            echo(f"\t* Socket '{plug.alias}' state: {plug.is_on} since {plug.on_since}")
+    if dev.children:
+        echo("\t[bold]== Children ==[/bold]")
+        for child in dev.children:
+            echo(f"\t* {child.alias} ({child.model}, {child.device_type})")
+            for feat in child.features.values():
+                try:
+                    echo(f"\t\t{feat.name}: {feat.value}")
+                except Exception as ex:
+                    echo(f"\t\t{feat.name}: got exception (%s)" % ex)
         echo()
 
     echo("\t[bold]== Generic information ==[/bold]")
@@ -590,10 +619,7 @@ async def state(ctx, dev: Device):
 
     echo("\n\t[bold]== Modules ==[/bold]")
     for module in dev.modules.values():
-        if module.is_supported:
-            echo(f"\t[green]+ {module}[/green]")
-        else:
-            echo(f"\t[red]- {module}[/red]")
+        echo(f"\t[green]+ {module}[/green]")
 
     if verbose:
         echo("\n\t[bold]== Verbose information ==[/bold]")
@@ -644,19 +670,28 @@ async def raw_command(ctx, dev: Device, module, command, parameters):
 @cli.command(name="command")
 @pass_dev
 @click.option("--module", required=False, help="Module for IOT protocol.")
+@click.option("--child", required=False, help="Child ID for controlling sub-devices")
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def cmd_command(dev: Device, module, command, parameters):
+async def cmd_command(dev: Device, module, child, command, parameters):
     """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
+
+    if child:
+        # The way child devices are accessed requires a ChildDevice to
+        # wrap the communications. Doing this properly would require creating
+        # a common interfaces for both IOT and SMART child devices.
+        # As a stop-gap solution, we perform an update instead.
+        await dev.update()
+        dev = dev.get_child_device(child)
 
     if isinstance(dev, IotDevice):
         res = await dev._query_helper(module, command, parameters)
     elif isinstance(dev, SmartDevice):
         res = await dev._query_helper(command, parameters)
     else:
-        raise SmartDeviceException("Unexpected device type %s.", dev)
+        raise KasaException("Unexpected device type %s.", dev)
     echo(json.dumps(res))
     return res
 

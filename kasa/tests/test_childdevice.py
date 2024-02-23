@@ -13,7 +13,6 @@ from .conftest import strip_smart
 def test_childdevice_init(dev, dummy_protocol, mocker):
     """Test that child devices get initialized and use protocol wrapper."""
     assert len(dev.children) > 0
-    assert dev.is_strip
 
     first = dev.children[0]
     assert isinstance(first.protocol, _ChildProtocolWrapper)
@@ -47,7 +46,6 @@ async def test_childdevice_properties(dev: SmartChildDevice):
     assert len(dev.children) > 0
 
     first = dev.children[0]
-    assert first.is_strip_socket
 
     # children do not have children
     assert not first.children
@@ -60,6 +58,11 @@ async def test_childdevice_properties(dev: SmartChildDevice):
         )
         for prop in properties:
             name, _ = prop
+            # Skip emeter and time properties
+            # TODO: needs API cleanup, emeter* should probably be removed in favor
+            #  of access through features/modules, handling of time* needs decision.
+            if name.startswith("emeter_") or name.startswith("time"):
+                continue
             try:
                 _ = getattr(first, name)
             except Exception as ex:

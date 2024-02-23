@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocol import BaseProtocol
-from .iotdevice import SmartDeviceException, requires_update
+from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
 from .modules import AmbientLight, Motion
 
@@ -46,7 +46,7 @@ class IotDimmer(IotPlug):
     which will not change the cached values,
     but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
+    Errors reported by the device are raised as :class:`KasaException`\s,
     and should be handled by the user of the library.
 
     Examples:
@@ -88,7 +88,7 @@ class IotDimmer(IotPlug):
         Will return a range between 0 - 100.
         """
         if not self.is_dimmable:
-            raise SmartDeviceException("Device is not dimmable.")
+            raise KasaException("Device is not dimmable.")
 
         sys_info = self.sys_info
         return int(sys_info["brightness"])
@@ -103,7 +103,7 @@ class IotDimmer(IotPlug):
             Using a transition will cause the dimmer to turn on.
         """
         if not self.is_dimmable:
-            raise SmartDeviceException("Device is not dimmable.")
+            raise KasaException("Device is not dimmable.")
 
         if not isinstance(brightness, int):
             raise ValueError(

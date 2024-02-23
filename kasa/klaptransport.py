@@ -57,7 +57,7 @@ from yarl import URL
 
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
-from .exceptions import AuthenticationException, SmartDeviceException
+from .exceptions import AuthenticationError, KasaException, _RetryableError
 from .httpclient import HttpClient
 from .json import loads as json_loads
 from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials, md5
@@ -159,7 +159,7 @@ class KlapTransport(BaseTransport):
             )
 
         if response_status != 200:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Device {self._host} responded with {response_status} to handshake1"
             )
 
@@ -168,7 +168,7 @@ class KlapTransport(BaseTransport):
         server_hash = response_data[16:]
 
         if len(server_hash) != 32:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Device {self._host} responded with unexpected klap response "
                 + f"{response_data!r} to handshake1"
             )
@@ -236,7 +236,7 @@ class KlapTransport(BaseTransport):
 
         msg = f"Server response doesn't match our challenge on ip {self._host}"
         _LOGGER.debug(msg)
-        raise AuthenticationException(msg)
+        raise AuthenticationError(msg)
 
     async def perform_handshake2(
         self, local_seed, remote_seed, auth_hash
@@ -267,8 +267,8 @@ class KlapTransport(BaseTransport):
 
         if response_status != 200:
             # This shouldn't be caused by incorrect
-            # credentials so don't raise AuthenticationException
-            raise SmartDeviceException(
+            # credentials so don't raise AuthenticationError
+            raise KasaException(
                 f"Device {self._host} responded with {response_status} to handshake2"
             )
 
@@ -337,12 +337,12 @@ class KlapTransport(BaseTransport):
             # If we failed with a security error, force a new handshake next time.
             if response_status == 403:
                 self._handshake_done = False
-                raise AuthenticationException(
+                raise _RetryableError(
                     f"Got a security error from {self._host} after handshake "
                     + "completed"
                 )
             else:
-                raise SmartDeviceException(
+                raise KasaException(
                     f"Device {self._host} responded with {response_status} to"
                     + f"request with seq {seq}"
                 )

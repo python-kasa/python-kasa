@@ -22,12 +22,11 @@ from .deviceconfig import DeviceConfig
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
-    SMART_TIMEOUT_ERRORS,
-    AuthenticationException,
-    RetryableException,
-    SmartDeviceException,
+    AuthenticationError,
+    DeviceError,
+    KasaException,
     SmartErrorCode,
-    TimeoutException,
+    _RetryableError,
 )
 from .httpclient import HttpClient
 from .json import dumps as json_dumps
@@ -141,14 +140,12 @@ class AesTransport(BaseTransport):
         if error_code == SmartErrorCode.SUCCESS:
             return
         msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
-        if error_code in SMART_TIMEOUT_ERRORS:
-            raise TimeoutException(msg, error_code=error_code)
         if error_code in SMART_RETRYABLE_ERRORS:
-            raise RetryableException(msg, error_code=error_code)
+            raise _RetryableError(msg, error_code=error_code)
         if error_code in SMART_AUTHENTICATION_ERRORS:
             self._state = TransportState.HANDSHAKE_REQUIRED
-            raise AuthenticationException(msg, error_code=error_code)
-        raise SmartDeviceException(msg, error_code=error_code)
+            raise AuthenticationError(msg, error_code=error_code)
+        raise DeviceError(msg, error_code=error_code)
 
     async def send_secure_passthrough(self, request: str) -> Dict[str, Any]:
         """Send encrypted message as passthrough."""
@@ -171,7 +168,7 @@ class AesTransport(BaseTransport):
         # _LOGGER.debug(f"secure_passthrough response is {status_code}: {resp_dict}")
 
         if status_code != 200:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"{self._host} responded with an unexpected "
                 + f"status code {status_code} to passthrough"
             )
@@ -197,7 +194,7 @@ class AesTransport(BaseTransport):
                     self._host,
                 )
             except Exception:
-                raise SmartDeviceException(
+                raise KasaException(
                     f"Unable to decrypt response from {self._host}, "
                     + f"error: {ex}, response: {raw_response}",
                     ex,
@@ -208,7 +205,7 @@ class AesTransport(BaseTransport):
         """Login to the device."""
         try:
             await self.try_login(self._login_params)
-        except AuthenticationException as aex:
+        except AuthenticationError as aex:
             try:
                 if aex.error_code is not SmartErrorCode.LOGIN_ERROR:
                     raise aex
@@ -223,10 +220,10 @@ class AesTransport(BaseTransport):
                     "%s: logged in with default credentials",
                     self._host,
                 )
-            except AuthenticationException:
+            except AuthenticationError:
                 raise
             except Exception as ex:
-                raise SmartDeviceException(
+                raise KasaException(
                     "Unable to login and trying default "
                     + f"login raised another exception: {ex}",
                     ex,
@@ -292,7 +289,7 @@ class AesTransport(BaseTransport):
         _LOGGER.debug("Device responded with: %s", resp_dict)
 
         if status_code != 200:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"{self._host} responded with an unexpected "
                 + f"status code {status_code} to handshake"
             )
@@ -347,7 +344,7 @@ class AesTransport(BaseTransport):
                 await self.perform_login()
             # After a login failure handshake needs to
             # be redone or a 9999 error is received.
-            except AuthenticationException as ex:
+            except AuthenticationError as ex:
                 self._state = TransportState.HANDSHAKE_REQUIRED
                 raise ex
 

@@ -20,7 +20,7 @@ from kasa import (
 )
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip
 from kasa.protocol import BaseTransport
-from kasa.smart import SmartBulb, SmartPlug
+from kasa.smart import SmartBulb, SmartDevice
 from kasa.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -47,7 +47,7 @@ SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
 BULBS_SMART_VARIABLE_TEMP = {"L530E", "L930-5"}
 BULBS_SMART_LIGHT_STRIP = {"L900-5", "L900-10", "L920-5", "L930-5"}
 BULBS_SMART_COLOR = {"L530E", *BULBS_SMART_LIGHT_STRIP}
-BULBS_SMART_DIMMABLE = {"KS225", "L510B", "L510E"}
+BULBS_SMART_DIMMABLE = {"L510B", "L510E"}
 BULBS_SMART = (
     BULBS_SMART_VARIABLE_TEMP.union(BULBS_SMART_COLOR)
     .union(BULBS_SMART_DIMMABLE)
@@ -108,7 +108,6 @@ PLUGS_SMART = {
     "EP25",
     "KS205",
     "P125M",
-    "P135",
     "S505",
     "TP15",
 }
@@ -121,7 +120,7 @@ STRIPS_SMART = {"P300", "TP25"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
-DIMMERS_SMART = {"S500D"}
+DIMMERS_SMART = {"KS225", "S500D", "P135"}
 DIMMERS = {
     *DIMMERS_IOT,
     *DIMMERS_SMART,
@@ -346,7 +345,7 @@ def device_for_file(model, protocol):
     if protocol == "SMART":
         for d in PLUGS_SMART:
             if d in model:
-                return SmartPlug
+                return SmartDevice
         for d in BULBS_SMART:
             if d in model:
                 return SmartBulb
@@ -355,7 +354,7 @@ def device_for_file(model, protocol):
                 return SmartBulb
         for d in STRIPS_SMART:
             if d in model:
-                return SmartPlug
+                return SmartDevice
     else:
         for d in STRIPS_IOT:
             if d in model:

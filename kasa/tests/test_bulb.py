@@ -7,7 +7,7 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import Bulb, BulbPreset, DeviceType, SmartDeviceException
+from kasa import Bulb, BulbPreset, DeviceType, KasaException
 from kasa.iot import IotBulb
 
 from .conftest import (
@@ -51,7 +51,7 @@ async def test_state_attributes(dev: Bulb):
 
 @bulb_iot
 async def test_light_state_without_update(dev: IotBulb, monkeypatch):
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         monkeypatch.setitem(
             dev._last_update["system"]["get_sysinfo"], "light_state", None
         )
@@ -123,9 +123,9 @@ async def test_color_state_information(dev: Bulb):
 async def test_hsv_on_non_color(dev: Bulb):
     assert not dev.is_color
 
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dev.set_hsv(0, 0, 0)
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         print(dev.hsv)
 
 
@@ -175,13 +175,13 @@ async def test_out_of_range_temperature(dev: Bulb):
 
 @non_variable_temp
 async def test_non_variable_temp(dev: Bulb):
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dev.set_color_temp(2700)
 
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         print(dev.valid_temperature_range)
 
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         print(dev.color_temp)
 
 
@@ -238,9 +238,9 @@ async def test_invalid_brightness(dev: Bulb):
 async def test_non_dimmable(dev: Bulb):
     assert not dev.is_dimmable
 
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         assert dev.brightness == 0
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dev.set_brightness(100)
 
 
@@ -296,7 +296,7 @@ async def test_modify_preset(dev: IotBulb, mocker):
     await dev.save_preset(preset)
     assert dev.presets[0].brightness == 10
 
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dev.save_preset(
             BulbPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)
         )

@@ -1,10 +1,13 @@
 """Child device implementation."""
+import logging
 from typing import Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from .smartdevice import SmartDevice
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class SmartChildDevice(SmartDevice):
@@ -16,26 +19,41 @@ class SmartChildDevice(SmartDevice):
     def __init__(
         self,
         parent: SmartDevice,
-        child_id: str,
+        info,
+        component_info,
         config: Optional[DeviceConfig] = None,
         protocol: Optional[SmartProtocol] = None,
     ) -> None:
         super().__init__(parent.host, config=parent.config, protocol=parent.protocol)
         self._parent = parent
-        self._id = child_id
-        self.protocol = _ChildProtocolWrapper(child_id, parent.protocol)
-        # TODO: remove the assignment after modularization is done,
-        #  currently required to allow accessing time-related properties
-        self._time = parent._time
-        self._device_type = DeviceType.StripSocket
+        self._update_internal_state(info)
+        self._components = component_info
+        self._id = info["device_id"]
+        self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
     async def update(self, update_children: bool = True):
         """Noop update. The parent updates our internals."""
 
-    def update_internal_state(self, info):
-        """Set internal state for the child."""
-        # TODO: cleanup the _last_update, _sys_info, _info, _data mess.
-        self._last_update = self._sys_info = self._info = info
+    @classmethod
+    async def create(cls, parent: SmartDevice, child_info, child_components):
+        """Create a child device based on device info and component listing."""
+        child: "SmartChildDevice" = cls(parent, child_info, child_components)
+        await child._initialize_modules()
+        await child._initialize_features()
+        return child
+
+    @property
+    def device_type(self) -> DeviceType:
+        """Return child device type."""
+        child_device_map = {
+            "plug.powerstrip.sub-plug": DeviceType.Plug,
+            "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
+        }
+        dev_type = child_device_map.get(self.sys_info["category"])
+        if dev_type is None:
+            _LOGGER.warning("Unknown child device type, please open issue ")
+            dev_type = DeviceType.Unknown
+        return dev_type
 
     def __repr__(self):
         return f"<ChildDevice {self.alias} of {self._parent}>"

@@ -13,14 +13,14 @@ from kasa import (
     Device,
     DeviceType,
     Discover,
-    SmartDeviceException,
+    KasaException,
 )
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
-from kasa.exceptions import AuthenticationException, UnsupportedDeviceException
+from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice
 from kasa.xortransport import XorEncryption
 
@@ -94,7 +94,7 @@ async def test_type_detection_lightstrip(dev: Device):
 
 async def test_type_unknown():
     invalid_info = {"system": {"get_sysinfo": {"type": "nosuchtype"}}}
-    with pytest.raises(UnsupportedDeviceException):
+    with pytest.raises(UnsupportedDeviceError):
         Discover._get_device_class(invalid_info)
 
 
@@ -151,7 +151,7 @@ async def test_discover_single_hostname(discovery_mock, mocker):
     assert update_mock.call_count == 0
 
     mocker.patch("socket.getaddrinfo", side_effect=socket.gaierror())
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         x = await Discover.discover_single(host, credentials=Credentials())
 
 
@@ -161,7 +161,7 @@ async def test_discover_single_unsupported(unsupported_device_info, mocker):
 
     # Test with a valid unsupported response
     with pytest.raises(
-        UnsupportedDeviceException,
+        UnsupportedDeviceError,
     ):
         await Discover.discover_single(host)
 
@@ -171,7 +171,7 @@ async def test_discover_single_no_response(mocker):
     host = "127.0.0.1"
     mocker.patch.object(_DiscoverProtocol, "do_discover")
     with pytest.raises(
-        SmartDeviceException, match=f"Timed out getting discovery response for {host}"
+        KasaException, match=f"Timed out getting discovery response for {host}"
     ):
         await Discover.discover_single(host, discovery_timeout=0)
 
@@ -198,7 +198,7 @@ async def test_discover_invalid_info(msg, data, mocker):
 
     mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
 
-    with pytest.raises(SmartDeviceException, match=msg):
+    with pytest.raises(KasaException, match=msg):
         await Discover.discover_single(host)
 
 
@@ -280,11 +280,11 @@ async def test_discover_single_authentication(discovery_mock, mocker):
     mocker.patch.object(
         device_class,
         "update",
-        side_effect=AuthenticationException("Failed to authenticate"),
+        side_effect=AuthenticationError("Failed to authenticate"),
     )
 
     with pytest.raises(
-        AuthenticationException,
+        AuthenticationError,
         match="Failed to authenticate",
     ):
         device = await Discover.discover_single(
@@ -315,7 +315,7 @@ async def test_device_update_from_new_discovery_info(discovery_data):
     # TODO implement requires_update for SmartDevice
     if isinstance(device, IotDevice):
         with pytest.raises(
-            SmartDeviceException,
+            KasaException,
             match=re.escape("You need to await update() to access the data"),
         ):
             assert device.supported_modules
@@ -456,9 +456,9 @@ async def test_discover_propogates_task_exceptions(discovery_mock):
     discovery_timeout = 0
 
     async def on_discovered(dev):
-        raise SmartDeviceException("Dummy exception")
+        raise KasaException("Dummy exception")
 
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await Discover.discover(
             discovery_timeout=discovery_timeout, on_discovered=on_discovered
         )

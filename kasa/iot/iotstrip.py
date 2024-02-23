@@ -6,7 +6,7 @@ from typing import Any, DefaultDict, Dict, Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..exceptions import SmartDeviceException
+from ..exceptions import KasaException
 from ..protocol import BaseProtocol
 from .iotdevice import (
     EmeterStatus,
@@ -43,7 +43,7 @@ class IotStrip(IotDevice):
     which will not change the cached values,
     but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
+    Errors reported by the device are raised as :class:`KasaException`\s,
     and should be handled by the user of the library.
 
     Examples:
@@ -115,10 +115,12 @@ class IotStrip(IotDevice):
         if not self.children:
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
-            self.children = [
-                IotStripPlug(self.host, parent=self, child_id=child["id"])
+            self._children = {
+                f"{self.mac}_{child['id']}": IotStripPlug(
+                    self.host, parent=self, child_id=child["id"]
+                )
                 for child in children
-            ]
+            }
 
         if update_children and self.has_emeter:
             for plug in self.children:
@@ -375,4 +377,4 @@ class IotStripPlug(IotPlug):
             if plug["id"] == self.child_id:
                 return plug
 
-        raise SmartDeviceException(f"Unable to find children {self.child_id}")
+        raise KasaException(f"Unable to find children {self.child_id}")

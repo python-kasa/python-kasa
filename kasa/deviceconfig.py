@@ -5,7 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Dict, Optional, Union
 
 from .credentials import Credentials
-from .exceptions import SmartDeviceException
+from .exceptions import KasaException
 
 if TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -31,6 +31,7 @@ class DeviceFamilyType(Enum):
     SmartTapoPlug = "SMART.TAPOPLUG"
     SmartTapoBulb = "SMART.TAPOBULB"
     SmartTapoSwitch = "SMART.TAPOSWITCH"
+    SmartTapoHub = "SMART.TAPOHUB"
 
 
 def _dataclass_from_dict(klass, in_val):
@@ -46,7 +47,7 @@ def _dataclass_from_dict(klass, in_val):
                         fieldtypes[dict_key], in_val[dict_key]
                     )
             else:
-                raise SmartDeviceException(
+                raise KasaException(
                     f"Cannot create dataclass from dict, unknown key: {dict_key}"
                 )
         return klass(**val)
@@ -92,7 +93,7 @@ class ConnectionType:
                 login_version,
             )
         except (ValueError, TypeError) as ex:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Invalid connection parameters for {device_family}."
                 + f"{encryption_type}.{login_version}"
             ) from ex
@@ -113,9 +114,7 @@ class ConnectionType:
                 login_version,  # type: ignore[arg-type]
             )
 
-        raise SmartDeviceException(
-            f"Invalid connection type data for {connection_type_dict}"
-        )
+        raise KasaException(f"Invalid connection type data for {connection_type_dict}")
 
     def to_dict(self) -> Dict[str, Union[str, int]]:
         """Convert connection params to dict."""
@@ -185,4 +184,4 @@ class DeviceConfig:
         """Return device config from dict."""
         if isinstance(config_dict, dict):
             return _dataclass_from_dict(DeviceConfig, config_dict)
-        raise SmartDeviceException(f"Invalid device config data: {config_dict}")
+        raise KasaException(f"Invalid device config data: {config_dict}")

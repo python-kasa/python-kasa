@@ -2,8 +2,8 @@
 from enum import Enum
 from typing import Optional
 
-from ...exceptions import SmartDeviceException
-from .module import IotModule
+from ...exceptions import KasaException
+from ..iotmodule import IotModule
 
 
 class Range(Enum):
@@ -54,9 +54,7 @@ class Motion(IotModule):
         elif range is not None:
             payload = {"index": range.value}
         else:
-            raise SmartDeviceException(
-                "Either range or custom_range need to be defined"
-            )
+            raise KasaException("Either range or custom_range need to be defined")
 
         return await self.call("set_trigger_sens", payload)
 

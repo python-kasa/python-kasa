@@ -21,17 +21,23 @@ from voluptuous import (
 )
 
 import kasa
-from kasa import Credentials, Device, DeviceConfig, SmartDeviceException
+from kasa import Credentials, Device, DeviceConfig, KasaException
+from kasa.device_type import DeviceType
 from kasa.exceptions import SmartErrorCode
 from kasa.iot import IotDevice
 from kasa.smart import SmartChildDevice, SmartDevice
 
 from .conftest import (
+    bulb,
     device_iot,
     device_smart,
+    dimmer,
     handle_turn_on,
     has_emeter_iot,
+    lightstrip,
     no_emeter_iot,
+    plug,
+    strip,
     turn_on,
 )
 from .fakeprotocol_iot import FakeIotProtocol
@@ -67,8 +73,8 @@ async def test_state_info(dev):
 @device_iot
 async def test_invalid_connection(dev):
     with patch.object(
-        FakeIotProtocol, "query", side_effect=SmartDeviceException
-    ), pytest.raises(SmartDeviceException):
+        FakeIotProtocol, "query", side_effect=KasaException
+    ), pytest.raises(KasaException):
         await dev.update()
 
 
@@ -98,7 +104,7 @@ async def test_initial_update_no_emeter(dev, mocker):
 
 @device_iot
 async def test_query_helper(dev):
-    with pytest.raises(SmartDeviceException):
+    with pytest.raises(KasaException):
         await dev._query_helper("test", "testcmd", {})
     # TODO check for unwrapping?
 
@@ -196,13 +202,12 @@ async def test_representation(dev):
     assert pattern.match(str(dev))
 
 
-@device_iot
-async def test_childrens(dev):
-    """Make sure that children property is exposed by every device."""
-    if dev.is_strip:
-        assert len(dev.children) > 0
-    else:
-        assert len(dev.children) == 0
+@strip
+def test_children_api(dev):
+    """Test the child device API."""
+    first = dev.children[0]
+    first_by_get_child_device = dev.get_child_device(first.device_id)
+    assert first == first_by_get_child_device
 
 
 @device_iot
@@ -210,10 +215,8 @@ async def test_children(dev):
     """Make sure that children property is exposed by every device."""
     if dev.is_strip:
         assert len(dev.children) > 0
-        assert dev.has_children is True
     else:
         assert len(dev.children) == 0
-        assert dev.has_children is False
 
 
 @device_iot
@@ -255,7 +258,9 @@ async def test_device_class_ctors(device_class_name_obj):
     klass = device_class_name_obj[1]
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
-        dev = klass(parent, 1)
+        dev = klass(
+            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+        )
     else:
         dev = klass(host, config=config)
     assert dev.host == host
@@ -310,16 +315,13 @@ async def test_modules_not_supported(dev: IotDevice):
 
 
 @device_smart
-async def test_update_sub_errors(dev: SmartDevice, caplog):
+async def test_try_get_response(dev: SmartDevice, caplog):
     mock_response: dict = {
-        "get_device_info": {},
-        "get_device_usage": SmartErrorCode.PARAMS_ERROR,
-        "get_device_time": {},
+        "get_device_info": SmartErrorCode.PARAMS_ERROR,
     }
     caplog.set_level(logging.DEBUG)
-    with patch.object(dev.protocol, "query", return_value=mock_response):
-        await dev.update()
-    msg = "Error PARAMS_ERROR(-1008) getting request get_device_usage for device 127.0.0.123"
+    dev._try_get_response(mock_response, "get_device_info", {})
+    msg = "Error PARAMS_ERROR(-1008) getting request get_device_info for device 127.0.0.123"
     assert msg in caplog.text
 
 
@@ -331,7 +333,7 @@ async def test_update_no_device_info(dev: SmartDevice):
     }
     msg = f"get_device_info not found in {mock_response} for device 127.0.0.123"
     with patch.object(dev.protocol, "query", return_value=mock_response), pytest.raises(
-        SmartDeviceException, match=msg
+        KasaException, match=msg
     ):
         await dev.update()
 
@@ -349,6 +351,16 @@ def test_deprecated_devices(device_class, use_class):
     for _ in packages[1:]:
         module = importlib.import_module(package_name, package=module.__name__)
     getattr(module, use_class.__name__)
+
+
+@pytest.mark.parametrize(
+    "exceptions_class, use_class", kasa.deprecated_exceptions.items()
+)
+def test_deprecated_exceptions(exceptions_class, use_class):
+    msg = f"{exceptions_class} is deprecated, use {use_class.__name__} instead"
+    with pytest.deprecated_call(match=msg):
+        getattr(kasa, exceptions_class)
+    getattr(kasa, use_class.__name__)
 
 
 def check_mac(x):
@@ -409,3 +421,25 @@ SYSINFO_SCHEMA = Schema(
     },
     extra=REMOVE_EXTRA,
 )
+
+
+@dimmer
+def test_device_type_dimmer(dev):
+    assert dev.device_type == DeviceType.Dimmer
+
+
+@bulb
+def test_device_type_bulb(dev):
+    if dev.is_light_strip:
+        pytest.skip("bulb has also lightstrips to test the api")
+    assert dev.device_type == DeviceType.Bulb
+
+
+@plug
+def test_device_type_plug(dev):
+    assert dev.device_type == DeviceType.Plug
+
+
+@lightstrip
+def test_device_type_lightstrip(dev):
+    assert dev.device_type == DeviceType.LightStrip

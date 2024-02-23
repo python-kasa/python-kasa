@@ -88,16 +88,16 @@ jobs:
       - uses: "actions/setup-python@v4"
         with:
           python-version: "${{ matrix.python-version }}"
-      - name: "Install dependencies (no speedups)"
+      - name: "Install dependencies (no extras)"
         if: matrix.extras == false
         run: |
           python -m pip install --upgrade pip poetry
           poetry install
-      - name: "Install dependencies (with speedups)"
+      - name: "Install dependencies (with extras)"
         if: matrix.extras == true
         run: |
           python -m pip install --upgrade pip poetry
-          poetry install --extras speedups
+          poetry install --all-extras
       - name: "Run tests"
         run: |
           poetry run pytest --cov kasa --cov-report xml

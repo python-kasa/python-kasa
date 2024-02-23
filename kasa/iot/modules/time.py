@@ -1,8 +1,8 @@
 """Provides the current time and timezone information."""
 from datetime import datetime
 
-from ...exceptions import SmartDeviceException
-from .module import IotModule, merge
+from ...exceptions import KasaException
+from ..iotmodule import IotModule, merge
 
 
 class Time(IotModule):
@@ -46,7 +46,7 @@ class Time(IotModule):
                 res["min"],
                 res["sec"],
             )
-        except SmartDeviceException:
+        except KasaException:
             return None
 
     async def get_timezone(self):

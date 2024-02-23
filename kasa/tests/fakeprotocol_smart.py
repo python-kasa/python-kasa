@@ -1,7 +1,7 @@
 import warnings
 from json import loads as json_loads
 
-from kasa import Credentials, DeviceConfig, SmartDeviceException, SmartProtocol
+from kasa import Credentials, DeviceConfig, KasaException, SmartProtocol
 from kasa.protocol import BaseTransport
 
 
@@ -46,6 +46,40 @@ class FakeSmartTransport(BaseTransport):
 
     FIXTURE_MISSING_MAP = {
         "get_wireless_scan_info": ("wireless", {"ap_list": [], "wep_supported": False}),
+        "get_auto_off_config": ("auto_off", {"delay_min": 10, "enable": False}),
+        "get_led_info": (
+            "led",
+            {
+                "led_rule": "never",
+                "led_status": False,
+                "night_mode": {
+                    "end_time": 420,
+                    "night_mode_type": "sunrise_sunset",
+                    "start_time": 1140,
+                    "sunrise_offset": 0,
+                    "sunset_offset": 0,
+                },
+            },
+        ),
+        "get_connect_cloud_state": ("cloud_connect", {"status": 1}),
+        "get_on_off_gradually_info": ("on_off_gradually", {"enable": True}),
+        "get_latest_fw": (
+            "firmware",
+            {
+                "fw_size": 0,
+                "fw_ver": "1.0.5 Build 230801 Rel.095702",
+                "hw_id": "",
+                "need_to_upgrade": False,
+                "oem_id": "",
+                "release_date": "",
+                "release_note": "",
+                "type": 0,
+            },
+        ),
+        "get_auto_update_info": (
+            "firmware",
+            {"enable": True, "random_range": 120, "time": 180},
+        ),
     }
 
     async def send(self, request: str):
@@ -110,7 +144,7 @@ class FakeSmartTransport(BaseTransport):
                 )
                 return {"result": missing_result[1], "error_code": 0}
             else:
-                raise SmartDeviceException(f"Fixture doesn't support {method}")
+                raise KasaException(f"Fixture doesn't support {method}")
         elif method == "set_qs_info":
             return {"error_code": 0}
         elif method[:4] == "set_":

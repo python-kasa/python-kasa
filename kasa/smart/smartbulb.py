@@ -2,11 +2,8 @@
 from typing import Any, Dict, List, Optional
 
 from ..bulb import Bulb
-from ..device_type import DeviceType
-from ..deviceconfig import DeviceConfig
-from ..exceptions import SmartDeviceException
+from ..exceptions import KasaException
 from ..iot.iotbulb import HSV, BulbPreset, ColorTempRange
-from ..smartprotocol import SmartProtocol
 from .smartdevice import SmartDevice
 
 AVAILABLE_EFFECTS = {
@@ -20,16 +17,6 @@ class SmartBulb(SmartDevice, Bulb):
 
     Documentation TBD. See :class:`~kasa.iot.Bulb` for now.
     """
-
-    def __init__(
-        self,
-        host: str,
-        *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[SmartProtocol] = None,
-    ) -> None:
-        super().__init__(host=host, config=config, protocol=protocol)
-        self._device_type = DeviceType.Bulb
 
     @property
     def is_color(self) -> bool:
@@ -57,7 +44,7 @@ class SmartBulb(SmartDevice, Bulb):
         :return: White temperature range in Kelvin (minimum, maximum)
         """
         if not self.is_variable_color_temp:
-            raise SmartDeviceException("Color temperature not supported")
+            raise KasaException("Color temperature not supported")
 
         ct_range = self._info.get("color_temp_range", [0, 0])
         return ColorTempRange(min=ct_range[0], max=ct_range[1])
@@ -107,7 +94,7 @@ class SmartBulb(SmartDevice, Bulb):
         :return: hue, saturation and value (degrees, %, %)
         """
         if not self.is_color:
-            raise SmartDeviceException("Bulb does not support color.")
+            raise KasaException("Bulb does not support color.")
 
         h, s, v = (
             self._info.get("hue", 0),
@@ -121,7 +108,7 @@ class SmartBulb(SmartDevice, Bulb):
     def color_temp(self) -> int:
         """Whether the bulb supports color temperature changes."""
         if not self.is_variable_color_temp:
-            raise SmartDeviceException("Bulb does not support colortemp.")
+            raise KasaException("Bulb does not support colortemp.")
 
         return self._info.get("color_temp", -1)
 
@@ -129,7 +116,7 @@ class SmartBulb(SmartDevice, Bulb):
     def brightness(self) -> int:
         """Return the current brightness in percentage."""
         if not self.is_dimmable:  # pragma: no cover
-            raise SmartDeviceException("Bulb is not dimmable.")
+            raise KasaException("Bulb is not dimmable.")
 
         return self._info.get("brightness", -1)
 
@@ -151,7 +138,7 @@ class SmartBulb(SmartDevice, Bulb):
         :param int transition: transition in milliseconds.
         """
         if not self.is_color:
-            raise SmartDeviceException("Bulb does not support color.")
+            raise KasaException("Bulb does not support color.")
 
         if not isinstance(hue, int) or not (0 <= hue <= 360):
             raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
@@ -188,7 +175,7 @@ class SmartBulb(SmartDevice, Bulb):
         # TODO: Note, trying to set brightness at the same time
         #  with color_temp causes error -1008
         if not self.is_variable_color_temp:
-            raise SmartDeviceException("Bulb does not support colortemp.")
+            raise KasaException("Bulb does not support colortemp.")
 
         valid_temperature_range = self.valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
@@ -211,7 +198,7 @@ class SmartBulb(SmartDevice, Bulb):
         :param int transition: transition in milliseconds.
         """
         if not self.is_dimmable:  # pragma: no cover
-            raise SmartDeviceException("Bulb is not dimmable.")
+            raise KasaException("Bulb is not dimmable.")
 
         return await self.protocol.query(
             {"set_device_info": {"brightness": brightness}}

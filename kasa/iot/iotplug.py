@@ -22,7 +22,7 @@ class IotPlug(IotDevice):
     which will not change the cached values,
     but you must await :func:`update()` separately.
 
-    Errors reported by the device are raised as :class:`SmartDeviceException`\s,
+    Errors reported by the device are raised as :class:`KasaException`\s,
     and should be handled by the user of the library.
 
     Examples:

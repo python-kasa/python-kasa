@@ -3,13 +3,13 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 from .credentials import Credentials
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
-from .exceptions import SmartDeviceException
+from .exceptions import KasaException
 from .feature import Feature
 from .iotprotocol import IotProtocol
 from .protocol import BaseProtocol
@@ -71,6 +71,8 @@ class Device(ABC):
 
         self.modules: Dict[str, Any] = {}
         self._features: Dict[str, Feature] = {}
+        self._parent: Optional["Device"] = None
+        self._children: Mapping[str, "Device"] = {}
 
     @staticmethod
     async def connect(
@@ -182,9 +184,13 @@ class Device(ABC):
         return await self.protocol.query(request=request)
 
     @property
-    @abstractmethod
     def children(self) -> Sequence["Device"]:
         """Returns the child devices."""
+        return list(self._children.values())
+
+    def get_child_device(self, id_: str) -> "Device":
+        """Return child device by its ID."""
+        return self._children[id_]
 
     @property
     @abstractmethod
@@ -194,32 +200,32 @@ class Device(ABC):
     @property
     def is_bulb(self) -> bool:
         """Return True if the device is a bulb."""
-        return self._device_type == DeviceType.Bulb
+        return self.device_type == DeviceType.Bulb
 
     @property
     def is_light_strip(self) -> bool:
         """Return True if the device is a led strip."""
-        return self._device_type == DeviceType.LightStrip
+        return self.device_type == DeviceType.LightStrip
 
     @property
     def is_plug(self) -> bool:
         """Return True if the device is a plug."""
-        return self._device_type == DeviceType.Plug
+        return self.device_type == DeviceType.Plug
 
     @property
     def is_strip(self) -> bool:
         """Return True if the device is a strip."""
-        return self._device_type == DeviceType.Strip
+        return self.device_type == DeviceType.Strip
 
     @property
     def is_strip_socket(self) -> bool:
         """Return True if the device is a strip socket."""
-        return self._device_type == DeviceType.StripSocket
+        return self.device_type == DeviceType.StripSocket
 
     @property
     def is_dimmer(self) -> bool:
         """Return True if the device is a dimmer."""
-        return self._device_type == DeviceType.Dimmer
+        return self.device_type == DeviceType.Dimmer
 
     @property
     def is_dimmable(self) -> bool:
@@ -242,12 +248,12 @@ class Device(ABC):
             if p.alias == name:
                 return p
 
-        raise SmartDeviceException(f"Device has no child with {name}")
+        raise KasaException(f"Device has no child with {name}")
 
     def get_plug_by_index(self, index: int) -> "Device":
         """Return child device for the given index."""
         if index + 1 > len(self.children) or index < 0:
-            raise SmartDeviceException(
+            raise KasaException(
                 f"Invalid index {index}, device has {len(self.children)} plugs"
             )
         return self.children[index]
@@ -306,7 +312,7 @@ class Device(ABC):
         """Add a new feature to the device."""
         desc_name = feature.name.lower().replace(" ", "_")
         if desc_name in self._features:
-            raise SmartDeviceException("Duplicate feature name %s" % desc_name)
+            raise KasaException("Duplicate feature name %s" % desc_name)
         self._features[desc_name] = feature
 
     @property
@@ -354,9 +360,9 @@ class Device(ABC):
 
     def __repr__(self):
         if self._last_update is None:
-            return f"<{self._device_type} at {self.host} - update() needed>"
+            return f"<{self.device_type} at {self.host} - update() needed>"
         return (
-            f"<{self._device_type} model {self.model} at {self.host}"
+            f"<{self.device_type} model {self.model} at {self.host}"
             f" ({self.alias}), is_on: {self.is_on}"
             f" - dev specific: {self.state_information}>"
         )
