@@ -14,8 +14,6 @@ import logging
 import re
 import traceback
 from collections import defaultdict, namedtuple
-from os import listdir
-from os.path import isfile, join
 from pathlib import Path
 from pprint import pprint
 from typing import Dict, List, Union
@@ -497,11 +495,11 @@ async def generate_supported():
     _get_iot_supported(supported)
     _get_smart_supported(supported)
 
-    _update_supported_file(SUPPORTED_FILENAME, supported, False)
-    _update_supported_file(README_FILENAME, supported, True)
+    _update_supported_file(SUPPORTED_FILENAME, supported, summary=False)
+    _update_supported_file(README_FILENAME, supported, summary=True)
 
 
-def _update_supported_file(filename, supported, summary):
+def _update_supported_file(filename, supported, *, summary):
     with open(filename) as f:
         contents = f.readlines()
 
@@ -514,9 +512,9 @@ def _update_supported_file(filename, supported, summary):
 
     new_contents = contents[:start_index]
     end_contents = contents[end_index:]
-    new_contents.extend(_generate_supported(supported, "Kasa", summary))
+    new_contents.extend(_generate_supported(supported, "Kasa", summary=summary))
     new_contents.append("\n")
-    new_contents.extend(_generate_supported(supported, "Tapo", summary))
+    new_contents.extend(_generate_supported(supported, "Tapo", summary=summary))
     new_contents.append("\n")
     new_contents.extend(end_contents)
 
@@ -525,12 +523,13 @@ def _update_supported_file(filename, supported, summary):
         f.write(new_contents)
 
 
-def _generate_supported(supported, target_brand, summary):
-    single_star = "<sup>\*</sup>" if summary else "<sup> *</sup>"
-    double_star = "<sup>\*\*</sup>" if summary else "<sup> **</sup>"
+def _generate_supported(supported, target_brand, *, summary):
+    single_star = "<sup>\*</sup>"
+    double_star = "<sup>\*\*</sup>"
     brand_auth = single_star if target_brand.lower() == "tapo" else ""
+    header_start = "### Supported " if summary else "## "
     lines = [
-        f"### Supported {target_brand}{brand_auth} devices\n",
+        f"{header_start}{target_brand}{brand_auth} devices\n",
         "\n",
     ]
     for type_, brands in supported.items():
@@ -543,12 +542,12 @@ def _generate_supported(supported, target_brand, summary):
                 auth_count = 0
                 auth_symbol = ""
                 for version in versions:
-                    region_text = f"({version.region})" if version.region else ""
+                    region_text = f" ({version.region})" if version.region else ""
                     version_auth = (
                         single_star if version.auth and brand == "kasa" else ""
                     )
                     version_text = (
-                        f"Hardware {version.hw}{region_text} "
+                        f"  - Hardware {version.hw}{region_text} "
                         + f"Firmare {version.fw}{version_auth}"
                     )
                     version_list.append(version_text)
@@ -559,32 +558,25 @@ def _generate_supported(supported, target_brand, summary):
                     single_star if auth_count == len(versions) else auth_symbol
                 )
                 auth_symbol = auth_symbol if brand == "kasa" else ""
-                versions_text = "<br>".join(version_list)
-                detail_model_text = (
-                    f"<details><summary>{model}{auth_symbol}"
-                    + f"</summary>{versions_text}</details>"
-                )
+                versions_text = "\n".join(version_list)
+                detail_model_text = f"- **{model}{auth_symbol}**" + f"\n{versions_text}"
                 summary_model_text = model + auth_symbol
                 model_text = summary_model_text if summary else detail_model_text
                 models_list.append(model_text)
         if summary:
             models_text = ", ".join(models_list)
-            line = f"- **{type_}** - {models_text}\n"
+            line = f"- **{type_}**: {models_text}\n"
         else:
             models_text = "\n".join(models_list)
-            line = f"**{type_}**\n\n{models_text}\n<br>\n\n"
+            line = f"\n### {type_}\n\n{models_text}\n"
         lines.append(line)
     return lines
 
 
 def _get_smart_supported(supported):
-    smart_files = [
-        f
-        for f in listdir(SMART_FOLDER)
-        if isfile(join(SMART_FOLDER, f)) and f.endswith(".json")
-    ]
+    smart_files = [f for f in Path(SMART_FOLDER).glob("*.json")]
     for smart_file in smart_files:
-        with open(join(SMART_FOLDER, smart_file)) as f:
+        with open(smart_file) as f:
             fixture_data = json.load(f)
 
         model, _, region = fixture_data["discovery_result"]["device_model"].partition(
@@ -593,11 +585,9 @@ def _get_smart_supported(supported):
         # P100 doesn't have region HW
         region = region.replace(")", "") if region else ""
         device_type = fixture_data["discovery_result"]["device_type"]
-        if device_type[:10] == "SMART.KASA":
-            brand = "kasa"
-        elif device_type[:10] == "SMART.TAPO":
-            brand = "tapo"
-        else:
+        _protocol, devicetype = device_type.split(".")
+        brand, type_ = devicetype[:4].lower(), devicetype[4:]
+        if brand not in ["kasa", "tapo"]:
             click.echo(
                 click.style(
                     f"FAIL {smart_file} does not have a "
@@ -610,11 +600,11 @@ def _get_smart_supported(supported):
             component["id"]
             for component in fixture_data["component_nego"]["component_list"]
         ]
-        if device_type[10:] == "BULB":
+        if type_ == "BULB":
             supported_type = LIGHT_STRIPS if "light_strip" in components else BULBS
-        elif device_type[10:] == "PLUG":
+        elif type_ == "PLUG":
             supported_type = POWER_STRIPS if "child_device" in components else PLUGS
-        elif device_type[10:] == "SWITCH":
+        elif type_ == "SWITCH":
             supported_type = WALL_SWITCHES
         else:
             click.echo(
@@ -637,13 +627,9 @@ def _get_smart_supported(supported):
 
 
 def _get_iot_supported(supported):
-    iot_files = [
-        f
-        for f in listdir(IOT_FOLDER)
-        if isfile(join(IOT_FOLDER, f)) and f.endswith(".json")
-    ]
+    iot_files = [f for f in Path(IOT_FOLDER).glob("*.json")]
     for iot_file in iot_files:
-        with open(join(IOT_FOLDER, iot_file)) as f:
+        with open(iot_file) as f:
             fixture_data = json.load(f)
         sysinfo = fixture_data["system"]["get_sysinfo"]
         model, _, region = sysinfo["model"][:-1].partition("(")
