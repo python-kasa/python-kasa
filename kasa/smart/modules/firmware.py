@@ -1,7 +1,6 @@
 """Implementation of firmware module."""
 
 from __future__ import annotations
-import asyncio
 
 import asyncio
 import logging
@@ -13,14 +12,13 @@ from typing import TYPE_CHECKING, Any, Optional
 from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, Field, validator
 
-from ...exceptions import SmartErrorCode
-from ...feature import Feature
-from ..smartmodule import SmartModule
-
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
+from ...exceptions import SmartErrorCode
+from ...feature import Feature, FeatureType
+from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -106,10 +104,20 @@ class Firmware(SmartModule):
             )
         )
         self._add_feature(
-            Feature(device, "Current firmware version", container=self, attribute_getter="current_firmware")
+            Feature(
+                device,
+                "Current firmware version",
+                container=self,
+                attribute_getter="current_firmware",
+            )
         )
         self._add_feature(
-            Feature(device, "Available firmware version", container=self, attribute_getter="latest_firmware")
+            Feature(
+                device,
+                "Available firmware version",
+                container=self,
+                attribute_getter="latest_firmware",
+            )
         )
 
     def query(self) -> dict:
@@ -123,7 +131,6 @@ class Firmware(SmartModule):
     def current_firmware(self) -> str:
         """Return the current firmware version."""
         return self._device.hw_info["sw_ver"]
-
 
     @property
     def latest_firmware(self) -> str:
