@@ -573,7 +573,7 @@ def unsupported_device_info(request, mocker):
     yield discovery_data
 
 
-@pytest.fixture()
+@pytest.fixture
 def dummy_protocol():
     """Return a smart protocol instance with a mocking-ready dummy transport."""
 
