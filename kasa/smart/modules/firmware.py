@@ -103,4 +103,4 @@ class Firmware(SmartModule):
     async def set_auto_update_enabled(self, enabled: bool):
         """Change autoupdate setting."""
         data = {**self.data["get_auto_update_info"], "enable": enabled}
-        await self.call("set_auto_update_info", data) #{"enable": enabled})
+        await self.call("set_auto_update_info", data)  # {"enable": enabled})

@@ -1,0 +1,391 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "child_device",
+                "ver_code": 1
+            },
+            {
+                "id": "child_quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "child_inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "control_child",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm",
+                "ver_code": 1
+            },
+            {
+                "id": "device_load",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm_logs",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 3
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "H100(EU)",
+        "device_type": "SMART.TAPOHUB",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "3C-52-A1-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "AES",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "obd_src": "tplink",
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_alarm_configure": {
+        "duration": 10,
+        "type": "Doorbell Ring 2",
+        "volume": "low"
+    },
+    "get_auto_update_info": {
+        "enable": false,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_child_device_component_list": {
+        "child_component_list": [
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "trigger_log",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_humidity_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "report_mode",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "0000000000000000000000000000000000000000"
+            }
+        ],
+        "start_index": 0,
+        "sum": 1
+    },
+    "get_child_device_list": {
+        "child_device_list": [
+            {
+                "at_low_battery": false,
+                "avatar": "",
+                "battery_percentage": 100,
+                "bind_count": 1,
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "current_humidity": 56,
+                "current_humidity_exception": -34,
+                "current_temp": 22.2,
+                "current_temp_exception": 0,
+                "device_id": "0000000000000000000000000000000000000000",
+                "fw_ver": "1.7.0 Build 230424 Rel.170332",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -118,
+                "jamming_signal_level": 1,
+                "lastOnboardingTimestamp": 1706990901,
+                "mac": "F0A731000000",
+                "model": "T315",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/Berlin",
+                "report_interval": 16,
+                "rssi": -45,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "temp_unit": "celsius",
+                "type": "SMART.TAPOSENSOR"
+            }
+        ],
+        "start_index": 0,
+        "sum": 1
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "avatar": "hub",
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.5.5 Build 240105 Rel.192438",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "in_alarm": false,
+        "in_alarm_source": "",
+        "ip": "127.0.0.123",
+        "lang": "",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "3C-52-A1-00-00-00",
+        "model": "H100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "Europe/Berlin",
+        "rssi": -62,
+        "signal_level": 2,
+        "specs": "EU",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 60,
+        "type": "SMART.TAPOHUB"
+    },
+    "get_device_load_info": {
+        "cur_load_num": 2,
+        "load_level": "light",
+        "max_load_num": 64,
+        "total_memory": 4352,
+        "used_memory": 1384
+    },
+    "get_device_time": {
+        "region": "Europe/Berlin",
+        "time_diff": 60,
+        "timestamp": 1706995844
+    },
+    "get_device_usage": {},
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.5.5 Build 240105 Rel.192438",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "led_rule": "always",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 485,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 1046,
+            "sunrise_offset": 0,
+            "sunset_offset": 0
+        }
+    },
+    "get_matter_setup_info": {
+        "setup_code": "00000000000",
+        "setup_payload": "00:0000000000000000000"
+    },
+    "get_support_alarm_type_list": {
+        "alarm_type_list": [
+            "Doorbell Ring 1",
+            "Doorbell Ring 2",
+            "Doorbell Ring 3",
+            "Doorbell Ring 4",
+            "Doorbell Ring 5",
+            "Doorbell Ring 6",
+            "Doorbell Ring 7",
+            "Doorbell Ring 8",
+            "Doorbell Ring 9",
+            "Doorbell Ring 10",
+            "Phone Ring",
+            "Alarm 1",
+            "Alarm 2",
+            "Alarm 3",
+            "Alarm 4",
+            "Dripping Tap",
+            "Alarm 5",
+            "Connection 1",
+            "Connection 2"
+        ]
+    },
+    "get_support_child_device_category": {
+        "device_category_list": [
+            {
+                "category": "subg.trv"
+            },
+            {
+                "category": "subg.trigger"
+            },
+            {
+                "category": "subg.plugswitch"
+            }
+        ]
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "matter",
+                "ver_code": 3
+            }
+        ],
+        "extra_info": {
+            "device_model": "H100",
+            "device_type": "SMART.TAPOHUB",
+            "is_klap": false
+        }
+    }
+}

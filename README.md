@@ -317,6 +317,9 @@ At the moment, the following devices have been confirmed to work:
 * Tapo P300
 * Tapo TP25
 
+#### Hubs
+
+* Tapo H100
 
 ### Newer Kasa branded devices
 

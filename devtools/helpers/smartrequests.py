@@ -356,7 +356,7 @@ COMPONENT_REQUESTS = {
     "energy_monitoring": SmartRequest.energy_monitoring_list(),
     "power_protection": SmartRequest.power_protection_list(),
     "current_protection": [],  # overcurrent in device_info
-    "matter": [],
+    "matter": [SmartRequest.get_raw_request("get_matter_setup_info")],
     "preset": [SmartRequest.get_preset_rules()],
     "brightness": [],  # in device_info
     "color": [],  # in device_info
@@ -372,4 +372,13 @@ COMPONENT_REQUESTS = {
     "music_rhythm": [],  # music_rhythm_enable in device_info
     "segment": [SmartRequest.get_raw_request("get_device_segment")],
     "segment_effect": [SmartRequest.get_raw_request("get_segment_effect_rule")],
+    "device_load": [SmartRequest.get_raw_request("get_device_load_info")],
+    "child_quick_setup": [
+        SmartRequest.get_raw_request("get_support_child_device_category")
+    ],
+    "alarm": [
+        SmartRequest.get_raw_request("get_support_alarm_type_list"),
+        SmartRequest.get_raw_request("get_alarm_configure"),
+    ],
+    "alarm_logs": [SmartRequest.get_raw_request("get_alarm_triggers")],
 }
