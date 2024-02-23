@@ -1188,8 +1188,7 @@ async def feature(dev: Device, child: str, name: str, value):
         return
 
     if name not in dev.features:
-        raise
-        echo(f"No feature by name {name}")
+        echo(f"No feature by name '{name}'")
         return
 
     feat = dev.features[name]

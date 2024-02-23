@@ -709,6 +709,34 @@ async def test_feature(mocker):
     assert res.exit_code == 0
 
 
+async def test_feature_single(mocker):
+    """Test feature command returning single value."""
+    dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "led"],
+        catch_exceptions=False,
+    )
+    assert "LED" in res.output
+    assert "== Features ==" not in res.output
+    assert res.exit_code == 0
+
+async def test_feature_missing(mocker):
+    """Test feature command returning single value."""
+    dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "missing"],
+        catch_exceptions=False,
+    )
+    assert "No feature by name 'missing'" in res.output
+    assert "== Features ==" not in res.output
+    assert res.exit_code == 0
+
 async def test_feature_set(mocker):
     """Test feature command's set value."""
     dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
