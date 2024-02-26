@@ -15,7 +15,7 @@ class DeviceModule(SmartModule):
             "get_device_info": None,
         }
         # Device usage is not available on older firmware versions
-        if self._device._components[self.REQUIRED_COMPONENT] >= 2:
+        if self.supported_version >= 2:
             query["get_device_usage"] = None
 
         return query

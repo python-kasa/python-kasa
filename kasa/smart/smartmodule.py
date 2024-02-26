@@ -80,3 +80,8 @@ class SmartModule(Module):
             return next(iter(filtered_data.values()))
 
         return filtered_data
+
+    @property
+    def supported_version(self) -> int:
+        """Return version supported by the device."""
+        return self._device._components[self.REQUIRED_COMPONENT]

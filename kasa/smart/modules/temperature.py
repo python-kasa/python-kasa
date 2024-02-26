@@ -35,6 +35,15 @@ class TemperatureSensor(SmartModule):
                 icon="mdi:alert",
             )
         )
+        self._add_feature(
+            Feature(
+                device,
+                "Temperature unit",
+                container=self,
+                attribute_getter="temperature_unit",
+                attribute_setter="set_temperature_unit",
+            )
+        )
         # TODO: use temperature_unit for feature creation
 
     @property

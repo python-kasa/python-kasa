@@ -1156,22 +1156,39 @@ async def shell(dev: Device):
 @cli.command(name="feature")
 @click.argument("name", required=False)
 @click.argument("value", required=False)
+@click.option("--child", required=False)
 @pass_dev
-async def feature(dev, name: str, value):
+async def feature(dev: Device, child: str, name: str, value):
     """Access and modify features.
 
     If no *name* is given, lists available features and their values.
     If only *name* is given, the value of named feature is returned.
     If both *name* and *value* are set, the described setting is changed.
     """
+    if child is not None:
+        echo(f"Targeting child device {child}")
+        dev = dev.get_child_device(child)
     if not name:
+
+        def _print_features(dev):
+            for name, feat in dev.features.items():
+                try:
+                    echo(f"\t{feat.name} ({name}): {feat.value}")
+                except Exception as ex:
+                    echo(f"\t{feat.name} ({name}): [red]{ex}[/red]")
+
         echo("[bold]== Features ==[/bold]")
-        for name, feat in dev.features.items():
-            echo(f"{feat.name} ({name}): {feat.value}")
+        _print_features(dev)
+
+        if dev.children:
+            for child_dev in dev.children:
+                echo(f"[bold]== Child {child_dev.alias} ==")
+                _print_features(child_dev)
+
         return
 
     if name not in dev.features:
-        echo(f"No feature by name {name}")
+        echo(f"No feature by name '{name}'")
         return
 
     feat = dev.features[name]

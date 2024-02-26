@@ -5,9 +5,10 @@ The following devices have been tested and confirmed as working. If your device 
 <sup>*</sup>&nbsp; Model requires authentication<br>
 <sup>**</sup> Newer versions require authentication
 
+<!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
-## Kasa devices
 
+## Kasa devices
 
 ### Plugs
 
@@ -61,40 +62,6 @@ The following devices have been tested and confirmed as working. If your device 
 - **KS230**
   - Hardware 1.0 (US) Firmare 1.0.14
 
-### Power Strips
-
-- **EP40**
-  - Hardware 1.0 (US) Firmare 1.0.2
-- **HS107**
-  - Hardware 1.0 (US) Firmare 1.0.8
-- **HS300**
-  - Hardware 1.0 (US) Firmare 1.0.10
-  - Hardware 2.0 (US) Firmare 1.0.3
-  - Hardware 2.0 (US) Firmare 1.0.12
-- **KP200**
-  - Hardware 3.0 (US) Firmare 1.0.3
-- **KP303**
-  - Hardware 2.0 (US) Firmare 1.0.3
-  - Hardware 1.0 (UK) Firmare 1.0.3
-- **KP400**
-  - Hardware 1.0 (US) Firmare 1.0.10
-  - Hardware 2.0 (US) Firmare 1.0.6
-
-### Wall Switches
-
-- **HS200**
-  - Hardware 5.0 (US) Firmare 1.0.2
-  - Hardware 2.0 (US) Firmare 1.5.7
-  - Hardware 1.0 (US) Firmare 1.1.0
-- **HS210**
-  - Hardware 1.0 (US) Firmare 1.5.8
-- **KS200M**
-  - Hardware 1.0 (US) Firmare 1.0.8
-- **KS205<sup>\*</sup>**
-  - Hardware 1.0 (US) Firmare 1.0.2<sup>\*</sup>
-- **KS225<sup>\*</sup>**
-  - Hardware 1.0 (US) Firmare 1.0.2<sup>\*</sup>
-
 ### Bulbs
 
 - **KL110**
@@ -138,63 +105,106 @@ The following devices have been tested and confirmed as working. If your device 
   - Hardware 2.0 (US) Firmare 1.0.9
   - Hardware 2.0 (UN) Firmare 1.0.8
 
-## Tapo<sup>\*</sup> devices
-
-
-### Plugs
-
-- **P100**
-  - Hardware 1.0.0 Firmare 1.3.7
-  - Hardware 1.0.0 Firmare 1.1.3
-- **P110**
-  - Hardware 1.0 (EU) Firmare 1.2.3
-  - Hardware 1.0 (UK) Firmare 1.3.0
-- **P125M**
-  - Hardware 1.0 (US) Firmare 1.1.0
-- **P135**
-  - Hardware 1.0 (US) Firmare 1.0.5
-- **TP15**
-  - Hardware 1.0 (US) Firmare 1.0.3
-
 ### Power Strips
 
-- **P300**
-  - Hardware 1.0 (EU) Firmare 1.0.7
-  - Hardware 1.0 (EU) Firmare 1.0.13
-- **TP25**
+- **EP40**
   - Hardware 1.0 (US) Firmare 1.0.2
+- **HS107**
+  - Hardware 1.0 (US) Firmare 1.0.8
+- **HS300**
+  - Hardware 1.0 (US) Firmare 1.0.10
+  - Hardware 2.0 (US) Firmare 1.0.3
+  - Hardware 2.0 (US) Firmare 1.0.12
+- **KP200**
+  - Hardware 3.0 (US) Firmare 1.0.3
+- **KP303**
+  - Hardware 2.0 (US) Firmare 1.0.3
+  - Hardware 1.0 (UK) Firmare 1.0.3
+- **KP400**
+  - Hardware 1.0 (US) Firmare 1.0.10
+  - Hardware 2.0 (US) Firmare 1.0.6
 
 ### Wall Switches
 
-- **S500D**
-  - Hardware 1.0 (US) Firmare 1.0.5
-- **S505**
-  - Hardware 1.0 (US) Firmare 1.0.2
+- **HS200**
+  - Hardware 5.0 (US) Firmare 1.0.2
+  - Hardware 2.0 (US) Firmare 1.5.7
+  - Hardware 1.0 (US) Firmare 1.1.0
+- **HS210**
+  - Hardware 1.0 (US) Firmare 1.5.8
+- **KS200M**
+  - Hardware 1.0 (US) Firmare 1.0.8
+- **KS205<sup>\*</sup>**
+  - Hardware 1.0 (US) Firmare 1.0.2<sup>\*</sup>
+- **KS225<sup>\*</sup>**
+  - Hardware 1.0 (US) Firmare 1.0.2<sup>\*</sup>
+
+
+## Tapo<sup>\*</sup> devices
+
+### Hubs
+
+- **H100**
+  - Hardware 1.0 (EU) Firmare 1.5.5<sup>\*</sup>
+  - Hardware 1.0 (EU) Firmare 1.2.3<sup>\*</sup>
 
 ### Bulbs
 
 - **L510B**
-  - Hardware 3.0 (EU) Firmare 1.0.5
+  - Hardware 3.0 (EU) Firmare 1.0.5<sup>\*</sup>
 - **L510E**
-  - Hardware 3.0 (US) Firmare 1.0.5
-  - Hardware 3.0 (US) Firmare 1.1.2
+  - Hardware 3.0 (US) Firmare 1.0.5<sup>\*</sup>
+  - Hardware 3.0 (US) Firmare 1.1.2<sup>\*</sup>
 - **L530E**
-  - Hardware 3.0 (EU) Firmare 1.1.0
-  - Hardware 3.0 (EU) Firmare 1.0.6
-  - Hardware 2.0 (US) Firmare 1.1.0
+  - Hardware 3.0 (EU) Firmare 1.1.0<sup>\*</sup>
+  - Hardware 3.0 (EU) Firmare 1.1.6<sup>\*</sup>
+  - Hardware 3.0 (EU) Firmare 1.0.6<sup>\*</sup>
+  - Hardware 2.0 (US) Firmare 1.1.0<sup>\*</sup>
 
 ### Light Strips
 
 - **L900-10**
-  - Hardware 1.0 (US) Firmare 1.0.11
-  - Hardware 1.0 (EU) Firmare 1.0.17
+  - Hardware 1.0 (US) Firmare 1.0.11<sup>\*</sup>
+  - Hardware 1.0 (EU) Firmare 1.0.17<sup>\*</sup>
 - **L900-5**
-  - Hardware 1.0 (EU) Firmare 1.1.0
-  - Hardware 1.0 (EU) Firmare 1.0.17
+  - Hardware 1.0 (EU) Firmare 1.1.0<sup>\*</sup>
+  - Hardware 1.0 (EU) Firmare 1.0.17<sup>\*</sup>
 - **L920-5**
-  - Hardware 1.0 (US) Firmare 1.1.3
-  - Hardware 1.0 (US) Firmare 1.1.0
+  - Hardware 1.0 (US) Firmare 1.1.3<sup>\*</sup>
+  - Hardware 1.0 (US) Firmare 1.1.0<sup>\*</sup>
 - **L930-5**
-  - Hardware 1.0 (US) Firmare 1.1.2
+  - Hardware 1.0 (US) Firmare 1.1.2<sup>\*</sup>
+
+### Plugs
+
+- **P100**
+  - Hardware 1.0.0 Firmare 1.3.7<sup>\*</sup>
+  - Hardware 1.0.0 Firmare 1.1.3<sup>\*</sup>
+- **P110**
+  - Hardware 1.0 (EU) Firmare 1.2.3<sup>\*</sup>
+  - Hardware 1.0 (UK) Firmare 1.3.0<sup>\*</sup>
+- **P125M**
+  - Hardware 1.0 (US) Firmare 1.1.0<sup>\*</sup>
+- **P135**
+  - Hardware 1.0 (US) Firmare 1.0.5<sup>\*</sup>
+- **TP15**
+  - Hardware 1.0 (US) Firmare 1.0.3<sup>\*</sup>
+
+### Power Strips
+
+- **P300**
+  - Hardware 1.0 (EU) Firmare 1.0.7<sup>\*</sup>
+  - Hardware 1.0 (EU) Firmare 1.0.13<sup>\*</sup>
+- **TP25**
+  - Hardware 1.0 (US) Firmare 1.0.2<sup>\*</sup>
+
+### Wall Switches
+
+- **S500D**
+  - Hardware 1.0 (US) Firmare 1.0.5<sup>\*</sup>
+- **S505**
+  - Hardware 1.0 (US) Firmare 1.0.2<sup>\*</sup>
+
+
 
 <!--SUPPORTED_END-->

@@ -16,6 +16,7 @@ import traceback
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from pprint import pprint
+from string import Template
 from typing import Dict, List, Union
 
 import asyncclick as click
@@ -51,6 +52,7 @@ POWER_STRIPS = "Power Strips"
 WALL_SWITCHES = "Wall Switches"
 BULBS = "Bulbs"
 LIGHT_STRIPS = "Light Strips"
+HUBS = "Hubs"
 
 
 def scrub(res):
@@ -79,7 +81,10 @@ def scrub(res):
         "alias",
         "bssid",
         "channel",
-        "original_device_id",  # for child devices
+        "original_device_id",  # for child devices on strips
+        "parent_device_id",  # for hub children
+        "setup_code",  # matter
+        "setup_payload",  # matter
     ]
 
     for k, v in res.items():
@@ -485,21 +490,16 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
 @cli.command(name="generate-supported")
 async def generate_supported():
     """Generate the SUPPORTED.md from the fixtures."""
-    supported = {
-        PLUGS: {"kasa": {}, "tapo": {}},
-        POWER_STRIPS: {"kasa": {}, "tapo": {}},
-        WALL_SWITCHES: {"kasa": {}, "tapo": {}},
-        BULBS: {"kasa": {}, "tapo": {}},
-        LIGHT_STRIPS: {"kasa": {}, "tapo": {}},
-    }
+    supported = {"kasa": {}, "tapo": {}}
+
     _get_iot_supported(supported)
     _get_smart_supported(supported)
 
-    _update_supported_file(SUPPORTED_FILENAME, supported, summary=False)
-    _update_supported_file(README_FILENAME, supported, summary=True)
+    _update_supported_file(README_FILENAME, _supported_summary(supported))
+    _update_supported_file(SUPPORTED_FILENAME, _supported_detail(supported))
 
 
-def _update_supported_file(filename, supported, *, summary):
+def _update_supported_file(filename, supported_text):
     with open(filename) as f:
         contents = f.readlines()
 
@@ -512,9 +512,8 @@ def _update_supported_file(filename, supported, *, summary):
 
     new_contents = contents[:start_index]
     end_contents = contents[end_index:]
-    new_contents.extend(_generate_supported(supported, "Kasa", summary=summary))
     new_contents.append("\n")
-    new_contents.extend(_generate_supported(supported, "Tapo", summary=summary))
+    new_contents.append(supported_text)
     new_contents.append("\n")
     new_contents.extend(end_contents)
 
@@ -523,54 +522,69 @@ def _update_supported_file(filename, supported, *, summary):
         f.write(new_contents)
 
 
-def _generate_supported(supported, target_brand, *, summary):
-    single_star = "<sup>\*</sup>"
-    double_star = "<sup>\*\*</sup>"
-    brand_auth = single_star if target_brand.lower() == "tapo" else ""
-    header_start = "### Supported " if summary else "## "
-    lines = [
-        f"{header_start}{target_brand}{brand_auth} devices\n",
-        "\n",
-    ]
-    for type_, brands in supported.items():
-        models_list = []
-        for brand, models in brands.items():
-            if brand != target_brand.lower():
-                continue
+def _supported_summary(supported):
+    return _supported_text(
+        supported, "### Supported $brand devices\n\n$types\n", "- **$type_**: $models\n"
+    )
+
+
+def _supported_detail(supported):
+    return _supported_text(
+        supported,
+        "## $brand devices\n\n$types\n",
+        "### $type_\n\n$models\n",
+        "- **$model$auth_flag**\n$versions",
+        "  - Hardware $hw$region Firmare $fw$auth_flag\n",
+    )
+
+
+def _supported_text(
+    supported, brand_template, types_template, model_template="", version_template=""
+):
+    brandt = Template(brand_template)
+    typest = Template(types_template)
+    modelt = Template(model_template)
+    versst = Template(version_template)
+    brands = ""
+    version: SupportedVersion
+    for brand, types in supported.items():
+        brand_text = brand.capitalize() + ("<sup>\*</sup>" if brand == "tapo" else "")
+        types_text = ""
+        for type_, models in types.items():
+            models_list = []
+            models_text = ""
             for model, versions in sorted(models.items()):
-                version_list = []
                 auth_count = 0
-                auth_symbol = ""
+                versions_text = ""
                 for version in versions:
                     region_text = f" ({version.region})" if version.region else ""
-                    version_auth = (
-                        single_star if version.auth and brand == "kasa" else ""
-                    )
-                    version_text = (
-                        f"  - Hardware {version.hw}{region_text} "
-                        + f"Firmare {version.fw}{version_auth}"
-                    )
-                    version_list.append(version_text)
-                    if version.auth:
-                        auth_count += 1
-                        auth_symbol = double_star
-                auth_symbol = (
-                    single_star if auth_count == len(versions) else auth_symbol
+                    auth_count += 1 if version.auth else 0
+                    vauth_flag = "<sup>\*</sup>" if version.auth else ""
+                    if version_template:
+                        versions_text += versst.substitute(
+                            hw=version.hw,
+                            fw=version.fw,
+                            region=region_text,
+                            auth_flag=vauth_flag,
+                        )
+                auth_flag = (
+                    "<sup>\*</sup>"
+                    if auth_count == len(versions)
+                    else "<sup>\*\*</sup>"
+                    if auth_count > 0
+                    else ""
                 )
-                auth_symbol = auth_symbol if brand == "kasa" else ""
-                versions_text = "\n".join(version_list)
-                detail_model_text = f"- **{model}{auth_symbol}**" + f"\n{versions_text}"
-                summary_model_text = model + auth_symbol
-                model_text = summary_model_text if summary else detail_model_text
-                models_list.append(model_text)
-        if summary:
-            models_text = ", ".join(models_list)
-            line = f"- **{type_}**: {models_text}\n"
-        else:
-            models_text = "\n".join(models_list)
-            line = f"\n### {type_}\n\n{models_text}\n"
-        lines.append(line)
-    return lines
+                auth_flag = "" if brand == "tapo" else auth_flag
+                if model_template:
+                    models_text += modelt.substitute(
+                        model=model, versions=versions_text, auth_flag=auth_flag
+                    )
+                else:
+                    models_list.append(f"{model}{auth_flag}")
+            models_text = models_text if models_text else ", ".join(models_list)
+            types_text += typest.substitute(type_=type_, models=models_text)
+        brands += brandt.substitute(brand=brand_text, types=types_text)
+    return brands
 
 
 def _get_smart_supported(supported):
@@ -606,6 +620,8 @@ def _get_smart_supported(supported):
             supported_type = POWER_STRIPS if "child_device" in components else PLUGS
         elif type_ == "SWITCH":
             supported_type = WALL_SWITCHES
+        elif type_ == "HUB":
+            supported_type = HUBS
         else:
             click.echo(
                 click.style(
@@ -620,7 +636,8 @@ def _get_smart_supported(supported):
         fw_version = fixture_data["get_device_info"]["fw_ver"]
         fw_version = fw_version.split(" ", maxsplit=1)[0]
 
-        smodel = supported[supported_type][brand].setdefault(model, [])
+        stype = supported[brand].setdefault(supported_type, {})
+        smodel = stype.setdefault(model, [])
         smodel.append(
             SupportedVersion(region=region, hw=hw_version, fw=fw_version, auth=True)
         )
@@ -650,7 +667,8 @@ def _get_iot_supported(supported):
                     supported_type = WALL_SWITCHES
                 else:
                     supported_type = PLUGS
-        smodel = supported[supported_type]["kasa"].setdefault(model, [])
+        stype = supported["kasa"].setdefault(supported_type, {})
+        smodel = stype.setdefault(model, [])
         fw = sysinfo["sw_ver"].split(" ", maxsplit=1)[0]
         smodel.append(
             SupportedVersion(region=region, hw=sysinfo["hw_ver"], fw=fw, auth=auth)
