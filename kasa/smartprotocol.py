@@ -340,10 +340,16 @@ class _ChildProtocolWrapper(SmartProtocol):
         result = response.get("control_child")
         # Unwrap responseData for control_child
         if result and (response_data := result.get("responseData")):
-            self._handle_response_error_code(response_data, "control_child")
             result = response_data.get("result")
+            if result and (multi_responses := result.get("responses")):
+                ret_val = {}
+                for multi_response in multi_responses:
+                    method = multi_response["method"]
+                    self._handle_response_error_code(multi_response, method)
+                    ret_val[method] = multi_response.get("result")
+                return ret_val
 
-        # TODO: handle multipleRequest unwrapping
+            self._handle_response_error_code(response_data, "control_child")
 
         return {method: result}
 
