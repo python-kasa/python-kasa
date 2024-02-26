@@ -97,6 +97,8 @@ DIMMERS = {
     *DIMMERS_SMART,
 }
 
+HUBS_SMART = {"H100"}
+
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "KP125M", "EP25"}
 WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
@@ -105,7 +107,10 @@ DIMMABLE = {*BULBS, *DIMMERS}
 
 ALL_DEVICES_IOT = BULBS_IOT.union(PLUGS_IOT).union(STRIPS_IOT).union(DIMMERS_IOT)
 ALL_DEVICES_SMART = (
-    BULBS_SMART.union(PLUGS_SMART).union(STRIPS_SMART).union(DIMMERS_SMART)
+    BULBS_SMART.union(PLUGS_SMART)
+    .union(STRIPS_SMART)
+    .union(DIMMERS_SMART)
+    .union(HUBS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -214,6 +219,9 @@ bulb_smart = parametrize(
 dimmers_smart = parametrize(
     "dimmer devices smart", model_filter=DIMMERS_SMART, protocol_filter={"SMART"}
 )
+hubs_smart = parametrize(
+    "hubs smart", model_filter=HUBS_SMART, protocol_filter={"SMART"}
+)
 device_smart = parametrize(
     "devices smart", model_filter=ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
@@ -237,6 +245,7 @@ def check_categories():
         + plug_smart.args[1]
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
+        + hubs_smart.args[1]
     )
     diffs: Set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -263,6 +272,9 @@ def device_for_fixture_name(model, protocol):
             if d in model:
                 return SmartBulb
         for d in STRIPS_SMART:
+            if d in model:
+                return SmartDevice
+        for d in HUBS_SMART:
             if d in model:
                 return SmartDevice
     else:
@@ -320,12 +332,9 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
 
 
 async def get_device_for_fixture_protocol(fixture, protocol):
-    # loop = asyncio.get_running_loop()
-
     finfo = FixtureInfo(name=fixture, protocol=protocol, data={})
     for fixture_info in FIXTURE_DATA:
         if finfo == fixture_info:
-            # return await loop.run_in_executor(None, get_device_for_fixture(fixture_info))
             return await get_device_for_fixture(fixture_info)
 
 

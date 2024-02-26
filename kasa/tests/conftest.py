@@ -24,7 +24,7 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
-@pytest.fixture()
+@pytest.fixture
 def dummy_protocol():
     """Return a smart protocol instance with a mocking-ready dummy transport."""
 

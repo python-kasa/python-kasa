@@ -84,6 +84,25 @@ class FakeSmartTransport(BaseTransport):
             "firmware",
             {"enable": True, "random_range": 120, "time": 180},
         ),
+        "get_alarm_configure": (
+            "alarm",
+            {
+                "get_alarm_configure": {
+                    "duration": 10,
+                    "type": "Doorbell Ring 2",
+                    "volume": "low",
+                }
+            },
+        ),
+        "get_support_alarm_type_list": (
+            "alarm",
+            {
+                "alarm_type_list": [
+                    "Doorbell Ring 1",
+                ]
+            },
+        ),
+        "get_device_usage": ("device", {}),
     }
 
     async def send(self, request: str):

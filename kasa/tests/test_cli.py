@@ -32,7 +32,14 @@ from kasa.cli import (
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
 
-from .conftest import device_iot, device_smart, handle_turn_on, new_discovery, turn_on
+from .conftest import (
+    device_iot,
+    device_smart,
+    get_device_for_fixture_protocol,
+    handle_turn_on,
+    new_discovery,
+    turn_on,
+)
 
 
 async def test_update_called_by_cli(dev, mocker):
@@ -684,3 +691,111 @@ async def test_errors(mocker):
     )
     assert res.exit_code == 2
     assert "Raised error:" not in res.output
+
+
+async def test_feature(mocker):
+    """Test feature command."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature"],
+        catch_exceptions=False,
+    )
+    assert "LED" in res.output
+    assert "== Child " in res.output  # child listing
+
+    assert res.exit_code == 0
+
+
+async def test_feature_single(mocker):
+    """Test feature command returning single value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "led"],
+        catch_exceptions=False,
+    )
+    assert "LED" in res.output
+    assert "== Features ==" not in res.output
+    assert res.exit_code == 0
+
+
+async def test_feature_missing(mocker):
+    """Test feature command returning single value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "missing"],
+        catch_exceptions=False,
+    )
+    assert "No feature by name 'missing'" in res.output
+    assert "== Features ==" not in res.output
+    assert res.exit_code == 0
+
+
+async def test_feature_set(mocker):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
+    led_setter = mocker.patch("kasa.smart.modules.ledmodule.LedModule.set_led")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "led", "True"],
+        catch_exceptions=False,
+    )
+
+    led_setter.assert_called_with(True)
+    assert "Setting led to True" in res.output
+    assert res.exit_code == 0
+
+
+async def test_feature_set_child(mocker):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
+    setter = mocker.patch("kasa.smart.smartdevice.SmartDevice.set_state")
+
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+    get_child_device = mocker.spy(dummy_device, "get_child_device")
+
+    child_id = "000000000000000000000000000000000000000001"
+
+    runner = CliRunner()
+    res = await runner.invoke(
+        cli,
+        [
+            "--host",
+            "127.0.0.123",
+            "--debug",
+            "feature",
+            "--child",
+            child_id,
+            "state",
+            "False",
+        ],
+        catch_exceptions=False,
+    )
+
+    get_child_device.assert_called()
+    setter.assert_called_with(False)
+
+    assert f"Targeting child device {child_id}"
+    assert "Setting state to False" in res.output
+    assert res.exit_code == 0

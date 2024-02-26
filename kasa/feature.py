@@ -14,6 +14,7 @@ class FeatureType(Enum):
     BinarySensor = auto()
     Switch = auto()
     Button = auto()
+    Number = auto()
 
 
 @dataclass
@@ -35,6 +36,12 @@ class Feature:
     #: Type of the feature
     type: FeatureType = FeatureType.Sensor
 
+    # Number-specific attributes
+    #: Minimum value
+    minimum_value: int = 0
+    #: Maximum value
+    maximum_value: int = 2**16  # Arbitrary max
+
     @property
     def value(self):
         """Return the current value."""
@@ -47,5 +54,12 @@ class Feature:
         """Set the value."""
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
+        if self.type == FeatureType.Number:  # noqa: SIM102
+            if value < self.minimum_value or value > self.maximum_value:
+                raise ValueError(
+                    f"Value {value} out of range "
+                    f"[{self.minimum_value}, {self.maximum_value}]"
+                )
+
         container = self.container if self.container is not None else self.device
         return await getattr(container, self.attribute_setter)(value)
