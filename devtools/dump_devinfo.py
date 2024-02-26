@@ -302,7 +302,7 @@ async def _make_requests_or_exit(
     final = {}
     protocol = (
         device.protocol
-        if child_device_id == 0
+        if child_device_id == ""
         else _ChildProtocolWrapper(child_device_id, device.protocol)
     )
     try:
@@ -475,7 +475,7 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
         click.echo(f"Testing  {test_call.module}..", nl=False)
         try:
             click.echo(f"Testing {test_call}..", nl=False)
-            if test_call.child_device_id == 0:
+            if test_call.child_device_id == "":
                 response = await device.protocol.query(
                     SmartRequest._create_request_dict(test_call.request)
                 )
