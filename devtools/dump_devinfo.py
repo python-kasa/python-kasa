@@ -32,9 +32,10 @@ from kasa import (
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
+from kasa.smartprotocol import _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
-SmartCall = namedtuple("SmartCall", "module request should_succeed")
+SmartCall = namedtuple("SmartCall", "module request should_succeed child_device_id")
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +70,10 @@ def scrub(res):
         "parent_device_id",  # for hub children
         "setup_code",  # matter
         "setup_payload",  # matter
+        "mfi_setup_code",  # mfi_ for homekit
+        "mfi_setup_id",
+        "mfi_token_token",
+        "mfi_token_uuid",
     ]
 
     for k, v in res.items():
@@ -105,6 +110,8 @@ def scrub(res):
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
+                elif k == "device_id" and "SCRUBBED" in v:
+                    pass  # already scrubbed
                 elif k == "device_id" and len(v) > 40:
                     # retain the last two chars when scrubbing child ids
                     end = v[-2:]
@@ -289,8 +296,15 @@ async def _make_requests_or_exit(
     requests: List[SmartRequest],
     name: str,
     batch_size: int,
+    *,
+    child_device_id: str,
 ) -> Dict[str, Dict]:
     final = {}
+    protocol = (
+        device.protocol
+        if child_device_id == 0
+        else _ChildProtocolWrapper(child_device_id, device.protocol)
+    )
     try:
         end = len(requests)
         step = batch_size  # Break the requests down as there seems to be a size limit
@@ -300,9 +314,7 @@ async def _make_requests_or_exit(
             request: Union[List[SmartRequest], SmartRequest] = (
                 requests_step[0] if len(requests_step) == 1 else requests_step
             )
-            responses = await device.protocol.query(
-                SmartRequest._create_request_dict(request)
-            )
+            responses = await protocol.query(SmartRequest._create_request_dict(request))
             for method, result in responses.items():
                 final[method] = result
         return final
@@ -331,23 +343,18 @@ async def _make_requests_or_exit(
         await device.protocol.close()
 
 
-async def get_smart_fixture(device: SmartDevice, batch_size: int):
-    """Get fixture for new TAPO style protocol."""
+async def get_smart_test_calls(device: SmartDevice):
+    """Get the list of test calls to make."""
+    test_calls = []
+    successes = []
+    child_device_components = {}
+
     extra_test_calls = [
         SmartCall(
             module="temp_humidity_records",
             request=SmartRequest.get_raw_request("get_temp_humidity_records"),
             should_succeed=False,
-        ),
-        SmartCall(
-            module="child_device_list",
-            request=SmartRequest.get_raw_request("get_child_device_list"),
-            should_succeed=False,
-        ),
-        SmartCall(
-            module="child_device_component_list",
-            request=SmartRequest.get_raw_request("get_child_device_component_list"),
-            should_succeed=False,
+            child_device_id="",
         ),
         SmartCall(
             module="trigger_logs",
@@ -355,14 +362,17 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
                 "get_trigger_logs", SmartRequest.GetTriggerLogsParams(5, 0)
             ),
             should_succeed=False,
+            child_device_id="",
         ),
     ]
 
-    successes = []
-
     click.echo("Testing component_nego call ..", nl=False)
     responses = await _make_requests_or_exit(
-        device, [SmartRequest.component_nego()], "component_nego call", batch_size
+        device,
+        [SmartRequest.component_nego()],
+        "component_nego call",
+        batch_size=1,
+        child_device_id="",
     )
     component_info_response = responses["component_nego"]
     click.echo(click.style("OK", fg="green"))
@@ -371,35 +381,109 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
             module="component_nego",
             request=SmartRequest("component_nego"),
             should_succeed=True,
+            child_device_id="",
         )
     )
+    components = {
+        item["id"]: item["ver_code"]
+        for item in component_info_response["component_list"]
+    }
 
-    test_calls = []
-    should_succeed = []
+    if "child_device" in components:
+        child_components = await _make_requests_or_exit(
+            device,
+            [SmartRequest.get_child_device_component_list()],
+            "child device component list",
+            batch_size=1,
+            child_device_id="",
+        )
+        successes.append(
+            SmartCall(
+                module="child_component_list",
+                request=SmartRequest.get_child_device_component_list(),
+                should_succeed=True,
+                child_device_id="",
+            )
+        )
+        test_calls.append(
+            SmartCall(
+                module="child_device_list",
+                request=SmartRequest.get_child_device_list(),
+                should_succeed=True,
+                child_device_id="",
+            )
+        )
+        # Get list of child components to call
+        if "control_child" in components:
+            child_device_components = {
+                child_component_list["device_id"]: {
+                    item["id"]: item["ver_code"]
+                    for item in child_component_list["component_list"]
+                }
+                for child_component_list in child_components[
+                    "get_child_device_component_list"
+                ]["child_component_list"]
+            }
 
-    for item in component_info_response["component_list"]:
-        component_id = item["id"]
-        ver_code = item["ver_code"]
+    # Get component calls
+    for component_id, ver_code in components.items():
+        if component_id == "child_device":
+            continue
         if (requests := get_component_requests(component_id, ver_code)) is not None:
             component_test_calls = [
-                SmartCall(module=component_id, request=request, should_succeed=True)
+                SmartCall(
+                    module=component_id,
+                    request=request,
+                    should_succeed=True,
+                    child_device_id="",
+                )
                 for request in requests
             ]
             test_calls.extend(component_test_calls)
-            should_succeed.extend(component_test_calls)
         else:
             click.echo(f"Skipping {component_id}..", nl=False)
             click.echo(click.style("UNSUPPORTED", fg="yellow"))
 
+    # Child component calls
+    for child_device_id, child_components in child_device_components.items():
+        for component_id, ver_code in child_components.items():
+            if (requests := get_component_requests(component_id, ver_code)) is not None:
+                component_test_calls = [
+                    SmartCall(
+                        module=component_id,
+                        request=request,
+                        should_succeed=True,
+                        child_device_id=child_device_id,
+                    )
+                    for request in requests
+                ]
+                test_calls.extend(component_test_calls)
+            else:
+                click.echo(f"Skipping {component_id}..", nl=False)
+                click.echo(click.style("UNSUPPORTED", fg="yellow"))
+
     test_calls.extend(extra_test_calls)
+
+    return test_calls, successes
+
+
+async def get_smart_fixture(device: SmartDevice, batch_size: int):
+    """Get fixture for new TAPO style protocol."""
+    test_calls, successes = await get_smart_test_calls(device)
 
     for test_call in test_calls:
         click.echo(f"Testing  {test_call.module}..", nl=False)
         try:
             click.echo(f"Testing {test_call}..", nl=False)
-            response = await device.protocol.query(
-                SmartRequest._create_request_dict(test_call.request)
-            )
+            if test_call.child_device_id == 0:
+                response = await device.protocol.query(
+                    SmartRequest._create_request_dict(test_call.request)
+                )
+            else:
+                cp = _ChildProtocolWrapper(test_call.child_device_id, device.protocol)
+                response = await cp.query(
+                    SmartRequest._create_request_dict(test_call.request)
+                )
         except AuthenticationError as ex:
             _echo_error(
                 f"Unable to query the device due to an authentication error: {ex}",
@@ -430,13 +514,48 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
         finally:
             await device.protocol.close()
 
-    requests = []
-    for succ in successes:
-        requests.append(succ.request)
+    device_requests: Dict[str, List[SmartRequest]] = {}
+    for success in successes:
+        device_request = device_requests.setdefault(success.child_device_id, [])
+        device_request.append(success.request)
+
+    scrubbed_device_ids = {
+        device_id: f"SCRUBBED_CHILD_DEVICE_ID_{index}"
+        for index, device_id in enumerate(device_requests.keys())
+        if device_id != ""
+    }
 
     final = await _make_requests_or_exit(
-        device, requests, "all successes at once", batch_size
+        device,
+        device_requests[""],
+        "all successes at once",
+        batch_size,
+        child_device_id="",
     )
+    for child_device_id, requests in device_requests.items():
+        if child_device_id == "":
+            continue
+        response = await _make_requests_or_exit(
+            device,
+            requests,
+            "all child successes at once",
+            batch_size,
+            child_device_id=child_device_id,
+        )
+        scrubbed = scrubbed_device_ids[child_device_id]
+        if "get_device_info" in response and "device_id" in response["get_device_info"]:
+            response["get_device_info"]["device_id"] = scrubbed
+        cd = final.setdefault("child_devices", {})
+        cd[scrubbed] = response
+
+    # Scrub the device ids
+    if gc := final.get("get_child_device_component_list"):
+        for child in gc["child_component_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_device_ids[device_id]
+        for child in final["get_child_device_list"]["child_device_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_device_ids[device_id]
 
     # Need to recreate a DiscoverResult here because we don't want the aliases
     # in the fixture, we want the actual field names as returned by the device.
