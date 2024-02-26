@@ -9,10 +9,8 @@ from voluptuous import (
 
 from kasa import Bulb, BulbPreset, DeviceType, KasaException
 from kasa.iot import IotBulb
-from kasa.smart import SmartDevice
 
 from .conftest import (
-    brightness_smart,
     bulb,
     bulb_iot,
     color_bulb,
@@ -372,10 +370,3 @@ SYSINFO_SCHEMA_BULB = SYSINFO_SCHEMA.extend(
         ],
     }
 )
-
-
-@brightness_smart
-async def test_brightness_component(dev: SmartDevice):
-    """Placeholder to test framwework component filter."""
-    assert isinstance(dev, SmartDevice)
-    assert "brightness" in dev._components
