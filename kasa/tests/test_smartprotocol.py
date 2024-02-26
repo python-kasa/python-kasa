@@ -122,7 +122,6 @@ async def test_childdevicewrapper_error(dummy_protocol, mocker):
         await wrapped_protocol.query(DUMMY_QUERY)
 
 
-@pytest.mark.skip("childprotocolwrapper does not yet support multirequests")
 async def test_childdevicewrapper_unwrapping_multiplerequest(dummy_protocol, mocker):
     """Test that unwrapping multiplerequest works correctly."""
     mock_response = {
@@ -146,13 +145,12 @@ async def test_childdevicewrapper_unwrapping_multiplerequest(dummy_protocol, moc
             }
         },
     }
-
-    mocker.patch.object(dummy_protocol._transport, "send", return_value=mock_response)
-    resp = await dummy_protocol.query(DUMMY_QUERY)
+    wrapped_protocol = _ChildProtocolWrapper("dummyid", dummy_protocol)
+    mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
+    resp = await wrapped_protocol.query(DUMMY_QUERY)
     assert resp == {"get_device_info": {"foo": "bar"}, "second_command": {"bar": "foo"}}
 
 
-@pytest.mark.skip("childprotocolwrapper does not yet support multirequests")
 async def test_childdevicewrapper_multiplerequest_error(dummy_protocol, mocker):
     """Test that errors inside multipleRequest response of responseData raise an exception."""
     mock_response = {
@@ -172,7 +170,7 @@ async def test_childdevicewrapper_multiplerequest_error(dummy_protocol, mocker):
             }
         },
     }
-
-    mocker.patch.object(dummy_protocol._transport, "send", return_value=mock_response)
+    wrapped_protocol = _ChildProtocolWrapper("dummyid", dummy_protocol)
+    mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
     with pytest.raises(KasaException):
-        await dummy_protocol.query(DUMMY_QUERY)
+        await wrapped_protocol.query(DUMMY_QUERY)
