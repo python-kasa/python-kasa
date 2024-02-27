@@ -36,6 +36,10 @@ from kasa.smartprotocol import _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed child_device_id")
+FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
+
+SMART_FOLDER = "kasa/tests/fixtures/smart/"
+IOT_FOLDER = "kasa/tests/fixtures/"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -137,27 +141,30 @@ def default_to_regular(d):
 async def handle_device(basedir, autosave, device: Device, batch_size: int):
     """Create a fixture for a single device instance."""
     if isinstance(device, SmartDevice):
-        filename, copy_folder, final = await get_smart_fixture(device, batch_size)
-    else:
-        filename, copy_folder, final = await get_legacy_fixture(device)
-
-    save_filename = Path(basedir) / copy_folder / filename
-
-    pprint(scrub(final))
-    if autosave:
-        save = "y"
-    else:
-        save = click.prompt(
-            f"Do you want to save the above content to {save_filename} (y/n)"
+        fixture_results: List[FixtureResult] = await get_smart_fixtures(
+            device, batch_size
         )
-    if save == "y":
-        click.echo(f"Saving info to {save_filename}")
-
-        with open(save_filename, "w") as f:
-            json.dump(final, f, sort_keys=True, indent=4)
-            f.write("\n")
     else:
-        click.echo("Not saving.")
+        fixture_results = [await get_legacy_fixture(device)]
+
+    for fixture_result in fixture_results:
+        save_filename = Path(basedir) / fixture_result.folder / fixture_result.filename
+
+        pprint(scrub(fixture_result.data))
+        if autosave:
+            save = "y"
+        else:
+            save = click.prompt(
+                f"Do you want to save the above content to {save_filename} (y/n)"
+            )
+        if save == "y":
+            click.echo(f"Saving info to {save_filename}")
+
+            with open(save_filename, "w") as f:
+                json.dump(fixture_result.data, f, sort_keys=True, indent=4)
+                f.write("\n")
+        else:
+            click.echo("Not saving.")
 
 
 @click.command()
@@ -188,7 +195,27 @@ async def handle_device(basedir, autosave, device: Device, batch_size: int):
     "--batch-size", default=5, help="Number of batched requests to send at once"
 )
 @click.option("-d", "--debug", is_flag=True)
-async def cli(host, target, basedir, autosave, debug, username, password, batch_size):
+@click.option(
+    "-di",
+    "--discovery-info",
+    help=(
+        "Bypass discovery by passing an accurate discovery result json escaped string."
+        + " Do not use this flag unless you are sure you know what it means.",
+    ),
+)
+@click.option("--port", help="Port override")
+async def cli(
+    host,
+    target,
+    basedir,
+    autosave,
+    debug,
+    username,
+    password,
+    batch_size,
+    discovery_info,
+    port,
+):
     """Generate devinfo files for devices.
 
     Use --host (for a single device) or --target (for a complete network).
@@ -198,8 +225,30 @@ async def cli(host, target, basedir, autosave, debug, username, password, batch_
 
     credentials = Credentials(username=username, password=password)
     if host is not None:
-        click.echo("Host given, performing discovery on %s." % host)
-        device = await Discover.discover_single(host, credentials=credentials)
+        if discovery_info:
+            click.echo("Host and discovery info given, trying connect on %s." % host)
+            from kasa import ConnectionType, DeviceConfig
+
+            di = json.loads(discovery_info)
+            dr = DiscoveryResult(**di)
+            connection_type = ConnectionType.from_values(
+                dr.device_type,
+                dr.mgt_encrypt_schm.encrypt_type,
+                dr.mgt_encrypt_schm.lv,
+            )
+            dc = DeviceConfig(
+                host=host,
+                connection_type=connection_type,
+                port_override=port,
+                credentials=credentials,
+            )
+            device = await Device.connect(config=dc)
+            device.update_from_discover_info(dr.get_dict())
+        else:
+            click.echo("Host given, performing discovery on %s." % host)
+            device = await Discover.discover_single(
+                host, credentials=credentials, port=port
+            )
         await handle_device(basedir, autosave, device, batch_size)
     else:
         click.echo(
@@ -277,8 +326,8 @@ async def get_legacy_fixture(device):
     sw_version = sysinfo["sw_ver"]
     sw_version = sw_version.split(" ", maxsplit=1)[0]
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
-    copy_folder = "kasa/tests/fixtures/"
-    return save_filename, copy_folder, final
+    copy_folder = IOT_FOLDER
+    return FixtureResult(filename=save_filename, folder=copy_folder, data=final)
 
 
 def _echo_error(msg: str):
@@ -359,7 +408,7 @@ async def get_smart_test_calls(device: SmartDevice):
         SmartCall(
             module="trigger_logs",
             request=SmartRequest.get_raw_request(
-                "get_trigger_logs", SmartRequest.GetTriggerLogsParams(5, 0)
+                "get_trigger_logs", SmartRequest.GetTriggerLogsParams()
             ),
             should_succeed=False,
             child_device_id="",
@@ -444,6 +493,8 @@ async def get_smart_test_calls(device: SmartDevice):
             click.echo(f"Skipping {component_id}..", nl=False)
             click.echo(click.style("UNSUPPORTED", fg="yellow"))
 
+    test_calls.extend(extra_test_calls)
+
     # Child component calls
     for child_device_id, child_components in child_device_components.items():
         for component_id, ver_code in child_components.items():
@@ -461,13 +512,29 @@ async def get_smart_test_calls(device: SmartDevice):
             else:
                 click.echo(f"Skipping {component_id}..", nl=False)
                 click.echo(click.style("UNSUPPORTED", fg="yellow"))
-
-    test_calls.extend(extra_test_calls)
+        # Add the extra calls for each child
+        for extra_call in extra_test_calls:
+            extra_child_call = extra_call._replace(child_device_id=child_device_id)
+            test_calls.append(extra_child_call)
 
     return test_calls, successes
 
 
-async def get_smart_fixture(device: SmartDevice, batch_size: int):
+def get_smart_child_fixture(response):
+    """Get a seperate fixture for the child device."""
+    info = response["get_device_info"]
+    hw_version = info["hw_ver"]
+    sw_version = info["fw_ver"]
+    sw_version = sw_version.split(" ", maxsplit=1)[0]
+    model = info["model"]
+    if region := info.get("specs"):
+        model += f"({region})"
+
+    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    return FixtureResult(filename=save_filename, folder=SMART_FOLDER, data=response)
+
+
+async def get_smart_fixtures(device: SmartDevice, batch_size: int):
     """Get fixture for new TAPO style protocol."""
     test_calls, successes = await get_smart_test_calls(device)
 
@@ -497,6 +564,7 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
                 in [
                     SmartErrorCode.UNKNOWN_METHOD_ERROR,
                     SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
+                    SmartErrorCode.UNSPECIFIC_ERROR,
                 ]
             ):
                 click.echo(click.style("FAIL - EXPECTED", fg="green"))
@@ -532,6 +600,7 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
         batch_size,
         child_device_id="",
     )
+    fixture_results = []
     for child_device_id, requests in device_requests.items():
         if child_device_id == "":
             continue
@@ -545,10 +614,18 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
         scrubbed = scrubbed_device_ids[child_device_id]
         if "get_device_info" in response and "device_id" in response["get_device_info"]:
             response["get_device_info"]["device_id"] = scrubbed
-        cd = final.setdefault("child_devices", {})
-        cd[scrubbed] = response
+        # If the child is a different model to the parent create a seperate fixture
+        if (
+            "get_device_info" in response
+            and (child_model := response["get_device_info"].get("model"))
+            and child_model != final["get_device_info"]["model"]
+        ):
+            fixture_results.append(get_smart_child_fixture(response))
+        else:
+            cd = final.setdefault("child_devices", {})
+            cd[scrubbed] = response
 
-    # Scrub the device ids
+    # Scrub the device ids in the parent
     if gc := final.get("get_child_device_component_list"):
         for child in gc["child_component_list"]:
             device_id = child["device_id"]
@@ -573,8 +650,11 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
     sw_version = sw_version.split(" ", maxsplit=1)[0]
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
-    copy_folder = "kasa/tests/fixtures/smart/"
-    return save_filename, copy_folder, final
+    copy_folder = SMART_FOLDER
+    fixture_results.insert(
+        0, FixtureResult(filename=save_filename, folder=copy_folder, data=final)
+    )
+    return fixture_results
 
 
 if __name__ == "__main__":
