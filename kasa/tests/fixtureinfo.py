@@ -1,12 +1,16 @@
 import glob
 import json
 import os
-from collections import namedtuple
-from os.path import basename
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Dict, List, NamedTuple, Optional, Set
 
-FixtureInfo = namedtuple("FixtureInfo", "data protocol name")
+
+class FixtureInfo(NamedTuple):
+    name: str
+    protocol: str
+    data: Dict
+
+
 FixtureInfo.__hash__ = lambda x: hash((x.name, x.protocol))  # type: ignore[attr-defined, method-assign]
 FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assign]
 
@@ -51,7 +55,7 @@ def get_fixture_info() -> List[FixtureInfo]:
         with open(p) as f:
             data = json.load(f)
 
-        fixture_name = basename(p)
+        fixture_name = p.name
         fixture_data.append(
             FixtureInfo(data=data, protocol=protocol, name=fixture_name)
         )
@@ -69,32 +73,44 @@ def filter_fixtures(
     model_filter: Optional[Set[str]] = None,
     component_filter: Optional[str] = None,
 ):
+    """Filter the fixtures based on supplied parameters.
+
+    data_root_filter: return fixtures containing the supplied top
+        level key, i.e. discovery_result
+    protocol_filter: set of protocols to match, IOT or SMART
+    model_filter: set of device models to match
+    component_filter: filter SMART fixtures that have the provided
+    component in component_nego details.
+    """
+
+    def _model_match(fixture_data: FixtureInfo, model_filter):
+        file_model_region = fixture_data.name.split("_")[0]
+        file_model = file_model_region.split("(")[0]
+        return file_model in model_filter
+
+    def _component_match(fixture_data: FixtureInfo, component_filter):
+        if (component_nego := fixture_data.data.get("component_nego")) is None:
+            return False
+        components = {
+            component["id"]: component["ver_code"]
+            for component in component_nego["component_list"]
+        }
+        return component_filter in components
+
     filtered = []
     if protocol_filter is None:
         protocol_filter = {"IOT", "SMART"}
     for fixture_data in FIXTURE_DATA:
-        match = True
         if data_root_filter and data_root_filter not in fixture_data.data:
-            match = False
+            continue
         if fixture_data.protocol not in protocol_filter:
-            match = False
-        if model_filter is not None:
-            file_model_region = fixture_data.name.split("_")[0]
-            file_model = file_model_region.split("(")[0]
-            if file_model not in model_filter:
-                match = False
-        if component_filter:
-            if (component_nego := fixture_data.data.get("component_nego")) is None:
-                match = False
-            else:
-                components = {
-                    component["id"]: component["ver_code"]
-                    for component in component_nego["component_list"]
-                }
-                if component_filter not in components:
-                    match = False
-        if match:
-            filtered.append(fixture_data)
+            continue
+        if model_filter is not None and not _model_match(fixture_data, model_filter):
+            continue
+        if component_filter and not _component_match(fixture_data, component_filter):
+            continue
+
+        filtered.append(fixture_data)
 
     print(f"# {desc}")
     for value in filtered:

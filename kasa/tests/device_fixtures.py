@@ -1,6 +1,6 @@
 from typing import Dict, Set
 
-import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
+import pytest
 
 from kasa import (
     Credentials,
@@ -10,9 +10,9 @@ from kasa import (
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip
 from kasa.smart import SmartBulb, SmartDevice
 
-from .common import FIXTURE_DATA, FixtureInfo, filter_fixtures, idgenerator
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
+from .fixtureinfo import FIXTURE_DATA, FixtureInfo, filter_fixtures, idgenerator
 
 # Tapo bulbs
 BULBS_SMART_VARIABLE_TEMP = {"L530E", "L930-5"}

@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from json import dumps as json_dumps
 from typing import Optional
 
-import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
+import pytest
 
 from kasa.xortransport import XorEncryption
 
-from .common import FIXTURE_DATA, FixtureInfo, filter_fixtures, idgenerator
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
+from .fixtureinfo import FIXTURE_DATA, FixtureInfo, filter_fixtures, idgenerator
 
 
 def _make_unsupported(device_family, encrypt_type):

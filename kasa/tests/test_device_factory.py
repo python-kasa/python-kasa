@@ -20,10 +20,8 @@ from kasa.deviceconfig import (
 from kasa.discover import DiscoveryResult
 
 
-def _get_connection_type_device_class(the_fixture_data):
-    if "result" in the_fixture_data:
-        # discovery_info = {"result": the_fixture_data["discovery_result"]}
-        discovery_info = the_fixture_data
+def _get_connection_type_device_class(discovery_info):
+    if "result" in discovery_info:
         device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult(**discovery_info["result"])
 
@@ -34,7 +32,7 @@ def _get_connection_type_device_class(the_fixture_data):
         connection_type = ConnectionType.from_values(
             DeviceFamilyType.IotSmartPlugSwitch.value, EncryptType.Xor.value
         )
-        device_class = Discover._get_device_class(the_fixture_data)
+        device_class = Discover._get_device_class(discovery_info)
 
     return connection_type, device_class
 
