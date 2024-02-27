@@ -200,7 +200,7 @@ async def handle_device(basedir, autosave, device: Device, batch_size: int):
     "--discovery-info",
     help=(
         "Bypass discovery by passing an accurate discovery result json escaped string."
-        + " Do not use this flag unless you are sure you know what it means.",
+        + " Do not use this flag unless you are sure you know what it means."
     ),
 )
 @click.option("--port", help="Port override")
