@@ -45,9 +45,6 @@ class EnergyModule(SmartModule):
         """Query to execute during the update cycle."""
         return {
             "get_energy_usage": None,
-            # The current_power in get_energy_usage is more precise (mw vs. w),
-            # making this rather useless, but maybe there are version differences?
-            "get_current_power": None,
         }
 
     @property
@@ -58,7 +55,7 @@ class EnergyModule(SmartModule):
     @property
     def energy(self):
         """Return get_energy_usage results."""
-        return self.data["get_energy_usage"]
+        return self.data
 
     @property
     def emeter_realtime(self):
