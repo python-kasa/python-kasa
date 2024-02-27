@@ -1,11 +1,11 @@
 from kasa.smart import SmartDevice
 
 from .conftest import (
-    brightness_smart,
+    brightness,
 )
 
 
-@brightness_smart
+@brightness
 async def test_brightness_component(dev: SmartDevice):
     """Placeholder to test framwework component filter."""
     assert isinstance(dev, SmartDevice)
