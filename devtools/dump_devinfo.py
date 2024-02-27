@@ -560,6 +560,7 @@ def _supported_text(
                     region_text = f" ({version.region})" if version.region else ""
                     auth_count += 1 if version.auth else 0
                     vauth_flag = "<sup>\*</sup>" if version.auth else ""
+                    vauth_flag = "" if brand == "tapo" else vauth_flag
                     if version_template:
                         versions_text += versst.substitute(
                             hw=version.hw,
