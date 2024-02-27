@@ -129,6 +129,7 @@ class FakeIotProtocol(IotProtocol):
                 config=DeviceConfig("127.0.0.123"),
             )
         )
+        info = copy.deepcopy(info)
         self.discovery_data = info
         self.writer = None
         self.reader = None

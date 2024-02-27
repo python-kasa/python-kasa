@@ -20,9 +20,8 @@ from kasa.deviceconfig import (
 from kasa.discover import DiscoveryResult
 
 
-def _get_connection_type_device_class(the_fixture_data):
-    if "discovery_result" in the_fixture_data:
-        discovery_info = {"result": the_fixture_data["discovery_result"]}
+def _get_connection_type_device_class(discovery_info):
+    if "result" in discovery_info:
         device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult(**discovery_info["result"])
 
@@ -33,21 +32,18 @@ def _get_connection_type_device_class(the_fixture_data):
         connection_type = ConnectionType.from_values(
             DeviceFamilyType.IotSmartPlugSwitch.value, EncryptType.Xor.value
         )
-        device_class = Discover._get_device_class(the_fixture_data)
+        device_class = Discover._get_device_class(discovery_info)
 
     return connection_type, device_class
 
 
 async def test_connect(
-    all_fixture_data: dict,
+    discovery_data,
     mocker,
 ):
     """Test that if the protocol is passed in it gets set correctly."""
     host = "127.0.0.1"
-    ctype, device_class = _get_connection_type_device_class(all_fixture_data)
-
-    mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
-    mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
+    ctype, device_class = _get_connection_type_device_class(discovery_data)
 
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
@@ -67,34 +63,32 @@ async def test_connect(
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
-async def test_connect_custom_port(all_fixture_data: dict, mocker, custom_port):
+async def test_connect_custom_port(discovery_data: dict, mocker, custom_port):
     """Make sure that connect returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
 
-    ctype, _ = _get_connection_type_device_class(all_fixture_data)
+    ctype, _ = _get_connection_type_device_class(discovery_data)
     config = DeviceConfig(
         host=host,
         port_override=custom_port,
         connection_type=ctype,
         credentials=Credentials("dummy_user", "dummy_password"),
     )
-    default_port = 80 if "discovery_result" in all_fixture_data else 9999
+    default_port = 80 if "result" in discovery_data else 9999
 
-    ctype, _ = _get_connection_type_device_class(all_fixture_data)
-    mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
-    mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
+    ctype, _ = _get_connection_type_device_class(discovery_data)
+
     dev = await connect(config=config)
     assert issubclass(dev.__class__, Device)
     assert dev.port == custom_port or dev.port == default_port
 
 
 async def test_connect_logs_connect_time(
-    all_fixture_data: dict, caplog: pytest.LogCaptureFixture, mocker
+    discovery_data: dict,
+    caplog: pytest.LogCaptureFixture,
 ):
     """Test that the connect time is logged when debug logging is enabled."""
-    ctype, _ = _get_connection_type_device_class(all_fixture_data)
-    mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
-    mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
+    ctype, _ = _get_connection_type_device_class(discovery_data)
 
     host = "127.0.0.1"
     config = DeviceConfig(
@@ -107,13 +101,13 @@ async def test_connect_logs_connect_time(
     assert "seconds to update" in caplog.text
 
 
-async def test_connect_query_fails(all_fixture_data: dict, mocker):
+async def test_connect_query_fails(discovery_data, mocker):
     """Make sure that connect fails when query fails."""
     host = "127.0.0.1"
     mocker.patch("kasa.IotProtocol.query", side_effect=KasaException)
     mocker.patch("kasa.SmartProtocol.query", side_effect=KasaException)
 
-    ctype, _ = _get_connection_type_device_class(all_fixture_data)
+    ctype, _ = _get_connection_type_device_class(discovery_data)
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
@@ -125,14 +119,11 @@ async def test_connect_query_fails(all_fixture_data: dict, mocker):
     assert close_mock.call_count == 1
 
 
-async def test_connect_http_client(all_fixture_data, mocker):
+async def test_connect_http_client(discovery_data, mocker):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
 
-    ctype, _ = _get_connection_type_device_class(all_fixture_data)
-
-    mocker.patch("kasa.IotProtocol.query", return_value=all_fixture_data)
-    mocker.patch("kasa.SmartProtocol.query", return_value=all_fixture_data)
+    ctype, _ = _get_connection_type_device_class(discovery_data)
 
     http_client = aiohttp.ClientSession()
 
@@ -142,6 +133,7 @@ async def test_connect_http_client(all_fixture_data, mocker):
     dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
         assert dev.protocol._transport._http_client.client != http_client
+    await dev.disconnect()
 
     config = DeviceConfig(
         host=host,
@@ -152,3 +144,5 @@ async def test_connect_http_client(all_fixture_data, mocker):
     dev = await connect(config=config)
     if ctype.encryption_type != EncryptType.Xor:
         assert dev.protocol._transport._http_client.client == http_client
+    await dev.disconnect()
+    await http_client.close()
