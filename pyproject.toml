@@ -19,7 +19,6 @@ include = [
 
 [tool.poetry.scripts]
 kasa = "kasa.cli:cli"
-generate-supported = "devtools.generate_supported:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
