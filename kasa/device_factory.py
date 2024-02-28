@@ -1,11 +1,11 @@
 """Device creation via DeviceConfig."""
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, Optional, Tuple, Type
 
 from .aestransport import AesTransport
 from .device import Device
-from .device_type import DEVICE_TYPE_TO_SUPPORTED, DeviceType, SupportedDeviceType
+from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import (
@@ -24,7 +24,6 @@ from .protocol import (
     BaseTransport,
 )
 from .smart import SmartBulb, SmartDevice
-from .smart.smartdevice import _get_device_type_from_components
 from .smartprotocol import SmartProtocol
 from .xortransport import XorTransport
 
@@ -194,19 +193,3 @@ def get_protocol(
         protocol_transport_key
     )  # type: ignore
     return protocol_class(transport=transport_class(config=config))
-
-
-def get_device_supported_type_from_sysinfo(
-    sysinfo: Dict[str, Any]
-) -> SupportedDeviceType:
-    """Find type to be displayed as a supported device category."""
-    dt = _get_device_type_from_sys_info(sysinfo)
-    return DEVICE_TYPE_TO_SUPPORTED[dt]
-
-
-def get_device_supported_type_from_components(
-    components: List[str], device_type: str
-) -> SupportedDeviceType:
-    """Find type to be displayed as a supported device category."""
-    dt = _get_device_type_from_components(components, device_type)
-    return DEVICE_TYPE_TO_SUPPORTED[dt]

@@ -2,15 +2,14 @@
 """Script that checks supported devices and updates README.md and SUPPORTED.md."""
 import json
 import sys
+from enum import Enum
 from pathlib import Path
 from string import Template
 from typing import NamedTuple
 
-from kasa.device_factory import (
-    get_device_supported_type_from_components,
-    get_device_supported_type_from_sysinfo,
-)
-from kasa.device_type import SupportedDeviceType
+from kasa.device_factory import _get_device_type_from_sys_info
+from kasa.device_type import DeviceType
+from kasa.smart.smartdevice import _get_device_type_from_components
 
 
 class SupportedVersion(NamedTuple):
@@ -20,6 +19,31 @@ class SupportedVersion(NamedTuple):
     hw: str
     fw: str
     auth: bool
+
+
+class SupportedDeviceType(Enum):
+    """Supported device type enum."""
+
+    Plugs = "Plugs"
+    PowerStrips = "Power Strips"
+    WallSwitches = "Wall Switches"
+    Bulbs = "Bulbs"
+    LightStrips = "Light Strips"
+    Hubs = "Hubs"
+    Sensors = "Sensors"
+
+
+DEVICE_TYPE_TO_SUPPORTED = {
+    DeviceType.Plug: SupportedDeviceType.Plugs,
+    DeviceType.Bulb: SupportedDeviceType.Bulbs,
+    DeviceType.Strip: SupportedDeviceType.PowerStrips,
+    DeviceType.StripSocket: SupportedDeviceType.PowerStrips,
+    DeviceType.Dimmer: SupportedDeviceType.WallSwitches,
+    DeviceType.Switch: SupportedDeviceType.WallSwitches,
+    DeviceType.LightStrip: SupportedDeviceType.LightStrips,
+    DeviceType.Sensor: SupportedDeviceType.Sensors,
+    DeviceType.Hub: SupportedDeviceType.Hubs,
+}
 
 
 SUPPORTED_FILENAME = "SUPPORTED.md"
@@ -177,9 +201,8 @@ def _get_smart_supported(supported):
             component["id"]
             for component in fixture_data["component_nego"]["component_list"]
         ]
-        supported_type = get_device_supported_type_from_components(
-            components, device_type
-        )
+        dt = _get_device_type_from_components(components, device_type)
+        supported_type = DEVICE_TYPE_TO_SUPPORTED[dt]
 
         hw_version = fixture_data["get_device_info"]["hw_ver"]
         fw_version = fixture_data["get_device_info"]["fw_ver"]
@@ -198,7 +221,8 @@ def _get_iot_supported(supported):
         with open(iot_file) as f:
             fixture_data = json.load(f)
         sysinfo = fixture_data["system"]["get_sysinfo"]
-        supported_type = get_device_supported_type_from_sysinfo(fixture_data)
+        dt = _get_device_type_from_sys_info(fixture_data)
+        supported_type = DEVICE_TYPE_TO_SUPPORTED[dt]
 
         model, _, region = sysinfo["model"][:-1].partition("(")
         auth = "discovery_result" in fixture_data

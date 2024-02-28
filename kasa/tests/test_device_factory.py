@@ -11,12 +11,10 @@ from kasa import (
     KasaException,
 )
 from kasa.device_factory import (
+    _get_device_type_from_sys_info,
     connect,
-    get_device_supported_type_from_components,
-    get_device_supported_type_from_sysinfo,
     get_protocol,
 )
-from kasa.device_type import DEVICE_TYPE_TO_SUPPORTED
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
@@ -24,7 +22,7 @@ from kasa.deviceconfig import (
     EncryptType,
 )
 from kasa.discover import DiscoveryResult
-from kasa.smart.smartdevice import SmartDevice
+from kasa.smart.smartdevice import SmartDevice, _get_device_type_from_components
 
 
 def _get_connection_type_device_class(discovery_info):
@@ -155,14 +153,12 @@ async def test_connect_http_client(discovery_data, mocker):
     await http_client.close()
 
 
-async def test_device_supported_types(dev: Device):
+async def test_device_types(dev: Device):
     await dev.update()
     if isinstance(dev, SmartDevice):
         device_type = dev._discovery_info["result"]["device_type"]
-        res = get_device_supported_type_from_components(
-            dev._components.keys(), device_type
-        )
+        res = _get_device_type_from_components(dev._components.keys(), device_type)
     else:
-        res = get_device_supported_type_from_sysinfo(dev._last_update)
+        res = _get_device_type_from_sys_info(dev._last_update)
 
-    assert DEVICE_TYPE_TO_SUPPORTED[dev.device_type] == res
+    assert dev.device_type == res
