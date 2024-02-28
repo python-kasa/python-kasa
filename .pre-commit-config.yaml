@@ -38,14 +38,3 @@ repos:
     verbose: true # Show output on success
     types: [json]
     pass_filenames: false # passing filenames causes the hook to run in batches against all-files
-    stages: ["pre-commit"]
-  - id: generate-supported # This hook is tied to manual stage so will be used by the CI
-    name: Generate supported devices (print-diff)
-    description: This hook generates the supported device sections of README.md and SUPPORTED.md
-    entry: devtools/generate_supported.py
-    language: system
-    types: [json]
-    verbose: true
-    args: [--print-diffs] # The CI will print diffs to explain failues.
-    pass_filenames: false
-    stages: ["manual"]

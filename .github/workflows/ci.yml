@@ -28,7 +28,7 @@ jobs:
           poetry install
       - name: "Check supported device md files are up to date"
         run: |
-          poetry run pre-commit run generate-supported --hook-stage manual --all-files
+          poetry run pre-commit run generate-supported --all-files
       - name: "Linting and code formating (ruff)"
         run: |
           poetry run pre-commit run ruff --all-files
