@@ -42,7 +42,7 @@ repos:
   - id: generate-supported
     name: Generate supported devices
     description: This hook generates the supported device sections of README.md and SUPPORTED.md
-    entry: generate-supported
+    entry: devtools/generate_supported.py
     language: system
     types: [json]
     args: [--print-diffs]
