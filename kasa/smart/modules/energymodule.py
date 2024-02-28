@@ -43,12 +43,12 @@ class EnergyModule(SmartModule):
 
     def query(self) -> Dict:
         """Query to execute during the update cycle."""
-        ret_val = {
+        req = {
             "get_energy_usage": None,
         }
         if self.supported_version > 1:
-            ret_val["get_current_power"] = None
-        return ret_val
+            req["get_current_power"] = None
+        return req
 
     @property
     def current_power(self):
