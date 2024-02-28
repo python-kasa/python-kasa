@@ -45,6 +45,7 @@ repos:
     entry: devtools/generate_supported.py
     language: system
     types: [json]
+    verbose: true
     args: [--print-diffs] # The CI will print diffs to explain failues.
     pass_filenames: false
     stages: ["manual"]
