@@ -35,7 +35,7 @@ from kasa.iot import IotDevice
 from .conftest import (
     device_iot,
     device_smart,
-    get_device_for_file,
+    get_device_for_fixture_protocol,
     handle_turn_on,
     new_discovery,
     turn_on,
@@ -695,7 +695,9 @@ async def test_errors(mocker):
 
 async def test_feature(mocker):
     """Test feature command."""
-    dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
     runner = CliRunner()
     res = await runner.invoke(
@@ -711,7 +713,9 @@ async def test_feature(mocker):
 
 async def test_feature_single(mocker):
     """Test feature command returning single value."""
-    dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
     runner = CliRunner()
     res = await runner.invoke(
@@ -723,9 +727,12 @@ async def test_feature_single(mocker):
     assert "== Features ==" not in res.output
     assert res.exit_code == 0
 
+
 async def test_feature_missing(mocker):
     """Test feature command returning single value."""
-    dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
     runner = CliRunner()
     res = await runner.invoke(
@@ -737,9 +744,12 @@ async def test_feature_missing(mocker):
     assert "== Features ==" not in res.output
     assert res.exit_code == 0
 
+
 async def test_feature_set(mocker):
     """Test feature command's set value."""
-    dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
     led_setter = mocker.patch("kasa.smart.modules.ledmodule.LedModule.set_led")
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
 
@@ -757,7 +767,9 @@ async def test_feature_set(mocker):
 
 async def test_feature_set_child(mocker):
     """Test feature command's set value."""
-    dummy_device = await get_device_for_file("P300(EU)_1.0_1.0.13.json", "SMART")
+    dummy_device = await get_device_for_fixture_protocol(
+        "P300(EU)_1.0_1.0.13.json", "SMART"
+    )
     setter = mocker.patch("kasa.smart.smartdevice.SmartDevice.set_state")
 
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)

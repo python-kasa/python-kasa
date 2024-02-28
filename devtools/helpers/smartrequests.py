@@ -76,6 +76,13 @@ class SmartRequest:
         start_index: int = 0
 
     @dataclass
+    class GetScheduleRulesParams(SmartRequestParams):
+        """Get Rules Params."""
+
+        start_index: int = 0
+        schedule_mode: str = ""
+
+    @dataclass
     class GetTriggerLogsParams(SmartRequestParams):
         """Trigger Logs params."""
 
@@ -167,6 +174,16 @@ class SmartRequest:
         return SmartRequest("get_device_time")
 
     @staticmethod
+    def get_child_device_list() -> "SmartRequest":
+        """Get child device list."""
+        return SmartRequest("get_child_device_list")
+
+    @staticmethod
+    def get_child_device_component_list() -> "SmartRequest":
+        """Get child device component list."""
+        return SmartRequest("get_child_device_component_list")
+
+    @staticmethod
     def get_wireless_scan_info(
         params: Optional[GetRulesParams] = None,
     ) -> "SmartRequest":
@@ -179,7 +196,7 @@ class SmartRequest:
     def get_schedule_rules(params: Optional[GetRulesParams] = None) -> "SmartRequest":
         """Get schedule rules."""
         return SmartRequest(
-            "get_schedule_rules", params or SmartRequest.GetRulesParams()
+            "get_schedule_rules", params or SmartRequest.GetScheduleRulesParams()
         )
 
     @staticmethod
@@ -381,4 +398,13 @@ COMPONENT_REQUESTS = {
         SmartRequest.get_raw_request("get_alarm_configure"),
     ],
     "alarm_logs": [SmartRequest.get_raw_request("get_alarm_triggers")],
+    "child_device": [
+        SmartRequest.get_raw_request("get_child_device_list"),
+        SmartRequest.get_raw_request("get_child_device_component_list"),
+    ],
+    "control_child": [],
+    "homekit": [SmartRequest.get_raw_request("get_homekit_info")],
+    "dimmer_calibration": [],
+    "fan_control": [],
+    "overheat_protection": [],
 }

@@ -299,8 +299,9 @@ async def test_discover_single_authentication(discovery_mock, mocker):
 
 
 @new_discovery
-async def test_device_update_from_new_discovery_info(discovery_data):
+async def test_device_update_from_new_discovery_info(discovery_mock):
     """Make sure that new discovery devices update from discovery info correctly."""
+    discovery_data = discovery_mock.discovery_data
     device_class = Discover._get_device_class(discovery_data)
     device = device_class("127.0.0.1")
     discover_info = DiscoveryResult(**discovery_data["result"])
