@@ -9,6 +9,49 @@ All Tapo devices require authentication
 <!--SUPPORTED_START-->
 ## Kasa devices
 
+### Bulbs
+
+- **KL110**
+  - Hardware: 1.0 (US) / Firmware: 1.8.11
+- **KL120**
+  - Hardware: 1.0 (US) / Firmware: 1.8.6
+- **KL125**
+  - Hardware: 4.0 (US) / Firmware: 1.0.5
+  - Hardware: 2.0 (US) / Firmware: 1.0.7
+  - Hardware: 1.20 (US) / Firmware: 1.0.5
+- **KL130**
+  - Hardware: 1.0 (US) / Firmware: 1.8.11
+  - Hardware: 1.0 (EU) / Firmware: 1.8.8
+- **KL135**
+  - Hardware: 1.0 (US) / Firmware: 1.0.6
+- **KL50**
+  - Hardware: 1.0 (US) / Firmware: 1.1.13
+- **KL60**
+  - Hardware: 1.0 (US) / Firmware: 1.1.13
+  - Hardware: 1.0 (UN) / Firmware: 1.1.4
+- **LB100**
+  - Hardware: 1.0 (US) / Firmware: 1.4.3
+- **LB110**
+  - Hardware: 1.0 (US) / Firmware: 1.8.11
+- **LB120**
+  - Hardware: 1.0 (US) / Firmware: 1.1.0
+- **LB130**
+  - Hardware: 1.0 (US) / Firmware: 1.6.0
+
+### Light Strips
+
+- **KL400L5**
+  - Hardware: 1.0 (US) / Firmware: 1.0.8
+  - Hardware: 1.0 (US) / Firmware: 1.0.5
+- **KL420L5**
+  - Hardware: 1.0 (US) / Firmware: 1.0.2
+- **KL430**
+  - Hardware: 2.0 (US) / Firmware: 1.0.11
+  - Hardware: 2.0 (US) / Firmware: 1.0.8
+  - Hardware: 1.0 (US) / Firmware: 1.0.10
+  - Hardware: 2.0 (US) / Firmware: 1.0.9
+  - Hardware: 2.0 (UN) / Firmware: 1.0.8
+
 ### Plugs
 
 - **EP10**
@@ -61,49 +104,6 @@ All Tapo devices require authentication
 - **KS230**
   - Hardware: 1.0 (US) / Firmware: 1.0.14
 
-### Bulbs
-
-- **KL110**
-  - Hardware: 1.0 (US) / Firmware: 1.8.11
-- **KL120**
-  - Hardware: 1.0 (US) / Firmware: 1.8.6
-- **KL125**
-  - Hardware: 4.0 (US) / Firmware: 1.0.5
-  - Hardware: 2.0 (US) / Firmware: 1.0.7
-  - Hardware: 1.20 (US) / Firmware: 1.0.5
-- **KL130**
-  - Hardware: 1.0 (US) / Firmware: 1.8.11
-  - Hardware: 1.0 (EU) / Firmware: 1.8.8
-- **KL135**
-  - Hardware: 1.0 (US) / Firmware: 1.0.6
-- **KL50**
-  - Hardware: 1.0 (US) / Firmware: 1.1.13
-- **KL60**
-  - Hardware: 1.0 (US) / Firmware: 1.1.13
-  - Hardware: 1.0 (UN) / Firmware: 1.1.4
-- **LB100**
-  - Hardware: 1.0 (US) / Firmware: 1.4.3
-- **LB110**
-  - Hardware: 1.0 (US) / Firmware: 1.8.11
-- **LB120**
-  - Hardware: 1.0 (US) / Firmware: 1.1.0
-- **LB130**
-  - Hardware: 1.0 (US) / Firmware: 1.6.0
-
-### Light Strips
-
-- **KL400L5**
-  - Hardware: 1.0 (US) / Firmware: 1.0.8
-  - Hardware: 1.0 (US) / Firmware: 1.0.5
-- **KL420L5**
-  - Hardware: 1.0 (US) / Firmware: 1.0.2
-- **KL430**
-  - Hardware: 2.0 (US) / Firmware: 1.0.11
-  - Hardware: 2.0 (US) / Firmware: 1.0.8
-  - Hardware: 1.0 (US) / Firmware: 1.0.10
-  - Hardware: 2.0 (US) / Firmware: 1.0.9
-  - Hardware: 2.0 (UN) / Firmware: 1.0.8
-
 ### Power Strips
 
 - **EP40**
@@ -141,12 +141,6 @@ All Tapo devices require authentication
 
 ## Tapo devices
 
-### Hubs
-
-- **H100**
-  - Hardware: 1.0 (EU) / Firmware: 1.5.5
-  - Hardware: 1.0 (EU) / Firmware: 1.2.3
-
 ### Bulbs
 
 - **L510B**
@@ -159,6 +153,12 @@ All Tapo devices require authentication
   - Hardware: 3.0 (EU) / Firmware: 1.1.6
   - Hardware: 3.0 (EU) / Firmware: 1.0.6
   - Hardware: 2.0 (US) / Firmware: 1.1.0
+
+### Hubs
+
+- **H100**
+  - Hardware: 1.0 (EU) / Firmware: 1.5.5
+  - Hardware: 1.0 (EU) / Firmware: 1.2.3
 
 ### Light Strips
 

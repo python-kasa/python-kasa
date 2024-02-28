@@ -110,7 +110,7 @@ def _supported_text(
         brand_text = brand.capitalize()
         brand_auth = r"<sup>\*</sup>" if brand == "tapo" else ""
         types_text = ""
-        for type_, models in types.items():
+        for type_, models in sorted(types.items()):
             models_list = []
             models_text = ""
             for model, versions in sorted(models.items()):
