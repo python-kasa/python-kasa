@@ -35,6 +35,6 @@ repos:
     description: This hook generates the supported device sections of README.md and SUPPORTED.md
     entry: generate-supported
     language: system # Required or pre-commit creates a new venv
-    verbose: true # Show output on success
+    verbose: false # Show output on success
     types: [json]
     pass_filenames: false # passing filenames causes the hook to run in batches against all-files
