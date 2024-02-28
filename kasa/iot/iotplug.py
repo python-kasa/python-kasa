@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class IotPlug(IotDevice):
-    r"""Representation of a TP-Link Smart Switch.
+    r"""Representation of a TP-Link Smart Plug.
 
     To initialize, you have to await :func:`update()` at least once.
     This will allow accessing the properties using the exposed properties.
@@ -101,3 +101,17 @@ class IotPlug(IotDevice):
     def state_information(self) -> Dict[str, Any]:
         """Return switch-specific state information."""
         return {}
+
+
+class IotSwitch(IotPlug):
+    """Representation of a TP-Link Smart Switch."""
+
+    def __init__(
+        self,
+        host: str,
+        *,
+        config: Optional[DeviceConfig] = None,
+        protocol: Optional[BaseProtocol] = None,
+    ) -> None:
+        super().__init__(host=host, config=config, protocol=protocol)
+        self._device_type = DeviceType.Switch

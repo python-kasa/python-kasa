@@ -226,20 +226,20 @@ The following devices have been tested and confirmed as working. If your device 
 <!--SUPPORTED_START-->
 ### Supported Kasa devices
 
+- **Plugs**: EP10, EP25<sup>\*</sup>, HS100<sup>\*\*</sup>, HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401
+- **Power Strips**: EP40, HS107, HS300, KP200, KP303, KP400
+- **Wall Switches**: ES20M, HS200, HS210, HS220, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB100, LB110, LB120, LB130
 - **Light Strips**: KL400L5, KL420L5, KL430
-- **Plugs**: EP10, EP25<sup>\*</sup>, ES20M, HS100<sup>\*\*</sup>, HS103, HS105, HS110, HS220, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401, KP405, KS220M, KS230
-- **Power Strips**: EP40, HS107, HS300, KP200, KP303, KP400
-- **Wall Switches**: HS200, HS210, KS200M, KS205<sup>\*</sup>, KS225<sup>\*</sup>
 
 ### Supported Tapo<sup>\*</sup> devices
 
-- **Bulbs**: L510B, L510E, L530E
-- **Hubs**: H100
-- **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Plugs**: P100, P110, P125M, P135, TP15
 - **Power Strips**: P300, TP25
 - **Wall Switches**: S500D, S505
+- **Bulbs**: L510B, L510E, L530E
+- **Light Strips**: L900-10, L900-5, L920-5, L930-5
+- **Hubs**: H100
 
 <!--SUPPORTED_END-->
 <sup>*</sup>&nbsp; Model requires authentication<br>

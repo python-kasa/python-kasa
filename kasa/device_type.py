@@ -11,6 +11,7 @@ class DeviceType(Enum):
     Plug = "plug"
     Bulb = "bulb"
     Strip = "strip"
+    Switch = "switch"
     StripSocket = "stripsocket"
     Dimmer = "dimmer"
     LightStrip = "lightstrip"
@@ -36,3 +37,17 @@ class SupportedDeviceType(Enum):
     Bulbs = "Bulbs"
     LightStrips = "Light Strips"
     Hubs = "Hubs"
+    Sensors = "Sensors"
+
+
+DEVICE_TYPE_TO_SUPPORTED = {
+    DeviceType.Plug: SupportedDeviceType.Plugs,
+    DeviceType.Bulb: SupportedDeviceType.Bulbs,
+    DeviceType.Strip: SupportedDeviceType.PowerStrips,
+    DeviceType.StripSocket: SupportedDeviceType.PowerStrips,
+    DeviceType.Dimmer: SupportedDeviceType.WallSwitches,
+    DeviceType.Switch: SupportedDeviceType.WallSwitches,
+    DeviceType.LightStrip: SupportedDeviceType.LightStrips,
+    DeviceType.Sensor: SupportedDeviceType.Sensors,
+    DeviceType.Hub: SupportedDeviceType.Hubs,
+}

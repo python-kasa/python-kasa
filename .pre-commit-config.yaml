@@ -33,8 +33,18 @@ repos:
   - id: generate-supported
     name: Generate supported devices
     description: This hook generates the supported device sections of README.md and SUPPORTED.md
-    entry: generate-supported
+    entry: devtools/generate_supported.py
     language: system # Required or pre-commit creates a new venv
-    verbose: false # Show output on success
+    verbose: true # Show output on success
     types: [json]
     pass_filenames: false # passing filenames causes the hook to run in batches against all-files
+    stages: ["pre-commit"]
+  - id: generate-supported
+    name: Generate supported devices
+    description: This hook generates the supported device sections of README.md and SUPPORTED.md
+    entry: generate-supported
+    language: system
+    types: [json]
+    args: [--print-diffs]
+    pass_filenames: false
+    stages: ["manual"]

@@ -1,6 +1,6 @@
 from kasa import DeviceType
 
-from .conftest import plug, plug_smart
+from .conftest import plug_iot, plug_smart
 from .test_smartdevice import SYSINFO_SCHEMA
 
 # these schemas should go to the mainlib as
@@ -8,7 +8,7 @@ from .test_smartdevice import SYSINFO_SCHEMA
 # as well as to check that faked devices are operating properly.
 
 
-@plug
+@plug_iot
 async def test_plug_sysinfo(dev):
     assert dev.sys_info is not None
     SYSINFO_SCHEMA(dev.sys_info)
@@ -19,7 +19,7 @@ async def test_plug_sysinfo(dev):
     assert dev.is_plug or dev.is_strip
 
 
-@plug
+@plug_iot
 async def test_led(dev):
     original = dev.led
 

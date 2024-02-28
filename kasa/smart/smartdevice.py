@@ -63,12 +63,6 @@ class SmartDevice(Device):
             )
             for child_info in children
         }
-        # TODO: This may not be the best approach, but it allows distinguishing
-        #  between power strips and hubs for the time being.
-        if all(child.is_plug for child in self._children.values()):
-            self._device_type = DeviceType.Strip
-        else:
-            self._device_type = DeviceType.Hub
 
     @property
     def children(self) -> Sequence["SmartDevice"]:
@@ -519,21 +513,30 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
-        if self.children:
-            if "SMART.TAPOHUB" in self.sys_info["type"]:
-                self._device_type = DeviceType.Hub
-            else:
-                self._device_type = DeviceType.Strip
-        elif "light_strip" in self._components:
-            self._device_type = DeviceType.LightStrip
-        elif "dimmer_calibration" in self._components:
-            self._device_type = DeviceType.Dimmer
-        elif "brightness" in self._components:
-            self._device_type = DeviceType.Bulb
-        elif "PLUG" in self.sys_info["type"]:
-            self._device_type = DeviceType.Plug
-        else:
-            _LOGGER.warning("Unknown device type, falling back to plug")
-            self._device_type = DeviceType.Plug
+        self._device_type = _get_device_type_from_components(
+            list(self._components.keys()), self._info["type"]
+        )
 
         return self._device_type
+
+
+def _get_device_type_from_components(
+    components: List[str], device_type: str
+) -> DeviceType:
+    """Find type to be displayed as a supported device category."""
+    if "HUB" in device_type:
+        return DeviceType.Hub
+    if "PLUG" in device_type:
+        if "child_device" in components:
+            return DeviceType.Strip
+        return DeviceType.Plug
+    if "light_strip" in components:
+        return DeviceType.LightStrip
+    if "dimmer_calibration" in components:
+        return DeviceType.Dimmer
+    if "brightness" in components:
+        return DeviceType.Bulb
+    if "SWITCH" in device_type:
+        return DeviceType.Switch
+    _LOGGER.warning("Unknown device type, falling back to plug")
+    return DeviceType.Plug

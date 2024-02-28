@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Script that checks supported devices and updates README.md and SUPPORTED.md."""
 import json
 import sys
@@ -9,6 +10,7 @@ from kasa.device_factory import (
     get_device_supported_type_from_components,
     get_device_supported_type_from_sysinfo,
 )
+from kasa.device_type import SupportedDeviceType
 
 
 class SupportedVersion(NamedTuple):
@@ -29,6 +31,7 @@ SMART_FOLDER = "kasa/tests/fixtures/smart/"
 
 def generate_supported(args):
     """Generate the SUPPORTED.md from the fixtures."""
+    print_diffs = "--print-diffs" in args
     print("Generating supported devices")
 
     supported = {"kasa": {}, "tapo": {}}
@@ -37,16 +40,16 @@ def generate_supported(args):
     _get_smart_supported(supported)
 
     readme_updated = _update_supported_file(
-        README_FILENAME, _supported_summary(supported)
+        README_FILENAME, _supported_summary(supported), print_diffs
     )
     supported_updated = _update_supported_file(
-        SUPPORTED_FILENAME, _supported_detail(supported)
+        SUPPORTED_FILENAME, _supported_detail(supported), print_diffs
     )
     if not readme_updated and not supported_updated:
         print("Supported devices unchanged.")
 
 
-def _update_supported_file(filename, supported_text) -> bool:
+def _update_supported_file(filename, supported_text, print_diffs) -> bool:
     with open(filename) as f:
         contents = f.readlines()
 
@@ -63,10 +66,12 @@ def _update_supported_file(filename, supported_text) -> bool:
             f"{filename} has been modified with updated "
             + "supported devices, add file to commit."
         )
-        print("##CURRENT##")
-        print(current_text)
-        print("##NEW##")
-        print(supported_text)
+        if print_diffs:
+            print("##CURRENT##")
+            print(current_text)
+            print("##NEW##")
+            print(supported_text)
+
         new_contents = contents[:start_index]
         end_contents = contents[end_index:]
         new_contents.append(supported_text)
@@ -110,7 +115,11 @@ def _supported_text(
         brand_text = brand.capitalize()
         brand_auth = r"<sup>\*</sup>" if brand == "tapo" else ""
         types_text = ""
-        for type_, models in sorted(types.items()):
+        for supported_type, models in sorted(
+            # Sort by device type order in the enum
+            types.items(),
+            key=lambda st: list(SupportedDeviceType).index(st[0]),
+        ):
             models_list = []
             models_text = ""
             for model, versions in sorted(models.items()):
@@ -143,7 +152,9 @@ def _supported_text(
                 else:
                     models_list.append(f"{model}{auth_flag}")
             models_text = models_text if models_text else ", ".join(models_list)
-            types_text += typest.substitute(type_=type_, models=models_text)
+            types_text += typest.substitute(
+                type_=supported_type.value, models=models_text
+            )
         brands += brandt.substitute(brand=brand_text, types=types_text, auth=brand_auth)
     return brands
 
@@ -166,10 +177,9 @@ def _get_smart_supported(supported):
             component["id"]
             for component in fixture_data["component_nego"]["component_list"]
         ]
-        supported_device_type = get_device_supported_type_from_components(
+        supported_type = get_device_supported_type_from_components(
             components, device_type
         )
-        supported_type = supported_device_type.value
 
         hw_version = fixture_data["get_device_info"]["hw_ver"]
         fw_version = fixture_data["get_device_info"]["fw_ver"]
@@ -188,8 +198,7 @@ def _get_iot_supported(supported):
         with open(iot_file) as f:
             fixture_data = json.load(f)
         sysinfo = fixture_data["system"]["get_sysinfo"]
-        supported_device_type = get_device_supported_type_from_sysinfo(sysinfo)
-        supported_type = supported_device_type.value
+        supported_type = get_device_supported_type_from_sysinfo(fixture_data)
 
         model, _, region = sysinfo["model"][:-1].partition("(")
         auth = "discovery_result" in fixture_data
