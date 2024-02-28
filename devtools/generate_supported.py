@@ -63,6 +63,10 @@ def _update_supported_file(filename, supported_text) -> bool:
             f"{filename} has been modified with updated "
             + "supported devices, add file to commit."
         )
+        print("##CURRENT##")
+        print(current_text)
+        print("##NEW##")
+        print(supported_text)
         new_contents = contents[:start_index]
         end_contents = contents[end_index:]
         new_contents.append(supported_text)
