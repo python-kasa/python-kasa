@@ -22,7 +22,7 @@ from kasa.deviceconfig import (
     EncryptType,
 )
 from kasa.discover import DiscoveryResult
-from kasa.smart.smartdevice import SmartDevice, _get_device_type_from_components
+from kasa.smart.smartdevice import SmartDevice
 
 
 def _get_connection_type_device_class(discovery_info):
@@ -157,7 +157,9 @@ async def test_device_types(dev: Device):
     await dev.update()
     if isinstance(dev, SmartDevice):
         device_type = dev._discovery_info["result"]["device_type"]
-        res = _get_device_type_from_components(dev._components.keys(), device_type)
+        res = SmartDevice._get_device_type_from_components(
+            dev._components.keys(), device_type
+        )
     else:
         res = _get_device_type_from_sys_info(dev._last_update)
 

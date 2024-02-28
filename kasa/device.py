@@ -214,7 +214,7 @@ class Device(ABC):
 
     @property
     def is_switch(self) -> bool:
-        """Return True if the device is a plug."""
+        """Return True if the device is a switch."""
         return self.device_type == DeviceType.Switch
 
     @property

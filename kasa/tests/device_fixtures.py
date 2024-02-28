@@ -171,9 +171,11 @@ no_emeter_iot = parametrize(
 
 bulb = parametrize("bulbs", model_filter=BULBS, protocol_filter={"SMART", "IOT"})
 plug = parametrize("plugs", model_filter=PLUGS, protocol_filter={"IOT", "SMART"})
-plug_iot = parametrize("plugs", model_filter=PLUGS, protocol_filter={"IOT"})
-switch = parametrize("plugs", model_filter=SWITCHES, protocol_filter={"IOT", "SMART"})
-switch_iot = parametrize("plugs", model_filter=SWITCHES, protocol_filter={"IOT"})
+plug_iot = parametrize("plugs iot", model_filter=PLUGS, protocol_filter={"IOT"})
+switch = parametrize(
+    "switches", model_filter=SWITCHES, protocol_filter={"IOT", "SMART"}
+)
+switch_iot = parametrize("switches iot", model_filter=SWITCHES, protocol_filter={"IOT"})
 strip = parametrize("strips", model_filter=STRIPS, protocol_filter={"SMART", "IOT"})
 dimmer = parametrize("dimmers", model_filter=DIMMERS, protocol_filter={"IOT"})
 lightstrip = parametrize(
@@ -225,6 +227,9 @@ strip_smart = parametrize(
 
 plug_smart = parametrize(
     "plug devices smart", model_filter=PLUGS_SMART, protocol_filter={"SMART"}
+)
+switch_smart = parametrize(
+    "switch devices smart", model_filter=SWITCHES_SMART, protocol_filter={"SMART"}
 )
 bulb_smart = parametrize(
     "bulb devices smart", model_filter=BULBS_SMART, protocol_filter={"SMART"}

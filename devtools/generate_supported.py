@@ -10,7 +10,7 @@ from typing import NamedTuple
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
-from kasa.smart.smartdevice import _get_device_type_from_components
+from kasa.smart.smartdevice import SmartDevice
 
 
 class SupportedVersion(NamedTuple):
@@ -124,7 +124,7 @@ def _supported_summary(supported):
 def _supported_detail(supported):
     return _supported_text(
         supported,
-        "## $brand devices\n\n$types\n",
+        "## $brand devices\n\n$preamble\n\n$types\n",
         "### $type_\n\n$models\n",
         "- **$model**\n$versions",
         "  - Hardware: $hw$region / Firmware: $fw$auth_flag\n",
@@ -141,6 +141,11 @@ def _supported_text(
     brands = ""
     version: SupportedVersion
     for brand, types in supported.items():
+        preamble_text = (
+            "<sup>*</sup>&nbsp; Kasa model requires authentication"
+            if brand == "kasa"
+            else "All Tapo devices require authentication"
+        )
         brand_text = brand.capitalize()
         brand_auth = r"<sup>\*</sup>" if brand == "tapo" else ""
         types_text = ""
@@ -184,14 +189,15 @@ def _supported_text(
             types_text += typest.substitute(
                 type_=supported_type.value, models=models_text
             )
-        brands += brandt.substitute(brand=brand_text, types=types_text, auth=brand_auth)
+        brands += brandt.substitute(
+            brand=brand_text, types=types_text, auth=brand_auth, preamble=preamble_text
+        )
     return brands
 
 
 def _get_smart_supported(supported):
-    smart_files = [f for f in Path(SMART_FOLDER).glob("*.json")]
-    for smart_file in smart_files:
-        with open(smart_file) as f:
+    for file in Path(SMART_FOLDER).glob("*.json"):
+        with file.open() as f:
             fixture_data = json.load(f)
 
         model, _, region = fixture_data["discovery_result"]["device_model"].partition(
@@ -206,7 +212,7 @@ def _get_smart_supported(supported):
             component["id"]
             for component in fixture_data["component_nego"]["component_list"]
         ]
-        dt = _get_device_type_from_components(components, device_type)
+        dt = SmartDevice._get_device_type_from_components(components, device_type)
         supported_type = DEVICE_TYPE_TO_SUPPORTED[dt]
 
         hw_version = fixture_data["get_device_info"]["hw_ver"]
@@ -221,9 +227,8 @@ def _get_smart_supported(supported):
 
 
 def _get_iot_supported(supported):
-    iot_files = [f for f in Path(IOT_FOLDER).glob("*.json")]
-    for iot_file in iot_files:
-        with open(iot_file) as f:
+    for file in Path(IOT_FOLDER).glob("*.json"):
+        with file.open() as f:
             fixture_data = json.load(f)
         sysinfo = fixture_data["system"]["get_sysinfo"]
         dt = _get_device_type_from_sys_info(fixture_data)

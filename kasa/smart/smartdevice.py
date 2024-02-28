@@ -513,30 +513,30 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
-        self._device_type = _get_device_type_from_components(
+        self._device_type = self._get_device_type_from_components(
             list(self._components.keys()), self._info["type"]
         )
 
         return self._device_type
 
-
-def _get_device_type_from_components(
-    components: List[str], device_type: str
-) -> DeviceType:
-    """Find type to be displayed as a supported device category."""
-    if "HUB" in device_type:
-        return DeviceType.Hub
-    if "PLUG" in device_type:
-        if "child_device" in components:
-            return DeviceType.Strip
+    @staticmethod
+    def _get_device_type_from_components(
+        components: List[str], device_type: str
+    ) -> DeviceType:
+        """Find type to be displayed as a supported device category."""
+        if "HUB" in device_type:
+            return DeviceType.Hub
+        if "PLUG" in device_type:
+            if "child_device" in components:
+                return DeviceType.Strip
+            return DeviceType.Plug
+        if "light_strip" in components:
+            return DeviceType.LightStrip
+        if "dimmer_calibration" in components:
+            return DeviceType.Dimmer
+        if "brightness" in components:
+            return DeviceType.Bulb
+        if "SWITCH" in device_type:
+            return DeviceType.Switch
+        _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
-    if "light_strip" in components:
-        return DeviceType.LightStrip
-    if "dimmer_calibration" in components:
-        return DeviceType.Dimmer
-    if "brightness" in components:
-        return DeviceType.Bulb
-    if "SWITCH" in device_type:
-        return DeviceType.Switch
-    _LOGGER.warning("Unknown device type, falling back to plug")
-    return DeviceType.Plug

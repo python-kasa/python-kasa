@@ -2,12 +2,11 @@
 
 The following devices have been tested and confirmed as working. If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).
 
-<sup>*</sup>&nbsp; Kasa model requires authentication<br>
-All Tapo devices require authentication
-
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
 ## Kasa devices
+
+<sup>*</sup>&nbsp; Kasa model requires authentication
 
 ### Plugs
 
@@ -140,6 +139,8 @@ All Tapo devices require authentication
 
 
 ## Tapo devices
+
+All Tapo devices require authentication
 
 ### Plugs
 
