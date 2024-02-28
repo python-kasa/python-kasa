@@ -47,9 +47,9 @@ jobs:
       - name: "Run check-ast"
         run: |
           poetry run pre-commit run check-ast --all-files
-      - name: "Check README for supported models"
+      - name: "Check supported device md files are up to date"
         run: |
-          poetry run python -m devtools.check_readme_vs_fixtures
+          poetry run pre-commit run generate-supported --all-files
 
 
   tests:

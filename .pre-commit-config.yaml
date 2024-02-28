@@ -27,3 +27,14 @@ repos:
   hooks:
   - id: doc8
     additional_dependencies: [tomli]
+
+- repo: local
+  hooks:
+  - id: generate-supported
+    name: Generate supported devices
+    description: This hook generates the supported device sections of README.md and SUPPORTED.md
+    entry: generate-supported
+    language: system # Required or pre-commit creates a new venv
+    verbose: true # Show output on success
+    types: [json]
+    pass_filenames: false # passing filenames causes the hook to run in batches against all-files

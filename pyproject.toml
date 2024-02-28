@@ -19,6 +19,7 @@ include = [
 
 [tool.poetry.scripts]
 kasa = "kasa.cli:cli"
+generate-supported = "devtools.generate_supported:main"
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -35,7 +36,7 @@ kasa-crypt = { "version" = ">=0.2.0", optional = true }
 
 # required only for docs
 sphinx = { version = "^5", optional = true }
-sphinx_rtd_theme = { version = "^0", optional = true }
+sphinx_rtd_theme = { version = "^2", optional = true }
 sphinxcontrib-programoutput = { version = "^0", optional = true }
 myst-parser = { version = "*", optional = true }
 docutils = { version = ">=0.17", optional = true }

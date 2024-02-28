@@ -16,7 +16,6 @@ import traceback
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from pprint import pprint
-from string import Template
 from typing import Dict, List, Union
 
 import asyncclick as click
@@ -34,25 +33,10 @@ from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
 
-SupportedVersion = namedtuple("SupportedVersion", "region hw fw auth")
-
-
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed")
 
 _LOGGER = logging.getLogger(__name__)
-
-IOT_FOLDER = "kasa/tests/fixtures/"
-SMART_FOLDER = "kasa/tests/fixtures/smart/"
-SUPPORTED_FILENAME = "SUPPORTED.md"
-README_FILENAME = "README.md"
-
-PLUGS = "Plugs"
-POWER_STRIPS = "Power Strips"
-WALL_SWITCHES = "Wall Switches"
-BULBS = "Bulbs"
-LIGHT_STRIPS = "Light Strips"
-HUBS = "Hubs"
 
 
 def scrub(res):
@@ -143,7 +127,7 @@ def default_to_regular(d):
     return d
 
 
-async def handle_device(basedir, autosave, device: Device, batch_size: int) -> bool:
+async def handle_device(basedir, autosave, device: Device, batch_size: int):
     """Create a fixture for a single device instance."""
     if isinstance(device, SmartDevice):
         filename, copy_folder, final = await get_smart_fixture(device, batch_size)
@@ -165,13 +149,11 @@ async def handle_device(basedir, autosave, device: Device, batch_size: int) -> b
         with open(save_filename, "w") as f:
             json.dump(final, f, sort_keys=True, indent=4)
             f.write("\n")
-        return True
     else:
         click.echo("Not saving.")
-        return False
 
 
-@click.group(invoke_without_command=True)
+@click.command()
 @click.option("--host", required=False, help="Target host.")
 @click.option(
     "--target",
@@ -199,10 +181,7 @@ async def handle_device(basedir, autosave, device: Device, batch_size: int) -> b
     "--batch-size", default=5, help="Number of batched requests to send at once"
 )
 @click.option("-d", "--debug", is_flag=True)
-@click.pass_context
-async def cli(
-    ctx, host, target, basedir, autosave, debug, username, password, batch_size
-):
+async def cli(host, target, basedir, autosave, debug, username, password, batch_size):
     """Generate devinfo files for devices.
 
     Use --host (for a single device) or --target (for a complete network).
@@ -210,16 +189,11 @@ async def cli(
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    if ctx.invoked_subcommand == "generate-supported":
-        return
-
     credentials = Credentials(username=username, password=password)
-    file_created = False
     if host is not None:
         click.echo("Host given, performing discovery on %s." % host)
         device = await Discover.discover_single(host, credentials=credentials)
-        if await handle_device(basedir, autosave, device, batch_size):
-            file_created = True
+        await handle_device(basedir, autosave, device, batch_size)
     else:
         click.echo(
             "No --host given, performing discovery on %s. Use --target to override."
@@ -228,10 +202,7 @@ async def cli(
         devices = await Discover.discover(target=target, credentials=credentials)
         click.echo("Detected %s devices" % len(devices))
         for dev in devices.values():
-            if await handle_device(basedir, autosave, dev, batch_size):
-                file_created = True
-    if file_created:
-        generate_supported()
+            await handle_device(basedir, autosave, dev, batch_size)
 
 
 async def get_legacy_fixture(device):
@@ -299,7 +270,7 @@ async def get_legacy_fixture(device):
     sw_version = sysinfo["sw_ver"]
     sw_version = sw_version.split(" ", maxsplit=1)[0]
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
-    copy_folder = IOT_FOLDER
+    copy_folder = "kasa/tests/fixtures/"
     return save_filename, copy_folder, final
 
 
@@ -483,197 +454,8 @@ async def get_smart_fixture(device: SmartDevice, batch_size: int):
     sw_version = sw_version.split(" ", maxsplit=1)[0]
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
-    copy_folder = SMART_FOLDER
+    copy_folder = "kasa/tests/fixtures/smart/"
     return save_filename, copy_folder, final
-
-
-@cli.command(name="generate-supported")
-async def generate_supported():
-    """Generate the SUPPORTED.md from the fixtures."""
-    supported = {"kasa": {}, "tapo": {}}
-
-    _get_iot_supported(supported)
-    _get_smart_supported(supported)
-
-    _update_supported_file(README_FILENAME, _supported_summary(supported))
-    _update_supported_file(SUPPORTED_FILENAME, _supported_detail(supported))
-
-
-def _update_supported_file(filename, supported_text):
-    with open(filename) as f:
-        contents = f.readlines()
-
-    start_index = end_index = None
-    for index, line in enumerate(contents):
-        if line == "<!--SUPPORTED_START-->\n":
-            start_index = index + 1
-        if line == "<!--SUPPORTED_END-->\n":
-            end_index = index
-
-    new_contents = contents[:start_index]
-    end_contents = contents[end_index:]
-    new_contents.append("\n")
-    new_contents.append(supported_text)
-    new_contents.append("\n")
-    new_contents.extend(end_contents)
-
-    with open(filename, "w") as f:
-        new_contents = "".join(new_contents)
-        f.write(new_contents)
-
-
-def _supported_summary(supported):
-    return _supported_text(
-        supported, "### Supported $brand devices\n\n$types\n", "- **$type_**: $models\n"
-    )
-
-
-def _supported_detail(supported):
-    return _supported_text(
-        supported,
-        "## $brand devices\n\n$types\n",
-        "### $type_\n\n$models\n",
-        "- **$model$auth_flag**\n$versions",
-        "  - Hardware $hw$region Firmare $fw$auth_flag\n",
-    )
-
-
-def _supported_text(
-    supported, brand_template, types_template, model_template="", version_template=""
-):
-    brandt = Template(brand_template)
-    typest = Template(types_template)
-    modelt = Template(model_template)
-    versst = Template(version_template)
-    brands = ""
-    version: SupportedVersion
-    for brand, types in supported.items():
-        brand_text = brand.capitalize() + ("<sup>\*</sup>" if brand == "tapo" else "")
-        types_text = ""
-        for type_, models in types.items():
-            models_list = []
-            models_text = ""
-            for model, versions in sorted(models.items()):
-                auth_count = 0
-                versions_text = ""
-                for version in versions:
-                    region_text = f" ({version.region})" if version.region else ""
-                    auth_count += 1 if version.auth else 0
-                    vauth_flag = "<sup>\*</sup>" if version.auth else ""
-                    vauth_flag = "" if brand == "tapo" else vauth_flag
-                    if version_template:
-                        versions_text += versst.substitute(
-                            hw=version.hw,
-                            fw=version.fw,
-                            region=region_text,
-                            auth_flag=vauth_flag,
-                        )
-                auth_flag = (
-                    "<sup>\*</sup>"
-                    if auth_count == len(versions)
-                    else "<sup>\*\*</sup>"
-                    if auth_count > 0
-                    else ""
-                )
-                auth_flag = "" if brand == "tapo" else auth_flag
-                if model_template:
-                    models_text += modelt.substitute(
-                        model=model, versions=versions_text, auth_flag=auth_flag
-                    )
-                else:
-                    models_list.append(f"{model}{auth_flag}")
-            models_text = models_text if models_text else ", ".join(models_list)
-            types_text += typest.substitute(type_=type_, models=models_text)
-        brands += brandt.substitute(brand=brand_text, types=types_text)
-    return brands
-
-
-def _get_smart_supported(supported):
-    smart_files = [f for f in Path(SMART_FOLDER).glob("*.json")]
-    for smart_file in smart_files:
-        with open(smart_file) as f:
-            fixture_data = json.load(f)
-
-        model, _, region = fixture_data["discovery_result"]["device_model"].partition(
-            "("
-        )
-        # P100 doesn't have region HW
-        region = region.replace(")", "") if region else ""
-        device_type = fixture_data["discovery_result"]["device_type"]
-        _protocol, devicetype = device_type.split(".")
-        brand, type_ = devicetype[:4].lower(), devicetype[4:]
-        if brand not in ["kasa", "tapo"]:
-            click.echo(
-                click.style(
-                    f"FAIL {smart_file} does not have a "
-                    + f"supported device_type {device_type}",
-                    fg="red",
-                )
-            )
-            continue
-        components = [
-            component["id"]
-            for component in fixture_data["component_nego"]["component_list"]
-        ]
-        if type_ == "BULB":
-            supported_type = LIGHT_STRIPS if "light_strip" in components else BULBS
-        elif type_ == "PLUG":
-            supported_type = POWER_STRIPS if "child_device" in components else PLUGS
-        elif type_ == "SWITCH":
-            supported_type = WALL_SWITCHES
-        elif type_ == "HUB":
-            supported_type = HUBS
-        else:
-            click.echo(
-                click.style(
-                    f"FAIL {smart_file} does not have a "
-                    + f"supported device_type {device_type}",
-                    fg="red",
-                )
-            )
-            continue
-
-        hw_version = fixture_data["get_device_info"]["hw_ver"]
-        fw_version = fixture_data["get_device_info"]["fw_ver"]
-        fw_version = fw_version.split(" ", maxsplit=1)[0]
-
-        stype = supported[brand].setdefault(supported_type, {})
-        smodel = stype.setdefault(model, [])
-        smodel.append(
-            SupportedVersion(region=region, hw=hw_version, fw=fw_version, auth=True)
-        )
-
-
-def _get_iot_supported(supported):
-    iot_files = [f for f in Path(IOT_FOLDER).glob("*.json")]
-    for iot_file in iot_files:
-        with open(iot_file) as f:
-            fixture_data = json.load(f)
-        sysinfo = fixture_data["system"]["get_sysinfo"]
-        model, _, region = sysinfo["model"][:-1].partition("(")
-        auth = "discovery_result" in fixture_data
-        type_ = sysinfo.get("type", sysinfo.get("mic_type"))
-        if type_ == "IOT.SMARTBULB":
-            supported_type = LIGHT_STRIPS if "length" in sysinfo else BULBS
-        else:
-            if "children" in sysinfo:
-                supported_type = POWER_STRIPS
-            else:
-                if "dev_name" not in sysinfo:
-                    click.echo(
-                        click.style(f"FAIL {iot_file} does not have dev_name", fg="red")
-                    )
-                    continue
-                if "light" in sysinfo["dev_name"].lower():
-                    supported_type = WALL_SWITCHES
-                else:
-                    supported_type = PLUGS
-        stype = supported["kasa"].setdefault(supported_type, {})
-        smodel = stype.setdefault(model, [])
-        fw = sysinfo["sw_ver"].split(" ", maxsplit=1)[0]
-        smodel.append(
-            SupportedVersion(region=region, hw=sysinfo["hw_ver"], fw=fw, auth=auth)
-        )
 
 
 if __name__ == "__main__":

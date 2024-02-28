@@ -224,7 +224,6 @@ The following devices have been tested and confirmed as working. If your device 
 
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
-
 ### Supported Kasa devices
 
 - **Plugs**: EP10, EP25<sup>\*</sup>, ES20M, HS100<sup>\*\*</sup>, HS103, HS105, HS110, HS220, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401, KP405, KS220M, KS230
@@ -241,7 +240,6 @@ The following devices have been tested and confirmed as working. If your device 
 - **Plugs**: P100, P110, P125M, P135, TP15
 - **Power Strips**: P300, TP25
 - **Wall Switches**: S500D, S505
-
 
 <!--SUPPORTED_END-->
 <sup>*</sup>&nbsp; Model requires authentication<br>
