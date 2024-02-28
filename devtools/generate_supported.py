@@ -116,7 +116,7 @@ def _supported_text(
             for model, versions in sorted(models.items()):
                 auth_count = 0
                 versions_text = ""
-                for version in versions:
+                for version in sorted(versions):
                     region_text = f" ({version.region})" if version.region else ""
                     auth_count += 1 if version.auth else 0
                     vauth_flag = r"<sup>\*</sup>" if version.auth else ""

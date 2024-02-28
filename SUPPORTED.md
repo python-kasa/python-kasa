@@ -16,19 +16,19 @@ All Tapo devices require authentication
 - **KL120**
   - Hardware: 1.0 (US) / Firmware: 1.8.6
 - **KL125**
-  - Hardware: 4.0 (US) / Firmware: 1.0.5
-  - Hardware: 2.0 (US) / Firmware: 1.0.7
   - Hardware: 1.20 (US) / Firmware: 1.0.5
+  - Hardware: 2.0 (US) / Firmware: 1.0.7
+  - Hardware: 4.0 (US) / Firmware: 1.0.5
 - **KL130**
-  - Hardware: 1.0 (US) / Firmware: 1.8.11
   - Hardware: 1.0 (EU) / Firmware: 1.8.8
+  - Hardware: 1.0 (US) / Firmware: 1.8.11
 - **KL135**
   - Hardware: 1.0 (US) / Firmware: 1.0.6
 - **KL50**
   - Hardware: 1.0 (US) / Firmware: 1.1.13
 - **KL60**
-  - Hardware: 1.0 (US) / Firmware: 1.1.13
   - Hardware: 1.0 (UN) / Firmware: 1.1.4
+  - Hardware: 1.0 (US) / Firmware: 1.1.13
 - **LB100**
   - Hardware: 1.0 (US) / Firmware: 1.4.3
 - **LB110**
@@ -41,16 +41,16 @@ All Tapo devices require authentication
 ### Light Strips
 
 - **KL400L5**
-  - Hardware: 1.0 (US) / Firmware: 1.0.8
   - Hardware: 1.0 (US) / Firmware: 1.0.5
+  - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **KL420L5**
   - Hardware: 1.0 (US) / Firmware: 1.0.2
 - **KL430**
+  - Hardware: 2.0 (UN) / Firmware: 1.0.8
+  - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 2.0 (US) / Firmware: 1.0.11
   - Hardware: 2.0 (US) / Firmware: 1.0.8
-  - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 2.0 (US) / Firmware: 1.0.9
-  - Hardware: 2.0 (UN) / Firmware: 1.0.8
 
 ### Plugs
 
@@ -62,35 +62,35 @@ All Tapo devices require authentication
 - **ES20M**
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **HS100**
-  - Hardware: 2.0 (US) / Firmware: 1.5.6
+  - Hardware: 1.0 (UK) / Firmware: 1.2.6
   - Hardware: 4.1 (UK) / Firmware: 1.1.0<sup>\*</sup>
   - Hardware: 1.0 (US) / Firmware: 1.2.5
-  - Hardware: 1.0 (UK) / Firmware: 1.2.6
+  - Hardware: 2.0 (US) / Firmware: 1.5.6
 - **HS103**
   - Hardware: 1.0 (US) / Firmware: 1.5.7
-  - Hardware: 2.1 (US) / Firmware: 1.1.4
   - Hardware: 2.1 (US) / Firmware: 1.1.2
+  - Hardware: 2.1 (US) / Firmware: 1.1.4
 - **HS105**
   - Hardware: 1.0 (US) / Firmware: 1.2.9
   - Hardware: 1.0 (US) / Firmware: 1.5.6
 - **HS110**
+  - Hardware: 1.0 (EU) / Firmware: 1.2.5
   - Hardware: 2.0 (EU) / Firmware: 1.5.2
   - Hardware: 4.0 (EU) / Firmware: 1.0.4
-  - Hardware: 1.0 (EU) / Firmware: 1.2.5
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **HS220**
   - Hardware: 1.0 (US) / Firmware: 1.5.7
-  - Hardware: 2.0 (US) / Firmware: 1.0.3
   - Hardware: 1.0 (US) / Firmware: 1.5.7
+  - Hardware: 2.0 (US) / Firmware: 1.0.3
 - **KP100**
   - Hardware: 3.0 (US) / Firmware: 1.0.1
 - **KP105**
-  - Hardware: 1.0 (UK) / Firmware: 1.0.7
   - Hardware: 1.0 (UK) / Firmware: 1.0.5
+  - Hardware: 1.0 (UK) / Firmware: 1.0.7
 - **KP115**
-  - Hardware: 1.0 (US) / Firmware: 1.0.21
-  - Hardware: 1.0 (US) / Firmware: 1.0.17
   - Hardware: 1.0 (EU) / Firmware: 1.0.16
+  - Hardware: 1.0 (US) / Firmware: 1.0.17
+  - Hardware: 1.0 (US) / Firmware: 1.0.21
 - **KP125**
   - Hardware: 1.0 (US) / Firmware: 1.0.6
 - **KP125M**
@@ -112,13 +112,13 @@ All Tapo devices require authentication
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **HS300**
   - Hardware: 1.0 (US) / Firmware: 1.0.10
-  - Hardware: 2.0 (US) / Firmware: 1.0.3
   - Hardware: 2.0 (US) / Firmware: 1.0.12
+  - Hardware: 2.0 (US) / Firmware: 1.0.3
 - **KP200**
   - Hardware: 3.0 (US) / Firmware: 1.0.3
 - **KP303**
-  - Hardware: 2.0 (US) / Firmware: 1.0.3
   - Hardware: 1.0 (UK) / Firmware: 1.0.3
+  - Hardware: 2.0 (US) / Firmware: 1.0.3
 - **KP400**
   - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 2.0 (US) / Firmware: 1.0.6
@@ -126,9 +126,9 @@ All Tapo devices require authentication
 ### Wall Switches
 
 - **HS200**
-  - Hardware: 5.0 (US) / Firmware: 1.0.2
-  - Hardware: 2.0 (US) / Firmware: 1.5.7
   - Hardware: 1.0 (US) / Firmware: 1.1.0
+  - Hardware: 2.0 (US) / Firmware: 1.5.7
+  - Hardware: 5.0 (US) / Firmware: 1.0.2
 - **HS210**
   - Hardware: 1.0 (US) / Firmware: 1.5.8
 - **KS200M**
@@ -149,39 +149,39 @@ All Tapo devices require authentication
   - Hardware: 3.0 (US) / Firmware: 1.0.5
   - Hardware: 3.0 (US) / Firmware: 1.1.2
 - **L530E**
+  - Hardware: 3.0 (EU) / Firmware: 1.0.6
   - Hardware: 3.0 (EU) / Firmware: 1.1.0
   - Hardware: 3.0 (EU) / Firmware: 1.1.6
-  - Hardware: 3.0 (EU) / Firmware: 1.0.6
   - Hardware: 2.0 (US) / Firmware: 1.1.0
 
 ### Hubs
 
 - **H100**
-  - Hardware: 1.0 (EU) / Firmware: 1.5.5
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
+  - Hardware: 1.0 (EU) / Firmware: 1.5.5
 
 ### Light Strips
 
 - **L900-10**
+  - Hardware: 1.0 (EU) / Firmware: 1.0.17
   - Hardware: 1.0 (US) / Firmware: 1.0.11
-  - Hardware: 1.0 (EU) / Firmware: 1.0.17
 - **L900-5**
-  - Hardware: 1.0 (EU) / Firmware: 1.1.0
   - Hardware: 1.0 (EU) / Firmware: 1.0.17
+  - Hardware: 1.0 (EU) / Firmware: 1.1.0
 - **L920-5**
-  - Hardware: 1.0 (US) / Firmware: 1.1.3
   - Hardware: 1.0 (US) / Firmware: 1.1.0
+  - Hardware: 1.0 (US) / Firmware: 1.1.3
 - **L930-5**
   - Hardware: 1.0 (US) / Firmware: 1.1.2
 
 ### Plugs
 
 - **P100**
-  - Hardware: 1.0.0 / Firmware: 1.3.7
   - Hardware: 1.0.0 / Firmware: 1.1.3
+  - Hardware: 1.0.0 / Firmware: 1.3.7
 - **P110**
-  - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
+  - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (UK) / Firmware: 1.3.0
 - **P125M**
   - Hardware: 1.0 (US) / Firmware: 1.1.0
@@ -193,8 +193,8 @@ All Tapo devices require authentication
 ### Power Strips
 
 - **P300**
-  - Hardware: 1.0 (EU) / Firmware: 1.0.7
   - Hardware: 1.0 (EU) / Firmware: 1.0.13
+  - Hardware: 1.0 (EU) / Firmware: 1.0.7
 - **TP25**
   - Hardware: 1.0 (US) / Firmware: 1.0.2
 
