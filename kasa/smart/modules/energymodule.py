@@ -43,9 +43,12 @@ class EnergyModule(SmartModule):
 
     def query(self) -> Dict:
         """Query to execute during the update cycle."""
-        return {
+        ret_val = {
             "get_energy_usage": None,
         }
+        if self.supported_version > 1:
+            ret_val["get_current_power"] = None
+        return ret_val
 
     @property
     def current_power(self):
@@ -55,6 +58,8 @@ class EnergyModule(SmartModule):
     @property
     def energy(self):
         """Return get_energy_usage results."""
+        if en := self.data.get("get_energy_usage"):
+            return en
         return self.data
 
     @property
