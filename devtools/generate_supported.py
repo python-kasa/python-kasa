@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Script that checks supported devices and updates README.md and SUPPORTED.md."""
 import json
+import os
 import sys
 from enum import Enum
 from pathlib import Path
@@ -56,7 +57,11 @@ SMART_FOLDER = "kasa/tests/fixtures/smart/"
 def generate_supported(args):
     """Generate the SUPPORTED.md from the fixtures."""
     print_diffs = "--print-diffs" in args
+    running_in_ci = "CI" in os.environ
     print("Generating supported devices")
+    if running_in_ci:
+        print_diffs = True
+        print("Detected running in CI")
 
     supported = {"kasa": {}, "tapo": {}}
 
