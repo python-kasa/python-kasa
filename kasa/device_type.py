@@ -25,3 +25,14 @@ class DeviceType(Enum):
             if device_type.value == name:
                 return device_type
         return DeviceType.Unknown
+
+
+class SupportedDeviceType(Enum):
+    """Supported device type enum."""
+
+    Plugs = "Plugs"
+    PowerStrips = "Power Strips"
+    WallSwitches = "Wall Switches"
+    Bulbs = "Bulbs"
+    LightStrips = "Light Strips"
+    Hubs = "Hubs"

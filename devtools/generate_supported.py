@@ -5,6 +5,11 @@ from pathlib import Path
 from string import Template
 from typing import NamedTuple
 
+from kasa.device_factory import (
+    get_device_supported_type_from_components,
+    get_device_supported_type_from_sysinfo,
+)
+
 
 class SupportedVersion(NamedTuple):
     """Supported version."""
@@ -17,14 +22,6 @@ class SupportedVersion(NamedTuple):
 
 SUPPORTED_FILENAME = "SUPPORTED.md"
 README_FILENAME = "README.md"
-
-PLUGS = "Plugs"
-POWER_STRIPS = "Power Strips"
-WALL_SWITCHES = "Wall Switches"
-BULBS = "Bulbs"
-LIGHT_STRIPS = "Light Strips"
-HUBS = "Hubs"
-
 
 IOT_FOLDER = "kasa/tests/fixtures/"
 SMART_FOLDER = "kasa/tests/fixtures/smart/"
@@ -107,7 +104,7 @@ def _supported_text(
     version: SupportedVersion
     for brand, types in supported.items():
         brand_text = brand.capitalize()
-        brand_auth = "<sup>\*</sup>" if brand == "tapo" else ""
+        brand_auth = r"<sup>\*</sup>" if brand == "tapo" else ""
         types_text = ""
         for type_, models in types.items():
             models_list = []
@@ -118,7 +115,7 @@ def _supported_text(
                 for version in versions:
                     region_text = f" ({version.region})" if version.region else ""
                     auth_count += 1 if version.auth else 0
-                    vauth_flag = "<sup>\*</sup>" if version.auth else ""
+                    vauth_flag = r"<sup>\*</sup>" if version.auth else ""
                     vauth_flag = "" if brand == "tapo" else vauth_flag
                     if version_template:
                         versions_text += versst.substitute(
@@ -128,9 +125,9 @@ def _supported_text(
                             auth_flag=vauth_flag,
                         )
                 auth_flag = (
-                    "<sup>\*</sup>"
+                    r"<sup>\*</sup>"
                     if auth_count == len(versions)
-                    else "<sup>\*\*</sup>"
+                    else r"<sup>\*\*</sup>"
                     if auth_count > 0
                     else ""
                 )
@@ -160,31 +157,15 @@ def _get_smart_supported(supported):
         region = region.replace(")", "") if region else ""
         device_type = fixture_data["discovery_result"]["device_type"]
         _protocol, devicetype = device_type.split(".")
-        brand, type_ = devicetype[:4].lower(), devicetype[4:]
-        if brand not in ["kasa", "tapo"]:
-            print(
-                f"FAIL {smart_file} does not have a "
-                + f"supported device_type {device_type}"
-            )
-            continue
+        brand = devicetype[:4].lower()
         components = [
             component["id"]
             for component in fixture_data["component_nego"]["component_list"]
         ]
-        if type_ == "BULB":
-            supported_type = LIGHT_STRIPS if "light_strip" in components else BULBS
-        elif type_ == "PLUG":
-            supported_type = POWER_STRIPS if "child_device" in components else PLUGS
-        elif type_ == "SWITCH":
-            supported_type = WALL_SWITCHES
-        elif type_ == "HUB":
-            supported_type = HUBS
-        else:
-            print(
-                f"FAIL {smart_file} does not have a "
-                + f"supported device_type {device_type}"
-            )
-            continue
+        supported_device_type = get_device_supported_type_from_components(
+            components, device_type
+        )
+        supported_type = supported_device_type.value
 
         hw_version = fixture_data["get_device_info"]["hw_ver"]
         fw_version = fixture_data["get_device_info"]["fw_ver"]
@@ -203,22 +184,11 @@ def _get_iot_supported(supported):
         with open(iot_file) as f:
             fixture_data = json.load(f)
         sysinfo = fixture_data["system"]["get_sysinfo"]
+        supported_device_type = get_device_supported_type_from_sysinfo(sysinfo)
+        supported_type = supported_device_type.value
+
         model, _, region = sysinfo["model"][:-1].partition("(")
         auth = "discovery_result" in fixture_data
-        type_ = sysinfo.get("type", sysinfo.get("mic_type"))
-        if type_ == "IOT.SMARTBULB":
-            supported_type = LIGHT_STRIPS if "length" in sysinfo else BULBS
-        else:
-            if "children" in sysinfo:
-                supported_type = POWER_STRIPS
-            else:
-                if "dev_name" not in sysinfo:
-                    print(f"FAIL {iot_file} does not have dev_name")
-                    continue
-                if "light" in sysinfo["dev_name"].lower():
-                    supported_type = WALL_SWITCHES
-                else:
-                    supported_type = PLUGS
         stype = supported["kasa"].setdefault(supported_type, {})
         smodel = stype.setdefault(model, [])
         fw = sysinfo["sw_ver"].split(" ", maxsplit=1)[0]

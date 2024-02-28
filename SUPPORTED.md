@@ -181,6 +181,7 @@ All Tapo devices require authentication
   - Hardware: 1.0.0 / Firmware: 1.1.3
 - **P110**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
+  - Hardware: 1.0 (EU) / Firmware: 1.0.7
   - Hardware: 1.0 (UK) / Firmware: 1.3.0
 - **P125M**
   - Hardware: 1.0 (US) / Firmware: 1.1.0

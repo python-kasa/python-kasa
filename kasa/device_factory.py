@@ -1,10 +1,11 @@
 """Device creation via DeviceConfig."""
 import logging
 import time
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from .aestransport import AesTransport
 from .device import Device
+from .device_type import SupportedDeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
@@ -170,3 +171,44 @@ def get_protocol(
         protocol_transport_key
     )  # type: ignore
     return protocol_class(transport=transport_class(config=config))
+
+
+def get_device_supported_type_from_sysinfo(
+    sysinfo: Dict[str, Any]
+) -> SupportedDeviceType:
+    """Find type to be displayed as a supported device category."""
+    type_ = sysinfo.get("type", sysinfo.get("mic_type"))
+    if type_ == "IOT.SMARTBULB":
+        if "length" in sysinfo:
+            return SupportedDeviceType.LightStrips
+        return SupportedDeviceType.Bulbs
+    if "children" in sysinfo:
+        return SupportedDeviceType.PowerStrips
+    if "dev_name" not in sysinfo:
+        raise KasaException("No 'dev_name' in sysinfo")
+    if "light" in sysinfo["dev_name"].lower():
+        return SupportedDeviceType.WallSwitches
+    return SupportedDeviceType.Plugs
+
+
+def get_device_supported_type_from_components(
+    components: List[str], device_type: str
+) -> SupportedDeviceType:
+    """Find type to be displayed as a supported device category."""
+    protocol, devicetype = device_type.split(".")
+    brand, type_ = devicetype[:4], devicetype[4:]
+    if brand not in ["KASA", "TAPO"] or protocol not in ["SMART", "IOT"]:
+        raise KasaException(f"Unknown device type {device_type}")
+    if type_ == "BULB":
+        if "light_strip" in components:
+            return SupportedDeviceType.LightStrips
+        return SupportedDeviceType.Bulbs
+    if type_ == "PLUG":
+        if "child_device" in components:
+            return SupportedDeviceType.PowerStrips
+        return SupportedDeviceType.Plugs
+    if type_ == "SWITCH":
+        return SupportedDeviceType.WallSwitches
+    if type_ == "HUB":
+        return SupportedDeviceType.Hubs
+    raise KasaException(f"Unknown device type {device_type}")
