@@ -84,18 +84,6 @@ class IotLightStrip(IotBulb):
         """
         return EFFECT_NAMES_V1 if self.has_effects else None
 
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return strip specific state information."""
-        info = super().state_information
-
-        info["Length"] = self.length
-        if self.has_effects:
-            info["Effect"] = self.effect["name"]
-
-        return info
-
     @requires_update
     async def set_effect(
         self,

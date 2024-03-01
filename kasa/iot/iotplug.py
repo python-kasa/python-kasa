@@ -96,12 +96,6 @@ class IotPlug(IotDevice):
             "system", "set_led_off", {"off": int(not state)}
         )
 
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return switch-specific state information."""
-        return {}
-
 
 class IotWallSwitch(IotPlug):
     """Representation of a TP-Link Smart Wall Switch."""

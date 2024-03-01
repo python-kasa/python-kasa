@@ -320,15 +320,6 @@ class SmartDevice(Device):
         return ssid
 
     @property
-    def state_information(self) -> Dict[str, Any]:
-        """Return the key state information."""
-        return {
-            "overheated": self._info.get("overheated"),
-            "signal_level": self._info.get("signal_level"),
-            "SSID": self.ssid,
-        }
-
-    @property
     def has_emeter(self) -> bool:
         """Return if the device has emeter."""
         return "EnergyModule" in self.modules

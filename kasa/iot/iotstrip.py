@@ -154,19 +154,6 @@ class IotStrip(IotDevice):
         """Set the state of the led (night mode)."""
         await self._query_helper("system", "set_led_off", {"off": int(not state)})
 
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return strip-specific state information.
-
-        :return: Strip information dict, keys in user-presentable form.
-        """
-        return {
-            "LED state": self.led,
-            "Childs count": len(self.children),
-            "On since": self.on_since,
-        }
-
     async def current_consumption(self) -> float:
         """Get the current power consumption in watts."""
         return sum([await plug.current_consumption() for plug in self.children])
