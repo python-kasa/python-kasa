@@ -10,7 +10,11 @@ from kasa import (
     Discover,
     KasaException,
 )
-from kasa.device_factory import connect, get_protocol
+from kasa.device_factory import (
+    _get_device_type_from_sys_info,
+    connect,
+    get_protocol,
+)
 from kasa.deviceconfig import (
     ConnectionType,
     DeviceConfig,
@@ -18,6 +22,7 @@ from kasa.deviceconfig import (
     EncryptType,
 )
 from kasa.discover import DiscoveryResult
+from kasa.smart.smartdevice import SmartDevice
 
 
 def _get_connection_type_device_class(discovery_info):
@@ -146,3 +151,16 @@ async def test_connect_http_client(discovery_data, mocker):
         assert dev.protocol._transport._http_client.client == http_client
     await dev.disconnect()
     await http_client.close()
+
+
+async def test_device_types(dev: Device):
+    await dev.update()
+    if isinstance(dev, SmartDevice):
+        device_type = dev._discovery_info["result"]["device_type"]
+        res = SmartDevice._get_device_type_from_components(
+            dev._components.keys(), device_type
+        )
+    else:
+        res = _get_device_type_from_sys_info(dev._last_update)
+
+    assert dev.device_type == res

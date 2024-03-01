@@ -220,120 +220,32 @@ Note, that this works currently only on kasa-branded devices which use port 9999
 
 ## Supported devices
 
-In principle, most kasa-branded devices that are locally controllable using the official Kasa mobile app work with this library.
+The following devices have been tested and confirmed as working. If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).
 
-The following lists the devices that have been manually verified to work.
-**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).**
+<!--Do not edit text inside the SUPPORTED section below -->
+<!--SUPPORTED_START-->
+### Supported Kasa devices
 
-### Plugs
+- **Plugs**: EP10, EP25<sup>\*</sup>, HS100<sup>\*\*</sup>, HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401
+- **Power Strips**: EP40, HS107, HS300, KP200, KP303, KP400
+- **Wall Switches**: ES20M, HS200, HS210, HS220, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230
+- **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB100, LB110, LB120, LB130
+- **Light Strips**: KL400L5, KL420L5, KL430
 
-* HS100
-* HS103
-* HS105
-* HS107
-* HS110
-* KP100
-* KP105
-* KP115
-* KP125
-* KP125M [See note below](#newer-kasa-branded-devices)
-* KP401
-* EP10
-* EP25 [See note below](#newer-kasa-branded-devices)
+### Supported Tapo<sup>\*</sup> devices
 
-### Power Strips
+- **Plugs**: P100, P110, P125M, P135, TP15
+- **Power Strips**: P300, TP25
+- **Wall Switches**: S500D, S505
+- **Bulbs**: L510B, L510E, L530E
+- **Light Strips**: L900-10, L900-5, L920-5, L930-5
+- **Hubs**: H100
 
-* EP40
-* HS300
-* KP303
-* KP200 (in wall)
-* KP400
-* KP405 (dimmer)
+<!--SUPPORTED_END-->
+<sup>*</sup>&nbsp; Model requires authentication<br>
+<sup>**</sup> Newer versions require authentication
 
-### Wall switches
-
-* ES20M
-* HS200
-* HS210
-* HS220
-* KS200M (partial support, no motion, no daylight detection)
-* KS220M (partial support, no motion, no daylight detection)
-* KS230
-
-### Bulbs
-
-* LB100
-* LB110
-* LB120
-* LB130
-* LB230
-* KL50
-* KL60
-* KL110
-* KL120
-* KL125
-* KL130
-* KL135
-
-### Light strips
-
-* KL400L5
-* KL420L5
-* KL430
-
-### Tapo branded devices
-
-The library has recently added a limited supported for devices that carry Tapo branding.
-
-At the moment, the following devices have been confirmed to work:
-
-#### Plugs
-
-* Tapo P110
-* Tapo P125M
-* Tapo P135 (dimming not yet supported)
-* Tapo TP15
-
-#### Bulbs
-
-* Tapo L510B
-* Tapo L510E
-* Tapo L530E
-
-#### Light strips
-
-* Tapo L900-5
-* Tapo L900-10
-* Tapo L920-5
-* Tapo L930-5
-
-#### Wall switches
-
-* Tapo S500D
-* Tapo S505
-
-#### Power strips
-
-* Tapo P300
-* Tapo TP25
-
-#### Hubs
-
-* Tapo H100
-
-### Newer Kasa branded devices
-
-Some newer hardware versions of Kasa branded devices are now using the same protocol as
-Tapo branded devices.  Support for these devices is currently limited as per TAPO branded
-devices:
-
-* Kasa EP25 (plug) hw_version 2.6
-* Kasa KP125M (plug)
-* Kasa KS205 (Wifi/Matter Wall Switch)
-* Kasa KS225 (Wifi/Matter Wall Dimmer Switch)
-
-
-**If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).**
+See [supported devices in our documentation](SUPPORTED.md) for more detailed information about tested hardware and software versions.
 
 ## Resources
 

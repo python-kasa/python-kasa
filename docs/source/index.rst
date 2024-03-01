@@ -15,3 +15,4 @@
    smartdimmer
    smartstrip
    smartlightstrip
+   SUPPORTED

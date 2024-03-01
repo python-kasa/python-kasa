@@ -29,8 +29,9 @@ from .conftest import (
     dimmer,
     lightstrip,
     new_discovery,
-    plug,
+    plug_iot,
     strip_iot,
+    wallswitch_iot,
 )
 
 UNSUPPORTED = {
@@ -55,7 +56,14 @@ UNSUPPORTED = {
 }
 
 
-@plug
+@wallswitch_iot
+async def test_type_detection_switch(dev: Device):
+    d = Discover._get_device_class(dev._last_update)("localhost")
+    assert d.is_wallswitch
+    assert d.device_type == DeviceType.WallSwitch
+
+
+@plug_iot
 async def test_type_detection_plug(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_plug

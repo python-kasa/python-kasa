@@ -1,6 +1,6 @@
 from kasa import DeviceType
 
-from .conftest import plug, plug_smart
+from .conftest import plug_iot, plug_smart, switch_smart, wallswitch_iot
 from .test_smartdevice import SYSINFO_SCHEMA
 
 # these schemas should go to the mainlib as
@@ -8,7 +8,7 @@ from .test_smartdevice import SYSINFO_SCHEMA
 # as well as to check that faked devices are operating properly.
 
 
-@plug
+@plug_iot
 async def test_plug_sysinfo(dev):
     assert dev.sys_info is not None
     SYSINFO_SCHEMA(dev.sys_info)
@@ -19,8 +19,34 @@ async def test_plug_sysinfo(dev):
     assert dev.is_plug or dev.is_strip
 
 
-@plug
-async def test_led(dev):
+@wallswitch_iot
+async def test_switch_sysinfo(dev):
+    assert dev.sys_info is not None
+    SYSINFO_SCHEMA(dev.sys_info)
+
+    assert dev.model is not None
+
+    assert dev.device_type == DeviceType.WallSwitch
+    assert dev.is_wallswitch
+
+
+@plug_iot
+async def test_plug_led(dev):
+    original = dev.led
+
+    await dev.set_led(False)
+    await dev.update()
+    assert not dev.led
+
+    await dev.set_led(True)
+    await dev.update()
+    assert dev.led
+
+    await dev.set_led(original)
+
+
+@wallswitch_iot
+async def test_switch_led(dev):
     original = dev.led
 
     await dev.set_led(False)
@@ -40,3 +66,13 @@ async def test_plug_device_info(dev):
     assert dev.model is not None
 
     assert dev.device_type == DeviceType.Plug or dev.device_type == DeviceType.Strip
+
+
+@switch_smart
+async def test_switch_device_info(dev):
+    assert dev._info is not None
+    assert dev.model is not None
+
+    assert (
+        dev.device_type == DeviceType.WallSwitch or dev.device_type == DeviceType.Dimmer
+    )

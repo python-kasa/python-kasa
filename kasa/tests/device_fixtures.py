@@ -7,7 +7,7 @@ from kasa import (
     Device,
     Discover,
 )
-from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip
+from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
 from kasa.smart import SmartBulb, SmartDevice
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -60,15 +60,12 @@ PLUGS_IOT = {
     "HS103",
     "HS105",
     "HS110",
-    "HS200",
-    "HS210",
     "EP10",
     "KP100",
     "KP105",
     "KP115",
     "KP125",
     "KP401",
-    "KS200M",
 }
 # P135 supports dimming, but its not currently support
 # by the library
@@ -77,15 +74,25 @@ PLUGS_SMART = {
     "P110",
     "KP125M",
     "EP25",
-    "KS205",
     "P125M",
-    "S505",
     "TP15",
 }
 PLUGS = {
     *PLUGS_IOT,
     *PLUGS_SMART,
 }
+SWITCHES_IOT = {
+    "HS200",
+    "HS210",
+    "KS200M",
+}
+SWITCHES_SMART = {
+    "KS205",
+    "KS225",
+    "S500D",
+    "S505",
+}
+SWITCHES = {*SWITCHES_IOT, *SWITCHES_SMART}
 STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
 STRIPS_SMART = {"P300", "TP25"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
@@ -105,12 +112,15 @@ WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
 
 DIMMABLE = {*BULBS, *DIMMERS}
 
-ALL_DEVICES_IOT = BULBS_IOT.union(PLUGS_IOT).union(STRIPS_IOT).union(DIMMERS_IOT)
+ALL_DEVICES_IOT = (
+    BULBS_IOT.union(PLUGS_IOT).union(STRIPS_IOT).union(DIMMERS_IOT).union(SWITCHES_IOT)
+)
 ALL_DEVICES_SMART = (
     BULBS_SMART.union(PLUGS_SMART)
     .union(STRIPS_SMART)
     .union(DIMMERS_SMART)
     .union(HUBS_SMART)
+    .union(SWITCHES_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -160,7 +170,14 @@ no_emeter_iot = parametrize(
 )
 
 bulb = parametrize("bulbs", model_filter=BULBS, protocol_filter={"SMART", "IOT"})
-plug = parametrize("plugs", model_filter=PLUGS, protocol_filter={"IOT"})
+plug = parametrize("plugs", model_filter=PLUGS, protocol_filter={"IOT", "SMART"})
+plug_iot = parametrize("plugs iot", model_filter=PLUGS, protocol_filter={"IOT"})
+wallswitch = parametrize(
+    "wall switches", model_filter=SWITCHES, protocol_filter={"IOT", "SMART"}
+)
+wallswitch_iot = parametrize(
+    "wall switches iot", model_filter=SWITCHES, protocol_filter={"IOT"}
+)
 strip = parametrize("strips", model_filter=STRIPS, protocol_filter={"SMART", "IOT"})
 dimmer = parametrize("dimmers", model_filter=DIMMERS, protocol_filter={"IOT"})
 lightstrip = parametrize(
@@ -213,6 +230,9 @@ strip_smart = parametrize(
 plug_smart = parametrize(
     "plug devices smart", model_filter=PLUGS_SMART, protocol_filter={"SMART"}
 )
+switch_smart = parametrize(
+    "switch devices smart", model_filter=SWITCHES_SMART, protocol_filter={"SMART"}
+)
 bulb_smart = parametrize(
     "bulb devices smart", model_filter=BULBS_SMART, protocol_filter={"SMART"}
 )
@@ -239,8 +259,8 @@ def check_categories():
         + strip.args[1]
         + plug.args[1]
         + bulb.args[1]
+        + wallswitch.args[1]
         + lightstrip.args[1]
-        + plug_smart.args[1]
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
         + hubs_smart.args[1]
@@ -263,6 +283,9 @@ def device_for_fixture_name(model, protocol):
         for d in PLUGS_SMART:
             if d in model:
                 return SmartDevice
+        for d in SWITCHES_SMART:
+            if d in model:
+                return SmartDevice
         for d in BULBS_SMART:
             if d in model:
                 return SmartBulb
@@ -283,6 +306,9 @@ def device_for_fixture_name(model, protocol):
         for d in PLUGS_IOT:
             if d in model:
                 return IotPlug
+        for d in SWITCHES_IOT:
+            if d in model:
+                return IotWallSwitch
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:
@@ -325,6 +351,13 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
         d.protocol = FakeSmartProtocol(fixture_data.data, fixture_data.name)
     else:
         d.protocol = FakeIotProtocol(fixture_data.data)
+    if "discovery_result" in fixture_data.data:
+        discovery_data = {"result": fixture_data.data["discovery_result"]}
+    else:
+        discovery_data = {
+            "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
+        }
+    d.update_from_discover_info(discovery_data)
     await _update_and_close(d)
     return d
 

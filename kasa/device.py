@@ -213,6 +213,11 @@ class Device(ABC):
         return self.device_type == DeviceType.Plug
 
     @property
+    def is_wallswitch(self) -> bool:
+        """Return True if the device is a switch."""
+        return self.device_type == DeviceType.WallSwitch
+
+    @property
     def is_strip(self) -> bool:
         """Return True if the device is a strip."""
         return self.device_type == DeviceType.Strip

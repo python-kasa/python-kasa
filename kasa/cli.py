@@ -26,7 +26,15 @@ from kasa import (
     UnsupportedDeviceError,
 )
 from kasa.discover import DiscoveryResult
-from kasa.iot import IotBulb, IotDevice, IotDimmer, IotLightStrip, IotPlug, IotStrip
+from kasa.iot import (
+    IotBulb,
+    IotDevice,
+    IotDimmer,
+    IotLightStrip,
+    IotPlug,
+    IotStrip,
+    IotWallSwitch,
+)
 from kasa.smart import SmartBulb, SmartDevice
 
 try:
@@ -63,11 +71,13 @@ echo = _do_echo
 
 TYPE_TO_CLASS = {
     "plug": IotPlug,
+    "switch": IotWallSwitch,
     "bulb": IotBulb,
     "dimmer": IotDimmer,
     "strip": IotStrip,
     "lightstrip": IotLightStrip,
     "iot.plug": IotPlug,
+    "iot.switch": IotWallSwitch,
     "iot.bulb": IotBulb,
     "iot.dimmer": IotDimmer,
     "iot.strip": IotStrip,
