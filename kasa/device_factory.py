@@ -15,7 +15,7 @@ from .iot import (
     IotLightStrip,
     IotPlug,
     IotStrip,
-    IotSwitch,
+    IotWallSwitch,
 )
 from .iotprotocol import IotProtocol
 from .klaptransport import KlapTransport, KlapTransportV2
@@ -131,7 +131,7 @@ def _get_device_type_from_sys_info(info: Dict[str, Any]) -> DeviceType:
         if "children" in sysinfo:
             return DeviceType.Strip
         if (dev_name := sysinfo.get("dev_name")) and "light" in dev_name.lower():
-            return DeviceType.Switch
+            return DeviceType.WallSwitch
         return DeviceType.Plug
 
     if "smartbulb" in type_.lower():
@@ -149,7 +149,7 @@ def get_device_class_from_sys_info(sysinfo: Dict[str, Any]) -> Type[IotDevice]:
         DeviceType.Plug: IotPlug,
         DeviceType.Dimmer: IotDimmer,
         DeviceType.Strip: IotStrip,
-        DeviceType.Switch: IotSwitch,
+        DeviceType.WallSwitch: IotWallSwitch,
         DeviceType.LightStrip: IotLightStrip,
     }
     return TYPE_TO_CLASS[_get_device_type_from_sys_info(sysinfo)]

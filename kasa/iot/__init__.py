@@ -3,7 +3,7 @@ from .iotbulb import IotBulb
 from .iotdevice import IotDevice
 from .iotdimmer import IotDimmer
 from .iotlightstrip import IotLightStrip
-from .iotplug import IotPlug, IotSwitch
+from .iotplug import IotPlug, IotWallSwitch
 from .iotstrip import IotStrip
 
 __all__ = [
@@ -13,5 +13,5 @@ __all__ = [
     "IotStrip",
     "IotDimmer",
     "IotLightStrip",
-    "IotSwitch",
+    "IotWallSwitch",
 ]

@@ -7,7 +7,7 @@ from kasa import (
     Device,
     Discover,
 )
-from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotSwitch
+from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
 from kasa.smart import SmartBulb, SmartDevice
 
 from .fakeprotocol_iot import FakeIotProtocol
@@ -172,10 +172,12 @@ no_emeter_iot = parametrize(
 bulb = parametrize("bulbs", model_filter=BULBS, protocol_filter={"SMART", "IOT"})
 plug = parametrize("plugs", model_filter=PLUGS, protocol_filter={"IOT", "SMART"})
 plug_iot = parametrize("plugs iot", model_filter=PLUGS, protocol_filter={"IOT"})
-switch = parametrize(
-    "switches", model_filter=SWITCHES, protocol_filter={"IOT", "SMART"}
+wallswitch = parametrize(
+    "wall switches", model_filter=SWITCHES, protocol_filter={"IOT", "SMART"}
 )
-switch_iot = parametrize("switches iot", model_filter=SWITCHES, protocol_filter={"IOT"})
+wallswitch_iot = parametrize(
+    "wall switches iot", model_filter=SWITCHES, protocol_filter={"IOT"}
+)
 strip = parametrize("strips", model_filter=STRIPS, protocol_filter={"SMART", "IOT"})
 dimmer = parametrize("dimmers", model_filter=DIMMERS, protocol_filter={"IOT"})
 lightstrip = parametrize(
@@ -257,7 +259,7 @@ def check_categories():
         + strip.args[1]
         + plug.args[1]
         + bulb.args[1]
-        + switch.args[1]
+        + wallswitch.args[1]
         + lightstrip.args[1]
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
@@ -306,7 +308,7 @@ def device_for_fixture_name(model, protocol):
                 return IotPlug
         for d in SWITCHES_IOT:
             if d in model:
-                return IotSwitch
+                return IotWallSwitch
 
         # Light strips are recognized also as bulbs, so this has to go first
         for d in BULBS_IOT_LIGHT_STRIP:

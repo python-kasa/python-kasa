@@ -27,7 +27,7 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Strip: "Power Strips",
     DeviceType.StripSocket: "Power Strips",
     DeviceType.Dimmer: "Wall Switches",
-    DeviceType.Switch: "Wall Switches",
+    DeviceType.WallSwitch: "Wall Switches",
     DeviceType.Bulb: "Bulbs",
     DeviceType.LightStrip: "Light Strips",
     DeviceType.Hub: "Hubs",

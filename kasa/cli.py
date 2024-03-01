@@ -33,7 +33,7 @@ from kasa.iot import (
     IotLightStrip,
     IotPlug,
     IotStrip,
-    IotSwitch,
+    IotWallSwitch,
 )
 from kasa.smart import SmartBulb, SmartDevice
 
@@ -71,13 +71,13 @@ echo = _do_echo
 
 TYPE_TO_CLASS = {
     "plug": IotPlug,
-    "switch": IotSwitch,
+    "switch": IotWallSwitch,
     "bulb": IotBulb,
     "dimmer": IotDimmer,
     "strip": IotStrip,
     "lightstrip": IotLightStrip,
     "iot.plug": IotPlug,
-    "iot.switch": IotSwitch,
+    "iot.switch": IotWallSwitch,
     "iot.bulb": IotBulb,
     "iot.dimmer": IotDimmer,
     "iot.strip": IotStrip,

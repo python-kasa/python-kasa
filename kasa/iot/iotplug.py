@@ -103,8 +103,8 @@ class IotPlug(IotDevice):
         return {}
 
 
-class IotSwitch(IotPlug):
-    """Representation of a TP-Link Smart Switch."""
+class IotWallSwitch(IotPlug):
+    """Representation of a TP-Link Smart Wall Switch."""
 
     def __init__(
         self,
@@ -114,4 +114,4 @@ class IotSwitch(IotPlug):
         protocol: Optional[BaseProtocol] = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
-        self._device_type = DeviceType.Switch
+        self._device_type = DeviceType.WallSwitch

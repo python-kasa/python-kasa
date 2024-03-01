@@ -537,6 +537,6 @@ class SmartDevice(Device):
         if "brightness" in components:
             return DeviceType.Bulb
         if "SWITCH" in device_type:
-            return DeviceType.Switch
+            return DeviceType.WallSwitch
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
