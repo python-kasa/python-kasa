@@ -6,7 +6,7 @@ The following devices have been tested and confirmed as working. If your device 
 <!--SUPPORTED_START-->
 ## Kasa devices
 
-<sup>*</sup>&nbsp; Kasa model requires authentication
+Some newer Kasa devices require authentication. These are marked with <sup>*</sup> in the list below.
 
 ### Plugs
 
@@ -140,7 +140,7 @@ The following devices have been tested and confirmed as working. If your device 
 
 ## Tapo devices
 
-All Tapo devices require authentication
+All Tapo devices require authentication.
 
 ### Plugs
 

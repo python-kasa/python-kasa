@@ -3,7 +3,6 @@
 import json
 import os
 import sys
-from enum import Enum
 from pathlib import Path
 from string import Template
 from typing import NamedTuple
@@ -22,28 +21,17 @@ class SupportedVersion(NamedTuple):
     auth: bool
 
 
-class SupportedDeviceType(Enum):
-    """Supported device type enum."""
-
-    Plugs = "Plugs"
-    PowerStrips = "Power Strips"
-    WallSwitches = "Wall Switches"
-    Bulbs = "Bulbs"
-    LightStrips = "Light Strips"
-    Hubs = "Hubs"
-    Sensors = "Sensors"
-
-
-DEVICE_TYPE_TO_SUPPORTED = {
-    DeviceType.Plug: SupportedDeviceType.Plugs,
-    DeviceType.Bulb: SupportedDeviceType.Bulbs,
-    DeviceType.Strip: SupportedDeviceType.PowerStrips,
-    DeviceType.StripSocket: SupportedDeviceType.PowerStrips,
-    DeviceType.Dimmer: SupportedDeviceType.WallSwitches,
-    DeviceType.Switch: SupportedDeviceType.WallSwitches,
-    DeviceType.LightStrip: SupportedDeviceType.LightStrips,
-    DeviceType.Sensor: SupportedDeviceType.Sensors,
-    DeviceType.Hub: SupportedDeviceType.Hubs,
+# The order of devices in this dict drives the display order
+DEVICE_TYPE_TO_PRODUCT_GROUP = {
+    DeviceType.Plug: "Plugs",
+    DeviceType.Strip: "Power Strips",
+    DeviceType.StripSocket: "Power Strips",
+    DeviceType.Dimmer: "Wall Switches",
+    DeviceType.Switch: "Wall Switches",
+    DeviceType.Bulb: "Bulbs",
+    DeviceType.LightStrip: "Light Strips",
+    DeviceType.Hub: "Hubs",
+    DeviceType.Sensor: "Sensors",
 }
 
 
@@ -142,9 +130,10 @@ def _supported_text(
     version: SupportedVersion
     for brand, types in supported.items():
         preamble_text = (
-            "<sup>*</sup>&nbsp; Kasa model requires authentication"
+            "Some newer Kasa devices require authentication. "
+            + "These are marked with <sup>*</sup> in the list below."
             if brand == "kasa"
-            else "All Tapo devices require authentication"
+            else "All Tapo devices require authentication."
         )
         brand_text = brand.capitalize()
         brand_auth = r"<sup>\*</sup>" if brand == "tapo" else ""
@@ -152,7 +141,7 @@ def _supported_text(
         for supported_type, models in sorted(
             # Sort by device type order in the enum
             types.items(),
-            key=lambda st: list(SupportedDeviceType).index(st[0]),
+            key=lambda st: list(DEVICE_TYPE_TO_PRODUCT_GROUP.values()).index(st[0]),
         ):
             models_list = []
             models_text = ""
@@ -162,8 +151,9 @@ def _supported_text(
                 for version in sorted(versions):
                     region_text = f" ({version.region})" if version.region else ""
                     auth_count += 1 if version.auth else 0
-                    vauth_flag = r"<sup>\*</sup>" if version.auth else ""
-                    vauth_flag = "" if brand == "tapo" else vauth_flag
+                    vauth_flag = (
+                        r"<sup>\*</sup>" if version.auth and brand == "kasa" else ""
+                    )
                     if version_template:
                         versions_text += versst.substitute(
                             hw=version.hw,
@@ -171,14 +161,14 @@ def _supported_text(
                             region=region_text,
                             auth_flag=vauth_flag,
                         )
-                auth_flag = (
-                    r"<sup>\*</sup>"
-                    if auth_count == len(versions)
-                    else r"<sup>\*\*</sup>"
-                    if auth_count > 0
-                    else ""
-                )
-                auth_flag = "" if brand == "tapo" else auth_flag
+                if brand == "kasa" and auth_count > 0:
+                    auth_flag = (
+                        r"<sup>\*</sup>"
+                        if auth_count == len(versions)
+                        else r"<sup>\*\*</sup>"
+                    )
+                else:
+                    auth_flag = ""
                 if model_template:
                     models_text += modelt.substitute(
                         model=model, versions=versions_text, auth_flag=auth_flag
@@ -186,9 +176,7 @@ def _supported_text(
                 else:
                     models_list.append(f"{model}{auth_flag}")
             models_text = models_text if models_text else ", ".join(models_list)
-            types_text += typest.substitute(
-                type_=supported_type.value, models=models_text
-            )
+            types_text += typest.substitute(type_=supported_type, models=models_text)
         brands += brandt.substitute(
             brand=brand_text, types=types_text, auth=brand_auth, preamble=preamble_text
         )
@@ -213,7 +201,7 @@ def _get_smart_supported(supported):
             for component in fixture_data["component_nego"]["component_list"]
         ]
         dt = SmartDevice._get_device_type_from_components(components, device_type)
-        supported_type = DEVICE_TYPE_TO_SUPPORTED[dt]
+        supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[dt]
 
         hw_version = fixture_data["get_device_info"]["hw_ver"]
         fw_version = fixture_data["get_device_info"]["fw_ver"]
@@ -232,7 +220,7 @@ def _get_iot_supported(supported):
             fixture_data = json.load(f)
         sysinfo = fixture_data["system"]["get_sysinfo"]
         dt = _get_device_type_from_sys_info(fixture_data)
-        supported_type = DEVICE_TYPE_TO_SUPPORTED[dt]
+        supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[dt]
 
         model, _, region = sysinfo["model"][:-1].partition("(")
         auth = "discovery_result" in fixture_data
