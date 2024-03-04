@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import Dict, List, Set
 
 import pytest
@@ -106,6 +107,7 @@ DIMMERS = {
 }
 
 HUBS_SMART = {"H100"}
+SENSORS_SMART = {"T315"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "KP125M", "EP25"}
@@ -121,6 +123,7 @@ ALL_DEVICES_SMART = (
     .union(STRIPS_SMART)
     .union(DIMMERS_SMART)
     .union(HUBS_SMART)
+    .union(SENSORS_SMART)
     .union(SWITCHES_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
@@ -263,6 +266,9 @@ dimmers_smart = parametrize(
 hubs_smart = parametrize(
     "hubs smart", model_filter=HUBS_SMART, protocol_filter={"SMART"}
 )
+sensors_smart = parametrize(
+    "sensors smart", model_filter=SENSORS_SMART, protocol_filter={"SMART"}
+)
 device_smart = parametrize(
     "devices smart", model_filter=ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
@@ -283,6 +289,7 @@ def check_categories():
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
         + hubs_smart.args[1]
+        + sensors_smart.args[1]
     )
     diffs: Set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -299,24 +306,14 @@ check_categories()
 
 def device_for_fixture_name(model, protocol):
     if "SMART" in protocol:
-        for d in PLUGS_SMART:
+        for d in chain(
+            PLUGS_SMART, SWITCHES_SMART, STRIPS_SMART, HUBS_SMART, SENSORS_SMART
+        ):
             if d in model:
                 return SmartDevice
-        for d in SWITCHES_SMART:
-            if d in model:
-                return SmartDevice
-        for d in BULBS_SMART:
+        for d in chain(BULBS_SMART, DIMMERS_SMART):
             if d in model:
                 return SmartBulb
-        for d in DIMMERS_SMART:
-            if d in model:
-                return SmartBulb
-        for d in STRIPS_SMART:
-            if d in model:
-                return SmartDevice
-        for d in HUBS_SMART:
-            if d in model:
-                return SmartDevice
     else:
         for d in STRIPS_IOT:
             if d in model:
@@ -378,7 +375,9 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
         discovery_data = {
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
         }
-    if discovery_data:  # Child devices do not have discovery info
+
+    # Child devices have no discovery data.
+    if discovery_data is not None:
         d.update_from_discover_info(discovery_data)
 
     await _update_and_close(d)

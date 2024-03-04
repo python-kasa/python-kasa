@@ -2,7 +2,7 @@ import warnings
 from typing import Dict
 from unittest.mock import MagicMock
 
-import pytest  # type: ignore # see https://github.com/pytest-dev/pytest/issues/3342
+import pytest
 
 from kasa import (
     DeviceConfig,
