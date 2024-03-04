@@ -22,6 +22,8 @@ class Brightness(SmartModule):
                 container=self,
                 attribute_getter="brightness",
                 attribute_setter="set_brightness",
+                minimum_value=1,
+                maximum_value=100,
             )
         )
 

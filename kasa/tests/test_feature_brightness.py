@@ -18,5 +18,3 @@ async def test_brightness_component(dev: SmartDevice):
     # Test setting the value
     await feature.set_value(10)
     assert feature.value == 10
-
-
