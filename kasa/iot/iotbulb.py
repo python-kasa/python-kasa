@@ -2,7 +2,7 @@
 import logging
 import re
 from enum import Enum
-from typing import Any, Dict, List, Optional, cast
+from typing import Dict, List, Optional, cast
 
 try:
     from pydantic.v1 import BaseModel, Field, root_validator

@@ -1,5 +1,5 @@
 """Module for tapo-branded smart bulbs (L5**)."""
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from ..bulb import Bulb
 from ..exceptions import KasaException

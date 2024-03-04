@@ -1,5 +1,5 @@
 """Module for light strips (KL430)."""
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig

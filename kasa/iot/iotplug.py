@@ -1,6 +1,6 @@
 """Module for smart plugs (HS100, HS110, ..)."""
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig

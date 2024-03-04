@@ -306,7 +306,7 @@ class Device(ABC):
     @property
     def state_information(self) -> Dict[str, Any]:
         """Return available features and their values."""
-        return {feat.name: feat.value for feat in  self._features.values()}
+        return {feat.name: feat.value for feat in self._features.values()}
 
     @property
     def features(self) -> Dict[str, Feature]:
