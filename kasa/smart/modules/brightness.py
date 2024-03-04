@@ -1,7 +1,7 @@
 """Implementation of brightness module."""
 from typing import TYPE_CHECKING, Dict
 
-from ...feature import Feature
+from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -24,6 +24,7 @@ class Brightness(SmartModule):
                 attribute_setter="set_brightness",
                 minimum_value=1,
                 maximum_value=100,
+                type=FeatureType.Number,
             )
         )
 
