@@ -349,6 +349,11 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
         d.protocol = FakeSmartProtocol(fixture_data.data, fixture_data.name)
     else:
         d.protocol = FakeIotProtocol(fixture_data.data)
+
+    # smart child devices do not have their own discovery data
+    if fixture_data.protocol == "SMART.CHILD":
+        return d
+
     if "discovery_result" in fixture_data.data:
         discovery_data = {"result": fixture_data.data["discovery_result"]}
     else:
