@@ -57,6 +57,9 @@ class IotPlug(IotDevice):
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
 
+    async def _initialize_features(self):
+        await super()._initialize_features()
+
         self._add_feature(
             Feature(
                 device=self,
