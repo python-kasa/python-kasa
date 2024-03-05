@@ -249,8 +249,6 @@ device_iot = parametrize(
     "devices iot", model_filter=ALL_DEVICES_IOT, protocol_filter={"IOT"}
 )
 
-brightness = parametrize("brightness smart", component_filter="brightness")
-
 
 def check_categories():
     """Check that every fixture file is categorized."""

@@ -2,6 +2,7 @@
 from .alarmmodule import AlarmModule
 from .autooffmodule import AutoOffModule
 from .battery import BatterySensor
+from .brightness import Brightness
 from .childdevicemodule import ChildDeviceModule
 from .cloudmodule import CloudModule
 from .devicemodule import DeviceModule
@@ -26,6 +27,7 @@ __all__ = [
     "ReportModule",
     "AutoOffModule",
     "LedModule",
+    "Brightness",
     "Firmware",
     "CloudModule",
     "LightTransitionModule",
