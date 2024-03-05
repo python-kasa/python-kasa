@@ -198,7 +198,7 @@ async def test_mac(dev):
 async def test_representation(dev):
     import re
 
-    pattern = re.compile("<.* model .* at .* (.*), is_on: .* - dev specific: .*>")
+    pattern = re.compile("<DeviceType\..+ at .+? - .*? \(.+?\)>")
     assert pattern.match(str(dev))
 
 

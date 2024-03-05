@@ -366,8 +366,4 @@ class Device(ABC):
     def __repr__(self):
         if self._last_update is None:
             return f"<{self.device_type} at {self.host} - update() needed>"
-        return (
-            f"<{self.device_type} model {self.model} at {self.host}"
-            f" ({self.alias}), is_on: {self.is_on}"
-            f" - dev specific: {self.state_information}>"
-        )
+        return f"<{self.device_type} at {self.host} - {self.alias} ({self.model})>"
