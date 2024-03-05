@@ -8,7 +8,7 @@ from kasa.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
-from .fixtureinfo import FIXTURE_DATA, FixtureInfo, filter_fixtures, idgenerator
+from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 
 
 def _make_unsupported(device_family, encrypt_type):
@@ -42,8 +42,10 @@ UNSUPPORTED_DEVICES = {
 }
 
 
-def parametrize_discovery(desc, root_key):
-    filtered_fixtures = filter_fixtures(desc, data_root_filter=root_key)
+def parametrize_discovery(desc, *, data_root_filter, protocol_filter=None):
+    filtered_fixtures = filter_fixtures(
+        desc, data_root_filter=data_root_filter, protocol_filter=protocol_filter
+    )
     return pytest.mark.parametrize(
         "discovery_mock",
         filtered_fixtures,
@@ -52,10 +54,15 @@ def parametrize_discovery(desc, root_key):
     )
 
 
-new_discovery = parametrize_discovery("new discovery", "discovery_result")
+new_discovery = parametrize_discovery(
+    "new discovery", data_root_filter="discovery_result"
+)
 
 
-@pytest.fixture(params=FIXTURE_DATA, ids=idgenerator)
+@pytest.fixture(
+    params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
+    ids=idgenerator,
+)
 def discovery_mock(request, mocker):
     fixture_info: FixtureInfo = request.param
     fixture_data = fixture_info.data
@@ -142,7 +149,10 @@ def discovery_mock(request, mocker):
     yield dm
 
 
-@pytest.fixture(params=FIXTURE_DATA, ids=idgenerator)
+@pytest.fixture(
+    params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
+    ids=idgenerator,
+)
 def discovery_data(request, mocker):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_info = request.param
