@@ -208,7 +208,7 @@ class IotBulb(IotDevice, Bulb):
     async def _initialize_features(self):
         await super()._initialize_features()
 
-        if bool(self.sys_info["is_dimmable"]):
+        if bool(self.sys_info["is_dimmable"]):  # pragma: no branch
             self._add_feature(
                 Feature(
                     device=self,

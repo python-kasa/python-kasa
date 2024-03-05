@@ -84,7 +84,7 @@ class IotDimmer(IotPlug):
     async def _initialize_features(self):
         await super()._initialize_features()
 
-        if "brightness" in self.sys_info:
+        if "brightness" in self.sys_info:  # pragma: no branch
             self._add_feature(
                 Feature(
                     device=self,
