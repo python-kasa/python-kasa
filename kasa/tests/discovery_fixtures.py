@@ -135,7 +135,7 @@ def discovery_mock(request, mocker):
         side_effect=lambda *_, **__: [(None, None, None, None, (dm.ip, 0))],
     )
 
-    if fixture_info.protocol == "SMART":
+    if "SMART" in fixture_info.protocol:
         proto = FakeSmartProtocol(fixture_data, fixture_info.name)
     else:
         proto = FakeIotProtocol(fixture_data)
