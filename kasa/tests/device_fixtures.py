@@ -277,7 +277,7 @@ check_categories()
 
 
 def device_for_fixture_name(model, protocol):
-    if protocol == "SMART":
+    if "SMART" in protocol:
         for d in PLUGS_SMART:
             if d in model:
                 return SmartDevice
@@ -345,17 +345,21 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
         host="127.0.0.123"
     )
-    if fixture_data.protocol == "SMART":
+    if "SMART" in fixture_data.protocol:
         d.protocol = FakeSmartProtocol(fixture_data.data, fixture_data.name)
     else:
         d.protocol = FakeIotProtocol(fixture_data.data)
+
+    discovery_data = None
     if "discovery_result" in fixture_data.data:
         discovery_data = {"result": fixture_data.data["discovery_result"]}
-    else:
+    elif "system" in fixture_data.data:
         discovery_data = {
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
         }
-    d.update_from_discover_info(discovery_data)
+    if discovery_data:  # Child devices do not have discovery info
+        d.update_from_discover_info(discovery_data)
+
     await _update_and_close(d)
     return d
 
