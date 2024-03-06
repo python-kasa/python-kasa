@@ -267,7 +267,7 @@ hubs_smart = parametrize(
     "hubs smart", model_filter=HUBS_SMART, protocol_filter={"SMART"}
 )
 sensors_smart = parametrize(
-    "sensors smart", model_filter=SENSORS_SMART, protocol_filter={"SMART"}
+    "sensors smart", model_filter=SENSORS_SMART, protocol_filter={"SMART.CHILD"}
 )
 device_smart = parametrize(
     "devices smart", model_filter=ALL_DEVICES_SMART, protocol_filter={"SMART"}
