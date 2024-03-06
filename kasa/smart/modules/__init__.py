@@ -5,6 +5,7 @@ from .battery import BatterySensor
 from .brightness import Brightness
 from .childdevicemodule import ChildDeviceModule
 from .cloudmodule import CloudModule
+from .colortemp import ColorTemperatureModule
 from .devicemodule import DeviceModule
 from .energymodule import EnergyModule
 from .firmware import Firmware
@@ -31,4 +32,5 @@ __all__ = [
     "Firmware",
     "CloudModule",
     "LightTransitionModule",
+    "ColorTemperatureModule",
 ]
