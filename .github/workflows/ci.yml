@@ -18,13 +18,15 @@ jobs:
         python-version: ["3.12"]
 
     steps:
-      - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v2"
+      - uses: "actions/checkout@v4"
+      - name: Install poetry
+        run: pipx install poetry
+      - uses: "actions/setup-python@v5"
         with:
           python-version: "${{ matrix.python-version }}"
+          cache: 'poetry'
       - name: "Install dependencies"
         run: |
-          python -m pip install --upgrade pip poetry
           poetry install
       - name: "Check supported device md files are up to date"
         run: |
@@ -85,21 +87,27 @@ jobs:
             extras: true
 
     steps:
-      - uses: "actions/checkout@v3"
-      - uses: "actions/setup-python@v4"
+      - uses: "actions/checkout@v4"
+      - name: Install poetry
+        run: pipx install poetry
+      - uses: "actions/setup-python@v5"
         with:
           python-version: "${{ matrix.python-version }}"
+          cache: 'poetry'
       - name: "Install dependencies (no extras)"
         if: matrix.extras == false
         run: |
-          python -m pip install --upgrade pip poetry
           poetry install
       - name: "Install dependencies (with extras)"
         if: matrix.extras == true
         run: |
-          python -m pip install --upgrade pip poetry
           poetry install --all-extras
-      - name: "Run tests"
+      - name: "Run tests (no coverage)"
+        if: ${{ startsWith(matrix.python-version, 'pypy') }}
+        run: |
+          poetry run pytest
+      - name: "Run tests (with coverage)"
+        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: |
           poetry run pytest --cov kasa --cov-report xml
       - name: "Upload coverage to Codecov"
