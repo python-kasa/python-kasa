@@ -93,7 +93,7 @@ def filter_fixtures(
 
     data_root_filter: return fixtures containing the supplied top
         level key, i.e. discovery_result
-    protocol_filter: set of protocols to match, IOT or SMART
+    protocol_filter: set of protocols to match, IOT, SMART, SMART.CHILD
     model_filter: set of device models to match
     component_filter: filter SMART fixtures that have the provided
     component in component_nego details.

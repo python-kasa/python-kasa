@@ -37,7 +37,11 @@ class Module(ABC):
 
     def _add_feature(self, feature: Feature):
         """Add module feature."""
-        feat_name = f"{self._module}_{feature.name}"
+
+        def _slugified_name(name):
+            return name.lower().replace(" ", "_").replace("'", "_")
+
+        feat_name = _slugified_name(feature.name)
         if feat_name in self._module_features:
             raise KasaException("Duplicate name detected %s" % feat_name)
         self._module_features[feat_name] = feature
