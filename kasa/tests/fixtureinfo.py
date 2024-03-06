@@ -33,8 +33,17 @@ SUPPORTED_SMART_DEVICES = [
     )
 ]
 
+SUPPORTED_SMART_CHILD_DEVICES = [
+    (device, "SMART.CHILD")
+    for device in glob.glob(
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/smart/child/*.json"
+    )
+]
 
-SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
+
+SUPPORTED_DEVICES = (
+    SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES + SUPPORTED_SMART_CHILD_DEVICES
+)
 
 
 def idgenerator(paramtuple: FixtureInfo):
@@ -54,6 +63,8 @@ def get_fixture_info() -> List[FixtureInfo]:
         folder = Path(__file__).parent / "fixtures"
         if protocol == "SMART":
             folder = folder / "smart"
+        if protocol == "SMART.CHILD":
+            folder = folder / "smart/child"
         p = folder / file
 
         with open(p) as f:
