@@ -46,11 +46,6 @@ class Module(ABC):
             raise KasaException("Duplicate name detected %s" % feat_name)
         self._module_features[feat_name] = feature
 
-    @property
-    def features(self) -> Dict[str, Feature]:
-        """Return the list of supported features."""
-        return self._module_features
-
     def __repr__(self) -> str:
         return (
             f"<Module {self.__class__.__name__} ({self._module})"
