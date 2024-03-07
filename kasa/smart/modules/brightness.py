@@ -1,7 +1,7 @@
 """Implementation of brightness module."""
 from typing import TYPE_CHECKING, Dict
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -15,18 +15,7 @@ class Brightness(SmartModule):
 
     def __init__(self, device: "SmartDevice", module: str):
         super().__init__(device, module)
-        self._add_feature(
-            Feature(
-                device,
-                "Brightness",
-                container=self,
-                attribute_getter="brightness",
-                attribute_setter="set_brightness",
-                minimum_value=1,
-                maximum_value=100,
-                type=FeatureType.Number,
-            )
-        )
+        self._add_feature(Feature._brightness(device, container=self))
 
     def query(self) -> Dict:
         """Query to execute during the update cycle."""

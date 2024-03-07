@@ -17,8 +17,16 @@ class FeatureType(Enum):
     Number = auto()
 
 
+class MetaFeature(type):
+    """Class for feature names."""
+
+    state = "State"
+    rssi = "RSSI"
+    brightness = "Brightness"
+
+
 @dataclass
-class Feature:
+class Feature(metaclass=MetaFeature):
     """Feature defines a generic interface for device features."""
 
     #: Device instance required for getting and setting values
@@ -62,4 +70,38 @@ class Feature:
                 )
 
         container = self.container if self.container is not None else self.device
+        if isinstance(self.attribute_setter, Callable):
+            return await self.attribute_setter(value)
         return await getattr(container, self.attribute_setter)(value)
+
+    @staticmethod
+    def _brightness(device, container=None) -> "Feature":
+        return Feature(
+            device=device,
+            container=container,
+            name=Feature.brightness,
+            attribute_getter="brightness",
+            attribute_setter="set_brightness",
+            minimum_value=1,
+            maximum_value=100,
+            type=FeatureType.Number,
+        )
+
+    @staticmethod
+    def _rssi(device, attribute_getter) -> "Feature":
+        return Feature(
+            device,
+            Feature.rssi,
+            attribute_getter=attribute_getter,
+            icon="mdi:signal",
+        )
+
+    @staticmethod
+    def _state(device, attribute_getter, attribute_setter) -> "Feature":
+        return Feature(
+            device,
+            Feature.state,
+            attribute_getter=attribute_getter,
+            attribute_setter=attribute_setter,
+            type=FeatureType.Switch,
+        )

@@ -146,6 +146,24 @@ def parametrize_combine(parametrized: List[pytest.MarkDecorator]):
     )
 
 
+def parametrize_subtract(params: pytest.MarkDecorator, subtract: pytest.MarkDecorator):
+    """Combine multiple pytest parametrize dev marks into one set of fixtures."""
+    if params.args[0] != "dev" or subtract.args[0] != "dev":
+        raise Exception(
+            f"Supplied mark is not for dev fixture: {params.args[0]} {subtract.args[0]}"
+        )
+    fixtures = []
+    for param in params.args[1]:
+        if param not in subtract.args[1]:
+            fixtures.append(param)
+    return pytest.mark.parametrize(
+        "dev",
+        sorted(fixtures),
+        indirect=True,
+        ids=idgenerator,
+    )
+
+
 def parametrize(
     desc,
     *,
@@ -275,6 +293,9 @@ device_smart = parametrize(
 device_iot = parametrize(
     "devices iot", model_filter=ALL_DEVICES_IOT, protocol_filter={"IOT"}
 )
+has_children_smart = parametrize(
+    "has children smart", component_filter="child_device", protocol_filter={"SMART"}
+)
 
 
 def check_categories():
@@ -376,7 +397,7 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
         }
 
-    if discovery_data: # Child devices do not have discovery info
+    if discovery_data:  # Child devices do not have discovery info
         d.update_from_discover_info(discovery_data)
 
     await _update_and_close(d)
