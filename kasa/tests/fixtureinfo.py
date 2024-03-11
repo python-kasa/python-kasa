@@ -148,4 +148,5 @@ def filter_fixtures(
     print(f"# {desc}")
     for value in filtered:
         print(f"\t{value.name}")
+    filtered.sort()
     return filtered
