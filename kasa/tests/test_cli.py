@@ -155,12 +155,9 @@ async def test_command_with_child(dev, mocker):
             super().__init__("127.0.0.1")
 
         async def _query_helper(*_, **__):
-            pass
+            return {"dummy": "response"}
 
     dummy_child = DummyDevice()
-    query_mock = mocker.patch.object(
-        dummy_child, "_query_helper", return_value={"dummy": "response"}
-    )
 
     mocker.patch.object(dev, "_children", {"XYZ": dummy_child})
     mocker.patch.object(dev, "get_child_device", return_value=dummy_child)
@@ -173,7 +170,6 @@ async def test_command_with_child(dev, mocker):
     )
 
     update_mock.assert_called()
-    query_mock.assert_called()
     assert '{"dummy": "response"}' in res.output
     assert res.exit_code == 0
 
