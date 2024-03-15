@@ -37,6 +37,7 @@ class FanModule(SmartModule):
                 attribute_getter="sleep_mode",
                 attribute_setter="set_sleep_mode",
                 icon="mdi:sleep",
+                type=FeatureType.Switch
             )
         )
 
