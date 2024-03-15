@@ -24,7 +24,7 @@ from .conftest import (
     variable_temp,
     variable_temp_iot,
 )
-from .test_smartdevice import SYSINFO_SCHEMA
+from .test_iotdevice import SYSINFO_SCHEMA
 
 
 @bulb
@@ -370,3 +370,10 @@ SYSINFO_SCHEMA_BULB = SYSINFO_SCHEMA.extend(
         ],
     }
 )
+
+
+@bulb
+def test_device_type_bulb(dev):
+    if dev.is_light_strip:
+        pytest.skip("bulb has also lightstrips to test the api")
+    assert dev.device_type == DeviceType.Bulb

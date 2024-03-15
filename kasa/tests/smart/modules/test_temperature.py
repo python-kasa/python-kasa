@@ -3,7 +3,9 @@ import pytest
 from kasa.smart.modules import TemperatureSensor
 from kasa.tests.device_fixtures import parametrize
 
-temperature = parametrize("has temperature", component_filter="temperature", protocol_filter={"SMART.CHILD"})
+temperature = parametrize(
+    "has temperature", component_filter="temperature", protocol_filter={"SMART.CHILD"}
+)
 
 
 @temperature

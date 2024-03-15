@@ -376,7 +376,7 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
         }
 
-    if discovery_data: # Child devices do not have discovery info
+    if discovery_data:  # Child devices do not have discovery info
         d.update_from_discover_info(discovery_data)
 
     await _update_and_close(d)

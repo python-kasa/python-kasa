@@ -3,7 +3,9 @@ import pytest
 from kasa.smart.modules import HumiditySensor
 from kasa.tests.device_fixtures import parametrize
 
-humidity = parametrize("has humidity", component_filter="humidity", protocol_filter={"SMART.CHILD"})
+humidity = parametrize(
+    "has humidity", component_filter="humidity", protocol_filter={"SMART.CHILD"}
+)
 
 
 @humidity
