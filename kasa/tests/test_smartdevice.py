@@ -1,8 +1,9 @@
 """Tests for SMART devices."""
 import logging
-from pytest_mock import MockerFixture
+from typing import Any, Dict
 
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa import KasaException
 from kasa.exceptions import SmartErrorCode
@@ -31,9 +32,9 @@ async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
         "get_device_time": {},
     }
     msg = f"get_device_info not found in {mock_response} for device 127.0.0.123"
-    with mocker.patch.object(dev.protocol, "query", return_value=mock_response), pytest.raises(
-        KasaException, match=msg
-    ):
+    with mocker.patch.object(
+        dev.protocol, "query", return_value=mock_response
+    ), pytest.raises(KasaException, match=msg):
         await dev.update()
 
 
@@ -78,10 +79,12 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
     # Check the children are created, if device supports them
     if "child_device" in dev._components:
         initialize_children.assert_called_once()
-        query.assert_any_call({
-            "get_child_device_component_list": None,
-            "get_child_device_list": None,
-        })
+        query.assert_any_call(
+            {
+                "get_child_device_component_list": None,
+                "get_child_device_list": None,
+            }
+        )
         assert len(dev.children) == dev.internal_state["get_child_device_list"]["sum"]
 
 
@@ -94,7 +97,7 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     assert dev.modules
 
     await dev.update()
-    full_query = {}
+    full_query: Dict[str, Any] = {}
     for mod in dev.modules.values():
         full_query |= mod.query()
 
