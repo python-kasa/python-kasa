@@ -206,8 +206,8 @@ def json_formatter_cb(result, **kwargs):
     "-d",
     "--debug",
     envvar="KASA_DEBUG",
-    default=False,
-    is_flag=True,
+    default=0,
+    count=True,
     help="Print debug output",
 )
 @click.option(
@@ -409,6 +409,9 @@ async def cli(
             await device.disconnect()
 
     ctx.obj = await ctx.with_async_resource(async_wrapped_device(dev))
+
+    # TODO: this is too late, as discovery has already initialized httpclient
+    dev.config.debug_level = debug
 
     if ctx.invoked_subcommand is None:
         return await ctx.invoke(state)

@@ -40,7 +40,23 @@ class HttpClient:
             return self._config.http_client
 
         if not self._client_session:
-            self._client_session = aiohttp.ClientSession(cookie_jar=get_cookie_jar())
+            trace_configs = None
+            # TODO: the client is initialized already by discovery which doesn't use
+            #       deviceconfig, so it's too late to setup the trace config here.
+            if True or self._config.debug_level >= 2:  # debug_lvl >=2
+                trace_config = aiohttp.TraceConfig()
+
+                async def log_trace(session, trace_config_ctx, params):
+                    _LOGGER.debug(f"{params=}")
+
+                trace_config.on_request_start.append(log_trace)
+                trace_config.on_request_end.append(log_trace)
+                trace_config.on_request_exception.append(log_trace)
+                trace_configs = [trace_config]
+            self._client_session = aiohttp.ClientSession(
+                cookie_jar=get_cookie_jar(), trace_configs=trace_configs
+            )
+
         return self._client_session
 
     async def post(
