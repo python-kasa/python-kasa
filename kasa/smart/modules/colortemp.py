@@ -1,9 +1,9 @@
 """Implementation of color temp module."""
 from typing import TYPE_CHECKING, Dict
 
+from ...bulb import ColorTempRange
 from ...feature import Feature
 from ..smartmodule import SmartModule
-from ...bulb import ColorTempRange
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
