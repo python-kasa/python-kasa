@@ -32,8 +32,8 @@ async def test_childdevice_update(dev, dummy_protocol, mocker):
 
     await dev.update()
 
-    assert dev._last_update != first._last_update
-    assert child_list[0] == first._last_update
+    assert dev._info != first._info
+    assert child_list[0] == first._info
 
 
 @strip_smart
