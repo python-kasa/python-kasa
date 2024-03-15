@@ -24,7 +24,7 @@ def test_childdevice_init(dev, dummy_protocol, mocker):
 @strip_smart
 async def test_childdevice_update(dev, dummy_protocol, mocker):
     """Test that parent update updates children."""
-    child_info = dev._last_update["child_info"]
+    child_info = dev.internal_state["get_child_device_list"]
     child_list = child_info["child_device_list"]
 
     assert len(dev.children) == child_info["sum"]
