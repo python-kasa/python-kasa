@@ -71,3 +71,8 @@ async def test_effects_lightstrip_set_effect_transition(
 async def test_effects_lightstrip_has_effects(dev: IotLightStrip):
     assert dev.has_effects is True
     assert dev.effect_list
+
+
+@lightstrip
+def test_device_type_lightstrip(dev):
+    assert dev.device_type == DeviceType.LightStrip

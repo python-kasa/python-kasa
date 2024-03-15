@@ -1,7 +1,7 @@
 from kasa import DeviceType
 
-from .conftest import plug_iot, plug_smart, switch_smart, wallswitch_iot
-from .test_smartdevice import SYSINFO_SCHEMA
+from .conftest import plug, plug_iot, plug_smart, switch_smart, wallswitch_iot
+from .test_iotdevice import SYSINFO_SCHEMA
 
 # these schemas should go to the mainlib as
 # they can be useful when adding support for new features/devices
@@ -76,3 +76,8 @@ async def test_switch_device_info(dev):
     assert (
         dev.device_type == DeviceType.WallSwitch or dev.device_type == DeviceType.Dimmer
     )
+
+
+@plug
+def test_device_type_plug(dev):
+    assert dev.device_type == DeviceType.Plug

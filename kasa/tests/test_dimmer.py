@@ -1,5 +1,6 @@
 import pytest
 
+from kasa import DeviceType
 from kasa.iot import IotDimmer
 
 from .conftest import dimmer, handle_turn_on, turn_on
@@ -132,3 +133,8 @@ async def test_set_dimmer_transition_invalid(dev):
     for invalid_transition in [-1, 0, 0.5]:
         with pytest.raises(ValueError):
             await dev.set_dimmer_transition(1, invalid_transition)
+
+
+@dimmer
+def test_device_type_dimmer(dev):
+    assert dev.device_type == DeviceType.Dimmer
