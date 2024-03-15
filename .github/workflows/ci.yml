@@ -22,12 +22,21 @@ jobs:
       - name: Install poetry
         run: pipx install poetry
       - uses: "actions/setup-python@v5"
+        id: setup-python
         with:
           python-version: "${{ matrix.python-version }}"
           cache: 'poetry'
       - name: "Install dependencies"
         run: |
           poetry install
+      - name: Read pre-commit version
+        id: pre-commit-version
+        run: >-
+          echo "PRE_COMMIT_VERSION=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit/
+          key: ${{ runner.os }}-pre-commit-${{ steps.pre-commit-version.outputs.PRE_COMMIT_VERSION }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
       - name: "Check supported device md files are up to date"
         run: |
           poetry run pre-commit run generate-supported --all-files
@@ -91,9 +100,19 @@ jobs:
       - name: Install poetry
         run: pipx install poetry
       - uses: "actions/setup-python@v5"
+        id: setup-python
         with:
           python-version: "${{ matrix.python-version }}"
-          cache: 'poetry'
+      - name: Read poetry cache location
+        id: poetry-cache-location
+        shell: bash
+        run: |
+          echo "POETRY_VENV_LOCATION=$(poetry config virtualenvs.path)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.poetry-cache-location.outputs.POETRY_VENV_LOCATION }}
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-extras-${{ matrix.extras }}
       - name: "Install dependencies (no extras)"
         if: matrix.extras == false
         run: |
