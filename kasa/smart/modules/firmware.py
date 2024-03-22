@@ -48,16 +48,17 @@ class Firmware(SmartModule):
 
     def __init__(self, device: "SmartDevice", module: str):
         super().__init__(device, module)
-        self._add_feature(
-            Feature(
-                device,
-                "Auto update enabled",
-                container=self,
-                attribute_getter="auto_update_enabled",
-                attribute_setter="set_auto_update_enabled",
-                type=FeatureType.Switch,
+        if self.supported_version > 1:
+            self._add_feature(
+                Feature(
+                    device,
+                    "Auto update enabled",
+                    container=self,
+                    attribute_getter="auto_update_enabled",
+                    attribute_setter="set_auto_update_enabled",
+                    type=FeatureType.Switch,
+                )
             )
-        )
         self._add_feature(
             Feature(
                 device,
@@ -70,12 +71,17 @@ class Firmware(SmartModule):
 
     def query(self) -> Dict:
         """Query to execute during the update cycle."""
-        return {"get_auto_update_info": None, "get_latest_fw": None}
+        req = {
+            "get_latest_fw": None,
+        }
+        if self.supported_version > 1:
+            req["get_auto_update_info"] = None
+        return req
 
     @property
     def latest_firmware(self):
         """Return latest firmware information."""
-        fw = self.data["get_latest_fw"]
+        fw = self.data.get("get_latest_fw") or self.data
         if isinstance(fw, SmartErrorCode):
             # Error in response, probably disconnected from the cloud.
             return UpdateInfo(type=0, need_to_upgrade=False)
@@ -98,7 +104,10 @@ class Firmware(SmartModule):
     @property
     def auto_update_enabled(self):
         """Return True if autoupdate is enabled."""
-        return self.data["get_auto_update_info"]["enable"]
+        return (
+            "get_auto_update_info" in self.data
+            and self.data["get_auto_update_info"]["enable"]
+        )
 
     async def set_auto_update_enabled(self, enabled: bool):
         """Change autoupdate setting."""

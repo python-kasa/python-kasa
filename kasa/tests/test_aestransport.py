@@ -135,6 +135,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     transport._state = TransportState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
+    mocker.patch.object(transport, "BACKOFF_SECONDS_AFTER_LOGIN_ERROR", 0)
 
     assert transport._token_url is None
 

@@ -53,13 +53,18 @@ class SmartModule(Module):
     def data(self):
         """Return response data for the module.
 
-        If module performs only a single query, the resulting response is unwrapped.
+        If the module performs only a single query, the resulting response is unwrapped.
+        If the module does not define a query, this property returns a reference
+        to the main "get_device_info" response.
         """
+        dev = self._device
         q = self.query()
+
+        if not q:
+            return dev.internal_state["get_device_info"]
+
         q_keys = list(q.keys())
         query_key = q_keys[0]
-
-        dev = self._device
 
         # TODO: hacky way to check if update has been called.
         #  The way this falls back to parent may not always be wanted.

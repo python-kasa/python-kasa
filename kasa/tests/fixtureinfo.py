@@ -4,6 +4,10 @@ import os
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Set
 
+from kasa.device_factory import _get_device_type_from_sys_info
+from kasa.device_type import DeviceType
+from kasa.smart.smartdevice import SmartDevice
+
 
 class FixtureInfo(NamedTuple):
     name: str
@@ -29,8 +33,17 @@ SUPPORTED_SMART_DEVICES = [
     )
 ]
 
+SUPPORTED_SMART_CHILD_DEVICES = [
+    (device, "SMART.CHILD")
+    for device in glob.glob(
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/smart/child/*.json"
+    )
+]
 
-SUPPORTED_DEVICES = SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES
+
+SUPPORTED_DEVICES = (
+    SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES + SUPPORTED_SMART_CHILD_DEVICES
+)
 
 
 def idgenerator(paramtuple: FixtureInfo):
@@ -50,6 +63,8 @@ def get_fixture_info() -> List[FixtureInfo]:
         folder = Path(__file__).parent / "fixtures"
         if protocol == "SMART":
             folder = folder / "smart"
+        if protocol == "SMART.CHILD":
+            folder = folder / "smart/child"
         p = folder / file
 
         with open(p) as f:
@@ -72,12 +87,13 @@ def filter_fixtures(
     protocol_filter: Optional[Set[str]] = None,
     model_filter: Optional[Set[str]] = None,
     component_filter: Optional[str] = None,
+    device_type_filter: Optional[List[DeviceType]] = None,
 ):
     """Filter the fixtures based on supplied parameters.
 
     data_root_filter: return fixtures containing the supplied top
         level key, i.e. discovery_result
-    protocol_filter: set of protocols to match, IOT or SMART
+    protocol_filter: set of protocols to match, IOT, SMART, SMART.CHILD
     model_filter: set of device models to match
     component_filter: filter SMART fixtures that have the provided
     component in component_nego details.
@@ -97,6 +113,19 @@ def filter_fixtures(
         }
         return component_filter in components
 
+    def _device_type_match(fixture_data: FixtureInfo, device_type):
+        if (component_nego := fixture_data.data.get("component_nego")) is None:
+            return _get_device_type_from_sys_info(fixture_data.data) in device_type
+        components = [component["id"] for component in component_nego["component_list"]]
+        if (info := fixture_data.data.get("get_device_info")) and (
+            type_ := info.get("type")
+        ):
+            return (
+                SmartDevice._get_device_type_from_components(components, type_)
+                in device_type
+            )
+        return False
+
     filtered = []
     if protocol_filter is None:
         protocol_filter = {"IOT", "SMART"}
@@ -109,10 +138,15 @@ def filter_fixtures(
             continue
         if component_filter and not _component_match(fixture_data, component_filter):
             continue
+        if device_type_filter and not _device_type_match(
+            fixture_data, device_type_filter
+        ):
+            continue
 
         filtered.append(fixture_data)
 
     print(f"# {desc}")
     for value in filtered:
         print(f"\t{value.name}")
+    filtered.sort()
     return filtered

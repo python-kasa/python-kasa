@@ -56,4 +56,4 @@ class SmartChildDevice(SmartDevice):
         return dev_type
 
     def __repr__(self):
-        return f"<ChildDevice {self.alias} of {self._parent}>"
+        return f"<{self.device_type} {self.alias} ({self.model}) of {self._parent}>"

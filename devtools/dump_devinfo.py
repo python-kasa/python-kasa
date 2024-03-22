@@ -39,6 +39,7 @@ SmartCall = namedtuple("SmartCall", "module request should_succeed child_device_
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 
 SMART_FOLDER = "kasa/tests/fixtures/smart/"
+SMART_CHILD_FOLDER = "kasa/tests/fixtures/smart/child/"
 IOT_FOLDER = "kasa/tests/fixtures/"
 
 _LOGGER = logging.getLogger(__name__)
@@ -531,7 +532,9 @@ def get_smart_child_fixture(response):
         model += f"({region})"
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
-    return FixtureResult(filename=save_filename, folder=SMART_FOLDER, data=response)
+    return FixtureResult(
+        filename=save_filename, folder=SMART_CHILD_FOLDER, data=response
+    )
 
 
 async def get_smart_fixtures(device: SmartDevice, batch_size: int):

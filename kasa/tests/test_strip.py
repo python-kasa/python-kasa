@@ -131,3 +131,11 @@ async def test_all_binary_states(dev):
             # original state map should be restored
             for index, state in dev.is_on.items():
                 assert state == state_map[index]
+
+
+@strip
+def test_children_api(dev):
+    """Test the child device API."""
+    first = dev.children[0]
+    first_by_get_child_device = dev.get_child_device(first.device_id)
+    assert first == first_by_get_child_device

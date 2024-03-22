@@ -1,10 +1,12 @@
-from typing import Dict, Set
+from itertools import chain
+from typing import Dict, List, Set
 
 import pytest
 
 from kasa import (
     Credentials,
     Device,
+    DeviceType,
     Discover,
 )
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
@@ -105,6 +107,7 @@ DIMMERS = {
 }
 
 HUBS_SMART = {"H100"}
+SENSORS_SMART = {"T315"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "KP125M", "EP25"}
@@ -120,11 +123,27 @@ ALL_DEVICES_SMART = (
     .union(STRIPS_SMART)
     .union(DIMMERS_SMART)
     .union(HUBS_SMART)
+    .union(SENSORS_SMART)
     .union(SWITCHES_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
 IP_MODEL_CACHE: Dict[str, str] = {}
+
+
+def parametrize_combine(parametrized: List[pytest.MarkDecorator]):
+    """Combine multiple pytest parametrize dev marks into one set of fixtures."""
+    fixtures = set()
+    for param in parametrized:
+        if param.args[0] != "dev":
+            raise Exception(f"Supplied mark is not for dev fixture: {param.args[0]}")
+        fixtures.update(param.args[1])
+    return pytest.mark.parametrize(
+        "dev",
+        sorted(list(fixtures)),
+        indirect=True,
+        ids=idgenerator,
+    )
 
 
 def parametrize(
@@ -134,6 +153,7 @@ def parametrize(
     protocol_filter=None,
     component_filter=None,
     data_root_filter=None,
+    device_type_filter=None,
     ids=None,
 ):
     if ids is None:
@@ -146,6 +166,7 @@ def parametrize(
             protocol_filter=protocol_filter,
             component_filter=component_filter,
             data_root_filter=data_root_filter,
+            device_type_filter=device_type_filter,
         ),
         indirect=True,
         ids=ids,
@@ -169,7 +190,6 @@ no_emeter_iot = parametrize(
     protocol_filter={"IOT"},
 )
 
-bulb = parametrize("bulbs", model_filter=BULBS, protocol_filter={"SMART", "IOT"})
 plug = parametrize("plugs", model_filter=PLUGS, protocol_filter={"IOT", "SMART"})
 plug_iot = parametrize("plugs iot", model_filter=PLUGS, protocol_filter={"IOT"})
 wallswitch = parametrize(
@@ -216,9 +236,16 @@ variable_temp_iot = parametrize(
     model_filter=BULBS_IOT_VARIABLE_TEMP,
     protocol_filter={"IOT"},
 )
+
+bulb_smart = parametrize(
+    "bulb devices smart",
+    device_type_filter=[DeviceType.Bulb, DeviceType.LightStrip],
+    protocol_filter={"SMART"},
+)
 bulb_iot = parametrize(
     "bulb devices iot", model_filter=BULBS_IOT, protocol_filter={"IOT"}
 )
+bulb = parametrize_combine([bulb_smart, bulb_iot])
 
 strip_iot = parametrize(
     "strip devices iot", model_filter=STRIPS_IOT, protocol_filter={"IOT"}
@@ -233,14 +260,14 @@ plug_smart = parametrize(
 switch_smart = parametrize(
     "switch devices smart", model_filter=SWITCHES_SMART, protocol_filter={"SMART"}
 )
-bulb_smart = parametrize(
-    "bulb devices smart", model_filter=BULBS_SMART, protocol_filter={"SMART"}
-)
 dimmers_smart = parametrize(
     "dimmer devices smart", model_filter=DIMMERS_SMART, protocol_filter={"SMART"}
 )
 hubs_smart = parametrize(
     "hubs smart", model_filter=HUBS_SMART, protocol_filter={"SMART"}
+)
+sensors_smart = parametrize(
+    "sensors smart", model_filter=SENSORS_SMART, protocol_filter={"SMART.CHILD"}
 )
 device_smart = parametrize(
     "devices smart", model_filter=ALL_DEVICES_SMART, protocol_filter={"SMART"}
@@ -248,8 +275,6 @@ device_smart = parametrize(
 device_iot = parametrize(
     "devices iot", model_filter=ALL_DEVICES_IOT, protocol_filter={"IOT"}
 )
-
-brightness = parametrize("brightness smart", component_filter="brightness")
 
 
 def check_categories():
@@ -264,6 +289,7 @@ def check_categories():
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
         + hubs_smart.args[1]
+        + sensors_smart.args[1]
     )
     diffs: Set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -279,25 +305,15 @@ check_categories()
 
 
 def device_for_fixture_name(model, protocol):
-    if protocol == "SMART":
-        for d in PLUGS_SMART:
+    if "SMART" in protocol:
+        for d in chain(
+            PLUGS_SMART, SWITCHES_SMART, STRIPS_SMART, HUBS_SMART, SENSORS_SMART
+        ):
             if d in model:
                 return SmartDevice
-        for d in SWITCHES_SMART:
-            if d in model:
-                return SmartDevice
-        for d in BULBS_SMART:
+        for d in chain(BULBS_SMART, DIMMERS_SMART):
             if d in model:
                 return SmartBulb
-        for d in DIMMERS_SMART:
-            if d in model:
-                return SmartBulb
-        for d in STRIPS_SMART:
-            if d in model:
-                return SmartDevice
-        for d in HUBS_SMART:
-            if d in model:
-                return SmartDevice
     else:
         for d in STRIPS_IOT:
             if d in model:
@@ -347,17 +363,22 @@ async def get_device_for_fixture(fixture_data: FixtureInfo):
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
         host="127.0.0.123"
     )
-    if fixture_data.protocol == "SMART":
+    if "SMART" in fixture_data.protocol:
         d.protocol = FakeSmartProtocol(fixture_data.data, fixture_data.name)
     else:
         d.protocol = FakeIotProtocol(fixture_data.data)
+
+    discovery_data = None
     if "discovery_result" in fixture_data.data:
         discovery_data = {"result": fixture_data.data["discovery_result"]}
-    else:
+    elif "system" in fixture_data.data:
         discovery_data = {
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
         }
-    d.update_from_discover_info(discovery_data)
+
+    if discovery_data:  # Child devices do not have discovery info
+        d.update_from_discover_info(discovery_data)
+
     await _update_and_close(d)
     return d
 
@@ -369,7 +390,7 @@ async def get_device_for_fixture_protocol(fixture, protocol):
             return await get_device_for_fixture(fixture_info)
 
 
-@pytest.fixture(params=FIXTURE_DATA, ids=idgenerator)
+@pytest.fixture(params=filter_fixtures("main devices"), ids=idgenerator)
 async def dev(request):
     """Device fixture.
 
