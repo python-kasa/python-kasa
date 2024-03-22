@@ -221,6 +221,19 @@ class IotBulb(IotDevice, Bulb):
                 )
             )
 
+        if self.is_variable_color_temp:
+            self._add_feature(
+                Feature(
+                    device=self,
+                    name="Color temperature",
+                    container=self,
+                    attribute_getter="color_temp",
+                    attribute_setter="set_color_temp",
+                    range_getter="valid_temperature_range",
+                )
+            )
+
+
     @property  # type: ignore
     @requires_update
     def is_color(self) -> bool:
