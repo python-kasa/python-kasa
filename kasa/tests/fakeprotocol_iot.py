@@ -137,6 +137,46 @@ CLOUD_MODULE = {
 }
 
 
+AMBIENT_MODULE = {
+    "get_current_brt": {"value": 26, "err_code": 0},
+    "get_config": {
+        "devs": [
+            {
+                "hw_id": 0,
+                "enable": 0,
+                "dark_index": 1,
+                "min_adc": 0,
+                "max_adc": 2450,
+                "level_array": [
+                    {"name": "cloudy", "adc": 490, "value": 20},
+                    {"name": "overcast", "adc": 294, "value": 12},
+                    {"name": "dawn", "adc": 222, "value": 9},
+                    {"name": "twilight", "adc": 222, "value": 9},
+                    {"name": "total darkness", "adc": 111, "value": 4},
+                    {"name": "custom", "adc": 2400, "value": 97},
+                ],
+            }
+        ],
+        "ver": "1.0",
+        "err_code": 0,
+    },
+}
+
+
+MOTION_MODULE = {
+    "get_config": {
+        "enable": 0,
+        "version": "1.0",
+        "trigger_index": 2,
+        "cold_time": 60000,
+        "min_adc": 0,
+        "max_adc": 4095,
+        "array": [80, 50, 20, 0],
+        "err_code": 0,
+    }
+}
+
+
 class FakeIotProtocol(IotProtocol):
     def __init__(self, info):
         super().__init__(
@@ -321,8 +361,8 @@ class FakeIotProtocol(IotProtocol):
             "set_brightness": set_hs220_brightness,
             "set_dimmer_transition": set_hs220_dimmer_transition,
         },
-        "smartlife.iot.LAS": {},
-        "smartlife.iot.PIR": {},
+        "smartlife.iot.LAS": AMBIENT_MODULE,
+        "smartlife.iot.PIR": MOTION_MODULE,
         "cnCloud": CLOUD_MODULE,
         "smartlife.iot.common.cloud": CLOUD_MODULE,
     }
