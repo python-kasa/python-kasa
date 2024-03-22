@@ -121,6 +121,21 @@ TIME_MODULE = {
     "set_timezone": None,
 }
 
+CLOUD_MODULE = {
+    "get_info": {
+        "username": "",
+        "server": "devs.tplinkcloud.com",
+        "binded": 0,
+        "cld_connection": 0,
+        "illegalType": -1,
+        "stopConnect": -1,
+        "tcspStatus": -1,
+        "fwDlPage": "",
+        "tcspInfo": "",
+        "fwNotifyType": 0,
+    }
+}
+
 
 class FakeIotProtocol(IotProtocol):
     def __init__(self, info):
@@ -308,6 +323,8 @@ class FakeIotProtocol(IotProtocol):
         },
         "smartlife.iot.LAS": {},
         "smartlife.iot.PIR": {},
+        "cnCloud": CLOUD_MODULE,
+        "smartlife.iot.common.cloud": CLOUD_MODULE,
     }
 
     async def query(self, request, port=9999):
