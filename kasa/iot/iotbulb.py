@@ -233,7 +233,6 @@ class IotBulb(IotDevice, Bulb):
                 )
             )
 
-
     @property  # type: ignore
     @requires_update
     def is_color(self) -> bool:

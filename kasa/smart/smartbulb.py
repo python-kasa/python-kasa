@@ -27,8 +27,7 @@ class SmartBulb(SmartDevice, Bulb):
     @property
     def is_dimmable(self) -> bool:
         """Whether the bulb supports brightness changes."""
-        # TODO: this makes an assumption that only dimmables report this
-        return "brightness" in self._info
+        return "Brightness" in self.modules
 
     @property
     def is_variable_color_temp(self) -> bool:
@@ -187,6 +186,11 @@ class SmartBulb(SmartDevice, Bulb):
 
         return await self.protocol.query({"set_device_info": {"color_temp": temp}})
 
+    def _raise_for_invalid_brightness(self, value: int):
+        """Raise error on invalid brightness value."""
+        if not isinstance(value, int) or not (1 <= value <= 100):
+            raise ValueError(f"Invalid brightness value: {value} (valid range: 1-100%)")
+
     async def set_brightness(
         self, brightness: int, *, transition: Optional[int] = None
     ) -> Dict:
@@ -200,24 +204,11 @@ class SmartBulb(SmartDevice, Bulb):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
+        self._raise_for_invalid_brightness(brightness)
+
         return await self.protocol.query(
             {"set_device_info": {"brightness": brightness}}
         )
-
-    # Default state information, should be made to settings
-    """
-    "info": {
-        "default_states": {
-        "re_power_type": "always_on",
-        "type": "last_states",
-        "state": {
-            "brightness": 36,
-            "hue": 0,
-            "saturation": 0,
-            "color_temp": 2700,
-        },
-    },
-    """
 
     async def set_effect(
         self,
@@ -228,15 +219,6 @@ class SmartBulb(SmartDevice, Bulb):
     ) -> None:
         """Set an effect on the device."""
         raise NotImplementedError()
-        # TODO: the code below does to activate the effect but gives no error
-        return await self.protocol.query(
-            {
-                "set_device_info": {
-                    "dynamic_light_effect_enable": 1,
-                    "dynamic_light_effect_id": effect,
-                }
-            }
-        )
 
     @property
     def presets(self) -> List[BulbPreset]:
