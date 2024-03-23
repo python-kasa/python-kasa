@@ -614,12 +614,8 @@ async def state(ctx, dev: Device):
 
     echo("\n\t[bold]== Device-specific information == [/bold]")
     for id_, feature in dev.features.items():
-        echo(f"\t{feature.name} ({id_}): {feature.value}")
-
-    if dev.has_emeter:
-        echo("\n\t[bold]== Current State ==[/bold]")
-        emeter_status = dev.emeter_realtime
-        echo(f"\t{emeter_status}")
+        unit = f" {feature.unit}" if feature.unit else ""
+        echo(f"\t{feature.name} ({id_}): {feature.value}{unit}")
 
     echo("\n\t[bold]== Modules ==[/bold]")
     for module in dev.modules.values():
