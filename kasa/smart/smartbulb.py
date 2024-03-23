@@ -1,5 +1,5 @@
 """Module for tapo-branded smart bulbs (L5**)."""
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from ..bulb import Bulb
 from ..exceptions import KasaException
@@ -27,8 +27,7 @@ class SmartBulb(SmartDevice, Bulb):
     @property
     def is_dimmable(self) -> bool:
         """Whether the bulb supports brightness changes."""
-        # TODO: this makes an assumption that only dimmables report this
-        return "brightness" in self._info
+        return "Brightness" in self.modules
 
     @property
     def is_variable_color_temp(self) -> bool:
@@ -187,6 +186,13 @@ class SmartBulb(SmartDevice, Bulb):
 
         return await self.protocol.query({"set_device_info": {"color_temp": temp}})
 
+
+    def _raise_for_invalid_brightness(self, value: int):
+        """Raise error on invalid brightness value."""
+        if not isinstance(value, int) or not (0 < value <= 100):
+            raise ValueError(f"Invalid brightness value: {value} (valid range: 1-100%)")
+
+
     async def set_brightness(
         self, brightness: int, *, transition: Optional[int] = None
     ) -> Dict:
@@ -200,24 +206,11 @@ class SmartBulb(SmartDevice, Bulb):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
+        self._raise_for_invalid_brightness(brightness)
+
         return await self.protocol.query(
             {"set_device_info": {"brightness": brightness}}
         )
-
-    # Default state information, should be made to settings
-    """
-    "info": {
-        "default_states": {
-        "re_power_type": "always_on",
-        "type": "last_states",
-        "state": {
-            "brightness": 36,
-            "hue": 0,
-            "saturation": 0,
-            "color_temp": 2700,
-        },
-    },
-    """
 
     async def set_effect(
         self,
@@ -228,34 +221,6 @@ class SmartBulb(SmartDevice, Bulb):
     ) -> None:
         """Set an effect on the device."""
         raise NotImplementedError()
-        # TODO: the code below does to activate the effect but gives no error
-        return await self.protocol.query(
-            {
-                "set_device_info": {
-                    "dynamic_light_effect_enable": 1,
-                    "dynamic_light_effect_id": effect,
-                }
-            }
-        )
-
-    @property  # type: ignore
-    def state_information(self) -> Dict[str, Any]:
-        """Return bulb-specific state information."""
-        info: Dict[str, Any] = {
-            # TODO: re-enable after we don't inherit from smartbulb
-            # **super().state_information
-            "Is dimmable": self.is_dimmable,
-        }
-        if self.is_dimmable:
-            info["Brightness"] = self.brightness
-        if self.is_variable_color_temp:
-            info["Color temperature"] = self.color_temp
-            info["Valid temperature range"] = self.valid_temperature_range
-        if self.is_color:
-            info["HSV"] = self.hsv
-        info["Presets"] = self.presets
-
-        return info
 
     @property
     def presets(self) -> List[BulbPreset]:
