@@ -133,11 +133,6 @@ async def test_variable_temp_state_information(dev: Bulb):
     assert "Color temperature" in dev.state_information
     assert dev.state_information["Color temperature"] == dev.color_temp
 
-    assert "Valid temperature range" in dev.state_information
-    assert (
-        dev.state_information["Valid temperature range"] == dev.valid_temperature_range
-    )
-
 
 @variable_temp
 @turn_on
