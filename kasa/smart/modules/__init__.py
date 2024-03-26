@@ -8,6 +8,7 @@ from .cloudmodule import CloudModule
 from .colortemp import ColorTemperatureModule
 from .devicemodule import DeviceModule
 from .energymodule import EnergyModule
+from .fanmodule import FanModule
 from .firmware import Firmware
 from .humidity import HumiditySensor
 from .ledmodule import LedModule
@@ -29,6 +30,7 @@ __all__ = [
     "AutoOffModule",
     "LedModule",
     "Brightness",
+    "FanModule",
     "Firmware",
     "CloudModule",
     "LightTransitionModule",
