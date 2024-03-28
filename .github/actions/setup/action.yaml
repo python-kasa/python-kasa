@@ -31,7 +31,7 @@ runs:
       id: variable-setup
       run: |
         echo "COPY_CMD_PREFIX=${{ !startsWith(inputs.os, 'windows') && 'sudo ' || '' }}" >> $GITHUB_ENV
-        echo "SEP=${{ !startsWith(inputs.os, 'windows') && '/' || '\' }}" >> $GITHUB_ENV
+        echo "SEP=${{ !startsWith(inputs.os, 'windows') && '/' || '\\' }}" >> $GITHUB_ENV
         echo "pipx-home=$PIPX_HOME" >> $GITHUB_OUTPUT
         echo "pipx-bin-dir=$PIPX_BIN_DIR" >> $GITHUB_OUTPUT
         echo "pipx-version=$(pipx --version)" >> $GITHUB_OUTPUT
