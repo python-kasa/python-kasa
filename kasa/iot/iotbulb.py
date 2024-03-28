@@ -2,7 +2,7 @@
 import logging
 import re
 from enum import Enum
-from typing import Any, Dict, List, Optional, cast
+from typing import Dict, List, Optional, cast
 
 try:
     from pydantic.v1 import BaseModel, Field, root_validator
@@ -210,6 +210,19 @@ class IotBulb(IotDevice, Bulb):
 
         if bool(self.sys_info["is_dimmable"]):  # pragma: no branch
             self._add_feature(StandardFeature.brightness(self))
+
+        if self.is_variable_color_temp:
+            self._add_feature(
+                Feature(
+                    device=self,
+                    name="Color temperature",
+                    container=self,
+                    attribute_getter="color_temp",
+                    attribute_setter="set_color_temp",
+                    range_getter="valid_temperature_range",
+                )
+            )
+
 
     @property  # type: ignore
     @requires_update
@@ -451,23 +464,6 @@ class IotBulb(IotDevice, Bulb):
 
         light_state = {"brightness": brightness}
         return await self.set_light_state(light_state, transition=transition)
-
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return bulb-specific state information."""
-        info: Dict[str, Any] = {
-            "Brightness": self.brightness,
-            "Is dimmable": self.is_dimmable,
-        }
-        if self.is_variable_color_temp:
-            info["Color temperature"] = self.color_temp
-            info["Valid temperature range"] = self.valid_temperature_range
-        if self.is_color:
-            info["HSV"] = self.hsv
-        info["Presets"] = self.presets
-
-        return info
 
     @property  # type: ignore
     @requires_update

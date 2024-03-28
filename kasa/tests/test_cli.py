@@ -149,10 +149,15 @@ async def test_command_with_child(dev, mocker):
     runner = CliRunner()
     update_mock = mocker.patch.object(dev, "update")
 
-    dummy_child = mocker.create_autospec(IotDevice)
-    query_mock = mocker.patch.object(
-        dummy_child, "_query_helper", return_value={"dummy": "response"}
-    )
+    # create_autospec for device slows tests way too much, so we use a dummy here
+    class DummyDevice(dev.__class__):
+        def __init__(self):
+            super().__init__("127.0.0.1")
+
+        async def _query_helper(*_, **__):
+            return {"dummy": "response"}
+
+    dummy_child = DummyDevice()
 
     mocker.patch.object(dev, "_children", {"XYZ": dummy_child})
     mocker.patch.object(dev, "get_child_device", return_value=dummy_child)
@@ -165,7 +170,6 @@ async def test_command_with_child(dev, mocker):
     )
 
     update_mock.assert_called()
-    query_mock.assert_called()
     assert '{"dummy": "response"}' in res.output
     assert res.exit_code == 0
 

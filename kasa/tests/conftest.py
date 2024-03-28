@@ -1,6 +1,6 @@
 import warnings
 from typing import Dict
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -48,8 +48,8 @@ def dummy_protocol():
 
     transport = DummyTransport(config=DeviceConfig(host="127.0.0.123"))
     protocol = SmartProtocol(transport=transport)
-
-    return protocol
+    with patch.object(protocol, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0):
+        yield protocol
 
 
 def pytest_configure():

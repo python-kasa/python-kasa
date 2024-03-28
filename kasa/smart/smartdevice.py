@@ -41,10 +41,18 @@ class SmartDevice(Device):
         self.modules: Dict[str, "SmartModule"] = {}
         self._parent: Optional["SmartDevice"] = None
         self._children: Mapping[str, "SmartDevice"] = {}
+        self._last_update = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
-        children = self.internal_state["child_info"]["child_device_list"]
+        child_info_query = {
+            "get_child_device_component_list": None,
+            "get_child_device_list": None,
+        }
+        resp = await self.protocol.query(child_info_query)
+        self.internal_state.update(resp)
+
+        children = self.internal_state["get_child_device_list"]["child_device_list"]
         children_components = {
             child["device_id"]: {
                 comp["id"]: int(comp["ver_code"]) for comp in child["component_list"]
@@ -88,12 +96,29 @@ class SmartDevice(Device):
         )
 
     async def _negotiate(self):
-        resp = await self.protocol.query("component_nego")
+        """Perform initialization.
+
+        We fetch the device info and the available components as early as possible.
+        If the device reports supporting child devices, they are also initialized.
+        """
+        initial_query = {"component_nego": None, "get_device_info": None}
+        resp = await self.protocol.query(initial_query)
+
+        # Save the initial state to allow modules access the device info already
+        # during the initialization, which is necessary as some information like the
+        # supported color temperature range is contained within the response.
+        self._last_update.update(resp)
+        self._info = self._try_get_response(resp, "get_device_info")
+
+        # Create our internal presentation of available components
         self._components_raw = resp["component_nego"]
         self._components = {
             comp["id"]: int(comp["ver_code"])
             for comp in self._components_raw["component_list"]
         }
+
+        if "child_device" in self._components and not self.children:
+            await self._initialize_children()
 
     async def update(self, update_children: bool = True):
         """Update the device."""
@@ -110,20 +135,10 @@ class SmartDevice(Device):
         for module in self.modules.values():
             req.update(module.query())
 
-        resp = await self.protocol.query(req)
+        self._last_update = resp = await self.protocol.query(req)
 
         self._info = self._try_get_response(resp, "get_device_info")
-
-        self._last_update = {
-            "components": self._components_raw,
-            **resp,
-            "child_info": self._try_get_response(resp, "get_child_device_list", {}),
-        }
-
-        if child_info := self._last_update.get("child_info"):
-            if not self.children:
-                await self._initialize_children()
-
+        if child_info := self._try_get_response(resp, "get_child_device_list", {}):
             # TODO: we don't currently perform queries on children based on modules,
             #  but just update the information that is returned in the main query.
             for info in child_info["child_device_list"]:
@@ -309,15 +324,6 @@ class SmartDevice(Device):
         ssid = self._info.get("ssid")
         ssid = base64.b64decode(ssid).decode() if ssid else "No SSID"
         return ssid
-
-    @property
-    def state_information(self) -> Dict[str, Any]:
-        """Return the key state information."""
-        return {
-            "overheated": self._info.get("overheated"),
-            "signal_level": self._info.get("signal_level"),
-            "SSID": self.ssid,
-        }
 
     @property
     def has_emeter(self) -> bool:

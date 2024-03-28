@@ -622,12 +622,6 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return device-type specific, end-user friendly state information."""
-        raise NotImplementedError("Device subclass needs to implement this.")
-
-    @property  # type: ignore
-    @requires_update
     def device_id(self) -> str:
         """Return unique ID for the device.
 

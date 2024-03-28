@@ -54,6 +54,17 @@ class Feature:
     minimum_value: int = 0
     #: Maximum value
     maximum_value: int = 2**16  # Arbitrary max
+    #: Attribute containing the name of the range getter property.
+    #: If set, this property will be used to set *minimum_value* and *maximum_value*.
+    range_getter: Optional[str] = None
+
+    def __post_init__(self):
+        """Handle late-binding of members."""
+        container = self.container if self.container is not None else self.device
+        if self.range_getter is not None:
+            self.minimum_value, self.maximum_value = getattr(
+                container, self.range_getter
+            )
 
     @property
     def value(self):
