@@ -96,6 +96,7 @@ runs:
         echo "pre-commit-version=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
 
     - uses: actions/cache@v4
+      if: inputs.cache-pre-commit == 'true'
       name: Pre-commit cache
       with:
         path: ~/.cache/pre-commit/

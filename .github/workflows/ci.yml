@@ -8,7 +8,7 @@ on:
   workflow_dispatch:  # to allow manual re-runs
 
 env:
-  POETRY_VERSION: 1.7.1
+  POETRY_VERSION: 1.8.2
 
 jobs:
   linting:
