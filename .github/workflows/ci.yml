@@ -94,7 +94,7 @@ jobs:
           os: ${{ matrix.os }}
           python-version: ${{ matrix.python-version }}
           poetry-version: ${{ env.POETRY_VERSION }}
-          poetry-install-options: "--all-extras"
+          poetry-install-options: ${{ if matrix.extras == true && "--all-extras" || "" }}
       - name: "Run tests (no coverage)"
         if: ${{ startsWith(matrix.python-version, 'pypy') }}
         run: |
