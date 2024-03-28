@@ -1,0 +1,97 @@
+---
+name: Setup Action
+description: Install requested pipx dependencies, configure the system python, and install poetry and the package dependencies
+
+inputs:
+  os:
+    required: true
+  poetry-install-options:
+    default: ""
+  poetry-version:
+    default: 1.6.1
+  python-version:
+    required: true
+  cache-pre-commit:
+    default: false
+
+env:
+  POETRY_VIRTUALENVS_IN_PROJECT: true
+  POETRY_NO_INTERACTION: 1
+
+runs:
+  using: composite
+  steps:
+    - uses: "actions/setup-python@v5"
+      id: setup-python
+      with:
+        python-version: "${{ inputs.python-version }}"
+
+    - name: Setup Local Variables
+      id: variable-setup
+      run: |
+        echo "pipx-home=$PIPX_HOME" >> $GITHUB_OUTPUT
+        echo "pipx-bin-dir=$PIPX_BIN_DIR" >> $GITHUB_OUTPUT
+        echo "pipx-version=$(pipx --version)" >> $GITHUB_OUTPUT
+        export BASE64_PIPX_ID=$(echo -n 'poetry==${{ inputs.poetry-version }} ${{ inputs.pipx-packages }}' | base64)
+        echo "cache-key-pipx=pipx-${{ inputs.os }}-${{ inputs.python-version }}-$BASE64_PIPX_ID" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Pipx cache
+      id: cache-pipx
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/pipx_cache
+        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-version.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
+
+    - name: Copy pipx caches to pipx if cached in workspace
+      if: steps.cache-pipx.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        sudo cp -r ${{ github.workspace }}/pipx_cache/venvs/* $PIPX_HOME/venvs
+        sudo cp -r ${{ github.workspace }}/pipx_cache/shared/* $PIPX_HOME/shared
+        if test -f $PIPX_HOME/venvs/poetry/bin/poetry ; then sudo ln -s $PIPX_HOME/venvs/poetry/bin/poetry $PIPX_BIN_DIR/poetry ; fi
+        if test -f ${{ github.workspace }}/pipx_cache/bin/poetry.exe ; then sudo cp ${{ github.workspace }}/pipx_cache/bin/poetry.exe $PIPX_BIN_DIR ; fi
+
+    - name: Install poetry
+      if: steps.cache-pipx.outputs.cache-hit != 'true'
+      run: pipx install poetry==$POETRY_VERSION --python "${{ steps.setup-python.outputs.python-path }}"
+
+    - name: Copy pipx caches to workspace # if not cached
+      #if: steps.cache-pipx.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p ${{ github.workspace }}/pipx_cache/venvs/poetry
+        mkdir -p ${{ github.workspace }}/pipx_cache/shared
+        mkdir -p ${{ github.workspace }}/pipx_cache/bin
+        sudo cp -r $PIPX_HOME/venvs/poetry/* ${{ github.workspace }}/pipx_cache/venvs/poetry
+        sudo cp -r $PIPX_HOME/shared/* ${{ github.workspace }}/pipx_cache/shared
+        if test -f $PIPX_BIN_DIR/poetry.exe ; then sudo cp $PIPX_BIN_DIR/poetry.exe ${{ github.workspace }}/pipx_cache/bin/ ; fi
+
+    - name: Read poetry cache location
+      id: poetry-cache-location
+      shell: bash
+      run: |
+        echo "poetry-venv-location=$(poetry config virtualenvs.path)" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v4
+      name: Poetry cache
+      with:
+        path: |
+          ${{ steps.poetry-cache-location.outputs.poetry-venv-location }}
+        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
+
+    - name: "Poetry install"
+      run: |
+        poetry install ${{ inputs.poetry-install-options }}
+
+    - name: Read pre-commit version
+      if: inputs.cache-pre-commit == 'true'
+      id: pre-commit-version
+      run: >-
+        echo "pre-commit-version=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v4
+      name: Pre-commit cache
+      with:
+        path: ~/.cache/pre-commit/
+        key: ${{ runner.os }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
