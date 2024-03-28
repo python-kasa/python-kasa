@@ -11,7 +11,7 @@ from typing import (
     Union,
 )
 
-if sys.version_info < (3, 10):
+if sys.version_info < (3, 11):
     from typing_extensions import Unpack
 else:
     from typing import Unpack
