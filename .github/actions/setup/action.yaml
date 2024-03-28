@@ -29,9 +29,8 @@ runs:
 
     - name: Setup Local Variables
       id: variable-setup
-      env:
-        COPY_CMD_PREFIX: ${{ !startsWith(inputs.os, 'windows') && 'sudo ' || '' }}
       run: |
+        echo "COPY_CMD_PREFIX=${{ !startsWith(inputs.os, 'windows') && 'sudo ' || '' }}" >> $GITHUB_ENV
         echo "pipx-home=$PIPX_HOME" >> $GITHUB_OUTPUT
         echo "pipx-bin-dir=$PIPX_BIN_DIR" >> $GITHUB_OUTPUT
         echo "pipx-version=$(pipx --version)" >> $GITHUB_OUTPUT
@@ -52,8 +51,8 @@ runs:
       run: |
         ${{ env.COPY_CMD_PREFIX }}cp -r ${{ github.workspace }}/pipx_cache/venvs/* $PIPX_HOME/venvs
         ${{ env.COPY_CMD_PREFIX }}cp -r ${{ github.workspace }}/pipx_cache/shared/* $PIPX_HOME/shared
-        if test -f $PIPX_HOME/venvs/poetry/bin/poetry ; then sudo ln -s $PIPX_HOME/venvs/poetry/bin/poetry $PIPX_BIN_DIR/poetry ; fi
-        if test -f ${{ github.workspace }}/pipx_cache/bin/poetry.exe ; then cp ${{ github.workspace }}/pipx_cache/bin/poetry.exe $PIPX_BIN_DIR ; fi
+        if test -f "$PIPX_HOME/venvs/poetry/bin/poetry" ; then sudo ln -s $PIPX_HOME/venvs/poetry/bin/poetry $PIPX_BIN_DIR/poetry ; fi
+        if test -f ${{ github.workspace }}/pipx_cache/bin/poetry.exe ; then cp ${{ github.workspace }}/pipx_cache/bin/poetry.exe "$PIPX_BIN_DIR" ; fi
 
     - name: Install poetry
       if: steps.cache-pipx.outputs.cache-hit != 'true'
@@ -67,9 +66,9 @@ runs:
         mkdir -p ${{ github.workspace }}/pipx_cache/venvs/poetry
         mkdir -p ${{ github.workspace }}/pipx_cache/shared
         mkdir -p ${{ github.workspace }}/pipx_cache/bin
-        ${{ env.COPY_CMD_PREFIX }}cp -r $PIPX_HOME/venvs/poetry/* ${{ github.workspace }}/pipx_cache/venvs/poetry
-        ${{ env.COPY_CMD_PREFIX }}cp -r $PIPX_HOME/shared/* ${{ github.workspace }}/pipx_cache/shared
-        if test -f $PIPX_BIN_DIR/poetry.exe ; then cp $PIPX_BIN_DIR/poetry.exe ${{ github.workspace }}/pipx_cache/bin/ ; fi
+        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/venvs/poetry/*" ${{ github.workspace }}/pipx_cache/venvs/poetry
+        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/shared/*"" ${{ github.workspace }}/pipx_cache/shared
+        if test -f "$PIPX_BIN_DIR/poetry.exe" ; then cp "$PIPX_BIN_DIR/poetry.exe" ${{ github.workspace }}/pipx_cache/bin/ ; fi
 
     - name: Read poetry cache location
       id: poetry-cache-location
