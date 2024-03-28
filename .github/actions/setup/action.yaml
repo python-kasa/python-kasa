@@ -1,5 +1,5 @@
 ---
-name: Setup Action
+name: Setup Environment
 description: Install requested pipx dependencies, configure the system python, and install poetry and the package dependencies
 
 inputs:
