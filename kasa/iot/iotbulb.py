@@ -12,7 +12,7 @@ except ImportError:
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import StandardFeature
+from ..feature import Feature, StandardFeature
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
@@ -222,7 +222,6 @@ class IotBulb(IotDevice, Bulb):
                     range_getter="valid_temperature_range",
                 )
             )
-
 
     @property  # type: ignore
     @requires_update
