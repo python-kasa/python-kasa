@@ -7,6 +7,8 @@ on:
     branches: ["master"]
   workflow_dispatch:  # to allow manual re-runs
 
+env:
+  POETRY_VERSION: 1.8.2
 
 jobs:
   linting:
@@ -19,35 +21,13 @@ jobs:
 
     steps:
       - uses: "actions/checkout@v4"
-      - uses: "actions/setup-python@v5"
-        id: setup-python
+      - name: Setup environment
+        uses: ./.github/actions/setup
         with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install poetry
-        run: pipx install poetry --python "${{ steps.setup-python.outputs.python-path }}"
-      - name: Read poetry cache location
-        id: poetry-cache-location
-        shell: bash
-        run: |
-          echo "POETRY_VENV_LOCATION=$(poetry config virtualenvs.path)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        name: Poetry cache
-        with:
-          path: |
-            ${{ steps.poetry-cache-location.outputs.POETRY_VENV_LOCATION }}
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-extras-false
-      - name: "Install dependencies"
-        run: |
-          poetry install
-      - name: Read pre-commit version
-        id: pre-commit-version
-        run: >-
-          echo "PRE_COMMIT_VERSION=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        name: Pre-commit cache
-        with:
-          path: ~/.cache/pre-commit/
-          key: ${{ runner.os }}-pre-commit-${{ steps.pre-commit-version.outputs.PRE_COMMIT_VERSION }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          os: ${{ matrix.os }}
+          python-version: ${{ matrix.python-version }}
+          cache-pre-commit: true
+          poetry-version: ${{ env.POETRY_VERSION }}
       - name: "Check supported device md files are up to date"
         run: |
           poetry run pre-commit run generate-supported --all-files
@@ -108,31 +88,13 @@ jobs:
 
     steps:
       - uses: "actions/checkout@v4"
-      - uses: "actions/setup-python@v5"
-        id: setup-python
+      - name: Setup environment
+        uses: ./.github/actions/setup
         with:
-          python-version: "${{ matrix.python-version }}"
-      - name: Install poetry
-        run: pipx install poetry --python "${{ steps.setup-python.outputs.python-path }}"
-      - name: Read poetry cache location
-        id: poetry-cache-location
-        shell: bash
-        run: |
-          echo "POETRY_VENV_LOCATION=$(poetry config virtualenvs.path)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        name: Poetry cache
-        with:
-          path: |
-            ${{ steps.poetry-cache-location.outputs.POETRY_VENV_LOCATION }}
-          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-extras-${{ matrix.extras }}
-      - name: "Install dependencies (no extras)"
-        if: matrix.extras == false
-        run: |
-          poetry install
-      - name: "Install dependencies (with extras)"
-        if: matrix.extras == true
-        run: |
-          poetry install --all-extras
+          os: ${{ matrix.os }}
+          python-version: ${{ matrix.python-version }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+          poetry-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
       - name: "Run tests (no coverage)"
         if: ${{ startsWith(matrix.python-version, 'pypy') }}
         run: |
