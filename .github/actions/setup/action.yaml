@@ -17,6 +17,7 @@ inputs:
 env:
   POETRY_VIRTUALENVS_IN_PROJECT: true
   POETRY_NO_INTERACTION: 1
+  COPY_CMD_PREFIX: ${{ !startsWith(inputs.os, 'windows') && 'sudo ' || '' }}
 
 runs:
   using: composite
@@ -41,16 +42,16 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ github.workspace }}/pipx_cache
-        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-version.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
+        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.variable-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
 
     - name: Copy pipx caches to pipx if cached in workspace
       if: steps.cache-pipx.outputs.cache-hit == 'true'
       shell: bash
       run: |
-        sudo cp -r ${{ github.workspace }}/pipx_cache/venvs/* $PIPX_HOME/venvs
-        sudo cp -r ${{ github.workspace }}/pipx_cache/shared/* $PIPX_HOME/shared
+        ${{ env.COPY_CMD_PREFIX }}cp -r ${{ github.workspace }}/pipx_cache/venvs/* $PIPX_HOME/venvs
+        ${{ env.COPY_CMD_PREFIX }}cp -r ${{ github.workspace }}/pipx_cache/shared/* $PIPX_HOME/shared
         if test -f $PIPX_HOME/venvs/poetry/bin/poetry ; then sudo ln -s $PIPX_HOME/venvs/poetry/bin/poetry $PIPX_BIN_DIR/poetry ; fi
-        if test -f ${{ github.workspace }}/pipx_cache/bin/poetry.exe ; then sudo cp ${{ github.workspace }}/pipx_cache/bin/poetry.exe $PIPX_BIN_DIR ; fi
+        if test -f ${{ github.workspace }}/pipx_cache/bin/poetry.exe ; then cp ${{ github.workspace }}/pipx_cache/bin/poetry.exe $PIPX_BIN_DIR ; fi
 
     - name: Install poetry
       if: steps.cache-pipx.outputs.cache-hit != 'true'
@@ -64,9 +65,9 @@ runs:
         mkdir -p ${{ github.workspace }}/pipx_cache/venvs/poetry
         mkdir -p ${{ github.workspace }}/pipx_cache/shared
         mkdir -p ${{ github.workspace }}/pipx_cache/bin
-        sudo cp -r $PIPX_HOME/venvs/poetry/* ${{ github.workspace }}/pipx_cache/venvs/poetry
-        sudo cp -r $PIPX_HOME/shared/* ${{ github.workspace }}/pipx_cache/shared
-        if test -f $PIPX_BIN_DIR/poetry.exe ; then sudo cp $PIPX_BIN_DIR/poetry.exe ${{ github.workspace }}/pipx_cache/bin/ ; fi
+        ${{ env.COPY_CMD_PREFIX }}cp -r $PIPX_HOME/venvs/poetry/* ${{ github.workspace }}/pipx_cache/venvs/poetry
+        ${{ env.COPY_CMD_PREFIX }}cp -r $PIPX_HOME/shared/* ${{ github.workspace }}/pipx_cache/shared
+        if test -f $PIPX_BIN_DIR/poetry.exe ; then cp $PIPX_BIN_DIR/poetry.exe ${{ github.workspace }}/pipx_cache/bin/ ; fi
 
     - name: Read poetry cache location
       id: poetry-cache-location
