@@ -66,8 +66,8 @@ runs:
         mkdir -p ${{ github.workspace }}/pipx_cache/venvs/poetry
         mkdir -p ${{ github.workspace }}/pipx_cache/shared
         mkdir -p ${{ github.workspace }}/pipx_cache/bin
-        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/venvs/poetry/*" ${{ github.workspace }}/pipx_cache/venvs/poetry
-        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/shared/*"" ${{ github.workspace }}/pipx_cache/shared
+        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/venvs/poetry"/* ${{ github.workspace }}/pipx_cache/venvs/poetry
+        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/shared"/* ${{ github.workspace }}/pipx_cache/shared
         if test -f "$PIPX_BIN_DIR/poetry.exe" ; then cp "$PIPX_BIN_DIR/poetry.exe" ${{ github.workspace }}/pipx_cache/bin/ ; fi
 
     - name: Read poetry cache location
