@@ -30,6 +30,8 @@ runs:
     - name: Setup Local Variables
       id: variable-setup
       run: |
+        export WORKSPACE=${{ github.workspace }}
+        echo "BASH_WORKSPACE=$(${WORKSPACE//\\//})" >> $GITHUB_ENV
         echo "COPY_CMD_PREFIX=${{ !startsWith(inputs.os, 'windows') && 'sudo ' || '' }}" >> $GITHUB_ENV
         echo "SEP=${{ !startsWith(inputs.os, 'windows') && '/' || '\\' }}" >> $GITHUB_ENV
         echo "pipx-home=$PIPX_HOME" >> $GITHUB_OUTPUT
@@ -43,7 +45,7 @@ runs:
       id: cache-pipx
       uses: actions/cache@v4
       with:
-        path: ${{ github.workspace }}${{ env.SEP }}pipx_cache
+        path: ${{ github.workspace }}${{ env.SEP }}pipx_cache  # actions/caches doesn't seem to like mixed seperators
         key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.variable-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
 
     - name: Copy pipx caches to pipx if cached in workspace
@@ -64,12 +66,12 @@ runs:
       #if: steps.cache-pipx.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        mkdir -p ${{ github.workspace }}/pipx_cache/venvs/poetry
-        mkdir -p ${{ github.workspace }}/pipx_cache/shared
-        mkdir -p ${{ github.workspace }}/pipx_cache/bin
-        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/venvs/poetry"/* ${{ github.workspace }}/pipx_cache/venvs/poetry
-        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/shared"/* ${{ github.workspace }}/pipx_cache/shared
-        if test -f "$PIPX_BIN_DIR/poetry.exe" ; then cp "$PIPX_BIN_DIR/poetry.exe" ${{ github.workspace }}/pipx_cache/bin/ ; fi
+        mkdir -p ${{ env.BASH_WORKSPACE }}/pipx_cache/venvs/poetry
+        mkdir -p ${{ env.BASH_WORKSPACE }}/pipx_cache/shared
+        mkdir -p ${{ env.BASH_WORKSPACE }}/pipx_cache/bin
+        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/venvs/poetry"/* ${{ env.BASH_WORKSPACE }}/pipx_cache/venvs/poetry
+        ${{ env.COPY_CMD_PREFIX }}cp -r "$PIPX_HOME/shared"/* ${{ env.BASH_WORKSPACE }}/pipx_cache/shared
+        if test -f "$PIPX_BIN_DIR/poetry.exe" ; then cp "$PIPX_BIN_DIR/poetry.exe" ${{ env.BASH_WORKSPACE }}/pipx_cache/bin/ ; fi
 
     - name: Read poetry cache location
       id: poetry-cache-location
