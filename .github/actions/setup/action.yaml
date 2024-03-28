@@ -31,7 +31,8 @@ runs:
       id: variable-setup
       run: |
         export WORKSPACE=${{ github.workspace }}
-        echo "BASH_WORKSPACE=$(${WORKSPACE//\\//})" >> $GITHUB_ENV
+        export BASH_WORKSPACE=${WORKSPACE//\\//}
+        echo "BASH_WORKSPACE=$BASH_WORKSPACE" >> $GITHUB_ENV
         echo "COPY_CMD_PREFIX=${{ !startsWith(inputs.os, 'windows') && 'sudo ' || '' }}" >> $GITHUB_ENV
         echo "SEP=${{ !startsWith(inputs.os, 'windows') && '/' || '\\' }}" >> $GITHUB_ENV
         echo "pipx-home=$PIPX_HOME" >> $GITHUB_OUTPUT
