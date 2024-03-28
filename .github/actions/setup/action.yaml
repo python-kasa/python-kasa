@@ -54,6 +54,7 @@ runs:
 
     - name: Install poetry
       if: steps.cache-pipx.outputs.cache-hit != 'true'
+      shell: bash
       run: pipx install poetry==$POETRY_VERSION --python "${{ steps.setup-python.outputs.python-path }}"
 
     - name: Copy pipx caches to workspace # if not cached
@@ -81,12 +82,14 @@ runs:
         key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
 
     - name: "Poetry install"
+      shell: bash
       run: |
         poetry install ${{ inputs.poetry-install-options }}
 
     - name: Read pre-commit version
       if: inputs.cache-pre-commit == 'true'
       id: pre-commit-version
+      shell: bash
       run: >-
         echo "pre-commit-version=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
 
