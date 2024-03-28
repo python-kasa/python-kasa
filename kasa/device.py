@@ -313,20 +313,15 @@ class Device(ABC):
         """Return the list of supported features."""
         return self._features
 
-    def __getitem__(self, key: str) -> Feature:
-        """Return feature by name."""
-        return self._features[key.lower()]
-
     def has_feature(self, key: str) -> bool:
         """Return feature by name."""
-        return key.lower() in self._features
+        return key in self._features
 
     def _add_feature(self, feature: Feature):
         """Add a new feature to the device."""
-        desc_name = feature.name.lower().replace(" ", "_")
-        if desc_name in self._features:
-            raise KasaException("Duplicate feature name %s" % desc_name)
-        self._features[desc_name] = feature
+        if feature.name in self._features:
+            raise KasaException("Duplicate feature name %s" % feature.name)
+        self._features[feature.name] = feature
 
     @property
     @abstractmethod

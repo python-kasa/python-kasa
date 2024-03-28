@@ -1,7 +1,20 @@
 """Generic interface for defining device features."""
+import sys
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Optional,
+    TypedDict,
+    Union,
+)
+
+if sys.version_info < (3, 10):
+    from typing_extensions import Unpack
+else:
+    from typing import Unpack
 
 if TYPE_CHECKING:
     from .device import Device
@@ -17,16 +30,8 @@ class FeatureType(Enum):
     Number = auto()
 
 
-class MetaFeature(type):
-    """Class for feature names."""
-
-    state = "State"
-    rssi = "RSSI"
-    brightness = "Brightness"
-
-
 @dataclass
-class Feature(metaclass=MetaFeature):
+class Feature:
     """Feature defines a generic interface for device features."""
 
     #: Device instance required for getting and setting values
@@ -74,34 +79,72 @@ class Feature(metaclass=MetaFeature):
             return await self.attribute_setter(value)
         return await getattr(container, self.attribute_setter)(value)
 
+
+class FeatureNames:
+    """Class for feature names."""
+
+    BRIGHTNESS = "Brightness"
+    RSSI = "RSSI"
+    STATE = "State"
+
+
+class FeatureKwargs(TypedDict, total=False):
+    """Type class for feature kwargs."""
+
+    attribute_setter: str
+    container: Any
+    icon: str
+    type: FeatureType
+    minimum_value: int
+    maximum_value: int
+
+
+class StandardFeature:
+    """Factory class for standard features."""
+
     @staticmethod
-    def _brightness(device, container=None) -> "Feature":
+    def brightness(
+        device,
+        container=None,
+        name=FeatureNames.BRIGHTNESS,
+        icon=None,
+        attribute_getter="brightness",
+        attribute_setter="set_brightness",
+        minimum_value=1,
+        maximum_value=100,
+        type=FeatureType.Number,
+    ) -> "Feature":
+        """Brightness feature."""
         return Feature(
             device=device,
             container=container,
-            name=Feature.brightness,
-            attribute_getter="brightness",
-            attribute_setter="set_brightness",
-            minimum_value=1,
-            maximum_value=100,
-            type=FeatureType.Number,
-        )
-
-    @staticmethod
-    def _rssi(device, attribute_getter) -> "Feature":
-        return Feature(
-            device,
-            Feature.rssi,
-            attribute_getter=attribute_getter,
-            icon="mdi:signal",
-        )
-
-    @staticmethod
-    def _state(device, attribute_getter, attribute_setter) -> "Feature":
-        return Feature(
-            device,
-            Feature.state,
+            name=name,
+            icon=icon,
             attribute_getter=attribute_getter,
             attribute_setter=attribute_setter,
-            type=FeatureType.Switch,
+            minimum_value=minimum_value,
+            maximum_value=maximum_value,
+            type=type,
         )
+
+    @staticmethod
+    def rssi(
+        device: "Device",
+        attribute_getter: Union[str, Callable],
+        name: str = FeatureNames.RSSI,
+        **kwargs: Unpack[FeatureKwargs],
+    ) -> Feature:
+        """RSSI feature."""
+        kwargs.setdefault("icon", "mdi:signal")
+        return Feature(device, name, attribute_getter, **kwargs)
+
+    @staticmethod
+    def state(
+        device: "Device",
+        attribute_getter: Union[str, Callable],
+        name: str = FeatureNames.STATE,
+        **kwargs: Unpack[FeatureKwargs],
+    ) -> Feature:
+        """State feature."""
+        kwargs.setdefault("type", FeatureType.Switch)
+        return Feature(device, name, attribute_getter, **kwargs)

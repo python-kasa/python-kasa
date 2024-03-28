@@ -1,5 +1,6 @@
 import pytest
 
+from kasa import FeatureNames
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
 from kasa.tests.conftest import dimmable, parametrize
@@ -14,7 +15,7 @@ async def test_brightness_component(dev: SmartDevice):
     assert "brightness" in dev._components
 
     # Test getting the value
-    feature = dev.features["brightness"]
+    feature = dev.features[FeatureNames.BRIGHTNESS]
     assert isinstance(feature.value, int)
     assert feature.value > 0 and feature.value <= 100
 
@@ -36,7 +37,7 @@ async def test_brightness_dimmable(dev: SmartDevice):
     assert "brightness" in dev.sys_info or bool(dev.sys_info["is_dimmable"])
 
     # Test getting the value
-    feature = dev.features["brightness"]
+    feature = dev.features[FeatureNames.BRIGHTNESS]
     assert isinstance(feature.value, int)
     assert feature.value > 0 and feature.value <= 100
 

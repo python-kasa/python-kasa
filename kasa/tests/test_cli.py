@@ -720,7 +720,7 @@ async def test_feature_single(mocker):
     runner = CliRunner()
     res = await runner.invoke(
         cli,
-        ["--host", "127.0.0.123", "--debug", "feature", "led"],
+        ["--host", "127.0.0.123", "--debug", "feature", "LED"],
         catch_exceptions=False,
     )
     assert "LED" in res.output
@@ -756,12 +756,12 @@ async def test_feature_set(mocker):
     runner = CliRunner()
     res = await runner.invoke(
         cli,
-        ["--host", "127.0.0.123", "--debug", "feature", "led", "True"],
+        ["--host", "127.0.0.123", "--debug", "feature", "LED", "True"],
         catch_exceptions=False,
     )
 
     led_setter.assert_called_with(True)
-    assert "Setting led to True" in res.output
+    assert "Setting LED to True" in res.output
     assert res.exit_code == 0
 
 
@@ -787,7 +787,7 @@ async def test_feature_set_child(mocker):
             "feature",
             "--child",
             child_id,
-            "state",
+            "State",
             "False",
         ],
         catch_exceptions=False,
@@ -797,5 +797,5 @@ async def test_feature_set_child(mocker):
     setter.assert_called_with(False)
 
     assert f"Targeting child device {child_id}"
-    assert "Setting state to False" in res.output
+    assert "Setting State to False" in res.output
     assert res.exit_code == 0

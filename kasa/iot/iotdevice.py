@@ -22,7 +22,7 @@ from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
-from ..feature import Feature
+from ..feature import Feature, StandardFeature
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter
@@ -305,10 +305,12 @@ class IotDevice(Device):
             return await (self.turn_on() if value else self.turn_off())
 
         self._add_feature(
-            Feature._state(self, attribute_getter="is_on", attribute_setter=_set_state)
+            StandardFeature.state(
+                self, attribute_getter="is_on", attribute_setter=_set_state
+            )
         )
 
-        self._add_feature(Feature._rssi(self, attribute_getter="rssi"))
+        self._add_feature(StandardFeature.rssi(self, attribute_getter="rssi"))
         if "on_time" in self._sys_info:
             self._add_feature(
                 Feature(

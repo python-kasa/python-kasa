@@ -1,5 +1,5 @@
 from kasa.device import Device
-from kasa.feature import Feature
+from kasa.feature import FeatureNames
 from kasa.smart import SmartDevice
 from kasa.tests.conftest import (
     device_iot,
@@ -20,11 +20,11 @@ async def test_feature_state(dev: Device):
     if isinstance(dev, SmartDevice):
         assert "device_on" in dev._info
 
-    assert dev.has_feature(Feature.state) is True
-    assert isinstance(dev[Feature.state].value, bool)
+    assert dev.has_feature(FeatureNames.STATE) is True
+    assert isinstance(dev.features[FeatureNames.STATE].value, bool)
 
-    await dev[Feature.state].set_value(True)
-    assert dev[Feature.state].value is True
+    await dev.features[FeatureNames.STATE].set_value(True)
+    assert dev.features[FeatureNames.STATE].value is True
 
-    await dev[Feature.state].set_value(False)
-    assert dev[Feature.state].value is False
+    await dev.features[FeatureNames.STATE].set_value(False)
+    assert dev.features[FeatureNames.STATE].value is False

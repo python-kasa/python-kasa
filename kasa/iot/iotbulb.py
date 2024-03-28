@@ -12,7 +12,7 @@ except ImportError:
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature
+from ..feature import StandardFeature
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
@@ -209,7 +209,7 @@ class IotBulb(IotDevice, Bulb):
         await super()._initialize_features()
 
         if bool(self.sys_info["is_dimmable"]):  # pragma: no branch
-            self._add_feature(Feature._brightness(self))
+            self._add_feature(StandardFeature.brightness(self))
 
     @property  # type: ignore
     @requires_update

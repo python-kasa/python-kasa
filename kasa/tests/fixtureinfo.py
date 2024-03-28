@@ -15,7 +15,7 @@ class FixtureInfo(NamedTuple):
     data: Dict
 
 
-FixtureInfo.__hash__ = lambda x: hash((x.name, x.protocol))  # type: ignore[attr-defined, method-assign]
+FixtureInfo.__hash__ = lambda self: hash((self.name, self.protocol))  # type: ignore[attr-defined, method-assign]
 FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assign]
 
 

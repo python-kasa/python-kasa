@@ -10,7 +10,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
-from ..feature import Feature, FeatureType
+from ..feature import Feature, FeatureType, StandardFeature
 from ..smartprotocol import SmartProtocol
 from .modules import *  # noqa: F403
 
@@ -151,12 +151,12 @@ class SmartDevice(Device):
                 module = mod(self, mod.REQUIRED_COMPONENT)
                 self.modules[module.name] = module
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize device features."""
         self._add_feature(Feature(self, "Device ID", attribute_getter="device_id"))
         if "device_on" in self._info:
             self._add_feature(
-                Feature._state(
+                StandardFeature.state(
                     self, attribute_getter="is_on", attribute_setter="set_state"
                 )
             )
@@ -173,7 +173,7 @@ class SmartDevice(Device):
 
         if "rssi" in self._info:
             self._add_feature(
-                Feature._rssi(self, attribute_getter=lambda x: x._info["rssi"])
+                StandardFeature.rssi(self, attribute_getter=lambda x: x._info["rssi"])
             )
 
         if "ssid" in self._info:
