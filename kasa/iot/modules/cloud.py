@@ -1,9 +1,25 @@
 """Cloud module implementation."""
 
+from __future__ import annotations
+
+import logging
+
 from pydantic.v1 import BaseModel
 
+from datetime import date
+from typing import Optional
+
 from ...feature import Feature
-from ..iotmodule import IotModule
+from ...firmware import (
+    Firmware,
+    UpdateResult,
+)
+from ...firmware import (
+    FirmwareUpdate as FirmwareUpdateInterface,
+)
+from ..iotmodule import IotModule, merge
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class CloudInfo(BaseModel):
@@ -21,7 +37,31 @@ class CloudInfo(BaseModel):
     username: str
 
 
-class Cloud(IotModule):
+class FirmwareUpdate(BaseModel):
+    """Update info status object."""
+
+    status: int = Field(alias="fwType")
+    version: Optional[str] = Field(alias="fwVer", default=None)  # noqa: UP007
+    release_date: Optional[date] = Field(alias="fwReleaseDate", default=None)  # noqa: UP007
+    release_notes: Optional[str] = Field(alias="fwReleaseLog", default=None)  # noqa: UP007
+    url: Optional[str] = Field(alias="fwUrl", default=None)  # noqa: UP007
+
+    @validator("release_date", pre=True)
+    def _release_date_optional(cls, v):
+        if not v:
+            return None
+
+        return v
+
+    @property
+    def update_available(self):
+        """Return True if update available."""
+        if self.status != 0:
+            return True
+        return False
+
+
+class Cloud(IotModule, Firmware):
     """Module implementing support for cloud services."""
 
     def __init__(self, device, module):
@@ -46,27 +86,73 @@ class Cloud(IotModule):
 
     def query(self):
         """Request cloud connectivity info."""
-        return self.query_for_command("get_info")
+        req = self.query_for_command("get_info")
+
+        # TODO: this is problematic, as it will fail the whole query on some
+        #  devices if they are not connected to the internet
+        if self._module in self._device._last_update and self.is_connected:
+            req = merge(req, self.get_available_firmwares())
+
+        return req
 
     @property
     def info(self) -> CloudInfo:
         """Return information about the cloud connectivity."""
         return CloudInfo.parse_obj(self.data["get_info"])
 
-    def get_available_firmwares(self):
+    async def get_available_firmwares(self):
         """Return list of available firmwares."""
-        return self.query_for_command("get_intl_fw_list")
+        return await self.call("get_intl_fw_list")
 
-    def set_server(self, url: str):
+    async def get_firmware_update(self) -> FirmwareUpdate:
+        """Return firmware update information."""
+        try:
+            available_fws = (await self.get_available_firmwares()).get("fw_list", [])
+            if not available_fws:
+                return FirmwareUpdate(fwType=0)
+            if len(available_fws) > 1:
+                _LOGGER.warning(
+                    "Got more than one update, using the first one: %s", available_fws
+                )
+            return FirmwareUpdate.parse_obj(next(iter(available_fws)))
+        except Exception as ex:
+            _LOGGER.warning("Unable to check for firmware update: %s", ex)
+            return FirmwareUpdate(fwType=0)
+
+    async def set_server(self, url: str):
         """Set the update server URL."""
-        return self.query_for_command("set_server_url", {"server": url})
+        return await self.call("set_server_url", {"server": url})
 
-    def connect(self, username: str, password: str):
+    async def connect(self, username: str, password: str):
         """Login to the cloud using given information."""
-        return self.query_for_command(
-            "bind", {"username": username, "password": password}
-        )
+        return await self.call("bind", {"username": username, "password": password})
 
-    def disconnect(self):
+    async def disconnect(self):
         """Disconnect from the cloud."""
-        return self.query_for_command("unbind")
+        return await self.call("unbind")
+
+    async def update_firmware(self, *, progress_cb=None) -> UpdateResult:
+        """Perform firmware update."""
+        raise NotImplementedError
+        i = 0
+        import asyncio
+
+        while i < 100:
+            await asyncio.sleep(1)
+            if progress_cb is not None:
+                await progress_cb(i)
+            i += 10
+
+        return UpdateResult("")
+
+    async def check_for_updates(self) -> FirmwareUpdateInterface:
+        """Return firmware update information."""
+        fw = await self.get_firmware_update()
+
+        return FirmwareUpdateInterface(
+            update_available=fw.update_available,
+            current_version=self._device.hw_info.get("sw_ver"),
+            available_version=fw.version,
+            release_date=fw.release_date,
+            release_notes=fw.release_notes,
+        )

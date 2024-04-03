@@ -14,6 +14,7 @@ from .deviceconfig import DeviceConfig
 from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
+from .firmware import Firmware
 from .iotprotocol import IotProtocol
 from .module import Module, ModuleT
 from .protocol import BaseProtocol
@@ -287,6 +288,11 @@ class Device(ABC):
                 f"Invalid index {index}, device has {len(self.children)} plugs"
             )
         return self.children[index]
+
+    @property
+    @abstractmethod
+    def firmware(self) -> Firmware:
+        """Return firmware."""
 
     @property
     @abstractmethod

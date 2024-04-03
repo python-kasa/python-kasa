@@ -715,3 +715,9 @@ class IotDevice(Device):
         This should only be used for debugging purposes.
         """
         return self._last_update or self._discovery_info
+
+    @property
+    @requires_update
+    def firmware(self) -> Cloud:
+        """Returns object implementing the firmware handling."""
+        return self.modules["cloud"]

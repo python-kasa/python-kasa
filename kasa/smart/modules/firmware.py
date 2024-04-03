@@ -11,13 +11,15 @@ from typing import TYPE_CHECKING, Any, Optional
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, Field, validator
-
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
 from ...exceptions import SmartErrorCode
 from ...feature import Feature, FeatureType
+from ...firmware import Firmware as FirmwareInterface
+from ...firmware import FirmwareUpdate as FirmwareUpdateInterface
+from ...firmware import UpdateResult
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -27,7 +29,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class UpdateInfo(BaseModel):
+class FirmwareUpdate(BaseModel):
     """Update info status object."""
 
     status: int = Field(alias="type")
@@ -53,7 +55,7 @@ class UpdateInfo(BaseModel):
         return False
 
 
-class Firmware(SmartModule):
+class Firmware(SmartModule, FirmwareInterface):
     """Implementation of firmware module."""
 
     REQUIRED_COMPONENT = "firmware"
@@ -143,9 +145,9 @@ class Firmware(SmartModule):
         fw = self.data.get("get_latest_fw") or self.data
         if not self._device.is_cloud_connected or isinstance(fw, SmartErrorCode):
             # Error in response, probably disconnected from the cloud.
-            return UpdateInfo(type=0, need_to_upgrade=False)
+            return FirmwareUpdate(type=0, need_to_upgrade=False)
 
-        return UpdateInfo.parse_obj(fw)
+        return FirmwareUpdate.parse_obj(fw)
 
     @property
     def update_available(self) -> bool | None:
@@ -192,3 +194,20 @@ class Firmware(SmartModule):
         """Change autoupdate setting."""
         data = {**self.data["get_auto_update_info"], "enable": enabled}
         await self.call("set_auto_update_info", data)
+
+    async def update_firmware(self, *, progress_cb) -> UpdateResult:
+        """Update the firmware."""
+        # TODO: implement, this is part of the common firmware API
+        raise NotImplementedError
+
+    async def check_for_updates(self) -> FirmwareUpdateInterface:
+        """Return firmware update information."""
+        # TODO: naming of the common firmware API methods
+        info = self.firmware_update_info
+        return FirmwareUpdateInterface(
+            current_version=self.current_firmware,
+            update_available=info.update_available,
+            available_version=info.version,
+            release_date=info.release_date,
+            release_notes=info.release_notes,
+        )

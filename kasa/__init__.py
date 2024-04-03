@@ -36,6 +36,7 @@ from kasa.exceptions import (
     UnsupportedDeviceError,
 )
 from kasa.feature import Feature
+from kasa.firmware import Firmware, FirmwareUpdate
 from kasa.iot.iotbulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.iotprotocol import (
     IotProtocol,
@@ -72,6 +73,8 @@ __all__ = [
     "ConnectionType",
     "EncryptType",
     "DeviceFamilyType",
+    "Firmware",
+    "FirmwareUpdate",
 ]
 
 from . import iot

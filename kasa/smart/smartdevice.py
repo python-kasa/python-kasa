@@ -625,6 +625,13 @@ class SmartDevice(Bulb, Fan, Device):
 
         return self._device_type
 
+    @property
+    def firmware(self) -> FirmwareInterface:
+        """Return firmware module."""
+        # TODO: open question: does it make sense to expose common modules?
+        fw = cast(FirmwareInterface, self.modules["Firmware"])
+        return fw
+
     @staticmethod
     def _get_device_type_from_components(
         components: list[str], device_type: str
