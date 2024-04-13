@@ -24,7 +24,6 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
-          os: ${{ matrix.os }}
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
           poetry-version: ${{ env.POETRY_VERSION }}
@@ -91,7 +90,6 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
-          os: ${{ matrix.os }}
           python-version: ${{ matrix.python-version }}
           poetry-version: ${{ env.POETRY_VERSION }}
           poetry-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
