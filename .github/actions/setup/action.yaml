@@ -1,0 +1,83 @@
+---
+name: Setup Environment
+description: Install requested pipx dependencies, configure the system python, and install poetry and the package dependencies
+
+inputs:
+  poetry-install-options:
+    default: ""
+  poetry-version:
+    default: 1.8.2
+  python-version:
+    required: true
+  cache-pre-commit:
+    default: false
+
+runs:
+  using: composite
+  steps:
+    - uses: "actions/setup-python@v5"
+      id: setup-python
+      with:
+        python-version: "${{ inputs.python-version }}"
+
+    - name: Setup pipx environment Variables
+      id: pipx-env-setup
+      # pipx default home and bin dir are not writable by the cache action
+      # so override them here and add the bin dir to PATH for later steps.
+      # This also ensures the pipx cache only contains poetry
+      run: |
+        SEP="${{ !startsWith(runner.os, 'windows') && '/' || '\\' }}"
+        PIPX_CACHE="${{ github.workspace }}${SEP}pipx_cache"
+        echo "pipx-cache-path=${PIPX_CACHE}" >> $GITHUB_OUTPUT
+        echo "pipx-version=$(pipx --version)" >> $GITHUB_OUTPUT
+        echo "PIPX_HOME=${PIPX_CACHE}${SEP}home" >> $GITHUB_ENV
+        echo "PIPX_BIN_DIR=${PIPX_CACHE}${SEP}bin" >> $GITHUB_ENV
+        echo "PIPX_MAN_DIR=${PIPX_CACHE}${SEP}man" >> $GITHUB_ENV
+        echo "${PIPX_CACHE}${SEP}bin" >> $GITHUB_PATH
+      shell: bash
+
+    - name: Pipx cache
+      id: pipx-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pipx-env-setup.outputs.pipx-cache-path }}
+        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
+
+    - name: Install poetry
+      if: steps.pipx-cache.outputs.cache-hit != 'true'
+      id: install-poetry
+      shell: bash
+      run: |-
+        pipx install poetry==${{ inputs.poetry-version }} --python "${{ steps.setup-python.outputs.python-path }}"
+
+    - name: Read poetry cache location
+      id: poetry-cache-location
+      shell: bash
+      run: |-
+        echo "poetry-venv-location=$(poetry config virtualenvs.path)" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v4
+      name: Poetry cache
+      with:
+        path: |
+          ${{ steps.poetry-cache-location.outputs.poetry-venv-location }}
+        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
+
+    - name: "Poetry install"
+      shell: bash
+      run: |
+        poetry install ${{ inputs.poetry-install-options }}
+
+    - name: Read pre-commit version
+      if: inputs.cache-pre-commit == 'true'
+      id: pre-commit-version
+      shell: bash
+      run: >-
+        echo "pre-commit-version=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v4
+      if: inputs.cache-pre-commit == 'true'
+      name: Pre-commit cache
+      with:
+        path: ~/.cache/pre-commit/
+        key: ${{ runner.os }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
