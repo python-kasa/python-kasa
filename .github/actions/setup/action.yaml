@@ -11,6 +11,19 @@ inputs:
     required: true
   cache-pre-commit:
     default: false
+  use-uv-installer:
+    default: false
+  uv-version:
+    default: 0.1.32
+  cache-version:
+    default: "v0.3"
+
+
+
+outputs:
+  cmd-prefix:
+    description: "Cmd to activate uv venv or prefix with poetry run"
+    value: "${{ inputs.use-uv-installer == 'false' && 'poetry run ' || format('{0} ; ', steps.uv-variables-setup.outputs.uv-activate-cmd) }}"
 
 runs:
   using: composite
@@ -28,8 +41,10 @@ runs:
       run: |
         SEP="${{ !startsWith(runner.os, 'windows') && '/' || '\\' }}"
         PIPX_CACHE="${{ github.workspace }}${SEP}pipx_cache"
+        PIPX_CACHE_KEY_SUFFIX="${{ inputs.use-uv-installer == 'false' && format('poetry-{0}', inputs.poetry-version) || format('uv-{0}', inputs.uv-version) }}"
         echo "pipx-cache-path=${PIPX_CACHE}" >> $GITHUB_OUTPUT
         echo "pipx-version=$(pipx --version)" >> $GITHUB_OUTPUT
+        echo "pipx-cache-key-suffix=${PIPX_CACHE_KEY_SUFFIX}" >> $GITHUB_OUTPUT
         echo "PIPX_HOME=${PIPX_CACHE}${SEP}home" >> $GITHUB_ENV
         echo "PIPX_BIN_DIR=${PIPX_CACHE}${SEP}bin" >> $GITHUB_ENV
         echo "PIPX_MAN_DIR=${PIPX_CACHE}${SEP}man" >> $GITHUB_ENV
@@ -40,44 +55,105 @@ runs:
       id: pipx-cache
       uses: actions/cache@v4
       with:
+        save-always: true
         path: ${{ steps.pipx-env-setup.outputs.pipx-cache-path }}
-        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
+        key: ${{ inputs.cache-version }}-pipx-cache-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-${{ steps.pipx-env-setup.outputs.pipx-cache-key-suffix }}
 
     - name: Install poetry
-      if: steps.pipx-cache.outputs.cache-hit != 'true'
+      if: ${{ (steps.pipx-cache.outputs.cache-hit != 'true') && ( inputs.use-uv-installer == 'false') }}
       id: install-poetry
       shell: bash
       run: |-
         pipx install poetry==${{ inputs.poetry-version }} --python "${{ steps.setup-python.outputs.python-path }}"
 
+    - name: Install uv
+      if: ${{ (steps.pipx-cache.outputs.cache-hit != 'true') && ( inputs.use-uv-installer == 'true') }}
+      id: install-uv
+      shell: bash
+      run: |-
+        pipx install uv==${{ inputs.uv-version }} --python "${{ steps.setup-python.outputs.python-path }}"
+
     - name: Read poetry cache location
-      id: poetry-cache-location
+      if: inputs.use-uv-installer == 'false'
+      id: poetry-venv-location
       shell: bash
       run: |-
         echo "poetry-venv-location=$(poetry config virtualenvs.path)" >> $GITHUB_OUTPUT
 
+    - name: Read uv cache location
+      if: inputs.use-uv-installer == 'true'
+      id: uv-variables-setup
+      shell: bash
+      run: |-
+        SEP="${{ !startsWith(runner.os, 'windows') && '/' || '\\' }}"
+        echo "uv-cache-location=$(uv cache dir)" >> $GITHUB_OUTPUT
+        echo "uv-venv-location=${{ github.workspace }}${SEP}.venv" >> $GITHUB_OUTPUT
+        echo "uv-activate-cmd=${{ !startsWith(runner.os, 'windows') && 'source .venv/bin/activate' || '.venv\\Scripts\\activate' }}" >> $GITHUB_OUTPUT
+
     - uses: actions/cache@v4
-      name: Poetry cache
+      if: inputs.use-uv-installer == 'false'
+      name: Poetry venv cache
       with:
+        save-always: true
         path: |
-          ${{ steps.poetry-cache-location.outputs.poetry-venv-location }}
-        key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
+          ${{ steps.poetry-venv-location.outputs.poetry-venv-location }}
+        key: ${{ inputs.cache-version }}-poetry-venv-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
+
+    - uses: actions/cache@v4
+      if: inputs.use-uv-installer == 'true'
+      name: uv venv
+      id: uv-venv-cache
+      with:
+        save-always: true
+        path: |
+          ${{ steps.uv-variables-setup.outputs.uv-venv-location }}
+        key: ${{ inputs.cache-version }}-uv-${{ inputs.uv-version }}-venv-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
+
+    - uses: actions/cache@v4
+      # This caches the whole uv cache which will be re-used even if dependencies change. It might need pruning over time.
+      if: ${{ (steps.uv-venv-cache.outputs.cache-hit != 'true') && ( inputs.use-uv-installer == 'true') }}
+      name: uv cache
+      id: uv-cache-restore
+      with:
+        save-always: true
+        path: |
+          ${{ steps.uv-variables-setup.outputs.uv-cache-location }}
+        key: ${{ inputs.cache-version }}-uv-${{ inputs.uv-version }}-cache-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ github.sha }}
+        restore-keys: uv-${{ inputs.uv-version }}-cache-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}
 
     - name: "Poetry install"
+      if: inputs.use-uv-installer == 'false'
       shell: bash
-      run: |
+      run: |-
         poetry install ${{ inputs.poetry-install-options }}
+
+    - name: "uv install"
+      if: inputs.use-uv-installer == 'true'
+      shell: bash
+      env:
+        UV_ACTIVATE: ${{ startsWith(runner.os, 'windows') && 'source ' || '' }}${{ steps.uv-variables-setup.outputs.uv-activate-cmd }}
+        UV_VENV: ${{ steps.uv-variables-setup.outputs.uv-venv-location }}
+      run: |-
+        [ ! -d ".venv" ] && uv venv
+        $UV_ACTIVATE
+        uv pip install poetry==${{ inputs.poetry-version }}
+        uv pip install poetry-plugin-export
+        poetry config warnings.export false
+        poetry export -f requirements.txt --output requirements.txt --with dev ${{ inputs.poetry-install-options }}
+        uv pip install -e . -r requirements.txt
 
     - name: Read pre-commit version
       if: inputs.cache-pre-commit == 'true'
       id: pre-commit-version
       shell: bash
-      run: >-
+      run: |-
+        uv pip install pre-commit
         echo "pre-commit-version=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
 
     - uses: actions/cache@v4
       if: inputs.cache-pre-commit == 'true'
       name: Pre-commit cache
       with:
+        save-always: true
         path: ~/.cache/pre-commit/
-        key: ${{ runner.os }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        key: ${{ inputs.cache-version }}-${{ runner.os }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}

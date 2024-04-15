@@ -23,34 +23,44 @@ jobs:
       - uses: "actions/checkout@v4"
       - name: Setup environment
         uses: ./.github/actions/setup
+        id: setup-environment
         with:
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
           poetry-version: ${{ env.POETRY_VERSION }}
+          use-uv-installer: true
       - name: "Check supported device md files are up to date"
-        run: |
-          poetry run pre-commit run generate-supported --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run generate-supported --all-files
       - name: "Linting and code formating (ruff)"
-        run: |
-          poetry run pre-commit run ruff --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run ruff --all-files
       - name: "Typing checks (mypy)"
-        run: |
-          poetry run pre-commit run mypy --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run mypy --all-files
       - name: "Run trailing-whitespace"
-        run: |
-          poetry run pre-commit run trailing-whitespace --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run trailing-whitespace --all-files
       - name: "Run end-of-file-fixer"
-        run: |
-          poetry run pre-commit run end-of-file-fixer --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run end-of-file-fixer --all-files
       - name: "Run check-docstring-first"
-        run: |
-          poetry run pre-commit run check-docstring-first --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run check-docstring-first --all-files
       - name: "Run debug-statements"
-        run: |
-          poetry run pre-commit run debug-statements --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run debug-statements --all-files
       - name: "Run check-ast"
-        run: |
-          poetry run pre-commit run check-ast --all-files
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pre-commit run check-ast --all-files
 
 
   tests:
@@ -88,19 +98,23 @@ jobs:
     steps:
       - uses: "actions/checkout@v4"
       - name: Setup environment
+        id: setup-environment
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
           poetry-version: ${{ env.POETRY_VERSION }}
+          use-uv-installer: ${{ !(startsWith(matrix.python-version, 'pypy') && startsWith(matrix.os, 'windows')) }}
           poetry-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
       - name: "Run tests (no coverage)"
         if: ${{ startsWith(matrix.python-version, 'pypy') }}
-        run: |
-          poetry run pytest
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pytest
       - name: "Run tests (with coverage)"
         if: ${{ !startsWith(matrix.python-version, 'pypy') }}
-        run: |
-          poetry run pytest --cov kasa --cov-report xml
+        run: >
+          ${{ steps.setup-environment.outputs.cmd-prefix }}
+          pytest --cov kasa --cov-report xml
       - name: "Upload coverage to Codecov"
         uses: "codecov/codecov-action@v3"
         with:
