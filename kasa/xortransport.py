@@ -9,6 +9,7 @@ https://github.com/softScheck/tplink-smartplug/
 which are licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 """
+
 import asyncio
 import contextlib
 import errno

@@ -1,4 +1,5 @@
 """Implementation of the motion detection (PIR) module found in some dimmers."""
+
 from enum import Enum
 from typing import Optional
 

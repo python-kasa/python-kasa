@@ -1,4 +1,5 @@
 """Child device implementation."""
+
 import logging
 from typing import Optional
 

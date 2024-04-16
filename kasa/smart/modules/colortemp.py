@@ -1,4 +1,5 @@
 """Implementation of color temp module."""
+
 from typing import TYPE_CHECKING, Dict
 
 from ...bulb import ColorTempRange

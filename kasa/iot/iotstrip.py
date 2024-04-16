@@ -1,4 +1,5 @@
 """Module for multi-socket devices (HS300, HS107, KP303, ..)."""
+
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta

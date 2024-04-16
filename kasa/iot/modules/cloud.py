@@ -1,4 +1,5 @@
 """Cloud module implementation."""
+
 try:
     from pydantic.v1 import BaseModel
 except ImportError:

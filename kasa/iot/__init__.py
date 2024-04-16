@@ -1,4 +1,5 @@
 """Package for supporting legacy kasa devices."""
+
 from .iotbulb import IotBulb
 from .iotdevice import IotDevice
 from .iotdimmer import IotDimmer

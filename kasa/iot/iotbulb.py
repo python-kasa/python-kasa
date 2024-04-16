@@ -1,4 +1,5 @@
 """Module for bulbs (LB*, KL*, KB*)."""
+
 import logging
 import re
 from enum import Enum
@@ -232,7 +233,6 @@ class IotBulb(IotDevice, Bulb):
                     range_getter="valid_temperature_range",
                 )
             )
-
 
     @property  # type: ignore
     @requires_update

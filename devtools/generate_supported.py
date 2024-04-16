@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Script that checks supported devices and updates README.md and SUPPORTED.md."""
+
 import json
 import os
 import sys

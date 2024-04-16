@@ -1,4 +1,5 @@
 """Module for emeter container."""
+
 import logging
 from typing import Optional
 
