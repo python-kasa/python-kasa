@@ -1,4 +1,5 @@
 """Modules for SMART devices."""
+
 from .alarmmodule import AlarmModule
 from .autooffmodule import AutoOffModule
 from .battery import BatterySensor

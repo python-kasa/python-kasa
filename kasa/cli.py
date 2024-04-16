@@ -1,4 +1,5 @@
 """python-kasa cli tool."""
+
 import ast
 import asyncio
 import json

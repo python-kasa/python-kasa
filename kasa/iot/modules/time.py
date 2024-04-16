@@ -1,4 +1,5 @@
 """Provides the current time and timezone information."""
+
 from datetime import datetime
 
 from ...exceptions import KasaException

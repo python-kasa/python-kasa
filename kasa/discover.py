@@ -1,4 +1,5 @@
 """Discovery module for TP-Link Smart Home devices."""
+
 import asyncio
 import binascii
 import ipaddress

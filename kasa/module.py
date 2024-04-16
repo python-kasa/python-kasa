@@ -1,4 +1,5 @@
 """Base class for all module implementations."""
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict

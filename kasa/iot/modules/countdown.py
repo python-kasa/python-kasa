@@ -1,4 +1,5 @@
 """Implementation for the countdown timer."""
+
 from .rulemodule import RuleModule
 
 

@@ -1,4 +1,5 @@
 """Implementation of firmware module."""
+
 from typing import TYPE_CHECKING, Dict, Optional
 
 from ...exceptions import SmartErrorCode

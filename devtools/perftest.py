@@ -1,4 +1,5 @@
 """Script for testing update performance on devices."""
+
 import asyncio
 import time
 

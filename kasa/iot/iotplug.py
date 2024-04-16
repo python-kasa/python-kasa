@@ -1,4 +1,5 @@
 """Module for smart plugs (HS100, HS110, ..)."""
+
 import logging
 from typing import Optional
 

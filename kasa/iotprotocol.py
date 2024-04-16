@@ -1,4 +1,5 @@
 """Module for the IOT legacy IOT KASA protocol."""
+
 import asyncio
 import logging
 from typing import Dict, Optional, Union

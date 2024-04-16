@@ -1,4 +1,5 @@
 """Generic interface for defining device features."""
+
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union

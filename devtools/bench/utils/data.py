@@ -1,6 +1,5 @@
 """Test data for benchmarks."""
 
-
 import json
 
 from .original import OriginalTPLinkSmartHomeProtocol

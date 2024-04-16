@@ -1,4 +1,5 @@
 """Module for tapo-branded smart bulbs (L5**)."""
+
 from typing import Dict, List, Optional
 
 from ..bulb import Bulb

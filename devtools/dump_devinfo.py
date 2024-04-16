@@ -7,6 +7,7 @@ If you have new, yet unsupported device or a device with no devinfo file under
 Executing this script will several modules and methods one by one,
 and finally execute a query to query all of them at once.
 """
+
 import base64
 import collections.abc
 import json
