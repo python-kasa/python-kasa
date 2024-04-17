@@ -1,4 +1,5 @@
 """Module for bulbs (LB*, KL*, KB*)."""
+
 import logging
 import re
 from enum import Enum

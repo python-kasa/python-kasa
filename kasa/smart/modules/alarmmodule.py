@@ -1,4 +1,5 @@
 """Implementation of alarm module."""
+
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from ...feature import Feature, FeatureType

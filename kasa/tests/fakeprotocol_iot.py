@@ -302,9 +302,9 @@ class FakeIotProtocol(IotProtocol):
 
     def set_preferred_state(self, new_state, *args):
         """Implement set_preferred_state."""
-        self.proto["system"]["get_sysinfo"]["preferred_state"][
-            new_state["index"]
-        ] = new_state
+        self.proto["system"]["get_sysinfo"]["preferred_state"][new_state["index"]] = (
+            new_state
+        )
 
     def light_state(self, x, *args):
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]

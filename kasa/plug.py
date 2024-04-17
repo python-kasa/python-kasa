@@ -1,4 +1,5 @@
 """Module for a TAPO Plug."""
+
 import logging
 from abc import ABC
 

@@ -1,6 +1,5 @@
 """TP-Link device types."""
 
-
 from enum import Enum
 
 
@@ -17,6 +16,7 @@ class DeviceType(Enum):
     LightStrip = "lightstrip"
     Sensor = "sensor"
     Hub = "hub"
+    Fan = "fan"
     Unknown = "unknown"
 
     @staticmethod

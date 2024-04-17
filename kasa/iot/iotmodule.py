@@ -1,4 +1,5 @@
 """Base class for IOT module implementations."""
+
 import collections
 import logging
 

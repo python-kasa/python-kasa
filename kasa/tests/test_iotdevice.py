@@ -1,4 +1,5 @@
 """Module for common iotdevice tests."""
+
 import re
 from datetime import datetime
 

@@ -1,4 +1,5 @@
 """Implementation of the usage interface."""
+
 from datetime import datetime
 from typing import Dict
 

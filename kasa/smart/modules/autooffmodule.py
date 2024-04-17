@@ -1,4 +1,5 @@
 """Implementation of auto off module."""
+
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Dict, Optional
 

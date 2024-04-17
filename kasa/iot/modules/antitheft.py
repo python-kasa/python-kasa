@@ -1,4 +1,5 @@
 """Implementation of the antitheft module."""
+
 from .rulemodule import RuleModule
 
 

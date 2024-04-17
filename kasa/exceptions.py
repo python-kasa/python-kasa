@@ -1,4 +1,5 @@
 """python-kasa exceptions."""
+
 from asyncio import TimeoutError as _asyncioTimeoutError
 from enum import IntEnum
 from typing import Any, Optional

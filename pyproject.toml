@@ -101,6 +101,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 target-version = "py38"
+
+[tool.ruff.lint]
 select = [
   "E",  # pycodestyle
   "D",  # pydocstyle
@@ -116,10 +118,10 @@ ignore = [
   "D107",  # Missing docstring in `__init__`
 ]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "kasa/tests/*.py" = [
     "D100",
     "D101",

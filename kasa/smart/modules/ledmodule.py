@@ -1,4 +1,5 @@
 """Module for led controls."""
+
 from typing import TYPE_CHECKING, Dict
 
 from ...feature import Feature, FeatureType

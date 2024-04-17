@@ -1,4 +1,5 @@
 """Implementation of humidity module."""
+
 from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType

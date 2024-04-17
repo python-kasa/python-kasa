@@ -1,4 +1,5 @@
 """Base implementation for SMART modules."""
+
 import logging
 from typing import TYPE_CHECKING, Dict, Type
 
@@ -61,7 +62,7 @@ class SmartModule(Module):
         q = self.query()
 
         if not q:
-            return dev.internal_state["get_device_info"]
+            return dev.sys_info
 
         q_keys = list(q.keys())
         query_key = q_keys[0]

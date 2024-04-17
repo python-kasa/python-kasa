@@ -1,4 +1,5 @@
 """Implementation of energy monitoring module."""
+
 from typing import TYPE_CHECKING, Dict, Optional
 
 from ...emeterstatus import EmeterStatus
