@@ -1,4 +1,5 @@
 """Implementation of temperature module."""
+
 from typing import TYPE_CHECKING, Literal
 
 from ...feature import Feature, FeatureType

@@ -1,4 +1,5 @@
 """Schedule module implementation."""
+
 from .rulemodule import RuleModule
 
 

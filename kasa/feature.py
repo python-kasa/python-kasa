@@ -1,4 +1,5 @@
 """Generic interface for defining device features."""
+
 import sys
 from dataclasses import dataclass
 from enum import Enum, auto

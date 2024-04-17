@@ -1,4 +1,5 @@
 """Module for smooth light transitions."""
+
 from typing import TYPE_CHECKING
 
 from ...exceptions import KasaException

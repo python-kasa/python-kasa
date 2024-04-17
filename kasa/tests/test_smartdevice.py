@@ -1,4 +1,5 @@
 """Tests for SMART devices."""
+
 import logging
 from typing import Any, Dict
 

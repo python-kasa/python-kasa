@@ -1,4 +1,5 @@
 """Module for Device base class."""
+
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass

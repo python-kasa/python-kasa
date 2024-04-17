@@ -1,4 +1,5 @@
 """Module for dimmers (currently only HS220)."""
+
 from enum import Enum
 from typing import Any, Dict, Optional
 

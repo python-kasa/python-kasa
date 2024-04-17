@@ -1,4 +1,5 @@
 """Implementation of the ambient light (LAS) module found in some dimmers."""
+
 from ...feature import Feature, FeatureType
 from ..iotmodule import IotModule, merge
 

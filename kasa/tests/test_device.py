@@ -1,4 +1,5 @@
 """Tests for all devices."""
+
 import importlib
 import inspect
 import pkgutil
