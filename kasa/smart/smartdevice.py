@@ -1,9 +1,11 @@
 """Module for a SMART device."""
 
+from __future__ import annotations
+
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -28,20 +30,20 @@ class SmartDevice(Device):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[SmartProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: SmartProtocol | None = None,
     ) -> None:
         _protocol = protocol or SmartProtocol(
             transport=AesTransport(config=config or DeviceConfig(host=host)),
         )
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
-        self._components_raw: Optional[Dict[str, Any]] = None
-        self._components: Dict[str, int] = {}
-        self._state_information: Dict[str, Any] = {}
-        self.modules: Dict[str, "SmartModule"] = {}
-        self._parent: Optional["SmartDevice"] = None
-        self._children: Mapping[str, "SmartDevice"] = {}
+        self._components_raw: dict[str, Any] | None = None
+        self._components: dict[str, int] = {}
+        self._state_information: dict[str, Any] = {}
+        self.modules: dict[str, SmartModule] = {}
+        self._parent: SmartDevice | None = None
+        self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
 
     async def _initialize_children(self):
@@ -74,7 +76,7 @@ class SmartDevice(Device):
         }
 
     @property
-    def children(self) -> Sequence["SmartDevice"]:
+    def children(self) -> Sequence[SmartDevice]:
         """Return list of children."""
         return list(self._children.values())
 
@@ -130,7 +132,7 @@ class SmartDevice(Device):
             await self._negotiate()
             await self._initialize_modules()
 
-        req: Dict[str, Any] = {}
+        req: dict[str, Any] = {}
 
         # TODO: this could be optimized by constructing the query only once
         for module in self.modules.values():
@@ -236,7 +238,7 @@ class SmartDevice(Device):
                 self._add_feature(feat)
 
     @property
-    def sys_info(self) -> Dict[str, Any]:
+    def sys_info(self) -> dict[str, Any]:
         """Returns the device info."""
         return self._info  # type: ignore
 
@@ -246,7 +248,7 @@ class SmartDevice(Device):
         return str(self._info.get("model"))
 
     @property
-    def alias(self) -> Optional[str]:
+    def alias(self) -> str | None:
         """Returns the device alias or nickname."""
         if self._info and (nickname := self._info.get("nickname")):
             return base64.b64decode(nickname).decode()
@@ -265,13 +267,13 @@ class SmartDevice(Device):
         return _timemod.time
 
     @property
-    def timezone(self) -> Dict:
+    def timezone(self) -> dict:
         """Return the timezone and time_difference."""
         ti = self.time
         return {"timezone": ti.tzname()}
 
     @property
-    def hw_info(self) -> Dict:
+    def hw_info(self) -> dict:
         """Return hardware info for the device."""
         return {
             "sw_ver": self._info.get("fw_ver"),
@@ -284,7 +286,7 @@ class SmartDevice(Device):
         }
 
     @property
-    def location(self) -> Dict:
+    def location(self) -> dict:
         """Return the device location."""
         loc = {
             "latitude": cast(float, self._info.get("latitude", 0)) / 10_000,
@@ -293,7 +295,7 @@ class SmartDevice(Device):
         return loc
 
     @property
-    def rssi(self) -> Optional[int]:
+    def rssi(self) -> int | None:
         """Return the rssi."""
         rssi = self._info.get("rssi")
         return int(rssi) if rssi else None
@@ -321,7 +323,7 @@ class SmartDevice(Device):
         self._info = info
 
     async def _query_helper(
-        self, method: str, params: Optional[Dict] = None, child_ids=None
+        self, method: str, params: dict | None = None, child_ids=None
     ) -> Any:
         res = await self.protocol.query({method: params})
 
@@ -378,19 +380,19 @@ class SmartDevice(Device):
         return energy.emeter_realtime
 
     @property
-    def emeter_this_month(self) -> Optional[float]:
+    def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
         energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_this_month
 
     @property
-    def emeter_today(self) -> Optional[float]:
+    def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
         energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_today
 
     @property
-    def on_since(self) -> Optional[datetime]:
+    def on_since(self) -> datetime | None:
         """Return the time that the device was turned on or None if turned off."""
         if (
             not self._info.get("device_on")
@@ -404,7 +406,7 @@ class SmartDevice(Device):
         else:  # We have no device time, use current local time.
             return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
-    async def wifi_scan(self) -> List[WifiNetwork]:
+    async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""
 
         def _net_for_scan_info(res):
@@ -527,7 +529,7 @@ class SmartDevice(Device):
 
     @staticmethod
     def _get_device_type_from_components(
-        components: List[str], device_type: str
+        components: list[str], device_type: str
     ) -> DeviceType:
         """Find type to be displayed as a supported device category."""
         if "HUB" in device_type:

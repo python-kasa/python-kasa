@@ -1,6 +1,6 @@
 """Module for light strips (KL430)."""
 
-from typing import Dict, List, Optional
+from __future__ import annotations
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -49,8 +49,8 @@ class IotLightStrip(IotBulb):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.LightStrip
@@ -63,7 +63,7 @@ class IotLightStrip(IotBulb):
 
     @property  # type: ignore
     @requires_update
-    def effect(self) -> Dict:
+    def effect(self) -> dict:
         """Return effect state.
 
         Example:
@@ -77,7 +77,7 @@ class IotLightStrip(IotBulb):
 
     @property  # type: ignore
     @requires_update
-    def effect_list(self) -> Optional[List[str]]:
+    def effect_list(self) -> list[str] | None:
         """Return built-in effects list.
 
         Example:
@@ -90,8 +90,8 @@ class IotLightStrip(IotBulb):
         self,
         effect: str,
         *,
-        brightness: Optional[int] = None,
-        transition: Optional[int] = None,
+        brightness: int | None = None,
+        transition: int | None = None,
     ) -> None:
         """Set an effect on the device.
 
@@ -118,7 +118,7 @@ class IotLightStrip(IotBulb):
     @requires_update
     async def set_custom_effect(
         self,
-        effect_dict: Dict,
+        effect_dict: dict,
     ) -> None:
         """Set a custom effect on the device.
 

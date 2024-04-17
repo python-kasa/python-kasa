@@ -1,5 +1,7 @@
 """Implementation of time module."""
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 from time import mktime
 from typing import TYPE_CHECKING, cast
@@ -17,7 +19,7 @@ class TimeModule(SmartModule):
     REQUIRED_COMPONENT = "time"
     QUERY_GETTER_NAME = "get_device_time"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
 
         self._add_feature(

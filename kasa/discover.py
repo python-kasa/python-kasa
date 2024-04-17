@@ -1,11 +1,13 @@
 """Discovery module for TP-Link Smart Home devices."""
 
+from __future__ import annotations
+
 import asyncio
 import binascii
 import ipaddress
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, List, Optional, Set, Type, cast
+from typing import Awaitable, Callable, Dict, Optional, Type, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -38,6 +40,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 OnDiscoveredCallable = Callable[[Device], Awaitable[None]]
+OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Awaitable[None]]
 DeviceDict = Dict[str, Device]
 
 
@@ -54,17 +57,15 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
     def __init__(
         self,
         *,
-        on_discovered: Optional[OnDiscoveredCallable] = None,
+        on_discovered: OnDiscoveredCallable | None = None,
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         discovery_timeout: int = 5,
-        interface: Optional[str] = None,
-        on_unsupported: Optional[
-            Callable[[UnsupportedDeviceError], Awaitable[None]]
-        ] = None,
-        port: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
-        timeout: Optional[int] = None,
+        interface: str | None = None,
+        on_unsupported: OnUnsupportedCallable | None = None,
+        port: int | None = None,
+        credentials: Credentials | None = None,
+        timeout: int | None = None,
     ) -> None:
         self.transport = None
         self.discovery_packets = discovery_packets
@@ -78,15 +79,15 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target_2 = (target, Discover.DISCOVERY_PORT_2)
 
         self.discovered_devices = {}
-        self.unsupported_device_exceptions: Dict = {}
-        self.invalid_device_exceptions: Dict = {}
+        self.unsupported_device_exceptions: dict = {}
+        self.invalid_device_exceptions: dict = {}
         self.on_unsupported = on_unsupported
         self.credentials = credentials
         self.timeout = timeout
         self.discovery_timeout = discovery_timeout
-        self.seen_hosts: Set[str] = set()
-        self.discover_task: Optional[asyncio.Task] = None
-        self.callback_tasks: List[asyncio.Task] = []
+        self.seen_hosts: set[str] = set()
+        self.discover_task: asyncio.Task | None = None
+        self.callback_tasks: list[asyncio.Task] = []
         self.target_discovered: bool = False
         self._started_event = asyncio.Event()
 
@@ -148,7 +149,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             return
         self.seen_hosts.add(ip)
 
-        device: Optional[Device] = None
+        device: Device | None = None
 
         config = DeviceConfig(host=ip, port_override=self.port)
         if self.credentials:
@@ -328,9 +329,9 @@ class Discover:
         host: str,
         *,
         discovery_timeout: int = 5,
-        port: Optional[int] = None,
-        timeout: Optional[int] = None,
-        credentials: Optional[Credentials] = None,
+        port: int | None = None,
+        timeout: int | None = None,
+        credentials: Credentials | None = None,
     ) -> Device:
         """Discover a single device by the given IP address.
 
@@ -403,7 +404,7 @@ class Discover:
             raise TimeoutError(f"Timed out getting discovery response for {host}")
 
     @staticmethod
-    def _get_device_class(info: dict) -> Type[Device]:
+    def _get_device_class(info: dict) -> type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult(**info["result"])
@@ -502,16 +503,17 @@ class Discover:
         return device
 
 
+class EncryptionScheme(BaseModel):
+    """Base model for encryption scheme of discovery result."""
+
+    is_support_https: bool
+    encrypt_type: str
+    http_port: int
+    lv: Optional[int] = None  # noqa: UP007
+
+
 class DiscoveryResult(BaseModel):
     """Base model for discovery result."""
-
-    class EncryptionScheme(BaseModel):
-        """Base model for encryption scheme of discovery result."""
-
-        is_support_https: bool
-        encrypt_type: str
-        http_port: int
-        lv: Optional[int] = None
 
     device_type: str
     device_model: str
@@ -520,11 +522,11 @@ class DiscoveryResult(BaseModel):
     mgt_encrypt_schm: EncryptionScheme
     device_id: str
 
-    hw_ver: Optional[str] = None
-    owner: Optional[str] = None
-    is_support_iot_cloud: Optional[bool] = None
-    obd_src: Optional[str] = None
-    factory_default: Optional[bool] = None
+    hw_ver: Optional[str] = None  # noqa: UP007
+    owner: Optional[str] = None  # noqa: UP007
+    is_support_iot_cloud: Optional[bool] = None  # noqa: UP007
+    obd_src: Optional[str] = None  # noqa: UP007
+    factory_default: Optional[bool] = None  # noqa: UP007
 
     def get_dict(self) -> dict:
         """Return a dict for this discovery result.

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import json
 import logging
@@ -7,7 +9,7 @@ import time
 from contextlib import nullcontext as does_not_raise
 from json import dumps as json_dumps
 from json import loads as json_loads
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp
 import pytest
@@ -335,7 +337,7 @@ class MockAesDevice:
                 json = json_loads(item.decode())
         return await self._post(url, json)
 
-    async def _post(self, url: URL, json: Dict[str, Any]):
+    async def _post(self, url: URL, json: dict[str, Any]):
         if json["method"] == "handshake":
             return await self._return_handshake_response(url, json)
         elif json["method"] == "securePassthrough":
@@ -346,7 +348,7 @@ class MockAesDevice:
             assert str(url) == f"http://{self.host}:80/app?token={self.token}"
             return await self._return_send_response(url, json)
 
-    async def _return_handshake_response(self, url: URL, json: Dict[str, Any]):
+    async def _return_handshake_response(self, url: URL, json: dict[str, Any]):
         start = len("-----BEGIN PUBLIC KEY-----\n")
         end = len("\n-----END PUBLIC KEY-----\n")
         client_pub_key = json["params"]["key"][start:-end]
@@ -359,7 +361,7 @@ class MockAesDevice:
             self.status_code, {"result": {"key": key_64}, "error_code": self.error_code}
         )
 
-    async def _return_secure_passthrough_response(self, url: URL, json: Dict[str, Any]):
+    async def _return_secure_passthrough_response(self, url: URL, json: dict[str, Any]):
         encrypted_request = json["params"]["request"]
         decrypted_request = self.encryption_session.decrypt(encrypted_request.encode())
         decrypted_request_dict = json_loads(decrypted_request)
@@ -378,7 +380,7 @@ class MockAesDevice:
         }
         return self._mock_response(self.status_code, result)
 
-    async def _return_login_response(self, url: URL, json: Dict[str, Any]):
+    async def _return_login_response(self, url: URL, json: dict[str, Any]):
         if "token=" in str(url):
             raise Exception("token should not be in url for a login request")
         self.token = "".join(random.choices(string.ascii_uppercase, k=32))  # noqa: S311
@@ -386,7 +388,7 @@ class MockAesDevice:
         self.inner_call_count += 1
         return self._mock_response(self.status_code, result)
 
-    async def _return_send_response(self, url: URL, json: Dict[str, Any]):
+    async def _return_send_response(self, url: URL, json: dict[str, Any]):
         result = {"result": {"method": None}, "error_code": self.inner_error_code}
         response = self.send_response if self.send_response else result
         self.inner_call_count += 1

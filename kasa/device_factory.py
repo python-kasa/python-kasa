@@ -1,8 +1,10 @@
 """Device creation via DeviceConfig."""
 
+from __future__ import annotations
+
 import logging
 import time
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any
 
 from .aestransport import AesTransport
 from .device import Device
@@ -35,7 +37,7 @@ GET_SYSINFO_QUERY = {
 }
 
 
-async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Device":
+async def connect(*, host: str | None = None, config: DeviceConfig) -> Device:
     """Connect to a single device by the given hostname or device configuration.
 
     This method avoids the UDP based discovery process and
@@ -72,7 +74,7 @@ async def connect(*, host: Optional[str] = None, config: DeviceConfig) -> "Devic
         raise
 
 
-async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> "Device":
+async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
     if debug_enabled:
         start_time = time.perf_counter()
@@ -87,8 +89,8 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> "Device":
             )
             start_time = time.perf_counter()
 
-    device_class: Optional[Type[Device]]
-    device: Optional[Device] = None
+    device_class: type[Device] | None
+    device: Device | None = None
 
     if isinstance(protocol, IotProtocol) and isinstance(
         protocol._transport, XorTransport
@@ -115,13 +117,13 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> "Device":
         )
 
 
-def _get_device_type_from_sys_info(info: Dict[str, Any]) -> DeviceType:
+def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
     """Find SmartDevice subclass for device described by passed data."""
     if "system" not in info or "get_sysinfo" not in info["system"]:
         raise KasaException("No 'system' or 'get_sysinfo' in response")
 
-    sysinfo: Dict[str, Any] = info["system"]["get_sysinfo"]
-    type_: Optional[str] = sysinfo.get("type", sysinfo.get("mic_type"))
+    sysinfo: dict[str, Any] = info["system"]["get_sysinfo"]
+    type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
     if type_ is None:
         raise KasaException("Unable to find the device type field!")
 
@@ -143,7 +145,7 @@ def _get_device_type_from_sys_info(info: Dict[str, Any]) -> DeviceType:
     raise UnsupportedDeviceError("Unknown device type: %s" % type_)
 
 
-def get_device_class_from_sys_info(sysinfo: Dict[str, Any]) -> Type[IotDevice]:
+def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
     """Find SmartDevice subclass for device described by passed data."""
     TYPE_TO_CLASS = {
         DeviceType.Bulb: IotBulb,
@@ -156,9 +158,9 @@ def get_device_class_from_sys_info(sysinfo: Dict[str, Any]) -> Type[IotDevice]:
     return TYPE_TO_CLASS[_get_device_type_from_sys_info(sysinfo)]
 
 
-def get_device_class_from_family(device_type: str) -> Optional[Type[Device]]:
+def get_device_class_from_family(device_type: str) -> type[Device] | None:
     """Return the device class from the type name."""
-    supported_device_types: Dict[str, Type[Device]] = {
+    supported_device_types: dict[str, type[Device]] = {
         "SMART.TAPOPLUG": SmartDevice,
         "SMART.TAPOBULB": SmartBulb,
         "SMART.TAPOSWITCH": SmartBulb,
@@ -173,14 +175,14 @@ def get_device_class_from_family(device_type: str) -> Optional[Type[Device]]:
 
 def get_protocol(
     config: DeviceConfig,
-) -> Optional[BaseProtocol]:
+) -> BaseProtocol | None:
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
     protocol_transport_key = (
         protocol_name + "." + config.connection_type.encryption_type.value
     )
-    supported_device_protocols: Dict[
-        str, Tuple[Type[BaseProtocol], Type[BaseTransport]]
+    supported_device_protocols: dict[
+        str, tuple[type[BaseProtocol], type[BaseTransport]]
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),

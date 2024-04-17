@@ -1,7 +1,8 @@
 """Implementation of the emeter module."""
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, List, Optional, Union
 
 from ...emeterstatus import EmeterStatus
 from .usage import Usage
@@ -16,7 +17,7 @@ class Emeter(Usage):
         return EmeterStatus(self.data["get_realtime"])
 
     @property
-    def emeter_today(self) -> Optional[float]:
+    def emeter_today(self) -> float | None:
         """Return today's energy consumption in kWh."""
         raw_data = self.daily_data
         today = datetime.now().day
@@ -24,7 +25,7 @@ class Emeter(Usage):
         return data.get(today)
 
     @property
-    def emeter_this_month(self) -> Optional[float]:
+    def emeter_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
         raw_data = self.monthly_data
         current_month = datetime.now().month
@@ -42,7 +43,7 @@ class Emeter(Usage):
         """Return real-time statistics."""
         return await self.call("get_realtime")
 
-    async def get_daystat(self, *, year=None, month=None, kwh=True) -> Dict:
+    async def get_daystat(self, *, year=None, month=None, kwh=True) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: energy, ...}.
@@ -51,7 +52,7 @@ class Emeter(Usage):
         data = self._convert_stat_data(data["day_list"], entry_key="day", kwh=kwh)
         return data
 
-    async def get_monthstat(self, *, year=None, kwh=True) -> Dict:
+    async def get_monthstat(self, *, year=None, kwh=True) -> dict:
         """Return monthly stats for the given year.
 
         The return value is a dictionary of {month: energy, ...}.
@@ -62,11 +63,11 @@ class Emeter(Usage):
 
     def _convert_stat_data(
         self,
-        data: List[Dict[str, Union[int, float]]],
+        data: list[dict[str, int | float]],
         entry_key: str,
         kwh: bool = True,
-        key: Optional[int] = None,
-    ) -> Dict[Union[int, float], Union[int, float]]:
+        key: int | None = None,
+    ) -> dict[int | float, int | float]:
         """Return emeter information keyed with the day/month.
 
         The incoming data is a list of dictionaries::

@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import warnings
-from typing import Dict
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -37,7 +38,7 @@ def dummy_protocol():
         def credentials_hash(self) -> str:
             return "dummy hash"
 
-        async def send(self, request: str) -> Dict:
+        async def send(self, request: str) -> dict:
             return {}
 
         async def close(self) -> None:

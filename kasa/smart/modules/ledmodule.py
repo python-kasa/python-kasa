@@ -1,6 +1,8 @@
 """Module for led controls."""
 
-from typing import TYPE_CHECKING, Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
@@ -15,7 +17,7 @@ class LedModule(SmartModule):
     REQUIRED_COMPONENT = "led"
     QUERY_GETTER_NAME = "get_led_info"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -29,7 +31,7 @@ class LedModule(SmartModule):
             )
         )
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {self.QUERY_GETTER_NAME: {"led_rule": None}}
 

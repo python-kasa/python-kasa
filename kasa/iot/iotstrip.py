@@ -1,9 +1,11 @@
 """Module for multi-socket devices (HS300, HS107, KP303, ..)."""
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, DefaultDict, Dict, Optional
+from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -23,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def merge_sums(dicts):
     """Merge the sum of dicts."""
-    total_dict: DefaultDict[int, float] = defaultdict(lambda: 0.0)
+    total_dict: defaultdict[int, float] = defaultdict(lambda: 0.0)
     for sum_dict in dicts:
         for day, value in sum_dict.items():
             total_dict[day] += value
@@ -86,8 +88,8 @@ class IotStrip(IotDevice):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self.emeter_type = "emeter"
@@ -137,7 +139,7 @@ class IotStrip(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def on_since(self) -> Optional[datetime]:
+    def on_since(self) -> datetime | None:
         """Return the maximum on-time of all outlets."""
         if self.is_off:
             return None
@@ -170,8 +172,8 @@ class IotStrip(IotDevice):
 
     @requires_update
     async def get_emeter_daily(
-        self, year: Optional[int] = None, month: Optional[int] = None, kwh: bool = True
-    ) -> Dict:
+        self, year: int | None = None, month: int | None = None, kwh: bool = True
+    ) -> dict:
         """Retrieve daily statistics for a given month.
 
         :param year: year for which to retrieve statistics (default: this year)
@@ -186,8 +188,8 @@ class IotStrip(IotDevice):
 
     @requires_update
     async def get_emeter_monthly(
-        self, year: Optional[int] = None, kwh: bool = True
-    ) -> Dict:
+        self, year: int | None = None, kwh: bool = True
+    ) -> dict:
         """Retrieve monthly statistics for a given year.
 
         :param year: year for which to retrieve statistics (default: this year)
@@ -197,7 +199,7 @@ class IotStrip(IotDevice):
             "get_emeter_monthly", {"year": year, "kwh": kwh}
         )
 
-    async def _async_get_emeter_sum(self, func: str, kwargs: Dict[str, Any]) -> Dict:
+    async def _async_get_emeter_sum(self, func: str, kwargs: dict[str, Any]) -> dict:
         """Retreive emeter stats for a time period from children."""
         self._verify_emeter()
         return merge_sums(
@@ -212,13 +214,13 @@ class IotStrip(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def emeter_this_month(self) -> Optional[float]:
+    def emeter_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
         return sum(plug.emeter_this_month for plug in self.children)
 
     @property  # type: ignore
     @requires_update
-    def emeter_today(self) -> Optional[float]:
+    def emeter_today(self) -> float | None:
         """Return this month's energy consumption in kWh."""
         return sum(plug.emeter_today for plug in self.children)
 
@@ -243,7 +245,7 @@ class IotStripPlug(IotPlug):
     The plug inherits (most of) the system information from the parent.
     """
 
-    def __init__(self, host: str, parent: "IotStrip", child_id: str) -> None:
+    def __init__(self, host: str, parent: IotStrip, child_id: str) -> None:
         super().__init__(host)
 
         self.parent = parent
@@ -262,16 +264,14 @@ class IotStripPlug(IotPlug):
         """
         await self._modular_update({})
 
-    def _create_emeter_request(
-        self, year: Optional[int] = None, month: Optional[int] = None
-    ):
+    def _create_emeter_request(self, year: int | None = None, month: int | None = None):
         """Create a request for requesting all emeter statistics at once."""
         if year is None:
             year = datetime.now().year
         if month is None:
             month = datetime.now().month
 
-        req: Dict[str, Any] = {}
+        req: dict[str, Any] = {}
 
         merge(req, self._create_request("emeter", "get_realtime"))
         merge(req, self._create_request("emeter", "get_monthstat", {"year": year}))
@@ -285,16 +285,16 @@ class IotStripPlug(IotPlug):
         return req
 
     def _create_request(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ):
-        request: Dict[str, Any] = {
+        request: dict[str, Any] = {
             "context": {"child_ids": [self.child_id]},
             target: {cmd: arg},
         }
         return request
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ) -> Any:
         """Override query helper to include the child_ids."""
         return await self.parent._query_helper(
@@ -335,14 +335,14 @@ class IotStripPlug(IotPlug):
 
     @property  # type: ignore
     @requires_update
-    def next_action(self) -> Dict:
+    def next_action(self) -> dict:
         """Return next scheduled(?) action."""
         info = self._get_child_info()
         return info["next_action"]
 
     @property  # type: ignore
     @requires_update
-    def on_since(self) -> Optional[datetime]:
+    def on_since(self) -> datetime | None:
         """Return on-time, if available."""
         if self.is_off:
             return None
@@ -359,7 +359,7 @@ class IotStripPlug(IotPlug):
         sys_info = self.parent.sys_info
         return f"Socket for {sys_info['model']}"
 
-    def _get_child_info(self) -> Dict:
+    def _get_child_info(self) -> dict:
         """Return the subdevice information for this device."""
         for plug in self.parent.sys_info["children"]:
             if plug["id"] == self.child_id:

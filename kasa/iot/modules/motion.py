@@ -1,7 +1,8 @@
 """Implementation of the motion detection (PIR) module found in some dimmers."""
 
+from __future__ import annotations
+
 from enum import Enum
-from typing import Optional
 
 from ...exceptions import KasaException
 from ..iotmodule import IotModule
@@ -43,7 +44,7 @@ class Motion(IotModule):
         return await self.call("set_enable", {"enable": int(state)})
 
     async def set_range(
-        self, *, range: Optional[Range] = None, custom_range: Optional[int] = None
+        self, *, range: Range | None = None, custom_range: int | None = None
     ):
         """Set the range for the sensor.
 

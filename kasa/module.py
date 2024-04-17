@@ -1,8 +1,9 @@
 """Base class for all module implementations."""
 
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict
 
 from .device import Device
 from .exceptions import KasaException
@@ -18,10 +19,10 @@ class Module(ABC):
     executed during the regular update cycle.
     """
 
-    def __init__(self, device: "Device", module: str):
+    def __init__(self, device: Device, module: str):
         self._device = device
         self._module = module
-        self._module_features: Dict[str, Feature] = {}
+        self._module_features: dict[str, Feature] = {}
 
     @abstractmethod
     def query(self):

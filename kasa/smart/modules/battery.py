@@ -1,5 +1,7 @@
 """Implementation of battery module."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType
@@ -15,7 +17,7 @@ class BatterySensor(SmartModule):
     REQUIRED_COMPONENT = "battery_detect"
     QUERY_GETTER_NAME = "get_battery_detect_info"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(

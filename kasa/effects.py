@@ -1,6 +1,8 @@
 """Module for light strip effects (LB*, KL*, KB*)."""
 
-from typing import List, cast
+from __future__ import annotations
+
+from typing import cast
 
 EFFECT_AURORA = {
     "custom": 0,
@@ -292,5 +294,5 @@ EFFECTS_LIST_V1 = [
     EFFECT_VALENTINES,
 ]
 
-EFFECT_NAMES_V1: List[str] = [cast(str, effect["name"]) for effect in EFFECTS_LIST_V1]
+EFFECT_NAMES_V1: list[str] = [cast(str, effect["name"]) for effect in EFFECTS_LIST_V1]
 EFFECT_MAPPING_V1 = {effect["name"]: effect for effect in EFFECTS_LIST_V1}

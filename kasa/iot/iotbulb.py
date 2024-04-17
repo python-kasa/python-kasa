@@ -1,9 +1,11 @@
 """Module for bulbs (LB*, KL*, KB*)."""
 
+from __future__ import annotations
+
 import logging
 import re
 from enum import Enum
-from typing import Dict, List, Optional, cast
+from typing import Optional, cast
 
 try:
     from pydantic.v1 import BaseModel, Field, root_validator
@@ -40,7 +42,7 @@ class TurnOnBehavior(BaseModel):
     """
 
     #: Index of preset to use, or ``None`` for the last known state.
-    preset: Optional[int] = Field(alias="index", default=None)
+    preset: Optional[int] = Field(alias="index", default=None)  # noqa: UP007
     #: Wanted behavior
     mode: BehaviorMode
 
@@ -193,8 +195,8 @@ class IotBulb(IotDevice, Bulb):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb
@@ -275,7 +277,7 @@ class IotBulb(IotDevice, Bulb):
 
     @property  # type: ignore
     @requires_update
-    def light_state(self) -> Dict[str, str]:
+    def light_state(self) -> dict[str, str]:
         """Query the light state."""
         light_state = self.sys_info["light_state"]
         if light_state is None:
@@ -298,7 +300,7 @@ class IotBulb(IotDevice, Bulb):
         """Return True if the device supports effects."""
         return "lighting_effect_state" in self.sys_info
 
-    async def get_light_details(self) -> Dict[str, int]:
+    async def get_light_details(self) -> dict[str, int]:
         """Return light details.
 
         Example::
@@ -325,14 +327,14 @@ class IotBulb(IotDevice, Bulb):
             self.LIGHT_SERVICE, "set_default_behavior", behavior.dict(by_alias=True)
         )
 
-    async def get_light_state(self) -> Dict[str, Dict]:
+    async def get_light_state(self) -> dict[str, dict]:
         """Query the light state."""
         # TODO: add warning and refer to use light.state?
         return await self._query_helper(self.LIGHT_SERVICE, "get_light_state")
 
     async def set_light_state(
-        self, state: Dict, *, transition: Optional[int] = None
-    ) -> Dict:
+        self, state: dict, *, transition: int | None = None
+    ) -> dict:
         """Set the light state."""
         if transition is not None:
             state["transition_period"] = transition
@@ -378,10 +380,10 @@ class IotBulb(IotDevice, Bulb):
         self,
         hue: int,
         saturation: int,
-        value: Optional[int] = None,
+        value: int | None = None,
         *,
-        transition: Optional[int] = None,
-    ) -> Dict:
+        transition: int | None = None,
+    ) -> dict:
         """Set new HSV.
 
         :param int hue: hue in degrees
@@ -424,8 +426,8 @@ class IotBulb(IotDevice, Bulb):
 
     @requires_update
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: Optional[int] = None
-    ) -> Dict:
+        self, temp: int, *, brightness=None, transition: int | None = None
+    ) -> dict:
         """Set the color temperature of the device in kelvin.
 
         :param int temp: The new color temperature, in Kelvin
@@ -460,8 +462,8 @@ class IotBulb(IotDevice, Bulb):
 
     @requires_update
     async def set_brightness(
-        self, brightness: int, *, transition: Optional[int] = None
-    ) -> Dict:
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
         """Set the brightness in percentage.
 
         :param int brightness: brightness in percent
@@ -482,14 +484,14 @@ class IotBulb(IotDevice, Bulb):
         light_state = self.light_state
         return bool(light_state["on_off"])
 
-    async def turn_off(self, *, transition: Optional[int] = None, **kwargs) -> Dict:
+    async def turn_off(self, *, transition: int | None = None, **kwargs) -> dict:
         """Turn the bulb off.
 
         :param int transition: transition in milliseconds.
         """
         return await self.set_light_state({"on_off": 0}, transition=transition)
 
-    async def turn_on(self, *, transition: Optional[int] = None, **kwargs) -> Dict:
+    async def turn_on(self, *, transition: int | None = None, **kwargs) -> dict:
         """Turn the bulb on.
 
         :param int transition: transition in milliseconds.
@@ -513,7 +515,7 @@ class IotBulb(IotDevice, Bulb):
 
     @property  # type: ignore
     @requires_update
-    def presets(self) -> List[BulbPreset]:
+    def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
         return [BulbPreset(**vals) for vals in self.sys_info["preferred_state"]]
 

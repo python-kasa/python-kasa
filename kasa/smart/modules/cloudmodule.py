@@ -1,5 +1,7 @@
 """Implementation of cloud module."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType
@@ -15,7 +17,7 @@ class CloudModule(SmartModule):
     QUERY_GETTER_NAME = "get_connect_cloud_state"
     REQUIRED_COMPONENT = "cloud_connect"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
 
         self._add_feature(

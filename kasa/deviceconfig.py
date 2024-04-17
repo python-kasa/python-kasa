@@ -1,5 +1,11 @@
-"""Module for holding connection parameters."""
+"""Module for holding connection parameters.
 
+Note that this module does not work with from __future__ import annotations
+due to it's use of type returned by fields() which becomes a string with the import.
+https://bugs.python.org/issue39442
+"""
+
+# ruff: noqa: FA100
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum

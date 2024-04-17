@@ -1,8 +1,10 @@
 """python-kasa exceptions."""
 
+from __future__ import annotations
+
 from asyncio import TimeoutError as _asyncioTimeoutError
 from enum import IntEnum
-from typing import Any, Optional
+from typing import Any
 
 
 class KasaException(Exception):
@@ -35,7 +37,7 @@ class DeviceError(KasaException):
     """Base exception for device errors."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.error_code: Optional["SmartErrorCode"] = kwargs.get("error_code", None)
+        self.error_code: SmartErrorCode | None = kwargs.get("error_code", None)
         super().__init__(*args)
 
     def __repr__(self):

@@ -1,5 +1,7 @@
 """Implementation of report module."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from ...feature import Feature
@@ -15,7 +17,7 @@ class ReportModule(SmartModule):
     REQUIRED_COMPONENT = "report_mode"
     QUERY_GETTER_NAME = "get_report_mode"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(

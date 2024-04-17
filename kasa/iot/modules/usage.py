@@ -1,7 +1,8 @@
 """Implementation of the usage interface."""
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict
 
 from ..iotmodule import IotModule, merge
 
@@ -58,7 +59,7 @@ class Usage(IotModule):
                 return entry["time"]
         return None
 
-    async def get_raw_daystat(self, *, year=None, month=None) -> Dict:
+    async def get_raw_daystat(self, *, year=None, month=None) -> dict:
         """Return raw daily stats for the given year & month."""
         if year is None:
             year = datetime.now().year
@@ -67,14 +68,14 @@ class Usage(IotModule):
 
         return await self.call("get_daystat", {"year": year, "month": month})
 
-    async def get_raw_monthstat(self, *, year=None) -> Dict:
+    async def get_raw_monthstat(self, *, year=None) -> dict:
         """Return raw monthly stats for the given year."""
         if year is None:
             year = datetime.now().year
 
         return await self.call("get_monthstat", {"year": year})
 
-    async def get_daystat(self, *, year=None, month=None) -> Dict:
+    async def get_daystat(self, *, year=None, month=None) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: time, ...}.
@@ -83,7 +84,7 @@ class Usage(IotModule):
         data = self._convert_stat_data(data["day_list"], entry_key="day")
         return data
 
-    async def get_monthstat(self, *, year=None) -> Dict:
+    async def get_monthstat(self, *, year=None) -> dict:
         """Return monthly stats for the given year.
 
         The return value is a dictionary of {month: time, ...}.
@@ -96,7 +97,7 @@ class Usage(IotModule):
         """Erase all stats."""
         return await self.call("erase_runtime_stat")
 
-    def _convert_stat_data(self, data, entry_key) -> Dict:
+    def _convert_stat_data(self, data, entry_key) -> dict:
         """Return usage information keyed with the day/month.
 
         The incoming data is a list of dictionaries::

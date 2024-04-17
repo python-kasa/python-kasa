@@ -1,7 +1,8 @@
 """Module for smart plugs (HS100, HS110, ..)."""
 
+from __future__ import annotations
+
 import logging
-from typing import Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -47,8 +48,8 @@ class IotPlug(IotDevice):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
@@ -108,8 +109,8 @@ class IotWallSwitch(IotPlug):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.WallSwitch

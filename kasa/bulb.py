@@ -1,7 +1,9 @@
 """Module for Device base class."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Dict, List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from .device import Device
 
@@ -33,14 +35,14 @@ class BulbPreset(BaseModel):
     brightness: int
 
     # These are not available for effect mode presets on light strips
-    hue: Optional[int]
-    saturation: Optional[int]
-    color_temp: Optional[int]
+    hue: Optional[int]  # noqa: UP007
+    saturation: Optional[int]  # noqa: UP007
+    color_temp: Optional[int]  # noqa: UP007
 
     # Variables for effect mode presets
-    custom: Optional[int]
-    id: Optional[str]
-    mode: Optional[int]
+    custom: Optional[int]  # noqa: UP007
+    id: Optional[str]  # noqa: UP007
+    mode: Optional[int]  # noqa: UP007
 
 
 class Bulb(Device, ABC):
@@ -101,10 +103,10 @@ class Bulb(Device, ABC):
         self,
         hue: int,
         saturation: int,
-        value: Optional[int] = None,
+        value: int | None = None,
         *,
-        transition: Optional[int] = None,
-    ) -> Dict:
+        transition: int | None = None,
+    ) -> dict:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -117,8 +119,8 @@ class Bulb(Device, ABC):
 
     @abstractmethod
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: Optional[int] = None
-    ) -> Dict:
+        self, temp: int, *, brightness=None, transition: int | None = None
+    ) -> dict:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -129,8 +131,8 @@ class Bulb(Device, ABC):
 
     @abstractmethod
     async def set_brightness(
-        self, brightness: int, *, transition: Optional[int] = None
-    ) -> Dict:
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
         """Set the brightness in percentage.
 
         Note, transition is not supported and will be ignored.
@@ -141,5 +143,5 @@ class Bulb(Device, ABC):
 
     @property
     @abstractmethod
-    def presets(self) -> List[BulbPreset]:
+    def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
