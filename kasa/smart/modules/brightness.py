@@ -44,3 +44,8 @@ class Brightness(SmartModule):
     async def set_brightness(self, brightness: int):
         """Set the brightness."""
         return await self.call("set_device_info", {"brightness": brightness})
+
+    @property
+    def is_available(self):
+        """Is the module available on this device."""
+        return "brightness" in self.data

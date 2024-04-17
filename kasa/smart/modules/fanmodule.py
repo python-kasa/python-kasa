@@ -67,3 +67,8 @@ class FanModule(SmartModule):
     async def set_sleep_mode(self, on: bool):
         """Set sleep mode."""
         return await self.call("set_device_info", {"fan_sleep_mode_on": on})
+
+    @property
+    def is_available(self):
+        """Is the module available on this device."""
+        return "fan_speed_level" in self.data

@@ -93,3 +93,8 @@ class SmartModule(Module):
     def supported_version(self) -> int:
         """Return version supported by the device."""
         return self._device._components[self.REQUIRED_COMPONENT]
+
+    @property
+    def is_available(self):
+        """Is the module available on this device."""
+        return True

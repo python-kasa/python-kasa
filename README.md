@@ -228,7 +228,7 @@ The following devices have been tested and confirmed as working. If your device 
 
 - **Plugs**: EP10, EP25<sup>\*</sup>, HS100<sup>\*\*</sup>, HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401
 - **Power Strips**: EP40, HS107, HS300, KP200, KP303, KP400
-- **Wall Switches**: ES20M, HS200, HS210, HS220, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230
+- **Wall Switches**: ES20M, HS200, HS210, HS220, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230, KS240<sup>\*</sup>
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB100, LB110, LB120, LB130
 - **Light Strips**: KL400L5, KL420L5, KL430
 

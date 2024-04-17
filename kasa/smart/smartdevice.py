@@ -160,6 +160,7 @@ class SmartDevice(Device):
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
+
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
                     "Found required %s, adding %s to modules.",
@@ -167,7 +168,8 @@ class SmartDevice(Device):
                     mod.__name__,
                 )
                 module = mod(self, mod.REQUIRED_COMPONENT)
-                self.modules[module.name] = module
+                if module.is_available:
+                    self.modules[module.name] = module
 
     async def _initialize_features(self):
         """Initialize device features."""
