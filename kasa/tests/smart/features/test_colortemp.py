@@ -13,7 +13,7 @@ async def test_colortemp_component(dev: SmartDevice):
     assert "color_temperature" in dev._components
 
     # Test getting the value
-    feature = dev.features["color_temperature"]
+    feature = dev.features["Color temperature"]
     assert isinstance(feature.value, int)
     assert isinstance(feature.minimum_value, int)
     assert isinstance(feature.maximum_value, int)

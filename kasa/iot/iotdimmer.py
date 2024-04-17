@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature, FeatureType
+from ..feature import StandardFeature
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
@@ -86,17 +86,7 @@ class IotDimmer(IotPlug):
         await super()._initialize_features()
 
         if "brightness" in self.sys_info:  # pragma: no branch
-            self._add_feature(
-                Feature(
-                    device=self,
-                    name="Brightness",
-                    attribute_getter="brightness",
-                    attribute_setter="set_brightness",
-                    minimum_value=1,
-                    maximum_value=100,
-                    type=FeatureType.Number,
-                )
-            )
+            self._add_feature(StandardFeature.brightness(self))
 
     @property  # type: ignore
     @requires_update

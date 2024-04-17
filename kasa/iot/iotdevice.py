@@ -23,7 +23,7 @@ from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
-from ..feature import Feature
+from ..feature import Feature, StandardFeature
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter
@@ -302,11 +302,16 @@ class IotDevice(Device):
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
 
     async def _initialize_features(self):
+        async def _set_state(value: bool):
+            return await (self.turn_on() if value else self.turn_off())
+
         self._add_feature(
-            Feature(
-                device=self, name="RSSI", attribute_getter="rssi", icon="mdi:signal"
+            StandardFeature.state(
+                self, attribute_getter="is_on", attribute_setter=_set_state
             )
         )
+
+        self._add_feature(StandardFeature.rssi(self, attribute_getter="rssi"))
         if "on_time" in self._sys_info:
             self._add_feature(
                 Feature(

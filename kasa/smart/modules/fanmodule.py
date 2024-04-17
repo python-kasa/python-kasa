@@ -1,4 +1,5 @@
 """Implementation of fan_control module."""
+
 from typing import TYPE_CHECKING, Dict
 
 from ...feature import Feature, FeatureType
@@ -37,7 +38,7 @@ class FanModule(SmartModule):
                 attribute_getter="sleep_mode",
                 attribute_setter="set_sleep_mode",
                 icon="mdi:sleep",
-                type=FeatureType.Switch
+                type=FeatureType.Switch,
             )
         )
 
