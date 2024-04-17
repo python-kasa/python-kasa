@@ -314,12 +314,11 @@ class SmartDevice(Device):
         return self._last_update
 
     def _update_internal_state(self, info):
-        """Update internal state.
+        """Update the internal info state.
 
-        This is used by the parent to push updates to its children
+        This is used by the parent to push updates to its children.
         """
-        # TODO: cleanup the _last_update, _info mess.
-        self._last_update = self._info = info
+        self._info = info
 
     async def _query_helper(
         self, method: str, params: Optional[Dict] = None, child_ids=None
