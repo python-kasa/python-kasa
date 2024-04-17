@@ -1,4 +1,5 @@
 """python-kasa cli tool."""
+
 import ast
 import asyncio
 import json
@@ -609,16 +610,7 @@ async def state(ctx, dev: Device):
     echo(f"\tMAC (rssi):   {dev.mac} ({dev.rssi})")
     echo(f"\tLocation:     {dev.location}")
 
-    echo("\n\t[bold]== Device specific information ==[/bold]")
-    for info_name, info_data in dev.state_information.items():
-        if isinstance(info_data, list):
-            echo(f"\t{info_name}:")
-            for item in info_data:
-                echo(f"\t\t{item}")
-        else:
-            echo(f"\t{info_name}: {info_data}")
-
-    echo("\n\t[bold]== Features == [/bold]")
+    echo("\n\t[bold]== Device-specific information == [/bold]")
     for id_, feature in dev.features.items():
         echo(f"\t{feature.name} ({id_}): {feature.value}")
 

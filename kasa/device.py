@@ -1,4 +1,5 @@
 """Module for Device base class."""
+
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -304,9 +305,9 @@ class Device(ABC):
         """Return all the internal state data."""
 
     @property
-    @abstractmethod
     def state_information(self) -> Dict[str, Any]:
-        """Return the key state information."""
+        """Return available features and their values."""
+        return {feat.name: feat.value for feat in self._features.values()}
 
     @property
     def features(self) -> Dict[str, Feature]:

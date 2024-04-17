@@ -1,4 +1,5 @@
 """Implementation of time module."""
+
 from datetime import datetime, timedelta, timezone
 from time import mktime
 from typing import TYPE_CHECKING, cast

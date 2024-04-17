@@ -1,4 +1,5 @@
 """Module for multi-socket devices (HS300, HS107, KP303, ..)."""
+
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -153,19 +154,6 @@ class IotStrip(IotDevice):
     async def set_led(self, state: bool):
         """Set the state of the led (night mode)."""
         await self._query_helper("system", "set_led_off", {"off": int(not state)})
-
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return strip-specific state information.
-
-        :return: Strip information dict, keys in user-presentable form.
-        """
-        return {
-            "LED state": self.led,
-            "Childs count": len(self.children),
-            "On since": self.on_since,
-        }
 
     async def current_consumption(self) -> float:
         """Get the current power consumption in watts."""

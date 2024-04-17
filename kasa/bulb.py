@@ -1,4 +1,5 @@
 """Module for Device base class."""
+
 from abc import ABC, abstractmethod
 from typing import Dict, List, NamedTuple, Optional
 

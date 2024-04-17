@@ -11,6 +11,7 @@ Stroetmann which is licensed under the Apache License, Version 2.0.
 You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
+
 import collections.abc
 import functools
 import inspect
@@ -614,12 +615,6 @@ class IotDevice(Device):
         on_time = self._sys_info["on_time"]
 
         return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
-
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return device-type specific, end-user friendly state information."""
-        raise NotImplementedError("Device subclass needs to implement this.")
 
     @property  # type: ignore
     @requires_update

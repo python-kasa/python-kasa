@@ -1,4 +1,5 @@
 """Module for a SMART device."""
+
 import base64
 import logging
 from datetime import datetime, timedelta
@@ -332,15 +333,6 @@ class SmartDevice(Device):
         ssid = self._info.get("ssid")
         ssid = base64.b64decode(ssid).decode() if ssid else "No SSID"
         return ssid
-
-    @property
-    def state_information(self) -> Dict[str, Any]:
-        """Return the key state information."""
-        return {
-            "overheated": self._info.get("overheated"),
-            "signal_level": self._info.get("signal_level"),
-            "SSID": self.ssid,
-        }
 
     @property
     def has_emeter(self) -> bool:

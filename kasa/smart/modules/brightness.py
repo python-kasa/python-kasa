@@ -1,4 +1,5 @@
 """Implementation of brightness module."""
+
 from typing import TYPE_CHECKING, Dict
 
 from ...feature import Feature, FeatureType

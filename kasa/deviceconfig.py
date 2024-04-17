@@ -1,4 +1,5 @@
 """Module for holding connection parameters."""
+
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum

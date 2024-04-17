@@ -1,4 +1,5 @@
 """Base implementation for SMART modules."""
+
 import logging
 from typing import TYPE_CHECKING, Dict, Type
 

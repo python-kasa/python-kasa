@@ -1,6 +1,7 @@
 """Module for smart plugs (HS100, HS110, ..)."""
+
 import logging
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -98,12 +99,6 @@ class IotPlug(IotDevice):
         return await self._query_helper(
             "system", "set_led_off", {"off": int(not state)}
         )
-
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return switch-specific state information."""
-        return {}
 
 
 class IotWallSwitch(IotPlug):

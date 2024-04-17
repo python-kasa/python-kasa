@@ -1,5 +1,6 @@
 """Module for tapo-branded smart bulbs (L5**)."""
-from typing import Any, Dict, List, Optional
+
+from typing import Dict, List, Optional
 
 from ..bulb import Bulb
 from ..exceptions import KasaException
@@ -237,25 +238,6 @@ class SmartBulb(SmartDevice, Bulb):
                 }
             }
         )
-
-    @property  # type: ignore
-    def state_information(self) -> Dict[str, Any]:
-        """Return bulb-specific state information."""
-        info: Dict[str, Any] = {
-            # TODO: re-enable after we don't inherit from smartbulb
-            # **super().state_information
-            "Is dimmable": self.is_dimmable,
-        }
-        if self.is_dimmable:
-            info["Brightness"] = self.brightness
-        if self.is_variable_color_temp:
-            info["Color temperature"] = self.color_temp
-            info["Valid temperature range"] = self.valid_temperature_range
-        if self.is_color:
-            info["HSV"] = self.hsv
-        info["Presets"] = self.presets
-
-        return info
 
     @property
     def presets(self) -> List[BulbPreset]:

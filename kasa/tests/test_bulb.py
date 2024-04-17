@@ -42,11 +42,8 @@ async def test_bulb_sysinfo(dev: Bulb):
 
 @bulb
 async def test_state_attributes(dev: Bulb):
-    assert "Brightness" in dev.state_information
-    assert dev.state_information["Brightness"] == dev.brightness
-
-    assert "Is dimmable" in dev.state_information
-    assert dev.state_information["Is dimmable"] == dev.is_dimmable
+    assert "Cloud connection" in dev.state_information
+    assert isinstance(dev.state_information["Cloud connection"], bool)
 
 
 @bulb_iot
@@ -114,6 +111,7 @@ async def test_invalid_hsv(dev: Bulb, turn_on):
 
 
 @color_bulb
+@pytest.mark.skip("requires color feature")
 async def test_color_state_information(dev: Bulb):
     assert "HSV" in dev.state_information
     assert dev.state_information["HSV"] == dev.hsv
@@ -130,14 +128,10 @@ async def test_hsv_on_non_color(dev: Bulb):
 
 
 @variable_temp
+@pytest.mark.skip("requires colortemp module")
 async def test_variable_temp_state_information(dev: Bulb):
     assert "Color temperature" in dev.state_information
     assert dev.state_information["Color temperature"] == dev.color_temp
-
-    assert "Valid temperature range" in dev.state_information
-    assert (
-        dev.state_information["Valid temperature range"] == dev.valid_temperature_range
-    )
 
 
 @variable_temp

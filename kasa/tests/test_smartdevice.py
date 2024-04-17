@@ -1,4 +1,5 @@
 """Tests for SMART devices."""
+
 import logging
 from typing import Any, Dict
 
@@ -99,6 +100,6 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     await dev.update()
     full_query: Dict[str, Any] = {}
     for mod in dev.modules.values():
-        full_query |= mod.query()
+        full_query = {**full_query, **mod.query()}
 
     query.assert_called_with(full_query)

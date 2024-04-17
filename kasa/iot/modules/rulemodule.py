@@ -1,4 +1,5 @@
 """Base implementation for all rule-based modules."""
+
 import logging
 from enum import Enum
 from typing import Dict, List, Optional

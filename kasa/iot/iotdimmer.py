@@ -1,4 +1,5 @@
 """Module for dimmers (currently only HS220)."""
+
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -232,12 +233,3 @@ class IotDimmer(IotPlug):
         """Whether the switch supports brightness changes."""
         sys_info = self.sys_info
         return "brightness" in sys_info
-
-    @property  # type: ignore
-    @requires_update
-    def state_information(self) -> Dict[str, Any]:
-        """Return switch-specific state information."""
-        info = super().state_information
-        info["Brightness"] = self.brightness
-
-        return info

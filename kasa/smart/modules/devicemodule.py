@@ -1,4 +1,5 @@
 """Implementation of device module."""
+
 from typing import Dict
 
 from ..smartmodule import SmartModule
