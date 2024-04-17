@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from kasa import DeviceType
 
 from .conftest import plug, plug_iot, plug_smart, switch_smart, wallswitch_iot

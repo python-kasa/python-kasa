@@ -12,8 +12,6 @@ Module-specific errors are raised as `KasaException` and are expected
 to be handled by the user of the library.
 """
 
-from __future__ import annotations
-
 from importlib.metadata import version
 from typing import TYPE_CHECKING
 from warnings import warn

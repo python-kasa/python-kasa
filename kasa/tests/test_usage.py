@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import datetime
 from unittest.mock import Mock
 

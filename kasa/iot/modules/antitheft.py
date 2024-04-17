@@ -1,7 +1,5 @@
 """Implementation of the antitheft module."""
 
-from __future__ import annotations
-
 from .rulemodule import RuleModule
 
 

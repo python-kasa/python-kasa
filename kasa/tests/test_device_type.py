@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from kasa.device_type import DeviceType
 
 
