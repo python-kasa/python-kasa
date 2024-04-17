@@ -25,9 +25,10 @@ heart_beat
 
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import asdict, dataclass
-from typing import List, Optional, Union
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ _LOGGER = logging.getLogger(__name__)
 class SmartRequest:
     """Class to represent a smart protocol request."""
 
-    def __init__(self, method_name: str, params: Optional["SmartRequestParams"] = None):
+    def __init__(self, method_name: str, params: SmartRequestParams | None = None):
         self.method_name = method_name
         if params:
             self.params = params.to_dict()
@@ -93,7 +94,7 @@ class SmartRequest:
     class LedStatusParams(SmartRequestParams):
         """LED Status params."""
 
-        led_rule: Optional[str] = None
+        led_rule: str | None = None
 
         @staticmethod
         def from_bool(state: bool):
@@ -105,42 +106,42 @@ class SmartRequest:
     class LightInfoParams(SmartRequestParams):
         """LightInfo params."""
 
-        brightness: Optional[int] = None
-        color_temp: Optional[int] = None
-        hue: Optional[int] = None
-        saturation: Optional[int] = None
+        brightness: int | None = None
+        color_temp: int | None = None
+        hue: int | None = None
+        saturation: int | None = None
 
     @dataclass
     class DynamicLightEffectParams(SmartRequestParams):
         """LightInfo params."""
 
         enable: bool
-        id: Optional[str] = None
+        id: str | None = None
 
     @staticmethod
     def get_raw_request(
-        method: str, params: Optional[SmartRequestParams] = None
-    ) -> "SmartRequest":
+        method: str, params: SmartRequestParams | None = None
+    ) -> SmartRequest:
         """Send a raw request to the device."""
         return SmartRequest(method, params)
 
     @staticmethod
-    def component_nego() -> "SmartRequest":
+    def component_nego() -> SmartRequest:
         """Get quick setup component info."""
         return SmartRequest("component_nego")
 
     @staticmethod
-    def get_device_info() -> "SmartRequest":
+    def get_device_info() -> SmartRequest:
         """Get device info."""
         return SmartRequest("get_device_info")
 
     @staticmethod
-    def get_device_usage() -> "SmartRequest":
+    def get_device_usage() -> SmartRequest:
         """Get device usage."""
         return SmartRequest("get_device_usage")
 
     @staticmethod
-    def device_info_list(ver_code) -> List["SmartRequest"]:
+    def device_info_list(ver_code) -> list[SmartRequest]:
         """Get device info list."""
         if ver_code == 1:
             return [SmartRequest.get_device_info()]
@@ -151,12 +152,12 @@ class SmartRequest:
         ]
 
     @staticmethod
-    def get_auto_update_info() -> "SmartRequest":
+    def get_auto_update_info() -> SmartRequest:
         """Get auto update info."""
         return SmartRequest("get_auto_update_info")
 
     @staticmethod
-    def firmware_info_list() -> List["SmartRequest"]:
+    def firmware_info_list() -> list[SmartRequest]:
         """Get info list."""
         return [
             SmartRequest.get_raw_request("get_fw_download_state"),
@@ -164,48 +165,48 @@ class SmartRequest:
         ]
 
     @staticmethod
-    def qs_component_nego() -> "SmartRequest":
+    def qs_component_nego() -> SmartRequest:
         """Get quick setup component info."""
         return SmartRequest("qs_component_nego")
 
     @staticmethod
-    def get_device_time() -> "SmartRequest":
+    def get_device_time() -> SmartRequest:
         """Get device time."""
         return SmartRequest("get_device_time")
 
     @staticmethod
-    def get_child_device_list() -> "SmartRequest":
+    def get_child_device_list() -> SmartRequest:
         """Get child device list."""
         return SmartRequest("get_child_device_list")
 
     @staticmethod
-    def get_child_device_component_list() -> "SmartRequest":
+    def get_child_device_component_list() -> SmartRequest:
         """Get child device component list."""
         return SmartRequest("get_child_device_component_list")
 
     @staticmethod
     def get_wireless_scan_info(
-        params: Optional[GetRulesParams] = None,
-    ) -> "SmartRequest":
+        params: GetRulesParams | None = None,
+    ) -> SmartRequest:
         """Get wireless scan info."""
         return SmartRequest(
             "get_wireless_scan_info", params or SmartRequest.GetRulesParams()
         )
 
     @staticmethod
-    def get_schedule_rules(params: Optional[GetRulesParams] = None) -> "SmartRequest":
+    def get_schedule_rules(params: GetRulesParams | None = None) -> SmartRequest:
         """Get schedule rules."""
         return SmartRequest(
             "get_schedule_rules", params or SmartRequest.GetScheduleRulesParams()
         )
 
     @staticmethod
-    def get_next_event(params: Optional[GetRulesParams] = None) -> "SmartRequest":
+    def get_next_event(params: GetRulesParams | None = None) -> SmartRequest:
         """Get next scheduled event."""
         return SmartRequest("get_next_event", params or SmartRequest.GetRulesParams())
 
     @staticmethod
-    def schedule_info_list() -> List["SmartRequest"]:
+    def schedule_info_list() -> list[SmartRequest]:
         """Get schedule info list."""
         return [
             SmartRequest.get_schedule_rules(),
@@ -213,38 +214,38 @@ class SmartRequest:
         ]
 
     @staticmethod
-    def get_countdown_rules(params: Optional[GetRulesParams] = None) -> "SmartRequest":
+    def get_countdown_rules(params: GetRulesParams | None = None) -> SmartRequest:
         """Get countdown rules."""
         return SmartRequest(
             "get_countdown_rules", params or SmartRequest.GetRulesParams()
         )
 
     @staticmethod
-    def get_antitheft_rules(params: Optional[GetRulesParams] = None) -> "SmartRequest":
+    def get_antitheft_rules(params: GetRulesParams | None = None) -> SmartRequest:
         """Get antitheft rules."""
         return SmartRequest(
             "get_antitheft_rules", params or SmartRequest.GetRulesParams()
         )
 
     @staticmethod
-    def get_led_info(params: Optional[LedStatusParams] = None) -> "SmartRequest":
+    def get_led_info(params: LedStatusParams | None = None) -> SmartRequest:
         """Get led info."""
         return SmartRequest("get_led_info", params or SmartRequest.LedStatusParams())
 
     @staticmethod
-    def get_auto_off_config(params: Optional[GetRulesParams] = None) -> "SmartRequest":
+    def get_auto_off_config(params: GetRulesParams | None = None) -> SmartRequest:
         """Get auto off config."""
         return SmartRequest(
             "get_auto_off_config", params or SmartRequest.GetRulesParams()
         )
 
     @staticmethod
-    def get_delay_action_info() -> "SmartRequest":
+    def get_delay_action_info() -> SmartRequest:
         """Get delay action info."""
         return SmartRequest("get_delay_action_info")
 
     @staticmethod
-    def auto_off_list() -> List["SmartRequest"]:
+    def auto_off_list() -> list[SmartRequest]:
         """Get energy usage."""
         return [
             SmartRequest.get_auto_off_config(),
@@ -252,12 +253,12 @@ class SmartRequest:
         ]
 
     @staticmethod
-    def get_energy_usage() -> "SmartRequest":
+    def get_energy_usage() -> SmartRequest:
         """Get energy usage."""
         return SmartRequest("get_energy_usage")
 
     @staticmethod
-    def energy_monitoring_list() -> List["SmartRequest"]:
+    def energy_monitoring_list() -> list[SmartRequest]:
         """Get energy usage."""
         return [
             SmartRequest("get_energy_usage"),
@@ -265,12 +266,12 @@ class SmartRequest:
         ]
 
     @staticmethod
-    def get_current_power() -> "SmartRequest":
+    def get_current_power() -> SmartRequest:
         """Get current power."""
         return SmartRequest("get_current_power")
 
     @staticmethod
-    def power_protection_list() -> List["SmartRequest"]:
+    def power_protection_list() -> list[SmartRequest]:
         """Get power protection info list."""
         return [
             SmartRequest.get_current_power(),
@@ -279,45 +280,45 @@ class SmartRequest:
         ]
 
     @staticmethod
-    def get_preset_rules(params: Optional[GetRulesParams] = None) -> "SmartRequest":
+    def get_preset_rules(params: GetRulesParams | None = None) -> SmartRequest:
         """Get preset rules."""
         return SmartRequest("get_preset_rules", params or SmartRequest.GetRulesParams())
 
     @staticmethod
-    def get_auto_light_info() -> "SmartRequest":
+    def get_auto_light_info() -> SmartRequest:
         """Get auto light info."""
         return SmartRequest("get_auto_light_info")
 
     @staticmethod
     def get_dynamic_light_effect_rules(
-        params: Optional[GetRulesParams] = None,
-    ) -> "SmartRequest":
+        params: GetRulesParams | None = None,
+    ) -> SmartRequest:
         """Get dynamic light effect rules."""
         return SmartRequest(
             "get_dynamic_light_effect_rules", params or SmartRequest.GetRulesParams()
         )
 
     @staticmethod
-    def set_device_on(params: DeviceOnParams) -> "SmartRequest":
+    def set_device_on(params: DeviceOnParams) -> SmartRequest:
         """Set device on state."""
         return SmartRequest("set_device_info", params)
 
     @staticmethod
-    def set_light_info(params: LightInfoParams) -> "SmartRequest":
+    def set_light_info(params: LightInfoParams) -> SmartRequest:
         """Set color temperature."""
         return SmartRequest("set_device_info", params)
 
     @staticmethod
     def set_dynamic_light_effect_rule_enable(
         params: DynamicLightEffectParams,
-    ) -> "SmartRequest":
+    ) -> SmartRequest:
         """Enable dynamic light effect rule."""
         return SmartRequest("set_dynamic_light_effect_rule_enable", params)
 
     @staticmethod
-    def get_component_info_requests(component_nego_response) -> List["SmartRequest"]:
+    def get_component_info_requests(component_nego_response) -> list[SmartRequest]:
         """Get a list of requests based on the component info response."""
-        request_list: List["SmartRequest"] = []
+        request_list: list[SmartRequest] = []
         for component in component_nego_response["component_list"]:
             if (
                 requests := get_component_requests(
@@ -329,7 +330,7 @@ class SmartRequest:
 
     @staticmethod
     def _create_request_dict(
-        smart_request: Union["SmartRequest", List["SmartRequest"]],
+        smart_request: SmartRequest | list[SmartRequest],
     ) -> dict:
         """Create request dict to be passed to SmartProtocol.query()."""
         if isinstance(smart_request, list):

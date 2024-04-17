@@ -1,8 +1,10 @@
 """Generic interface for defining device features."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from .device import Device
@@ -23,17 +25,17 @@ class Feature:
     """Feature defines a generic interface for device features."""
 
     #: Device instance required for getting and setting values
-    device: "Device"
+    device: Device
     #: User-friendly short description
     name: str
     #: Name of the property that allows accessing the value
-    attribute_getter: Union[str, Callable]
+    attribute_getter: str | Callable
     #: Name of the method that allows changing the value
-    attribute_setter: Optional[str] = None
+    attribute_setter: str | None = None
     #: Container storing the data, this overrides 'device' for getters
     container: Any = None
     #: Icon suggestion
-    icon: Optional[str] = None
+    icon: str | None = None
     #: Type of the feature
     type: FeatureType = FeatureType.Sensor
 
@@ -44,7 +46,7 @@ class Feature:
     maximum_value: int = 2**16  # Arbitrary max
     #: Attribute containing the name of the range getter property.
     #: If set, this property will be used to set *minimum_value* and *maximum_value*.
-    range_getter: Optional[str] = None
+    range_getter: str | None = None
 
     def __post_init__(self):
         """Handle late-binding of members."""

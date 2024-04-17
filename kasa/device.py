@@ -1,10 +1,12 @@
 """Module for Device base class."""
 
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+from typing import Any, Mapping, Sequence
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -24,13 +26,13 @@ class WifiNetwork:
     ssid: str
     key_type: int
     # These are available only on softaponboarding
-    cipher_type: Optional[int] = None
-    bssid: Optional[str] = None
-    channel: Optional[int] = None
-    rssi: Optional[int] = None
+    cipher_type: int | None = None
+    bssid: str | None = None
+    channel: int | None = None
+    rssi: int | None = None
 
     # For SMART devices
-    signal_level: Optional[int] = None
+    signal_level: int | None = None
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,8 +50,8 @@ class Device(ABC):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         """Create a new Device instance.
 
@@ -68,19 +70,19 @@ class Device(ABC):
         #       checks in accessors. the @updated_required decorator does not ensure
         #       mypy that these are not accessed incorrectly.
         self._last_update: Any = None
-        self._discovery_info: Optional[Dict[str, Any]] = None
+        self._discovery_info: dict[str, Any] | None = None
 
-        self.modules: Dict[str, Any] = {}
-        self._features: Dict[str, Feature] = {}
-        self._parent: Optional["Device"] = None
-        self._children: Mapping[str, "Device"] = {}
+        self.modules: dict[str, Any] = {}
+        self._features: dict[str, Feature] = {}
+        self._parent: Device | None = None
+        self._children: Mapping[str, Device] = {}
 
     @staticmethod
     async def connect(
         *,
-        host: Optional[str] = None,
-        config: Optional[DeviceConfig] = None,
-    ) -> "Device":
+        host: str | None = None,
+        config: DeviceConfig | None = None,
+    ) -> Device:
         """Connect to a single device by the given hostname or device configuration.
 
         This method avoids the UDP based discovery process and
@@ -120,11 +122,11 @@ class Device(ABC):
         return not self.is_on
 
     @abstractmethod
-    async def turn_on(self, **kwargs) -> Optional[Dict]:
+    async def turn_on(self, **kwargs) -> dict | None:
         """Turn on the device."""
 
     @abstractmethod
-    async def turn_off(self, **kwargs) -> Optional[Dict]:
+    async def turn_off(self, **kwargs) -> dict | None:
         """Turn off the device."""
 
     @property
@@ -147,12 +149,12 @@ class Device(ABC):
         return self.protocol._transport._port
 
     @property
-    def credentials(self) -> Optional[Credentials]:
+    def credentials(self) -> Credentials | None:
         """The device credentials."""
         return self.protocol._transport._credentials
 
     @property
-    def credentials_hash(self) -> Optional[str]:
+    def credentials_hash(self) -> str | None:
         """The protocol specific hash of the credentials the device is using."""
         return self.protocol._transport.credentials_hash
 
@@ -177,25 +179,25 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def alias(self) -> Optional[str]:
+    def alias(self) -> str | None:
         """Returns the device alias or nickname."""
 
-    async def _raw_query(self, request: Union[str, Dict]) -> Any:
+    async def _raw_query(self, request: str | dict) -> Any:
         """Send a raw query to the device."""
         return await self.protocol.query(request=request)
 
     @property
-    def children(self) -> Sequence["Device"]:
+    def children(self) -> Sequence[Device]:
         """Returns the child devices."""
         return list(self._children.values())
 
-    def get_child_device(self, id_: str) -> "Device":
+    def get_child_device(self, id_: str) -> Device:
         """Return child device by its ID."""
         return self._children[id_]
 
     @property
     @abstractmethod
-    def sys_info(self) -> Dict[str, Any]:
+    def sys_info(self) -> dict[str, Any]:
         """Returns the device info."""
 
     @property
@@ -248,7 +250,7 @@ class Device(ABC):
         """Return True if the device supports color changes."""
         return False
 
-    def get_plug_by_name(self, name: str) -> "Device":
+    def get_plug_by_name(self, name: str) -> Device:
         """Return child device for the given name."""
         for p in self.children:
             if p.alias == name:
@@ -256,7 +258,7 @@ class Device(ABC):
 
         raise KasaException(f"Device has no child with {name}")
 
-    def get_plug_by_index(self, index: int) -> "Device":
+    def get_plug_by_index(self, index: int) -> Device:
         """Return child device for the given index."""
         if index + 1 > len(self.children) or index < 0:
             raise KasaException(
@@ -271,22 +273,22 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def timezone(self) -> Dict:
+    def timezone(self) -> dict:
         """Return the timezone and time_difference."""
 
     @property
     @abstractmethod
-    def hw_info(self) -> Dict:
+    def hw_info(self) -> dict:
         """Return hardware info for the device."""
 
     @property
     @abstractmethod
-    def location(self) -> Dict:
+    def location(self) -> dict:
         """Return the device location."""
 
     @property
     @abstractmethod
-    def rssi(self) -> Optional[int]:
+    def rssi(self) -> int | None:
         """Return the rssi."""
 
     @property
@@ -305,12 +307,12 @@ class Device(ABC):
         """Return all the internal state data."""
 
     @property
-    def state_information(self) -> Dict[str, Any]:
+    def state_information(self) -> dict[str, Any]:
         """Return available features and their values."""
         return {feat.name: feat.value for feat in self._features.values()}
 
     @property
-    def features(self) -> Dict[str, Feature]:
+    def features(self) -> dict[str, Feature]:
         """Return the list of supported features."""
         return self._features
 
@@ -328,7 +330,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def on_since(self) -> Optional[datetime]:
+    def on_since(self) -> datetime | None:
         """Return the time that the device was turned on or None if turned off."""
 
     @abstractmethod
@@ -342,18 +344,18 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def emeter_this_month(self) -> Optional[float]:
+    def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
 
     @property
     @abstractmethod
-    def emeter_today(self) -> Union[Optional[float], Any]:
+    def emeter_today(self) -> float | None | Any:
         """Get the emeter value for today."""
         # Return type of Any ensures consumers being shielded from the return
         # type by @update_required are not affected.
 
     @abstractmethod
-    async def wifi_scan(self) -> List[WifiNetwork]:
+    async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""
 
     @abstractmethod

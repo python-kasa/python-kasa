@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from itertools import chain
-from typing import Dict, List, Set
 
 import pytest
 
@@ -128,10 +129,10 @@ ALL_DEVICES_SMART = (
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
-IP_MODEL_CACHE: Dict[str, str] = {}
+IP_MODEL_CACHE: dict[str, str] = {}
 
 
-def parametrize_combine(parametrized: List[pytest.MarkDecorator]):
+def parametrize_combine(parametrized: list[pytest.MarkDecorator]):
     """Combine multiple pytest parametrize dev marks into one set of fixtures."""
     fixtures = set()
     for param in parametrized:
@@ -291,7 +292,7 @@ def check_categories():
         + hubs_smart.args[1]
         + sensors_smart.args[1]
     )
-    diffs: Set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
+    diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
         print(diffs)
         for diff in diffs:

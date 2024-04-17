@@ -1,5 +1,7 @@
 """Provides the current time and timezone information."""
 
+from __future__ import annotations
+
 from datetime import datetime
 
 from ...exceptions import KasaException

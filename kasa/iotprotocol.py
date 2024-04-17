@@ -1,8 +1,9 @@
 """Module for the IOT legacy IOT KASA protocol."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Dict, Optional, Union
 
 from .deviceconfig import DeviceConfig
 from .exceptions import (
@@ -34,7 +35,7 @@ class IotProtocol(BaseProtocol):
 
         self._query_lock = asyncio.Lock()
 
-    async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
+    async def query(self, request: str | dict, retry_count: int = 3) -> dict:
         """Query the device retrying for retry_count on failure."""
         if isinstance(request, dict):
             request = json_dumps(request)
@@ -43,7 +44,7 @@ class IotProtocol(BaseProtocol):
         async with self._query_lock:
             return await self._query(request, retry_count)
 
-    async def _query(self, request: str, retry_count: int = 3) -> Dict:
+    async def _query(self, request: str, retry_count: int = 3) -> dict:
         for retry in range(retry_count + 1):
             try:
                 return await self._execute_query(request, retry)
@@ -83,7 +84,7 @@ class IotProtocol(BaseProtocol):
         # make mypy happy, this should never be reached..
         raise KasaException("Query reached somehow to unreachable")
 
-    async def _execute_query(self, request: str, retry_count: int) -> Dict:
+    async def _execute_query(self, request: str, retry_count: int) -> dict:
         return await self._transport.send(request)
 
     async def close(self) -> None:
@@ -94,11 +95,11 @@ class IotProtocol(BaseProtocol):
 class _deprecated_TPLinkSmartHomeProtocol(IotProtocol):
     def __init__(
         self,
-        host: Optional[str] = None,
+        host: str | None = None,
         *,
-        port: Optional[int] = None,
-        timeout: Optional[int] = None,
-        transport: Optional[BaseTransport] = None,
+        port: int | None = None,
+        timeout: int | None = None,
+        transport: BaseTransport | None = None,
     ) -> None:
         """Create a protocol object."""
         if not host and not transport:

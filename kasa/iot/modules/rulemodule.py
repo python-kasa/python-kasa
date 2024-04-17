@@ -1,5 +1,7 @@
 """Base implementation for all rule-based modules."""
 
+from __future__ import annotations
+
 import logging
 from enum import Enum
 from typing import Dict, List, Optional
@@ -37,20 +39,20 @@ class Rule(BaseModel):
     id: str
     name: str
     enable: bool
-    wday: List[int]
+    wday: List[int]  # noqa: UP006
     repeat: bool
 
     # start action
-    sact: Optional[Action]
+    sact: Optional[Action]  # noqa: UP007
     stime_opt: TimeOption
     smin: int
 
-    eact: Optional[Action]
+    eact: Optional[Action]  # noqa: UP007
     etime_opt: TimeOption
     emin: int
 
     # Only on bulbs
-    s_light: Optional[Dict]
+    s_light: Optional[Dict]  # noqa: UP006,UP007
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -65,7 +67,7 @@ class RuleModule(IotModule):
         return merge(q, self.query_for_command("get_next_action"))
 
     @property
-    def rules(self) -> List[Rule]:
+    def rules(self) -> list[Rule]:
         """Return the list of rules for the service."""
         try:
             return [

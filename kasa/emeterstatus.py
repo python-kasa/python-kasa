@@ -1,7 +1,8 @@
 """Module for emeter container."""
 
+from __future__ import annotations
+
 import logging
-from typing import Optional
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class EmeterStatus(dict):
     """
 
     @property
-    def voltage(self) -> Optional[float]:
+    def voltage(self) -> float | None:
         """Return voltage in V."""
         try:
             return self["voltage"]
@@ -25,7 +26,7 @@ class EmeterStatus(dict):
             return None
 
     @property
-    def power(self) -> Optional[float]:
+    def power(self) -> float | None:
         """Return power in W."""
         try:
             return self["power"]
@@ -33,7 +34,7 @@ class EmeterStatus(dict):
             return None
 
     @property
-    def current(self) -> Optional[float]:
+    def current(self) -> float | None:
         """Return current in A."""
         try:
             return self["current"]
@@ -41,7 +42,7 @@ class EmeterStatus(dict):
             return None
 
     @property
-    def total(self) -> Optional[float]:
+    def total(self) -> float | None:
         """Return total in kWh."""
         try:
             return self["total"]

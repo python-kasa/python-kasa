@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from json import dumps as json_dumps
 from json import loads as json_loads
 

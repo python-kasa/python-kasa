@@ -1,5 +1,8 @@
 """Implementation of fan_control module."""
-from typing import TYPE_CHECKING, Dict
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
@@ -13,7 +16,7 @@ class FanModule(SmartModule):
 
     REQUIRED_COMPONENT = "fan_control"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
 
         self._add_feature(
@@ -37,11 +40,11 @@ class FanModule(SmartModule):
                 attribute_getter="sleep_mode",
                 attribute_setter="set_sleep_mode",
                 icon="mdi:sleep",
-                type=FeatureType.Switch
+                type=FeatureType.Switch,
             )
         )
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {}
 

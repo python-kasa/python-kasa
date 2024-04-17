@@ -1,7 +1,9 @@
 """Tests for SMART devices."""
 
+from __future__ import annotations
+
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
@@ -98,7 +100,7 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     assert dev.modules
 
     await dev.update()
-    full_query: Dict[str, Any] = {}
+    full_query: dict[str, Any] = {}
     for mod in dev.modules.values():
         full_query = {**full_query, **mod.query()}
 

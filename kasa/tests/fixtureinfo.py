@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import glob
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Set
+from typing import NamedTuple
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
@@ -12,7 +14,7 @@ from kasa.smart.smartdevice import SmartDevice
 class FixtureInfo(NamedTuple):
     name: str
     protocol: str
-    data: Dict
+    data: dict
 
 
 FixtureInfo.__hash__ = lambda self: hash((self.name, self.protocol))  # type: ignore[attr-defined, method-assign]
@@ -55,7 +57,7 @@ def idgenerator(paramtuple: FixtureInfo):
         return None
 
 
-def get_fixture_info() -> List[FixtureInfo]:
+def get_fixture_info() -> list[FixtureInfo]:
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_data = []
     for file, protocol in SUPPORTED_DEVICES:
@@ -77,17 +79,17 @@ def get_fixture_info() -> List[FixtureInfo]:
     return fixture_data
 
 
-FIXTURE_DATA: List[FixtureInfo] = get_fixture_info()
+FIXTURE_DATA: list[FixtureInfo] = get_fixture_info()
 
 
 def filter_fixtures(
     desc,
     *,
-    data_root_filter: Optional[str] = None,
-    protocol_filter: Optional[Set[str]] = None,
-    model_filter: Optional[Set[str]] = None,
-    component_filter: Optional[str] = None,
-    device_type_filter: Optional[List[DeviceType]] = None,
+    data_root_filter: str | None = None,
+    protocol_filter: set[str] | None = None,
+    model_filter: set[str] | None = None,
+    component_filter: str | None = None,
+    device_type_filter: list[DeviceType] | None = None,
 ):
     """Filter the fixtures based on supplied parameters.
 

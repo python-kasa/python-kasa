@@ -1,5 +1,7 @@
 """Module for individual feature modules."""
 
+from __future__ import annotations
+
 from .ambientlight import AmbientLight
 from .antitheft import Antitheft
 from .cloud import Cloud

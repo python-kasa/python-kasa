@@ -1,5 +1,7 @@
 """Tests for all devices."""
 
+from __future__ import annotations
+
 import importlib
 import inspect
 import pkgutil

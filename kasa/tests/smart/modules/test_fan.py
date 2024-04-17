@@ -14,7 +14,11 @@ async def test_fan_speed(dev: SmartDevice, mocker: MockerFixture):
     """Test fan speed feature."""
     fan: FanModule = dev.modules["FanModule"]
     level_feature = fan._module_features["fan_speed_level"]
-    assert level_feature.minimum_value <= level_feature.value <= level_feature.maximum_value
+    assert (
+        level_feature.minimum_value
+        <= level_feature.value
+        <= level_feature.maximum_value
+    )
 
     call = mocker.spy(fan, "call")
     await fan.set_fan_speed_level(3)

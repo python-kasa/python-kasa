@@ -1,7 +1,9 @@
 """Module for dimmers (currently only HS220)."""
 
+from __future__ import annotations
+
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -72,8 +74,8 @@ class IotDimmer(IotPlug):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Dimmer
@@ -112,9 +114,7 @@ class IotDimmer(IotPlug):
         return int(sys_info["brightness"])
 
     @requires_update
-    async def set_brightness(
-        self, brightness: int, *, transition: Optional[int] = None
-    ):
+    async def set_brightness(self, brightness: int, *, transition: int | None = None):
         """Set the new dimmer brightness level in percentage.
 
         :param int transition: transition duration in milliseconds.
@@ -143,7 +143,7 @@ class IotDimmer(IotPlug):
             self.DIMMER_SERVICE, "set_brightness", {"brightness": brightness}
         )
 
-    async def turn_off(self, *, transition: Optional[int] = None, **kwargs):
+    async def turn_off(self, *, transition: int | None = None, **kwargs):
         """Turn the bulb off.
 
         :param int transition: transition duration in milliseconds.
@@ -154,7 +154,7 @@ class IotDimmer(IotPlug):
         return await super().turn_off()
 
     @requires_update
-    async def turn_on(self, *, transition: Optional[int] = None, **kwargs):
+    async def turn_on(self, *, transition: int | None = None, **kwargs):
         """Turn the bulb on.
 
         :param int transition: transition duration in milliseconds.
@@ -202,7 +202,7 @@ class IotDimmer(IotPlug):
 
     @requires_update
     async def set_button_action(
-        self, action_type: ActionType, action: ButtonAction, index: Optional[int] = None
+        self, action_type: ActionType, action: ButtonAction, index: int | None = None
     ):
         """Set action to perform on button click/hold.
 
@@ -213,7 +213,7 @@ class IotDimmer(IotPlug):
         """
         action_type_setter = f"set_{action_type}"
 
-        payload: Dict[str, Any] = {"mode": str(action)}
+        payload: dict[str, Any] = {"mode": str(action)}
         if index is not None:
             payload["index"] = index
 

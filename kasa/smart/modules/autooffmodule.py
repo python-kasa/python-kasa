@@ -1,7 +1,9 @@
 """Implementation of auto off module."""
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
 
 from ...feature import Feature
 from ..smartmodule import SmartModule
@@ -16,7 +18,7 @@ class AutoOffModule(SmartModule):
     REQUIRED_COMPONENT = "auto_off"
     QUERY_GETTER_NAME = "get_auto_off_config"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -42,7 +44,7 @@ class AutoOffModule(SmartModule):
             )
         )
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {self.QUERY_GETTER_NAME: {"start_index": 0}}
 
@@ -75,7 +77,7 @@ class AutoOffModule(SmartModule):
         return self._device.sys_info["auto_off_status"] == "on"
 
     @property
-    def auto_off_at(self) -> Optional[datetime]:
+    def auto_off_at(self) -> datetime | None:
         """Return when the device will be turned off automatically."""
         if not self.is_timer_active:
             return None

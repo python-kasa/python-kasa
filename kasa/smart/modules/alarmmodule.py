@@ -1,6 +1,8 @@
 """Implementation of alarm module."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
@@ -14,14 +16,14 @@ class AlarmModule(SmartModule):
 
     REQUIRED_COMPONENT = "alarm"
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {
             "get_alarm_configure": None,
             "get_support_alarm_type_list": None,  # This should be needed only once
         }
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -59,7 +61,7 @@ class AlarmModule(SmartModule):
         return self.data["get_alarm_configure"]["type"]
 
     @property
-    def alarm_sounds(self) -> List[str]:
+    def alarm_sounds(self) -> list[str]:
         """Return list of available alarm sounds."""
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
@@ -74,7 +76,7 @@ class AlarmModule(SmartModule):
         return self._device.sys_info["in_alarm"]
 
     @property
-    def source(self) -> Optional[str]:
+    def source(self) -> str | None:
         """Return the alarm cause."""
         src = self._device.sys_info["in_alarm_source"]
         return src if src else None

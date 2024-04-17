@@ -1,6 +1,8 @@
 """Implementation of firmware module."""
 
-from typing import TYPE_CHECKING, Dict, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 from ...exceptions import SmartErrorCode
 from ...feature import Feature, FeatureType
@@ -20,11 +22,11 @@ class UpdateInfo(BaseModel):
     """Update info status object."""
 
     status: int = Field(alias="type")
-    fw_ver: Optional[str] = None
-    release_date: Optional[date] = None
-    release_notes: Optional[str] = Field(alias="release_note", default=None)
-    fw_size: Optional[int] = None
-    oem_id: Optional[str] = None
+    fw_ver: Optional[str] = None  # noqa: UP007
+    release_date: Optional[date] = None  # noqa: UP007
+    release_notes: Optional[str] = Field(alias="release_note", default=None)  # noqa: UP007
+    fw_size: Optional[int] = None  # noqa: UP007
+    oem_id: Optional[str] = None  # noqa: UP007
     needs_upgrade: bool = Field(alias="need_to_upgrade")
 
     @validator("release_date", pre=True)
@@ -47,7 +49,7 @@ class Firmware(SmartModule):
 
     REQUIRED_COMPONENT = "firmware"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         if self.supported_version > 1:
             self._add_feature(
@@ -70,7 +72,7 @@ class Firmware(SmartModule):
             )
         )
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         req = {
             "get_latest_fw": None,

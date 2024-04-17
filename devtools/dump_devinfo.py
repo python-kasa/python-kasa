@@ -8,6 +8,8 @@ Executing this script will several modules and methods one by one,
 and finally execute a query to query all of them at once.
 """
 
+from __future__ import annotations
+
 import base64
 import collections.abc
 import json
@@ -17,7 +19,6 @@ import traceback
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from pprint import pprint
-from typing import Dict, List, Union
 
 import asyncclick as click
 
@@ -143,7 +144,7 @@ def default_to_regular(d):
 async def handle_device(basedir, autosave, device: Device, batch_size: int):
     """Create a fixture for a single device instance."""
     if isinstance(device, SmartDevice):
-        fixture_results: List[FixtureResult] = await get_smart_fixtures(
+        fixture_results: list[FixtureResult] = await get_smart_fixtures(
             device, batch_size
         )
     else:
@@ -344,12 +345,12 @@ def _echo_error(msg: str):
 
 async def _make_requests_or_exit(
     device: SmartDevice,
-    requests: List[SmartRequest],
+    requests: list[SmartRequest],
     name: str,
     batch_size: int,
     *,
     child_device_id: str,
-) -> Dict[str, Dict]:
+) -> dict[str, dict]:
     final = {}
     protocol = (
         device.protocol
@@ -362,7 +363,7 @@ async def _make_requests_or_exit(
         for i in range(0, end, step):
             x = i
             requests_step = requests[x : x + step]
-            request: Union[List[SmartRequest], SmartRequest] = (
+            request: list[SmartRequest] | SmartRequest = (
                 requests_step[0] if len(requests_step) == 1 else requests_step
             )
             responses = await protocol.query(SmartRequest._create_request_dict(request))
@@ -586,7 +587,7 @@ async def get_smart_fixtures(device: SmartDevice, batch_size: int):
         finally:
             await device.protocol.close()
 
-    device_requests: Dict[str, List[SmartRequest]] = {}
+    device_requests: dict[str, list[SmartRequest]] = {}
     for success in successes:
         device_request = device_requests.setdefault(success.child_device_id, [])
         device_request.append(success.request)

@@ -1,6 +1,6 @@
 """Module for tapo-branded smart bulbs (L5**)."""
 
-from typing import Dict, List, Optional
+from __future__ import annotations
 
 from ..bulb import Bulb
 from ..exceptions import KasaException
@@ -56,7 +56,7 @@ class SmartBulb(SmartDevice, Bulb):
         return "dynamic_light_effect_enable" in self._info
 
     @property
-    def effect(self) -> Dict:
+    def effect(self) -> dict:
         """Return effect state.
 
         This follows the format used by SmartLightStrip.
@@ -80,7 +80,7 @@ class SmartBulb(SmartDevice, Bulb):
         return data
 
     @property
-    def effect_list(self) -> Optional[List[str]]:
+    def effect_list(self) -> list[str] | None:
         """Return built-in effects list.
 
         Example:
@@ -125,10 +125,10 @@ class SmartBulb(SmartDevice, Bulb):
         self,
         hue: int,
         saturation: int,
-        value: Optional[int] = None,
+        value: int | None = None,
         *,
-        transition: Optional[int] = None,
-    ) -> Dict:
+        transition: int | None = None,
+    ) -> dict:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -164,8 +164,8 @@ class SmartBulb(SmartDevice, Bulb):
         return await self.protocol.query({"set_device_info": {**request_payload}})
 
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: Optional[int] = None
-    ) -> Dict:
+        self, temp: int, *, brightness=None, transition: int | None = None
+    ) -> dict:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -189,8 +189,8 @@ class SmartBulb(SmartDevice, Bulb):
         return await self.protocol.query({"set_device_info": {"color_temp": temp}})
 
     async def set_brightness(
-        self, brightness: int, *, transition: Optional[int] = None
-    ) -> Dict:
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
         """Set the brightness in percentage.
 
         Note, transition is not supported and will be ignored.
@@ -224,8 +224,8 @@ class SmartBulb(SmartDevice, Bulb):
         self,
         effect: str,
         *,
-        brightness: Optional[int] = None,
-        transition: Optional[int] = None,
+        brightness: int | None = None,
+        transition: int | None = None,
     ) -> None:
         """Set an effect on the device."""
         raise NotImplementedError()
@@ -240,6 +240,6 @@ class SmartBulb(SmartDevice, Bulb):
         )
 
     @property
-    def presets(self) -> List[BulbPreset]:
+    def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
         return []

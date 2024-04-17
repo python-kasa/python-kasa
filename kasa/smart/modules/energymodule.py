@@ -1,6 +1,8 @@
 """Implementation of energy monitoring module."""
 
-from typing import TYPE_CHECKING, Dict, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ...emeterstatus import EmeterStatus
 from ...feature import Feature
@@ -15,7 +17,7 @@ class EnergyModule(SmartModule):
 
     REQUIRED_COMPONENT = "energy_monitoring"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -42,7 +44,7 @@ class EnergyModule(SmartModule):
             )
         )  # Wh or kWH?
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         req = {
             "get_energy_usage": None,
@@ -77,15 +79,15 @@ class EnergyModule(SmartModule):
         )
 
     @property
-    def emeter_this_month(self) -> Optional[float]:
+    def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
         return self._convert_energy_data(self.energy.get("month_energy"), 1 / 1000)
 
     @property
-    def emeter_today(self) -> Optional[float]:
+    def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
         return self._convert_energy_data(self.energy.get("today_energy"), 1 / 1000)
 
-    def _convert_energy_data(self, data, scale) -> Optional[float]:
+    def _convert_energy_data(self, data, scale) -> float | None:
         """Return adjusted emeter information."""
         return data if not data else data * scale

@@ -12,12 +12,14 @@ You may obtain a copy of the license at
 http://www.apache.org/licenses/LICENSE-2.0
 """
 
+from __future__ import annotations
+
 import collections.abc
 import functools
 import inspect
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set
+from typing import Any, Mapping, Sequence
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -66,7 +68,7 @@ def requires_update(f):
 
 
 @functools.lru_cache
-def _parse_features(features: str) -> Set[str]:
+def _parse_features(features: str) -> set[str]:
     """Parse features string."""
     return set(features.split(":"))
 
@@ -177,19 +179,19 @@ class IotDevice(Device):
         self,
         host: str,
         *,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[BaseProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         """Create a new IotDevice instance."""
         super().__init__(host=host, config=config, protocol=protocol)
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
-        self._supported_modules: Optional[Dict[str, IotModule]] = None
-        self._legacy_features: Set[str] = set()
-        self._children: Mapping[str, "IotDevice"] = {}
+        self._supported_modules: dict[str, IotModule] | None = None
+        self._legacy_features: set[str] = set()
+        self._children: Mapping[str, IotDevice] = {}
 
     @property
-    def children(self) -> Sequence["IotDevice"]:
+    def children(self) -> Sequence[IotDevice]:
         """Return list of children."""
         return list(self._children.values())
 
@@ -203,9 +205,9 @@ class IotDevice(Device):
         self.modules[name] = module
 
     def _create_request(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ):
-        request: Dict[str, Any] = {target: {cmd: arg}}
+        request: dict[str, Any] = {target: {cmd: arg}}
         if child_ids is not None:
             request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}
 
@@ -219,7 +221,7 @@ class IotDevice(Device):
             raise KasaException("update() required prior accessing emeter")
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: Optional[Dict] = None, child_ids=None
+        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ) -> Any:
         """Query device, return results or raise an exception.
 
@@ -256,13 +258,13 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def features(self) -> Dict[str, Feature]:
+    def features(self) -> dict[str, Feature]:
         """Return a set of features that the device supports."""
         return self._features
 
     @property  # type: ignore
     @requires_update
-    def supported_modules(self) -> List[str]:
+    def supported_modules(self) -> list[str]:
         """Return a set of modules supported by the device."""
         # TODO: this should rather be called `features`, but we don't want to break
         #       the API now. Maybe just deprecate it and point the users to use this?
@@ -274,7 +276,7 @@ class IotDevice(Device):
         """Return True if device has an energy meter."""
         return "ENE" in self._legacy_features
 
-    async def get_sys_info(self) -> Dict[str, Any]:
+    async def get_sys_info(self) -> dict[str, Any]:
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
 
@@ -363,12 +365,12 @@ class IotDevice(Device):
         # responses on top of it so we remember
         # which modules are not supported, otherwise
         # every other update will query for them
-        update: Dict = self._last_update.copy() if self._last_update else {}
+        update: dict = self._last_update.copy() if self._last_update else {}
         for response in responses:
             update = {**update, **response}
         self._last_update = update
 
-    def update_from_discover_info(self, info: Dict[str, Any]) -> None:
+    def update_from_discover_info(self, info: dict[str, Any]) -> None:
         """Update state from info from the discover call."""
         self._discovery_info = info
         if "system" in info and (sys_info := info["system"].get("get_sysinfo")):
@@ -380,7 +382,7 @@ class IotDevice(Device):
             # by the requires_update decorator
             self._set_sys_info(info)
 
-    def _set_sys_info(self, sys_info: Dict[str, Any]) -> None:
+    def _set_sys_info(self, sys_info: dict[str, Any]) -> None:
         """Set sys_info."""
         self._sys_info = sys_info
         if features := sys_info.get("feature"):
@@ -388,7 +390,7 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def sys_info(self) -> Dict[str, Any]:
+    def sys_info(self) -> dict[str, Any]:
         """
         Return system information.
 
@@ -405,7 +407,7 @@ class IotDevice(Device):
         return str(sys_info["model"])
 
     @property  # type: ignore
-    def alias(self) -> Optional[str]:
+    def alias(self) -> str | None:
         """Return device name (alias)."""
         sys_info = self._sys_info
         return sys_info.get("alias") if sys_info else None
@@ -422,18 +424,18 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def timezone(self) -> Dict:
+    def timezone(self) -> dict:
         """Return the current timezone."""
         return self.modules["time"].timezone
 
-    async def get_time(self) -> Optional[datetime]:
+    async def get_time(self) -> datetime | None:
         """Return current time from the device, if available."""
         _LOGGER.warning(
             "Use `time` property instead, this call will be removed in the future."
         )
         return await self.modules["time"].get_time()
 
-    async def get_timezone(self) -> Dict:
+    async def get_timezone(self) -> dict:
         """Return timezone information."""
         _LOGGER.warning(
             "Use `timezone` property instead, this call will be removed in the future."
@@ -442,7 +444,7 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def hw_info(self) -> Dict:
+    def hw_info(self) -> dict:
         """Return hardware information.
 
         This returns just a selection of sysinfo keys that are related to hardware.
@@ -464,7 +466,7 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def location(self) -> Dict:
+    def location(self) -> dict:
         """Return geographical location."""
         sys_info = self._sys_info
         loc = {"latitude": None, "longitude": None}
@@ -482,7 +484,7 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def rssi(self) -> Optional[int]:
+    def rssi(self) -> int | None:
         """Return WiFi signal strength (rssi)."""
         rssi = self._sys_info.get("rssi")
         return None if rssi is None else int(rssi)
@@ -528,21 +530,21 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def emeter_today(self) -> Optional[float]:
+    def emeter_today(self) -> float | None:
         """Return today's energy consumption in kWh."""
         self._verify_emeter()
         return self.modules["emeter"].emeter_today
 
     @property  # type: ignore
     @requires_update
-    def emeter_this_month(self) -> Optional[float]:
+    def emeter_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
         self._verify_emeter()
         return self.modules["emeter"].emeter_this_month
 
     async def get_emeter_daily(
-        self, year: Optional[int] = None, month: Optional[int] = None, kwh: bool = True
-    ) -> Dict:
+        self, year: int | None = None, month: int | None = None, kwh: bool = True
+    ) -> dict:
         """Retrieve daily statistics for a given month.
 
         :param year: year for which to retrieve statistics (default: this year)
@@ -556,8 +558,8 @@ class IotDevice(Device):
 
     @requires_update
     async def get_emeter_monthly(
-        self, year: Optional[int] = None, kwh: bool = True
-    ) -> Dict:
+        self, year: int | None = None, kwh: bool = True
+    ) -> dict:
         """Retrieve monthly statistics for a given year.
 
         :param year: year for which to retrieve statistics (default: this year)
@@ -568,7 +570,7 @@ class IotDevice(Device):
         return await self.modules["emeter"].get_monthstat(year=year, kwh=kwh)
 
     @requires_update
-    async def erase_emeter_stats(self) -> Dict:
+    async def erase_emeter_stats(self) -> dict:
         """Erase energy meter statistics."""
         self._verify_emeter()
         return await self.modules["emeter"].erase_stats()
@@ -588,11 +590,11 @@ class IotDevice(Device):
         """
         await self._query_helper("system", "reboot", {"delay": delay})
 
-    async def turn_off(self, **kwargs) -> Dict:
+    async def turn_off(self, **kwargs) -> dict:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def turn_on(self, **kwargs) -> Optional[Dict]:
+    async def turn_on(self, **kwargs) -> dict | None:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
@@ -604,7 +606,7 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def on_since(self) -> Optional[datetime]:
+    def on_since(self) -> datetime | None:
         """Return pretty-printed on-time, or None if not available."""
         if "on_time" not in self._sys_info:
             return None
@@ -626,7 +628,7 @@ class IotDevice(Device):
         """
         return self.mac
 
-    async def wifi_scan(self) -> List[WifiNetwork]:  # noqa: D202
+    async def wifi_scan(self) -> list[WifiNetwork]:  # noqa: D202
         """Scan for available wifi networks."""
 
         async def _scan(target):

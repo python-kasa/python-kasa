@@ -1,7 +1,8 @@
 """Child device implementation."""
 
+from __future__ import annotations
+
 import logging
-from typing import Optional
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -22,8 +23,8 @@ class SmartChildDevice(SmartDevice):
         parent: SmartDevice,
         info,
         component_info,
-        config: Optional[DeviceConfig] = None,
-        protocol: Optional[SmartProtocol] = None,
+        config: DeviceConfig | None = None,
+        protocol: SmartProtocol | None = None,
     ) -> None:
         super().__init__(parent.host, config=parent.config, protocol=parent.protocol)
         self._parent = parent
@@ -38,7 +39,7 @@ class SmartChildDevice(SmartDevice):
     @classmethod
     async def create(cls, parent: SmartDevice, child_info, child_components):
         """Create a child device based on device info and component listing."""
-        child: "SmartChildDevice" = cls(parent, child_info, child_components)
+        child: SmartChildDevice = cls(parent, child_info, child_components)
         await child._initialize_modules()
         await child._initialize_features()
         return child

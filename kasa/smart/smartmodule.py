@@ -1,7 +1,9 @@
 """Base implementation for SMART modules."""
 
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING
 
 from ..exceptions import KasaException
 from ..module import Module
@@ -18,9 +20,9 @@ class SmartModule(Module):
     NAME: str
     REQUIRED_COMPONENT: str
     QUERY_GETTER_NAME: str
-    REGISTERED_MODULES: Dict[str, Type["SmartModule"]] = {}
+    REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         self._device: SmartDevice
         super().__init__(device, module)
 
@@ -36,7 +38,7 @@ class SmartModule(Module):
         """Name of the module."""
         return getattr(self, "NAME", self.__class__.__name__)
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle.
 
         Default implementation uses the raw query getter w/o parameters.

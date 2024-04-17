@@ -1,6 +1,8 @@
 """Implementation of color temp module."""
 
-from typing import TYPE_CHECKING, Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ...bulb import ColorTempRange
 from ...feature import Feature
@@ -15,7 +17,7 @@ class ColorTemperatureModule(SmartModule):
 
     REQUIRED_COMPONENT = "color_temperature"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -28,7 +30,7 @@ class ColorTemperatureModule(SmartModule):
             )
         )
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         # Color temp is contained in the main device info response.
         return {}

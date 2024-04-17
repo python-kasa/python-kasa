@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from json import dumps as json_dumps
-from typing import Optional
 
 import pytest
 
@@ -76,8 +77,8 @@ def discovery_mock(request, mocker):
         query_data: dict
         device_type: str
         encrypt_type: str
-        login_version: Optional[int] = None
-        port_override: Optional[int] = None
+        login_version: int | None = None
+        port_override: int | None = None
 
     if "discovery_result" in fixture_data:
         discovery_data = {"result": fixture_data["discovery_result"]}

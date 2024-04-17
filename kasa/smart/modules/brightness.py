@@ -1,6 +1,8 @@
 """Implementation of brightness module."""
 
-from typing import TYPE_CHECKING, Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
@@ -14,7 +16,7 @@ class Brightness(SmartModule):
 
     REQUIRED_COMPONENT = "brightness"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -29,7 +31,7 @@ class Brightness(SmartModule):
             )
         )
 
-    def query(self) -> Dict:
+    def query(self) -> dict:
         """Query to execute during the update cycle."""
         # Brightness is contained in the main device info response.
         return {}

@@ -1,5 +1,7 @@
 """python-kasa cli tool."""
 
+from __future__ import annotations
+
 import ast
 import asyncio
 import json
@@ -9,7 +11,7 @@ import sys
 from contextlib import asynccontextmanager
 from functools import singledispatch, wraps
 from pprint import pformat as pf
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 import asyncclick as click
 
@@ -320,7 +322,7 @@ async def cli(
         global _do_echo
         echo = _do_echo
 
-    logging_config: Dict[str, Any] = {
+    logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
     }
     try:

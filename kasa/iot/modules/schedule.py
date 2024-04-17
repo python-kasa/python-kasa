@@ -1,5 +1,7 @@
 """Schedule module implementation."""
 
+from __future__ import annotations
+
 from .rulemodule import RuleModule
 
 

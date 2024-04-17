@@ -40,6 +40,8 @@ https://github.com/python-kasa/python-kasa/pull/117
 
 """
 
+from __future__ import annotations
+
 import asyncio
 import base64
 import datetime
@@ -49,7 +51,7 @@ import secrets
 import struct
 import time
 from pprint import pformat as pf
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Any, cast
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -99,7 +101,7 @@ class KlapTransport(BaseTransport):
         super().__init__(config=config)
 
         self._http_client = HttpClient(config)
-        self._local_seed: Optional[bytes] = None
+        self._local_seed: bytes | None = None
         if (
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
@@ -109,16 +111,16 @@ class KlapTransport(BaseTransport):
             self._local_auth_owner = self.generate_owner_hash(self._credentials).hex()
         else:
             self._local_auth_hash = base64.b64decode(self._credentials_hash.encode())  # type: ignore[union-attr]
-        self._default_credentials_auth_hash: Dict[str, bytes] = {}
+        self._default_credentials_auth_hash: dict[str, bytes] = {}
         self._blank_auth_hash = None
         self._handshake_lock = asyncio.Lock()
         self._query_lock = asyncio.Lock()
         self._handshake_done = False
 
-        self._encryption_session: Optional[KlapEncryptionSession] = None
-        self._session_expire_at: Optional[float] = None
+        self._encryption_session: KlapEncryptionSession | None = None
+        self._session_expire_at: float | None = None
 
-        self._session_cookie: Optional[Dict[str, Any]] = None
+        self._session_cookie: dict[str, Any] | None = None
 
         _LOGGER.debug("Created KLAP transport for %s", self._host)
         self._app_url = URL(f"http://{self._host}:{self._port}/app")
@@ -134,7 +136,7 @@ class KlapTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         return base64.b64encode(self._local_auth_hash).decode()
 
-    async def perform_handshake1(self) -> Tuple[bytes, bytes, bytes]:
+    async def perform_handshake1(self) -> tuple[bytes, bytes, bytes]:
         """Perform handshake1."""
         local_seed: bytes = secrets.token_bytes(16)
 
@@ -240,7 +242,7 @@ class KlapTransport(BaseTransport):
 
     async def perform_handshake2(
         self, local_seed, remote_seed, auth_hash
-    ) -> "KlapEncryptionSession":
+    ) -> KlapEncryptionSession:
         """Perform handshake2."""
         # Handshake 2 has the following payload:
         #    sha256(serverBytes | authenticator)

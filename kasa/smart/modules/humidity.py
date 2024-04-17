@@ -1,5 +1,7 @@
 """Implementation of humidity module."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from ...feature import Feature, FeatureType
@@ -15,7 +17,7 @@ class HumiditySensor(SmartModule):
     REQUIRED_COMPONENT = "humidity"
     QUERY_GETTER_NAME = "get_comfort_humidity_config"
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(

@@ -1,5 +1,7 @@
 """Modules for SMART devices."""
 
+from __future__ import annotations
+
 from .alarmmodule import AlarmModule
 from .autooffmodule import AutoOffModule
 from .battery import BatterySensor

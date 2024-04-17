@@ -1,8 +1,10 @@
 """Module for HttpClientSession class."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict
 
 import aiohttp
 from yarl import URL
@@ -48,12 +50,12 @@ class HttpClient:
         self,
         url: URL,
         *,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[bytes] = None,
-        json: Optional[Union[Dict, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
-        cookies_dict: Optional[Dict[str, str]] = None,
-    ) -> Tuple[int, Optional[Union[Dict, bytes]]]:
+        params: dict[str, Any] | None = None,
+        data: bytes | None = None,
+        json: dict | Any | None = None,
+        headers: dict[str, str] | None = None,
+        cookies_dict: dict[str, str] | None = None,
+    ) -> tuple[int, dict | bytes | None]:
         """Send an http post request to the device.
 
         If the request is provided via the json parameter json will be returned.
@@ -103,7 +105,7 @@ class HttpClient:
 
         return resp.status, response_data
 
-    def get_cookie(self, cookie_name: str) -> Optional[str]:
+    def get_cookie(self, cookie_name: str) -> str | None:
         """Return the cookie with cookie_name."""
         if cookie := self.client.cookie_jar.filter_cookies(self._last_url).get(
             cookie_name

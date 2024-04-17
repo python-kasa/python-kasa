@@ -1,5 +1,7 @@
 """Module for smooth light transitions."""
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from ...exceptions import KasaException
@@ -17,7 +19,7 @@ class LightTransitionModule(SmartModule):
     QUERY_GETTER_NAME = "get_on_off_gradually_info"
     MAXIMUM_DURATION = 60
 
-    def __init__(self, device: "SmartDevice", module: str):
+    def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._create_features()
 

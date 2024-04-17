@@ -10,13 +10,14 @@ which are licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 """
 
+from __future__ import annotations
+
 import base64
 import errno
 import hashlib
 import logging
 import struct
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple, Union
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -62,7 +63,7 @@ class BaseTransport(ABC):
         """The hashed credentials used by the transport."""
 
     @abstractmethod
-    async def send(self, request: str) -> Dict:
+    async def send(self, request: str) -> dict:
         """Send a message to the device and return a response."""
 
     @abstractmethod
@@ -95,7 +96,7 @@ class BaseProtocol(ABC):
         return self._transport._config
 
     @abstractmethod
-    async def query(self, request: Union[str, Dict], retry_count: int = 3) -> Dict:
+    async def query(self, request: str | dict, retry_count: int = 3) -> dict:
         """Query the device for the protocol.  Abstract method to be overriden."""
 
     @abstractmethod
@@ -103,7 +104,7 @@ class BaseProtocol(ABC):
         """Close the protocol.  Abstract method to be overriden."""
 
 
-def get_default_credentials(tuple: Tuple[str, str]) -> Credentials:
+def get_default_credentials(tuple: tuple[str, str]) -> Credentials:
     """Return decoded default credentials."""
     un = base64.b64decode(tuple[0].encode()).decode()
     pw = base64.b64decode(tuple[1].encode()).decode()

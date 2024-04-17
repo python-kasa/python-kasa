@@ -10,6 +10,8 @@ which are licensed under the Apache License, Version 2.0
 http://www.apache.org/licenses/LICENSE-2.0
 """
 
+from __future__ import annotations
+
 import asyncio
 import contextlib
 import errno
@@ -17,7 +19,7 @@ import logging
 import socket
 import struct
 from pprint import pformat as pf
-from typing import Dict, Generator, Optional
+from typing import Generator
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -41,10 +43,10 @@ class XorTransport(BaseTransport):
 
     def __init__(self, *, config: DeviceConfig) -> None:
         super().__init__(config=config)
-        self.reader: Optional[asyncio.StreamReader] = None
-        self.writer: Optional[asyncio.StreamWriter] = None
+        self.reader: asyncio.StreamReader | None = None
+        self.writer: asyncio.StreamWriter | None = None
         self.query_lock = asyncio.Lock()
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
+        self.loop: asyncio.AbstractEventLoop | None = None
 
     @property
     def default_port(self):
@@ -72,7 +74,7 @@ class XorTransport(BaseTransport):
             # the buffer on the device
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
-    async def _execute_send(self, request: str) -> Dict:
+    async def _execute_send(self, request: str) -> dict:
         """Execute a query on the device and wait for the response."""
         assert self.writer is not None  # noqa: S101
         assert self.reader is not None  # noqa: S101
@@ -115,7 +117,7 @@ class XorTransport(BaseTransport):
         """
         await self.close()
 
-    async def send(self, request: str) -> Dict:
+    async def send(self, request: str) -> dict:
         """Send a message to the device and return a response."""
         #
         # Most of the time we will already be connected if the device is online

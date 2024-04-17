@@ -1,5 +1,7 @@
 """Implementation for child devices."""
 
+from __future__ import annotations
+
 from ..smartmodule import SmartModule
 
 
