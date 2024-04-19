@@ -25,13 +25,10 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 2.1 (US) / Firmware: 1.1.2
   - Hardware: 2.1 (US) / Firmware: 1.1.4
 - **HS105**
-  - Hardware: 1.0 (US) / Firmware: 1.2.9
   - Hardware: 1.0 (US) / Firmware: 1.5.6
 - **HS110**
   - Hardware: 1.0 (EU) / Firmware: 1.2.5
-  - Hardware: 2.0 (EU) / Firmware: 1.5.2
   - Hardware: 4.0 (EU) / Firmware: 1.0.4
-  - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **KP100**
   - Hardware: 3.0 (US) / Firmware: 1.0.1
 - **KP105**
@@ -72,13 +69,11 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **ES20M**
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **HS200**
-  - Hardware: 1.0 (US) / Firmware: 1.1.0
   - Hardware: 2.0 (US) / Firmware: 1.5.7
   - Hardware: 5.0 (US) / Firmware: 1.0.2
 - **HS210**
   - Hardware: 1.0 (US) / Firmware: 1.5.8
 - **HS220**
-  - Hardware: 1.0 (US) / Firmware: 1.5.7
   - Hardware: 1.0 (US) / Firmware: 1.5.7
   - Hardware: 2.0 (US) / Firmware: 1.0.3
 - **KP405**
@@ -114,14 +109,8 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KL60**
   - Hardware: 1.0 (UN) / Firmware: 1.1.4
   - Hardware: 1.0 (US) / Firmware: 1.1.13
-- **LB100**
-  - Hardware: 1.0 (US) / Firmware: 1.4.3
 - **LB110**
   - Hardware: 1.0 (US) / Firmware: 1.8.11
-- **LB120**
-  - Hardware: 1.0 (US) / Firmware: 1.1.0
-- **LB130**
-  - Hardware: 1.0 (US) / Firmware: 1.6.0
 
 ### Light Strips
 
