@@ -1,12 +1,10 @@
 import pytest
 
 from kasa.smart import SmartDevice
-from kasa.tests.conftest import parametrize
-
-brightness = parametrize("colortemp smart", component_filter="color_temperature")
+from kasa.tests.conftest import variable_temp_smart
 
 
-@brightness
+@variable_temp_smart
 async def test_colortemp_component(dev: SmartDevice):
     """Test brightness feature."""
     assert isinstance(dev, SmartDevice)
