@@ -30,6 +30,7 @@ class FanModule(SmartModule):
                 type=FeatureType.Number,
                 minimum_value=1,
                 maximum_value=4,
+                category=Feature.Category.Primary,
             )
         )
         self._add_feature(

@@ -32,6 +32,7 @@ class Brightness(SmartModule):
                 minimum_value=BRIGHTNESS_MIN,
                 maximum_value=BRIGHTNESS_MAX,
                 type=FeatureType.Number,
+                category=Feature.Category.Primary,
             )
         )
 

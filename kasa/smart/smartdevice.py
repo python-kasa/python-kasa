@@ -176,7 +176,14 @@ class SmartDevice(Device):
 
     async def _initialize_features(self):
         """Initialize device features."""
-        self._add_feature(Feature(self, "Device ID", attribute_getter="device_id"))
+        self._add_feature(
+            Feature(
+                self,
+                "Device ID",
+                attribute_getter="device_id",
+                category=Feature.Category.Debug,
+            )
+        )
         if "device_on" in self._info:
             self._add_feature(
                 Feature(
@@ -185,6 +192,7 @@ class SmartDevice(Device):
                     attribute_getter="is_on",
                     attribute_setter="set_state",
                     type=FeatureType.Switch,
+                    category=Feature.Category.Primary,
                 )
             )
 
@@ -195,6 +203,7 @@ class SmartDevice(Device):
                     "Signal Level",
                     attribute_getter=lambda x: x._info["signal_level"],
                     icon="mdi:signal",
+                    category=Feature.Category.Debug,
                 )
             )
 
@@ -205,13 +214,18 @@ class SmartDevice(Device):
                     "RSSI",
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
+                    category=Feature.Category.Debug,
                 )
             )
 
         if "ssid" in self._info:
             self._add_feature(
                 Feature(
-                    device=self, name="SSID", attribute_getter="ssid", icon="mdi:wifi"
+                    device=self,
+                    name="SSID",
+                    attribute_getter="ssid",
+                    icon="mdi:wifi",
+                    category=Feature.Category.Debug,
                 )
             )
 
@@ -223,6 +237,7 @@ class SmartDevice(Device):
                     attribute_getter=lambda x: x._info["overheated"],
                     icon="mdi:heat-wave",
                     type=FeatureType.BinarySensor,
+                    category=Feature.Category.Debug,
                 )
             )
 
@@ -235,6 +250,7 @@ class SmartDevice(Device):
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",
+                    category=Feature.Category.Debug,
                 )
             )
 
