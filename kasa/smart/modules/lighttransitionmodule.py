@@ -166,3 +166,7 @@ class LightTransitionModule(SmartModule):
             "set_on_off_gradually_info",
             {"off_state": {**self._turn_on, "duration": seconds}},
         )
+
+    async def _check_supported(self) -> bool:
+        """Additional check to see if the module is supported by the device."""
+        return True

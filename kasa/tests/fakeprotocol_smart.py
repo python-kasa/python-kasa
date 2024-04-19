@@ -141,6 +141,23 @@ class FakeSmartTransport(BaseTransport):
         elif child_method == "set_device_info":
             info.update(child_params)
             return {"error_code": 0}
+        elif (
+            # FIXTURE_MISSING is for service calls not in place when
+            # SMART fixtures started to be generated
+            missing_result := self.FIXTURE_MISSING_MAP.get(child_method)
+        ) and missing_result[0] in self.components:
+            retval = {"result": missing_result[1], "error_code": 0}
+            return retval
+        else:
+            # PARAMS error returned for KS240 when get_device_usage called
+            # on parent device.  Could be any error code though.
+            # TODO: Try to figure out if there's a way to prevent the KS240 smartdevice
+            # calling the unsupported device in the first place.
+            retval = {
+                "error_code": SmartErrorCode.PARAMS_ERROR.value,
+                "method": "get_device_usage",
+            }
+            return retval
 
         raise NotImplementedError(
             "Method %s not implemented for children" % child_method

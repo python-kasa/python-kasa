@@ -22,6 +22,8 @@ _LOGGER = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from .smartmodule import SmartModule
 
+PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]  # noqa: F405
+
 
 class SmartDevice(Device):
     """Base class to represent a SMART protocol based device."""
@@ -78,6 +80,8 @@ class SmartDevice(Device):
     @property
     def children(self) -> Sequence[SmartDevice]:
         """Return list of children."""
+        if self.device_type == DeviceType.WallSwitch:
+            return []
         return list(self._children.values())
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
@@ -132,13 +136,18 @@ class SmartDevice(Device):
             await self._negotiate()
             await self._initialize_modules()
 
-        req: dict[str, Any] = {}
+        device_reqs: dict[SmartDevice, dict[str, Any]] = {}
 
         # TODO: this could be optimized by constructing the query only once
         for module in self.modules.values():
-            req.update(module.query())
+            device_reqs.setdefault(module._device, {}).update(module.query())
 
-        self._last_update = resp = await self.protocol.query(req)
+        for device, req in device_reqs.items():
+            if req:
+                resp = await device.protocol.query(req)
+                device._last_update = {
+                    k: v for k, v in resp.items() if not isinstance(v, SmartErrorCode)
+                }
 
         self._info = self._try_get_response(resp, "get_device_info")
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
@@ -158,9 +167,18 @@ class SmartDevice(Device):
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
 
+        if self._parent and self._parent.device_type == DeviceType.WallSwitch:
+            modules = self._parent.modules
+            skip_parent_only_modules = True
+        else:
+            modules = self.modules
+            skip_parent_only_modules = False
+
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
+            if skip_parent_only_modules and mod in PARENT_ONLY_MODULES:
+                continue
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
                     "Found required %s, adding %s to modules.",
@@ -168,8 +186,8 @@ class SmartDevice(Device):
                     mod.__name__,
                 )
                 module = mod(self, mod.REQUIRED_COMPONENT)
-                if module.is_available:
-                    self.modules[module.name] = module
+                if module.name not in modules and await module._check_supported():
+                    modules[module.name] = module
 
     async def _initialize_features(self):
         """Initialize device features."""
@@ -542,6 +560,8 @@ class SmartDevice(Device):
             return DeviceType.Plug
         if "light_strip" in components:
             return DeviceType.LightStrip
+        if "SWITCH" in device_type and "child_device" in components:
+            return DeviceType.WallSwitch
         if "dimmer_calibration" in components:
             return DeviceType.Dimmer
         if "brightness" in components:

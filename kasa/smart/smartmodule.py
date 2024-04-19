@@ -94,7 +94,11 @@ class SmartModule(Module):
         """Return version supported by the device."""
         return self._device._components[self.REQUIRED_COMPONENT]
 
-    @property
-    def is_available(self):
-        """Is the module available on this device."""
+    async def _check_supported(self) -> bool:
+        """Additional check to see if the module is supported by the device.
+
+        Used for parents who report components on the parent that are only available
+        on the child or for modules where the device has a pointless component like
+        color_temp_range but only supports one value.
+        """
         return True
