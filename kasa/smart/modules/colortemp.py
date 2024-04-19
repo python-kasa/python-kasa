@@ -11,6 +11,8 @@ from ..smartmodule import SmartModule
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
+DEFAULT_TEMP_RANGE = [2500, 6500]
+
 
 class ColorTemperatureModule(SmartModule):
     """Implementation of color temp module."""
@@ -38,7 +40,7 @@ class ColorTemperatureModule(SmartModule):
     @property
     def valid_temperature_range(self) -> ColorTempRange:
         """Return valid color-temp range."""
-        return ColorTempRange(*self.data.get("color_temp_range"))
+        return ColorTempRange(*self.data.get("color_temp_range", DEFAULT_TEMP_RANGE))
 
     @property
     def color_temp(self):
@@ -56,3 +58,7 @@ class ColorTemperatureModule(SmartModule):
             )
 
         return await self.call("set_device_info", {"color_temp": temp})
+
+    async def _check_supported(self) -> bool:
+        """Check the color_temp_range has more than one value."""
+        return self.valid_temperature_range.min != self.valid_temperature_range.max
