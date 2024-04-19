@@ -4,12 +4,62 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from ... import Device
 from ...emeterstatus import EmeterStatus
+from ...feature import Feature
 from .usage import Usage
 
 
 class Emeter(Usage):
     """Emeter module."""
+
+    def __init__(self, device: Device, module: str):
+        super().__init__(device, module)
+        self._add_feature(
+            Feature(
+                device,
+                name="Current consumption",
+                attribute_getter="current_consumption",
+                container=self,
+                unit="W",
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                name="Today's consumption",
+                attribute_getter="emeter_today",
+                container=self,
+                unit="kWh",
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                name="This month's consumption",
+                attribute_getter="emeter_this_month",
+                container=self,
+                unit="kWh",
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                name="Voltage",
+                attribute_getter="voltage",
+                container=self,
+                unit="V",
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                name="Current",
+                attribute_getter="current",
+                container=self,
+                unit="A",
+            )
+        )
 
     @property  # type: ignore
     def realtime(self) -> EmeterStatus:
@@ -31,6 +81,22 @@ class Emeter(Usage):
         current_month = datetime.now().month
         data = self._convert_stat_data(raw_data, entry_key="month", key=current_month)
         return data.get(current_month)
+
+    @property
+    def current_consumption(self) -> float:
+        """Get the current power consumption in Watt."""
+        response = self.realtime
+        return float(response["power"])
+
+    @property
+    def current(self) -> float | None:
+        """Return the current in A."""
+        return self.realtime.current
+
+    @property
+    def voltage(self) -> float | None:
+        """Get the current voltage in V."""
+        return self.realtime.voltage
 
     async def erase_stats(self):
         """Erase all stats.
