@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from ...bulb import ColorTempRange
@@ -10,6 +11,9 @@ from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
+
+
+_LOGGER = logging.getLogger(__name__)
 
 DEFAULT_TEMP_RANGE = [2500, 6500]
 
@@ -40,7 +44,14 @@ class ColorTemperatureModule(SmartModule):
     @property
     def valid_temperature_range(self) -> ColorTempRange:
         """Return valid color-temp range."""
-        return ColorTempRange(*self.data.get("color_temp_range", DEFAULT_TEMP_RANGE))
+        if (ct_range := self.data.get("color_temp_range")) is None:
+            _LOGGER.debug(
+                "Device doesn't report color temperature range, "
+                "falling back to default %s",
+                DEFAULT_TEMP_RANGE,
+            )
+            ct_range = DEFAULT_TEMP_RANGE
+        return ColorTempRange(*ct_range)
 
     @property
     def color_temp(self):
