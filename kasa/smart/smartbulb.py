@@ -169,9 +169,9 @@ class SmartBulb(SmartDevice, Bulb):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
-        return await cast(
-            Brightness, self.modules["ColorTemperatureModule"]
-        ).set_brightness(brightness)
+        return await cast(Brightness, self.modules["Brightness"]).set_brightness(
+            brightness
+        )
 
     async def set_effect(
         self,
