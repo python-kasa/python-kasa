@@ -9,6 +9,7 @@ from voluptuous import (
 
 from kasa import Bulb, BulbPreset, DeviceType, KasaException
 from kasa.iot import IotBulb
+from kasa.smart import SmartBulb
 
 from .conftest import (
     bulb,
@@ -23,6 +24,7 @@ from .conftest import (
     turn_on,
     variable_temp,
     variable_temp_iot,
+    variable_temp_smart,
 )
 from .test_iotdevice import SYSINFO_SCHEMA
 
@@ -157,6 +159,11 @@ async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
 
     assert dev.valid_temperature_range == (2700, 5000)
     assert "Unknown color temperature range, fallback to 2700-5000" in caplog.text
+
+
+@variable_temp_smart
+async def test_smart_temp_range(dev: SmartBulb):
+    assert dev.valid_temperature_range
 
 
 @variable_temp
