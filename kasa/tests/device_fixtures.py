@@ -238,6 +238,11 @@ variable_temp_iot = parametrize(
     model_filter=BULBS_IOT_VARIABLE_TEMP,
     protocol_filter={"IOT"},
 )
+variable_temp_smart = parametrize(
+    "variable color temp smart",
+    model_filter=BULBS_SMART_VARIABLE_TEMP,
+    protocol_filter={"SMART"},
+)
 
 bulb_smart = parametrize(
     "bulb devices smart",

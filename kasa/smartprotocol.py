@@ -113,7 +113,7 @@ class SmartProtocol(BaseProtocol):
             {"method": method, "params": params} for method, params in requests.items()
         ]
 
-        end = len(requests)
+        end = len(multi_requests)
         # Break the requests down as there can be a size limit
         step = (
             self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE

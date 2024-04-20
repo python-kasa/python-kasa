@@ -63,6 +63,7 @@ async def test_smart_device_errors_in_multiple_request(
     resp_dict = await dummy_protocol.query(mock_request, retry_count=2)
     assert resp_dict["foobar2"] == error_code
     assert send_mock.call_count == 1
+    assert len(resp_dict) == len(mock_request)
 
 
 @pytest.mark.parametrize("request_size", [1, 3, 5, 10])

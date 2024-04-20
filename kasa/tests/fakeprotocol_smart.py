@@ -113,6 +113,9 @@ class FakeSmartTransport(BaseTransport):
             responses = []
             for request in params["requests"]:
                 response = self._send_request(request)  # type: ignore[arg-type]
+                # Devices do not continue after error
+                if response["error_code"] != 0:
+                    break
                 response["method"] = request["method"]  # type: ignore[index]
                 responses.append(response)
             return {"result": {"responses": responses}, "error_code": 0}
