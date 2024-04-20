@@ -36,6 +36,11 @@ async def test_smart_device_errors(dummy_protocol, mocker, error_code):
 async def test_smart_device_errors_in_multiple_request(
     dummy_protocol, mocker, error_code
 ):
+    mock_request = {
+        "foobar1": {"foo": "bar", "bar": "foo"},
+        "foobar2": {"foo": "bar", "bar": "foo"},
+        "foobar3": {"foo": "bar", "bar": "foo"},
+    }
     mock_response = {
         "result": {
             "responses": [
@@ -55,9 +60,10 @@ async def test_smart_device_errors_in_multiple_request(
         dummy_protocol._transport, "send", return_value=mock_response
     )
 
-    resp_dict = await dummy_protocol.query(DUMMY_MULTIPLE_QUERY, retry_count=2)
+    resp_dict = await dummy_protocol.query(mock_request, retry_count=2)
     assert resp_dict["foobar2"] == error_code
     assert send_mock.call_count == 1
+    assert len(resp_dict) == len(mock_request)
 
 
 @pytest.mark.parametrize("request_size", [1, 3, 5, 10])
