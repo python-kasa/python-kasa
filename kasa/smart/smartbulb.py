@@ -6,8 +6,7 @@ from typing import cast
 
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..exceptions import KasaException
-from .modules.colormodule import ColorModule
-from .modules.colortemp import ColorTemperatureModule
+from .modules import Brightness, ColorModule, ColorTemperatureModule
 from .smartdevice import SmartDevice
 
 AVAILABLE_EFFECTS = {
@@ -157,11 +156,6 @@ class SmartBulb(SmartDevice, Bulb):
             ColorTemperatureModule, self.modules["ColorTemperatureModule"]
         ).set_color_temp(temp)
 
-    def _raise_for_invalid_brightness(self, value: int):
-        """Raise error on invalid brightness value."""
-        if not isinstance(value, int) or not (1 <= value <= 100):
-            raise ValueError(f"Invalid brightness value: {value} (valid range: 1-100%)")
-
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
     ) -> dict:
@@ -175,11 +169,9 @@ class SmartBulb(SmartDevice, Bulb):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
-        self._raise_for_invalid_brightness(brightness)
-
-        return await self.protocol.query(
-            {"set_device_info": {"brightness": brightness}}
-        )
+        return await cast(
+            Brightness, self.modules["ColorTemperatureModule"]
+        ).set_brightness(brightness)
 
     async def set_effect(
         self,
