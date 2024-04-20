@@ -16,6 +16,7 @@ from .ledmodule import LedModule
 from .lighttransitionmodule import LightTransitionModule
 from .reportmodule import ReportModule
 from .temperature import TemperatureSensor
+from .temperaturecontrol import TemperatureControl
 from .timemodule import TimeModule
 
 __all__ = [
@@ -27,6 +28,7 @@ __all__ = [
     "BatterySensor",
     "HumiditySensor",
     "TemperatureSensor",
+    "TemperatureControl",
     "ReportModule",
     "AutoOffModule",
     "LedModule",
