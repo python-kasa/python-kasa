@@ -29,7 +29,7 @@ class Feature:
     #: User-friendly short description
     name: str
     #: Name of the property that allows accessing the value
-    attribute_getter: str | Callable
+    attribute_getter: str | Callable | None = None
     #: Name of the method that allows changing the value
     attribute_setter: str | None = None
     #: Container storing the data, this overrides 'device' for getters
@@ -59,6 +59,11 @@ class Feature:
     @property
     def value(self):
         """Return the current value."""
+        if self.type == FeatureType.Button:
+            return "<Button>"
+        if self.attribute_getter is None:
+            raise ValueError("Not a button and no attribute_getter set")
+
         container = self.container if self.container is not None else self.device
         if isinstance(self.attribute_getter, Callable):
             return self.attribute_getter(container)
@@ -76,4 +81,7 @@ class Feature:
                 )
 
         container = self.container if self.container is not None else self.device
+        if self.type == FeatureType.Button:
+            return await getattr(container, self.attribute_setter)()
+
         return await getattr(container, self.attribute_setter)(value)

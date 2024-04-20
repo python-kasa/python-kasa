@@ -3,11 +3,13 @@ import pytest
 from kasa import Feature, FeatureType
 
 
+class DummyDevice:
+    pass
+
+
 @pytest.fixture
 def dummy_feature() -> Feature:
     # create_autospec for device slows tests way too much, so we use a dummy here
-    class DummyDevice:
-        pass
 
     feat = Feature(
         device=DummyDevice(),  # type: ignore[arg-type]
@@ -77,3 +79,19 @@ async def test_feature_setter_read_only(dummy_feature):
     dummy_feature.attribute_setter = None
     with pytest.raises(ValueError):
         await dummy_feature.set_value("value for read only feature")
+
+
+async def test_feature_button(mocker):
+    """Test that setting value on button calls the setter."""
+    feat = Feature(
+        device=DummyDevice(),  # type: ignore[arg-type]
+        name="dummy_feature",
+        attribute_setter="call_action",
+        container=None,
+        icon="mdi:dummy",
+        type=FeatureType.Button,
+    )
+    mock_call_action = mocker.patch.object(feat.device, "call_action", create=True)
+    assert feat.value == "<Button>"
+    await feat.set_value(1234)
+    mock_call_action.assert_called()
