@@ -105,21 +105,21 @@ class SmartProtocol(BaseProtocol):
         # make mypy happy, this should never be reached..
         raise KasaException("Query reached somehow to unreachable")
 
-    async def _execute_multiple_query(self, request: dict, retry_count: int) -> dict:
+    async def _execute_multiple_query(self, requests: dict, retry_count: int) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         multi_result: dict[str, Any] = {}
         smart_method = "multipleRequest"
-        requests = [
-            {"method": method, "params": params} for method, params in request.items()
+        multi_requests = [
+            {"method": method, "params": params} for method, params in requests.items()
         ]
 
-        end = len(requests)
+        end = len(multi_requests)
         # Break the requests down as there can be a size limit
         step = (
             self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
         )
         for i in range(0, end, step):
-            requests_step = requests[i : i + step]
+            requests_step = multi_requests[i : i + step]
 
             smart_params = {"requests": requests_step}
             smart_request = self.get_smart_request(smart_method, smart_params)
@@ -146,6 +146,14 @@ class SmartProtocol(BaseProtocol):
                 self._handle_response_error_code(response, method, raise_on_error=False)
                 result = response.get("result", None)
                 multi_result[method] = result
+        # Multi requests don't continue after errors so requery any missing
+        for method, params in requests.items():
+            if method not in multi_result:
+                resp = await self._transport.send(
+                    self.get_smart_request(method, params)
+                )
+                self._handle_response_error_code(resp, method, raise_on_error=False)
+                multi_result[method] = resp.get("result")
         return multi_result
 
     async def _execute_query(self, request: str | dict, retry_count: int) -> dict:
