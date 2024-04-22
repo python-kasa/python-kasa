@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-from ...exceptions import SmartErrorCode
+from ...exceptions import KasaException, SmartErrorCode
 from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
 
@@ -75,9 +75,10 @@ class Firmware(SmartModule):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        req = {
-            "get_latest_fw": None,
-        }
+        req: dict[str, Any] = {}
+        if self._device._is_cloud_connected:
+            req["get_latest_fw"] = None
+
         if self.supported_version > 1:
             req["get_auto_update_info"] = None
         return req
@@ -99,11 +100,19 @@ class Firmware(SmartModule):
 
     async def get_update_state(self):
         """Return update state."""
-        return await self.call("get_fw_download_state")
+        if self._device._is_cloud_connected:
+            return await self.call("get_fw_download_state")
+        raise KasaException(
+            "Device must be connected to the internet to get firmware download state."
+        )
 
     async def update(self):
         """Update the device firmware."""
-        return await self.call("fw_download")
+        if self._device._is_cloud_connected:
+            return await self.call("fw_download")
+        raise KasaException(
+            "Device must be connected to the internet to download firmware."
+        )
 
     @property
     def auto_update_enabled(self):
@@ -119,5 +128,5 @@ class Firmware(SmartModule):
         await self.call("set_auto_update_info", data)  # {"enable": enabled})
 
     async def _check_supported(self) -> bool:
-        """Check the color_temp_range has more than one value."""
-        return self._device._is_cloud_connected
+        """Check the module has auto_update or is connected."""
+        return self._device._is_cloud_connected or self.supported_version > 1
