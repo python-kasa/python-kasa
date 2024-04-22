@@ -266,7 +266,7 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 ### TP-Link Tapo support
 
 This library has recently added a limited supported for devices that carry Tapo branding.
-That support is currently limited to the cli.  The package `kasa.smartdevice` is in flux and if you
+That support is currently limited to the cli.  The package `kasa.smart` is in flux and if you
 use it directly you should expect it could break in future releases until this statement is removed.
 
 Other TAPO libraries are:
