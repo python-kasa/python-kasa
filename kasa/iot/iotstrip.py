@@ -216,13 +216,13 @@ class IotStrip(IotDevice):
     @requires_update
     def emeter_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
-        return sum(plug.emeter_this_month for plug in self.children)
+        return sum(v if (v := plug.emeter_this_month) else 0 for plug in self.children)
 
     @property  # type: ignore
     @requires_update
     def emeter_today(self) -> float | None:
         """Return this month's energy consumption in kWh."""
-        return sum(plug.emeter_today for plug in self.children)
+        return sum(v if (v := plug.emeter_today) else 0 for plug in self.children)
 
     @property  # type: ignore
     @requires_update
