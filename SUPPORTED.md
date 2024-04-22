@@ -129,6 +129,11 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 2.0 (US) / Firmware: 1.0.8
   - Hardware: 2.0 (US) / Firmware: 1.0.9
 
+### Hubs
+
+- **KH100**
+  - Hardware: 1.0 (UK) / Firmware: 1.5.6<sup>\*</sup>
+
 
 ## Tapo devices
 
