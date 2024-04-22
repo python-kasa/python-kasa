@@ -17,6 +17,7 @@ def dummy_feature() -> Feature:
         container=None,
         icon="mdi:dummy",
         type=FeatureType.BinarySensor,
+        unit="dummyunit",
     )
     return feat
 
@@ -30,6 +31,7 @@ def test_feature_api(dummy_feature: Feature):
     assert dummy_feature.container is None
     assert dummy_feature.icon == "mdi:dummy"
     assert dummy_feature.type == FeatureType.BinarySensor
+    assert dummy_feature.unit == "dummyunit"
 
 
 def test_feature_value(dummy_feature: Feature):
