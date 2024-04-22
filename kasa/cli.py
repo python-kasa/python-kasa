@@ -598,9 +598,10 @@ async def state(ctx, dev: Device):
         echo("\t[bold]== Children ==[/bold]")
         for child in dev.children:
             echo(f"\t* {child.alias} ({child.model}, {child.device_type})")
-            for feat in child.features.values():
+            for id_, feat in child.features.items():
                 try:
-                    echo(f"\t\t{feat.name}: {feat.value}")
+                    unit = f" {feat.unit}" if feat.unit else ""
+                    echo(f"\t\t{feat.name} ({id_}): {feat.value}{unit}")
                 except Exception as ex:
                     echo(f"\t\t{feat.name}: got exception (%s)" % ex)
         echo()
@@ -1173,7 +1174,8 @@ async def feature(dev: Device, child: str, name: str, value):
         def _print_features(dev):
             for name, feat in dev.features.items():
                 try:
-                    echo(f"\t{feat.name} ({name}): {feat.value}")
+                    unit = f" {feat.unit}" if feat.unit else ""
+                    echo(f"\t{feat.name} ({name}): {feat.value}{unit}")
                 except Exception as ex:
                     echo(f"\t{feat.name} ({name}): [red]{ex}[/red]")
 
@@ -1194,7 +1196,8 @@ async def feature(dev: Device, child: str, name: str, value):
     feat = dev.features[name]
 
     if value is None:
-        echo(f"{feat.name} ({name}): {feat.value}")
+        unit = f" {feat.unit}" if feat.unit else ""
+        echo(f"{feat.name} ({name}): {feat.value}{unit}")
         return feat.value
 
     echo(f"Setting {name} to {value}")
