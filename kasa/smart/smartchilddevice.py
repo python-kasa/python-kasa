@@ -52,6 +52,7 @@ class SmartChildDevice(SmartDevice):
             "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
             "kasa.switch.outlet.sub-fan": DeviceType.Fan,
             "kasa.switch.outlet.sub-dimmer": DeviceType.Dimmer,
+            "subg.trv": DeviceType.Thermostat,
         }
         dev_type = child_device_map.get(self.sys_info["category"])
         if dev_type is None:
