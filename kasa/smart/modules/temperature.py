@@ -58,9 +58,7 @@ class TemperatureSensor(SmartModule):
     @property
     def temperature_warning(self) -> bool:
         """Return True if temperature is outside of the wanted range."""
-        if "current_temp_exception" in self._device.sys_info:
-            return self._device.sys_info["current_temp_exception"] != 0
-        return False
+        return self._device.sys_info.get("current_temp_exception", 0) != 0
 
     @property
     def temperature_unit(self):
