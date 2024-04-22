@@ -1,0 +1,1557 @@
+ {
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "child_device",
+                "ver_code": 1
+            },
+            {
+                "id": "child_quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "child_inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "control_child",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm",
+                "ver_code": 1
+            },
+            {
+                "id": "device_load",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm_logs",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "KH100(UK)",
+        "device_type": "SMART.KASAHUB",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "F0-A7-31-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "AES",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "obd_src": "tplink",
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_alarm_configure": {
+        "duration": 300,
+        "type": "Doorbell Ring 1",
+        "volume": "high"
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 900
+    },
+    "get_child_device_component_list": {
+        "child_component_list": [
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "trigger_log",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_humidity_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "report_mode",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "trigger_log",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_humidity_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "report_mode",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "frost_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "child_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_control",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "remove_scale",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "shutdown_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "progress_calibration",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "early_start",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "screen_setting",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "night_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "smart_control_schedule",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature_correction",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "window_open_detect",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_3"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "frost_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "child_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_control",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "remove_scale",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "shutdown_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "progress_calibration",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "early_start",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "screen_setting",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "night_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "smart_control_schedule",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature_correction",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "window_open_detect",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_4"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "frost_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "child_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_control",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "remove_scale",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "shutdown_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "progress_calibration",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "early_start",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "screen_setting",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "night_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "smart_control_schedule",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature_correction",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "window_open_detect",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_5"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "frost_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "child_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_control",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "remove_scale",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "shutdown_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "progress_calibration",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "early_start",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "screen_setting",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "night_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "smart_control_schedule",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature_correction",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "window_open_detect",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_6"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "frost_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "child_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_control",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "remove_scale",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "shutdown_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "progress_calibration",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "early_start",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "screen_setting",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "night_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "smart_control_schedule",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature_correction",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "window_open_detect",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_7"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "trigger_log",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_humidity_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "report_mode",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_8"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "trigger_log",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_humidity_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "report_mode",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_9"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "trigger_log",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_humidity_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "comfort_humidity",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "report_mode",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_10"
+            }
+        ],
+        "start_index": 0,
+        "sum": 10
+    },
+    "get_child_device_list": {
+        "child_device_list": [
+            {
+                "at_low_battery": false,
+                "avatar": "kasa_trv",
+                "bind_count": 1,
+                "category": "subg.trv",
+                "child_protection": false,
+                "current_temp": 20.1,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_3",
+                "frost_protection_on": false,
+                "fw_ver": "2.8.0 Build 240202 Rel.135229",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -117,
+                "jamming_signal_level": 1,
+                "location": "",
+                "mac": "F0A731000000",
+                "max_control_temp": 30,
+                "min_control_temp": 5,
+                "model": "KE100",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "rssi": -45,
+                "signal_level": 3,
+                "specs": "UK",
+                "status": "online",
+                "status_follow_edge": false,
+                "target_temp": 21.0,
+                "temp_offset": 0,
+                "temp_unit": "celsius",
+                "trv_states": [
+                    "heating"
+                ],
+                "type": "SMART.KASAENERGY"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "kasa_trv",
+                "bind_count": 1,
+                "category": "subg.trv",
+                "child_protection": false,
+                "current_temp": 19.5,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_4",
+                "frost_protection_on": false,
+                "fw_ver": "2.8.0 Build 240202 Rel.135229",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -117,
+                "jamming_signal_level": 1,
+                "location": "",
+                "mac": "F0A731000000",
+                "max_control_temp": 30,
+                "min_control_temp": 5,
+                "model": "KE100",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "rssi": -52,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "target_temp": 21.0,
+                "temp_offset": 0,
+                "temp_unit": "celsius",
+                "trv_states": [
+                    "heating"
+                ],
+                "type": "SMART.KASAENERGY"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "kasa_trv",
+                "bind_count": 1,
+                "category": "subg.trv",
+                "child_protection": false,
+                "current_temp": 18.1,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_5",
+                "frost_protection_on": false,
+                "fw_ver": "2.8.0 Build 240202 Rel.135229",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -120,
+                "jamming_signal_level": 1,
+                "location": "",
+                "mac": "F0A731000000",
+                "max_control_temp": 30,
+                "min_control_temp": 5,
+                "model": "KE100",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "rssi": -46,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "target_temp": 21.0,
+                "temp_offset": 0,
+                "temp_unit": "celsius",
+                "trv_states": [
+                    "heating"
+                ],
+                "type": "SMART.KASAENERGY"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "kasa_trv",
+                "bind_count": 1,
+                "category": "subg.trv",
+                "child_protection": false,
+                "current_temp": 20.0,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_6",
+                "frost_protection_on": false,
+                "fw_ver": "2.8.0 Build 240202 Rel.135229",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -114,
+                "jamming_signal_level": 1,
+                "location": "",
+                "mac": "A842A1000000",
+                "max_control_temp": 30,
+                "min_control_temp": 5,
+                "model": "KE100",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "rssi": -40,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "target_temp": 21.0,
+                "temp_offset": 0,
+                "temp_unit": "celsius",
+                "trv_states": [
+                    "heating"
+                ],
+                "type": "SMART.KASAENERGY"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "kasa_trv",
+                "bind_count": 1,
+                "category": "subg.trv",
+                "child_protection": false,
+                "current_temp": 19.2,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_7",
+                "frost_protection_on": false,
+                "fw_ver": "2.8.0 Build 240202 Rel.135229",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -121,
+                "jamming_signal_level": 1,
+                "location": "",
+                "mac": "F0A731000000",
+                "max_control_temp": 30,
+                "min_control_temp": 5,
+                "model": "KE100",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "rssi": -73,
+                "signal_level": 2,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "target_temp": 21.0,
+                "temp_offset": 0,
+                "temp_unit": "celsius",
+                "trv_states": [
+                    "heating"
+                ],
+                "type": "SMART.KASAENERGY"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "balcony",
+                "bind_count": 1,
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "current_humidity": 63,
+                "current_humidity_exception": 3,
+                "current_temp": 11.9,
+                "current_temp_exception": -8.1,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                "fw_ver": "1.5.0 Build 230105 Rel.150707",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -118,
+                "jamming_signal_level": 1,
+                "lastOnboardingTimestamp": 1713199738,
+                "mac": "40AE30000000",
+                "model": "T310",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "report_interval": 16,
+                "rssi": -63,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "temp_unit": "celsius",
+                "type": "SMART.TAPOSENSOR"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "sensor_t310",
+                "bind_count": 1,
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "current_humidity": 54,
+                "current_humidity_exception": 0,
+                "current_temp": 19.1,
+                "current_temp_exception": -0.9,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                "fw_ver": "1.5.0 Build 230105 Rel.150707",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -123,
+                "jamming_signal_level": 1,
+                "lastOnboardingTimestamp": 1712755472,
+                "mac": "40AE30000000",
+                "model": "T310",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "report_interval": 16,
+                "rssi": -57,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "temp_unit": "celsius",
+                "type": "SMART.TAPOSENSOR"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "sensor_t310",
+                "bind_count": 1,
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "current_humidity": 52,
+                "current_humidity_exception": 0,
+                "current_temp": 20.0,
+                "current_temp_exception": 0,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_8",
+                "fw_ver": "1.5.0 Build 230105 Rel.150707",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -119,
+                "jamming_signal_level": 1,
+                "lastOnboardingTimestamp": 1706550338,
+                "mac": "E4FAC4000000",
+                "model": "T310",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "report_interval": 16,
+                "rssi": -68,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "temp_unit": "celsius",
+                "type": "SMART.TAPOSENSOR"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "sensor_t310",
+                "bind_count": 1,
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "current_humidity": 60,
+                "current_humidity_exception": 0,
+                "current_temp": 20.1,
+                "current_temp_exception": 0.1,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_9",
+                "fw_ver": "1.5.0 Build 230105 Rel.150707",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -116,
+                "jamming_signal_level": 1,
+                "lastOnboardingTimestamp": 1706551426,
+                "mac": "E4FAC4000000",
+                "model": "T310",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "report_interval": 16,
+                "rssi": -70,
+                "signal_level": 2,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "temp_unit": "celsius",
+                "type": "SMART.TAPOSENSOR"
+            },
+            {
+                "at_low_battery": false,
+                "avatar": "sensor_t310",
+                "bind_count": 1,
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "current_humidity": 54,
+                "current_humidity_exception": 0,
+                "current_temp": 19.3,
+                "current_temp_exception": 0,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_10",
+                "fw_ver": "1.5.0 Build 230105 Rel.150707",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -120,
+                "jamming_signal_level": 1,
+                "lastOnboardingTimestamp": 1706789728,
+                "mac": "E4FAC4000000",
+                "model": "T310",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/London",
+                "report_interval": 16,
+                "rssi": -81,
+                "signal_level": 1,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "temp_unit": "celsius",
+                "type": "SMART.TAPOSENSOR"
+            }
+        ],
+        "start_index": 0,
+        "sum": 10
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "avatar": "kasa_hub",
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.5.6 Build 240202 Rel.164142",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "in_alarm": false,
+        "in_alarm_source": "",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "F0-A7-31-00-00-00",
+        "model": "KH100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "Europe/London",
+        "rssi": -37,
+        "signal_level": 3,
+        "specs": "UK",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 0,
+        "type": "SMART.KASAHUB"
+    },
+    "get_device_load_info": {
+        "cur_load_num": 24,
+        "load_level": "light",
+        "max_load_num": 64,
+        "total_memory": 4352,
+        "used_memory": 1581
+    },
+    "get_device_time": {
+        "region": "Europe/London",
+        "time_diff": 0,
+        "timestamp": 1713550228
+    },
+    "get_device_usage": {},
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.5.6 Build 240202 Rel.164142",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "led_rule": "always",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 358,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 1210,
+            "sunrise_offset": 0,
+            "sunset_offset": 0
+        }
+    },
+    "get_support_alarm_type_list": {
+        "alarm_type_list": [
+            "Doorbell Ring 1",
+            "Doorbell Ring 2",
+            "Doorbell Ring 3",
+            "Doorbell Ring 4",
+            "Doorbell Ring 5",
+            "Doorbell Ring 6",
+            "Doorbell Ring 7",
+            "Doorbell Ring 8",
+            "Doorbell Ring 9",
+            "Doorbell Ring 10",
+            "Phone Ring",
+            "Alarm 1",
+            "Alarm 2",
+            "Alarm 3",
+            "Alarm 4",
+            "Dripping Tap",
+            "Alarm 5",
+            "Connection 1",
+            "Connection 2"
+        ]
+    },
+    "get_support_child_device_category": {
+        "device_category_list": [
+            {
+                "category": "subg.trv"
+            },
+            {
+                "category": "subg.trigger"
+            },
+            {
+                "category": "subg.plugswitch"
+            }
+        ]
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [],
+        "start_index": 0,
+        "sum": 0,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "KH100",
+            "device_type": "SMART.KASAHUB",
+            "is_klap": false
+        }
+    }
+}

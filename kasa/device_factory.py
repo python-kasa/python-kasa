@@ -166,6 +166,7 @@ def get_device_class_from_family(device_type: str) -> type[Device] | None:
         "SMART.TAPOSWITCH": SmartBulb,
         "SMART.KASAPLUG": SmartDevice,
         "SMART.TAPOHUB": SmartDevice,
+        "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartBulb,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
