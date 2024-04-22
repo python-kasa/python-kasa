@@ -62,16 +62,15 @@ class Firmware(SmartModule):
                     type=FeatureType.Switch,
                 )
             )
-        if device._is_cloud_connected:
-            self._add_feature(
-                Feature(
-                    device,
-                    "Update available",
-                    container=self,
-                    attribute_getter="update_available",
-                    type=FeatureType.BinarySensor,
-                )
+        self._add_feature(
+            Feature(
+                device,
+                "Update available",
+                container=self,
+                attribute_getter="update_available",
+                type=FeatureType.BinarySensor,
             )
+        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -94,25 +93,28 @@ class Firmware(SmartModule):
         return UpdateInfo.parse_obj(fw)
 
     @property
-    def update_available(self):
+    def update_available(self) -> bool | None:
         """Return True if update is available."""
+        if not self._device._is_cloud_connected:
+            return None
         return self.latest_firmware.update_available
 
     async def get_update_state(self):
         """Return update state."""
-        if self._device._is_cloud_connected:
-            return await self.call("get_fw_download_state")
-        raise KasaException(
-            "Device must be connected to the internet to get firmware download state."
-        )
+        if not self._device._is_cloud_connected:
+            raise KasaException(
+                "Device must be connected to the internet "
+                "to get firmware download state."
+            )
+        return await self.call("get_fw_download_state")
 
     async def update(self):
         """Update the device firmware."""
-        if self._device._is_cloud_connected:
-            return await self.call("fw_download")
-        raise KasaException(
-            "Device must be connected to the internet to download firmware."
-        )
+        if not self._device._is_cloud_connected:
+            raise KasaException(
+                "Device must be connected to the internet to download firmware."
+            )
+        return await self.call("fw_download")
 
     @property
     def auto_update_enabled(self):
@@ -126,7 +128,3 @@ class Firmware(SmartModule):
         """Change autoupdate setting."""
         data = {**self.data["get_auto_update_info"], "enable": enabled}
         await self.call("set_auto_update_info", data)  # {"enable": enabled})
-
-    async def _check_supported(self) -> bool:
-        """Check the module has auto_update or is connected."""
-        return self._device._is_cloud_connected or self.supported_version > 1

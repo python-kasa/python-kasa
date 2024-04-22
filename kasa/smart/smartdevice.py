@@ -117,13 +117,6 @@ class SmartDevice(Device):
         # supported color temperature range is contained within the response.
         self._last_update.update(resp)
         self._info = self._try_get_response(resp, "get_device_info")
-        # It's likely that all SMART devices respond to get_connect_cloud_state but
-        # just in case some don't pass a default {} here. The KP125M fixture does not
-        # have it because it was created prior to dump_devinfo having the response.
-        self._is_cloud_connected = bool(
-            (cloud_state := self._try_get_response(resp, "get_connect_cloud_state", {}))
-            and cloud_state["status"] == 0
-        )
 
         # Create our internal presentation of available components
         self._components_raw = resp["component_nego"]
@@ -153,10 +146,6 @@ class SmartDevice(Device):
         self._last_update = resp = await self.protocol.query(req)
 
         self._info = self._try_get_response(resp, "get_device_info")
-        self._is_cloud_connected = bool(
-            (cloud_state := self._try_get_response(resp, "get_connect_cloud_state", {}))
-            and cloud_state["status"] == 0
-        )
 
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
             # TODO: we don't currently perform queries on children based on modules,
@@ -175,7 +164,13 @@ class SmartDevice(Device):
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
 
+        # Initialise the CloudModule
+        cloudModule = CloudModule(self, CloudModule.REQUIRED_COMPONENT)  # noqa: F405
+        self.modules[cloudModule.name] = cloudModule
+
         for mod in SmartModule.REGISTERED_MODULES.values():
+            if mod == CloudModule:  # noqa: F405
+                continue
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
@@ -254,6 +249,13 @@ class SmartDevice(Device):
         for module in self.modules.values():
             for feat in module._module_features.values():
                 self._add_feature(feat)
+
+    @property
+    def is_cloud_connected(self):
+        """Returns if the device is connected to the cloud."""
+        if "CloudModule" not in self.modules:
+            return False
+        return self.modules["CloudModule"].is_connected
 
     @property
     def sys_info(self) -> dict[str, Any]:
