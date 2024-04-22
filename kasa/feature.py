@@ -36,6 +36,8 @@ class Feature:
     container: Any = None
     #: Icon suggestion
     icon: str | None = None
+    #: Unit, if applicable
+    unit: str | None = None
     #: Type of the feature
     type: FeatureType = FeatureType.Sensor
 

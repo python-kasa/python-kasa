@@ -167,7 +167,8 @@ class SmartDevice(Device):
                     mod.__name__,
                 )
                 module = mod(self, mod.REQUIRED_COMPONENT)
-                self.modules[module.name] = module
+                if await module._check_supported():
+                    self.modules[module.name] = module
 
     async def _initialize_features(self):
         """Initialize device features."""

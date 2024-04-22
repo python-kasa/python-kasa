@@ -6,6 +6,7 @@ from .battery import BatterySensor
 from .brightness import Brightness
 from .childdevicemodule import ChildDeviceModule
 from .cloudmodule import CloudModule
+from .colormodule import ColorModule
 from .colortemp import ColorTemperatureModule
 from .devicemodule import DeviceModule
 from .energymodule import EnergyModule
@@ -16,6 +17,7 @@ from .ledmodule import LedModule
 from .lighttransitionmodule import LightTransitionModule
 from .reportmodule import ReportModule
 from .temperature import TemperatureSensor
+from .temperaturecontrol import TemperatureControl
 from .timemodule import TimeModule
 
 __all__ = [
@@ -27,6 +29,7 @@ __all__ = [
     "BatterySensor",
     "HumiditySensor",
     "TemperatureSensor",
+    "TemperatureControl",
     "ReportModule",
     "AutoOffModule",
     "LedModule",
@@ -36,4 +39,5 @@ __all__ = [
     "CloudModule",
     "LightTransitionModule",
     "ColorTemperatureModule",
+    "ColorModule",
 ]
