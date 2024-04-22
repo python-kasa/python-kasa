@@ -77,7 +77,13 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
     await dev._negotiate()
 
     # Check that we got the initial negotiation call
-    query.assert_any_call({"component_nego": None, "get_device_info": None})
+    query.assert_any_call(
+        {
+            "component_nego": None,
+            "get_device_info": None,
+            "get_connect_cloud_state": None,
+        }
+    )
     assert dev._components_raw
 
     # Check the children are created, if device supports them

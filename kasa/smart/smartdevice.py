@@ -45,6 +45,7 @@ class SmartDevice(Device):
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
+        self._is_cloud_connected = False
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -104,7 +105,11 @@ class SmartDevice(Device):
         We fetch the device info and the available components as early as possible.
         If the device reports supporting child devices, they are also initialized.
         """
-        initial_query = {"component_nego": None, "get_device_info": None}
+        initial_query = {
+            "component_nego": None,
+            "get_device_info": None,
+            "get_connect_cloud_state": None,
+        }
         resp = await self.protocol.query(initial_query)
 
         # Save the initial state to allow modules access the device info already
@@ -112,6 +117,13 @@ class SmartDevice(Device):
         # supported color temperature range is contained within the response.
         self._last_update.update(resp)
         self._info = self._try_get_response(resp, "get_device_info")
+        # It's likely that all SMART devices respond to get_connect_cloud_state but
+        # just in case some don't pass a default {} here. The KP125M fixture does not
+        # have it because it was created prior to dump_devinfo having the response.
+        self._is_cloud_connected = bool(
+            (cloud_state := self._try_get_response(resp, "get_connect_cloud_state", {}))
+            and cloud_state["status"] == 0
+        )
 
         # Create our internal presentation of available components
         self._components_raw = resp["component_nego"]
@@ -141,6 +153,11 @@ class SmartDevice(Device):
         self._last_update = resp = await self.protocol.query(req)
 
         self._info = self._try_get_response(resp, "get_device_info")
+        self._is_cloud_connected = bool(
+            (cloud_state := self._try_get_response(resp, "get_connect_cloud_state", {}))
+            and cloud_state["status"] == 0
+        )
+
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
             # TODO: we don't currently perform queries on children based on modules,
             #  but just update the information that is returned in the main query.

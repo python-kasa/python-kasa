@@ -62,15 +62,16 @@ class Firmware(SmartModule):
                     type=FeatureType.Switch,
                 )
             )
-        self._add_feature(
-            Feature(
-                device,
-                "Update available",
-                container=self,
-                attribute_getter="update_available",
-                type=FeatureType.BinarySensor,
+        if device._is_cloud_connected:
+            self._add_feature(
+                Feature(
+                    device,
+                    "Update available",
+                    container=self,
+                    attribute_getter="update_available",
+                    type=FeatureType.BinarySensor,
+                )
             )
-        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -85,7 +86,7 @@ class Firmware(SmartModule):
     def latest_firmware(self):
         """Return latest firmware information."""
         fw = self.data.get("get_latest_fw") or self.data
-        if isinstance(fw, SmartErrorCode):
+        if not self._device._is_cloud_connected or isinstance(fw, SmartErrorCode):
             # Error in response, probably disconnected from the cloud.
             return UpdateInfo(type=0, need_to_upgrade=False)
 
@@ -116,3 +117,7 @@ class Firmware(SmartModule):
         """Change autoupdate setting."""
         data = {**self.data["get_auto_update_info"], "enable": enabled}
         await self.call("set_auto_update_info", data)  # {"enable": enabled})
+
+    async def _check_supported(self) -> bool:
+        """Check the color_temp_range has more than one value."""
+        return self._device._is_cloud_connected
