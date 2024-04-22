@@ -500,6 +500,14 @@ async def get_smart_test_calls(device: SmartDevice):
 
     # Child component calls
     for child_device_id, child_components in child_device_components.items():
+        test_calls.append(
+            SmartCall(
+                module="component_nego",
+                request=SmartRequest("component_nego"),
+                should_succeed=True,
+                child_device_id=child_device_id,
+            )
+        )
         for component_id, ver_code in child_components.items():
             if (requests := get_component_requests(component_id, ver_code)) is not None:
                 component_test_calls = [
@@ -621,7 +629,8 @@ async def get_smart_fixtures(device: SmartDevice, batch_size: int):
             response["get_device_info"]["device_id"] = scrubbed
         # If the child is a different model to the parent create a seperate fixture
         if (
-            "get_device_info" in response
+            "component_nego" in response
+            and "get_device_info" in response
             and (child_model := response["get_device_info"].get("model"))
             and child_model != final["get_device_info"]["model"]
         ):
