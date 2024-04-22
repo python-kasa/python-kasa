@@ -231,6 +231,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Wall Switches**: ES20M, HS200, HS210, HS220, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB110
 - **Light Strips**: KL400L5, KL420L5, KL430
+- **Hubs**: KH100<sup>\*</sup>
 
 ### Supported Tapo<sup>\*</sup> devices
 
@@ -266,7 +267,7 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 ### TP-Link Tapo support
 
 This library has recently added a limited supported for devices that carry Tapo branding.
-That support is currently limited to the cli.  The package `kasa.tapo` is in flux and if you
+That support is currently limited to the cli.  The package `kasa.smart` is in flux and if you
 use it directly you should expect it could break in future releases until this statement is removed.
 
 Other TAPO libraries are:
@@ -276,3 +277,4 @@ Other TAPO libraries are:
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
 * [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)
   * [Home Assistant integration](https://github.com/petretiandrea/home-assistant-tapo-p100)
+* [rust and python implementation](https://github.com/mihai-dinculescu/tapo/)

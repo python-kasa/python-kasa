@@ -25,24 +25,27 @@ class EnergyModule(SmartModule):
                 name="Current consumption",
                 attribute_getter="current_power",
                 container=self,
+                unit="W",
             )
-        )  # W or mW?
+        )
         self._add_feature(
             Feature(
                 device,
                 name="Today's consumption",
                 attribute_getter="emeter_today",
                 container=self,
+                unit="Wh",
             )
-        )  # Wh or kWh?
+        )
         self._add_feature(
             Feature(
                 device,
                 name="This month's consumption",
                 attribute_getter="emeter_this_month",
                 container=self,
+                unit="Wh",
             )
-        )  # Wh or kWH?
+        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -54,9 +57,11 @@ class EnergyModule(SmartModule):
         return req
 
     @property
-    def current_power(self):
-        """Current power."""
-        return self.emeter_realtime.power
+    def current_power(self) -> float | None:
+        """Current power in watts."""
+        if power := self.energy.get("current_power"):
+            return power / 1_000
+        return None
 
     @property
     def energy(self):
@@ -72,22 +77,16 @@ class EnergyModule(SmartModule):
         return EmeterStatus(
             {
                 "power_mw": self.energy.get("current_power"),
-                "total": self._convert_energy_data(
-                    self.energy.get("today_energy"), 1 / 1000
-                ),
+                "total": self.energy.get("today_energy") / 1_000,
             }
         )
 
     @property
     def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
-        return self._convert_energy_data(self.energy.get("month_energy"), 1 / 1000)
+        return self.energy.get("month_energy")
 
     @property
     def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
-        return self._convert_energy_data(self.energy.get("today_energy"), 1 / 1000)
-
-    def _convert_energy_data(self, data, scale) -> float | None:
-        """Return adjusted emeter information."""
-        return data if not data else data * scale
+        return self.energy.get("today_energy")
