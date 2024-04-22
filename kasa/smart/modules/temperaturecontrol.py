@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class TemperatureControl(SmartModule):
     """Implementation of temperature module."""
 
-    REQUIRED_COMPONENT = "temperature_control"
+    REQUIRED_COMPONENT = "temp_control"
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
@@ -57,11 +57,11 @@ class TemperatureControl(SmartModule):
         return self._device.sys_info["max_control_temp"]
 
     @property
-    def target_temperature(self) -> int:
+    def target_temperature(self) -> float:
         """Return target temperature."""
-        return self._device.sys_info["target_temperature"]
+        return self._device.sys_info["target_temp"]
 
-    async def set_target_temperature(self, target: int):
+    async def set_target_temperature(self, target: float):
         """Set target temperature."""
         if (
             target < self.minimum_target_temperature

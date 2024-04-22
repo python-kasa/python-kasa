@@ -1068,7 +1068,7 @@
             }
         ],
         "start_index": 0,
-        "sum": 12
+        "sum": 10
     },
     "get_child_device_list": {
         "child_device_list": [
@@ -1409,7 +1409,7 @@
             }
         ],
         "start_index": 0,
-        "sum": 12
+        "sum": 10
     },
     "get_connect_cloud_state": {
         "status": 0

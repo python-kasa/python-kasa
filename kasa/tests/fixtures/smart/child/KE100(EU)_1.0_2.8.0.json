@@ -1,4 +1,116 @@
 {
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "frost_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "child_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "temp_control",
+                "ver_code": 1
+            },
+            {
+                "id": "remove_scale",
+                "ver_code": 1
+            },
+            {
+                "id": "shutdown_mode",
+                "ver_code": 1
+            },
+            {
+                "id": "progress_calibration",
+                "ver_code": 1
+            },
+            {
+                "id": "early_start",
+                "ver_code": 1
+            },
+            {
+                "id": "temp_record",
+                "ver_code": 1
+            },
+            {
+                "id": "screen_setting",
+                "ver_code": 1
+            },
+            {
+                "id": "night_mode",
+                "ver_code": 1
+            },
+            {
+                "id": "smart_control_schedule",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "battery_detect",
+                "ver_code": 1
+            },
+            {
+                "id": "temperature_correction",
+                "ver_code": 1
+            },
+            {
+                "id": "window_open_detect",
+                "ver_code": 2
+            }
+        ]
+    },
     "get_connect_cloud_state": {
         "status": 0
     },

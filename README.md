@@ -231,6 +231,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Wall Switches**: ES20M, HS200, HS210, HS220, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB110
 - **Light Strips**: KL400L5, KL420L5, KL430
+- **Hubs**: KH100<sup>\*</sup>
 
 ### Supported Tapo<sup>\*</sup> devices
 

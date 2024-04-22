@@ -1,7 +1,7 @@
 import pytest
 
 from kasa.smart.modules import TemperatureSensor
-from kasa.tests.device_fixtures import parametrize
+from kasa.tests.device_fixtures import parametrize, thermostats_smart
 
 temperature = parametrize(
     "has temperature control",
@@ -10,11 +10,11 @@ temperature = parametrize(
 )
 
 
-@temperature
+@thermostats_smart
 @pytest.mark.parametrize(
     "feature, type",
     [
-        ("target_temperature", int),
+        ("target_temperature", float),
         ("temperature_offset", int),
     ],
 )

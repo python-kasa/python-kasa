@@ -107,8 +107,9 @@ DIMMERS = {
     *DIMMERS_SMART,
 }
 
-HUBS_SMART = {"H100"}
-SENSORS_SMART = {"T315"}
+HUBS_SMART = {"H100", "KH100"}
+SENSORS_SMART = {"T310", "T315"}
+THERMOSTATS_SMART = {"KE100"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "KP125M", "EP25"}
@@ -126,6 +127,7 @@ ALL_DEVICES_SMART = (
     .union(HUBS_SMART)
     .union(SENSORS_SMART)
     .union(SWITCHES_SMART)
+    .union(THERMOSTATS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -275,6 +277,9 @@ hubs_smart = parametrize(
 sensors_smart = parametrize(
     "sensors smart", model_filter=SENSORS_SMART, protocol_filter={"SMART.CHILD"}
 )
+thermostats_smart = parametrize(
+    "thermostats smart", model_filter=THERMOSTATS_SMART, protocol_filter={"SMART.CHILD"}
+)
 device_smart = parametrize(
     "devices smart", model_filter=ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
@@ -296,6 +301,7 @@ def check_categories():
         + dimmers_smart.args[1]
         + hubs_smart.args[1]
         + sensors_smart.args[1]
+        + thermostats_smart.args[1]
     )
     diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -313,7 +319,12 @@ check_categories()
 def device_for_fixture_name(model, protocol):
     if "SMART" in protocol:
         for d in chain(
-            PLUGS_SMART, SWITCHES_SMART, STRIPS_SMART, HUBS_SMART, SENSORS_SMART
+            PLUGS_SMART,
+            SWITCHES_SMART,
+            STRIPS_SMART,
+            HUBS_SMART,
+            SENSORS_SMART,
+            THERMOSTATS_SMART,
         ):
             if d in model:
                 return SmartDevice

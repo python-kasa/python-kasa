@@ -28,16 +28,17 @@ class TemperatureSensor(SmartModule):
                 icon="mdi:thermometer",
             )
         )
-        self._add_feature(
-            Feature(
-                device,
-                "Temperature warning",
-                container=self,
-                attribute_getter="temperature_warning",
-                type=FeatureType.BinarySensor,
-                icon="mdi:alert",
+        if "current_temp_exception" in device.sys_info:
+            self._add_feature(
+                Feature(
+                    device,
+                    "Temperature warning",
+                    container=self,
+                    attribute_getter="temperature_warning",
+                    type=FeatureType.BinarySensor,
+                    icon="mdi:alert",
+                )
             )
-        )
         self._add_feature(
             Feature(
                 device,
@@ -57,7 +58,9 @@ class TemperatureSensor(SmartModule):
     @property
     def temperature_warning(self) -> bool:
         """Return True if temperature is outside of the wanted range."""
-        return self._device.sys_info["current_temp_exception"] != 0
+        if "current_temp_exception" in self._device.sys_info:
+            return self._device.sys_info["current_temp_exception"] != 0
+        return False
 
     @property
     def temperature_unit(self):

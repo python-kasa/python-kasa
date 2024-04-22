@@ -1,4 +1,80 @@
 {
+    "component_nego" : {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "trigger_log",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "battery_detect",
+                "ver_code": 1
+            },
+            {
+                "id": "temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "humidity",
+                "ver_code": 1
+            },
+            {
+                "id": "temp_humidity_record",
+                "ver_code": 1
+            },
+            {
+                "id": "comfort_temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "comfort_humidity",
+                "ver_code": 1
+            },
+            {
+                "id": "report_mode",
+                "ver_code": 1
+            }
+        ]
+    },
     "get_connect_cloud_state": {
         "status": 0
     },
