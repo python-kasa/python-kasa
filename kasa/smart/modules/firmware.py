@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from ...exceptions import SmartErrorCode
 from ...feature import Feature, FeatureType
@@ -74,9 +74,7 @@ class Firmware(SmartModule):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        req = {
-            "get_latest_fw": None,
-        }
+        req: dict[str, Any] = {"get_latest_fw": None}
         if self.supported_version > 1:
             req["get_auto_update_info"] = None
         return req
@@ -85,15 +83,17 @@ class Firmware(SmartModule):
     def latest_firmware(self):
         """Return latest firmware information."""
         fw = self.data.get("get_latest_fw") or self.data
-        if isinstance(fw, SmartErrorCode):
+        if not self._device.is_cloud_connected or isinstance(fw, SmartErrorCode):
             # Error in response, probably disconnected from the cloud.
             return UpdateInfo(type=0, need_to_upgrade=False)
 
         return UpdateInfo.parse_obj(fw)
 
     @property
-    def update_available(self):
+    def update_available(self) -> bool | None:
         """Return True if update is available."""
+        if not self._device.is_cloud_connected:
+            return None
         return self.latest_firmware.update_available
 
     async def get_update_state(self):

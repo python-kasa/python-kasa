@@ -65,7 +65,6 @@ class FakeSmartTransport(BaseTransport):
                 },
             },
         ),
-        "get_connect_cloud_state": ("cloud_connect", {"status": 1}),
         "get_on_off_gradually_info": ("on_off_gradually", {"enable": True}),
         "get_latest_fw": (
             "firmware",
@@ -189,7 +188,7 @@ class FakeSmartTransport(BaseTransport):
                 # calling the unsupported device in the first place.
                 retval = {
                     "error_code": SmartErrorCode.PARAMS_ERROR.value,
-                    "method": "get_device_usage",
+                    "method": method,
                 }
             # Reduce warning spam by consolidating and reporting at the end of the run
             if self.fixture_name not in pytest.fixtures_missing_methods:

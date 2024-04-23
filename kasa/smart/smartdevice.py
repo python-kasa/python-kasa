@@ -108,7 +108,11 @@ class SmartDevice(Device):
         We fetch the device info and the available components as early as possible.
         If the device reports supporting child devices, they are also initialized.
         """
-        initial_query = {"component_nego": None, "get_device_info": None}
+        initial_query = {
+            "component_nego": None,
+            "get_device_info": None,
+            "get_connect_cloud_state": None,
+        }
         resp = await self.protocol.query(initial_query)
 
         # Save the initial state to allow modules access the device info already
@@ -256,6 +260,13 @@ class SmartDevice(Device):
         for module in self.modules.values():
             for feat in module._module_features.values():
                 self._add_feature(feat)
+
+    @property
+    def is_cloud_connected(self):
+        """Returns if the device is connected to the cloud."""
+        if "CloudModule" not in self.modules:
+            return False
+        return self.modules["CloudModule"].is_connected
 
     @property
     def sys_info(self) -> dict[str, Any]:

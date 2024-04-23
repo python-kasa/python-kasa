@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from pytest_mock import MockerFixture
@@ -77,7 +78,13 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
     await dev._negotiate()
 
     # Check that we got the initial negotiation call
-    query.assert_any_call({"component_nego": None, "get_device_info": None})
+    query.assert_any_call(
+        {
+            "component_nego": None,
+            "get_device_info": None,
+            "get_connect_cloud_state": None,
+        }
+    )
     assert dev._components_raw
 
     # Check the children are created, if device supports them
@@ -134,3 +141,62 @@ async def test_smartdevice_brightness(dev: SmartBulb):
 
     with pytest.raises(ValueError):
         await dev.set_brightness(feature.maximum_value + 10)
+
+
+@device_smart
+async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixture):
+    """Test is_cloud_connected property."""
+    assert isinstance(dev, SmartDevice)
+    assert "cloud_connect" in dev._components
+
+    is_connected = (
+        (cc := dev._last_update.get("get_connect_cloud_state"))
+        and not isinstance(cc, SmartErrorCode)
+        and cc["status"] == 0
+    )
+
+    assert dev.is_cloud_connected == is_connected
+    last_update = dev._last_update
+
+    last_update["get_connect_cloud_state"] = {"status": 0}
+    with patch.object(dev.protocol, "query", return_value=last_update):
+        await dev.update()
+        assert dev.is_cloud_connected is True
+
+    last_update["get_connect_cloud_state"] = {"status": 1}
+    with patch.object(dev.protocol, "query", return_value=last_update):
+        await dev.update()
+        assert dev.is_cloud_connected is False
+
+    last_update["get_connect_cloud_state"] = SmartErrorCode.UNKNOWN_METHOD_ERROR
+    with patch.object(dev.protocol, "query", return_value=last_update):
+        await dev.update()
+        assert dev.is_cloud_connected is False
+
+    # Test for no cloud_connect component during device initialisation
+    component_list = [
+        val
+        for val in dev._components_raw["component_list"]
+        if val["id"] not in {"cloud_connect"}
+    ]
+    initial_response = {
+        "component_nego": {"component_list": component_list},
+        "get_connect_cloud_state": last_update["get_connect_cloud_state"],
+        "get_device_info": last_update["get_device_info"],
+    }
+    # Child component list is not stored on the device
+    if "get_child_device_list" in last_update:
+        child_component_list = await dev.protocol.query(
+            "get_child_device_component_list"
+        )
+        last_update["get_child_device_component_list"] = child_component_list[
+            "get_child_device_component_list"
+        ]
+    new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+    with patch.object(
+        new_dev.protocol,
+        "query",
+        side_effect=[initial_response, last_update, last_update],
+    ):
+        await new_dev.update()
+        assert new_dev.is_cloud_connected is False
