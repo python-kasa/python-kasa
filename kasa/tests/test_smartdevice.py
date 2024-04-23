@@ -193,10 +193,19 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
             "get_child_device_component_list"
         ]
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+
+    first_call = True
+
+    def side_effect_func(*_, **__):
+        nonlocal first_call
+        resp = initial_response if first_call else last_update
+        first_call = False
+        return resp
+
     with patch.object(
         new_dev.protocol,
         "query",
-        side_effect=[initial_response, last_update, last_update],
+        side_effect=side_effect_func,
     ):
         await new_dev.update()
         assert new_dev.is_cloud_connected is False

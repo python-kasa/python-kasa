@@ -149,16 +149,20 @@ class SmartDevice(Device):
         for device, req in device_reqs.items():
             if req:
                 resp = await device.protocol.query(req)
-                device._last_update = {
-                    k: v for k, v in resp.items() if not isinstance(v, SmartErrorCode)
-                }
+                device._last_update = resp
+                if not device._parent:
+                    device._info = self._try_get_response(resp, "get_device_info")
 
-        self._info = self._try_get_response(resp, "get_device_info")
-        if child_info := self._try_get_response(resp, "get_child_device_list", {}):
-            # TODO: we don't currently perform queries on children based on modules,
-            #  but just update the information that is returned in the main query.
-            for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+                    if child_info := self._try_get_response(
+                        resp, "get_child_device_list", {}
+                    ):
+                        # TODO: we don't currently perform get_device_info on children
+                        # based on modules, but just update the information that is
+                        # returned in the main query.
+                        for info in child_info["child_device_list"]:
+                            self._children[info["device_id"]]._update_internal_state(
+                                info
+                            )
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
