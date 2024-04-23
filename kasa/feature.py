@@ -16,7 +16,7 @@ class FeatureType(Enum):
     Sensor = auto()
     BinarySensor = auto()
     Switch = auto()
-    Button = auto()
+    Action = auto()
     Number = auto()
 
 
@@ -59,10 +59,10 @@ class Feature:
     @property
     def value(self):
         """Return the current value."""
-        if self.type == FeatureType.Button:
-            return "<Button>"
+        if self.type == FeatureType.Action:
+            return "<Action>"
         if self.attribute_getter is None:
-            raise ValueError("Not a button and no attribute_getter set")
+            raise ValueError("Not an action and no attribute_getter set")
 
         container = self.container if self.container is not None else self.device
         if isinstance(self.attribute_getter, Callable):
@@ -81,7 +81,7 @@ class Feature:
                 )
 
         container = self.container if self.container is not None else self.device
-        if self.type == FeatureType.Button:
+        if self.type == FeatureType.Action:
             return await getattr(container, self.attribute_setter)()
 
         return await getattr(container, self.attribute_setter)(value)

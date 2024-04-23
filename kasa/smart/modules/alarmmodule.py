@@ -60,7 +60,7 @@ class AlarmModule(SmartModule):
                 "Test alarm",
                 container=self,
                 attribute_setter="play",
-                type=FeatureType.Button,
+                type=FeatureType.Action,
             )
         )
         self._add_feature(
@@ -69,7 +69,7 @@ class AlarmModule(SmartModule):
                 "Stop alarm",
                 container=self,
                 attribute_setter="stop",
-                type=FeatureType.Button,
+                type=FeatureType.Action,
             )
         )
 

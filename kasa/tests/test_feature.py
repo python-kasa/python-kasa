@@ -81,7 +81,7 @@ async def test_feature_setter_read_only(dummy_feature):
         await dummy_feature.set_value("value for read only feature")
 
 
-async def test_feature_button(mocker):
+async def test_feature_action(mocker):
     """Test that setting value on button calls the setter."""
     feat = Feature(
         device=DummyDevice(),  # type: ignore[arg-type]
@@ -89,9 +89,9 @@ async def test_feature_button(mocker):
         attribute_setter="call_action",
         container=None,
         icon="mdi:dummy",
-        type=FeatureType.Button,
+        type=FeatureType.Action,
     )
     mock_call_action = mocker.patch.object(feat.device, "call_action", create=True)
-    assert feat.value == "<Button>"
+    assert feat.value == "<Action>"
     await feat.set_value(1234)
     mock_call_action.assert_called()
