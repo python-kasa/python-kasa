@@ -13,7 +13,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
-from ..feature import Feature, FeatureType
+from ..feature import Feature
 from ..smartprotocol import SmartProtocol
 from .modules import *  # noqa: F403
 
@@ -191,7 +191,7 @@ class SmartDevice(Device):
                     "State",
                     attribute_getter="is_on",
                     attribute_setter="set_state",
-                    type=FeatureType.Switch,
+                    type=Feature.Type.Switch,
                     category=Feature.Category.Primary,
                 )
             )
@@ -236,7 +236,7 @@ class SmartDevice(Device):
                     "Overheated",
                     attribute_getter=lambda x: x._info["overheated"],
                     icon="mdi:heat-wave",
-                    type=FeatureType.BinarySensor,
+                    type=Feature.Type.BinarySensor,
                     category=Feature.Category.Debug,
                 )
             )

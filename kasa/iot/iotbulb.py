@@ -15,7 +15,7 @@ except ImportError:
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature, FeatureType
+from ..feature import Feature
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
@@ -220,7 +220,7 @@ class IotBulb(IotDevice, Bulb):
                     attribute_setter="set_brightness",
                     minimum_value=1,
                     maximum_value=100,
-                    type=FeatureType.Number,
+                    type=Feature.Type.Number,
                     category=Feature.Category.Primary,
                 )
             )

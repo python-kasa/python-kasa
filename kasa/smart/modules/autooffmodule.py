@@ -27,6 +27,7 @@ class AutoOffModule(SmartModule):
                 container=self,
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",
+                type=Feature.Type.Switch,
             )
         )
         self._add_feature(
@@ -36,6 +37,7 @@ class AutoOffModule(SmartModule):
                 container=self,
                 attribute_getter="delay",
                 attribute_setter="set_delay",
+                type=Feature.Type.Number,
             )
         )
         self._add_feature(

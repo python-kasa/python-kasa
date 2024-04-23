@@ -1,6 +1,6 @@
 """Implementation of the ambient light (LAS) module found in some dimmers."""
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..iotmodule import IotModule, merge
 
 # TODO create tests and use the config reply there
@@ -25,7 +25,7 @@ class AmbientLight(IotModule):
                 name="Ambient Light",
                 icon="mdi:brightness-percent",
                 attribute_getter="ambientlight_brightness",
-                type=FeatureType.Sensor,
+                type=Feature.Type.Sensor,
             )
         )
 

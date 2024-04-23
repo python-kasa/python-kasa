@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ class Brightness(SmartModule):
                 attribute_setter="set_brightness",
                 minimum_value=BRIGHTNESS_MIN,
                 maximum_value=BRIGHTNESS_MAX,
-                type=FeatureType.Number,
+                type=Feature.Type.Number,
                 category=Feature.Category.Primary,
             )
         )
