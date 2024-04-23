@@ -193,4 +193,4 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
         side_effect=[initial_response, last_update, last_update],
     ):
         await new_dev.update()
-        assert dev.is_cloud_connected is False
+        assert new_dev.is_cloud_connected is False
