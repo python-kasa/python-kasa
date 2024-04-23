@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
-from ...exceptions import KasaException, SmartErrorCode
+from ...exceptions import SmartErrorCode
 from ...feature import Feature, FeatureType
 from ..smartmodule import SmartModule
 
@@ -74,10 +74,7 @@ class Firmware(SmartModule):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        req: dict[str, Any] = {}
-        if self._device._is_cloud_connected:
-            req["get_latest_fw"] = None
-
+        req: dict[str, Any] = {"get_latest_fw": None}
         if self.supported_version > 1:
             req["get_auto_update_info"] = None
         return req
@@ -86,7 +83,7 @@ class Firmware(SmartModule):
     def latest_firmware(self):
         """Return latest firmware information."""
         fw = self.data.get("get_latest_fw") or self.data
-        if not self._device._is_cloud_connected or isinstance(fw, SmartErrorCode):
+        if not self._device.is_cloud_connected or isinstance(fw, SmartErrorCode):
             # Error in response, probably disconnected from the cloud.
             return UpdateInfo(type=0, need_to_upgrade=False)
 
@@ -95,25 +92,16 @@ class Firmware(SmartModule):
     @property
     def update_available(self) -> bool | None:
         """Return True if update is available."""
-        if not self._device._is_cloud_connected:
+        if not self._device.is_cloud_connected:
             return None
         return self.latest_firmware.update_available
 
     async def get_update_state(self):
         """Return update state."""
-        if not self._device._is_cloud_connected:
-            raise KasaException(
-                "Device must be connected to the internet "
-                "to get firmware download state."
-            )
         return await self.call("get_fw_download_state")
 
     async def update(self):
         """Update the device firmware."""
-        if not self._device._is_cloud_connected:
-            raise KasaException(
-                "Device must be connected to the internet to download firmware."
-            )
         return await self.call("fw_download")
 
     @property

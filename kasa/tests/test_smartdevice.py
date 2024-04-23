@@ -134,3 +134,34 @@ async def test_smartdevice_brightness(dev: SmartBulb):
 
     with pytest.raises(ValueError):
         await dev.set_brightness(feature.maximum_value + 10)
+
+
+@device_smart
+async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixture):
+    """Test is_cloud_connected property."""
+    assert isinstance(dev, SmartDevice)
+    assert "cloud_connect" in dev._components
+
+    is_connected = (
+        (cc := dev._last_update.get("get_connect_cloud_state"))
+        and not isinstance(cc, SmartErrorCode)
+        and cc["status"] == 0
+    )
+
+    assert dev.is_cloud_connected == is_connected
+    last_update = dev._last_update
+
+    last_update["get_connect_cloud_state"] = {"status": 0}
+    with mocker.patch.object(dev.protocol, "query", return_value=last_update):
+        await dev.update()
+        assert dev.is_cloud_connected is True
+
+    last_update["get_connect_cloud_state"] = {"status": 1}
+    with mocker.patch.object(dev.protocol, "query", return_value=last_update):
+        await dev.update()
+        assert dev.is_cloud_connected is False
+
+    last_update["get_connect_cloud_state"] = SmartErrorCode.UNKNOWN_METHOD_ERROR
+    with mocker.patch.object(dev.protocol, "query", return_value=last_update):
+        await dev.update()
+        assert dev.is_cloud_connected is False

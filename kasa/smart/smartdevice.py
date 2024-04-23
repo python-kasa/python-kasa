@@ -45,7 +45,6 @@ class SmartDevice(Device):
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
-        self._is_cloud_connected = False
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -146,7 +145,6 @@ class SmartDevice(Device):
         self._last_update = resp = await self.protocol.query(req)
 
         self._info = self._try_get_response(resp, "get_device_info")
-
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
             # TODO: we don't currently perform queries on children based on modules,
             #  but just update the information that is returned in the main query.
@@ -164,13 +162,7 @@ class SmartDevice(Device):
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
 
-        # Initialise the CloudModule
-        cloudModule = CloudModule(self, CloudModule.REQUIRED_COMPONENT)  # noqa: F405
-        self.modules[cloudModule.name] = cloudModule
-
         for mod in SmartModule.REGISTERED_MODULES.values():
-            if mod == CloudModule:  # noqa: F405
-                continue
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
