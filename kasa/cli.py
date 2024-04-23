@@ -648,7 +648,6 @@ async def state(ctx, dev: Device):
     echo(f"\tLocation:     {dev.location}")
 
     _echo_all_features(dev.features)
-        echo(f"\t{feature.name} ({id_}): {feature.value}{unit}")
 
     echo("\n\t[bold]== Modules ==[/bold]")
     for module in dev.modules.values():
