@@ -54,6 +54,24 @@ class AlarmModule(SmartModule):
                 device, "Alarm volume", container=self, attribute_getter="alarm_volume"
             )
         )
+        self._add_feature(
+            Feature(
+                device,
+                "Test alarm",
+                container=self,
+                attribute_setter="play",
+                type=FeatureType.Action,
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                "Stop alarm",
+                container=self,
+                attribute_setter="stop",
+                type=FeatureType.Action,
+            )
+        )
 
     @property
     def alarm_sound(self):
@@ -83,8 +101,8 @@ class AlarmModule(SmartModule):
 
     async def play(self):
         """Play alarm."""
-        return self.call("play_alarm")
+        return await self.call("play_alarm")
 
     async def stop(self):
         """Stop alarm."""
-        return self.call("stop_alarm")
+        return await self.call("stop_alarm")
