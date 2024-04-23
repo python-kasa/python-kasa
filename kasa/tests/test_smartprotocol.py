@@ -7,7 +7,8 @@ from ..exceptions import (
     KasaException,
     SmartErrorCode,
 )
-from ..smartprotocol import _ChildProtocolWrapper
+from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
+from .fakeprotocol_smart import FakeSmartTransport
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 DUMMY_MULTIPLE_QUERY = {
@@ -180,3 +181,58 @@ async def test_childdevicewrapper_multiplerequest_error(dummy_protocol, mocker):
     mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
     with pytest.raises(KasaException):
         await wrapped_protocol.query(DUMMY_QUERY)
+
+
+@pytest.mark.parametrize("list_sum", [5, 10, 30])
+@pytest.mark.parametrize("batch_size", [1, 2, 3, 50])
+async def test_smart_protocol_lists_single_request(mocker, list_sum, batch_size):
+    child_device_list = [{"foo": i} for i in range(list_sum)]
+    response = {
+        "get_child_device_list": {
+            "child_device_list": child_device_list,
+            "start_index": 0,
+            "sum": list_sum,
+        }
+    }
+    request = {"get_child_device_list": None}
+
+    ft = FakeSmartTransport(
+        response, "foobar", list_return_size=batch_size, no_components=True
+    )
+    protocol = SmartProtocol(transport=ft)
+    query_spy = mocker.spy(protocol, "_execute_query")
+    resp = await protocol.query(request)
+    expected_count = int(list_sum / batch_size) + (1 if list_sum % batch_size else 0)
+    assert query_spy.call_count == expected_count
+    assert resp == response
+
+
+@pytest.mark.parametrize("list_sum", [5, 10, 30])
+@pytest.mark.parametrize("batch_size", [1, 2, 3, 50])
+async def test_smart_protocol_lists_multiple_request(mocker, list_sum, batch_size):
+    child_list = [{"foo": i} for i in range(list_sum)]
+    response = {
+        "get_child_device_list": {
+            "child_device_list": child_list,
+            "start_index": 0,
+            "sum": list_sum,
+        },
+        "get_child_device_component_list": {
+            "child_component_list": child_list,
+            "start_index": 0,
+            "sum": list_sum,
+        },
+    }
+    request = {"get_child_device_list": None, "get_child_device_component_list": None}
+
+    ft = FakeSmartTransport(
+        response, "foobar", list_return_size=batch_size, no_components=True
+    )
+    protocol = SmartProtocol(transport=ft)
+    query_spy = mocker.spy(protocol, "_execute_query")
+    resp = await protocol.query(request)
+    expected_count = 1 + 2 * (
+        int(list_sum / batch_size) + (0 if list_sum % batch_size else -1)
+    )
+    assert query_spy.call_count == expected_count
+    assert resp == response

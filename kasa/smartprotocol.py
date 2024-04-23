@@ -67,7 +67,9 @@ class SmartProtocol(BaseProtocol):
     async def _query(self, request: str | dict, retry_count: int = 3) -> dict:
         for retry in range(retry_count + 1):
             try:
-                return await self._execute_query(request, retry)
+                return await self._execute_query(
+                    request, retry_count=retry, handle_lists=True
+                )
             except _ConnectionError as sdex:
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
@@ -145,6 +147,9 @@ class SmartProtocol(BaseProtocol):
                 method = response["method"]
                 self._handle_response_error_code(response, method, raise_on_error=False)
                 result = response.get("result", None)
+                await self._handle_response_lists(
+                    result, method, retry_count=retry_count
+                )
                 multi_result[method] = result
         # Multi requests don't continue after errors so requery any missing
         for method, params in requests.items():
@@ -156,7 +161,9 @@ class SmartProtocol(BaseProtocol):
                 multi_result[method] = resp.get("result")
         return multi_result
 
-    async def _execute_query(self, request: str | dict, retry_count: int) -> dict:
+    async def _execute_query(
+        self, request: str | dict, *, retry_count: int, handle_lists: bool
+    ) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if isinstance(request, dict):
@@ -189,7 +196,39 @@ class SmartProtocol(BaseProtocol):
 
         # Single set_ requests do not return a result
         result = response_data.get("result")
+        if handle_lists and result:
+            await self._handle_response_lists(
+                result, smart_method, retry_count=retry_count
+            )
         return {smart_method: result}
+
+    async def _handle_response_lists(
+        self, response_result: dict[str, Any], method, retry_count
+    ):
+        if (
+            not isinstance(response_result, SmartErrorCode)
+            and "start_index" in response_result
+            and (list_sum := response_result.get("sum"))
+        ):
+            response_list_name = next(
+                iter(
+                    [
+                        key
+                        for key in response_result
+                        if isinstance(response_result[key], list)
+                    ]
+                )
+            )
+            while (list_length := len(response_result[response_list_name])) < list_sum:
+                response = await self._execute_query(
+                    {method: {"start_index": list_length}},
+                    retry_count=retry_count,
+                    handle_lists=False,
+                )
+                next_batch = response[method]
+                response_result[response_list_name].extend(
+                    next_batch[response_list_name]
+                )
 
     def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
