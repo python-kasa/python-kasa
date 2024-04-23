@@ -97,10 +97,14 @@ class Emeter(Usage):
         return data.get(current_month)
 
     @property
-    def current_consumption(self) -> float:
+    def current_consumption(self) -> float | None:
         """Get the current power consumption in Watt."""
-        response = self.realtime
-        return float(response["power"])
+        return self.realtime.power
+
+    @property
+    def emeter_total(self) -> float | None:
+        """Return total consumption since last reboot in kWh."""
+        return self.realtime.total
 
     @property
     def current(self) -> float | None:
