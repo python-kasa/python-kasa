@@ -22,6 +22,7 @@ class Emeter(Usage):
                 attribute_getter="current_consumption",
                 container=self,
                 unit="W",
+                id="current_power_w",  # for homeassistant backwards compat
             )
         )
         self._add_feature(
@@ -31,6 +32,7 @@ class Emeter(Usage):
                 attribute_getter="emeter_today",
                 container=self,
                 unit="kWh",
+                id="today_energy_kwh",  # for homeassistant backwards compat
             )
         )
         self._add_feature(
@@ -45,10 +47,21 @@ class Emeter(Usage):
         self._add_feature(
             Feature(
                 device,
+                name="Total consumption since reboot",
+                attribute_getter="emeter_total",
+                container=self,
+                unit="kWh",
+                id="total_energy_kwh",  # for homeassistant backwards compat
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
                 name="Voltage",
                 attribute_getter="voltage",
                 container=self,
                 unit="V",
+                id="voltage",  # for homeassistant backwards compat
             )
         )
         self._add_feature(
@@ -58,6 +71,7 @@ class Emeter(Usage):
                 attribute_getter="current",
                 container=self,
                 unit="A",
+                id="current_a",  # for homeassistant backwards compat
             )
         )
 
