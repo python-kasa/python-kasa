@@ -116,6 +116,8 @@ class Feature:
 
     def __repr__(self):
         s = f"{self.name} ({self.id}): {self.value}"
+        if self.unit is not None:
+            s += f" {self.unit}"
 
         if self.type == FeatureType.Number:
             s += f" (range: {self.minimum_value}-{self.maximum_value})"
