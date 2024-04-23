@@ -203,7 +203,7 @@ class SmartDevice(Device):
                     "Signal Level",
                     attribute_getter=lambda x: x._info["signal_level"],
                     icon="mdi:signal",
-                    category=Feature.Category.Debug,
+                    category=Feature.Category.Info,
                 )
             )
 
