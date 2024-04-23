@@ -69,13 +69,23 @@ class Feature:
     #: If set, this property will be used to set *minimum_value* and *maximum_value*.
     range_getter: str | None = None
 
+    #: Identifier
+    id: str | None = None
+
     def __post_init__(self):
         """Handle late-binding of members."""
+        # Set id, if unset
+        if self.id is None:
+            self.id = self.name.lower().replace(" ", "_")
+
+        # Populate minimum & maximum values, if range_getter is given
         container = self.container if self.container is not None else self.device
         if self.range_getter is not None:
             self.minimum_value, self.maximum_value = getattr(
                 container, self.range_getter
             )
+
+        # Set the category, if unset
         if self.category is Feature.Category.Unset:
             if self.attribute_setter:
                 self.category = Feature.Category.Config
@@ -103,3 +113,11 @@ class Feature:
 
         container = self.container if self.container is not None else self.device
         return await getattr(container, self.attribute_setter)(value)
+
+    def __repr__(self):
+        s = f"{self.name} ({self.id}): {self.value}"
+
+        if self.type == FeatureType.Number:
+            s += f" (range: {self.minimum_value}-{self.maximum_value})"
+
+        return s

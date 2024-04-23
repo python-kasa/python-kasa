@@ -596,11 +596,11 @@ def _echo_features(
     if not features:
         return
     echo(f"[bold]{title}[/bold]")
-    for id_, feat in features.items():
+    for _, feat in features.items():
         try:
-            echo(f"\t{feat.name} ({id_}): {feat.value}")
+            echo(f"\t{feat}")
         except Exception as ex:
-            echo(f"\t{feat.name} ({id_}): got exception (%s)" % ex)
+            echo(f"\t{feat.name} ({feat.id}): got exception (%s)" % ex)
 
 
 def _echo_all_features(features, title_prefix=None):
@@ -616,9 +616,7 @@ def _echo_all_features(features, title_prefix=None):
     _echo_features(
         features, title="\n\t== Configuration ==", category=Feature.Category.Config
     )
-    _echo_features(
-        features, title="\n\t== Internals ==", category=Feature.Category.Debug
-    )
+    _echo_features(features, title="\n\t== Debug ==", category=Feature.Category.Debug)
 
 
 @cli.command()
