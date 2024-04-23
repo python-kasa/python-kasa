@@ -318,10 +318,10 @@ class Device(ABC):
 
     def _add_feature(self, feature: Feature):
         """Add a new feature to the device."""
-        desc_name = feature.name.lower().replace(" ", "_")
-        if desc_name in self._features:
-            raise KasaException("Duplicate feature name %s" % desc_name)
-        self._features[desc_name] = feature
+        if feature.id in self._features:
+            raise KasaException("Duplicate feature id %s" % feature.id)
+        assert feature.id is not None  # TODO: hack for typing # noqa: S101
+        self._features[feature.id] = feature
 
     @property
     @abstractmethod

@@ -28,6 +28,7 @@ class TimeModule(SmartModule):
                 name="Time",
                 attribute_getter="time",
                 container=self,
+                category=Feature.Category.Debug,
             )
         )
 

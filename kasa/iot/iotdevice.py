@@ -306,7 +306,11 @@ class IotDevice(Device):
     async def _initialize_features(self):
         self._add_feature(
             Feature(
-                device=self, name="RSSI", attribute_getter="rssi", icon="mdi:signal"
+                device=self,
+                name="RSSI",
+                attribute_getter="rssi",
+                icon="mdi:signal",
+                category=Feature.Category.Debug,
             )
         )
         if "on_time" in self._sys_info:

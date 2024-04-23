@@ -25,6 +25,7 @@ class ReportModule(SmartModule):
                 "Report interval",
                 container=self,
                 attribute_getter="report_interval",
+                category=Feature.Category.Debug,
             )
         )
 
