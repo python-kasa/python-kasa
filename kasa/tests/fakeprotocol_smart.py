@@ -21,7 +21,14 @@ class FakeSmartProtocol(SmartProtocol):
 
 
 class FakeSmartTransport(BaseTransport):
-    def __init__(self, info, fixture_name):
+    def __init__(
+        self,
+        info,
+        fixture_name,
+        *,
+        list_return_size=10,
+        component_nego_not_included=False,
+    ):
         super().__init__(
             config=DeviceConfig(
                 "127.0.0.123",
@@ -33,10 +40,12 @@ class FakeSmartTransport(BaseTransport):
         )
         self.fixture_name = fixture_name
         self.info = copy.deepcopy(info)
-        self.components = {
-            comp["id"]: comp["ver_code"]
-            for comp in self.info["component_nego"]["component_list"]
-        }
+        if not component_nego_not_included:
+            self.components = {
+                comp["id"]: comp["ver_code"]
+                for comp in self.info["component_nego"]["component_list"]
+            }
+        self.list_return_size = list_return_size
 
     @property
     def default_port(self):
@@ -177,7 +186,20 @@ class FakeSmartTransport(BaseTransport):
         elif method == "component_nego" or method[:4] == "get_":
             if method in info:
                 result = copy.deepcopy(info[method])
+                if "start_index" in result and "sum" in result:
+                    list_key = next(
+                        iter([key for key in result if isinstance(result[key], list)])
+                    )
+                    start_index = (
+                        start_index
+                        if (params and (start_index := params.get("start_index")))
+                        else 0
+                    )
+                    result[list_key] = result[list_key][
+                        start_index : start_index + self.list_return_size
+                    ]
                 return {"result": result, "error_code": 0}
+
             if (
                 # FIXTURE_MISSING is for service calls not in place when
                 # SMART fixtures started to be generated
