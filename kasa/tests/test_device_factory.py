@@ -13,6 +13,7 @@ from kasa import (
 from kasa.device_factory import (
     _get_device_type_from_sys_info,
     connect,
+    get_device_class_from_family,
     get_protocol,
 )
 from kasa.deviceconfig import (
@@ -164,3 +165,11 @@ async def test_device_types(dev: Device):
         res = _get_device_type_from_sys_info(dev._last_update)
 
     assert dev.device_type == res
+
+
+async def test_device_class_from_unknown_family(caplog):
+    """Verify that unknown SMART devices yield a warning and fallback to SmartDevice."""
+    dummy_name = "SMART.foo"
+    with caplog.at_level(logging.WARNING):
+        assert get_device_class_from_family(dummy_name) == SmartDevice
+    assert f"Unknown SMART device with {dummy_name}" in caplog.text
