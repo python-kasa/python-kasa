@@ -295,6 +295,7 @@ async def test_modify_preset(dev: IotBulb, mocker):
     assert preset.color_temp == 0
 
     await dev.save_preset(preset)
+    await dev.update()
     assert dev.presets[0].brightness == 10
 
     with pytest.raises(KasaException):

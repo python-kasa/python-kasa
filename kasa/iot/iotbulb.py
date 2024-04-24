@@ -182,6 +182,7 @@ class IotBulb(IotDevice, Bulb):
         50
         >>> preset.brightness = 100
         >>> asyncio.run(bulb.save_preset(preset))
+        >>> asyncio.run(bulb.update())
         >>> bulb.presets[0].brightness
         100
 
