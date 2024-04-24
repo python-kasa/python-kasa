@@ -12,6 +12,8 @@ import logging
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
+from ...feature import Feature
+from ..smartdevice import SmartDevice
 from ..smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,12 +25,25 @@ class ChildSetupModule(SmartModule):
     REQUIRED_COMPONENT = "child_quick_setup"
     QUERY_GETTER_NAME = "get_support_child_device_category"
 
+    def __init__(self, device: SmartDevice, module: str):
+        super().__init__(device, module)
+        self._add_feature(
+            Feature(
+                device,
+                name="Pair",
+                container=self,
+                attribute_setter="pair",
+                category=Feature.Category.Config,
+                type=Feature.Type.Action,
+            )
+        )
+
     @property
     def supported_device_categories(self) -> list[str]:
         """Return supported device categories."""
         return self.data["device_category_list"]
 
-    async def pair(self, *, timeout=5):
+    async def pair(self, *, timeout=10):
         """Scan for new devices and pair after discovering first new device."""
         await self.call("begin_scanning_child_device")
 
@@ -45,14 +60,15 @@ class ChildSetupModule(SmartModule):
         except TimeoutError:
             pass
 
+        if not discovered:
+            _LOGGER.warning("No devices found.")
+            return
+
         _LOGGER.info(
             "Discovery done, found %s devices", len(discovered["child_device_list"])
         )
-        if discovered:
-            _LOGGER.info("Adding %s", discovered)
-            await self.add_devices(discovered)
-        else:
-            _LOGGER.warning("No devices found.")
+
+        return await self.add_devices(discovered)
 
     async def unpair(self, device_id: str):
         """Remove device from the hub."""
