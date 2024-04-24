@@ -26,6 +26,7 @@ class HumiditySensor(SmartModule):
                 container=self,
                 attribute_getter="humidity",
                 icon="mdi:water-percent",
+                unit="%",
             )
         )
         self._add_feature(
