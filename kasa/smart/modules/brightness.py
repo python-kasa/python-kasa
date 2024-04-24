@@ -59,5 +59,5 @@ class Brightness(SmartModule):
         return await self.call("set_device_info", {"brightness": brightness})
 
     async def _check_supported(self):
-        """Is the module available on this device."""
+        """Additional check to see if the module is supported by the device."""
         return "brightness" in self.data

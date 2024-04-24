@@ -171,10 +171,6 @@ class LightTransitionModule(SmartModule):
             {"off_state": {**self._turn_on, "duration": seconds}},
         )
 
-    async def _check_supported(self) -> bool:
-        """Additional check to see if the module is supported by the device."""
-        return True
-
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         # Some devices have the required info in the device info.
