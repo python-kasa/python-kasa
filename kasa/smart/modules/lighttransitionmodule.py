@@ -103,6 +103,8 @@ class LightTransitionModule(SmartModule):
 
         Available only from v2.
         """
+        if "fade_on_time" in self._device.sys_info:
+            return self._device.sys_info["fade_on_time"]
         return self._turn_on["duration"]
 
     @property
@@ -138,6 +140,8 @@ class LightTransitionModule(SmartModule):
 
         Available only from v2.
         """
+        if "fade_off_time" in self._device.sys_info:
+            return self._device.sys_info["fade_off_time"]
         return self._turn_off["duration"]
 
     @property
@@ -170,3 +174,11 @@ class LightTransitionModule(SmartModule):
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
         return True
+
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        # Some devices have the required info in the device info.
+        if "gradually_on_mode" in self._device.sys_info:
+            return {}
+        else:
+            return {self.QUERY_GETTER_NAME: None}
