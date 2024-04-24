@@ -140,29 +140,20 @@ class SmartDevice(Device):
             await self._negotiate()
             await self._initialize_modules()
 
-        device_reqs: dict[SmartDevice, dict[str, Any]] = {}
+        req: dict[str, Any] = {}
 
         # TODO: this could be optimized by constructing the query only once
         for module in self.modules.values():
-            device_reqs.setdefault(module._device, {}).update(module.query())
+            req.update(module.query())
 
-        for device, req in device_reqs.items():
-            if req:
-                resp = await device.protocol.query(req)
-                device._last_update = resp
-                if not device._parent:
-                    device._info = self._try_get_response(resp, "get_device_info")
+        self._last_update = resp = await self.protocol.query(req)
 
-                    if child_info := self._try_get_response(
-                        resp, "get_child_device_list", {}
-                    ):
-                        # TODO: we don't currently perform get_device_info on children
-                        # based on modules, but just update the information that is
-                        # returned in the main query.
-                        for info in child_info["child_device_list"]:
-                            self._children[info["device_id"]]._update_internal_state(
-                                info
-                            )
+        self._info = self._try_get_response(resp, "get_device_info")
+        if child_info := self._try_get_response(resp, "get_child_device_list", {}):
+            # TODO: we don't currently perform queries on children based on modules,
+            #  but just update the information that is returned in the main query.
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]]._update_internal_state(info)
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
@@ -175,6 +166,13 @@ class SmartDevice(Device):
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
 
+        # Some of the wall switches (1 at time of writing, ks240) have child
+        # devices and report the child's components on the parent, even though
+        # they don't work on the parent directly. This logic below
+        # is ensuring that WallSwitches with children report all the child
+        # modules at the parent level except for a whitelist of modules that
+        # that are reported at the child level but only work on the parent,
+        # i.e. time, firmware etc.
         if self._parent and self._parent.device_type == DeviceType.WallSwitch:
             modules = self._parent.modules
             skip_parent_only_modules = True
