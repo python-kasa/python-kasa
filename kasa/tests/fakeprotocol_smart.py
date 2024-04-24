@@ -174,13 +174,15 @@ class FakeSmartTransport(BaseTransport):
             return self._handle_control_child(params)
         elif method == "component_nego" or method[:4] == "get_":
             if method in info:
-                return {"result": info[method], "error_code": 0}
+                result = copy.deepcopy(info[method])
+                return {"result": result, "error_code": 0}
             if (
                 # FIXTURE_MISSING is for service calls not in place when
                 # SMART fixtures started to be generated
                 missing_result := self.FIXTURE_MISSING_MAP.get(method)
             ) and missing_result[0] in self.components:
-                retval = {"result": missing_result[1], "error_code": 0}
+                result = copy.deepcopy(missing_result[1])
+                retval = {"result": result, "error_code": 0}
             else:
                 # PARAMS error returned for KS240 when get_device_usage called
                 # on parent device.  Could be any error code though.

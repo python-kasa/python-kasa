@@ -25,6 +25,7 @@ from kasa import (
     DeviceFamilyType,
     Discover,
     EncryptType,
+    Feature,
     KasaException,
     UnsupportedDeviceError,
 )
@@ -583,6 +584,41 @@ async def sysinfo(dev):
     return dev.sys_info
 
 
+def _echo_features(
+    features: dict[str, Feature], title: str, category: Feature.Category | None = None
+):
+    """Print out a listing of features and their values."""
+    if category is not None:
+        features = {
+            id_: feat for id_, feat in features.items() if feat.category == category
+        }
+
+    if not features:
+        return
+    echo(f"[bold]{title}[/bold]")
+    for _, feat in features.items():
+        try:
+            echo(f"\t{feat}")
+        except Exception as ex:
+            echo(f"\t{feat.name} ({feat.id}): got exception (%s)" % ex)
+
+
+def _echo_all_features(features, title_prefix=None):
+    """Print out all features by category."""
+    if title_prefix is not None:
+        echo(f"[bold]\n\t == {title_prefix} ==[/bold]")
+    _echo_features(
+        features, title="\n\t== Primary features ==", category=Feature.Category.Primary
+    )
+    _echo_features(
+        features, title="\n\t== Information ==", category=Feature.Category.Info
+    )
+    _echo_features(
+        features, title="\n\t== Configuration ==", category=Feature.Category.Config
+    )
+    _echo_features(features, title="\n\t== Debug ==", category=Feature.Category.Debug)
+
+
 @cli.command()
 @pass_dev
 @click.pass_context
@@ -595,15 +631,13 @@ async def state(ctx, dev: Device):
     echo(f"\tPort: {dev.port}")
     echo(f"\tDevice state: {dev.is_on}")
     if dev.children:
-        echo("\t[bold]== Children ==[/bold]")
+        echo("\t== Children ==")
         for child in dev.children:
-            echo(f"\t* {child.alias} ({child.model}, {child.device_type})")
-            for id_, feat in child.features.items():
-                try:
-                    unit = f" {feat.unit}" if feat.unit else ""
-                    echo(f"\t\t{feat.name} ({id_}): {feat.value}{unit}")
-                except Exception as ex:
-                    echo(f"\t\t{feat.name}: got exception (%s)" % ex)
+            _echo_all_features(
+                child.features,
+                title_prefix=f"{child.alias} ({child.model}, {child.device_type})",
+            )
+
         echo()
 
     echo("\t[bold]== Generic information ==[/bold]")
@@ -613,19 +647,15 @@ async def state(ctx, dev: Device):
     echo(f"\tMAC (rssi):   {dev.mac} ({dev.rssi})")
     echo(f"\tLocation:     {dev.location}")
 
-    echo("\n\t[bold]== Device-specific information == [/bold]")
-    for id_, feature in dev.features.items():
-        unit = f" {feature.unit}" if feature.unit else ""
-        echo(f"\t{feature.name} ({id_}): {feature.value}{unit}")
+    _echo_all_features(dev.features)
 
     echo("\n\t[bold]== Modules ==[/bold]")
     for module in dev.modules.values():
         echo(f"\t[green]+ {module}[/green]")
 
     if verbose:
-        echo("\n\t[bold]== Verbose information ==[/bold]")
+        echo("\n\t[bold]== Protocol information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
-        echo(f"\tDevice ID:         {dev.device_id}")
         echo()
         _echo_discovery_info(dev._discovery_info)
     return dev.internal_state

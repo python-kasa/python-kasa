@@ -413,4 +413,4 @@ class FakeIotProtocol(IotProtocol):
         for target in request:
             response.update(get_response_for_module(target))
 
-        return response
+        return copy.deepcopy(response)

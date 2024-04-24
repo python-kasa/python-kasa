@@ -22,6 +22,7 @@ async def test_brightness_component(dev: SmartDevice):
 
     # Test setting the value
     await feature.set_value(10)
+    await dev.update()
     assert feature.value == 10
 
     with pytest.raises(ValueError):
@@ -44,6 +45,7 @@ async def test_brightness_dimmable(dev: SmartDevice):
 
     # Test setting the value
     await feature.set_value(10)
+    await dev.update()
     assert feature.value == 10
 
     with pytest.raises(ValueError):

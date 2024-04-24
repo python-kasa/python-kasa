@@ -28,6 +28,7 @@ class LedModule(SmartModule):
                 attribute_getter="led",
                 attribute_setter="set_led",
                 type=FeatureType.Switch,
+                category=Feature.Category.Config,
             )
         )
 
