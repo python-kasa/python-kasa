@@ -585,7 +585,10 @@ async def sysinfo(dev):
 
 
 def _echo_features(
-    features: dict[str, Feature], title: str, category: Feature.Category | None = None
+    features: dict[str, Feature],
+    title: str,
+    category: Feature.Category | None = None,
+    verbose: bool = False,
 ):
     """Print out a listing of features and their values."""
     if category is not None:
@@ -599,24 +602,42 @@ def _echo_features(
     for _, feat in features.items():
         try:
             echo(f"\t{feat}")
+            if verbose:
+                echo(f"\t\tType: {feat.type}")
+                echo(f"\t\tCategory: {feat.category}")
+                echo(f"\t\tIcon: {feat.icon}")
         except Exception as ex:
             echo(f"\t{feat.name} ({feat.id}): got exception (%s)" % ex)
 
 
-def _echo_all_features(features, title_prefix=None):
+def _echo_all_features(features, *, verbose=False, title_prefix=None):
     """Print out all features by category."""
     if title_prefix is not None:
         echo(f"[bold]\n\t == {title_prefix} ==[/bold]")
     _echo_features(
-        features, title="\n\t== Primary features ==", category=Feature.Category.Primary
+        features,
+        title="\n\t== Primary features ==",
+        category=Feature.Category.Primary,
+        verbose=verbose,
     )
     _echo_features(
-        features, title="\n\t== Information ==", category=Feature.Category.Info
+        features,
+        title="\n\t== Information ==",
+        category=Feature.Category.Info,
+        verbose=verbose,
     )
     _echo_features(
-        features, title="\n\t== Configuration ==", category=Feature.Category.Config
+        features,
+        title="\n\t== Configuration ==",
+        category=Feature.Category.Config,
+        verbose=verbose,
     )
-    _echo_features(features, title="\n\t== Debug ==", category=Feature.Category.Debug)
+    _echo_features(
+        features,
+        title="\n\t== Debug ==",
+        category=Feature.Category.Debug,
+        verbose=verbose,
+    )
 
 
 @cli.command()
@@ -636,6 +657,7 @@ async def state(ctx, dev: Device):
             _echo_all_features(
                 child.features,
                 title_prefix=f"{child.alias} ({child.model}, {child.device_type})",
+                verbose=verbose,
             )
 
         echo()
@@ -647,7 +669,7 @@ async def state(ctx, dev: Device):
     echo(f"\tMAC (rssi):   {dev.mac} ({dev.rssi})")
     echo(f"\tLocation:     {dev.location}")
 
-    _echo_all_features(dev.features)
+    _echo_all_features(dev.features, verbose=verbose)
 
     echo("\n\t[bold]== Modules ==[/bold]")
     for module in dev.modules.values():
