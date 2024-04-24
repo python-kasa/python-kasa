@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from ...feature import Feature
@@ -9,6 +11,19 @@ from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
+
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class ThermostatState(Enum):
+    """Thermostat state."""
+
+    Heating = "heating"
+    Calibrating = "progress_calibration"
+    Idle = "idle"
+    Off = "off"
+    Unknown = "unknown"
 
 
 class TemperatureControl(SmartModule):
@@ -25,8 +40,10 @@ class TemperatureControl(SmartModule):
                 container=self,
                 attribute_getter="target_temperature",
                 attribute_setter="set_target_temperature",
+                range_getter="allowed_temperature_range",
                 icon="mdi:thermometer",
                 type=Feature.Type.Number,
+                category=Feature.Category.Primary,
             )
         )
         # TODO: this might belong into its own module, temperature_correction?
@@ -40,6 +57,29 @@ class TemperatureControl(SmartModule):
                 minimum_value=-10,
                 maximum_value=10,
                 type=Feature.Type.Number,
+                category=Feature.Category.Config,
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                device,
+                "State",
+                container=self,
+                attribute_getter="state",
+                attribute_setter="set_state",
+                category=Feature.Category.Primary,
+                type=Feature.Type.Switch,
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                device,
+                "Mode",
+                container=self,
+                attribute_getter="mode",
+                category=Feature.Category.Primary,
             )
         )
 
@@ -47,6 +87,45 @@ class TemperatureControl(SmartModule):
         """Query to execute during the update cycle."""
         # Target temperature is contained in the main device info response.
         return {}
+
+    @property
+    def state(self) -> bool:
+        """Return thermostat state."""
+        return self._device.sys_info["frost_protection_on"] is False
+
+    async def set_state(self, enabled: bool):
+        """Set thermostat state."""
+        return await self.call("set_device_info", {"frost_protection_on": not enabled})
+
+    @property
+    def mode(self) -> ThermostatState:
+        """Return thermostat state."""
+        # If frost protection is enabled, the thermostat is off.
+        if self._device.sys_info.get("frost_protection_on", False):
+            return ThermostatState.Off
+
+        states = self._device.sys_info["trv_states"]
+
+        # If the states is empty, the device is idling
+        if not states:
+            return ThermostatState.Idle
+
+        if len(states) > 1:
+            _LOGGER.warning(
+                "Got multiple states (%s), using the first one: %s", states, states[0]
+            )
+
+        state = states[0]
+        try:
+            return ThermostatState(state)
+        except:  # noqa: E722
+            _LOGGER.warning("Got unknown state: %s", state)
+            return ThermostatState.Unknown
+
+    @property
+    def allowed_temperature_range(self) -> tuple[int, int]:
+        """Return allowed temperature range."""
+        return self.minimum_target_temperature, self.maximum_target_temperature
 
     @property
     def minimum_target_temperature(self) -> int:
@@ -74,7 +153,12 @@ class TemperatureControl(SmartModule):
                 f"[{self.minimum_target_temperature},{self.maximum_target_temperature}]"
             )
 
-        return await self.call("set_device_info", {"target_temp": target})
+        payload = {"target_temp": target}
+        # If the device has frost protection, we set it off to enable heating
+        if "frost_protection_on" in self._device.sys_info:
+            payload["frost_protection_on"] = False
+
+        return await self.call("set_device_info", payload)
 
     @property
     def temperature_offset(self) -> int:

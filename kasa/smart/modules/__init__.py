@@ -12,6 +12,7 @@ from .devicemodule import DeviceModule
 from .energymodule import EnergyModule
 from .fanmodule import FanModule
 from .firmware import Firmware
+from .frostprotection import FrostProtectionModule
 from .humidity import HumiditySensor
 from .ledmodule import LedModule
 from .lighttransitionmodule import LightTransitionModule
@@ -40,4 +41,5 @@ __all__ = [
     "LightTransitionModule",
     "ColorTemperatureModule",
     "ColorModule",
+    "FrostProtectionModule",
 ]
