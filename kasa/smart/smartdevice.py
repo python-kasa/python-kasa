@@ -22,7 +22,11 @@ _LOGGER = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from .smartmodule import SmartModule
 
-PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]  # noqa: F405
+# List of modules that wall switches with children, i.e. ks240 report on
+# the child but only work on the parent.  See longer note below in _initialize_modules.
+# This list should be updated when creating new modules that could have the
+# same issue, homekit perhaps?
+WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]  # noqa: F405
 
 
 class SmartDevice(Device):
@@ -80,6 +84,7 @@ class SmartDevice(Device):
     @property
     def children(self) -> Sequence[SmartDevice]:
         """Return list of children."""
+        # Wall switches with children report all modules on the parent only
         if self.device_type == DeviceType.WallSwitch:
             return []
         return list(self._children.values())
@@ -166,13 +171,11 @@ class SmartDevice(Device):
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
 
-        # Some of the wall switches (1 at time of writing, ks240) have child
-        # devices and report the child's components on the parent, even though
-        # they don't work on the parent directly. This logic below
-        # is ensuring that WallSwitches with children report all the child
-        # modules at the parent level except for a whitelist of modules that
-        # that are reported at the child level but only work on the parent,
-        # i.e. time, firmware etc.
+        # Some wall switches (like ks240) are internally presented as having child
+        # devices which report the child's components on the parent's sysinfo, even
+        # when they need to be accessed through the children.
+        # The logic below ensures that such devices report all but whitelisted, the
+        # child modules at the parent level to create an illusion of a single device.
         if self._parent and self._parent.device_type == DeviceType.WallSwitch:
             modules = self._parent.modules
             skip_parent_only_modules = True
@@ -183,7 +186,7 @@ class SmartDevice(Device):
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
-            if skip_parent_only_modules and mod in PARENT_ONLY_MODULES:
+            if skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES:
                 continue
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
