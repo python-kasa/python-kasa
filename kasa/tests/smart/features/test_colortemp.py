@@ -20,6 +20,7 @@ async def test_colortemp_component(dev: SmartDevice):
     # We need to take the min here, as L9xx reports a range [9000, 9000].
     new_value = min(feature.minimum_value + 1, feature.maximum_value)
     await feature.set_value(new_value)
+    await dev.update()
     assert feature.value == new_value
 
     with pytest.raises(ValueError):
