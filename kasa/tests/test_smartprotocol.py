@@ -197,7 +197,10 @@ async def test_smart_protocol_lists_single_request(mocker, list_sum, batch_size)
     request = {"get_child_device_list": None}
 
     ft = FakeSmartTransport(
-        response, "foobar", list_return_size=batch_size, no_components=True
+        response,
+        "foobar",
+        list_return_size=batch_size,
+        component_nego_not_included=True,
     )
     protocol = SmartProtocol(transport=ft)
     query_spy = mocker.spy(protocol, "_execute_query")
@@ -226,7 +229,10 @@ async def test_smart_protocol_lists_multiple_request(mocker, list_sum, batch_siz
     request = {"get_child_device_list": None, "get_child_device_component_list": None}
 
     ft = FakeSmartTransport(
-        response, "foobar", list_return_size=batch_size, no_components=True
+        response,
+        "foobar",
+        list_return_size=batch_size,
+        component_nego_not_included=True,
     )
     protocol = SmartProtocol(transport=ft)
     query_spy = mocker.spy(protocol, "_execute_query")

@@ -68,7 +68,7 @@ class SmartProtocol(BaseProtocol):
         for retry in range(retry_count + 1):
             try:
                 return await self._execute_query(
-                    request, retry_count=retry, handle_lists=True
+                    request, retry_count=retry, iterate_list_pages=True
                 )
             except _ConnectionError as sdex:
                 if retry >= retry_count:
@@ -162,7 +162,7 @@ class SmartProtocol(BaseProtocol):
         return multi_result
 
     async def _execute_query(
-        self, request: str | dict, *, retry_count: int, handle_lists: bool
+        self, request: str | dict, *, retry_count: int, iterate_list_pages: bool = True
     ) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
@@ -196,7 +196,7 @@ class SmartProtocol(BaseProtocol):
 
         # Single set_ requests do not return a result
         result = response_data.get("result")
-        if handle_lists and result:
+        if iterate_list_pages and result:
             await self._handle_response_lists(
                 result, smart_method, retry_count=retry_count
             )
@@ -206,29 +206,29 @@ class SmartProtocol(BaseProtocol):
         self, response_result: dict[str, Any], method, retry_count
     ):
         if (
-            not isinstance(response_result, SmartErrorCode)
-            and "start_index" in response_result
-            and (list_sum := response_result.get("sum"))
+            isinstance(response_result, SmartErrorCode)
+            or "start_index" not in response_result
+            or (list_sum := response_result.get("sum")) is None
         ):
-            response_list_name = next(
-                iter(
-                    [
-                        key
-                        for key in response_result
-                        if isinstance(response_result[key], list)
-                    ]
-                )
+            return
+
+        response_list_name = next(
+            iter(
+                [
+                    key
+                    for key in response_result
+                    if isinstance(response_result[key], list)
+                ]
             )
-            while (list_length := len(response_result[response_list_name])) < list_sum:
-                response = await self._execute_query(
-                    {method: {"start_index": list_length}},
-                    retry_count=retry_count,
-                    handle_lists=False,
-                )
-                next_batch = response[method]
-                response_result[response_list_name].extend(
-                    next_batch[response_list_name]
-                )
+        )
+        while (list_length := len(response_result[response_list_name])) < list_sum:
+            response = await self._execute_query(
+                {method: {"start_index": list_length}},
+                retry_count=retry_count,
+                iterate_list_pages=False,
+            )
+            next_batch = response[method]
+            response_result[response_list_name].extend(next_batch[response_list_name])
 
     def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]

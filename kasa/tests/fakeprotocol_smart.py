@@ -21,7 +21,14 @@ class FakeSmartProtocol(SmartProtocol):
 
 
 class FakeSmartTransport(BaseTransport):
-    def __init__(self, info, fixture_name, *, list_return_size=10, no_components=False):
+    def __init__(
+        self,
+        info,
+        fixture_name,
+        *,
+        list_return_size=10,
+        component_nego_not_included=False,
+    ):
         super().__init__(
             config=DeviceConfig(
                 "127.0.0.123",
@@ -33,7 +40,7 @@ class FakeSmartTransport(BaseTransport):
         )
         self.fixture_name = fixture_name
         self.info = copy.deepcopy(info)
-        if no_components is False:
+        if not component_nego_not_included:
             self.components = {
                 comp["id"]: comp["ver_code"]
                 for comp in self.info["component_nego"]["component_list"]
