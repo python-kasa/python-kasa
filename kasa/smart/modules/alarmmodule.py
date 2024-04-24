@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ class AlarmModule(SmartModule):
                 container=self,
                 attribute_getter="active",
                 icon="mdi:bell",
-                type=FeatureType.BinarySensor,
+                type=Feature.Type.BinarySensor,
             )
         )
         self._add_feature(
@@ -60,7 +60,7 @@ class AlarmModule(SmartModule):
                 "Test alarm",
                 container=self,
                 attribute_setter="play",
-                type=FeatureType.Action,
+                type=Feature.Type.Action,
             )
         )
         self._add_feature(
@@ -69,7 +69,7 @@ class AlarmModule(SmartModule):
                 "Stop alarm",
                 container=self,
                 attribute_setter="stop",
-                type=FeatureType.Action,
+                type=Feature.Type.Action,
             )
         )
 

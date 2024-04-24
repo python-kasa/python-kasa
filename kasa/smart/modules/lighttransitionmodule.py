@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...exceptions import KasaException
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ class LightTransitionModule(SmartModule):
                     icon=icon,
                     attribute_getter="enabled_v1",
                     attribute_setter="set_enabled_v1",
-                    type=FeatureType.Switch,
+                    type=Feature.Type.Switch,
                 )
             )
         elif self.supported_version >= 2:
@@ -51,7 +51,7 @@ class LightTransitionModule(SmartModule):
                     attribute_getter="turn_on_transition",
                     attribute_setter="set_turn_on_transition",
                     icon=icon,
-                    type=FeatureType.Number,
+                    type=Feature.Type.Number,
                     maximum_value=self.MAXIMUM_DURATION,
                 )
             )  # self._turn_on_transition_max
@@ -63,7 +63,7 @@ class LightTransitionModule(SmartModule):
                     attribute_getter="turn_off_transition",
                     attribute_setter="set_turn_off_transition",
                     icon=icon,
-                    type=FeatureType.Number,
+                    type=Feature.Type.Number,
                     maximum_value=self.MAXIMUM_DURATION,
                 )
             )  # self._turn_off_transition_max

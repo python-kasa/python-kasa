@@ -1,6 +1,6 @@
 import pytest
 
-from kasa import Feature, FeatureType
+from kasa import Feature
 
 
 class DummyDevice:
@@ -18,7 +18,7 @@ def dummy_feature() -> Feature:
         attribute_setter="dummysetter",
         container=None,
         icon="mdi:dummy",
-        type=FeatureType.BinarySensor,
+        type=Feature.Type.Switch,
         unit="dummyunit",
     )
     return feat
@@ -32,8 +32,19 @@ def test_feature_api(dummy_feature: Feature):
     assert dummy_feature.attribute_setter == "dummysetter"
     assert dummy_feature.container is None
     assert dummy_feature.icon == "mdi:dummy"
-    assert dummy_feature.type == FeatureType.BinarySensor
+    assert dummy_feature.type == Feature.Type.Switch
     assert dummy_feature.unit == "dummyunit"
+
+
+def test_feature_missing_type():
+    """Test that creating a feature with a setter but without type causes an error."""
+    with pytest.raises(ValueError):
+        Feature(
+            device=DummyDevice(),  # type: ignore[arg-type]
+            name="dummy error",
+            attribute_getter="dummygetter",
+            attribute_setter="dummysetter",
+        )
 
 
 def test_feature_value(dummy_feature: Feature):
@@ -91,7 +102,7 @@ async def test_feature_action(mocker):
         attribute_setter="call_action",
         container=None,
         icon="mdi:dummy",
-        type=FeatureType.Action,
+        type=Feature.Type.Action,
     )
     mock_call_action = mocker.patch.object(feat.device, "call_action", create=True)
     assert feat.value == "<Action>"
