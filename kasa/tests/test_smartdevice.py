@@ -96,23 +96,29 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
                 "get_child_device_list": None,
             }
         )
-        assert len(dev.children) == dev.internal_state["get_child_device_list"]["sum"]
+        assert len(dev._children) == dev.internal_state["get_child_device_list"]["sum"]
 
 
 @device_smart
 async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     """Test that the regular update uses queries from all supported modules."""
-    query = mocker.spy(dev.protocol, "query")
-
     # We need to have some modules initialized by now
     assert dev.modules
 
-    await dev.update()
-    full_query: dict[str, Any] = {}
+    device_queries: dict[SmartDevice, dict[str, Any]] = {}
     for mod in dev.modules.values():
-        full_query = {**full_query, **mod.query()}
+        device_queries.setdefault(mod._device, {}).update(mod.query())
 
-    query.assert_called_with(full_query)
+    spies = {}
+    for dev in device_queries:
+        spies[dev] = mocker.spy(dev.protocol, "query")
+
+    await dev.update()
+    for dev in device_queries:
+        if device_queries[dev]:
+            spies[dev].assert_called_with(device_queries[dev])
+        else:
+            spies[dev].assert_not_called()
 
 
 @bulb_smart
@@ -187,10 +193,19 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
             "get_child_device_component_list"
         ]
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+
+    first_call = True
+
+    def side_effect_func(*_, **__):
+        nonlocal first_call
+        resp = initial_response if first_call else last_update
+        first_call = False
+        return resp
+
     with patch.object(
         new_dev.protocol,
         "query",
-        side_effect=[initial_response, last_update, last_update],
+        side_effect=side_effect_func,
     ):
         await new_dev.update()
         assert new_dev.is_cloud_connected is False

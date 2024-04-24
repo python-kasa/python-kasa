@@ -10,11 +10,13 @@ brightness = parametrize("brightness smart", component_filter="brightness")
 @brightness
 async def test_brightness_component(dev: SmartDevice):
     """Test brightness feature."""
+    brightness = dev.modules.get("Brightness")
+    assert brightness
     assert isinstance(dev, SmartDevice)
     assert "brightness" in dev._components
 
     # Test getting the value
-    feature = dev.features["brightness"]
+    feature = brightness._module_features["brightness"]
     assert isinstance(feature.value, int)
     assert feature.value > 1 and feature.value <= 100
 
