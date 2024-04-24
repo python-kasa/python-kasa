@@ -139,7 +139,8 @@ class FakeSmartTransport(BaseTransport):
 
         # We only support get & set device info for now.
         if child_method == "get_device_info":
-            return {"result": info, "error_code": 0}
+            result = copy.deepcopy(info)
+            return {"result": result, "error_code": 0}
         elif child_method == "set_device_info":
             info.update(child_params)
             return {"error_code": 0}
@@ -148,7 +149,8 @@ class FakeSmartTransport(BaseTransport):
             # SMART fixtures started to be generated
             missing_result := self.FIXTURE_MISSING_MAP.get(child_method)
         ) and missing_result[0] in self.components:
-            retval = {"result": missing_result[1], "error_code": 0}
+            result = copy.deepcopy(missing_result[1])
+            retval = {"result": result, "error_code": 0}
             return retval
         else:
             # PARAMS error returned for KS240 when get_device_usage called
@@ -157,7 +159,7 @@ class FakeSmartTransport(BaseTransport):
             # calling the unsupported device in the first place.
             retval = {
                 "error_code": SmartErrorCode.PARAMS_ERROR.value,
-                "method": "get_device_usage",
+                "method": child_method,
             }
             return retval
 
