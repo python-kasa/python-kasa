@@ -27,6 +27,7 @@ async def test_effects_lightstrip_set_effect(dev: IotLightStrip):
         await dev.set_effect("Not real")
 
     await dev.set_effect("Candy Cane")
+    await dev.update()
     assert dev.effect["name"] == "Candy Cane"
 
 

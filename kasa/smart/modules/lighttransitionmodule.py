@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...exceptions import KasaException
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ class LightTransitionModule(SmartModule):
                     icon=icon,
                     attribute_getter="enabled_v1",
                     attribute_setter="set_enabled_v1",
-                    type=FeatureType.Switch,
+                    type=Feature.Type.Switch,
                 )
             )
         elif self.supported_version >= 2:
@@ -51,7 +51,7 @@ class LightTransitionModule(SmartModule):
                     attribute_getter="turn_on_transition",
                     attribute_setter="set_turn_on_transition",
                     icon=icon,
-                    type=FeatureType.Number,
+                    type=Feature.Type.Number,
                     maximum_value=self.MAXIMUM_DURATION,
                 )
             )  # self._turn_on_transition_max
@@ -63,7 +63,7 @@ class LightTransitionModule(SmartModule):
                     attribute_getter="turn_off_transition",
                     attribute_setter="set_turn_off_transition",
                     icon=icon,
-                    type=FeatureType.Number,
+                    type=Feature.Type.Number,
                     maximum_value=self.MAXIMUM_DURATION,
                 )
             )  # self._turn_off_transition_max
@@ -103,6 +103,8 @@ class LightTransitionModule(SmartModule):
 
         Available only from v2.
         """
+        if "fade_on_time" in self._device.sys_info:
+            return self._device.sys_info["fade_on_time"]
         return self._turn_on["duration"]
 
     @property
@@ -138,6 +140,8 @@ class LightTransitionModule(SmartModule):
 
         Available only from v2.
         """
+        if "fade_off_time" in self._device.sys_info:
+            return self._device.sys_info["fade_off_time"]
         return self._turn_off["duration"]
 
     @property
@@ -166,3 +170,11 @@ class LightTransitionModule(SmartModule):
             "set_on_off_gradually_info",
             {"off_state": {**self._turn_on, "duration": seconds}},
         )
+
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        # Some devices have the required info in the device info.
+        if "gradually_on_mode" in self._device.sys_info:
+            return {}
+        else:
+            return {self.QUERY_GETTER_NAME: None}

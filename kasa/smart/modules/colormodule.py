@@ -25,8 +25,9 @@ class ColorModule(SmartModule):
                 "HSV",
                 container=self,
                 attribute_getter="hsv",
-                # TODO proper type for setting hsv
                 attribute_setter="set_hsv",
+                # TODO proper type for setting hsv
+                type=Feature.Type.Unknown,
             )
         )
 

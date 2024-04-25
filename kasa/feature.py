@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Callable
@@ -10,26 +11,44 @@ if TYPE_CHECKING:
     from .device import Device
 
 
-# TODO: This is only useful for Feature, so maybe move to Feature.Type?
-class FeatureType(Enum):
-    """Type to help decide how to present the feature."""
-
-    Sensor = auto()
-    BinarySensor = auto()
-    Switch = auto()
-    Action = auto()
-    Number = auto()
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
 class Feature:
     """Feature defines a generic interface for device features."""
 
+    class Type(Enum):
+        """Type to help decide how to present the feature."""
+
+        #: Sensor is an informative read-only value
+        Sensor = auto()
+        #: BinarySensor is a read-only boolean
+        BinarySensor = auto()
+        #: Switch is a boolean setting
+        Switch = auto()
+        #: Action triggers some action on device
+        Action = auto()
+        #: Number defines a numeric setting
+        #: See :ref:`range_getter`, :ref:`minimum_value`, and :ref:`maximum_value`
+        Number = auto()
+        #: Choice defines a setting with pre-defined values
+        Choice = auto()
+        Unknown = -1
+
+    # TODO: unsure if this is a great idea..
+    Sensor = Type.Sensor
+    BinarySensor = Type.BinarySensor
+    Switch = Type.Switch
+    Action = Type.Action
+    Number = Type.Number
+    Choice = Type.Choice
+
     class Category(Enum):
-        """Category hint for downstreams."""
+        """Category hint to allow feature grouping."""
 
         #: Primary features control the device state directly.
-        #: Examples including turning the device on, or adjust its brightness.
+        #: Examples include turning the device on/off, or adjusting its brightness.
         Primary = auto()
         #: Config features change device behavior without immediate state changes.
         Config = auto()
@@ -58,7 +77,7 @@ class Feature:
     #: Category hint for downstreams
     category: Feature.Category = Category.Unset
     #: Type of the feature
-    type: FeatureType = FeatureType.Sensor
+    type: Feature.Type = Type.Sensor
 
     # Number-specific attributes
     #: Minimum value
@@ -92,10 +111,19 @@ class Feature:
             else:
                 self.category = Feature.Category.Info
 
+        if self.category == Feature.Category.Config and self.type in [
+            Feature.Type.Sensor,
+            Feature.Type.BinarySensor,
+        ]:
+            raise ValueError(
+                f"Invalid type for configurable feature: {self.name} ({self.id}):"
+                f" {self.type}"
+            )
+
     @property
     def value(self):
         """Return the current value."""
-        if self.type == FeatureType.Action:
+        if self.type == Feature.Type.Action:
             return "<Action>"
         if self.attribute_getter is None:
             raise ValueError("Not an action and no attribute_getter set")
@@ -109,7 +137,7 @@ class Feature:
         """Set the value."""
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
-        if self.type == FeatureType.Number:  # noqa: SIM102
+        if self.type == Feature.Type.Number:  # noqa: SIM102
             if value < self.minimum_value or value > self.maximum_value:
                 raise ValueError(
                     f"Value {value} out of range "
@@ -117,7 +145,7 @@ class Feature:
                 )
 
         container = self.container if self.container is not None else self.device
-        if self.type == FeatureType.Action:
+        if self.type == Feature.Type.Action:
             return await getattr(container, self.attribute_setter)()
 
         return await getattr(container, self.attribute_setter)(value)
@@ -127,7 +155,7 @@ class Feature:
         if self.unit is not None:
             s += f" {self.unit}"
 
-        if self.type == FeatureType.Number:
+        if self.type == Feature.Type.Number:
             s += f" (range: {self.minimum_value}-{self.maximum_value})"
 
         return s

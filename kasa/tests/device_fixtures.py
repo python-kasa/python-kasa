@@ -92,6 +92,7 @@ SWITCHES_IOT = {
 SWITCHES_SMART = {
     "KS205",
     "KS225",
+    "KS240",
     "S500D",
     "S505",
 }

@@ -171,7 +171,13 @@ def get_device_class_from_family(device_type: str) -> type[Device] | None:
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
     }
-    return supported_device_types.get(device_type)
+    if (
+        cls := supported_device_types.get(device_type)
+    ) is None and device_type.startswith("SMART."):
+        _LOGGER.warning("Unknown SMART device with %s, using SmartDevice", device_type)
+        cls = SmartDevice
+
+    return cls
 
 
 def get_protocol(

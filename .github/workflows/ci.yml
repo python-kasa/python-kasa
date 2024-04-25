@@ -67,6 +67,12 @@ jobs:
         exclude:
           - os: macos-latest
             extras: true
+          # setup-python not currently working with macos-latest
+          # https://github.com/actions/setup-python/issues/808
+          - os: macos-latest
+            python-version: "3.8"
+          - os: macos-latest
+            python-version: "3.9"
           - os: windows-latest
             extras: true
           - os: ubuntu-latest

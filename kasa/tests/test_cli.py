@@ -88,8 +88,8 @@ async def test_sysinfo(dev, runner):
 @turn_on
 async def test_state(dev, turn_on, runner):
     await handle_turn_on(dev, turn_on)
-    res = await runner.invoke(state, obj=dev)
     await dev.update()
+    res = await runner.invoke(state, obj=dev)
 
     if dev.is_on:
         assert "Device state: True" in res.output
@@ -100,12 +100,12 @@ async def test_state(dev, turn_on, runner):
 @turn_on
 async def test_toggle(dev, turn_on, runner):
     await handle_turn_on(dev, turn_on)
-    await runner.invoke(toggle, obj=dev)
+    await dev.update()
+    assert dev.is_on == turn_on
 
-    if turn_on:
-        assert not dev.is_on
-    else:
-        assert dev.is_on
+    await runner.invoke(toggle, obj=dev)
+    await dev.update()
+    assert dev.is_on != turn_on
 
 
 @device_iot
@@ -118,6 +118,7 @@ async def test_alias(dev, runner):
     new_alias = "new alias"
     res = await runner.invoke(alias, [new_alias], obj=dev)
     assert f"Setting alias to {new_alias}" in res.output
+    await dev.update()
 
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
@@ -319,6 +320,7 @@ async def test_brightness(dev, runner):
 
     res = await runner.invoke(brightness, ["12"], obj=dev)
     assert "Setting brightness" in res.output
+    await dev.update()
 
     res = await runner.invoke(brightness, obj=dev)
     assert "Brightness: 12" in res.output
