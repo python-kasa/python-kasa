@@ -26,6 +26,7 @@ class EnergyModule(SmartModule):
                 attribute_getter="current_power",
                 container=self,
                 unit="W",
+                precision_hint=1,
             )
         )
         self._add_feature(
@@ -35,6 +36,7 @@ class EnergyModule(SmartModule):
                 attribute_getter="emeter_today",
                 container=self,
                 unit="Wh",
+                precision_hint=2,
             )
         )
         self._add_feature(
@@ -44,6 +46,7 @@ class EnergyModule(SmartModule):
                 attribute_getter="emeter_this_month",
                 container=self,
                 unit="Wh",
+                precision_hint=2,
             )
         )
 
