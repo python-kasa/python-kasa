@@ -116,7 +116,7 @@ async def test_feature_action(mocker):
     mock_call_action.assert_called()
 
 
-async def test_feature_choice_list(dummy_feature, caplog, mocker: MockFixture):
+async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture):
     """Test the choice feature type."""
     dummy_feature.type = Feature.Type.Choice
     dummy_feature.choices = ["first", "second"]
@@ -143,7 +143,8 @@ async def test_precision_hint(dummy_feature, precision_hint):
     dummy_feature.attribute_getter = lambda x: dummy_value
     assert dummy_feature.value == dummy_value
     assert f"{round(dummy_value, precision_hint)} dummyunit" in repr(dummy_feature)
-    
+
+
 @pytest.mark.skipif(
     sys.version_info < (3, 11),
     reason="exceptiongroup requires python3.11+",
@@ -157,25 +158,22 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
 
         expecting_call = True
 
-        match feat.type:
-            case Feature.Type.Number:
-                await feat.set_value(feat.minimum_value)
-            case Feature.Type.Switch:
-                await feat.set_value(True)
-            case Feature.Type.Action:
-                await feat.set_value(1)
-            case Feature.Type.Choice:
-                _LOGGER.warning(
-                    "Type.Choice for '%s' is not yet implemented, skipping", feat
-                )
-                expecting_call = False
-            case Feature.Type.Unknown:
-                _LOGGER.warning(
-                    "Feature '%s' has no type, cannot test the setter", feat
-                )
-                expecting_call = False
-            case _:
-                raise NotImplementedError(f"set_value not implemented for {feat.type}")
+        if feat.type == Feature.Type.Number:
+            await feat.set_value(feat.minimum_value)
+        elif feat.type == Feature.Type.Switch:
+            await feat.set_value(True)
+        elif feat.type == Feature.Type.Action:
+            await feat.set_value("dummyvalue")
+        elif feat.type == Feature.Type.Choice:
+            _LOGGER.warning(
+                "Type.Choice for '%s' is not yet implemented, skipping", feat
+            )
+            expecting_call = False
+        elif feat.type == Feature.Type.Unknown:
+            _LOGGER.warning("Feature '%s' has no type, cannot test the setter", feat)
+            expecting_call = False
+        else:
+            raise NotImplementedError(f"set_value not implemented for {feat.type}")
 
         if expecting_call:
             query_mock.assert_called()
