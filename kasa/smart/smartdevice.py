@@ -13,9 +13,17 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
+from ..fan import Fan
 from ..feature import Feature
 from ..smartprotocol import SmartProtocol
-from .modules import *  # noqa: F403
+from .modules import (
+    CloudModule,
+    DeviceModule,
+    EnergyModule,
+    FanModule,
+    Firmware,
+    TimeModule,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,10 +34,10 @@ if TYPE_CHECKING:
 # the child but only work on the parent.  See longer note below in _initialize_modules.
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
-WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]  # noqa: F405
+WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]
 
 
-class SmartDevice(Device):
+class SmartDevice(Device, Fan):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -428,19 +436,19 @@ class SmartDevice(Device):
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
         return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
         return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
         return energy.emeter_today
 
     @property
@@ -602,3 +610,34 @@ class SmartDevice(Device):
             return DeviceType.WallSwitch
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
+
+    @property
+    def is_fan(self) -> bool:
+        """Return True if the device is a fan."""
+        return "FanModule" in self.modules
+
+    @property
+    def fan_speed_level(self) -> int:
+        """Return fan speed level."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        return cast(FanModule, self.modules["FanModule"]).fan_speed_level
+
+    async def set_fan_speed_level(self, level: int):
+        """Set fan speed level."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        await cast(FanModule, self.modules["FanModule"]).set_fan_speed_level(level)
+
+    @property
+    def sleep_mode(self) -> bool:
+        """Return sleep mode status."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        return cast(FanModule, self.modules["FanModule"]).sleep_mode
+
+    async def set_sleep_mode(self, on: bool):
+        """Set sleep mode."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        await cast(FanModule, self.modules["FanModule"]).set_sleep_mode(on)
