@@ -1,7 +1,12 @@
-import pytest
-from pytest_mock import MockFixture
+import logging
+import sys
 
-from kasa import Feature
+import pytest
+from pytest_mock import MockerFixture
+
+from kasa import Device, Feature, KasaException
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class DummyDevice:
@@ -138,3 +143,65 @@ async def test_precision_hint(dummy_feature, precision_hint):
     dummy_feature.attribute_getter = lambda x: dummy_value
     assert dummy_feature.value == dummy_value
     assert f"{round(dummy_value, precision_hint)} dummyunit" in repr(dummy_feature)
+    
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="exceptiongroup requires python3.11+",
+)
+async def test_feature_setters(dev: Device, mocker: MockerFixture):
+    """Test that all feature setters query something."""
+
+    async def _test_feature(feat, query_mock):
+        if feat.attribute_setter is None:
+            return
+
+        expecting_call = True
+
+        match feat.type:
+            case Feature.Type.Number:
+                await feat.set_value(feat.minimum_value)
+            case Feature.Type.Switch:
+                await feat.set_value(True)
+            case Feature.Type.Action:
+                await feat.set_value(1)
+            case Feature.Type.Choice:
+                _LOGGER.warning(
+                    "Type.Choice for '%s' is not yet implemented, skipping", feat
+                )
+                expecting_call = False
+            case Feature.Type.Unknown:
+                _LOGGER.warning(
+                    "Feature '%s' has no type, cannot test the setter", feat
+                )
+                expecting_call = False
+            case _:
+                raise NotImplementedError(f"set_value not implemented for {feat.type}")
+
+        if expecting_call:
+            query_mock.assert_called()
+
+    async def _test_features(dev):
+        exceptions = []
+        query = mocker.patch.object(dev.protocol, "query")
+        for feat in dev.features.values():
+            query.reset_mock()
+            try:
+                await _test_feature(feat, query)
+            # we allow our own exceptions to avoid mocking valid responses
+            except KasaException:
+                pass
+            except Exception as ex:
+                ex.add_note(f"Exception when trying to set {feat} on {dev}")
+                exceptions.append(ex)
+
+        return exceptions
+
+    exceptions = await _test_features(dev)
+
+    for child in dev.children:
+        exceptions.extend(await _test_features(child))
+
+    if exceptions:
+        raise ExceptionGroup(
+            "Got exceptions while testing attribute_setters", exceptions
+        )

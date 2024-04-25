@@ -88,9 +88,9 @@ class LightTransitionModule(SmartModule):
 
         return self.data["off_state"]
 
-    def set_enabled_v1(self, enable: bool):
+    async def set_enabled_v1(self, enable: bool):
         """Enable gradual on/off."""
-        return self.call("set_on_off_gradually_info", {"enable": enable})
+        return await self.call("set_on_off_gradually_info", {"enable": enable})
 
     @property
     def enabled_v1(self) -> bool:
