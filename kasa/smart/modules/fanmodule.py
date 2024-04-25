@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ class FanModule(SmartModule):
                 attribute_getter="fan_speed_level",
                 attribute_setter="set_fan_speed_level",
                 icon="mdi:fan",
-                type=FeatureType.Number,
+                type=Feature.Type.Number,
                 minimum_value=1,
                 maximum_value=4,
                 category=Feature.Category.Primary,
@@ -41,7 +41,7 @@ class FanModule(SmartModule):
                 attribute_getter="sleep_mode",
                 attribute_setter="set_sleep_mode",
                 icon="mdi:sleep",
-                type=FeatureType.Switch,
+                type=Feature.Type.Switch,
             )
         )
 
@@ -68,3 +68,7 @@ class FanModule(SmartModule):
     async def set_sleep_mode(self, on: bool):
         """Set sleep mode."""
         return await self.call("set_device_info", {"fan_sleep_mode_on": on})
+
+    async def _check_supported(self):
+        """Is the module available on this device."""
+        return "fan_speed_level" in self.data

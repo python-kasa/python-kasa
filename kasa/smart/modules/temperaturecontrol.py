@@ -26,6 +26,7 @@ class TemperatureControl(SmartModule):
                 attribute_getter="target_temperature",
                 attribute_setter="set_target_temperature",
                 icon="mdi:thermometer",
+                type=Feature.Type.Number,
             )
         )
         # TODO: this might belong into its own module, temperature_correction?
@@ -38,6 +39,7 @@ class TemperatureControl(SmartModule):
                 attribute_setter="set_temperature_offset",
                 minimum_value=-10,
                 maximum_value=10,
+                type=Feature.Type.Number,
             )
         )
 

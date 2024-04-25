@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ class TemperatureSensor(SmartModule):
                     "Temperature warning",
                     container=self,
                     attribute_getter="temperature_warning",
-                    type=FeatureType.BinarySensor,
+                    type=Feature.Type.BinarySensor,
                     icon="mdi:alert",
                 )
             )
@@ -46,6 +46,7 @@ class TemperatureSensor(SmartModule):
                 container=self,
                 attribute_getter="temperature_unit",
                 attribute_setter="set_temperature_unit",
+                type=Feature.Type.Choice,
             )
         )
         # TODO: use temperature_unit for feature creation

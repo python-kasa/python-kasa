@@ -66,6 +66,7 @@ class IotStrip(IotDevice):
         >>> strip.is_on
         True
         >>> asyncio.run(strip.turn_off())
+        >>> asyncio.run(strip.update())
 
         Accessing individual plugs can be done using the `children` property:
 

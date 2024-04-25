@@ -6,7 +6,7 @@ import logging
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature, FeatureType
+from ..feature import Feature
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
 from .modules import Antitheft, Cloud, Schedule, Time, Usage
@@ -69,7 +69,7 @@ class IotPlug(IotDevice):
                 icon="mdi:led-{state}",
                 attribute_getter="led",
                 attribute_setter="set_led",
-                type=FeatureType.Switch,
+                type=Feature.Type.Switch,
             )
         )
 

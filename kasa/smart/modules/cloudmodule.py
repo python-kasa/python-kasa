@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...exceptions import SmartErrorCode
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ class CloudModule(SmartModule):
                 container=self,
                 attribute_getter="is_connected",
                 icon="mdi:cloud",
-                type=FeatureType.BinarySensor,
+                type=Feature.Type.BinarySensor,
             )
         )
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ class HumiditySensor(SmartModule):
                 "Humidity warning",
                 container=self,
                 attribute_getter="humidity_warning",
-                type=FeatureType.BinarySensor,
+                type=Feature.Type.BinarySensor,
                 icon="mdi:alert",
             )
         )

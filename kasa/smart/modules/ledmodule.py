@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ class LedModule(SmartModule):
                 icon="mdi:led-{state}",
                 attribute_getter="led",
                 attribute_setter="set_led",
-                type=FeatureType.Switch,
+                type=Feature.Type.Switch,
                 category=Feature.Category.Config,
             )
         )

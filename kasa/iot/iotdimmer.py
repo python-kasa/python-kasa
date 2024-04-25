@@ -7,7 +7,7 @@ from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature, FeatureType
+from ..feature import Feature
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
@@ -96,7 +96,7 @@ class IotDimmer(IotPlug):
                     attribute_setter="set_brightness",
                     minimum_value=1,
                     maximum_value=100,
-                    type=FeatureType.Number,
+                    type=Feature.Type.Number,
                 )
             )
 

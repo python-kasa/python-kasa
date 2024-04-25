@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 from ...exceptions import SmartErrorCode
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 try:
@@ -59,7 +59,7 @@ class Firmware(SmartModule):
                     container=self,
                     attribute_getter="auto_update_enabled",
                     attribute_setter="set_auto_update_enabled",
-                    type=FeatureType.Switch,
+                    type=Feature.Type.Switch,
                 )
             )
         self._add_feature(
@@ -68,7 +68,7 @@ class Firmware(SmartModule):
                 "Update available",
                 container=self,
                 attribute_getter="update_available",
-                type=FeatureType.BinarySensor,
+                type=Feature.Type.BinarySensor,
             )
         )
 
