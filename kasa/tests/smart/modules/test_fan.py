@@ -52,10 +52,18 @@ async def test_sleep_mode(dev: Device, mocker: MockerFixture):
 async def test_fan_interface(dev: SmartDevice, mocker: MockerFixture):
     """Test fan speed on device interface."""
     assert isinstance(dev, SmartDevice)
+    await dev.set_fan_state(fan_on=True, speed_level=1)
+    await dev.update()
 
-    assert dev.fan_speed_level != 3
+    assert dev.fan_state.is_on is True
+    assert dev.fan_state.speed_level == 1
+
     await dev.set_fan_speed_level(3)
 
     await dev.update()
 
     assert dev.fan_speed_level == 3
+
+    await dev.set_fan_state(fan_on=False)
+    await dev.update()
+    assert dev.fan_state.is_on is False

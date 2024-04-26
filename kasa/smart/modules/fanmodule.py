@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ...exceptions import KasaException
+from ...fan import FanState
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -48,6 +50,28 @@ class FanModule(SmartModule):
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {}
+
+    @property
+    def fan_state(self) -> FanState:
+        """Return fan state."""
+        return FanState(
+            is_on=self.data["device_on"], speed_level=self.data["fan_speed_level"]
+        )
+
+    async def set_fan_state(
+        self, fan_on: bool | None = None, speed_level: int | None = None
+    ):
+        """Set fan state."""
+        if fan_on is None and speed_level is None:
+            raise KasaException("Must provide at least one state.")
+        if speed_level and (speed_level < 1 or speed_level > 4):
+            raise ValueError("Invalid speed level, should be in range 1-4.")
+        params: dict[str, bool | int] = {}
+        if fan_on is not None:
+            params["device_on"] = fan_on
+        if speed_level is not None:
+            params["fan_speed_level"] = speed_level
+        return await self.call("set_device_info", params)
 
     @property
     def fan_speed_level(self) -> int:

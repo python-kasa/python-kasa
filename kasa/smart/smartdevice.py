@@ -13,7 +13,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
-from ..fan import Fan
+from ..fan import Fan, FanState
 from ..feature import Feature
 from ..smartprotocol import SmartProtocol
 from .modules import (
@@ -615,6 +615,23 @@ class SmartDevice(Device, Fan):
     def is_fan(self) -> bool:
         """Return True if the device is a fan."""
         return "FanModule" in self.modules
+
+    @property
+    def fan_state(self) -> FanState:
+        """Return fan speed level."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        return cast(FanModule, self.modules["FanModule"]).fan_state
+
+    async def set_fan_state(
+        self, fan_on: bool | None = None, speed_level: int | None = None
+    ):
+        """Set fan speed level."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        await cast(FanModule, self.modules["FanModule"]).set_fan_state(
+            fan_on=fan_on, speed_level=speed_level
+        )
 
     @property
     def fan_speed_level(self) -> int:
