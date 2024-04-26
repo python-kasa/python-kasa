@@ -628,16 +628,3 @@ class SmartDevice(Device, Fan):
         if not self.is_fan:
             raise KasaException("Device is not a Fan")
         await cast(FanModule, self.modules["FanModule"]).set_fan_speed_level(level)
-
-    @property
-    def sleep_mode(self) -> bool:
-        """Return sleep mode status."""
-        if not self.is_fan:
-            raise KasaException("Device is not a Fan")
-        return cast(FanModule, self.modules["FanModule"]).sleep_mode
-
-    async def set_sleep_mode(self, on: bool):
-        """Set sleep mode."""
-        if not self.is_fan:
-            raise KasaException("Device is not a Fan")
-        await cast(FanModule, self.modules["FanModule"]).set_sleep_mode(on)

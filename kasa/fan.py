@@ -21,12 +21,3 @@ class Fan(ABC):
     @abstractmethod
     async def set_fan_speed_level(self, level: int):
         """Set fan speed level."""
-
-    @property
-    @abstractmethod
-    def sleep_mode(self) -> bool:
-        """Return sleep mode status."""
-
-    @abstractmethod
-    async def set_sleep_mode(self, on: bool):
-        """Set sleep mode."""

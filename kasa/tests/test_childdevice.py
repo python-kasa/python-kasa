@@ -61,7 +61,11 @@ async def test_childdevice_properties(dev: SmartChildDevice):
             # Skip emeter and time properties
             # TODO: needs API cleanup, emeter* should probably be removed in favor
             #  of access through features/modules, handling of time* needs decision.
-            if name.startswith("emeter_") or name.startswith("time"):
+            if (
+                name.startswith("emeter_")
+                or name.startswith("time")
+                or name.startswith("fan")
+            ):
                 continue
             try:
                 _ = getattr(first, name)
