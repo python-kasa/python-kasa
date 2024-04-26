@@ -11,7 +11,7 @@ from pytest_mock import MockerFixture
 
 from kasa import KasaException
 from kasa.exceptions import SmartErrorCode
-from kasa.smart import SmartBulb, SmartDevice
+from kasa.smart import SmartDevice
 
 from .conftest import (
     bulb_smart,
@@ -122,7 +122,7 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
 
 
 @bulb_smart
-async def test_smartdevice_brightness(dev: SmartBulb):
+async def test_smartdevice_brightness(dev: SmartDevice):
     """Test brightness setter and getter."""
     assert isinstance(dev, SmartDevice)
     assert "brightness" in dev._components

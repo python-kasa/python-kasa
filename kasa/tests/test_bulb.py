@@ -9,7 +9,7 @@ from voluptuous import (
 
 from kasa import Bulb, BulbPreset, DeviceType, KasaException
 from kasa.iot import IotBulb
-from kasa.smart import SmartBulb
+from kasa.smart import SmartDevice
 
 from .conftest import (
     bulb,
@@ -162,7 +162,7 @@ async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
 
 
 @variable_temp_smart
-async def test_smart_temp_range(dev: SmartBulb):
+async def test_smart_temp_range(dev: SmartDevice):
     assert dev.valid_temperature_range
 
 
