@@ -14,8 +14,7 @@ if TYPE_CHECKING:
 class WaterleakSensor(SmartModule):
     """Implementation of waterleak module."""
 
-    # TODO: just a guess, we need a fixture file for this
-    REQUIRED_COMPONENT = "waterleak"
+    REQUIRED_COMPONENT = "sensor_alarm"
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
