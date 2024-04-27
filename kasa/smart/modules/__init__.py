@@ -8,6 +8,7 @@ from .childdevicemodule import ChildDeviceModule
 from .cloudmodule import CloudModule
 from .colormodule import ColorModule
 from .colortemp import ColorTemperatureModule
+from .contact import ContactSensor
 from .devicemodule import DeviceModule
 from .energymodule import EnergyModule
 from .fanmodule import FanModule
@@ -45,5 +46,6 @@ __all__ = [
     "ColorTemperatureModule",
     "ColorModule",
     "WaterleakSensor",
+    "ContactSensor",
     "FrostProtectionModule",
 ]
