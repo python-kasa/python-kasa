@@ -5,12 +5,12 @@ import pytest
 from kasa.smart.modules import WaterleakSensor
 from kasa.tests.device_fixtures import parametrize
 
-humidity = parametrize(
+waterleak = parametrize(
     "has waterleak", component_filter="sensor_alarm", protocol_filter={"SMART.CHILD"}
 )
 
 
-@humidity
+@waterleak
 @pytest.mark.parametrize(
     "feature, type",
     [
@@ -18,13 +18,25 @@ humidity = parametrize(
         ("status", Enum),
     ],
 )
-async def test_waterleak_features(dev, feature, type):
+async def test_waterleak_properties(dev, feature, type):
     """Test that features are registered and work as expected."""
-    humidity: WaterleakSensor = dev.modules["WaterleakSensor"]
+    waterleak: WaterleakSensor = dev.modules["WaterleakSensor"]
 
-    prop = getattr(humidity, feature)
+    prop = getattr(waterleak, feature)
     assert isinstance(prop, type)
 
-    feat = humidity._module_features[feature]
+    feat = waterleak._module_features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
+
+
+@waterleak
+async def test_waterleak_features(dev):
+    """Test waterleak features."""
+    waterleak: WaterleakSensor = dev.modules["WaterleakSensor"]
+
+    assert "water_leak" in dev.features
+    assert dev.features["water_leak"].value == waterleak.status
+
+    assert "water_alert" in dev.features
+    assert dev.features["water_alert"].value == waterleak.alert
