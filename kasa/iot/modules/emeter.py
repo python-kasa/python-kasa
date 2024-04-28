@@ -34,7 +34,7 @@ class Emeter(Usage):
                 container=self,
                 unit="kWh",
                 id="today_energy_kwh",  # for homeassistant backwards compat
-                precision_hint=2,
+                precision_hint=3,
             )
         )
         self._add_feature(
@@ -44,7 +44,7 @@ class Emeter(Usage):
                 attribute_getter="emeter_this_month",
                 container=self,
                 unit="kWh",
-                precision_hint=2,
+                precision_hint=3,
             )
         )
         self._add_feature(
@@ -55,7 +55,7 @@ class Emeter(Usage):
                 container=self,
                 unit="kWh",
                 id="total_energy_kwh",  # for homeassistant backwards compat
-                precision_hint=2,
+                precision_hint=3,
             )
         )
         self._add_feature(
