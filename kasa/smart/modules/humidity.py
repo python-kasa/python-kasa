@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -27,6 +27,7 @@ class HumiditySensor(SmartModule):
                 attribute_getter="humidity",
                 icon="mdi:water-percent",
                 unit="%",
+                hass_compat=HassCompat(device_class=HassCompat.DeviceClass.Humidity),
             )
         )
         self._add_feature(
@@ -37,6 +38,8 @@ class HumiditySensor(SmartModule):
                 attribute_getter="humidity_warning",
                 type=Feature.Type.BinarySensor,
                 icon="mdi:alert",
+                category=Feature.Category.Debug,
+                hass_compat=HassCompat(device_class=HassCompat.DeviceClass.Problem),
             )
         )
 

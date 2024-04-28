@@ -6,7 +6,7 @@ from datetime import datetime
 
 from ... import Device
 from ...emeterstatus import EmeterStatus
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from .usage import Usage
 
 
@@ -23,6 +23,10 @@ class Emeter(Usage):
                 container=self,
                 unit="W",
                 id="current_power_w",  # for homeassistant backwards compat
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Power,
+                    state_class=HassCompat.StateClass.Measurement,
+                ),
             )
         )
         self._add_feature(
@@ -33,6 +37,11 @@ class Emeter(Usage):
                 container=self,
                 unit="kWh",
                 id="today_energy_kwh",  # for homeassistant backwards compat
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Energy,
+                    state_class=HassCompat.StateClass.TotalIncreasing,
+                    entity_registry_visible_default=False,
+                ),
             )
         )
         self._add_feature(
@@ -42,6 +51,11 @@ class Emeter(Usage):
                 attribute_getter="emeter_this_month",
                 container=self,
                 unit="kWh",
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Energy,
+                    state_class=HassCompat.StateClass.TotalIncreasing,
+                    entity_registry_visible_default=False,
+                ),
             )
         )
         self._add_feature(
@@ -52,6 +66,11 @@ class Emeter(Usage):
                 container=self,
                 unit="kWh",
                 id="total_energy_kwh",  # for homeassistant backwards compat
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Energy,
+                    state_class=HassCompat.StateClass.TotalIncreasing,
+                    entity_registry_visible_default=False,
+                ),
             )
         )
         self._add_feature(
@@ -62,6 +81,10 @@ class Emeter(Usage):
                 container=self,
                 unit="V",
                 id="voltage",  # for homeassistant backwards compat
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Voltage,
+                    state_class=HassCompat.StateClass.Measurement,
+                ),
             )
         )
         self._add_feature(
@@ -72,6 +95,10 @@ class Emeter(Usage):
                 container=self,
                 unit="A",
                 id="current_a",  # for homeassistant backwards compat
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Current,
+                    state_class=HassCompat.StateClass.Measurement,
+                ),
             )
         )
 

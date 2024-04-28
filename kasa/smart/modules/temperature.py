@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -27,6 +27,7 @@ class TemperatureSensor(SmartModule):
                 attribute_getter="temperature",
                 icon="mdi:thermometer",
                 category=Feature.Category.Primary,
+                hass_compat=HassCompat(device_class=HassCompat.DeviceClass.Temperature),
             )
         )
         if "current_temp_exception" in device.sys_info:
@@ -38,6 +39,8 @@ class TemperatureSensor(SmartModule):
                     attribute_getter="temperature_warning",
                     type=Feature.Type.BinarySensor,
                     icon="mdi:alert",
+                    category=Feature.Category.Debug,
+                    hass_compat=HassCompat(device_class=HassCompat.DeviceClass.Problem),
                 )
             )
         self._add_feature(
@@ -65,6 +68,7 @@ class TemperatureSensor(SmartModule):
     @property
     def temperature_unit(self):
         """Return current temperature unit."""
+        # TODO: use directly homeassistant compatible units, ⁰C and ⁰F?
         return self._device.sys_info["temp_unit"]
 
     async def set_temperature_unit(self, unit: Literal["celsius", "fahrenheit"]):

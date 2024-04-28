@@ -5,7 +5,7 @@ try:
 except ImportError:
     from pydantic import BaseModel
 
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..iotmodule import IotModule
 
 
@@ -37,6 +37,8 @@ class Cloud(IotModule):
                 icon="mdi:cloud",
                 attribute_getter="is_connected",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Debug,
+                hass_compat=HassCompat(device_class=HassCompat.DeviceClass.Connected),
             )
         )
 

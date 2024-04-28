@@ -42,7 +42,11 @@ class AutoOffModule(SmartModule):
         )
         self._add_feature(
             Feature(
-                device, "Auto off at", container=self, attribute_getter="auto_off_at"
+                device,
+                "Auto off at",
+                container=self,
+                attribute_getter="auto_off_at",
+                category=Feature.Category.Debug,
             )
         )
 

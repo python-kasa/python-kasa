@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -26,6 +26,9 @@ class BatterySensor(SmartModule):
                 container=self,
                 attribute_getter="battery",
                 icon="mdi:battery",
+                unit="%",
+                category=Feature.Category.Debug,
+                hass_compat=HassCompat(device_class=HassCompat.DeviceClass.Battery),
             )
         )
         self._add_feature(
@@ -36,6 +39,8 @@ class BatterySensor(SmartModule):
                 attribute_getter="battery_low",
                 icon="mdi:alert",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Debug,
+                hass_compat=HassCompat(device_class=HassCompat.DeviceClass.LowBattery),
             )
         )
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...exceptions import SmartErrorCode
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -29,6 +29,8 @@ class CloudModule(SmartModule):
                 attribute_getter="is_connected",
                 icon="mdi:cloud",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Debug,
+                hass_compat=HassCompat(device_class=HassCompat.DeviceClass.Connected),
             )
         )
 

@@ -25,7 +25,7 @@ from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
-from ..feature import Feature
+from ..feature import Feature, HassCompat
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter
@@ -311,6 +311,7 @@ class IotDevice(Device):
                 attribute_getter="rssi",
                 icon="mdi:signal",
                 category=Feature.Category.Debug,
+                hass_compat=HassCompat(entity_registry_enabled_default=False),
             )
         )
         if "on_time" in self._sys_info:
@@ -320,6 +321,9 @@ class IotDevice(Device):
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",
+                    # TODO: We could enable this if we implement timezone support
+                    # hass_compat=HassCompat(device_class=
+                    # HassCompat.DeviceClass.Timestamp),
                 )
             )
 

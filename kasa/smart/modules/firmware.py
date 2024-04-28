@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 from ...exceptions import SmartErrorCode
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 try:
@@ -69,6 +69,10 @@ class Firmware(SmartModule):
                 container=self,
                 attribute_getter="update_available",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Debug,
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.UpdateAvailable
+                ),
             )
         )
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...emeterstatus import EmeterStatus
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -26,6 +26,10 @@ class EnergyModule(SmartModule):
                 attribute_getter="current_power",
                 container=self,
                 unit="W",
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Power,
+                    state_class=HassCompat.StateClass.Measurement,
+                ),
             )
         )
         self._add_feature(
@@ -35,6 +39,10 @@ class EnergyModule(SmartModule):
                 attribute_getter="emeter_today",
                 container=self,
                 unit="Wh",
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Energy,
+                    state_class=HassCompat.StateClass.TotalIncreasing,
+                ),
             )
         )
         self._add_feature(
@@ -44,6 +52,10 @@ class EnergyModule(SmartModule):
                 attribute_getter="emeter_this_month",
                 container=self,
                 unit="Wh",
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Energy,
+                    state_class=HassCompat.StateClass.TotalIncreasing,
+                ),
             )
         )
 

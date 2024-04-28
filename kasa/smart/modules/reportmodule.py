@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -26,6 +26,7 @@ class ReportModule(SmartModule):
                 container=self,
                 attribute_getter="report_interval",
                 category=Feature.Category.Debug,
+                hass_compat=HassCompat(entity_registry_enabled_default=False),
             )
         )
 

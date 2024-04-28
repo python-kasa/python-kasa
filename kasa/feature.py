@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -12,6 +12,67 @@ if TYPE_CHECKING:
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class HassCompat:
+    """Container class for homeassistant compat.
+
+    This is used to define some metadata for homeassistant for better UX.
+    This can be directly passed to *Description constructors.
+    """
+
+    class DeviceClass(Enum):
+        """Device class for homeassistant compat.
+
+        This contains only classes used in this library.
+        """
+
+        # Sensor
+        Power = "power"  # W, kW
+        Energy = "energy"  # wH, kWh
+        Battery = "battery"  # %
+        Voltage = "voltage"  # V, mV
+        Current = "current"  # A, mA
+        Humidity = "humidity"  # %
+        Temperature = "temperature"  # ⁰C, ⁰F, K
+        Timestamp = "timestamp"  # ISO8601
+
+        # Binary sensor
+        LowBattery = "battery"
+        Connected = "connectivity"
+        # TODO: We don't want duplicate opened state, which one to use?
+        DoorOpen = "door"
+        WindowOpen = "window"
+        Overheated = "heat"
+        Wet = "moisture"
+        Problem = "problem"
+        UpdateAvailable = "update"
+
+        def __str__(self):
+            """Overridden to return only the value."""
+            return self.value
+
+    class StateClass(Enum):
+        """State class compat for homeassistant."""
+
+        Measurement = "measurement"
+        Total = "total"
+        TotalIncreasing = "total_increasing"
+
+        def __str__(self):
+            """Overridden to return only the value."""
+            return self.value
+
+    device_class: DeviceClass | None = None
+    state_class: StateClass | None = None
+    entity_registry_enabled_default: bool = True
+    entity_registry_visible_default: bool = True
+
+    def dict(self):
+        """Convert to dict ready to consume by homeassistant description classes."""
+        items = asdict(self).items()
+        return {k: v for k, v in items if v is not None}
 
 
 @dataclass
@@ -88,6 +149,9 @@ class Feature:
     #: If set, this property will be used to set *minimum_value* and *maximum_value*.
     range_getter: str | None = None
 
+    #: Homeassistant compat
+    hass_compat: HassCompat | None = None
+
     #: Identifier
     id: str | None = None
 
@@ -119,6 +183,9 @@ class Feature:
                 f"Invalid type for configurable feature: {self.name} ({self.id}):"
                 f" {self.type}"
             )
+
+        if self.hass_compat is None:
+            self.hass_compat = HassCompat()
 
     @property
     def value(self):

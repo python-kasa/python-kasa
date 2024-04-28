@@ -13,7 +13,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
-from ..feature import Feature
+from ..feature import Feature, HassCompat
 from ..smartprotocol import SmartProtocol
 from .modules import *  # noqa: F403
 
@@ -206,6 +206,7 @@ class SmartDevice(Device):
                 "Device ID",
                 attribute_getter="device_id",
                 category=Feature.Category.Debug,
+                hass_compat=HassCompat(entity_registry_enabled_default=False),
             )
         )
         if "device_on" in self._info:
@@ -227,7 +228,7 @@ class SmartDevice(Device):
                     "Signal Level",
                     attribute_getter=lambda x: x._info["signal_level"],
                     icon="mdi:signal",
-                    category=Feature.Category.Info,
+                    category=Feature.Category.Debug,
                 )
             )
 
@@ -239,6 +240,7 @@ class SmartDevice(Device):
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
                     category=Feature.Category.Debug,
+                    hass_compat=HassCompat(entity_registry_enabled_default=False),
                 )
             )
 
@@ -250,6 +252,7 @@ class SmartDevice(Device):
                     attribute_getter="ssid",
                     icon="mdi:wifi",
                     category=Feature.Category.Debug,
+                    hass_compat=HassCompat(entity_registry_enabled_default=False),
                 )
             )
 
@@ -262,6 +265,9 @@ class SmartDevice(Device):
                     icon="mdi:heat-wave",
                     type=Feature.Type.BinarySensor,
                     category=Feature.Category.Debug,
+                    hass_compat=HassCompat(
+                        device_class=HassCompat.DeviceClass.Overheated
+                    ),
                 )
             )
 
@@ -274,7 +280,10 @@ class SmartDevice(Device):
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",
-                    category=Feature.Category.Debug,
+                    category=Feature.Category.Info,
+                    hass_compat=HassCompat(
+                        device_class=HassCompat.DeviceClass.Timestamp
+                    ),
                 )
             )
 

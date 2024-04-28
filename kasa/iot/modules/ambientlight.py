@@ -26,6 +26,7 @@ class AmbientLight(IotModule):
                 icon="mdi:brightness-percent",
                 attribute_getter="ambientlight_brightness",
                 type=Feature.Type.Sensor,
+                unit="%",
             )
         )
 

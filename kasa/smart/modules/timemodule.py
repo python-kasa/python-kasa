@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from time import mktime
 from typing import TYPE_CHECKING, cast
 
-from ...feature import Feature
+from ...feature import Feature, HassCompat
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -29,6 +29,10 @@ class TimeModule(SmartModule):
                 attribute_getter="time",
                 container=self,
                 category=Feature.Category.Debug,
+                hass_compat=HassCompat(
+                    device_class=HassCompat.DeviceClass.Timestamp,
+                    entity_registry_enabled_default=False,
+                ),
             )
         )
 
