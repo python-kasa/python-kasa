@@ -92,6 +92,13 @@ class Feature:
     #: If set, this property will be used to set *minimum_value* and *maximum_value*.
     range_getter: str | None = None
 
+    # Choice-specific attributes
+    #: List of choices as enum
+    choices: list[str] | None = None
+    #: Attribute name of the choices getter property.
+    #: If set, this property will be used to set *choices*.
+    choices_getter: str | None = None
+
     #: Identifier
     id: str | None = None
 
@@ -107,6 +114,10 @@ class Feature:
             self.minimum_value, self.maximum_value = getattr(
                 container, self.range_getter
             )
+
+        # Populate choices, if choices_getter is given
+        if self.choices_getter is not None:
+            self.choices = getattr(container, self.choices_getter)
 
         # Set the category, if unset
         if self.category is Feature.Category.Unset:
