@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from kasa.smart.modules import TemperatureControl
@@ -108,3 +110,28 @@ async def test_thermostat_mode(dev, mode, states, frost_protection):
 
     assert temp_module.state is not frost_protection
     assert temp_module.mode is mode
+
+
+@thermostats_smart
+@pytest.mark.parametrize(
+    "mode, states, msg",
+    [
+        pytest.param(
+            ThermostatState.Heating,
+            ["heating", "something else"],
+            "Got multiple states",
+            id="multiple states",
+        ),
+        pytest.param(
+            ThermostatState.Unknown, ["foobar"], "Got unknown state", id="unknown state"
+        ),
+    ],
+)
+async def test_thermostat_mode_warnings(dev, mode, states, msg, caplog):
+    """Test thermostat modes that should log a warning."""
+    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    caplog.set_level(logging.WARNING)
+
+    temp_module.data["trv_states"] = states
+    assert temp_module.mode is mode
+    assert msg in caplog.text
