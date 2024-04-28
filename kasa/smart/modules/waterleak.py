@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from ...feature import Feature
@@ -9,6 +10,14 @@ from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
+
+
+class WaterleakStatus(Enum):
+    """Waterleawk status."""
+
+    Normal = "normal"
+    LeakDetected = "water_leak"
+    Drying = "water_dry"
 
 
 class WaterleakSensor(SmartModule):
@@ -21,7 +30,7 @@ class WaterleakSensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Status",
+                "Water leak",
                 container=self,
                 attribute_getter="status",
                 icon="mdi:water",
@@ -30,9 +39,9 @@ class WaterleakSensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Alarm",
+                "Water alert",
                 container=self,
-                attribute_getter="active",
+                attribute_getter="alert",
                 icon="mdi:water-alert",
             )
         )
@@ -43,11 +52,11 @@ class WaterleakSensor(SmartModule):
         return {}
 
     @property
-    def status(self):
+    def status(self) -> WaterleakStatus:
         """Return current humidity in percentage."""
-        return self._device.sys_info["water_leak_status"]
+        return WaterleakStatus(self._device.sys_info["water_leak_status"])
 
     @property
-    def active(self) -> bool:
+    def alert(self) -> bool:
         """Return true if alarm is active."""
         return self._device.sys_info["in_alarm"]
