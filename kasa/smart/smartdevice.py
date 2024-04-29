@@ -49,7 +49,6 @@ class SmartDevice(Device):
         self._state_information: dict[str, Any] = {}
         self._modules: dict[str, SmartModule] = {}
         self._exposes_child_modules = False
-        self._combined_modules: dict[str, SmartModule] = {}
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
@@ -91,8 +90,6 @@ class SmartDevice(Device):
     @property
     def modules(self) -> dict[str, SmartModule]:
         """Return the device modules."""
-        if self._exposes_child_modules:
-            return self._combined_modules
         return self._modules
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
@@ -210,8 +207,7 @@ class SmartDevice(Device):
                     self._modules[module.name] = module
 
         if self._exposes_child_modules:
-            self._combined_modules = {k: v for k, v in self._modules.items()}
-            self._combined_modules.update(**child_modules_to_skip)
+            self._modules.update(**child_modules_to_skip)
 
     async def _initialize_features(self):
         """Initialize device features."""
