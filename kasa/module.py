@@ -40,7 +40,7 @@ class Module(ABC):
     def data(self):
         """Return the module specific raw data from the last update."""
 
-    def _initialize_features(self):
+    def _initialize_features(self):  # noqa: B027
         """Initialize features after the initial update.
 
         This can be implemented if features depend on module query responses.
