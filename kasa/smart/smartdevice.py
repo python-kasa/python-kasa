@@ -48,6 +48,7 @@ class SmartDevice(Device):
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
         self._modules: dict[str, SmartModule] = {}
+        self._combined_modules: dict[str, SmartModule] | None = None
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
@@ -90,11 +91,12 @@ class SmartDevice(Device):
     def modules(self) -> dict[str, SmartModule]:
         """Return the device modules."""
         if self._device_type == DeviceType.WallSwitch and self._children:
-            modules = {k: v for k, v in self._modules.items()}
-            for child in self._children.values():
-                for modname, mod in child._modules.items():
-                    modules[modname] = mod
-            return modules
+            if self._combined_modules is None:
+                self._combined_modules = {k: v for k, v in self._modules.items()}
+                for child in self._children.values():
+                    for modname, mod in child._modules.items():
+                        self._combined_modules[modname] = mod
+            return self._combined_modules
         return self._modules
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
@@ -206,7 +208,7 @@ class SmartDevice(Device):
                     mod.__name__,
                 )
                 module = mod(self, mod.REQUIRED_COMPONENT)
-                if module.name not in self._modules and await module._check_supported():
+                if await module._check_supported():
                     self._modules[module.name] = module
 
     async def _initialize_features(self):
@@ -296,9 +298,9 @@ class SmartDevice(Device):
     @property
     def is_cloud_connected(self):
         """Returns if the device is connected to the cloud."""
-        if "CloudModule" not in self._modules:
+        if "CloudModule" not in self.modules:
             return False
-        return self._modules["CloudModule"].is_connected
+        return self.modules["CloudModule"].is_connected
 
     @property
     def sys_info(self) -> dict[str, Any]:
@@ -322,10 +324,10 @@ class SmartDevice(Device):
     def time(self) -> datetime:
         """Return the time."""
         # TODO: Default to parent's time module for child devices
-        if self._parent and "TimeModule" in self._modules:
+        if self._parent and "TimeModule" in self.modules:
             _timemod = cast(TimeModule, self._parent.modules["TimeModule"])  # noqa: F405
         else:
-            _timemod = cast(TimeModule, self._modules["TimeModule"])  # noqa: F405
+            _timemod = cast(TimeModule, self.modules["TimeModule"])  # noqa: F405
 
         return _timemod.time
 
@@ -402,7 +404,7 @@ class SmartDevice(Device):
     @property
     def has_emeter(self) -> bool:
         """Return if the device has emeter."""
-        return "EnergyModule" in self._modules
+        return "EnergyModule" in self.modules
 
     @property
     def is_on(self) -> bool:
@@ -439,19 +441,19 @@ class SmartDevice(Device):
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        energy = cast(EnergyModule, self._modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
-        energy = cast(EnergyModule, self._modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
-        energy = cast(EnergyModule, self._modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
         return energy.emeter_today
 
     @property
@@ -463,7 +465,7 @@ class SmartDevice(Device):
         ):
             return None
         on_time = cast(float, on_time)
-        if (timemod := self._modules.get("TimeModule")) is not None:
+        if (timemod := self.modules.get("TimeModule")) is not None:
             timemod = cast(TimeModule, timemod)  # noqa: F405
             return timemod.time - timedelta(seconds=on_time)
         else:  # We have no device time, use current local time.
