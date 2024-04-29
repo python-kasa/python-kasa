@@ -15,6 +15,7 @@ import collections.abc
 import json
 import logging
 import re
+import sys
 import traceback
 from collections import defaultdict, namedtuple
 from pathlib import Path
@@ -343,6 +344,26 @@ def _echo_error(msg: str):
     )
 
 
+def format_exception(e):
+    """Print full exception stack as if it hadn't been caught.
+
+    https://stackoverflow.com/a/12539332
+    """
+    exception_list = traceback.format_stack()
+    exception_list = exception_list[:-2]
+    exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
+    exception_list.extend(
+        traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+    )
+
+    exception_str = "Traceback (most recent call last):\n"
+    exception_str += "".join(exception_list)
+    # Removing the last \n
+    exception_str = exception_str[:-1]
+
+    return exception_str
+
+
 async def _make_requests_or_exit(
     device: SmartDevice,
     requests: list[SmartRequest],
@@ -389,7 +410,7 @@ async def _make_requests_or_exit(
             f"Unexpected exception querying {name} at once: {ex}",
         )
         if _LOGGER.isEnabledFor(logging.DEBUG):
-            traceback.print_stack()
+            _echo_error(format_exception(ex))
         exit(1)
     finally:
         await device.protocol.close()
