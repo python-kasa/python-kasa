@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
-from ..bulb import HSV, BulbPreset, ColorTempRange
+from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -44,7 +44,7 @@ AVAILABLE_BULB_EFFECTS = {
 }
 
 
-class SmartDevice(Device):
+class SmartDevice(Device, Bulb):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -729,7 +729,7 @@ class SmartDevice(Device):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
-        return self._info.get("brightness", -1)
+        return cast(Brightness, self.modules["Brightness"]).brightness
 
     async def set_hsv(
         self,
