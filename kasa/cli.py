@@ -39,6 +39,7 @@ from kasa.iot import (
     IotStrip,
     IotWallSwitch,
 )
+from kasa.iot.modules import Usage
 from kasa.smart import SmartBulb, SmartDevice
 
 try:
@@ -829,7 +830,7 @@ async def usage(dev: Device, year, month, erase):
     Daily and monthly data provided in CSV format.
     """
     echo("[bold]== Usage ==[/bold]")
-    usage = dev.modules["usage"]
+    usage = cast(Usage, dev.modules["usage"])
 
     if erase:
         echo("Erasing usage statistics..")

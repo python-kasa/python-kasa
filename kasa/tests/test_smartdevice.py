@@ -103,22 +103,22 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
 async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     """Test that the regular update uses queries from all supported modules."""
     # We need to have some modules initialized by now
-    assert dev.modules
+    assert dev._modules
 
     device_queries: dict[SmartDevice, dict[str, Any]] = {}
-    for mod in dev.modules.values():
+    for mod in dev._modules.values():
         device_queries.setdefault(mod._device, {}).update(mod.query())
 
     spies = {}
-    for dev in device_queries:
-        spies[dev] = mocker.spy(dev.protocol, "query")
+    for device in device_queries:
+        spies[device] = mocker.spy(device.protocol, "query")
 
     await dev.update()
-    for dev in device_queries:
-        if device_queries[dev]:
-            spies[dev].assert_called_with(device_queries[dev])
+    for device in device_queries:
+        if device_queries[device]:
+            spies[device].assert_called_with(device_queries[device])
         else:
-            spies[dev].assert_not_called()
+            spies[device].assert_not_called()
 
 
 @bulb_smart

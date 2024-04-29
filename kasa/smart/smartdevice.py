@@ -47,7 +47,8 @@ class SmartDevice(Device):
         self._components_raw: dict[str, Any] | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
-        self.modules: dict[str, SmartModule] = {}
+        self._modules: dict[str, SmartModule] = {}
+        self._exposes_child_modules = False
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
@@ -84,10 +85,12 @@ class SmartDevice(Device):
     @property
     def children(self) -> Sequence[SmartDevice]:
         """Return list of children."""
-        # Wall switches with children report all modules on the parent only
-        if self.device_type == DeviceType.WallSwitch:
-            return []
         return list(self._children.values())
+
+    @property
+    def modules(self) -> dict[str, SmartModule]:
+        """Return the device modules."""
+        return self._modules
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
@@ -148,7 +151,7 @@ class SmartDevice(Device):
         req: dict[str, Any] = {}
 
         # TODO: this could be optimized by constructing the query only once
-        for module in self.modules.values():
+        for module in self._modules.values():
             req.update(module.query())
 
         self._last_update = resp = await self.protocol.query(req)
@@ -174,19 +177,24 @@ class SmartDevice(Device):
         # Some wall switches (like ks240) are internally presented as having child
         # devices which report the child's components on the parent's sysinfo, even
         # when they need to be accessed through the children.
-        # The logic below ensures that such devices report all but whitelisted, the
-        # child modules at the parent level to create an illusion of a single device.
+        # The logic below ensures that such devices add all but whitelisted, only on
+        # the child device.
+        skip_parent_only_modules = False
+        child_modules_to_skip = {}
         if self._parent and self._parent.device_type == DeviceType.WallSwitch:
-            modules = self._parent.modules
             skip_parent_only_modules = True
-        else:
-            modules = self.modules
-            skip_parent_only_modules = False
+        elif self._children and self.device_type == DeviceType.WallSwitch:
+            # _initialize_modules is called on the parent after the children
+            self._exposes_child_modules = True
+            for child in self._children.values():
+                child_modules_to_skip.update(**child.modules)
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
-            if skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES:
+            if (
+                skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES
+            ) or mod.__name__ in child_modules_to_skip:
                 continue
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
@@ -195,8 +203,11 @@ class SmartDevice(Device):
                     mod.__name__,
                 )
                 module = mod(self, mod.REQUIRED_COMPONENT)
-                if module.name not in modules and await module._check_supported():
-                    modules[module.name] = module
+                if await module._check_supported():
+                    self._modules[module.name] = module
+
+        if self._exposes_child_modules:
+            self._modules.update(**child_modules_to_skip)
 
     async def _initialize_features(self):
         """Initialize device features."""
@@ -278,7 +289,7 @@ class SmartDevice(Device):
                 )
             )
 
-        for module in self.modules.values():
+        for module in self._modules.values():
             for feat in module._module_features.values():
                 self._add_feature(feat)
 

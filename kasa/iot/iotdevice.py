@@ -19,7 +19,7 @@ import functools
 import inspect
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, cast
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -28,7 +28,7 @@ from ..exceptions import KasaException
 from ..feature import Feature
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
-from .modules import Emeter
+from .modules import Emeter, Time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -189,11 +189,17 @@ class IotDevice(Device):
         self._supported_modules: dict[str, IotModule] | None = None
         self._legacy_features: set[str] = set()
         self._children: Mapping[str, IotDevice] = {}
+        self._modules: dict[str, IotModule] = {}
 
     @property
     def children(self) -> Sequence[IotDevice]:
         """Return list of children."""
         return list(self._children.values())
+
+    @property
+    def modules(self) -> dict[str, IotModule]:
+        """Return the device modules."""
+        return self._modules
 
     def add_module(self, name: str, module: IotModule):
         """Register a module."""
@@ -420,31 +426,31 @@ class IotDevice(Device):
         """Set the device name (alias)."""
         return await self._query_helper("system", "set_dev_alias", {"alias": alias})
 
-    @property  # type: ignore
+    @property
     @requires_update
     def time(self) -> datetime:
         """Return current time from the device."""
-        return self.modules["time"].time
+        return cast(Time, self.modules["time"]).time
 
-    @property  # type: ignore
+    @property
     @requires_update
     def timezone(self) -> dict:
         """Return the current timezone."""
-        return self.modules["time"].timezone
+        return cast(Time, self.modules["time"]).timezone
 
     async def get_time(self) -> datetime | None:
         """Return current time from the device, if available."""
         _LOGGER.warning(
             "Use `time` property instead, this call will be removed in the future."
         )
-        return await self.modules["time"].get_time()
+        return await cast(Time, self.modules["time"]).get_time()
 
     async def get_timezone(self) -> dict:
         """Return timezone information."""
         _LOGGER.warning(
             "Use `timezone` property instead, this call will be removed in the future."
         )
-        return await self.modules["time"].get_timezone()
+        return await cast(Time, self.modules["time"]).get_timezone()
 
     @property  # type: ignore
     @requires_update
@@ -520,31 +526,31 @@ class IotDevice(Device):
         """
         return await self._query_helper("system", "set_mac_addr", {"mac": mac})
 
-    @property  # type: ignore
+    @property
     @requires_update
     def emeter_realtime(self) -> EmeterStatus:
         """Return current energy readings."""
         self._verify_emeter()
-        return EmeterStatus(self.modules["emeter"].realtime)
+        return EmeterStatus(cast(Emeter, self.modules["emeter"]).realtime)
 
     async def get_emeter_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
         self._verify_emeter()
-        return EmeterStatus(await self.modules["emeter"].get_realtime())
+        return EmeterStatus(await cast(Emeter, self.modules["emeter"]).get_realtime())
 
-    @property  # type: ignore
+    @property
     @requires_update
     def emeter_today(self) -> float | None:
         """Return today's energy consumption in kWh."""
         self._verify_emeter()
-        return self.modules["emeter"].emeter_today
+        return cast(Emeter, self.modules["emeter"]).emeter_today
 
-    @property  # type: ignore
+    @property
     @requires_update
     def emeter_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
         self._verify_emeter()
-        return self.modules["emeter"].emeter_this_month
+        return cast(Emeter, self.modules["emeter"]).emeter_this_month
 
     async def get_emeter_daily(
         self, year: int | None = None, month: int | None = None, kwh: bool = True
@@ -558,7 +564,9 @@ class IotDevice(Device):
         :return: mapping of day of month to value
         """
         self._verify_emeter()
-        return await self.modules["emeter"].get_daystat(year=year, month=month, kwh=kwh)
+        return await cast(Emeter, self.modules["emeter"]).get_daystat(
+            year=year, month=month, kwh=kwh
+        )
 
     @requires_update
     async def get_emeter_monthly(
@@ -571,13 +579,15 @@ class IotDevice(Device):
         :return: dict: mapping of month to value
         """
         self._verify_emeter()
-        return await self.modules["emeter"].get_monthstat(year=year, kwh=kwh)
+        return await cast(Emeter, self.modules["emeter"]).get_monthstat(
+            year=year, kwh=kwh
+        )
 
     @requires_update
     async def erase_emeter_stats(self) -> dict:
         """Erase energy meter statistics."""
         self._verify_emeter()
-        return await self.modules["emeter"].erase_stats()
+        return await cast(Emeter, self.modules["emeter"]).erase_stats()
 
     @requires_update
     async def current_consumption(self) -> float:

@@ -15,6 +15,7 @@ from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
 from .iotprotocol import IotProtocol
+from .module import Module
 from .protocol import BaseProtocol
 from .xortransport import XorTransport
 
@@ -72,7 +73,6 @@ class Device(ABC):
         self._last_update: Any = None
         self._discovery_info: dict[str, Any] | None = None
 
-        self.modules: dict[str, Any] = {}
         self._features: dict[str, Feature] = {}
         self._parent: Device | None = None
         self._children: Mapping[str, Device] = {}
@@ -110,6 +110,11 @@ class Device(ABC):
     async def disconnect(self):
         """Disconnect and close any underlying connection resources."""
         await self.protocol.close()
+
+    @property
+    @abstractmethod
+    def modules(self) -> Mapping[str, Module]:
+        """Return the device modules."""
 
     @property
     @abstractmethod
