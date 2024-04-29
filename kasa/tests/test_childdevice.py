@@ -65,6 +65,11 @@ async def test_childdevice_properties(dev: SmartChildDevice):
                 name.startswith("emeter_")
                 or name.startswith("time")
                 or name.startswith("fan")
+                or name.startswith("color")
+                or name.startswith("brightness")
+                or name.startswith("valid_temperature_range")
+                or name.startswith("hsv")
+                or name.startswith("effect")
             ):
                 continue
             try:

@@ -39,7 +39,8 @@ from kasa.iot import (
     IotStrip,
     IotWallSwitch,
 )
-from kasa.smart import SmartBulb, SmartDevice
+from kasa.iot.modules import Usage
+from kasa.smart import SmartDevice
 
 try:
     from pydantic.v1 import ValidationError
@@ -87,7 +88,7 @@ TYPE_TO_CLASS = {
     "iot.strip": IotStrip,
     "iot.lightstrip": IotLightStrip,
     "smart.plug": SmartDevice,
-    "smart.bulb": SmartBulb,
+    "smart.bulb": SmartDevice,
 }
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
@@ -829,7 +830,7 @@ async def usage(dev: Device, year, month, erase):
     Daily and monthly data provided in CSV format.
     """
     echo("[bold]== Usage ==[/bold]")
-    usage = dev.modules["usage"]
+    usage = cast(Usage, dev.modules["usage"])
 
     if erase:
         echo("Erasing usage statistics..")

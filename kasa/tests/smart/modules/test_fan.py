@@ -1,7 +1,10 @@
+from typing import cast
+
 from pytest_mock import MockerFixture
 
 from kasa import Device
 from kasa.smart import SmartDevice
+from kasa.smart.modules import FanModule
 from kasa.tests.device_fixtures import parametrize
 
 fan = parametrize("has fan", component_filter="fan_control", protocol_filter={"SMART"})
@@ -10,7 +13,7 @@ fan = parametrize("has fan", component_filter="fan_control", protocol_filter={"S
 @fan
 async def test_fan_speed(dev: Device, mocker: MockerFixture):
     """Test fan speed feature."""
-    fan = dev.modules.get("FanModule")
+    fan = cast(FanModule, dev.modules.get("FanModule"))
     assert fan
 
     level_feature = fan._module_features["fan_speed_level"]
@@ -33,7 +36,7 @@ async def test_fan_speed(dev: Device, mocker: MockerFixture):
 @fan
 async def test_sleep_mode(dev: Device, mocker: MockerFixture):
     """Test sleep mode feature."""
-    fan = dev.modules.get("FanModule")
+    fan = cast(FanModule, dev.modules.get("FanModule"))
     assert fan
     sleep_feature = fan._module_features["fan_sleep_mode"]
     assert isinstance(sleep_feature.value, bool)

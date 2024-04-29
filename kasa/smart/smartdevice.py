@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
+from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -17,7 +18,10 @@ from ..fan import Fan, FanState
 from ..feature import Feature
 from ..smartprotocol import SmartProtocol
 from .modules import (
+    Brightness,
     CloudModule,
+    ColorModule,
+    ColorTemperatureModule,
     DeviceModule,
     EnergyModule,
     FanModule,
@@ -36,8 +40,13 @@ if TYPE_CHECKING:
 # same issue, homekit perhaps?
 WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]
 
+AVAILABLE_BULB_EFFECTS = {
+    "L1": "Party",
+    "L2": "Relax",
+}
 
-class SmartDevice(Device, Fan):
+
+class SmartDevice(Device, Bulb, Fan):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -55,7 +64,8 @@ class SmartDevice(Device, Fan):
         self._components_raw: dict[str, Any] | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
-        self.modules: dict[str, SmartModule] = {}
+        self._modules: dict[str, SmartModule] = {}
+        self._exposes_child_modules = False
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
@@ -92,10 +102,12 @@ class SmartDevice(Device, Fan):
     @property
     def children(self) -> Sequence[SmartDevice]:
         """Return list of children."""
-        # Wall switches with children report all modules on the parent only
-        if self.device_type == DeviceType.WallSwitch:
-            return []
         return list(self._children.values())
+
+    @property
+    def modules(self) -> dict[str, SmartModule]:
+        """Return the device modules."""
+        return self._modules
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
@@ -156,7 +168,7 @@ class SmartDevice(Device, Fan):
         req: dict[str, Any] = {}
 
         # TODO: this could be optimized by constructing the query only once
-        for module in self.modules.values():
+        for module in self._modules.values():
             req.update(module.query())
 
         self._last_update = resp = await self.protocol.query(req)
@@ -182,19 +194,24 @@ class SmartDevice(Device, Fan):
         # Some wall switches (like ks240) are internally presented as having child
         # devices which report the child's components on the parent's sysinfo, even
         # when they need to be accessed through the children.
-        # The logic below ensures that such devices report all but whitelisted, the
-        # child modules at the parent level to create an illusion of a single device.
+        # The logic below ensures that such devices add all but whitelisted, only on
+        # the child device.
+        skip_parent_only_modules = False
+        child_modules_to_skip = {}
         if self._parent and self._parent.device_type == DeviceType.WallSwitch:
-            modules = self._parent.modules
             skip_parent_only_modules = True
-        else:
-            modules = self.modules
-            skip_parent_only_modules = False
+        elif self._children and self.device_type == DeviceType.WallSwitch:
+            # _initialize_modules is called on the parent after the children
+            self._exposes_child_modules = True
+            for child in self._children.values():
+                child_modules_to_skip.update(**child.modules)
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
-            if skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES:
+            if (
+                skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES
+            ) or mod.__name__ in child_modules_to_skip:
                 continue
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
@@ -203,8 +220,11 @@ class SmartDevice(Device, Fan):
                     mod.__name__,
                 )
                 module = mod(self, mod.REQUIRED_COMPONENT)
-                if module.name not in modules and await module._check_supported():
-                    modules[module.name] = module
+                if await module._check_supported():
+                    self._modules[module.name] = module
+
+        if self._exposes_child_modules:
+            self._modules.update(**child_modules_to_skip)
 
     async def _initialize_features(self):
         """Initialize device features."""
@@ -286,7 +306,7 @@ class SmartDevice(Device, Fan):
                 )
             )
 
-        for module in self.modules.values():
+        for module in self._modules.values():
             for feat in module._module_features.values():
                 self._add_feature(feat)
 
@@ -400,6 +420,11 @@ class SmartDevice(Device, Fan):
     def has_emeter(self) -> bool:
         """Return if the device has emeter."""
         return "EnergyModule" in self.modules
+
+    @property
+    def is_dimmer(self) -> bool:
+        """Whether the device acts as a dimmer."""
+        return self.is_dimmable
 
     @property
     def is_on(self) -> bool:
@@ -645,3 +670,172 @@ class SmartDevice(Device, Fan):
         if not self.is_fan:
             raise KasaException("Device is not a Fan")
         await cast(FanModule, self.modules["FanModule"]).set_fan_speed_level(level)
+
+    # Bulb interface methods
+
+    @property
+    def is_color(self) -> bool:
+        """Whether the bulb supports color changes."""
+        return "ColorModule" in self.modules
+
+    @property
+    def is_dimmable(self) -> bool:
+        """Whether the bulb supports brightness changes."""
+        return "Brightness" in self.modules
+
+    @property
+    def is_variable_color_temp(self) -> bool:
+        """Whether the bulb supports color temperature changes."""
+        return "ColorTemperatureModule" in self.modules
+
+    @property
+    def valid_temperature_range(self) -> ColorTempRange:
+        """Return the device-specific white temperature range (in Kelvin).
+
+        :return: White temperature range in Kelvin (minimum, maximum)
+        """
+        if not self.is_variable_color_temp:
+            raise KasaException("Color temperature not supported")
+
+        return cast(
+            ColorTemperatureModule, self.modules["ColorTemperatureModule"]
+        ).valid_temperature_range
+
+    @property
+    def has_effects(self) -> bool:
+        """Return True if the device supports effects."""
+        return "dynamic_light_effect_enable" in self._info
+
+    @property
+    def effect(self) -> dict:
+        """Return effect state.
+
+        This follows the format used by SmartLightStrip.
+
+        Example:
+            {'brightness': 50,
+             'custom': 0,
+             'enable': 0,
+             'id': '',
+             'name': ''}
+        """
+        # If no effect is active, dynamic_light_effect_id does not appear in info
+        current_effect = self._info.get("dynamic_light_effect_id", "")
+        data = {
+            "brightness": self.brightness,
+            "enable": current_effect != "",
+            "id": current_effect,
+            "name": AVAILABLE_BULB_EFFECTS.get(current_effect, ""),
+        }
+
+        return data
+
+    @property
+    def effect_list(self) -> list[str] | None:
+        """Return built-in effects list.
+
+        Example:
+            ['Party', 'Relax', ...]
+        """
+        return list(AVAILABLE_BULB_EFFECTS.keys()) if self.has_effects else None
+
+    @property
+    def hsv(self) -> HSV:
+        """Return the current HSV state of the bulb.
+
+        :return: hue, saturation and value (degrees, %, %)
+        """
+        if not self.is_color:
+            raise KasaException("Bulb does not support color.")
+
+        return cast(ColorModule, self.modules["ColorModule"]).hsv
+
+    @property
+    def color_temp(self) -> int:
+        """Whether the bulb supports color temperature changes."""
+        if not self.is_variable_color_temp:
+            raise KasaException("Bulb does not support colortemp.")
+
+        return cast(
+            ColorTemperatureModule, self.modules["ColorTemperatureModule"]
+        ).color_temp
+
+    @property
+    def brightness(self) -> int:
+        """Return the current brightness in percentage."""
+        if not self.is_dimmable:  # pragma: no cover
+            raise KasaException("Bulb is not dimmable.")
+
+        return cast(Brightness, self.modules["Brightness"]).brightness
+
+    async def set_hsv(
+        self,
+        hue: int,
+        saturation: int,
+        value: int | None = None,
+        *,
+        transition: int | None = None,
+    ) -> dict:
+        """Set new HSV.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int hue: hue in degrees
+        :param int saturation: saturation in percentage [0,100]
+        :param int value: value between 1 and 100
+        :param int transition: transition in milliseconds.
+        """
+        if not self.is_color:
+            raise KasaException("Bulb does not support color.")
+
+        return await cast(ColorModule, self.modules["ColorModule"]).set_hsv(
+            hue, saturation, value
+        )
+
+    async def set_color_temp(
+        self, temp: int, *, brightness=None, transition: int | None = None
+    ) -> dict:
+        """Set the color temperature of the device in kelvin.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int temp: The new color temperature, in Kelvin
+        :param int transition: transition in milliseconds.
+        """
+        if not self.is_variable_color_temp:
+            raise KasaException("Bulb does not support colortemp.")
+        return await cast(
+            ColorTemperatureModule, self.modules["ColorTemperatureModule"]
+        ).set_color_temp(temp)
+
+    async def set_brightness(
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
+        """Set the brightness in percentage.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int brightness: brightness in percent
+        :param int transition: transition in milliseconds.
+        """
+        if not self.is_dimmable:  # pragma: no cover
+            raise KasaException("Bulb is not dimmable.")
+
+        return await cast(Brightness, self.modules["Brightness"]).set_brightness(
+            brightness
+        )
+
+    async def set_effect(
+        self,
+        effect: str,
+        *,
+        brightness: int | None = None,
+        transition: int | None = None,
+    ) -> None:
+        """Set an effect on the device."""
+        raise NotImplementedError()
+
+    @property
+    def presets(self) -> list[BulbPreset]:
+        """Return a list of available bulb setting presets."""
+        return []

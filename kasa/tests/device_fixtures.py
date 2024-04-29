@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from itertools import chain
-
 import pytest
 
 from kasa import (
@@ -11,7 +9,7 @@ from kasa import (
     Discover,
 )
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
-from kasa.smart import SmartBulb, SmartDevice
+from kasa.smart import SmartDevice
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
@@ -319,19 +317,7 @@ check_categories()
 
 def device_for_fixture_name(model, protocol):
     if "SMART" in protocol:
-        for d in chain(
-            PLUGS_SMART,
-            SWITCHES_SMART,
-            STRIPS_SMART,
-            HUBS_SMART,
-            SENSORS_SMART,
-            THERMOSTATS_SMART,
-        ):
-            if d in model:
-                return SmartDevice
-        for d in chain(BULBS_SMART, DIMMERS_SMART):
-            if d in model:
-                return SmartBulb
+        return SmartDevice
     else:
         for d in STRIPS_IOT:
             if d in model:
