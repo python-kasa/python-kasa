@@ -7,9 +7,9 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import Bulb, BulbPreset, DeviceType, KasaException
-from kasa.iot import IotBulb
-from kasa.smart import SmartBulb
+from kasa import Bulb, BulbPreset, Device, DeviceType, KasaException
+from kasa.iot import IotBulb, IotDimmer
+from kasa.smart import SmartDevice
 
 from .conftest import (
     bulb,
@@ -30,7 +30,7 @@ from .test_iotdevice import SYSINFO_SCHEMA
 
 
 @bulb
-async def test_bulb_sysinfo(dev: Bulb):
+async def test_bulb_sysinfo(dev: Device):
     assert dev.sys_info is not None
     SYSINFO_SCHEMA_BULB(dev.sys_info)
 
@@ -43,7 +43,7 @@ async def test_bulb_sysinfo(dev: Bulb):
 
 
 @bulb
-async def test_state_attributes(dev: Bulb):
+async def test_state_attributes(dev: Device):
     assert "Cloud connection" in dev.state_information
     assert isinstance(dev.state_information["Cloud connection"], bool)
 
@@ -64,7 +64,8 @@ async def test_get_light_state(dev: IotBulb):
 
 @color_bulb
 @turn_on
-async def test_hsv(dev: Bulb, turn_on):
+async def test_hsv(dev: Device, turn_on):
+    assert isinstance(dev, Bulb)
     await handle_turn_on(dev, turn_on)
     assert dev.is_color
 
@@ -114,7 +115,8 @@ async def test_invalid_hsv(dev: Bulb, turn_on):
 
 @color_bulb
 @pytest.mark.skip("requires color feature")
-async def test_color_state_information(dev: Bulb):
+async def test_color_state_information(dev: Device):
+    assert isinstance(dev, Bulb)
     assert "HSV" in dev.state_information
     assert dev.state_information["HSV"] == dev.hsv
 
@@ -131,14 +133,16 @@ async def test_hsv_on_non_color(dev: Bulb):
 
 @variable_temp
 @pytest.mark.skip("requires colortemp module")
-async def test_variable_temp_state_information(dev: Bulb):
+async def test_variable_temp_state_information(dev: Device):
+    assert isinstance(dev, Bulb)
     assert "Color temperature" in dev.state_information
     assert dev.state_information["Color temperature"] == dev.color_temp
 
 
 @variable_temp
 @turn_on
-async def test_try_set_colortemp(dev: Bulb, turn_on):
+async def test_try_set_colortemp(dev: Device, turn_on):
+    assert isinstance(dev, Bulb)
     await handle_turn_on(dev, turn_on)
     await dev.set_color_temp(2700)
     await dev.update()
@@ -162,7 +166,7 @@ async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
 
 
 @variable_temp_smart
-async def test_smart_temp_range(dev: SmartBulb):
+async def test_smart_temp_range(dev: SmartDevice):
     assert dev.valid_temperature_range
 
 
@@ -188,7 +192,8 @@ async def test_non_variable_temp(dev: Bulb):
 
 @dimmable
 @turn_on
-async def test_dimmable_brightness(dev: Bulb, turn_on):
+async def test_dimmable_brightness(dev: Device, turn_on):
+    assert isinstance(dev, (Bulb, IotDimmer))
     await handle_turn_on(dev, turn_on)
     assert dev.is_dimmable
 

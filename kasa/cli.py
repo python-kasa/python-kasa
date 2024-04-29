@@ -40,7 +40,7 @@ from kasa.iot import (
     IotWallSwitch,
 )
 from kasa.iot.modules import Usage
-from kasa.smart import SmartBulb, SmartDevice
+from kasa.smart import SmartDevice
 
 try:
     from pydantic.v1 import ValidationError
@@ -88,7 +88,7 @@ TYPE_TO_CLASS = {
     "iot.strip": IotStrip,
     "iot.lightstrip": IotLightStrip,
     "smart.plug": SmartDevice,
-    "smart.bulb": SmartBulb,
+    "smart.bulb": SmartDevice,
 }
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
