@@ -306,9 +306,9 @@ async def cli(
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
-    if sys.argv[-1] == "--help":
+    if "--help" in sys.argv:
         # Context object is required to avoid crashing on sub-groups
-        ctx.obj = Device(None)
+        ctx.obj = object()
         return
 
     # If JSON output is requested, disable echo
