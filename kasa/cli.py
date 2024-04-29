@@ -39,6 +39,7 @@ from kasa.iot import (
     IotStrip,
     IotWallSwitch,
 )
+from kasa.iot.modules import Usage
 from kasa.smart import SmartBulb, SmartDevice
 
 try:
@@ -829,24 +830,24 @@ async def usage(dev: Device, year, month, erase):
     Daily and monthly data provided in CSV format.
     """
     echo("[bold]== Usage ==[/bold]")
-    usage = dev.modules["usage"]
+    usage = cast(Usage, dev.modules["usage"])
 
     if erase:
         echo("Erasing usage statistics..")
-        return await usage.erase_stats()  # type: ignore[attr-defined]
+        return await usage.erase_stats()
 
     if year:
         echo(f"== For year {year.year} ==")
         echo("Month, usage (minutes)")
-        usage_data = await usage.get_monthstat(year=year.year)  # type: ignore[attr-defined]
+        usage_data = await usage.get_monthstat(year=year.year)
     elif month:
         echo(f"== For month {month.month} of {month.year} ==")
         echo("Day, usage (minutes)")
-        usage_data = await usage.get_daystat(year=month.year, month=month.month)  # type: ignore[attr-defined]
+        usage_data = await usage.get_daystat(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        echo("Today: %s minutes" % usage.usage_today)  # type: ignore[attr-defined]
-        echo("This month: %s minutes" % usage.usage_this_month)  # type: ignore[attr-defined]
+        echo("Today: %s minutes" % usage.usage_today)
+        echo("This month: %s minutes" % usage.usage_this_month)
 
         return usage
 
