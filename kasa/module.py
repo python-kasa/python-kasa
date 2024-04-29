@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from .device import Device
 from .exceptions import KasaException
 from .feature import Feature
+
+if TYPE_CHECKING:
+    from .device import Device
 
 _LOGGER = logging.getLogger(__name__)
 

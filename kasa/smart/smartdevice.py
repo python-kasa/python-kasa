@@ -47,7 +47,7 @@ class SmartDevice(Device):
         self._components_raw: dict[str, Any] | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
-        self.modules: dict[str, SmartModule] = {}
+        self._modules: dict[str, SmartModule] = {}
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
@@ -84,10 +84,18 @@ class SmartDevice(Device):
     @property
     def children(self) -> Sequence[SmartDevice]:
         """Return list of children."""
-        # Wall switches with children report all modules on the parent only
-        if self.device_type == DeviceType.WallSwitch:
-            return []
         return list(self._children.values())
+
+    @property
+    def modules(self) -> dict[str, SmartModule]:
+        """Return the device modules."""
+        if self._device_type == DeviceType.WallSwitch and self._children:
+            modules = {k: v for k, v in self._modules.items()}
+            for child in self._children.values():
+                for modname, mod in child._modules.items():
+                    modules[modname] = mod
+            return modules
+        return self._modules
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
@@ -148,7 +156,7 @@ class SmartDevice(Device):
         req: dict[str, Any] = {}
 
         # TODO: this could be optimized by constructing the query only once
-        for module in self.modules.values():
+        for module in self._modules.values():
             req.update(module.query())
 
         self._last_update = resp = await self.protocol.query(req)
@@ -174,19 +182,22 @@ class SmartDevice(Device):
         # Some wall switches (like ks240) are internally presented as having child
         # devices which report the child's components on the parent's sysinfo, even
         # when they need to be accessed through the children.
-        # The logic below ensures that such devices report all but whitelisted, the
-        # child modules at the parent level to create an illusion of a single device.
+        # The logic below ensures that such devices add all but whitelisted, only on
+        # the child device.
+        skip_parent_only_modules = False
+        child_modules_to_skip = set()
         if self._parent and self._parent.device_type == DeviceType.WallSwitch:
-            modules = self._parent.modules
             skip_parent_only_modules = True
-        else:
-            modules = self.modules
-            skip_parent_only_modules = False
+        elif self._children and self.device_type == DeviceType.WallSwitch:
+            for child in self._children.values():
+                child_modules_to_skip.update(set(child.modules.values()))
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
-            if skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES:
+            if (
+                skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES
+            ) or mod in child_modules_to_skip:
                 continue
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
@@ -195,8 +206,8 @@ class SmartDevice(Device):
                     mod.__name__,
                 )
                 module = mod(self, mod.REQUIRED_COMPONENT)
-                if module.name not in modules and await module._check_supported():
-                    modules[module.name] = module
+                if module.name not in self._modules and await module._check_supported():
+                    self._modules[module.name] = module
 
     async def _initialize_features(self):
         """Initialize device features."""
@@ -278,16 +289,16 @@ class SmartDevice(Device):
                 )
             )
 
-        for module in self.modules.values():
+        for module in self._modules.values():
             for feat in module._module_features.values():
                 self._add_feature(feat)
 
     @property
     def is_cloud_connected(self):
         """Returns if the device is connected to the cloud."""
-        if "CloudModule" not in self.modules:
+        if "CloudModule" not in self._modules:
             return False
-        return self.modules["CloudModule"].is_connected
+        return self._modules["CloudModule"].is_connected
 
     @property
     def sys_info(self) -> dict[str, Any]:
@@ -311,10 +322,10 @@ class SmartDevice(Device):
     def time(self) -> datetime:
         """Return the time."""
         # TODO: Default to parent's time module for child devices
-        if self._parent and "TimeModule" in self.modules:
+        if self._parent and "TimeModule" in self._modules:
             _timemod = cast(TimeModule, self._parent.modules["TimeModule"])  # noqa: F405
         else:
-            _timemod = cast(TimeModule, self.modules["TimeModule"])  # noqa: F405
+            _timemod = cast(TimeModule, self._modules["TimeModule"])  # noqa: F405
 
         return _timemod.time
 
@@ -391,7 +402,7 @@ class SmartDevice(Device):
     @property
     def has_emeter(self) -> bool:
         """Return if the device has emeter."""
-        return "EnergyModule" in self.modules
+        return "EnergyModule" in self._modules
 
     @property
     def is_on(self) -> bool:
@@ -428,19 +439,19 @@ class SmartDevice(Device):
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self._modules["EnergyModule"])  # noqa: F405
         return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self._modules["EnergyModule"])  # noqa: F405
         return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self._modules["EnergyModule"])  # noqa: F405
         return energy.emeter_today
 
     @property
@@ -452,7 +463,7 @@ class SmartDevice(Device):
         ):
             return None
         on_time = cast(float, on_time)
-        if (timemod := self.modules.get("TimeModule")) is not None:
+        if (timemod := self._modules.get("TimeModule")) is not None:
             timemod = cast(TimeModule, timemod)  # noqa: F405
             return timemod.time - timedelta(seconds=on_time)
         else:  # We have no device time, use current local time.
