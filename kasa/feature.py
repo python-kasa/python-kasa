@@ -158,6 +158,12 @@ class Feature:
                     f"Value {value} out of range "
                     f"[{self.minimum_value}, {self.maximum_value}]"
                 )
+        elif self.type == Feature.Type.Choice:  # noqa: SIM102
+            if value not in self.choices:
+                raise ValueError(
+                    f"Unexpected value for {self.name}: {value}"
+                    f" - allowed: {self.choices}"
+                )
 
         container = self.container if self.container is not None else self.device
         if self.type == Feature.Type.Action:

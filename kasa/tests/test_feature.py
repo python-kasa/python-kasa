@@ -1,4 +1,5 @@
 import pytest
+from pytest_mock import MockFixture
 
 from kasa import Feature
 
@@ -108,6 +109,23 @@ async def test_feature_action(mocker):
     assert feat.value == "<Action>"
     await feat.set_value(1234)
     mock_call_action.assert_called()
+
+
+async def test_feature_choice_list(dummy_feature, caplog, mocker: MockFixture):
+    """Test the choice feature type."""
+    dummy_feature.type = Feature.Type.Choice
+    dummy_feature.choices = ["first", "second"]
+
+    mock_setter = mocker.patch.object(dummy_feature.device, "dummysetter", create=True)
+    await dummy_feature.set_value("first")
+    mock_setter.assert_called_with("first")
+    mock_setter.reset_mock()
+
+    with pytest.raises(ValueError):
+        await dummy_feature.set_value("invalid")
+        assert "Unexpected value" in caplog.text
+
+    mock_setter.assert_not_called()
 
 
 @pytest.mark.parametrize("precision_hint", [1, 2, 3])
