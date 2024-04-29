@@ -8,7 +8,7 @@ from voluptuous import (
 )
 
 from kasa import Bulb, BulbPreset, Device, DeviceType, KasaException
-from kasa.iot import IotBulb
+from kasa.iot import IotBulb, IotDimmer
 from kasa.smart import SmartDevice
 
 from .conftest import (
@@ -193,7 +193,7 @@ async def test_non_variable_temp(dev: Bulb):
 @dimmable
 @turn_on
 async def test_dimmable_brightness(dev: Device, turn_on):
-    assert isinstance(dev, Bulb)
+    assert isinstance(dev, Bulb | IotDimmer)
     await handle_turn_on(dev, turn_on)
     assert dev.is_dimmable
 
