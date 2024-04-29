@@ -48,7 +48,8 @@ class SmartDevice(Device):
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
         self._modules: dict[str, SmartModule] = {}
-        self._combined_modules: dict[str, SmartModule] | None = None
+        self._exposes_child_modules = False
+        self._combined_modules: dict[str, SmartModule] = {}
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
@@ -90,12 +91,7 @@ class SmartDevice(Device):
     @property
     def modules(self) -> dict[str, SmartModule]:
         """Return the device modules."""
-        if self._device_type == DeviceType.WallSwitch and self._children:
-            if self._combined_modules is None:
-                self._combined_modules = {k: v for k, v in self._modules.items()}
-                for child in self._children.values():
-                    for modname, mod in child._modules.items():
-                        self._combined_modules[modname] = mod
+        if self._exposes_child_modules:
             return self._combined_modules
         return self._modules
 
@@ -187,19 +183,21 @@ class SmartDevice(Device):
         # The logic below ensures that such devices add all but whitelisted, only on
         # the child device.
         skip_parent_only_modules = False
-        child_modules_to_skip = set()
+        child_modules_to_skip = {}
         if self._parent and self._parent.device_type == DeviceType.WallSwitch:
             skip_parent_only_modules = True
         elif self._children and self.device_type == DeviceType.WallSwitch:
+            # _initialize_modules is called on the parent after the children
+            self._exposes_child_modules = True
             for child in self._children.values():
-                child_modules_to_skip.update(set(child.modules.values()))
+                child_modules_to_skip.update(**child.modules)
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
             if (
                 skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES
-            ) or mod in child_modules_to_skip:
+            ) or mod.__name__ in child_modules_to_skip:
                 continue
             if mod.REQUIRED_COMPONENT in self._components:
                 _LOGGER.debug(
@@ -210,6 +208,10 @@ class SmartDevice(Device):
                 module = mod(self, mod.REQUIRED_COMPONENT)
                 if await module._check_supported():
                     self._modules[module.name] = module
+
+        if self._exposes_child_modules:
+            self._combined_modules = {k: v for k, v in self._modules.items()}
+            self._combined_modules.update(**child_modules_to_skip)
 
     async def _initialize_features(self):
         """Initialize device features."""
