@@ -79,6 +79,10 @@ class Feature:
     #: Type of the feature
     type: Feature.Type = Type.Sensor
 
+    # Display hints offer a way suggest how the value should be shown to users
+    #: Hint to help rounding the sensor values to given after-comma digits
+    precision_hint: int | None = None
+
     # Number-specific attributes
     #: Minimum value
     minimum_value: int = 0
@@ -151,7 +155,10 @@ class Feature:
         return await getattr(container, self.attribute_setter)(value)
 
     def __repr__(self):
-        s = f"{self.name} ({self.id}): {self.value}"
+        value = self.value
+        if self.precision_hint is not None and value is not None:
+            value = round(self.value, self.precision_hint)
+        s = f"{self.name} ({self.id}): {value}"
         if self.unit is not None:
             s += f" {self.unit}"
 

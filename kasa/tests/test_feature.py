@@ -108,3 +108,15 @@ async def test_feature_action(mocker):
     assert feat.value == "<Action>"
     await feat.set_value(1234)
     mock_call_action.assert_called()
+
+
+@pytest.mark.parametrize("precision_hint", [1, 2, 3])
+async def test_precision_hint(dummy_feature, precision_hint):
+    """Test that precision hint works as expected."""
+    dummy_value = 3.141593
+    dummy_feature.type = Feature.Type.Sensor
+    dummy_feature.precision_hint = precision_hint
+
+    dummy_feature.attribute_getter = lambda x: dummy_value
+    assert dummy_feature.value == dummy_value
+    assert f"{round(dummy_value, precision_hint)} dummyunit" in repr(dummy_feature)

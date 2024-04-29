@@ -41,7 +41,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ steps.pipx-env-setup.outputs.pipx-cache-path }}
-        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
+        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
 
     - name: Install poetry
       if: steps.pipx-cache.outputs.cache-hit != 'true'
@@ -61,7 +61,7 @@ runs:
       with:
         path: |
           ${{ steps.poetry-cache-location.outputs.poetry-venv-location }}
-        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
+        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
 
     - name: "Poetry install"
       shell: bash
@@ -80,4 +80,4 @@ runs:
       name: Pre-commit cache
       with:
         path: ~/.cache/pre-commit/
-        key: ${{ runner.os }}-${{ runner.arch }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}

@@ -18,7 +18,7 @@ from .iotdevice import (
     requires_update,
 )
 from .iotplug import IotPlug
-from .modules import Antitheft, Countdown, Emeter, Schedule, Time, Usage
+from .modules import Antitheft, Countdown, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,7 +100,6 @@ class IotStrip(IotDevice):
         self.add_module("usage", Usage(self, "schedule"))
         self.add_module("time", Time(self, "time"))
         self.add_module("countdown", Countdown(self, "countdown"))
-        self.add_module("emeter", Emeter(self, "emeter"))
 
     @property  # type: ignore
     @requires_update
@@ -217,13 +216,13 @@ class IotStrip(IotDevice):
     @requires_update
     def emeter_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
-        return sum(plug.emeter_this_month for plug in self.children)
+        return sum(v if (v := plug.emeter_this_month) else 0 for plug in self.children)
 
     @property  # type: ignore
     @requires_update
     def emeter_today(self) -> float | None:
         """Return this month's energy consumption in kWh."""
-        return sum(plug.emeter_today for plug in self.children)
+        return sum(v if (v := plug.emeter_today) else 0 for plug in self.children)
 
     @property  # type: ignore
     @requires_update
