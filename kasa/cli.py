@@ -833,20 +833,20 @@ async def usage(dev: Device, year, month, erase):
 
     if erase:
         echo("Erasing usage statistics..")
-        return await usage.erase_stats()
+        return await usage.erase_stats()  # type: ignore[attr-defined]
 
     if year:
         echo(f"== For year {year.year} ==")
         echo("Month, usage (minutes)")
-        usage_data = await usage.get_monthstat(year=year.year)
+        usage_data = await usage.get_monthstat(year=year.year)  # type: ignore[attr-defined]
     elif month:
         echo(f"== For month {month.month} of {month.year} ==")
         echo("Day, usage (minutes)")
-        usage_data = await usage.get_daystat(year=month.year, month=month.month)
+        usage_data = await usage.get_daystat(year=month.year, month=month.month)  # type: ignore[attr-defined]
     else:
         # Call with no argument outputs summary data and returns
-        echo("Today: %s minutes" % usage.usage_today)
-        echo("This month: %s minutes" % usage.usage_this_month)
+        echo("Today: %s minutes" % usage.usage_today)  # type: ignore[attr-defined]
+        echo("This month: %s minutes" % usage.usage_this_month)  # type: ignore[attr-defined]
 
         return usage
 
