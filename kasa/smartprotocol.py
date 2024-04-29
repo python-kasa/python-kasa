@@ -206,7 +206,8 @@ class SmartProtocol(BaseProtocol):
         self, response_result: dict[str, Any], method, retry_count
     ):
         if (
-            isinstance(response_result, SmartErrorCode)
+            response_result is None
+            or isinstance(response_result, SmartErrorCode)
             or "start_index" not in response_result
             or (list_sum := response_result.get("sum")) is None
         ):
