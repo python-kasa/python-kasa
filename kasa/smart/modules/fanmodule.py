@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...exceptions import KasaException
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -58,7 +57,7 @@ class FanModule(SmartModule):
     async def set_fan_speed_level(self, level: int):
         """Set fan speed level, 0 for off, 1-4 for on."""
         if level < 0 or level > 4:
-            raise KasaException("Invalid level, should be in range 0-4.")
+            raise ValueError("Invalid level, should be in range 0-4.")
         if level == 0:
             return await self.call("set_device_info", {"device_on": False})
         return await self.call(

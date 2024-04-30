@@ -16,6 +16,7 @@ from kasa.smart import SmartDevice
 from .conftest import (
     bulb_smart,
     device_smart,
+    get_device_for_fixture_protocol,
 )
 
 
@@ -119,6 +120,24 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
             spies[device].assert_called_with(device_queries[device])
         else:
             spies[device].assert_not_called()
+
+
+async def test_get_modules(mocker):
+    """Test get_modules for child and parent modules."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "KS240(US)_1.0_1.0.5.json", "SMART"
+    )
+    module = dummy_device.get_module("CloudModule")
+    assert module
+    assert module._device == dummy_device
+
+    module = dummy_device.get_module("FanModule")
+    assert module
+    assert module._device != dummy_device
+    assert module._device._parent == dummy_device
+
+    module = dummy_device.get_module("DummyModule")
+    assert module is None
 
 
 @bulb_smart
