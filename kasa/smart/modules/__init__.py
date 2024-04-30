@@ -14,6 +14,7 @@ from .fanmodule import FanModule
 from .firmware import Firmware
 from .humidity import HumiditySensor
 from .ledmodule import LedModule
+from .lighteffectmodule import LightEffectModule
 from .lighttransitionmodule import LightTransitionModule
 from .reportmodule import ReportModule
 from .temperature import TemperatureSensor
@@ -37,6 +38,7 @@ __all__ = [
     "FanModule",
     "Firmware",
     "CloudModule",
+    "LightEffectModule",
     "LightTransitionModule",
     "ColorTemperatureModule",
     "ColorModule",

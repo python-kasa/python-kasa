@@ -223,6 +223,20 @@ class FakeSmartTransport(BaseTransport):
             return retval
         elif method == "set_qs_info":
             return {"error_code": 0}
+        elif method == "set_dynamic_light_effect_rule_enable":
+            info["get_device_info"]["dynamic_light_effect_enable"] = params["enable"]
+            info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
+            if params["enable"]:
+                info["get_device_info"]["dynamic_light_effect_id"] = params["id"]
+                info["get_dynamic_light_effect_rules"]["current_rule_id"] = params[
+                    "enable"
+                ]
+            else:
+                if "dynamic_light_effect_id" in info["get_device_info"]:
+                    del info["get_device_info"]["dynamic_light_effect_id"]
+                if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
+                    del info["get_dynamic_light_effect_rules"]["current_rule_id"]
+            return {"error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)

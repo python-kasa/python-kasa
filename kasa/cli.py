@@ -1219,6 +1219,22 @@ async def feature(dev: Device, child: str, name: str, value):
     If only *name* is given, the value of named feature is returned.
     If both *name* and *value* are set, the described setting is changed.
     """
+
+    def _print_feature(name, feat, indent=""):
+        try:
+            unit = f" {feat.unit}" if feat.unit else ""
+            if feat.type == Feature.Type.Choice:
+                vals = feat.choices
+                index = vals.index(feat.value)
+                vals.remove(feat.value)
+                vals.insert(index, f"*{feat.value}*")
+                val = " ".join(vals)
+            else:
+                val = feat.value
+            echo(f"{indent}{feat.name} ({name}): {val}{unit}")
+        except Exception as ex:
+            echo(f"{indent}{feat.name} ({name}): [red]{ex}[/red]")
+
     if child is not None:
         echo(f"Targeting child device {child}")
         dev = dev.get_child_device(child)
@@ -1226,11 +1242,7 @@ async def feature(dev: Device, child: str, name: str, value):
 
         def _print_features(dev):
             for name, feat in dev.features.items():
-                try:
-                    unit = f" {feat.unit}" if feat.unit else ""
-                    echo(f"\t{feat.name} ({name}): {feat.value}{unit}")
-                except Exception as ex:
-                    echo(f"\t{feat.name} ({name}): [red]{ex}[/red]")
+                _print_feature(name, feat, "\t")
 
         echo("[bold]== Features ==[/bold]")
         _print_features(dev)
@@ -1249,13 +1261,15 @@ async def feature(dev: Device, child: str, name: str, value):
     feat = dev.features[name]
 
     if value is None:
-        unit = f" {feat.unit}" if feat.unit else ""
-        echo(f"{feat.name} ({name}): {feat.value}{unit}")
+        _print_feature(name, feat)
         return feat.value
 
     echo(f"Setting {name} to {value}")
     value = ast.literal_eval(value)
-    return await dev.features[name].set_value(value)
+    response = await dev.features[name].set_value(value)
+    await dev.update()
+    _print_feature(name, feat)
+    return response
 
 
 if __name__ == "__main__":

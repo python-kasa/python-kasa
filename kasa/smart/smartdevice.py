@@ -38,11 +38,6 @@ if TYPE_CHECKING:
 # same issue, homekit perhaps?
 WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]  # noqa: F405
 
-AVAILABLE_BULB_EFFECTS = {
-    "L1": "Party",
-    "L2": "Relax",
-}
-
 
 class SmartDevice(Device, Bulb):
     """Base class to represent a SMART protocol based device."""
@@ -666,44 +661,6 @@ class SmartDevice(Device, Bulb):
         ).valid_temperature_range
 
     @property
-    def has_effects(self) -> bool:
-        """Return True if the device supports effects."""
-        return "dynamic_light_effect_enable" in self._info
-
-    @property
-    def effect(self) -> dict:
-        """Return effect state.
-
-        This follows the format used by SmartLightStrip.
-
-        Example:
-            {'brightness': 50,
-             'custom': 0,
-             'enable': 0,
-             'id': '',
-             'name': ''}
-        """
-        # If no effect is active, dynamic_light_effect_id does not appear in info
-        current_effect = self._info.get("dynamic_light_effect_id", "")
-        data = {
-            "brightness": self.brightness,
-            "enable": current_effect != "",
-            "id": current_effect,
-            "name": AVAILABLE_BULB_EFFECTS.get(current_effect, ""),
-        }
-
-        return data
-
-    @property
-    def effect_list(self) -> list[str] | None:
-        """Return built-in effects list.
-
-        Example:
-            ['Party', 'Relax', ...]
-        """
-        return list(AVAILABLE_BULB_EFFECTS.keys()) if self.has_effects else None
-
-    @property
     def hsv(self) -> HSV:
         """Return the current HSV state of the bulb.
 
@@ -789,17 +746,12 @@ class SmartDevice(Device, Bulb):
             brightness
         )
 
-    async def set_effect(
-        self,
-        effect: str,
-        *,
-        brightness: int | None = None,
-        transition: int | None = None,
-    ) -> None:
-        """Set an effect on the device."""
-        raise NotImplementedError()
-
     @property
     def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
         return []
+
+    @property
+    def has_effects(self) -> bool:
+        """Return True if the device supports effects."""
+        return "LightEffectModule" in self.modules
