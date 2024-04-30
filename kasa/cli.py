@@ -590,6 +590,7 @@ def _echo_features(
     title: str,
     category: Feature.Category | None = None,
     verbose: bool = False,
+    indent: str = "\t",
 ):
     """Print out a listing of features and their values."""
     if category is not None:
@@ -602,13 +603,13 @@ def _echo_features(
     echo(f"[bold]{title}[/bold]")
     for _, feat in features.items():
         try:
-            echo(f"\t{feat}")
+            echo(f"{indent}{feat}")
             if verbose:
-                echo(f"\t\tType: {feat.type}")
-                echo(f"\t\tCategory: {feat.category}")
-                echo(f"\t\tIcon: {feat.icon}")
+                echo(f"{indent}\tType: {feat.type}")
+                echo(f"{indent}\tCategory: {feat.category}")
+                echo(f"{indent}\tIcon: {feat.icon}")
         except Exception as ex:
-            echo(f"\t{feat.name} ({feat.id}): got exception (%s)" % ex)
+            echo(f"{indent}{feat.name} ({feat.id}): [red]got exception ({ex})[/red]")
 
 
 def _echo_all_features(features, *, verbose=False, title_prefix=None):
@@ -1219,38 +1220,19 @@ async def feature(dev: Device, child: str, name: str, value):
     If only *name* is given, the value of named feature is returned.
     If both *name* and *value* are set, the described setting is changed.
     """
-
-    def _print_feature(name, feat, indent=""):
-        try:
-            unit = f" {feat.unit}" if feat.unit else ""
-            if feat.type == Feature.Type.Choice:
-                vals = feat.choices
-                index = vals.index(feat.value)
-                vals.remove(feat.value)
-                vals.insert(index, f"*{feat.value}*")
-                val = " ".join(vals)
-            else:
-                val = feat.value
-            echo(f"{indent}{feat.name} ({name}): {val}{unit}")
-        except Exception as ex:
-            echo(f"{indent}{feat.name} ({name}): [red]{ex}[/red]")
-
     if child is not None:
         echo(f"Targeting child device {child}")
         dev = dev.get_child_device(child)
     if not name:
-
-        def _print_features(dev):
-            for name, feat in dev.features.items():
-                _print_feature(name, feat, "\t")
-
-        echo("[bold]== Features ==[/bold]")
-        _print_features(dev)
+        _echo_features(dev.features, "\n[bold]== Features ==[/bold]\n", indent="")
 
         if dev.children:
             for child_dev in dev.children:
-                echo(f"[bold]== Child {child_dev.alias} ==")
-                _print_features(child_dev)
+                _echo_features(
+                    child_dev.features,
+                    f"\n[bold]== Child {child_dev.alias} ==\n",
+                    indent="",
+                )
 
         return
 
@@ -1260,15 +1242,17 @@ async def feature(dev: Device, child: str, name: str, value):
 
     feat = dev.features[name]
 
+    _echo_features(
+        {name: feat}, "\n[bold]== Feature Current Value ==[/bold]\n", indent=""
+    )
     if value is None:
-        _print_feature(name, feat)
         return feat.value
 
-    echo(f"Setting {name} to {value}")
+    echo(f"\nSetting {name} to {value}")
     value = ast.literal_eval(value)
     response = await dev.features[name].set_value(value)
     await dev.update()
-    _print_feature(name, feat)
+    _echo_features({name: feat}, "\n[bold]== Feature Updated To ==[/bold]\n", indent="")
     return response
 
 

@@ -176,6 +176,19 @@ class FakeSmartTransport(BaseTransport):
             "Method %s not implemented for children" % child_method
         )
 
+    def _set_dynamic_light_effect_rule_enable(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        info["get_device_info"]["dynamic_light_effect_enable"] = params["enable"]
+        info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
+        if params["enable"]:
+            info["get_device_info"]["dynamic_light_effect_id"] = params["id"]
+            info["get_dynamic_light_effect_rules"]["current_rule_id"] = params["enable"]
+        else:
+            if "dynamic_light_effect_id" in info["get_device_info"]:
+                del info["get_device_info"]["dynamic_light_effect_id"]
+            if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
+                del info["get_dynamic_light_effect_rules"]["current_rule_id"]
+
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
         params = request_dict["params"]
@@ -224,18 +237,7 @@ class FakeSmartTransport(BaseTransport):
         elif method == "set_qs_info":
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
-            info["get_device_info"]["dynamic_light_effect_enable"] = params["enable"]
-            info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
-            if params["enable"]:
-                info["get_device_info"]["dynamic_light_effect_id"] = params["id"]
-                info["get_dynamic_light_effect_rules"]["current_rule_id"] = params[
-                    "enable"
-                ]
-            else:
-                if "dynamic_light_effect_id" in info["get_device_info"]:
-                    del info["get_device_info"]["dynamic_light_effect_id"]
-                if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
-                    del info["get_dynamic_light_effect_rules"]["current_rule_id"]
+            self._set_dynamic_light_effect_rule_enable(info, params)
             return {"error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"

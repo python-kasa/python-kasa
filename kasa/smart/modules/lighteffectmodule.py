@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class LightEffectModule(SmartModule):
-    """Implementation of gradual on/off."""
+    """Implementation of dynamic light effects."""
 
     REQUIRED_COMPONENT = "light_effect"
     QUERY_GETTER_NAME = "get_dynamic_light_effect_rules"
@@ -78,7 +78,7 @@ class LightEffectModule(SmartModule):
 
     @property
     def effect(self) -> str:
-        """Return effect scene name."""
+        """Return effect name."""
         # get_dynamic_light_effect_rules also has an enable property and current_rule_id
         # property that could be used here as an alternative
         if self._device._info["dynamic_light_effect_enable"]:
