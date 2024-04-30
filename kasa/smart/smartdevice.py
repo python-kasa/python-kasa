@@ -308,25 +308,15 @@ class SmartDevice(Device, Bulb, Fan):
             for feat in module._module_features.values():
                 self._add_feature(feat)
 
-    def has_module(self, module_name):
-        """Return true if the device has the module."""
-        if module_name in self.modules:
-            return True
-        elif self._exposes_child_modules:
-            for child in self._children.values():
-                if module_name in child.modules:
-                    return True
-        return False
-
-    def get_module(self, module_name):
-        """Return the module from the device modules."""
+    def get_module(self, module_name) -> SmartModule | None:
+        """Return the module from the device modules or None if not present."""
         if module_name in self.modules:
             return self.modules[module_name]
         elif self._exposes_child_modules:
             for child in self._children.values():
                 if module_name in child.modules:
                     return child.modules[module_name]
-        return False
+        return None
 
     @property
     def is_cloud_connected(self):
