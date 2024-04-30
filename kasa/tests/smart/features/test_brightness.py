@@ -10,7 +10,7 @@ brightness = parametrize("brightness smart", component_filter="brightness")
 @brightness
 async def test_brightness_component(dev: SmartDevice):
     """Test brightness feature."""
-    brightness = dev.modules.get("Brightness")
+    brightness = dev.get_module("Brightness")
     assert brightness
     assert isinstance(dev, SmartDevice)
     assert "brightness" in dev._components
