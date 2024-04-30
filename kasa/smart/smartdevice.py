@@ -305,6 +305,7 @@ class SmartDevice(Device, Bulb):
             )
 
         for module in self._modules.values():
+            module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
 

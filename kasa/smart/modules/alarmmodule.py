@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class AlarmModule(SmartModule):
@@ -23,8 +18,12 @@ class AlarmModule(SmartModule):
             "get_support_alarm_type_list": None,  # This should be needed only once
         }
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features.
+
+        This is implemented as some features depend on device responses.
+        """
+        device = self._device
         self._add_feature(
             Feature(
                 device,
@@ -46,12 +45,26 @@ class AlarmModule(SmartModule):
         )
         self._add_feature(
             Feature(
-                device, "Alarm sound", container=self, attribute_getter="alarm_sound"
+                device,
+                "Alarm sound",
+                container=self,
+                attribute_getter="alarm_sound",
+                attribute_setter="set_alarm_sound",
+                category=Feature.Category.Config,
+                type=Feature.Type.Choice,
+                choices_getter="alarm_sounds",
             )
         )
         self._add_feature(
             Feature(
-                device, "Alarm volume", container=self, attribute_getter="alarm_volume"
+                device,
+                "Alarm volume",
+                container=self,
+                attribute_getter="alarm_volume",
+                attribute_setter="set_alarm_volume",
+                category=Feature.Category.Config,
+                type=Feature.Type.Choice,
+                choices=["low", "high"],
             )
         )
         self._add_feature(
@@ -78,6 +91,15 @@ class AlarmModule(SmartModule):
         """Return current alarm sound."""
         return self.data["get_alarm_configure"]["type"]
 
+    async def set_alarm_sound(self, sound: str):
+        """Set alarm sound.
+
+        See *alarm_sounds* for list of available sounds.
+        """
+        payload = self.data["get_alarm_configure"].copy()
+        payload["type"] = sound
+        return await self.call("set_alarm_configure", payload)
+
     @property
     def alarm_sounds(self) -> list[str]:
         """Return list of available alarm sounds."""
@@ -87,6 +109,12 @@ class AlarmModule(SmartModule):
     def alarm_volume(self):
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
+
+    async def set_alarm_volume(self, volume: str):
+        """Set alarm volume."""
+        payload = self.data["get_alarm_configure"].copy()
+        payload["volume"] = volume
+        return await self.call("set_alarm_configure", payload)
 
     @property
     def active(self) -> bool:

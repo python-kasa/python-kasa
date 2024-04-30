@@ -354,9 +354,6 @@ async def test_credentials(discovery_mock, mocker, runner):
 
     mocker.patch("kasa.cli.state", new=_state)
 
-    mocker.patch("kasa.IotProtocol.query", return_value=discovery_mock.query_data)
-    mocker.patch("kasa.SmartProtocol.query", return_value=discovery_mock.query_data)
-
     dr = DiscoveryResult(**discovery_mock.discovery_data["result"])
     res = await runner.invoke(
         cli,
