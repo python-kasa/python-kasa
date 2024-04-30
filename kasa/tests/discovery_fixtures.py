@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from json import dumps as json_dumps
 
@@ -8,7 +9,7 @@ import pytest
 from kasa.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
-from .fakeprotocol_smart import FakeSmartProtocol
+from .fakeprotocol_smart import FakeSmartProtocol, FakeSmartTransport
 from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 
 
@@ -65,6 +66,7 @@ new_discovery = parametrize_discovery(
     ids=idgenerator,
 )
 def discovery_mock(request, mocker):
+    """Mock discovery and patch protocol queries to use Fake protocols."""
     fixture_info: FixtureInfo = request.param
     fixture_data = fixture_info.data
 
@@ -157,12 +159,23 @@ def discovery_mock(request, mocker):
 def discovery_data(request, mocker):
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_info = request.param
-    mocker.patch("kasa.IotProtocol.query", return_value=fixture_info.data)
-    mocker.patch("kasa.SmartProtocol.query", return_value=fixture_info.data)
-    if "discovery_result" in fixture_info.data:
-        return {"result": fixture_info.data["discovery_result"]}
+    fixture_data = copy.deepcopy(fixture_info.data)
+    # Add missing queries to fixture data
+    if "component_nego" in fixture_data:
+        components = {
+            comp["id"]: int(comp["ver_code"])
+            for comp in fixture_data["component_nego"]["component_list"]
+        }
+        for k, v in FakeSmartTransport.FIXTURE_MISSING_MAP.items():
+            # Value is a tuple of component,reponse
+            if k not in fixture_data and v[0] in components:
+                fixture_data[k] = v[1]
+    mocker.patch("kasa.IotProtocol.query", return_value=fixture_data)
+    mocker.patch("kasa.SmartProtocol.query", return_value=fixture_data)
+    if "discovery_result" in fixture_data:
+        return {"result": fixture_data["discovery_result"]}
     else:
-        return {"system": {"get_sysinfo": fixture_info.data["system"]["get_sysinfo"]}}
+        return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
 
 
 @pytest.fixture(params=UNSUPPORTED_DEVICES.values(), ids=UNSUPPORTED_DEVICES.keys())
