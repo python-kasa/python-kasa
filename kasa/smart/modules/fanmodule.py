@@ -28,7 +28,7 @@ class FanModule(SmartModule):
                 attribute_setter="set_fan_speed_level",
                 icon="mdi:fan",
                 type=Feature.Type.Number,
-                minimum_value=1,
+                minimum_value=0,
                 maximum_value=4,
                 category=Feature.Category.Primary,
             )
@@ -55,10 +55,14 @@ class FanModule(SmartModule):
         return self.data["fan_speed_level"]
 
     async def set_fan_speed_level(self, level: int):
-        """Set fan speed level."""
-        if level < 1 or level > 4:
-            raise ValueError("Invalid level, should be in range 1-4.")
-        return await self.call("set_device_info", {"fan_speed_level": level})
+        """Set fan speed level, 0 for off, 1-4 for on."""
+        if level < 0 or level > 4:
+            raise ValueError("Invalid level, should be in range 0-4.")
+        if level == 0:
+            return await self.call("set_device_info", {"device_on": False})
+        return await self.call(
+            "set_device_info", {"device_on": True, "fan_speed_level": level}
+        )
 
     @property
     def sleep_mode(self) -> bool:

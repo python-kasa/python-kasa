@@ -20,6 +20,7 @@ from .reportmodule import ReportModule
 from .temperature import TemperatureSensor
 from .temperaturecontrol import TemperatureControl
 from .timemodule import TimeModule
+from .waterleak import WaterleakSensor
 
 __all__ = [
     "AlarmModule",
@@ -42,4 +43,5 @@ __all__ = [
     "LightTransitionModule",
     "ColorTemperatureModule",
     "ColorModule",
+    "WaterleakSensor",
 ]

@@ -14,6 +14,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
+from ..fan import Fan
 from ..feature import Feature
 from ..smartprotocol import SmartProtocol
 from .modules import (
@@ -23,6 +24,7 @@ from .modules import (
     ColorTemperatureModule,
     DeviceModule,
     EnergyModule,
+    FanModule,
     Firmware,
     TimeModule,
 )
@@ -36,10 +38,10 @@ if TYPE_CHECKING:
 # the child but only work on the parent.  See longer note below in _initialize_modules.
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
-WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]  # noqa: F405
+WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]
 
 
-class SmartDevice(Device, Bulb):
+class SmartDevice(Device, Bulb, Fan):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -216,9 +218,6 @@ class SmartDevice(Device, Bulb):
                 if await module._check_supported():
                     self._modules[module.name] = module
 
-        if self._exposes_child_modules:
-            self._modules.update(**child_modules_to_skip)
-
     async def _initialize_features(self):
         """Initialize device features."""
         self._add_feature(
@@ -303,6 +302,16 @@ class SmartDevice(Device, Bulb):
             module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
+
+    def get_module(self, module_name) -> SmartModule | None:
+        """Return the module from the device modules or None if not present."""
+        if module_name in self.modules:
+            return self.modules[module_name]
+        elif self._exposes_child_modules:
+            for child in self._children.values():
+                if module_name in child.modules:
+                    return child.modules[module_name]
+        return None
 
     @property
     def is_cloud_connected(self):
@@ -455,19 +464,19 @@ class SmartDevice(Device, Bulb):
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
         return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
         return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])  # noqa: F405
+        energy = cast(EnergyModule, self.modules["EnergyModule"])
         return energy.emeter_today
 
     @property
@@ -629,6 +638,26 @@ class SmartDevice(Device, Bulb):
             return DeviceType.WallSwitch
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
+
+    # Fan interface methods
+
+    @property
+    def is_fan(self) -> bool:
+        """Return True if the device is a fan."""
+        return "FanModule" in self.modules
+
+    @property
+    def fan_speed_level(self) -> int:
+        """Return fan speed level."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        return cast(FanModule, self.modules["FanModule"]).fan_speed_level
+
+    async def set_fan_speed_level(self, level: int):
+        """Set fan speed level."""
+        if not self.is_fan:
+            raise KasaException("Device is not a Fan")
+        await cast(FanModule, self.modules["FanModule"]).set_fan_speed_level(level)
 
     # Bulb interface methods
 
