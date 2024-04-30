@@ -1,7 +1,9 @@
 from typing import cast
 
+import pytest
 from pytest_mock import MockerFixture
 
+from kasa import KasaException
 from kasa.smart import SmartDevice
 from kasa.smart.modules import FanModule
 from kasa.tests.device_fixtures import parametrize
@@ -60,8 +62,21 @@ async def test_fan_interface(dev: SmartDevice, mocker: MockerFixture):
     device = fan._device
     assert device.is_fan
 
-    await device.set_fan_speed_level(3)
-
+    await device.set_fan_speed_level(1)
     await dev.update()
+    assert device.fan_speed_level == 1
+    assert device.is_on
 
-    assert device.fan_speed_level == 3
+    await device.set_fan_speed_level(4)
+    await dev.update()
+    assert device.fan_speed_level == 4
+
+    await device.set_fan_speed_level(0)
+    await dev.update()
+    assert not device.is_on
+
+    with pytest.raises(KasaException):
+        await device.set_fan_speed_level(-1)
+
+    with pytest.raises(KasaException):
+        await device.set_fan_speed_level(5)
