@@ -14,7 +14,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
-from ..fan import Fan, FanState
+from ..fan import Fan
 from ..feature import Feature
 from ..smartprotocol import SmartProtocol
 from .modules import (
@@ -223,9 +223,6 @@ class SmartDevice(Device, Bulb, Fan):
                 if await module._check_supported():
                     self._modules[module.name] = module
 
-        if self._exposes_child_modules:
-            self._modules.update(**child_modules_to_skip)
-
     async def _initialize_features(self):
         """Initialize device features."""
         self._add_feature(
@@ -309,6 +306,26 @@ class SmartDevice(Device, Bulb, Fan):
         for module in self._modules.values():
             for feat in module._module_features.values():
                 self._add_feature(feat)
+
+    def has_module(self, module_name):
+        """Return true if the device has the module."""
+        if module_name in self.modules:
+            return True
+        elif self._exposes_child_modules:
+            for child in self._children.values():
+                if module_name in child.modules:
+                    return True
+        return False
+
+    def get_module(self, module_name):
+        """Return the module from the device modules."""
+        if module_name in self.modules:
+            return self.modules[module_name]
+        elif self._exposes_child_modules:
+            for child in self._children.values():
+                if module_name in child.modules:
+                    return child.modules[module_name]
+        return False
 
     @property
     def is_cloud_connected(self):
@@ -636,27 +653,12 @@ class SmartDevice(Device, Bulb, Fan):
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
 
+    # Fan interface methods
+
     @property
     def is_fan(self) -> bool:
         """Return True if the device is a fan."""
         return "FanModule" in self.modules
-
-    @property
-    def fan_state(self) -> FanState:
-        """Return fan speed level."""
-        if not self.is_fan:
-            raise KasaException("Device is not a Fan")
-        return cast(FanModule, self.modules["FanModule"]).fan_state
-
-    async def set_fan_state(
-        self, fan_on: bool | None = None, speed_level: int | None = None
-    ):
-        """Set fan speed level."""
-        if not self.is_fan:
-            raise KasaException("Device is not a Fan")
-        await cast(FanModule, self.modules["FanModule"]).set_fan_state(
-            fan_on=fan_on, speed_level=speed_level
-        )
 
     @property
     def fan_speed_level(self) -> int:
