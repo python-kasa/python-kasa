@@ -1,9 +1,6 @@
 """Cloud module implementation."""
 
-try:
-    from pydantic.v1 import BaseModel
-except ImportError:
-    from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 from ...feature import Feature
 from ..iotmodule import IotModule

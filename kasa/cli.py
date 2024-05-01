@@ -14,6 +14,7 @@ from pprint import pformat as pf
 from typing import Any, cast
 
 import asyncclick as click
+from pydantic.v1 import ValidationError
 
 from kasa import (
     AuthenticationError,
@@ -41,11 +42,6 @@ from kasa.iot import (
 )
 from kasa.iot.modules import Usage
 from kasa.smart import SmartDevice
-
-try:
-    from pydantic.v1 import ValidationError
-except ImportError:
-    from pydantic import ValidationError
 
 try:
     from rich import print as _do_echo

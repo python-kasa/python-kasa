@@ -196,7 +196,7 @@ async def test_wifi_scan(dev, runner):
     res = await runner.invoke(wifi, ["scan"], obj=dev)
 
     assert res.exit_code == 0
-    assert re.search(r"Found \d wifi networks!", res.output)
+    assert re.search(r"Found [\d]+ wifi networks!", res.output)
 
 
 @device_smart
