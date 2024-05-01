@@ -6,7 +6,7 @@ from typing import cast
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device, Feature, KasaException
+from kasa import Device, Feature
 from kasa.smart.modules import LightEffectModule
 from kasa.tests.device_fixtures import parametrize
 
@@ -38,5 +38,5 @@ async def test_light_effect(dev: Device, mocker: MockerFixture):
         assert light_effect.effect == effect
         assert feature.value == effect
 
-    with pytest.raises(KasaException):
+    with pytest.raises(ValueError):
         await light_effect.set_effect("foobar")
