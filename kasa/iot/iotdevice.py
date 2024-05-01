@@ -214,7 +214,7 @@ class IotDevice(Device):
     ) -> ModuleT | IotModule | None:
         """Return the module from the device modules or None if not present."""
         if module_name in self.modules:
-            return cast(ModuleT, self.modules[module_name])
+            return self.modules[module_name]
         return None
 
     def add_module(self, name: str, module: IotModule):

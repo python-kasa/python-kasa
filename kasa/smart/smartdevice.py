@@ -322,11 +322,11 @@ class SmartDevice(Device, Bulb, Fan):
     ) -> ModuleT | SmartModule | None:
         """Return the module from the device modules or None if not present."""
         if module_name in self.modules:
-            return cast(ModuleT, self.modules[module_name])
+            return self.modules[module_name]
         elif self._exposes_child_modules:
             for child in self._children.values():
                 if module_name in child.modules:
-                    return cast(ModuleT, child.modules[module_name])
+                    return child.modules[module_name]
         return None
 
     @property
