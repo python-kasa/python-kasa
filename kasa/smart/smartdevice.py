@@ -512,26 +512,13 @@ class SmartDevice(Device, Bulb, Fan):
                 bssid=res["bssid"],
             )
 
-        async def _query_networks(networks=None, start_index=0):
-            _LOGGER.debug("Querying networks using start_index=%s", start_index)
-            if networks is None:
-                networks = []
+        _LOGGER.debug("Querying networks")
 
-            resp = await self.protocol.query(
-                {"get_wireless_scan_info": {"start_index": start_index}}
-            )
-            network_list = [
-                _net_for_scan_info(net)
-                for net in resp["get_wireless_scan_info"]["ap_list"]
-            ]
-            networks.extend(network_list)
-
-            if resp["get_wireless_scan_info"].get("sum", 0) > start_index + 10:
-                return await _query_networks(networks, start_index=start_index + 10)
-
-            return networks
-
-        return await _query_networks()
+        resp = await self.protocol.query({"get_wireless_scan_info": {"start_index": 0}})
+        networks = [
+            _net_for_scan_info(net) for net in resp["get_wireless_scan_info"]["ap_list"]
+        ]
+        return networks
 
     async def wifi_join(self, ssid: str, password: str, keytype: str = "wpa2_psk"):
         """Join the given wifi network.
