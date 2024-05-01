@@ -5,10 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Optional
 
-try:
-    from pydantic.v1 import BaseModel
-except ImportError:
-    from pydantic import BaseModel
+from pydantic.v1 import BaseModel
 
 
 class ColorTempRange(NamedTuple):

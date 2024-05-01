@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import TYPE_CHECKING, Any, Optional
+
+from pydantic.v1 import BaseModel, Field, validator
 
 from ...exceptions import SmartErrorCode
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-try:
-    from pydantic.v1 import BaseModel, Field, validator
-except ImportError:
-    from pydantic import BaseModel, Field, validator
-from datetime import date
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
