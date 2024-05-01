@@ -172,15 +172,14 @@ class Feature:
         return await getattr(container, self.attribute_setter)(value)
 
     def __repr__(self):
+        value = self.value
         if self.type == Feature.Type.Choice:
-            value = self.choices.copy()
-            val = self.value
-            index = value.index(val)
-            value.remove(val)
-            value.insert(index, f"*{val}*")
-            value = " ".join(value)
-        else:
-            value = self.value
+            value = " ".join(
+                [
+                    f"*{choice}*" if choice == value else choice
+                    for choice in self.choices
+                ]
+            )
         if self.precision_hint is not None and value is not None:
             value = round(self.value, self.precision_hint)
         s = f"{self.name} ({self.id}): {value}"

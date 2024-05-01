@@ -32,7 +32,7 @@ async def test_light_effect(dev: Device, mocker: MockerFixture):
         enable = effect != LightEffectModule.LIGHT_EFFECTS_OFF
         params: dict[str, bool | str] = {"enable": enable}
         if enable:
-            params["id"] = light_effect._scenes[effect]
+            params["id"] = light_effect._scenes_names_to_id[effect]
         call.assert_called_with("set_dynamic_light_effect_rule_enable", params)
         await dev.update()
         assert light_effect.effect == effect

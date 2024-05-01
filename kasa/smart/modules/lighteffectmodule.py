@@ -6,7 +6,6 @@ import base64
 import copy
 from typing import TYPE_CHECKING, Any
 
-from ...exceptions import KasaException
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -27,7 +26,7 @@ class LightEffectModule(SmartModule):
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
-        self._scenes: dict[str, str] = {}
+        self._scenes_names_to_id: dict[str, str] = {}
 
     def _initialize_features(self):
         """Initialize features."""
@@ -45,7 +44,7 @@ class LightEffectModule(SmartModule):
             )
         )
 
-    def _get_effects(self) -> dict[str, dict[str, Any]]:
+    def _initialize_effects(self) -> dict[str, dict[str, Any]]:
         """Return built-in effects."""
         # Copy the effects so scene name updates do not update the underlying dict.
         effects = copy.deepcopy(
@@ -58,7 +57,7 @@ class LightEffectModule(SmartModule):
             else:
                 # Otherwise it will be b64 encoded
                 effect["scene_name"] = base64.b64decode(effect["scene_name"]).decode()
-        self._scenes = {
+        self._scenes_names_to_id = {
             effect["scene_name"]: effect["id"] for effect in effects.values()
         }
         return effects
@@ -72,7 +71,7 @@ class LightEffectModule(SmartModule):
         """
         effects = [self.LIGHT_EFFECTS_OFF]
         effects.extend(
-            [effect["scene_name"] for effect in self._get_effects().values()]
+            [effect["scene_name"] for effect in self._initialize_effects().values()]
         )
         return effects
 
@@ -82,9 +81,9 @@ class LightEffectModule(SmartModule):
         # get_dynamic_light_effect_rules also has an enable property and current_rule_id
         # property that could be used here as an alternative
         if self._device._info["dynamic_light_effect_enable"]:
-            return self._get_effects()[self._device._info["dynamic_light_effect_id"]][
-                "scene_name"
-            ]
+            return self._initialize_effects()[
+                self._device._info["dynamic_light_effect_id"]
+            ]["scene_name"]
         return self.LIGHT_EFFECTS_OFF
 
     async def set_effect(
@@ -95,15 +94,16 @@ class LightEffectModule(SmartModule):
 
         The device doesn't store an active effect while not enabled so store locally.
         """
-        if effect != self.LIGHT_EFFECTS_OFF and effect not in self._scenes:
-            raise KasaException(
-                f"Cannot set theme to {effect}, possible values "
-                f"are: {self.LIGHT_EFFECTS_OFF} {' '.join(self._scenes.keys())}"
+        if effect != self.LIGHT_EFFECTS_OFF and effect not in self._scenes_names_to_id:
+            raise ValueError(
+                f"Cannot set light effect theme to {effect}, possible values "
+                f"are: {self.LIGHT_EFFECTS_OFF} "
+                f"{' '.join(self._scenes_names_to_id.keys())}"
             )
         enable = effect != self.LIGHT_EFFECTS_OFF
         params: dict[str, bool | str] = {"enable": enable}
         if enable:
-            effect_id = self._scenes[effect]
+            effect_id = self._scenes_names_to_id[effect]
             params["id"] = effect_id
         return await self.call("set_dynamic_light_effect_rule_enable", params)
 
