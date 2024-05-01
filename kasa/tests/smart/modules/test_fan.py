@@ -12,7 +12,7 @@ fan = parametrize("has fan", component_filter="fan_control", protocol_filter={"S
 @fan
 async def test_fan_speed(dev: SmartDevice, mocker: MockerFixture):
     """Test fan speed feature."""
-    fan = dev.get_module(ModuleName[FanModule]("FanModule"))
+    fan = dev.get_module(ModuleName(FanModule))
     assert fan
 
     level_feature = fan._module_features["fan_speed_level"]
@@ -37,7 +37,7 @@ async def test_fan_speed(dev: SmartDevice, mocker: MockerFixture):
 @fan
 async def test_sleep_mode(dev: SmartDevice, mocker: MockerFixture):
     """Test sleep mode feature."""
-    fan = dev.get_module(ModuleName[FanModule]("FanModule"))
+    fan = dev.get_module(ModuleName(FanModule))
     assert fan
     sleep_feature = fan._module_features["fan_sleep_mode"]
     assert isinstance(sleep_feature.value, bool)
@@ -56,7 +56,7 @@ async def test_sleep_mode(dev: SmartDevice, mocker: MockerFixture):
 async def test_fan_interface(dev: SmartDevice, mocker: MockerFixture):
     """Test fan speed on device interface."""
     assert isinstance(dev, SmartDevice)
-    fan = dev.get_module(ModuleName[FanModule]("FanModule"))
+    fan = dev.get_module(ModuleName(FanModule))
     assert fan
     device = fan._device
     assert device.is_fan

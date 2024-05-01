@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, overload
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -116,8 +116,18 @@ class Device(ABC):
     def modules(self) -> Mapping[str, Module]:
         """Return the device modules."""
 
+    @overload
     @abstractmethod
-    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:
+    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None: ...
+
+    @overload
+    @abstractmethod
+    def get_module(self, module_name: str) -> Module | None: ...
+
+    @abstractmethod
+    def get_module(
+        self, module_name: ModuleName[ModuleT] | str
+    ) -> ModuleT | Module | None:
         """Return the module from the device modules or None if not present."""
 
     @property

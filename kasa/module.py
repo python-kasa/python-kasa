@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Generic,
+    TypeVar,
+)
 
 from .exceptions import KasaException
 from .feature import Feature
@@ -22,6 +26,12 @@ class ModuleName(str, Generic[ModuleT]):
 
     At runtime this is a generic subclass of str.
     """
+
+    def __new__(cls, value: type[ModuleT] | str):
+        """Create new ModuleName instance."""
+        value = value if isinstance(value, str) else value.__name__
+        obj = str.__new__(cls, value)
+        return obj
 
     __slots__ = ()
 

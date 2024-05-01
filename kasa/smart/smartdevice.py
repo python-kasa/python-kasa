@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast, overload
 
 from ..aestransport import AesTransport
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
@@ -34,6 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .smartmodule import SmartModule
+
 
 # List of modules that wall switches with children, i.e. ks240 report on
 # the child but only work on the parent.  See longer note below in _initialize_modules.
@@ -309,7 +310,16 @@ class SmartDevice(Device, Bulb, Fan):
             for feat in module._module_features.values():
                 self._add_feature(feat)
 
-    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:
+    @overload
+    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:  # type: ignore[overload-overlap]
+        ...
+
+    @overload
+    def get_module(self, module_name: str) -> SmartModule | None: ...
+
+    def get_module(
+        self, module_name: ModuleName[ModuleT] | str
+    ) -> ModuleT | SmartModule | None:
         """Return the module from the device modules or None if not present."""
         if module_name in self.modules:
             return cast(ModuleT, self.modules[module_name])

@@ -19,7 +19,7 @@ import functools
 import inspect
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Sequence, cast
+from typing import Any, Mapping, Sequence, cast, overload
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -202,7 +202,16 @@ class IotDevice(Device):
         """Return the device modules."""
         return self._modules
 
-    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:
+    @overload
+    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:  # type: ignore[overload-overlap]
+        ...
+
+    @overload
+    def get_module(self, module_name: str) -> IotModule | None: ...
+
+    def get_module(
+        self, module_name: ModuleName[ModuleT] | str
+    ) -> ModuleT | IotModule | None:
         """Return the module from the device modules or None if not present."""
         if module_name in self.modules:
             return cast(ModuleT, self.modules[module_name])
