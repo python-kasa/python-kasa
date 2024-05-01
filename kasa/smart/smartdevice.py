@@ -512,22 +512,18 @@ class SmartDevice(Device, Bulb, Fan):
                 bssid=res["bssid"],
             )
 
-        async def _query_networks(networks=None, start_index=0):
-            _LOGGER.debug("Querying networks using start_index=%s", start_index)
+        async def _query_networks(networks=None):
+            _LOGGER.debug("Querying networks")
             if networks is None:
                 networks = []
 
             resp = await self.protocol.query(
-                {"get_wireless_scan_info": {"start_index": start_index}}
+                {"get_wireless_scan_info": {"start_index": 0}}
             )
-            network_list = [
+            networks = [
                 _net_for_scan_info(net)
                 for net in resp["get_wireless_scan_info"]["ap_list"]
             ]
-            networks.extend(network_list)
-
-            if resp["get_wireless_scan_info"].get("sum", 0) > start_index + 10:
-                return await _query_networks(networks, start_index=start_index + 10)
 
             return networks
 
