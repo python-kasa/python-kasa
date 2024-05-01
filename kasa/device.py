@@ -15,7 +15,7 @@ from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
 from .iotprotocol import IotProtocol
-from .module import Module
+from .module import Module, ModuleName, ModuleT
 from .protocol import BaseProtocol
 from .xortransport import XorTransport
 
@@ -115,6 +115,10 @@ class Device(ABC):
     @abstractmethod
     def modules(self) -> Mapping[str, Module]:
         """Return the device modules."""
+
+    @abstractmethod
+    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:
+        """Return the module from the device modules or None if not present."""
 
     @property
     @abstractmethod

@@ -26,6 +26,7 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
+from ..module import ModuleName, ModuleT
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter, Time
@@ -200,6 +201,12 @@ class IotDevice(Device):
     def modules(self) -> dict[str, IotModule]:
         """Return the device modules."""
         return self._modules
+
+    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:
+        """Return the module from the device modules or None if not present."""
+        if module_name in self.modules:
+            return cast(ModuleT, self.modules[module_name])
+        return None
 
     def add_module(self, name: str, module: IotModule):
         """Register a module."""
