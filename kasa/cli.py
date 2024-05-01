@@ -1248,6 +1248,7 @@ async def feature(dev: Device, child: str, name: str, value):
     if value is None:
         return feat.value
 
+    echo(f"Setting {name} to {value}")
     value = ast.literal_eval(value)
     response = await dev.features[name].set_value(value)
     await dev.update()
