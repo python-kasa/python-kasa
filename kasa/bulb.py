@@ -7,8 +7,6 @@ from typing import NamedTuple, Optional
 
 from pydantic.v1 import BaseModel
 
-from .device import Device
-
 
 class ColorTempRange(NamedTuple):
     """Color temperature range."""
