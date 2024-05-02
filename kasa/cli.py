@@ -1239,7 +1239,8 @@ async def feature(dev: Device, child: str, name: str, value):
     feat = dev.features[name]
 
     if value is None:
-        echo(f"Feature {name} has value {feat.value}")
+        unit = f" {feat.unit}" if feat.unit else ""
+        echo(f"{feat.name} ({name}): {feat.value}{unit}")
         return feat.value
 
     value = ast.literal_eval(value)
