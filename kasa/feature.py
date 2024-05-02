@@ -174,9 +174,16 @@ class Feature:
     def __repr__(self):
         try:
             value = self.value
+            choices = self.choices
         except Exception as ex:
             return f"Unable to read value ({self.id}): {ex}"
 
+        if self.type == Feature.Type.Choice:
+            if not isinstance(choices, list) or value not in choices:
+                return f"Value {value} is not a valid choice ({self.id}): {choices}"
+            value = " ".join(
+                [f"*{choice}*" if choice == value else choice for choice in choices]
+            )
         if self.precision_hint is not None and value is not None:
             value = round(self.value, self.precision_hint)
 
