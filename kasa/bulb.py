@@ -7,6 +7,8 @@ from typing import NamedTuple, Optional
 
 from pydantic.v1 import BaseModel
 
+from .device import Device
+
 
 class ColorTempRange(NamedTuple):
     """Color temperature range."""
@@ -40,7 +42,7 @@ class BulbPreset(BaseModel):
     mode: Optional[int]  # noqa: UP007
 
 
-class Bulb(ABC):
+class Bulb(Device, ABC):
     """Base class for TP-Link Bulb."""
 
     def _raise_for_invalid_brightness(self, value):

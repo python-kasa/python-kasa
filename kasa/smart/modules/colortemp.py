@@ -34,6 +34,7 @@ class ColorTemperatureModule(SmartModule):
                 attribute_setter="set_color_temp",
                 range_getter="valid_temperature_range",
                 category=Feature.Category.Primary,
+                type=Feature.Type.Number,
             )
         )
 

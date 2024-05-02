@@ -41,7 +41,9 @@ if TYPE_CHECKING:
 WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]
 
 
-class SmartDevice(Device, Bulb, Fan):
+# Device must go last as the other interfaces also inherit Device
+# and python needs a consistent method resolution order.
+class SmartDevice(Bulb, Fan, Device):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
