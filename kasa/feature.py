@@ -172,9 +172,14 @@ class Feature:
         return await getattr(container, self.attribute_setter)(value)
 
     def __repr__(self):
-        value = self.value
+        try:
+            value = self.value
+        except Exception as ex:
+            return f"Unable to read value ({self.id}): {ex}"
+
         if self.precision_hint is not None and value is not None:
             value = round(self.value, self.precision_hint)
+
         s = f"{self.name} ({self.id}): {value}"
         if self.unit is not None:
             s += f" {self.unit}"
