@@ -34,7 +34,7 @@ class LightEffectModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Light effect theme",
+                "Light effect",
                 container=self,
                 attribute_getter="effect",
                 attribute_setter="set_effect",
@@ -96,7 +96,7 @@ class LightEffectModule(SmartModule):
         """
         if effect != self.LIGHT_EFFECTS_OFF and effect not in self._scenes_names_to_id:
             raise ValueError(
-                f"Cannot set light effect theme to {effect}, possible values "
+                f"Cannot set light effect to {effect}, possible values "
                 f"are: {self.LIGHT_EFFECTS_OFF} "
                 f"{' '.join(self._scenes_names_to_id.keys())}"
             )
