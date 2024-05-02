@@ -164,7 +164,7 @@ async def handle_device(basedir, autosave, device: Device, batch_size: int):
         if save == "y":
             click.echo(f"Saving info to {save_filename}")
 
-            with open(save_filename, "w") as f:
+            with save_filename.open("w") as f:
                 json.dump(fixture_result.data, f, sort_keys=True, indent=4)
                 f.write("\n")
         else:
