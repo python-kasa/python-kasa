@@ -1238,17 +1238,16 @@ async def feature(dev: Device, child: str, name: str, value):
 
     feat = dev.features[name]
 
-    _echo_features(
-        {name: feat}, "\n[bold]== Feature Current Value ==[/bold]", indent=""
-    )
     if value is None:
+        echo(f"Feature {name} has value {feat.value}")
         return feat.value
 
-    echo(f"Setting {name} to {value}")
     value = ast.literal_eval(value)
+    echo(f"Changing {name} from {feat.value} to {value}")
     response = await dev.features[name].set_value(value)
     await dev.update()
-    _echo_features({name: feat}, "\n[bold]== Feature Updated To ==[/bold]", indent="")
+    echo(f"New state: {feat.value}")
+
     return response
 
 

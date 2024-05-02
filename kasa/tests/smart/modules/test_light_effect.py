@@ -17,7 +17,7 @@ light_effect = parametrize(
 
 @light_effect
 async def test_light_effect(dev: Device, mocker: MockerFixture):
-    """Test fan speed feature."""
+    """Test light effect."""
     light_effect = cast(LightEffectModule, dev.modules.get("LightEffectModule"))
     assert light_effect
 

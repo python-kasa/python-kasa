@@ -747,7 +747,7 @@ async def test_feature_set(mocker, runner):
     )
 
     led_setter.assert_called_with(True)
-    assert "Setting led to True" in res.output
+    assert "Changing led from False to True" in res.output
     assert res.exit_code == 0
 
 
@@ -773,14 +773,14 @@ async def test_feature_set_child(mocker, runner):
             "--child",
             child_id,
             "state",
-            "False",
+            "True",
         ],
         catch_exceptions=False,
     )
 
     get_child_device.assert_called()
-    setter.assert_called_with(False)
+    setter.assert_called_with(True)
 
     assert f"Targeting child device {child_id}"
-    assert "Setting state to False" in res.output
+    assert "Changing state from False to True" in res.output
     assert res.exit_code == 0

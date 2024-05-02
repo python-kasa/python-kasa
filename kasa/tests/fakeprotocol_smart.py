@@ -176,7 +176,7 @@ class FakeSmartTransport(BaseTransport):
             "Method %s not implemented for children" % child_method
         )
 
-    def _set_dynamic_light_effect_rule_enable(self, info, params):
+    def _set_light_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
         info["get_device_info"]["dynamic_light_effect_enable"] = params["enable"]
         info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
@@ -237,7 +237,7 @@ class FakeSmartTransport(BaseTransport):
         elif method == "set_qs_info":
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
-            self._set_dynamic_light_effect_rule_enable(info, params)
+            self._set_light_effect(info, params)
             return {"error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"

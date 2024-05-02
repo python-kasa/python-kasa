@@ -175,12 +175,12 @@ class Feature:
         try:
             value = self.value
             choices = self.choices
-            if choices and value not in choices:
-                return f"Value {value} is not a valid choice ({self.id}): {choices}"
         except Exception as ex:
             return f"Unable to read value ({self.id}): {ex}"
 
         if self.type == Feature.Type.Choice:
+            if not isinstance(choices, list) or value not in choices:
+                return f"Value {value} is not a valid choice ({self.id}): {choices}"
             value = " ".join(
                 [f"*{choice}*" if choice == value else choice for choice in choices]
             )
