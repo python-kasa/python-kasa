@@ -16,7 +16,7 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING
 from warnings import warn
 
-from kasa.bulb import Bulb
+from kasa.bulb import Bulb, BulbPreset
 from kasa.credentials import Credentials
 from kasa.device import Device
 from kasa.device_type import DeviceType
@@ -26,6 +26,7 @@ from kasa.deviceconfig import (
     DeviceFamilyType,
     EncryptType,
 )
+from kasa.dimmer import TurnOnBehavior, TurnOnBehaviors
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (
@@ -36,7 +37,6 @@ from kasa.exceptions import (
     UnsupportedDeviceError,
 )
 from kasa.feature import Feature
-from kasa.iot.iotbulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401

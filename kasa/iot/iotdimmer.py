@@ -2,39 +2,16 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
+from ..dimmer import ActionType, ButtonAction, FadeType
 from ..feature import Feature
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
 from .modules import AmbientLight, Motion
-
-
-class ButtonAction(Enum):
-    """Button action."""
-
-    NoAction = "none"
-    Instant = "instant_on_off"
-    Gentle = "gentle_on_off"
-    Preset = "customize_preset"
-
-
-class ActionType(Enum):
-    """Button action."""
-
-    DoubleClick = "double_click_action"
-    LongPress = "long_press_action"
-
-
-class FadeType(Enum):
-    """Fade on/off setting."""
-
-    FadeOn = "fade_on"
-    FadeOff = "fade_off"
 
 
 class IotDimmer(IotPlug):
@@ -191,6 +168,11 @@ class IotDimmer(IotPlug):
             "set_dimmer_transition",
             {"brightness": brightness, "duration": transition},
         )
+
+    @property
+    def is_on_behaviours(self):
+        """Return True if the dimmer has turn on behaviour settings."""
+        return True
 
     @requires_update
     async def get_behaviors(self):

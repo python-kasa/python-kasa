@@ -7,6 +7,7 @@ import logging
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..feature import Feature
+from ..plug import Plug, WallSwitch
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
 from .modules import Antitheft, Cloud, Schedule, Time, Usage
@@ -14,7 +15,7 @@ from .modules import Antitheft, Cloud, Schedule, Time, Usage
 _LOGGER = logging.getLogger(__name__)
 
 
-class IotPlug(IotDevice):
+class IotPlug(IotDevice, Plug):
     r"""Representation of a TP-Link Smart Plug.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -88,6 +89,13 @@ class IotPlug(IotDevice):
         """Turn the switch off."""
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 
+    @property
+    @requires_update
+    def is_led(self) -> bool:
+        """Return True if the device supports led."""
+        sys_info = self.sys_info
+        return "led_off" in sys_info
+
     @property  # type: ignore
     @requires_update
     def led(self) -> bool:
@@ -102,7 +110,7 @@ class IotPlug(IotDevice):
         )
 
 
-class IotWallSwitch(IotPlug):
+class IotWallSwitch(IotPlug, WallSwitch):
     """Representation of a TP-Link Smart Wall Switch."""
 
     def __init__(

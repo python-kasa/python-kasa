@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ...dimmer import FadeType
 from ...exceptions import KasaException
 from ...feature import Feature
 from ..smartmodule import SmartModule
@@ -170,6 +171,16 @@ class LightTransitionModule(SmartModule):
             "set_on_off_gradually_info",
             {"off_state": {**self._turn_on, "duration": seconds}},
         )
+
+    async def set_fade_time(self, fade_type: FadeType, time: int):
+        """Set time for fade in / fade out."""
+        if self.supported_version == 1:
+            await self.set_enabled_v1(time > 0)
+        else:
+            if fade_type == FadeType.FadeOn:
+                await self.set_turn_on_transition(time)
+            else:
+                await self.set_turn_off_transition(time)
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""

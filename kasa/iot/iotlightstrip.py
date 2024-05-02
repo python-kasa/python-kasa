@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..bulb import LightStrip
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
@@ -10,7 +11,7 @@ from .iotbulb import IotBulb
 from .iotdevice import KasaException, requires_update
 
 
-class IotLightStrip(IotBulb):
+class IotLightStrip(IotBulb, LightStrip):
     """Representation of a TP-Link Smart light strip.
 
     Light strips work similarly to bulbs, but use a different service for controlling,
@@ -114,6 +115,11 @@ class IotLightStrip(IotBulb):
             effect_dict["transition"] = transition
 
         await self.set_custom_effect(effect_dict)
+
+    @property
+    def is_custom_effects(self) -> bool:
+        """Return True if the device supports setting custom effects."""
+        return True
 
     @requires_update
     async def set_custom_effect(

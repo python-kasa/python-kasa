@@ -1,4 +1,4 @@
-"""Module for Device base class."""
+"""Module for bulb and light base class."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import NamedTuple, Optional
 
 from pydantic.v1 import BaseModel
 
-from .device import Device
+from .dimmer import Dimmer
 
 
 class ColorTempRange(NamedTuple):
@@ -42,7 +42,7 @@ class BulbPreset(BaseModel):
     mode: Optional[int]  # noqa: UP007
 
 
-class Bulb(Device, ABC):
+class Bulb(Dimmer, ABC):
     """Base class for TP-Link Bulb."""
 
     def _raise_for_invalid_brightness(self, value):
@@ -53,11 +53,6 @@ class Bulb(Device, ABC):
     @abstractmethod
     def is_color(self) -> bool:
         """Whether the bulb supports color changes."""
-
-    @property
-    @abstractmethod
-    def is_dimmable(self) -> bool:
-        """Whether the bulb supports brightness changes."""
 
     @property
     @abstractmethod
@@ -90,11 +85,6 @@ class Bulb(Device, ABC):
     def color_temp(self) -> int:
         """Whether the bulb supports color temperature changes."""
 
-    @property
-    @abstractmethod
-    def brightness(self) -> int:
-        """Return the current brightness in percentage."""
-
     @abstractmethod
     async def set_hsv(
         self,
@@ -126,19 +116,70 @@ class Bulb(Device, ABC):
         :param int transition: transition in milliseconds.
         """
 
-    @abstractmethod
-    async def set_brightness(
-        self, brightness: int, *, transition: int | None = None
-    ) -> dict:
-        """Set the brightness in percentage.
-
-        Note, transition is not supported and will be ignored.
-
-        :param int brightness: brightness in percent
-        :param int transition: transition in milliseconds.
-        """
-
     @property
     @abstractmethod
     def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
+
+
+class LightEffect(Bulb, ABC):
+    """Base interface to represent a device that supports light effects."""
+
+    @property
+    @abstractmethod
+    def is_custom_effects(self) -> bool:
+        """Return True if the device supports setting custom effects."""
+
+    @property
+    @abstractmethod
+    def effect(self) -> dict | str:
+        """Return effect state or name."""
+
+    @property
+    @abstractmethod
+    def effect_list(self) -> list[str] | None:
+        """Return built-in effects list.
+
+        Example:
+            ['Aurora', 'Bubbling Cauldron', ...]
+        """
+
+    @abstractmethod
+    async def set_effect(
+        self,
+        effect: str,
+        *,
+        brightness: int | None = None,
+        transition: int | None = None,
+    ) -> None:
+        """Set an effect on the device.
+
+        If brightness or transition is defined,
+        its value will be used instead of the effect-specific default.
+
+        See :meth:`effect_list` for available effects,
+        or use :meth:`set_custom_effect` for custom effects.
+
+        :param str effect: The effect to set
+        :param int brightness: The wanted brightness
+        :param int transition: The wanted transition time
+        """
+
+    @abstractmethod
+    async def set_custom_effect(
+        self,
+        effect_dict: dict,
+    ) -> None:
+        """Set a custom effect on the device.
+
+        :param str effect_dict: The custom effect dict to set
+        """
+
+
+class LightStrip(LightEffect, ABC):
+    """Base interface to represent a LightStrip device."""
+
+    @property
+    @abstractmethod
+    def length(self) -> int:
+        """Return length of the light strip."""
