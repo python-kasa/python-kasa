@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast, overload
+from typing import Any, Mapping, Sequence, cast, overload
 
 from ..aestransport import AesTransport
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
@@ -29,11 +29,9 @@ from .modules import (
     Firmware,
     TimeModule,
 )
+from .smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from .smartmodule import SmartModule
 
 
 # List of modules that wall switches with children, i.e. ks240 report on
