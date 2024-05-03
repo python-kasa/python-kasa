@@ -42,13 +42,10 @@ if TYPE_CHECKING:
 # same issue, homekit perhaps?
 WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]
 
-AVAILABLE_BULB_EFFECTS = {
-    "L1": "Party",
-    "L2": "Relax",
-}
 
-
-class SmartDevice(Device, Bulb, Fan):
+# Device must go last as the other interfaces also inherit Device
+# and python needs a consistent method resolution order.
+class SmartDevice(Bulb, Fan, Device):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -528,26 +525,13 @@ class SmartDevice(Device, Bulb, Fan):
                 bssid=res["bssid"],
             )
 
-        async def _query_networks(networks=None, start_index=0):
-            _LOGGER.debug("Querying networks using start_index=%s", start_index)
-            if networks is None:
-                networks = []
+        _LOGGER.debug("Querying networks")
 
-            resp = await self.protocol.query(
-                {"get_wireless_scan_info": {"start_index": start_index}}
-            )
-            network_list = [
-                _net_for_scan_info(net)
-                for net in resp["get_wireless_scan_info"]["ap_list"]
-            ]
-            networks.extend(network_list)
-
-            if resp["get_wireless_scan_info"].get("sum", 0) > start_index + 10:
-                return await _query_networks(networks, start_index=start_index + 10)
-
-            return networks
-
-        return await _query_networks()
+        resp = await self.protocol.query({"get_wireless_scan_info": {"start_index": 0}})
+        networks = [
+            _net_for_scan_info(net) for net in resp["get_wireless_scan_info"]["ap_list"]
+        ]
+        return networks
 
     async def wifi_join(self, ssid: str, password: str, keytype: str = "wpa2_psk"):
         """Join the given wifi network.
@@ -711,44 +695,6 @@ class SmartDevice(Device, Bulb, Fan):
         ).valid_temperature_range
 
     @property
-    def has_effects(self) -> bool:
-        """Return True if the device supports effects."""
-        return "dynamic_light_effect_enable" in self._info
-
-    @property
-    def effect(self) -> dict:
-        """Return effect state.
-
-        This follows the format used by SmartLightStrip.
-
-        Example:
-            {'brightness': 50,
-             'custom': 0,
-             'enable': 0,
-             'id': '',
-             'name': ''}
-        """
-        # If no effect is active, dynamic_light_effect_id does not appear in info
-        current_effect = self._info.get("dynamic_light_effect_id", "")
-        data = {
-            "brightness": self.brightness,
-            "enable": current_effect != "",
-            "id": current_effect,
-            "name": AVAILABLE_BULB_EFFECTS.get(current_effect, ""),
-        }
-
-        return data
-
-    @property
-    def effect_list(self) -> list[str] | None:
-        """Return built-in effects list.
-
-        Example:
-            ['Party', 'Relax', ...]
-        """
-        return list(AVAILABLE_BULB_EFFECTS.keys()) if self.has_effects else None
-
-    @property
     def hsv(self) -> HSV:
         """Return the current HSV state of the bulb.
 
@@ -834,17 +780,12 @@ class SmartDevice(Device, Bulb, Fan):
             brightness
         )
 
-    async def set_effect(
-        self,
-        effect: str,
-        *,
-        brightness: int | None = None,
-        transition: int | None = None,
-    ) -> None:
-        """Set an effect on the device."""
-        raise NotImplementedError()
-
     @property
     def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
         return []
+
+    @property
+    def has_effects(self) -> bool:
+        """Return True if the device supports effects."""
+        return "LightEffectModule" in self.modules

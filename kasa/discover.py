@@ -12,11 +12,7 @@ from typing import Awaitable, Callable, Dict, Optional, Type, cast
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
-
-try:
-    from pydantic.v1 import BaseModel, ValidationError  # pragma: no cover
-except ImportError:
-    from pydantic import BaseModel, ValidationError  # pragma: no cover
+from pydantic.v1 import BaseModel, ValidationError
 
 from kasa import Device
 from kasa.credentials import Credentials

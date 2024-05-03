@@ -55,9 +55,9 @@ class AutoOffModule(SmartModule):
         """Return True if enabled."""
         return self.data["enable"]
 
-    def set_enabled(self, enable: bool):
+    async def set_enabled(self, enable: bool):
         """Enable/disable auto off."""
-        return self.call(
+        return await self.call(
             "set_auto_off_config",
             {"enable": enable, "delay_min": self.data["delay_min"]},
         )
@@ -67,9 +67,9 @@ class AutoOffModule(SmartModule):
         """Return time until auto off."""
         return self.data["delay_min"]
 
-    def set_delay(self, delay: int):
+    async def set_delay(self, delay: int):
         """Set time until auto off."""
-        return self.call(
+        return await self.call(
             "set_auto_off_config", {"delay_min": delay, "enable": self.data["enable"]}
         )
 

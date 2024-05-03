@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import AsyncGenerator
+
 import pytest
 
 from kasa import (
@@ -346,13 +348,13 @@ def device_for_fixture_name(model, protocol):
     raise Exception("Unable to find type for %s", model)
 
 
-async def _update_and_close(d):
+async def _update_and_close(d) -> Device:
     await d.update()
     await d.protocol.close()
     return d
 
 
-async def _discover_update_and_close(ip, username, password):
+async def _discover_update_and_close(ip, username, password) -> Device:
     if username and password:
         credentials = Credentials(username=username, password=password)
     else:
@@ -361,7 +363,7 @@ async def _discover_update_and_close(ip, username, password):
     return await _update_and_close(d)
 
 
-async def get_device_for_fixture(fixture_data: FixtureInfo):
+async def get_device_for_fixture(fixture_data: FixtureInfo) -> Device:
     # if the wanted file is not an absolute path, prepend the fixtures directory
 
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
@@ -395,13 +397,14 @@ async def get_device_for_fixture_protocol(fixture, protocol):
 
 
 @pytest.fixture(params=filter_fixtures("main devices"), ids=idgenerator)
-async def dev(request):
+async def dev(request) -> AsyncGenerator[Device, None]:
     """Device fixture.
 
     Provides a device (given --ip) or parametrized fixture for the supported devices.
     The initial update is called automatically before returning the device.
     """
     fixture_data: FixtureInfo = request.param
+    dev: Device
 
     ip = request.config.getoption("--ip")
     username = request.config.getoption("--username")
@@ -412,13 +415,12 @@ async def dev(request):
         if not model:
             d = await _discover_update_and_close(ip, username, password)
             IP_MODEL_CACHE[ip] = model = d.model
+
         if model not in fixture_data.name:
             pytest.skip(f"skipping file {fixture_data.name}")
-        dev: Device = (
-            d if d else await _discover_update_and_close(ip, username, password)
-        )
+        dev = d if d else await _discover_update_and_close(ip, username, password)
     else:
-        dev: Device = await get_device_for_fixture(fixture_data)
+        dev = await get_device_for_fixture(fixture_data)
 
     yield dev
 

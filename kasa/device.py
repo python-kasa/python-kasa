@@ -258,6 +258,11 @@ class Device(ABC):
         return False
 
     @property
+    def is_fan(self) -> bool:
+        """Return True if the device is a fan."""
+        return self.device_type == DeviceType.Fan
+
+    @property
     def is_variable_color_temp(self) -> bool:
         """Return True if the device supports color temperature."""
         return False

@@ -6,11 +6,7 @@ import logging
 from enum import Enum
 from typing import Dict, List, Optional
 
-try:
-    from pydantic.v1 import BaseModel
-except ImportError:
-    from pydantic import BaseModel
-
+from pydantic.v1 import BaseModel
 
 from ..iotmodule import IotModule, merge
 

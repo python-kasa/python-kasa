@@ -14,6 +14,7 @@ from pprint import pformat as pf
 from typing import Any, cast
 
 import asyncclick as click
+from pydantic.v1 import ValidationError
 
 from kasa import (
     AuthenticationError,
@@ -41,11 +42,6 @@ from kasa.iot import (
 )
 from kasa.iot.modules import Usage
 from kasa.smart import SmartDevice
-
-try:
-    from pydantic.v1 import ValidationError
-except ImportError:
-    from pydantic import ValidationError
 
 try:
     from rich import print as _do_echo
@@ -590,6 +586,7 @@ def _echo_features(
     title: str,
     category: Feature.Category | None = None,
     verbose: bool = False,
+    indent: str = "\t",
 ):
     """Print out a listing of features and their values."""
     if category is not None:
@@ -602,13 +599,13 @@ def _echo_features(
     echo(f"[bold]{title}[/bold]")
     for _, feat in features.items():
         try:
-            echo(f"\t{feat}")
+            echo(f"{indent}{feat}")
             if verbose:
-                echo(f"\t\tType: {feat.type}")
-                echo(f"\t\tCategory: {feat.category}")
-                echo(f"\t\tIcon: {feat.icon}")
+                echo(f"{indent}\tType: {feat.type}")
+                echo(f"{indent}\tCategory: {feat.category}")
+                echo(f"{indent}\tIcon: {feat.icon}")
         except Exception as ex:
-            echo(f"\t{feat.name} ({feat.id}): got exception (%s)" % ex)
+            echo(f"{indent}{feat.name} ({feat.id}): [red]got exception ({ex})[/red]")
 
 
 def _echo_all_features(features, *, verbose=False, title_prefix=None):
@@ -1223,22 +1220,15 @@ async def feature(dev: Device, child: str, name: str, value):
         echo(f"Targeting child device {child}")
         dev = dev.get_child_device(child)
     if not name:
-
-        def _print_features(dev):
-            for name, feat in dev.features.items():
-                try:
-                    unit = f" {feat.unit}" if feat.unit else ""
-                    echo(f"\t{feat.name} ({name}): {feat.value}{unit}")
-                except Exception as ex:
-                    echo(f"\t{feat.name} ({name}): [red]{ex}[/red]")
-
-        echo("[bold]== Features ==[/bold]")
-        _print_features(dev)
+        _echo_features(dev.features, "\n[bold]== Features ==[/bold]\n", indent="")
 
         if dev.children:
             for child_dev in dev.children:
-                echo(f"[bold]== Child {child_dev.alias} ==")
-                _print_features(child_dev)
+                _echo_features(
+                    child_dev.features,
+                    f"\n[bold]== Child {child_dev.alias} ==\n",
+                    indent="",
+                )
 
         return
 
@@ -1253,9 +1243,13 @@ async def feature(dev: Device, child: str, name: str, value):
         echo(f"{feat.name} ({name}): {feat.value}{unit}")
         return feat.value
 
-    echo(f"Setting {name} to {value}")
     value = ast.literal_eval(value)
-    return await dev.features[name].set_value(value)
+    echo(f"Changing {name} from {feat.value} to {value}")
+    response = await dev.features[name].set_value(value)
+    await dev.update()
+    echo(f"New state: {feat.value}")
+
+    return response
 
 
 if __name__ == "__main__":

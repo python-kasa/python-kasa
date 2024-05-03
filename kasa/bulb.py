@@ -5,10 +5,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import NamedTuple, Optional
 
-try:
-    from pydantic.v1 import BaseModel
-except ImportError:
-    from pydantic import BaseModel
+from pydantic.v1 import BaseModel
+
+from .device import Device
 
 
 class ColorTempRange(NamedTuple):
@@ -43,7 +42,7 @@ class BulbPreset(BaseModel):
     mode: Optional[int]  # noqa: UP007
 
 
-class Bulb(ABC):
+class Bulb(Device, ABC):
     """Base class for TP-Link Bulb."""
 
     def _raise_for_invalid_brightness(self, value):

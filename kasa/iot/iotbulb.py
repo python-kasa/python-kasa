@@ -7,10 +7,7 @@ import re
 from enum import Enum
 from typing import Optional, cast
 
-try:
-    from pydantic.v1 import BaseModel, Field, root_validator
-except ImportError:
-    from pydantic import BaseModel, Field, root_validator
+from pydantic.v1 import BaseModel, Field, root_validator
 
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
@@ -236,6 +233,7 @@ class IotBulb(IotDevice, Bulb):
                     attribute_setter="set_color_temp",
                     range_getter="valid_temperature_range",
                     category=Feature.Category.Primary,
+                    type=Feature.Type.Number,
                 )
             )
 

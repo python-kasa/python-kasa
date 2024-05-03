@@ -4,14 +4,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from .device import Device
 
-class Fan(ABC):
+
+class Fan(Device, ABC):
     """Interface for a Fan."""
-
-    @property
-    @abstractmethod
-    def is_fan(self) -> bool:
-        """Return True if the device is a fan."""
 
     @property
     @abstractmethod
