@@ -12,17 +12,17 @@ waterleak = parametrize(
 
 @waterleak
 @pytest.mark.parametrize(
-    "feature, type",
+    "feature, prop_name, type",
     [
-        ("alert", int),
-        ("status", Enum),
+        ("water_alert", "alert", int),
+        ("water_leak", "status", Enum),
     ],
 )
-async def test_waterleak_properties(dev, feature, type):
+async def test_waterleak_properties(dev, feature, prop_name, type):
     """Test that features are registered and work as expected."""
     waterleak: WaterleakSensor = dev.modules["WaterleakSensor"]
 
-    prop = getattr(waterleak, feature)
+    prop = getattr(waterleak, prop_name)
     assert isinstance(prop, type)
 
     feat = waterleak._module_features[feature]
