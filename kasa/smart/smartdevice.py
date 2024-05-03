@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
+from typing import Any, Mapping, Sequence, cast, overload
 
 from ..aestransport import AesTransport
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange, LightStrip
@@ -16,6 +16,7 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..fan import Fan
 from ..feature import Feature
+from ..module import ModuleT
 from ..plug import Dimmer, Plug, Strip
 from ..smartprotocol import SmartProtocol
 from .modules import (
@@ -31,11 +32,10 @@ from .modules import (
     LightEffectModule,
     TimeModule,
 )
+from .smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    from .smartmodule import SmartModule
 
 # List of modules that wall switches with children, i.e. ks240 report on
 # the child but only work on the parent.  See longer note below in _initialize_modules.
@@ -308,8 +308,22 @@ class SmartDevice(LightStrip, Strip, Plug, Dimmer, Bulb, Fan, Device):
             for feat in module._module_features.values():
                 self._add_feature(feat)
 
-    def get_module(self, module_name) -> SmartModule | None:
+    @overload
+    def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
+
+    @overload
+    def get_module(self, module_type: str) -> SmartModule | None: ...
+
+    def get_module(
+        self, module_type: type[ModuleT] | str
+    ) -> ModuleT | SmartModule | None:
         """Return the module from the device modules or None if not present."""
+        if isinstance(module_type, str):
+            module_name = module_type
+        elif issubclass(module_type, SmartModule):
+            module_name = module_type.__name__
+        else:
+            return None
         if module_name in self.modules:
             return self.modules[module_name]
         elif self._exposes_child_modules:

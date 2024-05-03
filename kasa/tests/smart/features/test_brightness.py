@@ -33,7 +33,7 @@ async def test_brightness_component(dev: SmartDevice):
 
 
 @dimmable
-async def test_brightness_dimmable(dev: SmartDevice):
+async def test_brightness_dimmable(dev: IotDevice):
     """Test brightness feature."""
     assert isinstance(dev, IotDevice)
     assert "brightness" in dev.sys_info or bool(dev.sys_info["is_dimmable"])

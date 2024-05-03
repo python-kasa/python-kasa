@@ -122,21 +122,41 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
             spies[device].assert_not_called()
 
 
-async def test_get_modules(mocker):
+async def test_get_modules():
     """Test get_modules for child and parent modules."""
     dummy_device = await get_device_for_fixture_protocol(
         "KS240(US)_1.0_1.0.5.json", "SMART"
     )
+    from kasa.iot.modules import AmbientLight
+    from kasa.smart.modules import CloudModule, FanModule
+
+    # Modules on device
     module = dummy_device.get_module("CloudModule")
     assert module
     assert module._device == dummy_device
+    assert isinstance(module, CloudModule)
 
+    module = dummy_device.get_module(CloudModule)
+    assert module
+    assert module._device == dummy_device
+    assert isinstance(module, CloudModule)
+
+    # Modules on child
     module = dummy_device.get_module("FanModule")
     assert module
     assert module._device != dummy_device
     assert module._device._parent == dummy_device
 
+    module = dummy_device.get_module(FanModule)
+    assert module
+    assert module._device != dummy_device
+    assert module._device._parent == dummy_device
+
+    # Invalid modules
     module = dummy_device.get_module("DummyModule")
+    assert module is None
+
+    module = dummy_device.get_module(AmbientLight)
     assert module is None
 
 

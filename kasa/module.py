@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    TypeVar,
+)
 
 from .exceptions import KasaException
 from .feature import Feature
@@ -13,6 +16,8 @@ if TYPE_CHECKING:
     from .device import Device
 
 _LOGGER = logging.getLogger(__name__)
+
+ModuleT = TypeVar("ModuleT", bound="Module")
 
 
 class Module(ABC):
