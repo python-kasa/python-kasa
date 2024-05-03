@@ -19,7 +19,7 @@ from voluptuous import (
 from kasa import KasaException
 from kasa.iot import IotDevice
 
-from .conftest import handle_turn_on, turn_on
+from .conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
 from .device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
 from .fakeprotocol_iot import FakeIotProtocol
 
@@ -258,3 +258,30 @@ async def test_modules_not_supported(dev: IotDevice):
     await dev.update()
     for module in dev.modules.values():
         assert module.is_supported is not None
+
+
+async def test_get_modules():
+    """Test get_modules for child and parent modules."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "HS100(US)_2.0_1.5.6.json", "IOT"
+    )
+    from kasa.iot.modules import Cloud
+    from kasa.smart.modules import CloudModule
+
+    # Modules on device
+    module = dummy_device.get_module("Cloud")
+    assert module
+    assert module._device == dummy_device
+    assert isinstance(module, Cloud)
+
+    module = dummy_device.get_module(Cloud)
+    assert module
+    assert module._device == dummy_device
+    assert isinstance(module, Cloud)
+
+    # Invalid modules
+    module = dummy_device.get_module("DummyModule")
+    assert module is None
+
+    module = dummy_device.get_module(CloudModule)
+    assert module is None
