@@ -6,7 +6,6 @@ import logging
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
-    Generic,
     TypeVar,
 )
 
@@ -19,21 +18,6 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 ModuleT = TypeVar("ModuleT", bound="Module")
-
-
-class ModuleName(str, Generic[ModuleT]):
-    """Custom generic type for module names.
-
-    At runtime this is a generic subclass of str.
-    """
-
-    def __new__(cls, value: type[ModuleT] | str):
-        """Create new ModuleName instance."""
-        value = value if isinstance(value, str) else value.__name__
-        obj = str.__new__(cls, value)
-        return obj
-
-    __slots__ = ()
 
 
 class Module(ABC):

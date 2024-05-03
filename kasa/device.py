@@ -15,7 +15,7 @@ from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
 from .iotprotocol import IotProtocol
-from .module import Module, ModuleName, ModuleT
+from .module import Module, ModuleT
 from .protocol import BaseProtocol
 from .xortransport import XorTransport
 
@@ -118,16 +118,14 @@ class Device(ABC):
 
     @overload
     @abstractmethod
-    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None: ...
+    def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
 
     @overload
     @abstractmethod
-    def get_module(self, module_name: str) -> Module | None: ...
+    def get_module(self, module_type: str) -> Module | None: ...
 
     @abstractmethod
-    def get_module(
-        self, module_name: ModuleName[ModuleT] | str
-    ) -> ModuleT | Module | None:
+    def get_module(self, module_type: type[ModuleT] | str) -> ModuleT | Module | None:
         """Return the module from the device modules or None if not present."""
 
     @property

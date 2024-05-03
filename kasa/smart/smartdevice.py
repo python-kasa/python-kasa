@@ -16,7 +16,7 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..fan import Fan
 from ..feature import Feature
-from ..module import ModuleName, ModuleT
+from ..module import ModuleT
 from ..smartprotocol import SmartProtocol
 from .modules import (
     Brightness,
@@ -311,16 +311,21 @@ class SmartDevice(Device, Bulb, Fan):
                 self._add_feature(feat)
 
     @overload
-    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:  # type: ignore[overload-overlap]
-        ...
+    def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
 
     @overload
-    def get_module(self, module_name: str) -> SmartModule | None: ...
+    def get_module(self, module_type: str) -> SmartModule | None: ...
 
     def get_module(
-        self, module_name: ModuleName[ModuleT] | str
+        self, module_type: type[ModuleT] | str
     ) -> ModuleT | SmartModule | None:
         """Return the module from the device modules or None if not present."""
+        if isinstance(module_type, str):
+            module_name = module_type
+        elif issubclass(module_type, SmartModule):
+            module_name = module_type.__name__
+        else:
+            return None
         if module_name in self.modules:
             return self.modules[module_name]
         elif self._exposes_child_modules:

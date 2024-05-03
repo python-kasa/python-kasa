@@ -26,7 +26,7 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
-from ..module import ModuleName, ModuleT
+from ..module import ModuleT
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter, Time
@@ -203,16 +203,21 @@ class IotDevice(Device):
         return self._modules
 
     @overload
-    def get_module(self, module_name: ModuleName[ModuleT]) -> ModuleT | None:  # type: ignore[overload-overlap]
-        ...
+    def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
 
     @overload
-    def get_module(self, module_name: str) -> IotModule | None: ...
+    def get_module(self, module_type: str) -> IotModule | None: ...
 
     def get_module(
-        self, module_name: ModuleName[ModuleT] | str
+        self, module_type: type[ModuleT] | str
     ) -> ModuleT | IotModule | None:
         """Return the module from the device modules or None if not present."""
+        if isinstance(module_type, str):
+            module_name = module_type.lower()
+        elif issubclass(module_type, IotModule):
+            module_name = module_type.__name__.lower()
+        else:
+            return None
         if module_name in self.modules:
             return self.modules[module_name]
         return None
