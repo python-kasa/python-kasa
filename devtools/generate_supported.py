@@ -29,10 +29,12 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.StripSocket: "Power Strips",
     DeviceType.Dimmer: "Wall Switches",
     DeviceType.WallSwitch: "Wall Switches",
+    DeviceType.Fan: "Wall Switches",
     DeviceType.Bulb: "Bulbs",
     DeviceType.LightStrip: "Light Strips",
     DeviceType.Hub: "Hubs",
     DeviceType.Sensor: "Sensors",
+    DeviceType.Thermostat: "Sensors",
 }
 
 
@@ -185,16 +187,22 @@ def _supported_text(
 
 
 def _get_smart_supported(supported):
-    for file in Path(SMART_FOLDER).glob("*.json"):
+    for file in Path(SMART_FOLDER).glob("**/*.json"):
         with file.open() as f:
             fixture_data = json.load(f)
 
-        model, _, region = fixture_data["discovery_result"]["device_model"].partition(
-            "("
-        )
+        if "discovery_result" in fixture_data:
+            model, _, region = fixture_data["discovery_result"][
+                "device_model"
+            ].partition("(")
+            device_type = fixture_data["discovery_result"]["device_type"]
+        else:  # child devices of hubs do not have discovery result
+            model = fixture_data["get_device_info"]["model"]
+            region = fixture_data["get_device_info"].get("specs")
+            device_type = fixture_data["get_device_info"]["type"]
         # P100 doesn't have region HW
         region = region.replace(")", "") if region else ""
-        device_type = fixture_data["discovery_result"]["device_type"]
+
         _protocol, devicetype = device_type.split(".")
         brand = devicetype[:4].lower()
         components = [

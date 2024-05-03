@@ -232,6 +232,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB110
 - **Light Strips**: KL400L5, KL420L5, KL430
 - **Hubs**: KH100<sup>\*</sup>
+- **Sensors**: KE100<sup>\*</sup>
 
 ### Supported Tapo<sup>\*</sup> devices
 
@@ -241,6 +242,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Bulbs**: L510B, L510E, L530E
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Hubs**: H100
+- **Sensors**: T300, T310, T315
 
 <!--SUPPORTED_END-->
 <sup>*</sup>&nbsp; Model requires authentication<br>

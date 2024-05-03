@@ -134,6 +134,12 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KH100**
   - Hardware: 1.0 (UK) / Firmware: 1.5.6<sup>\*</sup>
 
+### Sensors
+
+- **KE100**
+  - Hardware: 1.0 (EU) / Firmware: 2.8.0<sup>\*</sup>
+  - Hardware: 1.0 (UK) / Firmware: 2.8.0<sup>\*</sup>
+
 
 ## Tapo devices
 
@@ -203,6 +209,15 @@ All Tapo devices require authentication.
 - **H100**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (EU) / Firmware: 1.5.5
+
+### Sensors
+
+- **T300**
+  - Hardware: 1.0 (EU) / Firmware: 1.7.0
+- **T310**
+  - Hardware: 1.0 (EU) / Firmware: 1.5.0
+- **T315**
+  - Hardware: 1.0 (EU) / Firmware: 1.7.0
 
 
 <!--SUPPORTED_END-->
