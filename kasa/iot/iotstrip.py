@@ -10,6 +10,7 @@ from typing import Any
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
+from ..plug import Strip
 from ..protocol import BaseProtocol
 from .iotdevice import (
     EmeterStatus,
@@ -32,7 +33,7 @@ def merge_sums(dicts):
     return total_dict
 
 
-class IotStrip(IotDevice):
+class IotStrip(IotDevice, Strip):
     r"""Representation of a TP-Link Smart Power Strip.
 
     A strip consists of the parent device and its children.

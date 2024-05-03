@@ -1,4 +1,4 @@
-"""Module for bulb and light base class."""
+"""Module for Device base class."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import NamedTuple, Optional
 
 from pydantic.v1 import BaseModel
 
-from .dimmer import Dimmer
+from .device import Device
 
 
 class ColorTempRange(NamedTuple):
@@ -42,7 +42,7 @@ class BulbPreset(BaseModel):
     mode: Optional[int]  # noqa: UP007
 
 
-class Bulb(Dimmer, ABC):
+class Bulb(Device, ABC):
     """Base class for TP-Link Bulb."""
 
     def _raise_for_invalid_brightness(self, value):
@@ -85,6 +85,11 @@ class Bulb(Dimmer, ABC):
     def color_temp(self) -> int:
         """Whether the bulb supports color temperature changes."""
 
+    @property
+    @abstractmethod
+    def brightness(self) -> int:
+        """Return the current brightness in percentage."""
+
     @abstractmethod
     async def set_hsv(
         self,
@@ -116,18 +121,30 @@ class Bulb(Dimmer, ABC):
         :param int transition: transition in milliseconds.
         """
 
+    @abstractmethod
+    async def set_brightness(
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
+        """Set the brightness in percentage.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int brightness: brightness in percent
+        :param int transition: transition in milliseconds.
+        """
+
     @property
     @abstractmethod
     def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
 
 
-class LightEffect(Bulb, ABC):
-    """Base interface to represent a device that supports light effects."""
+class LightStrip(Bulb, ABC):
+    """Base interface to represent a LightStrip device."""
 
     @property
     @abstractmethod
-    def is_custom_effects(self) -> bool:
+    def has_custom_effects(self) -> bool:
         """Return True if the device supports setting custom effects."""
 
     @property
@@ -174,10 +191,6 @@ class LightEffect(Bulb, ABC):
 
         :param str effect_dict: The custom effect dict to set
         """
-
-
-class LightStrip(LightEffect, ABC):
-    """Base interface to represent a LightStrip device."""
 
     @property
     @abstractmethod

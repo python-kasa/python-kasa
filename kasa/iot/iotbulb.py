@@ -4,16 +4,69 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import cast
+from enum import Enum
+from typing import Optional, cast
+
+from pydantic.v1 import BaseModel, Field, root_validator
 
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..dimmer import FadeType, TurnOnBehaviors
 from ..feature import Feature
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
+
+
+class BehaviorMode(str, Enum):
+    """Enum to present type of turn on behavior."""
+
+    #: Return to the last state known state.
+    Last = "last_status"
+    #: Use chosen preset.
+    Preset = "customize_preset"
+
+
+class TurnOnBehavior(BaseModel):
+    """Model to present a single turn on behavior.
+
+    :param int preset: the index number of wanted preset.
+    :param BehaviorMode mode: last status or preset mode.
+     If you are changing existing settings, you should not set this manually.
+
+    To change the behavior, it is only necessary to change the :attr:`preset` field
+    to contain either the preset index, or ``None`` for the last known state.
+    """
+
+    #: Index of preset to use, or ``None`` for the last known state.
+    preset: Optional[int] = Field(alias="index", default=None)  # noqa: UP007
+    #: Wanted behavior
+    mode: BehaviorMode
+
+    @root_validator
+    def _mode_based_on_preset(cls, values):
+        """Set the mode based on the preset value."""
+        if values["preset"] is not None:
+            values["mode"] = BehaviorMode.Preset
+        else:
+            values["mode"] = BehaviorMode.Last
+
+        return values
+
+    class Config:
+        """Configuration to make the validator run when changing the values."""
+
+        validate_assignment = True
+
+
+class TurnOnBehaviors(BaseModel):
+    """Model to contain turn on behaviors."""
+
+    #: The behavior when the bulb is turned on programmatically.
+    soft: TurnOnBehavior = Field(alias="soft_on")
+    #: The behavior when the bulb has been off from mains power.
+    hard: TurnOnBehavior = Field(alias="hard_on")
+
 
 TPLINK_KELVIN = {
     "LB130": ColorTempRange(2500, 9000),
@@ -275,14 +328,6 @@ class IotBulb(IotDevice, Bulb):
             self.LIGHT_SERVICE, "set_default_behavior", behavior.dict(by_alias=True)
         )
 
-    @requires_update
-    async def get_behaviors(self):
-        """Return button behavior settings."""
-        behaviors = await self._query_helper(
-            self.LIGHT_SERVICE, "get_default_behavior", {}
-        )
-        return behaviors
-
     async def get_light_state(self) -> dict[str, dict]:
         """Query the light state."""
         # TODO: add warning and refer to use light.state?
@@ -312,22 +357,6 @@ class IotBulb(IotDevice, Bulb):
             self.LIGHT_SERVICE, self.SET_LIGHT_METHOD, state
         )
         return light_state
-
-    @property
-    def is_transitions(self):
-        """Return True if the bulb has transition settings."""
-
-    async def set_fade_time(self, fade_type: FadeType, time: int):
-        """Set time for fade in / fade out."""
-        # TODO will this actually work
-        await self.set_light_state({"on_off": self.is_on}, transition=time)
-
-    async def set_dimmer_transition(self, brightness: int, transition: int):
-        """Turn the bulb on to brightness percentage over transition milliseconds.
-
-        A brightness value of 0 will turn off the bulb.
-        """
-        await self.set_brightness(brightness, transition)
 
     @property  # type: ignore
     @requires_update

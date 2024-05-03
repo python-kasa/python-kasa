@@ -26,7 +26,6 @@ from kasa.deviceconfig import (
     DeviceFamilyType,
     EncryptType,
 )
-from kasa.dimmer import TurnOnBehavior, TurnOnBehaviors
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
 from kasa.exceptions import (

@@ -90,11 +90,9 @@ class IotPlug(IotDevice, Plug):
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 
     @property
-    @requires_update
-    def is_led(self) -> bool:
+    def has_led(self) -> bool:
         """Return True if the device supports led."""
-        sys_info = self.sys_info
-        return "led_off" in sys_info
+        return True
 
     @property  # type: ignore
     @requires_update

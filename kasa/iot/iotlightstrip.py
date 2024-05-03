@@ -116,11 +116,6 @@ class IotLightStrip(IotBulb, LightStrip):
 
         await self.set_custom_effect(effect_dict)
 
-    @property
-    def is_custom_effects(self) -> bool:
-        """Return True if the device supports setting custom effects."""
-        return True
-
     @requires_update
     async def set_custom_effect(
         self,
@@ -137,3 +132,8 @@ class IotLightStrip(IotBulb, LightStrip):
             "set_lighting_effect",
             effect_dict,
         )
+
+    @property
+    def has_custom_effects(self) -> bool:
+        """Return True if the device supports setting custom effects."""
+        return True

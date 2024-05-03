@@ -335,6 +335,11 @@ class Device(ABC):
 
     @property
     @abstractmethod
+    def has_led(self) -> bool:
+        """Return True if the device supports led."""
+
+    @property
+    @abstractmethod
     def has_emeter(self) -> bool:
         """Return if the device has emeter."""
 

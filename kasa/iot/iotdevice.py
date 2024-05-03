@@ -282,6 +282,11 @@ class IotDevice(Device):
         """Return True if device has an energy meter."""
         return "ENE" in self._legacy_features
 
+    @property
+    def has_led(self) -> bool:
+        """Return True if the device supports led."""
+        return False
+
     async def get_sys_info(self) -> dict[str, Any]:
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")

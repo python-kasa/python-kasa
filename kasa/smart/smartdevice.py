@@ -12,12 +12,11 @@ from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange, LightStrip
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..dimmer import FadeType, TurnOnBehaviors
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..fan import Fan
 from ..feature import Feature
-from ..plug import Plug, Strip
+from ..plug import Dimmer, Plug, Strip
 from ..smartprotocol import SmartProtocol
 from .modules import (
     Brightness,
@@ -30,7 +29,6 @@ from .modules import (
     Firmware,
     LedModule,
     LightEffectModule,
-    LightTransitionModule,
     TimeModule,
 )
 
@@ -48,7 +46,7 @@ WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModu
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
-class SmartDevice(LightStrip, Strip, Plug, Bulb, Fan, Device):
+class SmartDevice(LightStrip, Strip, Plug, Dimmer, Bulb, Fan, Device):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -653,88 +651,17 @@ class SmartDevice(LightStrip, Strip, Plug, Bulb, Fan, Device):
             raise KasaException("Device is not a Fan")
         await cast(FanModule, self.modules["FanModule"]).set_fan_speed_level(level)
 
-    # Dimmer methods
-
-    @property
-    def is_dimmable(self) -> bool:
-        """Whether the device supports brightness changes."""
-        return "Brightness" in self.modules
-
-    @property
-    def brightness(self) -> int:
-        """Return the current brightness in percentage."""
-        if not self.is_dimmable:  # pragma: no cover
-            raise KasaException("Bulb is not dimmable.")
-
-        return cast(Brightness, self.modules["Brightness"]).brightness
-
-    async def set_brightness(
-        self, brightness: int, *, transition: int | None = None
-    ) -> dict:
-        """Set the brightness in percentage.
-
-        Note, transition is not supported and will be ignored.
-
-        :param int brightness: brightness in percent
-        :param int transition: transition in milliseconds.
-        """
-        if not self.is_dimmable:  # pragma: no cover
-            raise KasaException("Device is not dimmable.")
-
-        return await cast(Brightness, self.modules["Brightness"]).set_brightness(
-            brightness
-        )
-
-    async def set_dimmer_transition(self, brightness: int, transition: int):
-        """Turn the bulb on to brightness percentage over transition milliseconds.
-
-        A brightness value of 0 will turn off the dimmer.
-        """
-        if not self.is_transitions and self.is_dimmable:  # pragma: no cover
-            raise KasaException("Device is not dimmable.")
-        # TODO can add a transition here
-        return await cast(Brightness, self.modules["Brightness"]).set_brightness(
-            brightness
-        )
-
-    @property
-    def is_transitions(self):
-        """Return True if the dimmer has behaviour settings."""
-        return "LightTransitionModule" in self.modules
-
-    async def set_fade_time(self, fade_type: FadeType, time: int):
-        """Set time for fade in / fade out."""
-        await cast(
-            LightTransitionModule, self.modules["LightTransitionModule"]
-        ).set_fade_time(fade_type, time)
-
-    @property
-    def is_on_behaviours(self):
-        """Return True if the device has turn on behaviour settings."""
-        return False or "DefaultStatesModule" in self.modules
-
-    async def get_behaviors(self):
-        """Return button behavior settings."""
-        raise KasaException("Device does not support on behaviours.")
-
-    async def get_turn_on_behavior(self) -> TurnOnBehaviors:
-        """Return the behavior for turning the bulb on."""
-        raise KasaException("Device does not support on behaviours.")
-
-    async def set_turn_on_behavior(self, behavior: TurnOnBehaviors):
-        """Set the behavior for turning the bulb on.
-
-        If you do not want to manually construct the behavior object,
-        you should use :func:`get_turn_on_behavior` to get the current settings.
-        """
-        raise KasaException("Device does not support on behaviours.")
-
     # Bulb interface methods
 
     @property
     def is_color(self) -> bool:
         """Whether the bulb supports color changes."""
         return "ColorModule" in self.modules
+
+    @property
+    def is_dimmable(self) -> bool:
+        """Whether the device supports brightness changes."""
+        return "Brightness" in self.modules
 
     @property
     def is_variable_color_temp(self) -> bool:
@@ -774,6 +701,14 @@ class SmartDevice(LightStrip, Strip, Plug, Bulb, Fan, Device):
         return cast(
             ColorTemperatureModule, self.modules["ColorTemperatureModule"]
         ).color_temp
+
+    @property
+    def brightness(self) -> int:
+        """Return the current brightness in percentage."""
+        if not self.is_dimmable:  # pragma: no cover
+            raise KasaException("Bulb is not dimmable.")
+
+        return cast(Brightness, self.modules["Brightness"]).brightness
 
     async def set_hsv(
         self,
@@ -815,6 +750,23 @@ class SmartDevice(LightStrip, Strip, Plug, Bulb, Fan, Device):
             ColorTemperatureModule, self.modules["ColorTemperatureModule"]
         ).set_color_temp(temp)
 
+    async def set_brightness(
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
+        """Set the brightness in percentage.
+
+        Note, transition is not supported and will be ignored.
+
+        :param int brightness: brightness in percent
+        :param int transition: transition in milliseconds.
+        """
+        if not self.is_dimmable:  # pragma: no cover
+            raise KasaException("Device is not dimmable.")
+
+        return await cast(Brightness, self.modules["Brightness"]).set_brightness(
+            brightness
+        )
+
     @property
     def presets(self) -> list[BulbPreset]:
         """Return a list of available bulb setting presets."""
@@ -828,32 +780,27 @@ class SmartDevice(LightStrip, Strip, Plug, Bulb, Fan, Device):
     # Plug / Wall Switch methods
 
     @property
-    def is_led(self) -> bool:
+    def has_led(self) -> bool:
         """Return True if device has a led."""
         return "LedModule" in self.modules
 
     @property
-    def is_plug(self) -> bool:
-        """Return True if device is a plug."""
-        return self.is_led
-
-    @property
     def led(self) -> bool:
         """Return the state of the led."""
-        if not self.is_led:
+        if not self.has_led:
             raise KasaException("Device does not support led.")
         return cast(LedModule, self.modules["LedModule"]).led
 
     async def set_led(self, state: bool):
         """Set the state of the led (night mode)."""
-        if not self.is_led:
+        if not self.has_led:
             raise KasaException("Device does not support led.")
         return await cast(LedModule, self.modules["LedModule"]).set_led(state)
 
-    # Light Effect methods
+    # LightStrip methods
 
     @property
-    def is_custom_effects(self) -> bool:
+    def has_custom_effects(self) -> bool:
         """Return True if the device supports setting custom effects."""
         return False
 
@@ -908,7 +855,7 @@ class SmartDevice(LightStrip, Strip, Plug, Bulb, Fan, Device):
 
         :param str effect_dict: The custom effect dict to set
         """
-        if not self.is_custom_effects:
+        if not self.has_custom_effects:
             raise KasaException("Device does not support setting custom effects.")
 
     # Light Strip methods
