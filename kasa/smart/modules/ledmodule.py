@@ -55,7 +55,7 @@ class LedModule(SmartModule):
         This should probably be a select with always/never/nightmode.
         """
         rule = "always" if enable else "never"
-        return await self.call("set_led_info", self.data | {"led_rule": rule})
+        return await self.call("set_led_info", dict(self.data, **{"led_rule": rule}))
 
     @property
     def night_mode_settings(self):
