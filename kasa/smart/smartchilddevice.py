@@ -35,6 +35,14 @@ class SmartChildDevice(SmartDevice):
 
     async def update(self, update_children: bool = True):
         """Noop update. The parent updates our internals."""
+        # TODO: we should probably default update_children=False in the library
+        #  and perform these extra queries only on request.
+        if update_children:
+            req = {}
+            for module in self._modules.values():
+                req.update(module.query())
+
+            self._last_update = await self.protocol.query(req)
 
     @classmethod
     async def create(cls, parent: SmartDevice, child_info, child_components):

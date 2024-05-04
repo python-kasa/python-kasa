@@ -1294,5 +1294,15 @@ async def child_unpair(dev, device_id: str):
     return res
 
 
+@child.command(name="logs")
+@pass_dev
+async def child_logs(dev):
+    """Print child device trigger logs."""
+    for child in dev.children:
+        if "TriggerLogs" in child.modules:
+            await child.update()
+            print(child.modules["TriggerLogs"].logs)
+
+
 if __name__ == "__main__":
     cli()

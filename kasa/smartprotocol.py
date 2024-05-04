@@ -395,8 +395,12 @@ class _ChildProtocolWrapper(SmartProtocol):
                 ret_val = {}
                 for multi_response in multi_responses:
                     method = multi_response["method"]
-                    self._handle_response_error_code(multi_response, method)
-                    ret_val[method] = multi_response.get("result")
+                    try:
+                        self._handle_response_error_code(multi_response, method)
+                    except KasaException as ex:
+                        ret_val[method] = ex
+                    else:
+                        ret_val[method] = multi_response.get("result")
                 return ret_val
 
             self._handle_response_error_code(response_data, "control_child")
