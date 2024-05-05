@@ -186,41 +186,11 @@ The device type specific documentation can be found in their separate pages:
 ## Contributing
 
 Contributions are very welcome! To simplify the process, we are leveraging automated checks and tests for contributions.
-
-### Setting up development environment
-
-To get started, simply clone this repository and initialize the development environment.
-We are using [poetry](https://python-poetry.org) for dependency management, so after cloning the repository simply execute
-`poetry install` which will install all necessary packages and create a virtual environment for you.
-
-### Code-style checks
-
-We use several tools to automatically check all contributions. The simplest way to verify that everything is formatted properly
-before creating a pull request, consider activating the pre-commit hooks by executing `pre-commit install`.
-This will make sure that the checks are passing when you do a commit.
-
-You can also execute the checks by running either `tox -e lint` to only do the linting checks, or `tox` to also execute the tests.
-
-### Running tests
-
-You can run tests on the library by executing `pytest` in the source directory.
-This will run the tests against contributed example responses, but you can also execute the tests against a real device:
-```
-$ pytest --ip <address>
-```
-Note that this will perform state changes on the device.
-
-### Analyzing network captures
-
-The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
-After capturing the traffic, you can either use the [softScheck's  wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
-or the `parse_pcap.py` script contained inside the `devtools` directory.
-Note, that this works currently only on kasa-branded devices which use port 9999 for communications.
-
+Please refer to [our contributing guidelines](https://python-kasa.readthedocs.io/en/latest/contribute.html).
 
 ## Supported devices
 
-The following devices have been tested and confirmed as working. If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).
+The following devices have been tested and confirmed as working. If your device is unlisted but working, please consider [contributing a fixture file](https://python-kasa.readthedocs.io/en/latest/contribute.html#contributing-fixture-files).
 
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->

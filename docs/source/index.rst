@@ -10,6 +10,7 @@
    discover
    smartdevice
    design
+   contribute
    smartbulb
    smartplug
    smartdimmer
