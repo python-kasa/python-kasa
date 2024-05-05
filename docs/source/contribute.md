@@ -1,7 +1,7 @@
 # Contributing
 
 You probably arrived to this page as you are interested in contributing to python-kasa in some form?
-All types of contributions are very welcome, so thank you already!
+All types of contributions are very welcome, so thank you!
 This page aims to help you to get started.
 
 ```{contents} Contents
