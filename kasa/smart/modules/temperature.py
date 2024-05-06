@@ -38,6 +38,7 @@ class TemperatureSensor(SmartModule):
                     attribute_getter="temperature_warning",
                     type=Feature.Type.BinarySensor,
                     icon="mdi:alert",
+                    category=Feature.Category.Debug,
                 )
             )
         self._add_feature(

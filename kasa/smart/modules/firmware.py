@@ -66,6 +66,7 @@ class Firmware(SmartModule):
                 container=self,
                 attribute_getter="update_available",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Info,
             )
         )
 

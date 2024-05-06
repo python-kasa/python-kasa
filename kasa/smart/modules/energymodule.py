@@ -27,6 +27,7 @@ class EnergyModule(SmartModule):
                 container=self,
                 unit="W",
                 precision_hint=1,
+                category=Feature.Category.Primary,
             )
         )
         self._add_feature(
@@ -37,6 +38,7 @@ class EnergyModule(SmartModule):
                 container=self,
                 unit="Wh",
                 precision_hint=2,
+                category=Feature.Category.Info,
             )
         )
         self._add_feature(
@@ -47,6 +49,7 @@ class EnergyModule(SmartModule):
                 container=self,
                 unit="Wh",
                 precision_hint=2,
+                category=Feature.Category.Info,
             )
         )
 

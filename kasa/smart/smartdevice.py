@@ -283,7 +283,7 @@ class SmartDevice(Bulb, Fan, Device):
                     attribute_getter=lambda x: x._info["overheated"],
                     icon="mdi:heat-wave",
                     type=Feature.Type.BinarySensor,
-                    category=Feature.Category.Debug,
+                    category=Feature.Category.Info,
                 )
             )
 
@@ -296,7 +296,7 @@ class SmartDevice(Bulb, Fan, Device):
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",
-                    category=Feature.Category.Debug,
+                    category=Feature.Category.Info,
                 )
             )
 

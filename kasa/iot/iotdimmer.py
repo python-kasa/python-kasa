@@ -96,7 +96,9 @@ class IotDimmer(IotPlug):
                     attribute_setter="set_brightness",
                     minimum_value=1,
                     maximum_value=100,
+                    unit="%",
                     type=Feature.Type.Number,
+                    category=Feature.Category.Primary,
                 )
             )
 

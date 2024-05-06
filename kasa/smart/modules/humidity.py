@@ -27,6 +27,7 @@ class HumiditySensor(SmartModule):
                 attribute_getter="humidity",
                 icon="mdi:water-percent",
                 unit="%",
+                category=Feature.Category.Primary,
             )
         )
         self._add_feature(
@@ -37,6 +38,7 @@ class HumiditySensor(SmartModule):
                 attribute_getter="humidity_warning",
                 type=Feature.Type.BinarySensor,
                 icon="mdi:alert",
+                category=Feature.Category.Debug,
             )
         )
 

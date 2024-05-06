@@ -34,6 +34,7 @@ class Cloud(IotModule):
                 icon="mdi:cloud",
                 attribute_getter="is_connected",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Info,
             )
         )
 

@@ -29,6 +29,7 @@ class CloudModule(SmartModule):
                 attribute_getter="is_connected",
                 icon="mdi:cloud",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Info,
             )
         )
 
