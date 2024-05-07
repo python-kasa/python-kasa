@@ -185,7 +185,7 @@ The device type specific documentation can be found in their separate pages:
 
 ## Contributing
 
-Contributions are very welcome! To simplify the process, we are leveraging automated checks and tests for contributions.
+Contributions are very welcome! The easiest way to contribute is by [creating a fixture file](https://python-kasa.readthedocs.io/en/latest/contribute.html#contributing-fixture-files) for the automated test suite if your device hardware and firmware version is not currently listed as supported.
 Please refer to [our contributing guidelines](https://python-kasa.readthedocs.io/en/latest/contribute.html).
 
 ## Supported devices

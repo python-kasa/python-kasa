@@ -36,7 +36,7 @@ You can also execute the pre-commit hooks on all files by executing `pre-commit 
 You can run tests on the library by executing `pytest` in the source directory:
 
 ```
-$ pytest kasa
+$ poetry run pytest kasa
 ```
 
 This will run the tests against the contributed example responses.
@@ -68,6 +68,8 @@ The easiest way to do that is by doing:
 ```
 $ git clone https://github.com/python-kasa/python-kasa.git
 $ cd python-kasa
+$ poetry install
+$ poetry shell
 $ python -m devtools.dump_devinfo --username <username> --password <password> --host 192.168.1.123
 ```
 
@@ -80,5 +82,5 @@ If you choose to do so, it will save the fixture files directly in their correct
 
 ```{note}
 When adding new fixture files, you should run `pre-commit run -a` to re-generate the list of supported devices.
-You should also adjust `conftest.py` to add the new model into correct category and verify that test pass by executing `pytest kasa`.
+You may need to adjust `device_fixtures.py` to add a new model into the correct device categories.  Verify that test pass by executing `poetry run pytest kasa`.
 ```
