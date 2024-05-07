@@ -23,7 +23,8 @@ class AutoOffModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Auto off enabled",
+                id="auto_off_enabled",
+                name="Auto off enabled",
                 container=self,
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",
@@ -33,7 +34,8 @@ class AutoOffModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Auto off minutes",
+                id="auto_off_minutes",
+                name="Auto off minutes",
                 container=self,
                 attribute_getter="delay",
                 attribute_setter="set_delay",
@@ -43,7 +45,8 @@ class AutoOffModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Auto off at",
+                id="auto_off_at",
+                name="Auto off at",
                 container=self,
                 attribute_getter="auto_off_at",
                 category=Feature.Category.Info,

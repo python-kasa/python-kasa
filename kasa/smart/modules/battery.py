@@ -22,6 +22,7 @@ class BatterySensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "battery_level",
                 "Battery level",
                 container=self,
                 attribute_getter="battery",
@@ -33,6 +34,7 @@ class BatterySensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "battery_low",
                 "Battery low",
                 container=self,
                 attribute_getter="battery_low",

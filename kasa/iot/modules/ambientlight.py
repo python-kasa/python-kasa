@@ -22,6 +22,7 @@ class AmbientLight(IotModule):
             Feature(
                 device=device,
                 container=self,
+                id="ambient_light",
                 name="Ambient Light",
                 icon="mdi:brightness-percent",
                 attribute_getter="ambientlight_brightness",

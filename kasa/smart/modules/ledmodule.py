@@ -23,6 +23,7 @@ class LedModule(SmartModule):
             Feature(
                 device=device,
                 container=self,
+                id="led",
                 name="LED",
                 icon="mdi:led-{state}",
                 attribute_getter="led",

@@ -31,6 +31,7 @@ class LightTransitionModule(SmartModule):
                 Feature(
                     device=self._device,
                     container=self,
+                    id="smooth_transitions",
                     name="Smooth transitions",
                     icon=icon,
                     attribute_getter="enabled_v1",
@@ -46,7 +47,8 @@ class LightTransitionModule(SmartModule):
             self._add_feature(
                 Feature(
                     self._device,
-                    "Smooth transition on",
+                    id="smooth_transition_on",
+                    name="Smooth transition on",
                     container=self,
                     attribute_getter="turn_on_transition",
                     attribute_setter="set_turn_on_transition",
@@ -58,7 +60,8 @@ class LightTransitionModule(SmartModule):
             self._add_feature(
                 Feature(
                     self._device,
-                    "Smooth transition off",
+                    id="smooth_transition_off",
+                    name="Smooth transition off",
                     container=self,
                     attribute_getter="turn_off_transition",
                     attribute_setter="set_turn_off_transition",

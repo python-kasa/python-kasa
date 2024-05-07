@@ -62,6 +62,8 @@ class Feature:
 
     #: Device instance required for getting and setting values
     device: Device
+    #: Identifier
+    id: str
     #: User-friendly short description
     name: str
     #: Name of the property that allows accessing the value
@@ -98,9 +100,6 @@ class Feature:
     #: Attribute name of the choices getter property.
     #: If set, this property will be used to set *choices*.
     choices_getter: str | None = None
-
-    #: Identifier
-    id: str | None = None
 
     def __post_init__(self):
         """Handle late-binding of members."""

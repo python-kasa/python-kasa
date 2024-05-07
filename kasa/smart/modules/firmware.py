@@ -52,7 +52,8 @@ class Firmware(SmartModule):
             self._add_feature(
                 Feature(
                     device,
-                    "Auto update enabled",
+                    id="auto_update_enabled",
+                    name="Auto update enabled",
                     container=self,
                     attribute_getter="auto_update_enabled",
                     attribute_setter="set_auto_update_enabled",
@@ -62,7 +63,8 @@ class Firmware(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Update available",
+                id="update_available",
+                name="Update available",
                 container=self,
                 attribute_getter="update_available",
                 type=Feature.Type.BinarySensor,

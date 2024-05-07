@@ -30,7 +30,8 @@ class WaterleakSensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Water leak",
+                id="water_leak",
+                name="Water leak",
                 container=self,
                 attribute_getter="status",
                 icon="mdi:water",
@@ -39,7 +40,8 @@ class WaterleakSensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Water alert",
+                id="water_alert",
+                name="Water alert",
                 container=self,
                 attribute_getter="alert",
                 icon="mdi:water-alert",

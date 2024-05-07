@@ -22,7 +22,8 @@ class TemperatureSensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Temperature",
+                id="temperature",
+                name="Temperature",
                 container=self,
                 attribute_getter="temperature",
                 icon="mdi:thermometer",
@@ -33,7 +34,8 @@ class TemperatureSensor(SmartModule):
             self._add_feature(
                 Feature(
                     device,
-                    "Temperature warning",
+                    id="temperature_warning",
+                    name="Temperature warning",
                     container=self,
                     attribute_getter="temperature_warning",
                     type=Feature.Type.BinarySensor,
@@ -44,7 +46,8 @@ class TemperatureSensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Temperature unit",
+                id="temperature_unit",
+                name="Temperature unit",
                 container=self,
                 attribute_getter="temperature_unit",
                 attribute_setter="set_temperature_unit",

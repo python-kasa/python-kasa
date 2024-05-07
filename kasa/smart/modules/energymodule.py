@@ -22,6 +22,7 @@ class EnergyModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "consumption_current",
                 name="Current consumption",
                 attribute_getter="current_power",
                 container=self,
@@ -33,6 +34,7 @@ class EnergyModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "consumption_today",
                 name="Today's consumption",
                 attribute_getter="emeter_today",
                 container=self,
@@ -44,6 +46,7 @@ class EnergyModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "consumption_this_month",
                 name="This month's consumption",
                 attribute_getter="emeter_this_month",
                 container=self,

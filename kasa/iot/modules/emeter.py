@@ -42,6 +42,7 @@ class Emeter(Usage):
         self._add_feature(
             Feature(
                 device,
+                id="consumption_this_month",
                 name="This month's consumption",
                 attribute_getter="emeter_this_month",
                 container=self,

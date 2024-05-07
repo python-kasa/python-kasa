@@ -24,7 +24,8 @@ class CloudModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Cloud connection",
+                id="cloud_connection",
+                name="Cloud connection",
                 container=self,
                 attribute_getter="is_connected",
                 icon="mdi:cloud",

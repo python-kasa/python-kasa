@@ -27,7 +27,8 @@ class AlarmModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Alarm",
+                id="alarm",
+                name="Alarm",
                 container=self,
                 attribute_getter="active",
                 icon="mdi:bell",
@@ -37,7 +38,8 @@ class AlarmModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Alarm source",
+                id="alarm_source",
+                name="Alarm source",
                 container=self,
                 attribute_getter="source",
                 icon="mdi:bell",
@@ -46,7 +48,8 @@ class AlarmModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Alarm sound",
+                id="alarm_sound",
+                name="Alarm sound",
                 container=self,
                 attribute_getter="alarm_sound",
                 attribute_setter="set_alarm_sound",
@@ -58,7 +61,8 @@ class AlarmModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Alarm volume",
+                id="alarm_volume",
+                name="Alarm volume",
                 container=self,
                 attribute_getter="alarm_volume",
                 attribute_setter="set_alarm_volume",
@@ -70,7 +74,8 @@ class AlarmModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Test alarm",
+                id="test_alarm",
+                name="Test alarm",
                 container=self,
                 attribute_setter="play",
                 type=Feature.Type.Action,
@@ -79,7 +84,8 @@ class AlarmModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Stop alarm",
+                id="stop_alarm",
+                name="Stop alarm",
                 container=self,
                 attribute_setter="stop",
                 type=Feature.Type.Action,

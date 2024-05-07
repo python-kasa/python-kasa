@@ -34,7 +34,8 @@ class LightEffectModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Light effect",
+                id="light_effect",
+                name="Light effect",
                 container=self,
                 attribute_getter="effect",
                 attribute_setter="set_effect",

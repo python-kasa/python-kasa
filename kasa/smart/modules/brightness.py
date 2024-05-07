@@ -25,7 +25,8 @@ class Brightness(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Brightness",
+                id="brightness",
+                name="Brightness",
                 container=self,
                 attribute_getter="brightness",
                 attribute_setter="set_brightness",

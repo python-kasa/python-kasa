@@ -225,7 +225,8 @@ class SmartDevice(Bulb, Fan, Device):
         self._add_feature(
             Feature(
                 self,
-                "Device ID",
+                id="device_id",
+                name="Device ID",
                 attribute_getter="device_id",
                 category=Feature.Category.Debug,
             )
@@ -234,7 +235,8 @@ class SmartDevice(Bulb, Fan, Device):
             self._add_feature(
                 Feature(
                     self,
-                    "State",
+                    id="state",
+                    name="State",
                     attribute_getter="is_on",
                     attribute_setter="set_state",
                     type=Feature.Type.Switch,
@@ -246,7 +248,8 @@ class SmartDevice(Bulb, Fan, Device):
             self._add_feature(
                 Feature(
                     self,
-                    "Signal Level",
+                    id="signal_level",
+                    name="Signal Level",
                     attribute_getter=lambda x: x._info["signal_level"],
                     icon="mdi:signal",
                     category=Feature.Category.Info,
@@ -257,7 +260,8 @@ class SmartDevice(Bulb, Fan, Device):
             self._add_feature(
                 Feature(
                     self,
-                    "RSSI",
+                    id="rssi",
+                    name="RSSI",
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
                     category=Feature.Category.Debug,
@@ -268,6 +272,7 @@ class SmartDevice(Bulb, Fan, Device):
             self._add_feature(
                 Feature(
                     device=self,
+                    id="ssid",
                     name="SSID",
                     attribute_getter="ssid",
                     icon="mdi:wifi",
@@ -279,7 +284,8 @@ class SmartDevice(Bulb, Fan, Device):
             self._add_feature(
                 Feature(
                     self,
-                    "Overheated",
+                    id="overheated",
+                    name="Overheated",
                     attribute_getter=lambda x: x._info["overheated"],
                     icon="mdi:heat-wave",
                     type=Feature.Type.BinarySensor,
@@ -293,6 +299,7 @@ class SmartDevice(Bulb, Fan, Device):
             self._add_feature(
                 Feature(
                     device=self,
+                    id="on_since",
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",

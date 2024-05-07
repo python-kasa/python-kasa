@@ -27,6 +27,7 @@ class FrostProtectionModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "frost_protection_enabled",
                 name="Frost protection enabled",
                 container=self,
                 attribute_getter="enabled",
