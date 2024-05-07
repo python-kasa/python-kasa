@@ -37,7 +37,9 @@ class BatterySensor(SmartModule):
                     container=self,
                     attribute_getter="battery",
                     icon="mdi:battery",
+                    unit="%",
                     category=Feature.Category.Info,
+                    type=Feature.Type.Sensor,
                 )
             )
 
