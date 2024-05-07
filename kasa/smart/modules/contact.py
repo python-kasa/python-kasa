@@ -23,16 +23,17 @@ class ContactSensor(SmartModule):
             Feature(
                 device,
                 id="is_open",
-                name="Is Open",  # TODO: this hack is required until #904 gets merged
+                name="Open",
                 container=self,
                 attribute_getter="is_open",
                 icon="mdi:door",
+                category=Feature.Category.Primary,
+                type=Feature.Type.BinarySensor,
             )
         )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        # Brightness is contained in the main device info response.
         return {}
 
     @property

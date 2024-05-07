@@ -1,10 +1,11 @@
 import pytest
 
+from kasa import SmartDevice
 from kasa.smart.modules import ContactSensor
 from kasa.tests.device_fixtures import parametrize
 
 contact = parametrize(
-    "has humidity", model_filter="T110", protocol_filter={"SMART.CHILD"}
+    "is contact sensor", model_filter="T110", protocol_filter={"SMART.CHILD"}
 )
 
 
@@ -15,9 +16,10 @@ contact = parametrize(
         ("is_open", bool),
     ],
 )
-async def test_contact_features(dev, feature, type):
+async def test_contact_features(dev: SmartDevice, feature, type):
     """Test that features are registered and work as expected."""
-    contact: ContactSensor = dev.modules["ContactSensor"]
+    contact = dev.get_module(ContactSensor)
+    assert contact is not None
 
     prop = getattr(contact, feature)
     assert isinstance(prop, type)

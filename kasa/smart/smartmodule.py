@@ -94,7 +94,10 @@ class SmartModule(Module):
 
     @property
     def supported_version(self) -> int:
-        """Return version supported by the device."""
+        """Return version supported by the device.
+
+        If the module has no required component, this will return -1.
+        """
         if self.REQUIRED_COMPONENT is not None:
             return self._device._components[self.REQUIRED_COMPONENT]
         return -1
