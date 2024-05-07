@@ -212,6 +212,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Hub-Connected Devices
 
+- **T110**
+  - Hardware: 1.0 (EU) / Firmware: 1.8.0
 - **T300**
   - Hardware: 1.0 (EU) / Firmware: 1.7.0
 - **T310**
