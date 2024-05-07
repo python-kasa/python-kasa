@@ -22,20 +22,25 @@ class BatterySensor(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "battery_level",
                 "Battery level",
                 container=self,
                 attribute_getter="battery",
                 icon="mdi:battery",
+                unit="%",
+                category=Feature.Category.Info,
             )
         )
         self._add_feature(
             Feature(
                 device,
+                "battery_low",
                 "Battery low",
                 container=self,
                 attribute_getter="battery_low",
                 icon="mdi:alert",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Debug,
             )
         )
 

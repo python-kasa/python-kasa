@@ -36,7 +36,8 @@ class TemperatureControl(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Target temperature",
+                id="target_temperature",
+                name="Target temperature",
                 container=self,
                 attribute_getter="target_temperature",
                 attribute_setter="set_target_temperature",
@@ -50,7 +51,8 @@ class TemperatureControl(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Temperature offset",
+                id="temperature_offset",
+                name="Temperature offset",
                 container=self,
                 attribute_getter="temperature_offset",
                 attribute_setter="set_temperature_offset",
@@ -64,7 +66,8 @@ class TemperatureControl(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "State",
+                id="state",
+                name="State",
                 container=self,
                 attribute_getter="state",
                 attribute_setter="set_state",
@@ -76,7 +79,8 @@ class TemperatureControl(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Mode",
+                id="mode",
+                name="Mode",
                 container=self,
                 attribute_getter="mode",
                 category=Feature.Category.Primary,

@@ -334,6 +334,7 @@ class IotDevice(Device):
         self._add_feature(
             Feature(
                 device=self,
+                id="rssi",
                 name="RSSI",
                 attribute_getter="rssi",
                 icon="mdi:signal",
@@ -344,6 +345,7 @@ class IotDevice(Device):
             self._add_feature(
                 Feature(
                     device=self,
+                    id="on_since",
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",

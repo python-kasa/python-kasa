@@ -22,7 +22,8 @@ class FanModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Fan speed level",
+                id="fan_speed_level",
+                name="Fan speed level",
                 container=self,
                 attribute_getter="fan_speed_level",
                 attribute_setter="set_fan_speed_level",
@@ -36,7 +37,8 @@ class FanModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Fan sleep mode",
+                id="fan_sleep_mode",
+                name="Fan sleep mode",
                 container=self,
                 attribute_getter="sleep_mode",
                 attribute_setter="set_sleep_mode",

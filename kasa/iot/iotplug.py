@@ -65,6 +65,7 @@ class IotPlug(IotDevice):
         self._add_feature(
             Feature(
                 device=self,
+                id="led",
                 name="LED",
                 icon="mdi:led-{state}",
                 attribute_getter="led",

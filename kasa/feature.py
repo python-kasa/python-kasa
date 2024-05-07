@@ -62,6 +62,8 @@ class Feature:
 
     #: Device instance required for getting and setting values
     device: Device
+    #: Identifier
+    id: str
     #: User-friendly short description
     name: str
     #: Name of the property that allows accessing the value
@@ -99,15 +101,8 @@ class Feature:
     #: If set, this property will be used to set *choices*.
     choices_getter: str | None = None
 
-    #: Identifier
-    id: str | None = None
-
     def __post_init__(self):
         """Handle late-binding of members."""
-        # Set id, if unset
-        if self.id is None:
-            self.id = self.name.lower().replace(" ", "_")
-
         # Populate minimum & maximum values, if range_getter is given
         container = self.container if self.container is not None else self.device
         if self.range_getter is not None:
@@ -180,7 +175,16 @@ class Feature:
 
         if self.type == Feature.Type.Choice:
             if not isinstance(choices, list) or value not in choices:
-                return f"Value {value} is not a valid choice ({self.id}): {choices}"
+                _LOGGER.warning(
+                    "Invalid value for for choice %s (%s): %s not in %s",
+                    self.name,
+                    self.id,
+                    value,
+                    choices,
+                )
+                return (
+                    f"{self.name} ({self.id}): invalid value '{value}' not in {choices}"
+                )
             value = " ".join(
                 [f"*{choice}*" if choice == value else choice for choice in choices]
             )
