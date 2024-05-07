@@ -245,7 +245,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Hub-Connected Devices<sup>\*\*\*</sup>**: T300, T310, T315
 
 <!--SUPPORTED_END-->
-<sup>\*</sup>&nbsp;&nbsp;&nbsp; Model requires authentication<br>
+<sup>\*</sup>&nbsp;&nbsp; Model requires authentication<br>
 <sup>\*\*</sup>&nbsp; Newer versions require authentication<br>
 <sup>\*\*\*</sup> Devices may work across TAPO/KASA branded hubs
 
