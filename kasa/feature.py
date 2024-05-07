@@ -103,10 +103,6 @@ class Feature:
 
     def __post_init__(self):
         """Handle late-binding of members."""
-        # Set id, if unset
-        if self.id is None:
-            self.id = self.name.lower().replace(" ", "_")
-
         # Populate minimum & maximum values, if range_getter is given
         container = self.container if self.container is not None else self.device
         if self.range_getter is not None:
