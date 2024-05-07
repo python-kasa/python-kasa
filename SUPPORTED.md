@@ -6,7 +6,7 @@ The following devices have been tested and confirmed as working. If your device 
 <!--SUPPORTED_START-->
 ## Kasa devices
 
-Some newer Kasa devices require authentication. These are marked with <sup>*</sup> in the list below.
+Some newer Kasa devices require authentication. These are marked with <sup>*</sup> in the list below.<br>Hub-Connected Devices may work across TAPO/KASA branded hubs even if they don't work across the native apps.
 
 ### Plugs
 
@@ -134,7 +134,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KH100**
   - Hardware: 1.0 (UK) / Firmware: 1.5.6<sup>\*</sup>
 
-### Sensors
+### Hub-Connected Devices
 
 - **KE100**
   - Hardware: 1.0 (EU) / Firmware: 2.8.0<sup>\*</sup>
@@ -143,7 +143,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 
 ## Tapo devices
 
-All Tapo devices require authentication.
+All Tapo devices require authentication.<br>Hub-Connected Devices may work across TAPO/KASA branded hubs even if they don't work across the native apps.
 
 ### Plugs
 
@@ -210,7 +210,7 @@ All Tapo devices require authentication.
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (EU) / Firmware: 1.5.5
 
-### Sensors
+### Hub-Connected Devices
 
 - **T300**
   - Hardware: 1.0 (EU) / Firmware: 1.7.0

@@ -33,8 +33,8 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Bulb: "Bulbs",
     DeviceType.LightStrip: "Light Strips",
     DeviceType.Hub: "Hubs",
-    DeviceType.Sensor: "Sensors",
-    DeviceType.Thermostat: "Sensors",
+    DeviceType.Sensor: "Hub-Connected Devices",
+    DeviceType.Thermostat: "Hub-Connected Devices",
 }
 
 
@@ -108,7 +108,7 @@ def _supported_summary(supported):
     return _supported_text(
         supported,
         "### Supported $brand$auth devices\n\n$types\n",
-        "- **$type_**: $models\n",
+        "- **$type_$type_asterix**: $models\n",
     )
 
 
@@ -137,6 +137,10 @@ def _supported_text(
             + "These are marked with <sup>*</sup> in the list below."
             if brand == "kasa"
             else "All Tapo devices require authentication."
+        )
+        preamble_text += (
+            "<br>Hub-Connected Devices may work across TAPO/KASA branded "
+            + "hubs even if they don't work across the native apps."
         )
         brand_text = brand.capitalize()
         brand_auth = r"<sup>\*</sup>" if brand == "tapo" else ""
@@ -179,7 +183,14 @@ def _supported_text(
                 else:
                     models_list.append(f"{model}{auth_flag}")
             models_text = models_text if models_text else ", ".join(models_list)
-            types_text += typest.substitute(type_=supported_type, models=models_text)
+            type_asterix = (
+                r"<sup>\*\*\*</sup>"
+                if supported_type == "Hub-Connected Devices"
+                else ""
+            )
+            types_text += typest.substitute(
+                type_=supported_type, type_asterix=type_asterix, models=models_text
+            )
         brands += brandt.substitute(
             brand=brand_text, types=types_text, auth=brand_auth, preamble=preamble_text
         )
