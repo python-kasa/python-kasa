@@ -1,20 +1,19 @@
 """Implementation of firmware module."""
 
 from __future__ import annotations
-import asyncio
 
+import asyncio
+import logging
 from datetime import date
 from typing import TYPE_CHECKING, Any, Optional
 
-from pydantic.v1 import BaseModel, Field, validator
-
-from ...feature import Feature
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
+from pydantic.v1 import BaseModel, Field, validator
 
 from ...exceptions import SmartErrorCode
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -83,17 +82,21 @@ class Firmware(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Current firmware version",
+                id="current_firmware_version",
+                name="Current firmware version",
                 container=self,
                 attribute_getter="current_firmware",
+                category=Feature.Category.Info,
             )
         )
         self._add_feature(
             Feature(
                 device,
-                "Available firmware version",
+                id="available_firmware_version",
+                name="Available firmware version",
                 container=self,
                 attribute_getter="latest_firmware",
+                category=Feature.Category.Info,
             )
         )
 
