@@ -1,0 +1,170 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "frost_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "child_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "temp_control",
+                "ver_code": 1
+            },
+            {
+                "id": "remove_scale",
+                "ver_code": 1
+            },
+            {
+                "id": "progress_calibration",
+                "ver_code": 1
+            },
+            {
+                "id": "early_start",
+                "ver_code": 1
+            },
+            {
+                "id": "temp_record",
+                "ver_code": 1
+            },
+            {
+                "id": "screen_setting",
+                "ver_code": 1
+            },
+            {
+                "id": "night_mode",
+                "ver_code": 1
+            },
+            {
+                "id": "smart_control_schedule",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "battery_detect",
+                "ver_code": 1
+            },
+            {
+                "id": "temperature_correction",
+                "ver_code": 1
+            },
+            {
+                "id": "window_open_detect",
+                "ver_code": 2
+            },
+            {
+                "id": "shutdown_mode",
+                "ver_code": 1
+            }
+        ]
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "at_low_battery": false,
+        "avatar": "",
+        "battery_percentage": 100,
+        "bind_count": 5,
+        "category": "subg.trv",
+        "child_protection": false,
+        "current_temp": 22.9,
+        "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+        "frost_protection_on": false,
+        "fw_ver": "2.4.0 Build 230804 Rel.193040",
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "jamming_rssi": -113,
+        "jamming_signal_level": 1,
+        "lastOnboardingTimestamp": 1713888871,
+        "location": "",
+        "mac": "A842A1000000",
+        "max_control_temp": 30,
+        "min_control_temp": 5,
+        "model": "KE100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "parent_device_id": "0000000000000000000000000000000000000000",
+        "region": "Europe/Berlin",
+        "rssi": -7,
+        "signal_level": 3,
+        "specs": "EU",
+        "status": "online",
+        "target_temp": 23.0,
+        "temp_offset": 0,
+        "temp_unit": "celsius",
+        "trv_states": [
+            "heating"
+        ],
+        "type": "SMART.KASAENERGY"
+    },
+    "get_fw_download_state": {
+        "cloud_cache_seconds": 1,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_ver": "2.8.0 Build 240202 Rel.135229",
+        "hw_id": "00000000000000000000000000000000",
+        "need_to_upgrade": true,
+        "oem_id": "00000000000000000000000000000000",
+        "release_date": "2024-02-05",
+        "release_note": "Modifications and Bug Fixes:\n1. Optimized the noise issue in some cases.\n2. Fixed some minor bugs.",
+        "type": 2
+    }
+}
