@@ -137,6 +137,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 ### Hub-Connected Devices
 
 - **KE100**
+  - Hardware: 1.0 (EU) / Firmware: 2.4.0<sup>\*</sup>
   - Hardware: 1.0 (EU) / Firmware: 2.8.0<sup>\*</sup>
   - Hardware: 1.0 (UK) / Firmware: 2.8.0<sup>\*</sup>
 
@@ -208,6 +209,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 - **H100**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
+  - Hardware: 1.0 (EU) / Firmware: 1.5.10
   - Hardware: 1.0 (EU) / Firmware: 1.5.5
 
 ### Hub-Connected Devices
