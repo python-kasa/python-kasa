@@ -58,6 +58,13 @@ As with all other commands, you can also pass ``--help`` to both ``join`` and ``
     However, note that communications with devices provisioned using this method will stop working
     when connected to the cloud.
 
+.. warning::
+
+    At least some devices (e.g., Tapo lights L530 and L900) are known to have a watchdog that reboots them every 10 minutes if they are unable to connect to the cloud.
+    Although the communications are done locally, this will make these devices unavailable for a minute every time the device restarts.
+    This does not affect other devices to our current knowledge, but you have been warned.
+
+
 
 ``kasa --help``
 ***************
