@@ -64,7 +64,7 @@ class AlarmModule(SmartModule):
                 attribute_setter="set_alarm_volume",
                 category=Feature.Category.Config,
                 type=Feature.Type.Choice,
-                choices=["low", "high"],
+                choices=["low", "normal", "high"],
             )
         )
         self._add_feature(
