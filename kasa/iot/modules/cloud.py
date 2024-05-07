@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import logging
-
-from pydantic.v1 import BaseModel
-
 from datetime import date
 from typing import Optional
+
+from pydantic.v1 import BaseModel, Field, validator
 
 from ...feature import Feature
 from ...firmware import (

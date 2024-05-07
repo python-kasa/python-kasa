@@ -9,14 +9,13 @@ from typing import TYPE_CHECKING, Any, Optional
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
-from async_timeout import timeout as asyncio_timeout
-from pydantic.v1 import BaseModel, Field, validator
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
+from pydantic.v1 import BaseModel, Field, validator
 
 from ...exceptions import SmartErrorCode
-from ...feature import Feature, FeatureType
+from ...feature import Feature
 from ...firmware import Firmware as FirmwareInterface
 from ...firmware import FirmwareUpdate as FirmwareUpdateInterface
 from ...firmware import UpdateResult
@@ -103,22 +102,6 @@ class Firmware(SmartModule, FirmwareInterface):
                 container=self,
                 attribute_getter="latest_firmware",
                 category=Feature.Category.Info,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                "Current firmware version",
-                container=self,
-                attribute_getter="current_firmware",
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                "Available firmware version",
-                container=self,
-                attribute_getter="latest_firmware",
             )
         )
 

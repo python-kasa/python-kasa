@@ -26,6 +26,7 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
+from ..firmware import Firmware
 from ..module import ModuleT
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
@@ -718,6 +719,6 @@ class IotDevice(Device):
 
     @property
     @requires_update
-    def firmware(self) -> Cloud:
+    def firmware(self) -> Firmware:
         """Returns object implementing the firmware handling."""
-        return self.modules["cloud"]
+        return cast(Firmware, self.modules["cloud"])

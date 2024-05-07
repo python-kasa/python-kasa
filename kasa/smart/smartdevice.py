@@ -16,6 +16,7 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..fan import Fan
 from ..feature import Feature
+from ..firmware import Firmware
 from ..module import ModuleT
 from ..smartprotocol import SmartProtocol
 from .modules import (
@@ -26,8 +27,10 @@ from .modules import (
     DeviceModule,
     EnergyModule,
     FanModule,
-    Firmware,
     TimeModule,
+)
+from .modules import (
+    Firmware as FirmwareModule,
 )
 from .smartmodule import SmartModule
 
@@ -626,11 +629,10 @@ class SmartDevice(Bulb, Fan, Device):
         return self._device_type
 
     @property
-    def firmware(self) -> FirmwareInterface:
+    def firmware(self) -> Firmware:
         """Return firmware module."""
         # TODO: open question: does it make sense to expose common modules?
-        fw = cast(FirmwareInterface, self.modules["Firmware"])
-        return fw
+        return cast(Firmware, self.get_module(FirmwareModule))
 
     @staticmethod
     def _get_device_type_from_components(
