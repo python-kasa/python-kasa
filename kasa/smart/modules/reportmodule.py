@@ -22,7 +22,8 @@ class ReportModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "Report interval",
+                id="report_interval",
+                name="Report interval",
                 container=self,
                 attribute_getter="report_interval",
                 category=Feature.Category.Debug,

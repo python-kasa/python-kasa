@@ -24,6 +24,7 @@ class Emeter(Usage):
                 unit="W",
                 id="current_power_w",  # for homeassistant backwards compat
                 precision_hint=1,
+                category=Feature.Category.Primary,
             )
         )
         self._add_feature(
@@ -35,16 +36,19 @@ class Emeter(Usage):
                 unit="kWh",
                 id="today_energy_kwh",  # for homeassistant backwards compat
                 precision_hint=3,
+                category=Feature.Category.Info,
             )
         )
         self._add_feature(
             Feature(
                 device,
+                id="consumption_this_month",
                 name="This month's consumption",
                 attribute_getter="emeter_this_month",
                 container=self,
                 unit="kWh",
                 precision_hint=3,
+                category=Feature.Category.Info,
             )
         )
         self._add_feature(
@@ -56,6 +60,7 @@ class Emeter(Usage):
                 unit="kWh",
                 id="total_energy_kwh",  # for homeassistant backwards compat
                 precision_hint=3,
+                category=Feature.Category.Info,
             )
         )
         self._add_feature(
@@ -67,6 +72,7 @@ class Emeter(Usage):
                 unit="V",
                 id="voltage",  # for homeassistant backwards compat
                 precision_hint=1,
+                category=Feature.Category.Primary,
             )
         )
         self._add_feature(
@@ -78,6 +84,7 @@ class Emeter(Usage):
                 unit="A",
                 id="current_a",  # for homeassistant backwards compat
                 precision_hint=2,
+                category=Feature.Category.Primary,
             )
         )
 

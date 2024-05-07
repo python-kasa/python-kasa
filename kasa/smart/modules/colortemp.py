@@ -28,6 +28,7 @@ class ColorTemperatureModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "color_temperature",
                 "Color temperature",
                 container=self,
                 attribute_getter="color_temp",
