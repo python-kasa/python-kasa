@@ -210,7 +210,10 @@ class SmartDevice(Bulb, Fan, Device):
                 skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
                 continue
-            if mod.REQUIRED_COMPONENT in self._components:
+            if (
+                mod.REQUIRED_COMPONENT in self._components
+                or self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
+            ):
                 _LOGGER.debug(
                     "Found required %s, adding %s to modules.",
                     mod.REQUIRED_COMPONENT,

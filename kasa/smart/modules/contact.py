@@ -14,14 +14,16 @@ if TYPE_CHECKING:
 class ContactSensor(SmartModule):
     """Implementation of contact sensor module."""
 
-    REQUIRED_COMPONENT = "contact"
+    REQUIRED_COMPONENT = None  # we depend on availability of key
+    REQUIRED_KEY_ON_PARENT = "open"
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._add_feature(
             Feature(
                 device,
-                "Open",
+                id="is_open",
+                name="Is Open",  # TODO: this hack is required until #904 gets merged
                 container=self,
                 attribute_getter="is_open",
                 icon="mdi:door",
