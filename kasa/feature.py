@@ -175,7 +175,16 @@ class Feature:
 
         if self.type == Feature.Type.Choice:
             if not isinstance(choices, list) or value not in choices:
-                return f"Value {value} is not a valid choice ({self.id}): {choices}"
+                _LOGGER.warning(
+                    "Invalid value for for choice %s (%s): %s not in %s",
+                    self.name,
+                    self.id,
+                    value,
+                    choices,
+                )
+                return (
+                    f"{self.name} ({self.id}): invalid value '{value}' not in {choices}"
+                )
             value = " ".join(
                 [f"*{choice}*" if choice == value else choice for choice in choices]
             )

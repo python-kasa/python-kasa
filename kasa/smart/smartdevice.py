@@ -646,6 +646,10 @@ class SmartDevice(Bulb, Fan, Device):
             return DeviceType.Bulb
         if "SWITCH" in device_type:
             return DeviceType.WallSwitch
+        if "SENSOR" in device_type:
+            return DeviceType.Sensor
+        if "ENERGY" in device_type:
+            return DeviceType.Thermostat
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
 
