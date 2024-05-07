@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class BatterySensor(SmartModule):
@@ -17,23 +12,11 @@ class BatterySensor(SmartModule):
     REQUIRED_COMPONENT = "battery_detect"
     QUERY_GETTER_NAME = "get_battery_detect_info"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features."""
         self._add_feature(
             Feature(
-                device,
-                "battery_level",
-                "Battery level",
-                container=self,
-                attribute_getter="battery",
-                icon="mdi:battery",
-                unit="%",
-                category=Feature.Category.Info,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
+                self._device,
                 "battery_low",
                 "Battery low",
                 container=self,
@@ -43,6 +26,20 @@ class BatterySensor(SmartModule):
                 category=Feature.Category.Debug,
             )
         )
+
+        # Some devices, like T110 contact sensor do not report the battery percentage
+        if "battery_percentage" in self._device.sys_info:
+            self._add_feature(
+                Feature(
+                    self._device,
+                    "battery_level",
+                    "Battery level",
+                    container=self,
+                    attribute_getter="battery",
+                    icon="mdi:battery",
+                    category=Feature.Category.Info,
+                )
+            )
 
     @property
     def battery(self):
