@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Optional
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -153,7 +153,9 @@ class Firmware(SmartModule):
         state = resp["get_fw_download_state"]
         return DownloadState(**state)
 
-    async def update(self, progress_cb=None):
+    async def update(
+        self, progress_cb: Callable[[DownloadState], Coroutine] | None = None
+    ):
         """Update the device firmware."""
         current_fw = self.current_firmware
         _LOGGER.info(
@@ -177,7 +179,7 @@ class Firmware(SmartModule):
 
                 _LOGGER.debug("Update state: %s" % state)
                 if progress_cb is not None:
-                    asyncio.ensure_future(progress_cb(state))
+                    asyncio.create_task(progress_cb(state))
 
                 if state.status == 0:
                     _LOGGER.info(

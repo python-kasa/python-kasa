@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import pytest
@@ -60,7 +61,7 @@ async def test_update_available_without_cloud(dev: SmartDevice):
 
 
 @firmware
-async def test_update(
+async def test_firmware_update(
     dev: SmartDevice, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ):
     """Test updating firmware."""
@@ -84,6 +85,7 @@ async def test_update(
         DownloadState(status=0, download_progress=100, **extras),
     ]
 
+    asyncio_sleep = asyncio.sleep
     sleep = mocker.patch("asyncio.sleep")
     mocker.patch.object(fw, "get_update_state", side_effect=update_states)
 
@@ -91,12 +93,16 @@ async def test_update(
 
     await fw.update(progress_cb=cb_mock)
 
+    # This is necessary to allow the eventloop to process the created tasks
+    await asyncio_sleep(0)
+
     assert "Unhandled state code" in caplog.text
     assert "Downloading firmware, progress: 10" in caplog.text
     assert "Flashing firmware, sleeping" in caplog.text
     assert "Update idle" in caplog.text
 
-    cb_mock.assert_called()
+    for state in update_states:
+        cb_mock.assert_any_await(state)
 
     # sleep based on the upgrade_time
     sleep.assert_any_call(upgrade_time)
