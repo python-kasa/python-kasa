@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...modules.ledmodule import LedModule as BaseLedModule
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    pass
 
 
 class LedModule(SmartModule, BaseLedModule):

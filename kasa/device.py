@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Mapping, Sequence, overload
+from typing import Any, Mapping, Sequence, overload
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -37,9 +37,6 @@ class WifiNetwork:
 
 
 _LOGGER = logging.getLogger(__name__)
-
-
-CallableType = Callable[["Device", str], ModuleT]
 
 
 class Device(ABC):

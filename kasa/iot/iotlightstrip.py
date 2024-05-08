@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..effects import EFFECT_NAMES_V1
 from ..protocol import BaseProtocol
+from .effects import EFFECT_NAMES_V1
 from .iotbulb import IotBulb
 from .iotdevice import KasaException, requires_update
 from .modules.lighteffectmodule import LightEffectModule

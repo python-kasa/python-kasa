@@ -206,10 +206,7 @@ class IotDevice(Device):
     def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
 
     @overload
-    def get_module(self, module_type: type) -> ModuleT | None: ...
-
-    @overload
-    def get_module(self, module_type: str) -> Module | None: ...
+    def get_module(self, module_type: str) -> IotModule | None: ...
 
     def get_module(self, module_type: type[ModuleT] | str) -> ModuleT | Module | None:
         """Return the module from the device modules or None if not present."""
@@ -365,7 +362,6 @@ class IotDevice(Device):
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
             )
-            # TODO
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
         # TODO: perhaps modules should not have unsupported modules,
