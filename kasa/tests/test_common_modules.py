@@ -53,12 +53,14 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     """Test fan speed feature."""
     light_effect_module = dev.get_module(LightEffectModule)
     assert light_effect_module
+    feat = light_effect_module._module_features["light_effect"]
 
     call = mocker.spy(light_effect_module, "call")
     effect_list = light_effect_module.effect_list
     assert "Off" in effect_list
     assert effect_list.index("Off") == 0
     assert len(effect_list) > 1
+    assert effect_list == feat.choices
 
     assert light_effect_module.has_custom_effects is not None
 
@@ -66,17 +68,29 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     assert call.call_count == 1
     await dev.update()
     assert light_effect_module.effect == "Off"
+    assert feat.value == "Off"
 
-    await light_effect_module.set_effect(effect_list[1])
+    second_effect = effect_list[1]
+    await light_effect_module.set_effect(second_effect)
     assert call.call_count == 2
     await dev.update()
-    assert light_effect_module.effect == effect_list[1]
+    assert light_effect_module.effect == second_effect
+    assert feat.value == second_effect
 
-    await light_effect_module.set_effect(effect_list[len(effect_list) - 1])
+    last_effect = effect_list[len(effect_list) - 1]
+    await light_effect_module.set_effect(last_effect)
     assert call.call_count == 3
     await dev.update()
-    assert light_effect_module.effect == effect_list[len(effect_list) - 1]
+    assert light_effect_module.effect == last_effect
+    assert feat.value == last_effect
+
+    # Test feature set
+    await feat.set_value(second_effect)
+    assert call.call_count == 4
+    await dev.update()
+    assert light_effect_module.effect == second_effect
+    assert feat.value == second_effect
 
     with pytest.raises(ValueError):
         await light_effect_module.set_effect("foobar")
-        assert call.call_count == 2
+        assert call.call_count == 4
