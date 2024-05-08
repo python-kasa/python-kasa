@@ -23,6 +23,19 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
+class DownloadState(BaseModel):
+    """Download state."""
+
+    # Example:
+    #   {'status': 0, 'download_progress': 0, 'reboot_time': 5,
+    #    'upgrade_time': 5, 'auto_upgrade': False}
+    status: int
+    progress: int = Field(alias="download_progress")
+    reboot_time: int
+    upgrade_time: int
+    auto_upgrade: bool
+
+
 class UpdateInfo(BaseModel):
     """Update info status object."""
 
@@ -86,7 +99,7 @@ class Firmware(SmartModule):
                 name="Current firmware version",
                 container=self,
                 attribute_getter="current_firmware",
-                category=Feature.Category.Info,
+                category=Feature.Category.Debug,
             )
         )
         self._add_feature(
@@ -96,7 +109,7 @@ class Firmware(SmartModule):
                 name="Available firmware version",
                 container=self,
                 attribute_getter="latest_firmware",
-                category=Feature.Category.Info,
+                category=Feature.Category.Debug,
             )
         )
 
@@ -134,31 +147,58 @@ class Firmware(SmartModule):
             return None
         return self.firmware_update_info.update_available
 
-    async def get_update_state(self):
+    async def get_update_state(self) -> DownloadState:
         """Return update state."""
-        return await self.call("get_fw_download_state")
+        resp = await self.call("get_fw_download_state")
+        state = resp["get_fw_download_state"]
+        return DownloadState(**state)
 
-    async def update(self):
+    async def update(self, progress_cb=None):
         """Update the device firmware."""
         current_fw = self.current_firmware
-        _LOGGER.debug(
+        _LOGGER.info(
             "Going to upgrade from %s to %s",
             current_fw,
             self.firmware_update_info.version,
         )
-        resp = await self.call("fw_download")
-        _LOGGER.debug("Update request response: %s", resp)
+        await self.call("fw_download")
+
         # TODO: read timeout from get_auto_update_info or from get_fw_download_state?
         async with asyncio_timeout(60 * 5):
             while True:
                 await asyncio.sleep(0.5)
-                state = await self.get_update_state()
-                _LOGGER.debug("Update state: %s" % state)
-                # TODO: this could await a given callable for progress
+                try:
+                    state = await self.get_update_state()
+                except Exception as ex:
+                    _LOGGER.warning(
+                        "Got exception, maybe the device is rebooting? %s", ex
+                    )
+                    continue
 
-                if self.firmware_update_info.version != current_fw:
-                    _LOGGER.info("Updated to %s", self.firmware_update_info.version)
+                _LOGGER.debug("Update state: %s" % state)
+                if progress_cb is not None:
+                    asyncio.ensure_future(progress_cb(state))
+
+                if state.status == 0:
+                    _LOGGER.info(
+                        "Update idle, hopefully updated to %s",
+                        self.firmware_update_info.version,
+                    )
                     break
+                elif state.status == 2:
+                    _LOGGER.info("Downloading firmware, progress: %s", state.progress)
+                elif state.status == 3:
+                    upgrade_sleep = state.upgrade_time
+                    _LOGGER.info(
+                        "Flashing firmware, sleeping for %s before checking status",
+                        upgrade_sleep,
+                    )
+                    await asyncio.sleep(upgrade_sleep)
+                elif state.status < 0:
+                    _LOGGER.error("Got error: %s", state.status)
+                    break
+                else:
+                    _LOGGER.warning("Unhandled state code: %s", state)
 
     @property
     def auto_update_enabled(self):

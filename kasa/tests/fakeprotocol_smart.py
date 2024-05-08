@@ -234,7 +234,7 @@ class FakeSmartTransport(BaseTransport):
                 pytest.fixtures_missing_methods[self.fixture_name] = set()
             pytest.fixtures_missing_methods[self.fixture_name].add(method)
             return retval
-        elif method == "set_qs_info":
+        elif method in ["set_qs_info", "fw_download"]:
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
             self._set_light_effect(info, params)
