@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...feature import Feature
 from ...modules.ledmodule import LedModule as BaseLedModule
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
+    pass
 
 
 class LedModule(SmartModule, BaseLedModule):
@@ -17,21 +16,6 @@ class LedModule(SmartModule, BaseLedModule):
 
     REQUIRED_COMPONENT = "led"
     QUERY_GETTER_NAME = "get_led_info"
-
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
-        self._add_feature(
-            Feature(
-                device=device,
-                container=self,
-                name="LED",
-                icon="mdi:led-{state}",
-                attribute_getter="led",
-                attribute_setter="set_led",
-                type=Feature.Type.Switch,
-                category=Feature.Category.Config,
-            )
-        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""

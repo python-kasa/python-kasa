@@ -22,6 +22,7 @@ class ColorModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                "hsv",
                 "HSV",
                 container=self,
                 attribute_getter="hsv",

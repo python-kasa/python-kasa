@@ -30,10 +30,12 @@ class Cloud(IotModule):
             Feature(
                 device=device,
                 container=self,
+                id="cloud_connection",
                 name="Cloud connection",
                 icon="mdi:cloud",
                 attribute_getter="is_connected",
                 type=Feature.Type.BinarySensor,
+                category=Feature.Category.Info,
             )
         )
 

@@ -6,7 +6,6 @@ import base64
 import copy
 from typing import TYPE_CHECKING, Any
 
-from ...feature import Feature
 from ...modules.lighteffectmodule import LightEffectModule as BaseLightEffectModule
 from ..smartmodule import SmartModule
 
@@ -27,22 +26,6 @@ class LightEffectModule(SmartModule, BaseLightEffectModule):
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._scenes_names_to_id: dict[str, str] = {}
-
-    def _initialize_features(self):
-        """Initialize features."""
-        device = self._device
-        self._add_feature(
-            Feature(
-                device,
-                "Light effect",
-                container=self,
-                attribute_getter="effect",
-                attribute_setter="set_effect",
-                category=Feature.Category.Config,
-                type=Feature.Type.Choice,
-                choices_getter="effect_list",
-            )
-        )
 
     def _initialize_effects(self) -> dict[str, dict[str, Any]]:
         """Return built-in effects."""

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from ...feature import Feature
 from ...modules.lighteffectmodule import LightEffectModule as BaseLightEffectModule
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..iotmodule import IotModule
@@ -10,22 +9,6 @@ from ..iotmodule import IotModule
 
 class LightEffectModule(IotModule, BaseLightEffectModule):
     """Implementation of dynamic light effects."""
-
-    def _initialize_features(self):
-        """Initialize features."""
-        device = self._device
-        self._add_feature(
-            Feature(
-                device,
-                "Light effect",
-                container=self,
-                attribute_getter="effect",
-                attribute_setter="set_effect",
-                category=Feature.Category.Config,
-                type=Feature.Type.Choice,
-                choices_getter="effect_list",
-            )
-        )
 
     @property
     def effect(self) -> str:

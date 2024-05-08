@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from ...feature import Feature
 from ...modules.ledmodule import LedModule as BaseLedModule
 from ..iotmodule import IotModule
 
@@ -12,22 +11,6 @@ class LedModule(IotModule, BaseLedModule):
 
     REQUIRED_COMPONENT = "led"
     QUERY_GETTER_NAME = "get_led_info"
-
-    def _initialize_features(self):
-        """Initialize features."""
-        device = self._device
-        self._add_feature(
-            Feature(
-                device=device,
-                container=self,
-                name="LED",
-                icon="mdi:led-{state}",
-                attribute_getter="led",
-                attribute_setter="set_led",
-                type=Feature.Type.Switch,
-                category=Feature.Category.Config,
-            )
-        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""

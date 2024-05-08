@@ -213,6 +213,7 @@ class IotBulb(IotDevice, Bulb):
             self._add_feature(
                 Feature(
                     device=self,
+                    id="brightness",
                     name="Brightness",
                     attribute_getter="brightness",
                     attribute_setter="set_brightness",
@@ -227,6 +228,7 @@ class IotBulb(IotDevice, Bulb):
             self._add_feature(
                 Feature(
                     device=self,
+                    id="color_temperature",
                     name="Color temperature",
                     container=self,
                     attribute_getter="color_temp",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ..feature import Feature
 from ..module import Module
 
 
@@ -13,6 +14,23 @@ class LightEffectModule(Module):
     # https://discuss.python.org/t/add-abstracttype-to-the-typing-module/21996
 
     LIGHT_EFFECTS_OFF = "Off"
+
+    def _initialize_features(self):
+        """Initialize features."""
+        device = self._device
+        self._add_feature(
+            Feature(
+                device,
+                id="light_effect",
+                name="Light effect",
+                container=self,
+                attribute_getter="effect",
+                attribute_setter="set_effect",
+                category=Feature.Category.Primary,
+                type=Feature.Type.Choice,
+                choices_getter="effect_list",
+            )
+        )
 
     @property
     def has_custom_effects(self) -> bool:

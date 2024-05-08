@@ -25,6 +25,7 @@ class TimeModule(SmartModule):
         self._add_feature(
             Feature(
                 device=device,
+                id="time",
                 name="Time",
                 attribute_getter="time",
                 container=self,

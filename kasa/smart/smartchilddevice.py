@@ -49,6 +49,7 @@ class SmartChildDevice(SmartDevice):
         """Return child device type."""
         child_device_map = {
             "plug.powerstrip.sub-plug": DeviceType.Plug,
+            "subg.trigger.contact-sensor": DeviceType.Sensor,
             "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
             "subg.trigger.water-leak-sensor": DeviceType.Sensor,
             "kasa.switch.outlet.sub-fan": DeviceType.Fan,

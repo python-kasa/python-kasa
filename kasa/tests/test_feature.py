@@ -19,6 +19,7 @@ def dummy_feature() -> Feature:
 
     feat = Feature(
         device=DummyDevice(),  # type: ignore[arg-type]
+        id="dummy_feature",
         name="dummy_feature",
         attribute_getter="dummygetter",
         attribute_setter="dummysetter",
@@ -47,6 +48,7 @@ def test_feature_missing_type():
     with pytest.raises(ValueError):
         Feature(
             device=DummyDevice(),  # type: ignore[arg-type]
+            id="dummy_error",
             name="dummy error",
             attribute_getter="dummygetter",
             attribute_setter="dummysetter",
@@ -104,6 +106,7 @@ async def test_feature_action(mocker):
     """Test that setting value on button calls the setter."""
     feat = Feature(
         device=DummyDevice(),  # type: ignore[arg-type]
+        id="dummy_feature",
         name="dummy_feature",
         attribute_setter="call_action",
         container=None,
