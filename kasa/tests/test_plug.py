@@ -30,7 +30,7 @@ async def test_switch_sysinfo(dev):
     assert dev.is_wallswitch
 
 
-@plug
+@plug_iot
 async def test_plug_led(dev):
     original = dev.led
 

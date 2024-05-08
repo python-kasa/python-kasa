@@ -5,13 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...feature import Feature
+from ...modules.ledmodule import LedModule as BaseLedModule
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class LedModule(SmartModule):
+class LedModule(SmartModule, BaseLedModule):
     """Implementation of led controls."""
 
     REQUIRED_COMPONENT = "led"

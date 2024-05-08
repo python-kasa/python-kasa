@@ -8,7 +8,6 @@ from typing import Any
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..feature import Feature
-from ..plug import Dimmer
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
@@ -38,7 +37,7 @@ class FadeType(Enum):
     FadeOff = "fade_off"
 
 
-class IotDimmer(IotPlug, Dimmer):
+class IotDimmer(IotPlug):
     r"""Representation of a TP-Link Smart Dimmer.
 
     Dimmers work similarly to plugs, but provide also support for

@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from ..bulb import LightStrip
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
+from ..effects import EFFECT_NAMES_V1
 from ..protocol import BaseProtocol
 from .iotbulb import IotBulb
 from .iotdevice import KasaException, requires_update
+from .modules.lighteffectmodule import LightEffectModule
 
 
-class IotLightStrip(IotBulb, LightStrip):
+class IotLightStrip(IotBulb):
     """Representation of a TP-Link Smart light strip.
 
     Light strips work similarly to bulbs, but use a different service for controlling,
@@ -55,6 +55,10 @@ class IotLightStrip(IotBulb, LightStrip):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.LightStrip
+        self._light_effect_module = LightEffectModule(
+            self, "smartlife.iot.lighting_effect"
+        )
+        self.add_module("lighteffectmodule", self._light_effect_module)
 
     @property  # type: ignore
     @requires_update
@@ -74,6 +78,8 @@ class IotLightStrip(IotBulb, LightStrip):
              'id': '',
              'name': ''}
         """
+        # LightEffectModule returns the current effect name
+        # so return the dict here for backwards compatability
         return self.sys_info["lighting_effect_state"]
 
     @property  # type: ignore
@@ -84,6 +90,8 @@ class IotLightStrip(IotBulb, LightStrip):
         Example:
             ['Aurora', 'Bubbling Cauldron', ...]
         """
+        # LightEffectModule returns effect names along with a LIGHT_EFFECTS_OFF value
+        # so return the original effect names here for backwards compatability
         return EFFECT_NAMES_V1 if self.has_effects else None
 
     @requires_update
@@ -106,15 +114,9 @@ class IotLightStrip(IotBulb, LightStrip):
         :param int brightness: The wanted brightness
         :param int transition: The wanted transition time
         """
-        if effect not in EFFECT_MAPPING_V1:
-            raise KasaException(f"The effect {effect} is not a built in effect.")
-        effect_dict = EFFECT_MAPPING_V1[effect]
-        if brightness is not None:
-            effect_dict["brightness"] = brightness
-        if transition is not None:
-            effect_dict["transition"] = transition
-
-        await self.set_custom_effect(effect_dict)
+        await self._light_effect_module.set_effect(
+            effect, brightness=brightness, transition=transition
+        )
 
     @requires_update
     async def set_custom_effect(
@@ -127,13 +129,4 @@ class IotLightStrip(IotBulb, LightStrip):
         """
         if not self.has_effects:
             raise KasaException("Bulb does not support effects.")
-        await self._query_helper(
-            "smartlife.iot.lighting_effect",
-            "set_lighting_effect",
-            effect_dict,
-        )
-
-    @property
-    def has_custom_effects(self) -> bool:
-        """Return True if the device supports setting custom effects."""
-        return True
+        await self._light_effect_module.set_custom_effect(effect_dict)

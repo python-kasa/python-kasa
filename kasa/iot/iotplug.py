@@ -6,16 +6,14 @@ import logging
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature
-from ..plug import Plug, WallSwitch
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
-from .modules import Antitheft, Cloud, Schedule, Time, Usage
+from .modules import Antitheft, Cloud, LedModule, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class IotPlug(IotDevice, Plug):
+class IotPlug(IotDevice):
     r"""Representation of a TP-Link Smart Plug.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -59,20 +57,8 @@ class IotPlug(IotDevice, Plug):
         self.add_module("antitheft", Antitheft(self, "anti_theft"))
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
-
-    async def _initialize_features(self):
-        await super()._initialize_features()
-
-        self._add_feature(
-            Feature(
-                device=self,
-                name="LED",
-                icon="mdi:led-{state}",
-                attribute_getter="led",
-                attribute_setter="set_led",
-                type=Feature.Type.Switch,
-            )
-        )
+        self._led_module = LedModule(self, "system")
+        self.add_module("ledmodule", self._led_module)
 
     @property  # type: ignore
     @requires_update
@@ -89,26 +75,18 @@ class IotPlug(IotDevice, Plug):
         """Turn the switch off."""
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 
-    @property
-    def has_led(self) -> bool:
-        """Return True if the device supports led."""
-        return True
-
     @property  # type: ignore
     @requires_update
     def led(self) -> bool:
         """Return the state of the led."""
-        sys_info = self.sys_info
-        return bool(1 - sys_info["led_off"])
+        return self._led_module.led
 
     async def set_led(self, state: bool):
         """Set the state of the led (night mode)."""
-        return await self._query_helper(
-            "system", "set_led_off", {"off": int(not state)}
-        )
+        return await self._led_module.set_led(state)
 
 
-class IotWallSwitch(IotPlug, WallSwitch):
+class IotWallSwitch(IotPlug):
     """Representation of a TP-Link Smart Wall Switch."""
 
     def __init__(

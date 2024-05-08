@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Mapping, Sequence, overload
+from typing import Any, Callable, Mapping, Sequence, overload
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -37,6 +37,9 @@ class WifiNetwork:
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+CallableType = Callable[["Device", str], ModuleT]
 
 
 class Device(ABC):
@@ -344,11 +347,6 @@ class Device(ABC):
             raise KasaException("Duplicate feature id %s" % feature.id)
         assert feature.id is not None  # TODO: hack for typing # noqa: S101
         self._features[feature.id] = feature
-
-    @property
-    @abstractmethod
-    def has_led(self) -> bool:
-        """Return True if the device supports led."""
 
     @property
     @abstractmethod

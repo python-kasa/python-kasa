@@ -26,7 +26,7 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
-from ..module import ModuleT
+from ..module import Module, ModuleT
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter, Time
@@ -206,15 +206,16 @@ class IotDevice(Device):
     def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
 
     @overload
-    def get_module(self, module_type: str) -> IotModule | None: ...
+    def get_module(self, module_type: type) -> ModuleT | None: ...
 
-    def get_module(
-        self, module_type: type[ModuleT] | str
-    ) -> ModuleT | IotModule | None:
+    @overload
+    def get_module(self, module_type: str) -> Module | None: ...
+
+    def get_module(self, module_type: type[ModuleT] | str) -> ModuleT | Module | None:
         """Return the module from the device modules or None if not present."""
         if isinstance(module_type, str):
             module_name = module_type.lower()
-        elif issubclass(module_type, IotModule):
+        elif issubclass(module_type, Module):
             module_name = module_type.__name__.lower()
         else:
             return None
@@ -303,11 +304,6 @@ class IotDevice(Device):
         """Return True if device has an energy meter."""
         return "ENE" in self._legacy_features
 
-    @property
-    def has_led(self) -> bool:
-        """Return True if the device supports led."""
-        return False
-
     async def get_sys_info(self) -> dict[str, Any]:
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
@@ -329,10 +325,11 @@ class IotDevice(Device):
             self._last_update = response
             self._set_sys_info(response["system"]["get_sysinfo"])
 
+        await self._modular_update(req)
+
         if not self._features:
             await self._initialize_features()
 
-        await self._modular_update(req)
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
 
     async def _initialize_features(self):
@@ -355,12 +352,18 @@ class IotDevice(Device):
                 )
             )
 
+        for module in self._modules.values():
+            module._initialize_features()
+            for module_feat in module._module_features.values():
+                self._add_feature(module_feat)
+
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
         if self.has_emeter:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
             )
+            # TODO
             self.add_module("emeter", Emeter(self, self.emeter_type))
 
         # TODO: perhaps modules should not have unsupported modules,
@@ -370,8 +373,6 @@ class IotDevice(Device):
             for module in self.modules.values():
                 if module.is_supported:
                     supported[module._module] = module
-                for module_feat in module._module_features.values():
-                    self._add_feature(module_feat)
 
             self._supported_modules = supported
 

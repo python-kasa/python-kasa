@@ -70,7 +70,6 @@ async def test_childdevice_properties(dev: SmartChildDevice):
                 or name.startswith("valid_temperature_range")
                 or name.startswith("hsv")
                 or name.startswith("effect")
-                or name.startswith("led")
             ):
                 continue
             try:
