@@ -35,7 +35,7 @@ from kasa.exceptions import (
     UnsupportedDeviceError,
 )
 from kasa.feature import Feature
-from kasa.interfaces.light import Light, LightPreset
+from kasa.interfaces.light import Light, LightState
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
@@ -52,7 +52,7 @@ __all__ = [
     "BaseProtocol",
     "IotProtocol",
     "SmartProtocol",
-    "LightPreset",
+    "LightState",
     "TurnOnBehaviors",
     "TurnOnBehavior",
     "DeviceType",
@@ -75,6 +75,7 @@ __all__ = [
 ]
 
 from . import iot
+from .iot.modules.lightpreset import IotLightPreset
 
 deprecated_names = ["TPLinkSmartHomeProtocol"]
 deprecated_smart_devices = {
@@ -84,7 +85,7 @@ deprecated_smart_devices = {
     "SmartLightStrip": iot.IotLightStrip,
     "SmartStrip": iot.IotStrip,
     "SmartDimmer": iot.IotDimmer,
-    "SmartBulbPreset": LightPreset,
+    "SmartBulbPreset": IotLightPreset,
 }
 deprecated_exceptions = {
     "SmartDeviceException": KasaException,
@@ -124,7 +125,7 @@ if TYPE_CHECKING:
     SmartLightStrip = iot.IotLightStrip
     SmartStrip = iot.IotStrip
     SmartDimmer = iot.IotDimmer
-    SmartBulbPreset = LightPreset
+    SmartBulbPreset = IotLightPreset
 
     SmartDeviceException = KasaException
     UnsupportedDeviceException = UnsupportedDeviceError

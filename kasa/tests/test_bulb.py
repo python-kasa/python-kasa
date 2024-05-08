@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from voluptuous import (
     All,
@@ -7,7 +9,7 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import Device, DeviceType, KasaException, LightPreset, Module
+from kasa import Device, DeviceType, IotLightPreset, KasaException, Module
 from kasa.iot import IotBulb, IotDimmer
 
 from .conftest import (
@@ -85,7 +87,7 @@ async def test_hsv(dev: Device, turn_on):
 
 @color_bulb_iot
 async def test_set_hsv_transition(dev: IotBulb, mocker):
-    set_light_state = mocker.patch("kasa.iot.IotBulb.set_light_state")
+    set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     await dev.set_hsv(10, 10, 100, transition=1000)
 
     set_light_state.assert_called_with(
@@ -158,7 +160,7 @@ async def test_try_set_colortemp(dev: Device, turn_on):
 
 @variable_temp_iot
 async def test_set_color_temp_transition(dev: IotBulb, mocker):
-    set_light_state = mocker.patch("kasa.iot.IotBulb.set_light_state")
+    set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     await dev.set_color_temp(2700, transition=100)
 
     set_light_state.assert_called_with({"color_temp": 2700}, transition=100)
@@ -224,7 +226,7 @@ async def test_dimmable_brightness(dev: IotBulb, turn_on):
 
 @bulb_iot
 async def test_turn_on_transition(dev: IotBulb, mocker):
-    set_light_state = mocker.patch("kasa.iot.IotBulb.set_light_state")
+    set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     await dev.turn_on(transition=1000)
 
     set_light_state.assert_called_with({"on_off": 1}, transition=1000)
@@ -236,7 +238,7 @@ async def test_turn_on_transition(dev: IotBulb, mocker):
 
 @bulb_iot
 async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
-    set_light_state = mocker.patch("kasa.iot.IotBulb.set_light_state")
+    set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     await dev.set_brightness(10, transition=1000)
 
     set_light_state.assert_called_with({"brightness": 10}, transition=1000)
@@ -297,14 +299,14 @@ async def test_modify_preset(dev: IotBulb, mocker):
     if not dev.presets:
         pytest.skip("Some strips do not support presets")
 
-    data = {
+    data: dict[str, int | None] = {
         "index": 0,
         "brightness": 10,
         "hue": 0,
         "saturation": 0,
         "color_temp": 0,
     }
-    preset = LightPreset(**data)
+    preset = IotLightPreset(**data)  # type: ignore[call-arg, arg-type]
 
     assert preset.index == 0
     assert preset.brightness == 10
@@ -318,7 +320,7 @@ async def test_modify_preset(dev: IotBulb, mocker):
 
     with pytest.raises(KasaException):
         await dev.save_preset(
-            LightPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)
+            IotLightPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)  # type: ignore[call-arg]
         )
 
 
@@ -327,11 +329,11 @@ async def test_modify_preset(dev: IotBulb, mocker):
     ("preset", "payload"),
     [
         (
-            LightPreset(index=0, hue=0, brightness=1, saturation=0),
+            IotLightPreset(index=0, hue=0, brightness=1, saturation=0),  # type: ignore[call-arg]
             {"index": 0, "hue": 0, "brightness": 1, "saturation": 0},
         ),
         (
-            LightPreset(index=0, brightness=1, id="testid", mode=2, custom=0),
+            IotLightPreset(index=0, brightness=1, id="testid", mode=2, custom=0),  # type: ignore[call-arg]
             {"index": 0, "brightness": 1, "id": "testid", "mode": 2, "custom": 0},
         ),
     ],

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from ...exceptions import KasaException
-from ...interfaces.light import HSV, ColorTempRange
+from ...interfaces.light import HSV, ColorTempRange, LightState
 from ...interfaces.light import Light as LightInterface
 from ...module import Module
 from ..smartmodule import SmartModule
@@ -124,3 +126,14 @@ class Light(SmartModule, LightInterface):
     def has_effects(self) -> bool:
         """Return True if the device supports effects."""
         return Module.LightEffect in self._device.modules
+
+    async def set_state(self, state: LightState) -> dict:
+        """Set the light state."""
+        state_dict = asdict(state)
+        # brightness of 0 turns off the light, it's not a valid brightness
+        if state.brightness and state.brightness == 0:
+            state_dict["device_on"] = False
+            del state_dict["brightness"]
+
+        params = {k: v for k, v in state_dict.items() if v is not None}
+        return await self.call("set_device_info", params)

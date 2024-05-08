@@ -364,6 +364,7 @@ class Device(ABC):
         "set_color_temp": (Module.Light, ["set_color_temp"]),
         "valid_temperature_range": (Module.Light, ["valid_temperature_range"]),
         "has_effects": (Module.Light, ["has_effects"]),
+        "_deprecated_set_light_state": (Module.Light, ["has_effects"]),
         # led attributes
         "led": (Module.Led, ["led"]),
         "set_led": (Module.Led, ["set_led"]),
@@ -376,6 +377,9 @@ class Device(ABC):
         "effect_list": (Module.LightEffect, ["_deprecated_effect_list", "effect_list"]),
         "set_effect": (Module.LightEffect, ["set_effect"]),
         "set_custom_effect": (Module.LightEffect, ["set_custom_effect"]),
+        # light preset attributes
+        "presets": (Module.LightPreset, ["_deprecated_presets", "preset_states_list"]),
+        "save_preset": (Module.LightPreset, ["_deprecated_save_preset"]),
     }
 
     def __getattr__(self, name):

@@ -153,6 +153,8 @@ class FakeSmartTransport(BaseTransport):
         elif child_method == "set_device_info":
             info.update(child_params)
             return {"error_code": 0}
+        elif child_method == "set_preset_rules":
+            return self._set_child_preset_rules(info, child_params)
         elif (
             # FIXTURE_MISSING is for service calls not in place when
             # SMART fixtures started to be generated
@@ -201,6 +203,30 @@ class FakeSmartTransport(BaseTransport):
         info["get_led_info"]["led_status"] = params["led_rule"] != "never"
         info["get_led_info"]["led_rule"] = params["led_rule"]
 
+    def _set_preset_rules(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        if "brightness" not in info["get_preset_rules"]:
+            return {"error_code": SmartErrorCode.PARAMS_ERROR}
+        info["get_preset_rules"]["brightness"] = params["brightness"]
+        return {"error_code": 0}
+
+    def _set_child_preset_rules(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        # So far the only child device with light preset (KS240) has the
+        # data available to read in the device_info.  If a child device
+        # appears that doesn't have this this will need to be extended.
+        if "preset_state" not in info:
+            return {"error_code": SmartErrorCode.PARAMS_ERROR}
+        info["preset_state"] = [{"brightness": b} for b in params["brightness"]]
+        return {"error_code": 0}
+
+    def _edit_preset_rules(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        if "states" not in info["get_preset_rules"] is None:
+            return {"error_code": SmartErrorCode.PARAMS_ERROR}
+        info["get_preset_rules"]["states"][params["index"]] = params["state"]
+        return {"error_code": 0}
+
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
         params = request_dict["params"]
@@ -220,6 +246,13 @@ class FakeSmartTransport(BaseTransport):
                         if (params and (start_index := params.get("start_index")))
                         else 0
                     )
+                    # Fixtures generated before _handle_response_lists was implemented
+                    # could have incomplete lists.
+                    if len(result[list_key]) < result["sum"]:
+                        result["sum"] = len(result[list_key])
+                        pytest.fixtures_missing_methods.setdefault(
+                            self.fixture_name, set()
+                        ).add(f"{method} (incomplete '{list_key}' list)")
                     result[list_key] = result[list_key][
                         start_index : start_index + self.list_return_size
                     ]
@@ -244,9 +277,11 @@ class FakeSmartTransport(BaseTransport):
                     "method": method,
                 }
             # Reduce warning spam by consolidating and reporting at the end of the run
-            if self.fixture_name not in pytest.fixtures_missing_methods:
-                pytest.fixtures_missing_methods[self.fixture_name] = set()
-            pytest.fixtures_missing_methods[self.fixture_name].add(method)
+            # if self.fixture_name not in pytest.fixtures_missing_methods:
+            #    pytest.fixtures_missing_methods[self.fixture_name] = set()
+            pytest.fixtures_missing_methods.setdefault(self.fixture_name, set()).add(
+                method
+            )
             return retval
         elif method in ["set_qs_info", "fw_download"]:
             return {"error_code": 0}
@@ -259,6 +294,10 @@ class FakeSmartTransport(BaseTransport):
         elif method == "set_led_info":
             self._set_led_info(info, params)
             return {"error_code": 0}
+        elif method == "set_preset_rules":
+            return self._set_preset_rules(info, params)
+        elif method == "edit_preset_rules":
+            return self._edit_preset_rules(info, params)
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)

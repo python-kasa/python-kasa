@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import TYPE_CHECKING, cast
 
 from ...device_type import DeviceType
 from ...exceptions import KasaException
 from ...feature import Feature
-from ...interfaces.light import HSV, ColorTempRange
+from ...interfaces.light import HSV, ColorTempRange, LightState
 from ...interfaces.light import Light as LightInterface
 from ..iotmodule import IotModule
 
@@ -198,3 +199,23 @@ class Light(IotModule, LightInterface):
         return await bulb._set_color_temp(
             temp, brightness=brightness, transition=transition
         )
+
+    async def set_state(self, state: LightState) -> dict:
+        """Set the light state."""
+        if (bulb := self._get_bulb_device()) is None:
+            return await self.set_brightness(state.brightness or 0)
+        else:
+            transition = state.transition
+            state_dict = asdict(state)
+            state_dict = {k: v for k, v in state_dict.items() if v is not None}
+            state_dict["on_off"] = 1 if state.light_on is None else int(state.light_on)
+            return await bulb._set_light_state(state_dict, transition=transition)
+
+    async def _deprecated_set_light_state(
+        self, state: dict, *, transition: int | None = None
+    ) -> dict:
+        """Set the light state."""
+        if (bulb := self._get_bulb_device()) is None:
+            raise KasaException("Device does not support set_light_state")
+        else:
+            return await bulb._set_light_state(state, transition=transition)

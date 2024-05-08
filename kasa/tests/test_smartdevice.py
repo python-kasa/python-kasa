@@ -48,7 +48,10 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     """Test the initial update cycle."""
     # As the fixture data is already initialized, we reset the state for testing
     dev._components_raw = None
+    dev._components = {}
+    dev._modules = {}
     dev._features = {}
+    dev._children = {}
 
     negotiate = mocker.spy(dev, "_negotiate")
     initialize_modules = mocker.spy(dev, "_initialize_modules")

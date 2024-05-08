@@ -41,7 +41,6 @@ class SmartChildDevice(SmartDevice):
         """Create a child device based on device info and component listing."""
         child: SmartChildDevice = cls(parent, child_info, child_components)
         await child._initialize_modules()
-        await child._initialize_features()
         return child
 
     @property

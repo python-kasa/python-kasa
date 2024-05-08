@@ -36,6 +36,7 @@ class Module(ABC):
     LightEffect: Final[ModuleName[interfaces.LightEffect]] = ModuleName("LightEffect")
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
+    LightPreset: Final[ModuleName[interfaces.LightPreset]] = ModuleName("LightPreset")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
@@ -107,6 +108,13 @@ class Module(ABC):
         """Initialize features after the initial update.
 
         This can be implemented if features depend on module query responses.
+        """
+
+    def _handle_update(self):  # noqa: B027
+        """Perform actions after a device update.
+
+        This can be implemented if a module needs to perform actions after
+        the device has updated
         """
 
     def _add_feature(self, feature: Feature):
