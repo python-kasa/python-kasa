@@ -17,6 +17,7 @@ from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartE
 from ..fan import Fan
 from ..feature import Feature
 from ..module import Module, ModuleT
+from ..modules.modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
 from .modules import (
     Brightness,
@@ -61,7 +62,7 @@ class SmartDevice(Bulb, Fan, Device):
         self._components_raw: dict[str, Any] | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
-        self._modules: dict[str, SmartModule] = {}
+        self._modules: dict[str | ModuleName[Module], SmartModule] = {}
         self._exposes_child_modules = False
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
@@ -102,9 +103,9 @@ class SmartDevice(Bulb, Fan, Device):
         return list(self._children.values())
 
     @property
-    def modules(self) -> dict[str, SmartModule]:
+    def modules(self) -> ModuleMapping[SmartModule]:
         """Return the device modules."""
-        return self._modules
+        return cast(ModuleMapping[SmartModule], self._modules)
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)

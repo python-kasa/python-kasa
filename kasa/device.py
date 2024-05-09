@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Mapping, Sequence, overload
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, overload
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -18,6 +18,9 @@ from .iotprotocol import IotProtocol
 from .module import Module, ModuleT
 from .protocol import BaseProtocol
 from .xortransport import XorTransport
+
+if TYPE_CHECKING:
+    from .modules.modulemapping import ModuleMapping
 
 
 @dataclass
@@ -113,7 +116,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def modules(self) -> Mapping[str, Module]:
+    def modules(self) -> ModuleMapping[Module]:
         """Return the device modules."""
 
     @overload

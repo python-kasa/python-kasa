@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
+from ..modules import LIGHT_EFFECT
 from ..protocol import BaseProtocol
 from .effects import EFFECT_NAMES_V1
 from .iotbulb import IotBulb
@@ -55,10 +56,9 @@ class IotLightStrip(IotBulb):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.LightStrip
-        self._light_effect_module = LightEffectModule(
-            self, "smartlife.iot.lighting_effect"
+        self.add_module(
+            LIGHT_EFFECT, LightEffectModule(self, "smartlife.iot.lighting_effect")
         )
-        self.add_module("lighteffectmodule", self._light_effect_module)
 
     @property  # type: ignore
     @requires_update
@@ -114,7 +114,7 @@ class IotLightStrip(IotBulb):
         :param int brightness: The wanted brightness
         :param int transition: The wanted transition time
         """
-        await self._light_effect_module.set_effect(
+        await self.modules[LIGHT_EFFECT].set_effect(
             effect, brightness=brightness, transition=transition
         )
 
@@ -129,4 +129,4 @@ class IotLightStrip(IotBulb):
         """
         if not self.has_effects:
             raise KasaException("Bulb does not support effects.")
-        await self._light_effect_module.set_custom_effect(effect_dict)
+        await self.modules[LIGHT_EFFECT].set_custom_effect(effect_dict)

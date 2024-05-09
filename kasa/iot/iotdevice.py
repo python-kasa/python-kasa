@@ -27,6 +27,7 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
 from ..module import Module, ModuleT
+from ..modules.modulemapping import ModuleMapping, ModuleName
 from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter, Time
@@ -190,7 +191,7 @@ class IotDevice(Device):
         self._supported_modules: dict[str, IotModule] | None = None
         self._legacy_features: set[str] = set()
         self._children: Mapping[str, IotDevice] = {}
-        self._modules: dict[str, IotModule] = {}
+        self._modules: dict[str | ModuleName[Module], IotModule] = {}
 
     @property
     def children(self) -> Sequence[IotDevice]:
@@ -198,9 +199,9 @@ class IotDevice(Device):
         return list(self._children.values())
 
     @property
-    def modules(self) -> dict[str, IotModule]:
+    def modules(self) -> ModuleMapping[IotModule]:
         """Return the device modules."""
-        return self._modules
+        return cast(ModuleMapping[IotModule], self._modules)
 
     @overload
     def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
@@ -220,14 +221,14 @@ class IotDevice(Device):
             return self.modules[module_name]
         return None
 
-    def add_module(self, name: str, module: IotModule):
+    def add_module(self, name: str | ModuleName[Module], module: IotModule):
         """Register a module."""
         if name in self.modules:
             _LOGGER.debug("Module %s already registered, ignoring..." % name)
             return
 
         _LOGGER.debug("Adding module %s", module)
-        self.modules[name] = module
+        self._modules[name] = module
 
     def _create_request(
         self, target: str, cmd: str, arg: dict | None = None, child_ids=None
@@ -289,11 +290,11 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def supported_modules(self) -> list[str]:
+    def supported_modules(self) -> list[str | ModuleName[Module]]:
         """Return a set of modules supported by the device."""
         # TODO: this should rather be called `features`, but we don't want to break
         #       the API now. Maybe just deprecate it and point the users to use this?
-        return list(self.modules.keys())
+        return list(self._modules.keys())
 
     @property  # type: ignore
     @requires_update
@@ -368,7 +369,7 @@ class IotDevice(Device):
         #  making separate handling for this unnecessary
         if self._supported_modules is None:
             supported = {}
-            for module in self.modules.values():
+            for module in self._modules.values():
                 if module.is_supported:
                     supported[module._module] = module
 
@@ -376,7 +377,7 @@ class IotDevice(Device):
 
         request_list = []
         est_response_size = 1024 if "system" in req else 0
-        for module in self.modules.values():
+        for module in self._modules.values():
             if not module.is_supported:
                 _LOGGER.debug("Module %s not supported, skipping" % module)
                 continue

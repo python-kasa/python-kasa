@@ -21,6 +21,11 @@ repos:
   hooks:
   - id: mypy
     additional_dependencies: [types-click]
+    exclude: |
+      (?x)^(
+          kasa/modules/modulemapping\.py|
+      )$
+
 
 - repo: https://github.com/PyCQA/doc8
   rev: 'v1.1.1'
