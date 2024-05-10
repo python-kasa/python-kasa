@@ -16,7 +16,7 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING
 from warnings import warn
 
-from kasa.bulb import Bulb
+from kasa.bulb import Bulb, BulbPreset
 from kasa.credentials import Credentials
 from kasa.device import Device
 from kasa.device_type import DeviceType
@@ -36,12 +36,11 @@ from kasa.exceptions import (
     UnsupportedDeviceError,
 )
 from kasa.feature import Feature
-from kasa.iot.iotbulb import BulbPreset, TurnOnBehavior, TurnOnBehaviors
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
 )
-from kasa.plug import Plug
+from kasa.module import Module
 from kasa.protocol import BaseProtocol
 from kasa.smartprotocol import SmartProtocol
 
@@ -62,6 +61,7 @@ __all__ = [
     "Device",
     "Bulb",
     "Plug",
+    "Module",
     "KasaException",
     "AuthenticationError",
     "DeviceError",

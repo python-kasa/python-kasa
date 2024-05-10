@@ -253,7 +253,6 @@ class IotStripPlug(IotPlug):
         self._last_update = parent._last_update
         self._set_sys_info(parent.sys_info)
         self._device_type = DeviceType.StripSocket
-        self._modules = {}
         self.protocol = parent.protocol  # Must use the same connection as the parent
         self.add_module("time", Time(self, "time"))
 

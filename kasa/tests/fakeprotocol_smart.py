@@ -189,6 +189,11 @@ class FakeSmartTransport(BaseTransport):
             if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
                 del info["get_dynamic_light_effect_rules"]["current_rule_id"]
 
+    def _set_led_info(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        info["get_led_info"]["led_status"] = params["led_rule"] != "never"
+        info["get_led_info"]["led_rule"] = params["led_rule"]
+
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
         params = request_dict["params"]
@@ -218,7 +223,9 @@ class FakeSmartTransport(BaseTransport):
                 # SMART fixtures started to be generated
                 missing_result := self.FIXTURE_MISSING_MAP.get(method)
             ) and missing_result[0] in self.components:
-                result = copy.deepcopy(missing_result[1])
+                # Copy to info so it will work with update methods
+                info[method] = copy.deepcopy(missing_result[1])
+                result = copy.deepcopy(info[method])
                 retval = {"result": result, "error_code": 0}
             else:
                 # PARAMS error returned for KS240 when get_device_usage called
@@ -238,6 +245,9 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
             self._set_light_effect(info, params)
+            return {"error_code": 0}
+        elif method == "set_led_info":
+            self._set_led_info(info, params)
             return {"error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"

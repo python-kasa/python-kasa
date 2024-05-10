@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Sequence, cast, overload
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
@@ -16,7 +16,8 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..fan import Fan
 from ..feature import Feature
-from ..module import ModuleT
+from ..module import Module
+from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
 from .modules import (
     Brightness,
@@ -61,7 +62,7 @@ class SmartDevice(Bulb, Fan, Device):
         self._components_raw: dict[str, Any] | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
-        self._modules: dict[str, SmartModule] = {}
+        self._modules: dict[str | ModuleName[Module], SmartModule] = {}
         self._exposes_child_modules = False
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
@@ -102,8 +103,20 @@ class SmartDevice(Bulb, Fan, Device):
         return list(self._children.values())
 
     @property
-    def modules(self) -> dict[str, SmartModule]:
+    def modules(self) -> ModuleMapping[SmartModule]:
         """Return the device modules."""
+        if self._exposes_child_modules:
+            modules = {k: v for k, v in self._modules.items()}
+            for child in self._children.values():
+                for k, v in child._modules.items():
+                    if k not in modules:
+                        modules[k] = v
+            if TYPE_CHECKING:
+                return cast(ModuleMapping[SmartModule], modules)
+            return modules
+
+        if TYPE_CHECKING:  # Needed for python 3.8
+            return cast(ModuleMapping[SmartModule], self._modules)
         return self._modules
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
@@ -314,30 +327,6 @@ class SmartDevice(Bulb, Fan, Device):
             module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
-
-    @overload
-    def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
-
-    @overload
-    def get_module(self, module_type: str) -> SmartModule | None: ...
-
-    def get_module(
-        self, module_type: type[ModuleT] | str
-    ) -> ModuleT | SmartModule | None:
-        """Return the module from the device modules or None if not present."""
-        if isinstance(module_type, str):
-            module_name = module_type
-        elif issubclass(module_type, SmartModule):
-            module_name = module_type.__name__
-        else:
-            return None
-        if module_name in self.modules:
-            return self.modules[module_name]
-        elif self._exposes_child_modules:
-            for child in self._children.values():
-                if module_name in child.modules:
-                    return child.modules[module_name]
-        return None
 
     @property
     def is_cloud_connected(self):

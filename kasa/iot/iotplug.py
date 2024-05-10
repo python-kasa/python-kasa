@@ -6,10 +6,10 @@ import logging
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature
+from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
-from .modules import Antitheft, Cloud, Schedule, Time, Usage
+from .modules import Antitheft, Cloud, LedModule, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,21 +58,7 @@ class IotPlug(IotDevice):
         self.add_module("antitheft", Antitheft(self, "anti_theft"))
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
-
-    async def _initialize_features(self):
-        await super()._initialize_features()
-
-        self._add_feature(
-            Feature(
-                device=self,
-                id="led",
-                name="LED",
-                icon="mdi:led-{state}",
-                attribute_getter="led",
-                attribute_setter="set_led",
-                type=Feature.Type.Switch,
-            )
-        )
+        self.add_module(Module.Led, LedModule(self, "system"))
 
     @property  # type: ignore
     @requires_update
@@ -93,14 +79,11 @@ class IotPlug(IotDevice):
     @requires_update
     def led(self) -> bool:
         """Return the state of the led."""
-        sys_info = self.sys_info
-        return bool(1 - sys_info["led_off"])
+        return self.modules[Module.Led].led
 
     async def set_led(self, state: bool):
         """Set the state of the led (night mode)."""
-        return await self._query_helper(
-            "system", "set_led_off", {"off": int(not state)}
-        )
+        return await self.modules[Module.Led].set_led(state)
 
 
 class IotWallSwitch(IotPlug):

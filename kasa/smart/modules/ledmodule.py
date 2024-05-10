@@ -2,36 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from ...feature import Feature
+from ...interfaces.led import Led
 from ..smartmodule import SmartModule
 
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
-
-class LedModule(SmartModule):
+class LedModule(SmartModule, Led):
     """Implementation of led controls."""
 
     REQUIRED_COMPONENT = "led"
     QUERY_GETTER_NAME = "get_led_info"
-
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
-        self._add_feature(
-            Feature(
-                device=device,
-                container=self,
-                id="led",
-                name="LED",
-                icon="mdi:led-{state}",
-                attribute_getter="led",
-                attribute_setter="set_led",
-                type=Feature.Type.Switch,
-                category=Feature.Category.Config,
-            )
-        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -56,7 +35,7 @@ class LedModule(SmartModule):
         This should probably be a select with always/never/nightmode.
         """
         rule = "always" if enable else "never"
-        return await self.call("set_led_info", self.data | {"led_rule": rule})
+        return await self.call("set_led_info", dict(self.data, **{"led_rule": rule}))
 
     @property
     def night_mode_settings(self):

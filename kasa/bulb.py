@@ -56,11 +56,6 @@ class Bulb(Device, ABC):
 
     @property
     @abstractmethod
-    def is_dimmable(self) -> bool:
-        """Whether the bulb supports brightness changes."""
-
-    @property
-    @abstractmethod
     def is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes."""
 

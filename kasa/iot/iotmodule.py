@@ -43,13 +43,19 @@ class IotModule(Module):
     @property
     def data(self):
         """Return the module specific raw data from the last update."""
-        if self._module not in self._device._last_update:
+        dev = self._device
+        q = self.query()
+
+        if not q:
+            return dev.sys_info
+
+        if self._module not in dev._last_update:
             raise KasaException(
                 f"You need to call update() prior accessing module data"
                 f" for '{self._module}'"
             )
 
-        return self._device._last_update[self._module]
+        return dev._last_update[self._module]
 
     @property
     def is_supported(self) -> bool:
