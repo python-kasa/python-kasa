@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from ...interfaces.ledinterface import LedInterface
+from ...interfaces.ledinterface import Led
 from ..smartmodule import SmartModule
 
 
-class LedModule(SmartModule, LedInterface):
+class LedModule(SmartModule, Led):
     """Implementation of led controls."""
 
     REQUIRED_COMPONENT = "led"

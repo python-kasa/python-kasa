@@ -16,8 +16,8 @@ from .modulemapping import ModuleName
 
 if TYPE_CHECKING:
     from .device import Device as DeviceType  # avoid name clash with Device module
-    from .interfaces.ledinterface import LedInterface
-    from .interfaces.lighteffectinterface import LightEffectInterface
+    from .interfaces.ledinterface import Led
+    from .interfaces.lighteffectinterface import LightEffect
     from .iot import modules as iot
     from .smart import modules as smart
 
@@ -34,10 +34,8 @@ class Module(ABC):
     """
 
     # Common Modules
-    LightEffect: Final[ModuleName[LightEffectInterface]] = ModuleName(
-        "LightEffectModule"
-    )
-    Led: Final[ModuleName[LedInterface]] = ModuleName("LedModule")
+    LightEffect: Final[ModuleName[LightEffect]] = ModuleName("LightEffectModule")
+    Led: Final[ModuleName[Led]] = ModuleName("LedModule")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")

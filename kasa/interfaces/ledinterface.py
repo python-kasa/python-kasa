@@ -8,7 +8,7 @@ from ..feature import Feature
 from ..module import Module
 
 
-class LedInterface(Module, ABC):
+class Led(Module, ABC):
     """Base interface to represent a LED module."""
 
     def _initialize_features(self):

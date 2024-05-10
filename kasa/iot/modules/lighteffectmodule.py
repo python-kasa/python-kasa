@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from ...interfaces.lighteffectinterface import LightEffectInterface
+from ...interfaces.lighteffectinterface import LightEffect
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..iotmodule import IotModule
 
 
-class LightEffectModule(IotModule, LightEffectInterface):
+class LightEffectModule(IotModule, LightEffect):
     """Implementation of dynamic light effects."""
 
     @property
