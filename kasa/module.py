@@ -16,8 +16,8 @@ from .modulemapping import ModuleName
 
 if TYPE_CHECKING:
     from .device import Device as DeviceType  # avoid name clash with Device module
-    from .interfaces.ledinterface import Led
-    from .interfaces.lighteffectinterface import LightEffect
+    from .interfaces.led import Led
+    from .interfaces.lighteffect import LightEffect
     from .iot import modules as iot
     from .smart import modules as smart
 

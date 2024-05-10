@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...interfaces.ledinterface import Led
+from ...interfaces.led import Led
 from ..iotmodule import IotModule
 
 

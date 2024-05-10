@@ -6,7 +6,7 @@ import base64
 import copy
 from typing import TYPE_CHECKING, Any
 
-from ...interfaces.lighteffectinterface import LightEffect
+from ...interfaces.lighteffect import LightEffect
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:

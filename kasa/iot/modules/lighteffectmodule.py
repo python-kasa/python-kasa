@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...interfaces.lighteffectinterface import LightEffect
+from ...interfaces.lighteffect import LightEffect
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..iotmodule import IotModule
 
