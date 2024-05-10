@@ -6,8 +6,8 @@ import logging
 import pytest
 from pytest_mock import MockerFixture
 
+from kasa import Module
 from kasa.smart import SmartDevice
-from kasa.smart.modules import Firmware
 from kasa.smart.modules.firmware import DownloadState
 from kasa.tests.device_fixtures import parametrize
 
@@ -31,7 +31,7 @@ async def test_firmware_features(
     dev: SmartDevice, feature, prop_name, type, required_version, mocker: MockerFixture
 ):
     """Test light effect."""
-    fw = dev.get_module(Firmware)
+    fw = dev.modules.get(Module.Firmware)
     assert fw
 
     if not dev.is_cloud_connected:
@@ -51,7 +51,7 @@ async def test_firmware_features(
 @firmware
 async def test_update_available_without_cloud(dev: SmartDevice):
     """Test that update_available returns None when disconnected."""
-    fw = dev.get_module(Firmware)
+    fw = dev.modules.get(Module.Firmware)
     assert fw
 
     if dev.is_cloud_connected:
@@ -67,7 +67,7 @@ async def test_firmware_update(
     """Test updating firmware."""
     caplog.set_level(logging.INFO)
 
-    fw = dev.get_module(Firmware)
+    fw = dev.modules.get(Module.Firmware)
     assert fw
 
     upgrade_time = 5
