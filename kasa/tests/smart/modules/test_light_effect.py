@@ -6,7 +6,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from kasa import Device, Feature
-from kasa.modules import LIGHT_EFFECT
 from kasa.smart.modules import LightEffectModule
 from kasa.tests.device_fixtures import parametrize
 
@@ -18,7 +17,7 @@ light_effect = parametrize(
 @light_effect
 async def test_light_effect(dev: Device, mocker: MockerFixture):
     """Test light effect."""
-    light_effect = dev.modules.get(LIGHT_EFFECT)
+    light_effect = dev.get_module(LightEffectModule)
     assert isinstance(light_effect, LightEffectModule)
 
     feature = light_effect._module_features["light_effect"]

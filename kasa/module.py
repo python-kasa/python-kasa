@@ -6,14 +6,20 @@ import logging
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
+    Final,
     TypeVar,
 )
 
 from .exceptions import KasaException
 from .feature import Feature
+from .modules.modulemapping import ModuleName
 
 if TYPE_CHECKING:
-    from .device import Device
+    from .device import Device as DeviceType  # avoid name clash with Device module
+    from .iot import modules as iot
+    from .modules.ledmodule import LedModule
+    from .modules.lighteffectmodule import LightEffectModule
+    from .smart import modules as smart
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +33,61 @@ class Module(ABC):
     executed during the regular update cycle.
     """
 
-    def __init__(self, device: Device, module: str):
+    # Common Modules
+    LightEffect: Final[ModuleName[LightEffectModule]] = ModuleName("LightEffectModule")
+    Led: Final[ModuleName[LedModule]] = ModuleName("LedModule")
+
+    # IOT only Modules
+    AmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("AmbientLight")
+    Antitheft: Final[ModuleName[iot.Antitheft]] = ModuleName("Antitheft")
+    Countdown: Final[ModuleName[iot.Countdown]] = ModuleName("Countdown")
+    Emeter: Final[ModuleName[iot.Emeter]] = ModuleName("Emeter")
+    Motion: Final[ModuleName[iot.Motion]] = ModuleName("Motion")
+    Rule: Final[ModuleName[iot.RuleModule]] = ModuleName("RuleModule")
+    Schedule: Final[ModuleName[iot.Schedule]] = ModuleName("Schedule")
+    Usage: Final[ModuleName[iot.Usage]] = ModuleName("Usage")
+
+    # TODO Resolve these clashes
+    IotCloud: Final[ModuleName[iot.Cloud]] = ModuleName("Cloud")
+    IotTime: Final[ModuleName[iot.Time]] = ModuleName("Time")
+    Time: Final[ModuleName[smart.TimeModule]] = ModuleName("TimeModule")
+    Cloud: Final[ModuleName[smart.CloudModule]] = ModuleName("CloudModule")
+
+    # SMART only Modules
+    Alarm: Final[ModuleName[smart.AlarmModule]] = ModuleName("AlarmModule")
+    AutoOff: Final[ModuleName[smart.AutoOffModule]] = ModuleName("AutoOffModule")
+    BatterySensor: Final[ModuleName[smart.BatterySensor]] = ModuleName("BatterySensor")
+    Brightness: Final[ModuleName[smart.Brightness]] = ModuleName("Brightness")
+    ChildDevice: Final[ModuleName[smart.ChildDeviceModule]] = ModuleName(
+        "ChildDeviceModule"
+    )
+    Color: Final[ModuleName[smart.ColorModule]] = ModuleName("ColorModule")
+    ColorTemp: Final[ModuleName[smart.ColorTemperatureModule]] = ModuleName(
+        "ColorTemperatureModule"
+    )
+    Device: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
+    Energy: Final[ModuleName[smart.EnergyModule]] = ModuleName("EnergyModule")
+    Fan: Final[ModuleName[smart.FanModule]] = ModuleName("FanModule")
+    Firmware: Final[ModuleName[smart.Firmware]] = ModuleName("Firmware")
+    FrostProtection: Final[ModuleName[smart.FrostProtectionModule]] = ModuleName(
+        "FrostProtectionModule"
+    )
+    Humidity: Final[ModuleName[smart.HumiditySensor]] = ModuleName("HumiditySensor")
+    LightTransition: Final[ModuleName[smart.LightTransitionModule]] = ModuleName(
+        "LightTransitionModule"
+    )
+    Report: Final[ModuleName[smart.ReportModule]] = ModuleName("ReportModule")
+    Temperature: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
+        "TemperatureSensor"
+    )
+    TemperatureSensor: Final[ModuleName[smart.TemperatureControl]] = ModuleName(
+        "TemperatureControl"
+    )
+    WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
+        "WaterleakSensor"
+    )
+
+    def __init__(self, device: DeviceType, module: str):
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}

@@ -1,8 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device
-from kasa.modules import LED, LIGHT_EFFECT
+from kasa import Device, Module
 from kasa.tests.device_fixtures import (
     lightstrip,
     parametrize,
@@ -24,7 +23,7 @@ light_effect = parametrize_combine([light_effect_smart, lightstrip])
 @led
 async def test_led_module(dev: Device, mocker: MockerFixture):
     """Test fan speed feature."""
-    led_module = dev.modules.get(LED)
+    led_module = dev.modules.get(Module.Led)
     assert led_module
     feat = led_module._module_features["led"]
 
@@ -51,7 +50,7 @@ async def test_led_module(dev: Device, mocker: MockerFixture):
 @light_effect
 async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     """Test fan speed feature."""
-    light_effect_module = dev.modules[LIGHT_EFFECT]
+    light_effect_module = dev.modules[Module.LightEffect]
     assert light_effect_module
     feat = light_effect_module._module_features["light_effect"]
 
