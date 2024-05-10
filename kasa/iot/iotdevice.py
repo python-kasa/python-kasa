@@ -19,7 +19,7 @@ import functools
 import inspect
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -201,7 +201,9 @@ class IotDevice(Device):
     @property
     def modules(self) -> ModuleMapping[IotModule]:
         """Return the device modules."""
-        return cast(ModuleMapping[IotModule], self._modules)
+        if TYPE_CHECKING:
+            return cast(ModuleMapping[IotModule], self._modules)
+        return self._modules
 
     def add_module(self, name: str | ModuleName[Module], module: IotModule):
         """Register a module."""

@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
@@ -111,9 +111,13 @@ class SmartDevice(Bulb, Fan, Device):
                 for k, v in child._modules.items():
                     if k not in modules:
                         modules[k] = v
-            return cast(ModuleMapping[SmartModule], modules)
+            if TYPE_CHECKING:
+                return cast(ModuleMapping[SmartModule], modules)
+            return modules
 
-        return cast(ModuleMapping[SmartModule], self._modules)
+        if TYPE_CHECKING:  # Needed for python 3.8
+            return cast(ModuleMapping[SmartModule], self._modules)
+        return self._modules
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
