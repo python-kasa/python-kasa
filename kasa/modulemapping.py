@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
-    from ..module import Module
+    from .module import Module
 
 _ModuleT = TypeVar("_ModuleT", bound="Module")
 

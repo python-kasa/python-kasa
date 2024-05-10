@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from ...modules.ledmodule import LedModule as BaseLedModule
+from ...interfaces.ledinterface import LedInterface
 from ..iotmodule import IotModule
 
 
-class LedModule(IotModule, BaseLedModule):
+class LedModule(IotModule, LedInterface):
     """Implementation of led controls."""
-
-    REQUIRED_COMPONENT = "led"
-    QUERY_GETTER_NAME = "get_led_info"
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""

@@ -12,13 +12,13 @@ from typing import (
 
 from .exceptions import KasaException
 from .feature import Feature
-from .modules.modulemapping import ModuleName
+from .modulemapping import ModuleName
 
 if TYPE_CHECKING:
     from .device import Device as DeviceType  # avoid name clash with Device module
+    from .interfaces.ledinterface import LedInterface
+    from .interfaces.lighteffectinterface import LightEffectInterface
     from .iot import modules as iot
-    from .modules.ledmodule import LedModule
-    from .modules.lighteffectmodule import LightEffectModule
     from .smart import modules as smart
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,24 +34,21 @@ class Module(ABC):
     """
 
     # Common Modules
-    LightEffect: Final[ModuleName[LightEffectModule]] = ModuleName("LightEffectModule")
-    Led: Final[ModuleName[LedModule]] = ModuleName("LedModule")
+    LightEffect: Final[ModuleName[LightEffectInterface]] = ModuleName(
+        "LightEffectModule"
+    )
+    Led: Final[ModuleName[LedInterface]] = ModuleName("LedModule")
 
     # IOT only Modules
-    AmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("AmbientLight")
-    Antitheft: Final[ModuleName[iot.Antitheft]] = ModuleName("Antitheft")
-    Countdown: Final[ModuleName[iot.Countdown]] = ModuleName("Countdown")
-    Emeter: Final[ModuleName[iot.Emeter]] = ModuleName("Emeter")
-    Motion: Final[ModuleName[iot.Motion]] = ModuleName("Motion")
-    Rule: Final[ModuleName[iot.RuleModule]] = ModuleName("RuleModule")
-    Schedule: Final[ModuleName[iot.Schedule]] = ModuleName("Schedule")
-    Usage: Final[ModuleName[iot.Usage]] = ModuleName("Usage")
-
-    # TODO Resolve these clashes
-    IotCloud: Final[ModuleName[iot.Cloud]] = ModuleName("Cloud")
-    IotTime: Final[ModuleName[iot.Time]] = ModuleName("Time")
-    Time: Final[ModuleName[smart.TimeModule]] = ModuleName("TimeModule")
-    Cloud: Final[ModuleName[smart.CloudModule]] = ModuleName("CloudModule")
+    IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
+    IotAntitheft: Final[ModuleName[iot.Antitheft]] = ModuleName("anti_theft")
+    IotCountdown: Final[ModuleName[iot.Countdown]] = ModuleName("countdown")
+    IotEmeter: Final[ModuleName[iot.Emeter]] = ModuleName("emeter")
+    IotMotion: Final[ModuleName[iot.Motion]] = ModuleName("motion")
+    IotSchedule: Final[ModuleName[iot.Schedule]] = ModuleName("schedule")
+    IotUsage: Final[ModuleName[iot.Usage]] = ModuleName("usage")
+    IotCloud: Final[ModuleName[iot.Cloud]] = ModuleName("cloud")
+    IotTime: Final[ModuleName[iot.Time]] = ModuleName("time")
 
     # SMART only Modules
     Alarm: Final[ModuleName[smart.AlarmModule]] = ModuleName("AlarmModule")
@@ -61,10 +58,12 @@ class Module(ABC):
     ChildDevice: Final[ModuleName[smart.ChildDeviceModule]] = ModuleName(
         "ChildDeviceModule"
     )
+    Cloud: Final[ModuleName[smart.CloudModule]] = ModuleName("CloudModule")
     Color: Final[ModuleName[smart.ColorModule]] = ModuleName("ColorModule")
     ColorTemp: Final[ModuleName[smart.ColorTemperatureModule]] = ModuleName(
         "ColorTemperatureModule"
     )
+    ContactSensor: Final[ModuleName[smart.ContactSensor]] = ModuleName("ContactSensor")
     Device: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
     Energy: Final[ModuleName[smart.EnergyModule]] = ModuleName("EnergyModule")
     Fan: Final[ModuleName[smart.FanModule]] = ModuleName("FanModule")
@@ -83,6 +82,7 @@ class Module(ABC):
     TemperatureSensor: Final[ModuleName[smart.TemperatureControl]] = ModuleName(
         "TemperatureControl"
     )
+    Time: Final[ModuleName[smart.TimeModule]] = ModuleName("TimeModule")
     WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
         "WaterleakSensor"
     )

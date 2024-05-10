@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Mapping, Sequence, overload
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -15,12 +15,12 @@ from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
 from .iotprotocol import IotProtocol
-from .module import Module, ModuleT
+from .module import Module
 from .protocol import BaseProtocol
 from .xortransport import XorTransport
 
 if TYPE_CHECKING:
-    from .modules.modulemapping import ModuleMapping
+    from .modulemapping import ModuleMapping
 
 
 @dataclass
@@ -118,18 +118,6 @@ class Device(ABC):
     @abstractmethod
     def modules(self) -> ModuleMapping[Module]:
         """Return the device modules."""
-
-    @overload
-    @abstractmethod
-    def get_module(self, module_type: type[ModuleT]) -> ModuleT | None: ...
-
-    @overload
-    @abstractmethod
-    def get_module(self, module_type: str) -> Module | None: ...
-
-    @abstractmethod
-    def get_module(self, module_type: type[ModuleT] | str) -> ModuleT | Module | None:
-        """Return the module from the device modules or None if not present."""
 
     @property
     @abstractmethod

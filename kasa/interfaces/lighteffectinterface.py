@@ -8,7 +8,7 @@ from ..feature import Feature
 from ..module import Module
 
 
-class LightEffectModule(Module, ABC):
+class LightEffectInterface(Module, ABC):
     """Interface to represent a light effect module."""
 
     LIGHT_EFFECTS_OFF = "Off"

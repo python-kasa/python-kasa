@@ -8,7 +8,7 @@ from ..feature import Feature
 from ..module import Module
 
 
-class LedModule(Module, ABC):
+class LedInterface(Module, ABC):
     """Base interface to represent a LED module."""
 
     def _initialize_features(self):
@@ -20,7 +20,7 @@ class LedModule(Module, ABC):
                 container=self,
                 name="LED",
                 id="led",
-                icon="mdi:led-{state}",
+                icon="mdi:led",
                 attribute_getter="led",
                 attribute_setter="set_led",
                 type=Feature.Type.Switch,

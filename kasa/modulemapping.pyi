@@ -4,7 +4,7 @@ from abc import ABCMeta
 from collections.abc import Mapping
 from typing import Generic, TypeVar, overload
 
-from ..module import Module
+from .module import Module
 
 __all__ = [
     "ModuleMapping",
@@ -54,9 +54,9 @@ def _test_module_mapping_typing() -> None:
 
     from typing_extensions import assert_type
 
-    from ..iot.iotmodule import IotModule
-    from ..module import Module
-    from ..smart.smartmodule import SmartModule
+    from .iot.iotmodule import IotModule
+    from .module import Module
+    from .smart.smartmodule import SmartModule
 
     NewCommonModule = NewType("NewCommonModule", Module)
     NewIotModule = NewType("NewIotModule", IotModule)

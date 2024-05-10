@@ -80,7 +80,7 @@ class IotLightStrip(IotBulb):
              'name': ''}
         """
         # LightEffectModule returns the current effect name
-        # so return the dict here for backwards compatability
+        # so return the dict here for backwards compatibility
         return self.sys_info["lighting_effect_state"]
 
     @property  # type: ignore
@@ -92,7 +92,7 @@ class IotLightStrip(IotBulb):
             ['Aurora', 'Bubbling Cauldron', ...]
         """
         # LightEffectModule returns effect names along with a LIGHT_EFFECTS_OFF value
-        # so return the original effect names here for backwards compatability
+        # so return the original effect names here for backwards compatibility
         return EFFECT_NAMES_V1 if self.has_effects else None
 
     @requires_update

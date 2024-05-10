@@ -6,14 +6,14 @@ import base64
 import copy
 from typing import TYPE_CHECKING, Any
 
-from ...modules.lighteffectmodule import LightEffectModule as BaseLightEffectModule
+from ...interfaces.lighteffectinterface import LightEffectInterface
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class LightEffectModule(SmartModule, BaseLightEffectModule):
+class LightEffectModule(SmartModule, LightEffectInterface):
     """Implementation of dynamic light effects."""
 
     REQUIRED_COMPONENT = "light_effect"

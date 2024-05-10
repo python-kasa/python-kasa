@@ -5,7 +5,7 @@ from itertools import chain
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device, Feature
+from kasa import Device, Feature, Module
 from kasa.smart.modules import LightEffectModule
 from kasa.tests.device_fixtures import parametrize
 
@@ -17,7 +17,7 @@ light_effect = parametrize(
 @light_effect
 async def test_light_effect(dev: Device, mocker: MockerFixture):
     """Test light effect."""
-    light_effect = dev.get_module(LightEffectModule)
+    light_effect = dev.modules.get(Module.LightEffect)
     assert isinstance(light_effect, LightEffectModule)
 
     feature = light_effect._module_features["light_effect"]
