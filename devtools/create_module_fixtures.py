@@ -19,7 +19,7 @@ app = typer.Typer()
 def create_fixtures(dev: IotDevice, outputdir: Path):
     """Iterate over supported modules and create version-specific fixture files."""
     for name, module in dev.modules.items():
-        module_dir = outputdir / name
+        module_dir = outputdir / str(name)
         if not module_dir.exists():
             module_dir.mkdir(exist_ok=True, parents=True)
 

@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 from ..feature import Feature
 from ..module import Module
 
 
-class LightEffectModule(Module):
+class LightEffectInterface(Module, ABC):
     """Interface to represent a light effect module."""
-
-    # This needs to implement abstract methods for typing to work with
-    # overload get_module(type[ModuleT]) -> ModuleT:
-    # https://discuss.python.org/t/add-abstracttype-to-the-typing-module/21996
 
     LIGHT_EFFECTS_OFF = "Off"
 
@@ -33,24 +31,25 @@ class LightEffectModule(Module):
         )
 
     @property
+    @abstractmethod
     def has_custom_effects(self) -> bool:
         """Return True if the device supports setting custom effects."""
-        raise NotImplementedError()
 
     @property
+    @abstractmethod
     def effect(self) -> str:
         """Return effect state or name."""
-        raise NotImplementedError()
 
     @property
+    @abstractmethod
     def effect_list(self) -> list[str]:
         """Return built-in effects list.
 
         Example:
             ['Aurora', 'Bubbling Cauldron', ...]
         """
-        raise NotImplementedError()
 
+    @abstractmethod
     async def set_effect(
         self,
         effect: str,
@@ -70,7 +69,6 @@ class LightEffectModule(Module):
         :param int brightness: The wanted brightness
         :param int transition: The wanted transition time
         """
-        raise NotImplementedError()
 
     async def set_custom_effect(
         self,
@@ -80,13 +78,3 @@ class LightEffectModule(Module):
 
         :param str effect_dict: The custom effect dict to set
         """
-        raise NotImplementedError()
-
-    def query(self) -> dict:
-        """Query to execute during the update cycle."""
-        raise NotImplementedError()
-
-    @property
-    def data(self):
-        """Query to execute during the update cycle."""
-        raise NotImplementedError()

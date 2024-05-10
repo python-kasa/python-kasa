@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import KasaException
+from kasa import KasaException, Module
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
 
@@ -123,40 +123,39 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
 
 
 async def test_get_modules():
-    """Test get_modules for child and parent modules."""
+    """Test getting modules for child and parent modules."""
     dummy_device = await get_device_for_fixture_protocol(
         "KS240(US)_1.0_1.0.5.json", "SMART"
     )
-    from kasa.iot.modules import AmbientLight
-    from kasa.smart.modules import CloudModule, FanModule
+    from kasa.smart.modules import CloudModule
 
     # Modules on device
-    module = dummy_device.get_module("CloudModule")
+    module = dummy_device.modules.get("CloudModule")
     assert module
     assert module._device == dummy_device
     assert isinstance(module, CloudModule)
 
-    module = dummy_device.get_module(CloudModule)
+    module = dummy_device.modules.get(Module.Cloud)
     assert module
     assert module._device == dummy_device
     assert isinstance(module, CloudModule)
 
     # Modules on child
-    module = dummy_device.get_module("FanModule")
+    module = dummy_device.modules.get("FanModule")
     assert module
     assert module._device != dummy_device
     assert module._device._parent == dummy_device
 
-    module = dummy_device.get_module(FanModule)
+    module = dummy_device.modules.get(Module.Fan)
     assert module
     assert module._device != dummy_device
     assert module._device._parent == dummy_device
 
     # Invalid modules
-    module = dummy_device.get_module("DummyModule")
+    module = dummy_device.modules.get("DummyModule")
     assert module is None
 
-    module = dummy_device.get_module(AmbientLight)
+    module = dummy_device.modules.get(Module.IotAmbientLight)
     assert module is None
 
 

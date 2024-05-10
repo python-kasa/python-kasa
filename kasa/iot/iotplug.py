@@ -6,6 +6,7 @@ import logging
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
+from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
 from .modules import Antitheft, Cloud, LedModule, Schedule, Time, Usage
@@ -57,8 +58,7 @@ class IotPlug(IotDevice):
         self.add_module("antitheft", Antitheft(self, "anti_theft"))
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
-        self._led_module = LedModule(self, "system")
-        self.add_module("ledmodule", self._led_module)
+        self.add_module(Module.Led, LedModule(self, "system"))
 
     @property  # type: ignore
     @requires_update
@@ -79,11 +79,11 @@ class IotPlug(IotDevice):
     @requires_update
     def led(self) -> bool:
         """Return the state of the led."""
-        return self._led_module.led
+        return self.modules[Module.Led].led
 
     async def set_led(self, state: bool):
         """Set the state of the led (night mode)."""
-        return await self._led_module.set_led(state)
+        return await self.modules[Module.Led].set_led(state)
 
 
 class IotWallSwitch(IotPlug):

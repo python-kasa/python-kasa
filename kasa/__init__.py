@@ -40,6 +40,7 @@ from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
 )
+from kasa.module import Module
 from kasa.protocol import BaseProtocol
 from kasa.smartprotocol import SmartProtocol
 
@@ -60,6 +61,7 @@ __all__ = [
     "Device",
     "Bulb",
     "Plug",
+    "Module",
     "KasaException",
     "AuthenticationError",
     "DeviceError",

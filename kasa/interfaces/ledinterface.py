@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 from ..feature import Feature
 from ..module import Module
 
 
-class LedModule(Module):
+class LedInterface(Module, ABC):
     """Base interface to represent a LED module."""
-
-    # This needs to implement abstract methods for typing to work with
-    # overload get_module(type[ModuleT]) -> ModuleT:
-    # https://discuss.python.org/t/add-abstracttype-to-the-typing-module/21996
 
     def _initialize_features(self):
         """Initialize features."""
@@ -22,7 +20,7 @@ class LedModule(Module):
                 container=self,
                 name="LED",
                 id="led",
-                icon="mdi:led-{state}",
+                icon="mdi:led",
                 attribute_getter="led",
                 attribute_setter="set_led",
                 type=Feature.Type.Switch,
@@ -31,19 +29,10 @@ class LedModule(Module):
         )
 
     @property
+    @abstractmethod
     def led(self) -> bool:
         """Return current led status."""
-        raise NotImplementedError()
 
+    @abstractmethod
     async def set_led(self, enable: bool) -> None:
         """Set led."""
-        raise NotImplementedError()
-
-    def query(self) -> dict:
-        """Query to execute during the update cycle."""
-        raise NotImplementedError()
-
-    @property
-    def data(self):
-        """Query to execute during the update cycle."""
-        raise NotImplementedError()
