@@ -13,6 +13,7 @@ from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..feature import Feature
+from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
@@ -198,13 +199,17 @@ class IotBulb(IotDevice, Bulb):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb
-        self.add_module("schedule", Schedule(self, "smartlife.iot.common.schedule"))
-        self.add_module("usage", Usage(self, "smartlife.iot.common.schedule"))
-        self.add_module("antitheft", Antitheft(self, "smartlife.iot.common.anti_theft"))
-        self.add_module("time", Time(self, "smartlife.iot.common.timesetting"))
-        self.add_module("emeter", Emeter(self, self.emeter_type))
-        self.add_module("countdown", Countdown(self, "countdown"))
-        self.add_module("cloud", Cloud(self, "smartlife.iot.common.cloud"))
+        self.add_module(
+            Module.IotSchedule, Schedule(self, "smartlife.iot.common.schedule")
+        )
+        self.add_module(Module.IotUsage, Usage(self, "smartlife.iot.common.schedule"))
+        self.add_module(
+            Module.IotAntitheft, Antitheft(self, "smartlife.iot.common.anti_theft")
+        )
+        self.add_module(Module.IotTime, Time(self, "smartlife.iot.common.timesetting"))
+        self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
+        self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
+        self.add_module(Module.IotCloud, Cloud(self, "smartlife.iot.common.cloud"))
 
     async def _initialize_features(self):
         await super()._initialize_features()

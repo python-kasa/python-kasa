@@ -127,21 +127,21 @@ async def test_get_modules():
     dummy_device = await get_device_for_fixture_protocol(
         "KS240(US)_1.0_1.0.5.json", "SMART"
     )
-    from kasa.smart.modules import CloudModule
+    from kasa.smart.modules import Cloud
 
     # Modules on device
-    module = dummy_device.modules.get("CloudModule")
+    module = dummy_device.modules.get("Cloud")
     assert module
     assert module._device == dummy_device
-    assert isinstance(module, CloudModule)
+    assert isinstance(module, Cloud)
 
     module = dummy_device.modules.get(Module.Cloud)
     assert module
     assert module._device == dummy_device
-    assert isinstance(module, CloudModule)
+    assert isinstance(module, Cloud)
 
     # Modules on child
-    module = dummy_device.modules.get("FanModule")
+    module = dummy_device.modules.get("Fan")
     assert module
     assert module._device != dummy_device
     assert module._device._parent == dummy_device

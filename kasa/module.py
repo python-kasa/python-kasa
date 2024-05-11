@@ -15,7 +15,7 @@ from .feature import Feature
 from .modulemapping import ModuleName
 
 if TYPE_CHECKING:
-    from .device import Device as DeviceType  # avoid name clash with Device module
+    from .device import Device
     from .interfaces.led import Led
     from .interfaces.lighteffect import LightEffect
     from .iot import modules as iot
@@ -34,8 +34,8 @@ class Module(ABC):
     """
 
     # Common Modules
-    LightEffect: Final[ModuleName[LightEffect]] = ModuleName("LightEffectModule")
-    Led: Final[ModuleName[Led]] = ModuleName("LedModule")
+    LightEffect: Final[ModuleName[LightEffect]] = ModuleName("LightEffect")
+    Led: Final[ModuleName[Led]] = ModuleName("Led")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
@@ -49,43 +49,43 @@ class Module(ABC):
     IotTime: Final[ModuleName[iot.Time]] = ModuleName("time")
 
     # SMART only Modules
-    Alarm: Final[ModuleName[smart.AlarmModule]] = ModuleName("AlarmModule")
-    AutoOff: Final[ModuleName[smart.AutoOffModule]] = ModuleName("AutoOffModule")
+    Alarm: Final[ModuleName[smart.Alarm]] = ModuleName("Alarm")
+    AutoOff: Final[ModuleName[smart.AutoOff]] = ModuleName("AutoOff")
     BatterySensor: Final[ModuleName[smart.BatterySensor]] = ModuleName("BatterySensor")
     Brightness: Final[ModuleName[smart.Brightness]] = ModuleName("Brightness")
-    ChildDevice: Final[ModuleName[smart.ChildDeviceModule]] = ModuleName(
-        "ChildDeviceModule"
-    )
-    Cloud: Final[ModuleName[smart.CloudModule]] = ModuleName("CloudModule")
-    Color: Final[ModuleName[smart.ColorModule]] = ModuleName("ColorModule")
-    ColorTemp: Final[ModuleName[smart.ColorTemperatureModule]] = ModuleName(
-        "ColorTemperatureModule"
+    ChildDevice: Final[ModuleName[smart.ChildDevice]] = ModuleName("ChildDevice")
+    Cloud: Final[ModuleName[smart.Cloud]] = ModuleName("Cloud")
+    Color: Final[ModuleName[smart.Color]] = ModuleName("Color")
+    ColorTemperature: Final[ModuleName[smart.ColorTemperature]] = ModuleName(
+        "ColorTemperature"
     )
     ContactSensor: Final[ModuleName[smart.ContactSensor]] = ModuleName("ContactSensor")
-    Device: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
-    Energy: Final[ModuleName[smart.EnergyModule]] = ModuleName("EnergyModule")
-    Fan: Final[ModuleName[smart.FanModule]] = ModuleName("FanModule")
+    DeviceModule: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
+    Energy: Final[ModuleName[smart.Energy]] = ModuleName("Energy")
+    Fan: Final[ModuleName[smart.Fan]] = ModuleName("Fan")
     Firmware: Final[ModuleName[smart.Firmware]] = ModuleName("Firmware")
-    FrostProtection: Final[ModuleName[smart.FrostProtectionModule]] = ModuleName(
-        "FrostProtectionModule"
+    FrostProtection: Final[ModuleName[smart.FrostProtection]] = ModuleName(
+        "FrostProtection"
     )
-    Humidity: Final[ModuleName[smart.HumiditySensor]] = ModuleName("HumiditySensor")
-    LightTransition: Final[ModuleName[smart.LightTransitionModule]] = ModuleName(
-        "LightTransitionModule"
+    HumiditySensor: Final[ModuleName[smart.HumiditySensor]] = ModuleName(
+        "HumiditySensor"
     )
-    Report: Final[ModuleName[smart.ReportModule]] = ModuleName("ReportModule")
-    Temperature: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
+    LightTransition: Final[ModuleName[smart.LightTransition]] = ModuleName(
+        "LightTransition"
+    )
+    ReportMode: Final[ModuleName[smart.ReportMode]] = ModuleName("ReportMode")
+    TemperatureSensor: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
         "TemperatureSensor"
     )
-    TemperatureSensor: Final[ModuleName[smart.TemperatureControl]] = ModuleName(
+    TemperatureControl: Final[ModuleName[smart.TemperatureControl]] = ModuleName(
         "TemperatureControl"
     )
-    Time: Final[ModuleName[smart.TimeModule]] = ModuleName("TimeModule")
+    Time: Final[ModuleName[smart.Time]] = ModuleName("Time")
     WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
         "WaterleakSensor"
     )
 
-    def __init__(self, device: DeviceType, module: str):
+    def __init__(self, device: Device, module: str):
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}

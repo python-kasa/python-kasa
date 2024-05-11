@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class CloudModule(SmartModule):
+class Cloud(SmartModule):
     """Implementation of cloud module."""
 
     QUERY_GETTER_NAME = "get_connect_cloud_state"

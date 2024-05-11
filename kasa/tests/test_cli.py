@@ -737,7 +737,7 @@ async def test_feature_set(mocker, runner):
     dummy_device = await get_device_for_fixture_protocol(
         "P300(EU)_1.0_1.0.13.json", "SMART"
     )
-    led_setter = mocker.patch("kasa.smart.modules.ledmodule.LedModule.set_led")
+    led_setter = mocker.patch("kasa.smart.modules.led.Led.set_led")
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
 
     res = await runner.invoke(

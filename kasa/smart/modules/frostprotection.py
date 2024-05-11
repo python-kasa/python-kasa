@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class FrostProtectionModule(SmartModule):
+class FrostProtection(SmartModule):
     """Implementation for frost protection module.
 
     This basically turns the thermostat on and off.

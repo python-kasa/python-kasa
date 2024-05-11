@@ -20,15 +20,10 @@ from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
 from .modules import (
-    Brightness,
-    CloudModule,
-    ColorModule,
-    ColorTemperatureModule,
+    Cloud,
     DeviceModule,
-    EnergyModule,
-    FanModule,
     Firmware,
-    TimeModule,
+    Time,
 )
 from .smartmodule import SmartModule
 
@@ -39,7 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 # the child but only work on the parent.  See longer note below in _initialize_modules.
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
-WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, TimeModule, Firmware, CloudModule]
+WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -329,11 +324,11 @@ class SmartDevice(Bulb, Fan, Device):
                 self._add_feature(feat)
 
     @property
-    def is_cloud_connected(self):
+    def is_cloud_connected(self) -> bool:
         """Returns if the device is connected to the cloud."""
-        if "CloudModule" not in self.modules:
+        if Module.Cloud not in self.modules:
             return False
-        return self.modules["CloudModule"].is_connected
+        return self.modules[Module.Cloud].is_connected
 
     @property
     def sys_info(self) -> dict[str, Any]:
@@ -357,10 +352,10 @@ class SmartDevice(Bulb, Fan, Device):
     def time(self) -> datetime:
         """Return the time."""
         # TODO: Default to parent's time module for child devices
-        if self._parent and "TimeModule" in self.modules:
-            _timemod = cast(TimeModule, self._parent.modules["TimeModule"])  # noqa: F405
+        if self._parent and Module.Time in self.modules:
+            _timemod = self._parent.modules[Module.Time]
         else:
-            _timemod = cast(TimeModule, self.modules["TimeModule"])  # noqa: F405
+            _timemod = self.modules[Module.Time]
 
         return _timemod.time
 
@@ -437,7 +432,7 @@ class SmartDevice(Bulb, Fan, Device):
     @property
     def has_emeter(self) -> bool:
         """Return if the device has emeter."""
-        return "EnergyModule" in self.modules
+        return Module.Energy in self.modules
 
     @property
     def is_dimmer(self) -> bool:
@@ -479,19 +474,19 @@ class SmartDevice(Bulb, Fan, Device):
     @property
     def emeter_realtime(self) -> EmeterStatus:
         """Get the emeter status."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        energy = self.modules[Module.Energy]
         return energy.emeter_realtime
 
     @property
     def emeter_this_month(self) -> float | None:
         """Get the emeter value for this month."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        energy = self.modules[Module.Energy]
         return energy.emeter_this_month
 
     @property
     def emeter_today(self) -> float | None:
         """Get the emeter value for today."""
-        energy = cast(EnergyModule, self.modules["EnergyModule"])
+        energy = self.modules[Module.Energy]
         return energy.emeter_today
 
     @property
@@ -503,8 +498,7 @@ class SmartDevice(Bulb, Fan, Device):
         ):
             return None
         on_time = cast(float, on_time)
-        if (timemod := self.modules.get("TimeModule")) is not None:
-            timemod = cast(TimeModule, timemod)  # noqa: F405
+        if (timemod := self.modules.get(Module.Time)) is not None:
             return timemod.time - timedelta(seconds=on_time)
         else:  # We have no device time, use current local time.
             return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
@@ -650,37 +644,37 @@ class SmartDevice(Bulb, Fan, Device):
     @property
     def is_fan(self) -> bool:
         """Return True if the device is a fan."""
-        return "FanModule" in self.modules
+        return Module.Fan in self.modules
 
     @property
     def fan_speed_level(self) -> int:
         """Return fan speed level."""
         if not self.is_fan:
             raise KasaException("Device is not a Fan")
-        return cast(FanModule, self.modules["FanModule"]).fan_speed_level
+        return self.modules[Module.Fan].fan_speed_level
 
     async def set_fan_speed_level(self, level: int):
         """Set fan speed level."""
         if not self.is_fan:
             raise KasaException("Device is not a Fan")
-        await cast(FanModule, self.modules["FanModule"]).set_fan_speed_level(level)
+        await self.modules[Module.Fan].set_fan_speed_level(level)
 
     # Bulb interface methods
 
     @property
     def is_color(self) -> bool:
         """Whether the bulb supports color changes."""
-        return "ColorModule" in self.modules
+        return Module.Color in self.modules
 
     @property
     def is_dimmable(self) -> bool:
         """Whether the bulb supports brightness changes."""
-        return "Brightness" in self.modules
+        return Module.Brightness in self.modules
 
     @property
     def is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes."""
-        return "ColorTemperatureModule" in self.modules
+        return Module.ColorTemperature in self.modules
 
     @property
     def valid_temperature_range(self) -> ColorTempRange:
@@ -691,9 +685,7 @@ class SmartDevice(Bulb, Fan, Device):
         if not self.is_variable_color_temp:
             raise KasaException("Color temperature not supported")
 
-        return cast(
-            ColorTemperatureModule, self.modules["ColorTemperatureModule"]
-        ).valid_temperature_range
+        return self.modules[Module.ColorTemperature].valid_temperature_range
 
     @property
     def hsv(self) -> HSV:
@@ -704,7 +696,7 @@ class SmartDevice(Bulb, Fan, Device):
         if not self.is_color:
             raise KasaException("Bulb does not support color.")
 
-        return cast(ColorModule, self.modules["ColorModule"]).hsv
+        return self.modules[Module.Color].hsv
 
     @property
     def color_temp(self) -> int:
@@ -712,9 +704,7 @@ class SmartDevice(Bulb, Fan, Device):
         if not self.is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
-        return cast(
-            ColorTemperatureModule, self.modules["ColorTemperatureModule"]
-        ).color_temp
+        return self.modules[Module.ColorTemperature].color_temp
 
     @property
     def brightness(self) -> int:
@@ -722,7 +712,7 @@ class SmartDevice(Bulb, Fan, Device):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
-        return cast(Brightness, self.modules["Brightness"]).brightness
+        return self.modules[Module.Brightness].brightness
 
     async def set_hsv(
         self,
@@ -744,9 +734,7 @@ class SmartDevice(Bulb, Fan, Device):
         if not self.is_color:
             raise KasaException("Bulb does not support color.")
 
-        return await cast(ColorModule, self.modules["ColorModule"]).set_hsv(
-            hue, saturation, value
-        )
+        return await self.modules[Module.Color].set_hsv(hue, saturation, value)
 
     async def set_color_temp(
         self, temp: int, *, brightness=None, transition: int | None = None
@@ -760,9 +748,7 @@ class SmartDevice(Bulb, Fan, Device):
         """
         if not self.is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
-        return await cast(
-            ColorTemperatureModule, self.modules["ColorTemperatureModule"]
-        ).set_color_temp(temp)
+        return await self.modules[Module.ColorTemperature].set_color_temp(temp)
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
@@ -777,9 +763,7 @@ class SmartDevice(Bulb, Fan, Device):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
-        return await cast(Brightness, self.modules["Brightness"]).set_brightness(
-            brightness
-        )
+        return await self.modules[Module.Brightness].set_brightness(brightness)
 
     @property
     def presets(self) -> list[BulbPreset]:
@@ -789,4 +773,4 @@ class SmartDevice(Bulb, Fan, Device):
     @property
     def has_effects(self) -> bool:
         """Return True if the device supports effects."""
-        return "LightEffectModule" in self.modules
+        return Module.LightEffect in self.modules

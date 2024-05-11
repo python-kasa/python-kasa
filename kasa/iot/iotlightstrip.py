@@ -9,7 +9,7 @@ from ..protocol import BaseProtocol
 from .effects import EFFECT_NAMES_V1
 from .iotbulb import IotBulb
 from .iotdevice import KasaException, requires_update
-from .modules.lighteffectmodule import LightEffectModule
+from .modules.lighteffect import LightEffect
 
 
 class IotLightStrip(IotBulb):
@@ -58,7 +58,7 @@ class IotLightStrip(IotBulb):
         self._device_type = DeviceType.LightStrip
         self.add_module(
             Module.LightEffect,
-            LightEffectModule(self, "smartlife.iot.lighting_effect"),
+            LightEffect(self, "smartlife.iot.lighting_effect"),
         )
 
     @property  # type: ignore

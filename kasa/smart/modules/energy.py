@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class EnergyModule(SmartModule):
+class Energy(SmartModule):
     """Implementation of energy monitoring module."""
 
     REQUIRED_COMPONENT = "energy_monitoring"
