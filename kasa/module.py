@@ -15,7 +15,7 @@ from .feature import Feature
 from .modulemapping import ModuleName
 
 if TYPE_CHECKING:
-    from .device import Device as DeviceType  # avoid name clash with Device module
+    from .device import Device
     from .interfaces.led import Led
     from .interfaces.lighteffect import LightEffect
     from .iot import modules as iot
@@ -60,7 +60,7 @@ class Module(ABC):
         "ColorTemperature"
     )
     ContactSensor: Final[ModuleName[smart.ContactSensor]] = ModuleName("ContactSensor")
-    Device: Final[ModuleName[smart.Device]] = ModuleName("Device")
+    DeviceModule: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
     Energy: Final[ModuleName[smart.Energy]] = ModuleName("Energy")
     Fan: Final[ModuleName[smart.Fan]] = ModuleName("Fan")
     Firmware: Final[ModuleName[smart.Firmware]] = ModuleName("Firmware")
@@ -85,7 +85,7 @@ class Module(ABC):
         "WaterleakSensor"
     )
 
-    def __init__(self, device: DeviceType, module: str):
+    def __init__(self, device: Device, module: str):
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}

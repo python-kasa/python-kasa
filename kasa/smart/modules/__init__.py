@@ -9,7 +9,7 @@ from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
 from .contactsensor import ContactSensor
-from .device import Device
+from .devicemodule import DeviceModule
 from .energy import Energy
 from .fan import Fan
 from .firmware import Firmware
@@ -28,7 +28,7 @@ __all__ = [
     "Alarm",
     "Time",
     "Energy",
-    "Device",
+    "DeviceModule",
     "ChildDevice",
     "BatterySensor",
     "HumiditySensor",

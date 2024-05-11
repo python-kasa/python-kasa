@@ -5,7 +5,7 @@ from __future__ import annotations
 from ..smartmodule import SmartModule
 
 
-class Device(SmartModule):
+class DeviceModule(SmartModule):
     """Implementation of device module."""
 
     REQUIRED_COMPONENT = "device"
