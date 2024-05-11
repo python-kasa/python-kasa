@@ -21,11 +21,9 @@ from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
 from .modules import (
     Cloud,
+    DeviceModule,
     Firmware,
     Time,
-)
-from .modules import (
-    Device as DeviceModule,
 )
 from .smartmodule import SmartModule
 
