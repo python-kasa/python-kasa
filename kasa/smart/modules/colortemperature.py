@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_TEMP_RANGE = [2500, 6500]
 
 
-class ColorTemperatureModule(SmartModule):
+class ColorTemperature(SmartModule):
     """Implementation of color temp module."""
 
     REQUIRED_COMPONENT = "color_temperature"

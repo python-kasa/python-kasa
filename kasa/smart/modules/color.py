@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class ColorModule(SmartModule):
+class Color(SmartModule):
     """Implementation of color module."""
 
     REQUIRED_COMPONENT = "color"

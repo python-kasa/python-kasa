@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from ...interfaces.led import Led
+from ...interfaces.led import Led as LedInterface
 from ..iotmodule import IotModule
 
 
-class LedModule(IotModule, Led):
+class Led(IotModule, LedInterface):
     """Implementation of led controls."""
 
     def query(self) -> dict:

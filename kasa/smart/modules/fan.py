@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class FanModule(SmartModule):
+class Fan(SmartModule):
     """Implementation of fan_control module."""
 
     REQUIRED_COMPONENT = "fan_control"

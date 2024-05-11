@@ -1,51 +1,51 @@
 """Modules for SMART devices."""
 
-from .alarmmodule import AlarmModule
-from .autooffmodule import AutoOffModule
-from .battery import BatterySensor
+from .alarm import Alarm
+from .autooff import AutoOff
+from .batterysensor import BatterySensor
 from .brightness import Brightness
-from .childdevicemodule import ChildDeviceModule
-from .cloudmodule import CloudModule
-from .colormodule import ColorModule
-from .colortemp import ColorTemperatureModule
-from .contact import ContactSensor
-from .devicemodule import DeviceModule
-from .energymodule import EnergyModule
-from .fanmodule import FanModule
+from .childdevice import ChildDevice
+from .cloud import Cloud
+from .color import Color
+from .colortemperature import ColorTemperature
+from .contactsensor import ContactSensor
+from .device import Device
+from .energy import Energy
+from .fan import Fan
 from .firmware import Firmware
-from .frostprotection import FrostProtectionModule
-from .humidity import HumiditySensor
-from .ledmodule import LedModule
-from .lighteffectmodule import LightEffectModule
-from .lighttransitionmodule import LightTransitionModule
-from .reportmodule import ReportModule
-from .temperature import TemperatureSensor
+from .frostprotection import FrostProtection
+from .humiditysensor import HumiditySensor
+from .led import Led
+from .lighteffect import LightEffect
+from .lighttransition import LightTransition
+from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
-from .timemodule import TimeModule
-from .waterleak import WaterleakSensor
+from .temperaturesensor import TemperatureSensor
+from .time import Time
+from .waterleaksensor import WaterleakSensor
 
 __all__ = [
-    "AlarmModule",
-    "TimeModule",
-    "EnergyModule",
-    "DeviceModule",
-    "ChildDeviceModule",
+    "Alarm",
+    "Time",
+    "Energy",
+    "Device",
+    "ChildDevice",
     "BatterySensor",
     "HumiditySensor",
     "TemperatureSensor",
     "TemperatureControl",
-    "ReportModule",
-    "AutoOffModule",
-    "LedModule",
+    "ReportMode",
+    "AutoOff",
+    "Led",
     "Brightness",
-    "FanModule",
+    "Fan",
     "Firmware",
-    "CloudModule",
-    "LightEffectModule",
-    "LightTransitionModule",
-    "ColorTemperatureModule",
-    "ColorModule",
+    "Cloud",
+    "LightEffect",
+    "LightTransition",
+    "ColorTemperature",
+    "Color",
     "WaterleakSensor",
     "ContactSensor",
-    "FrostProtectionModule",
+    "FrostProtection",
 ]

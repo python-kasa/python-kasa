@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class LightTransitionModule(SmartModule):
+class LightTransition(SmartModule):
     """Implementation of gradual on/off."""
 
     REQUIRED_COMPONENT = "on_off_gradually"

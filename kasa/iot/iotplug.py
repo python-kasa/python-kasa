@@ -9,7 +9,7 @@ from ..deviceconfig import DeviceConfig
 from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
-from .modules import Antitheft, Cloud, LedModule, Schedule, Time, Usage
+from .modules import Antitheft, Cloud, Led, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class IotPlug(IotDevice):
         self.add_module("antitheft", Antitheft(self, "anti_theft"))
         self.add_module("time", Time(self, "time"))
         self.add_module("cloud", Cloud(self, "cnCloud"))
-        self.add_module(Module.Led, LedModule(self, "system"))
+        self.add_module(Module.Led, Led(self, "system"))
 
     @property  # type: ignore
     @requires_update

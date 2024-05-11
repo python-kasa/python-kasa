@@ -5,7 +5,8 @@ from .antitheft import Antitheft
 from .cloud import Cloud
 from .countdown import Countdown
 from .emeter import Emeter
-from .ledmodule import LedModule
+from .led import Led
+from .lighteffect import LightEffect
 from .motion import Motion
 from .rulemodule import Rule, RuleModule
 from .schedule import Schedule
@@ -18,7 +19,8 @@ __all__ = [
     "Cloud",
     "Countdown",
     "Emeter",
-    "LedModule",
+    "Led",
+    "LightEffect",
     "Motion",
     "Rule",
     "RuleModule",

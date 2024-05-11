@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class AutoOffModule(SmartModule):
+class AutoOff(SmartModule):
     """Implementation of auto off module."""
 
     REQUIRED_COMPONENT = "auto_off"

@@ -6,7 +6,7 @@ from ...feature import Feature
 from ..smartmodule import SmartModule
 
 
-class AlarmModule(SmartModule):
+class Alarm(SmartModule):
     """Implementation of alarm module."""
 
     REQUIRED_COMPONENT = "alarm"

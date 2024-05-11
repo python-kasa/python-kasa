@@ -3,7 +3,7 @@
 from ..smartmodule import SmartModule
 
 
-class ChildDeviceModule(SmartModule):
+class ChildDevice(SmartModule):
     """Implementation for child devices."""
 
     REQUIRED_COMPONENT = "child_device"
