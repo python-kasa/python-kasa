@@ -347,7 +347,7 @@ class IotDevice(Device):
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
             )
-            self.add_module("emeter", Emeter(self, self.emeter_type))
+            self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
 
         # TODO: perhaps modules should not have unsupported modules,
         #  making separate handling for this unnecessary

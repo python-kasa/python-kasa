@@ -8,6 +8,7 @@ from typing import Any
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..feature import Feature
+from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
@@ -81,8 +82,8 @@ class IotDimmer(IotPlug):
         self._device_type = DeviceType.Dimmer
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
         # TODO: need to be figured out what's the best approach to detect support
-        self.add_module("motion", Motion(self, "smartlife.iot.PIR"))
-        self.add_module("ambient", AmbientLight(self, "smartlife.iot.LAS"))
+        self.add_module(Module.IotMotion, Motion(self, "smartlife.iot.PIR"))
+        self.add_module(Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS"))
 
     async def _initialize_features(self):
         await super()._initialize_features()

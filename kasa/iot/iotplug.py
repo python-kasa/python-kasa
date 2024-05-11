@@ -53,11 +53,11 @@ class IotPlug(IotDevice):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
-        self.add_module("schedule", Schedule(self, "schedule"))
-        self.add_module("usage", Usage(self, "schedule"))
-        self.add_module("antitheft", Antitheft(self, "anti_theft"))
-        self.add_module("time", Time(self, "time"))
-        self.add_module("cloud", Cloud(self, "cnCloud"))
+        self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
+        self.add_module(Module.IotUsage, Usage(self, "schedule"))
+        self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
+        self.add_module(Module.IotTime, Time(self, "time"))
+        self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
         self.add_module(Module.Led, Led(self, "system"))
 
     @property  # type: ignore
