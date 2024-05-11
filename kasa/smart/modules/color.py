@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...bulb import HSV
 from ...feature import Feature
+from ...interfaces.light import HSV
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:

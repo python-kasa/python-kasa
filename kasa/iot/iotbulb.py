@@ -9,10 +9,10 @@ from typing import Optional, cast
 
 from pydantic.v1 import BaseModel, Field, root_validator
 
-from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..feature import Feature
+from ..interfaces.light import HSV, ColorTempRange, Light, LightPreset
 from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
@@ -88,7 +88,7 @@ NON_COLOR_MODE_FLAGS = {"transition_period", "on_off"}
 _LOGGER = logging.getLogger(__name__)
 
 
-class IotBulb(IotDevice, Bulb):
+class IotBulb(IotDevice, Light):
     r"""Representation of a TP-Link Smart Bulb.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -170,9 +170,9 @@ class IotBulb(IotDevice, Bulb):
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
         >>> bulb.presets
-        [BulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), BulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), BulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), BulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
+        [LightPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), LightPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
-        To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset`
+        To modify an existing preset, pass :class:`~kasa.smartbulb.LightPreset`
         instance to :func:`save_preset` method:
 
         >>> preset = bulb.presets[0]
@@ -523,11 +523,11 @@ class IotBulb(IotDevice, Bulb):
 
     @property  # type: ignore
     @requires_update
-    def presets(self) -> list[BulbPreset]:
+    def presets(self) -> list[LightPreset]:
         """Return a list of available bulb setting presets."""
-        return [BulbPreset(**vals) for vals in self.sys_info["preferred_state"]]
+        return [LightPreset(**vals) for vals in self.sys_info["preferred_state"]]
 
-    async def save_preset(self, preset: BulbPreset):
+    async def save_preset(self, preset: LightPreset):
         """Save a setting preset.
 
         You can either construct a preset object manually, or pass an existing one

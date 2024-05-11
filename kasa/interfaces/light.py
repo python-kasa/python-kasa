@@ -7,7 +7,7 @@ from typing import NamedTuple, Optional
 
 from pydantic.v1 import BaseModel
 
-from .device import Device
+from ..device import Device
 
 
 class ColorTempRange(NamedTuple):
@@ -25,8 +25,8 @@ class HSV(NamedTuple):
     value: int
 
 
-class BulbPreset(BaseModel):
-    """Bulb configuration preset."""
+class LightPreset(BaseModel):
+    """Light configuration preset."""
 
     index: int
     brightness: int
@@ -42,8 +42,8 @@ class BulbPreset(BaseModel):
     mode: Optional[int]  # noqa: UP007
 
 
-class Bulb(Device, ABC):
-    """Base class for TP-Link Bulb."""
+class Light(Device, ABC):
+    """Base class for TP-Link Light."""
 
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int) or not (0 <= value <= 100):
@@ -135,5 +135,5 @@ class Bulb(Device, ABC):
 
     @property
     @abstractmethod
-    def presets(self) -> list[BulbPreset]:
+    def presets(self) -> list[LightPreset]:
         """Return a list of available bulb setting presets."""

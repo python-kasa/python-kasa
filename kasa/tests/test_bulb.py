@@ -7,7 +7,7 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import Bulb, BulbPreset, Device, DeviceType, KasaException
+from kasa import Device, DeviceType, KasaException, Light, LightPreset
 from kasa.iot import IotBulb, IotDimmer
 from kasa.smart import SmartDevice
 
@@ -65,7 +65,7 @@ async def test_get_light_state(dev: IotBulb):
 @color_bulb
 @turn_on
 async def test_hsv(dev: Device, turn_on):
-    assert isinstance(dev, Bulb)
+    assert isinstance(dev, Light)
     await handle_turn_on(dev, turn_on)
     assert dev.is_color
 
@@ -96,7 +96,7 @@ async def test_set_hsv_transition(dev: IotBulb, mocker):
 
 @color_bulb
 @turn_on
-async def test_invalid_hsv(dev: Bulb, turn_on):
+async def test_invalid_hsv(dev: Light, turn_on):
     await handle_turn_on(dev, turn_on)
     assert dev.is_color
 
@@ -116,13 +116,13 @@ async def test_invalid_hsv(dev: Bulb, turn_on):
 @color_bulb
 @pytest.mark.skip("requires color feature")
 async def test_color_state_information(dev: Device):
-    assert isinstance(dev, Bulb)
+    assert isinstance(dev, Light)
     assert "HSV" in dev.state_information
     assert dev.state_information["HSV"] == dev.hsv
 
 
 @non_color_bulb
-async def test_hsv_on_non_color(dev: Bulb):
+async def test_hsv_on_non_color(dev: Light):
     assert not dev.is_color
 
     with pytest.raises(KasaException):
@@ -134,7 +134,7 @@ async def test_hsv_on_non_color(dev: Bulb):
 @variable_temp
 @pytest.mark.skip("requires colortemp module")
 async def test_variable_temp_state_information(dev: Device):
-    assert isinstance(dev, Bulb)
+    assert isinstance(dev, Light)
     assert "Color temperature" in dev.state_information
     assert dev.state_information["Color temperature"] == dev.color_temp
 
@@ -142,7 +142,7 @@ async def test_variable_temp_state_information(dev: Device):
 @variable_temp
 @turn_on
 async def test_try_set_colortemp(dev: Device, turn_on):
-    assert isinstance(dev, Bulb)
+    assert isinstance(dev, Light)
     await handle_turn_on(dev, turn_on)
     await dev.set_color_temp(2700)
     await dev.update()
@@ -171,7 +171,7 @@ async def test_smart_temp_range(dev: SmartDevice):
 
 
 @variable_temp
-async def test_out_of_range_temperature(dev: Bulb):
+async def test_out_of_range_temperature(dev: Light):
     with pytest.raises(ValueError):
         await dev.set_color_temp(1000)
     with pytest.raises(ValueError):
@@ -179,7 +179,7 @@ async def test_out_of_range_temperature(dev: Bulb):
 
 
 @non_variable_temp
-async def test_non_variable_temp(dev: Bulb):
+async def test_non_variable_temp(dev: Light):
     with pytest.raises(KasaException):
         await dev.set_color_temp(2700)
 
@@ -193,7 +193,7 @@ async def test_non_variable_temp(dev: Bulb):
 @dimmable
 @turn_on
 async def test_dimmable_brightness(dev: Device, turn_on):
-    assert isinstance(dev, (Bulb, IotDimmer))
+    assert isinstance(dev, (Light, IotDimmer))
     await handle_turn_on(dev, turn_on)
     assert dev.is_dimmable
 
@@ -230,7 +230,7 @@ async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
 
 
 @dimmable
-async def test_invalid_brightness(dev: Bulb):
+async def test_invalid_brightness(dev: Light):
     assert dev.is_dimmable
 
     with pytest.raises(ValueError):
@@ -241,7 +241,7 @@ async def test_invalid_brightness(dev: Bulb):
 
 
 @non_dimmable
-async def test_non_dimmable(dev: Bulb):
+async def test_non_dimmable(dev: Light):
     assert not dev.is_dimmable
 
     with pytest.raises(KasaException):
@@ -291,7 +291,7 @@ async def test_modify_preset(dev: IotBulb, mocker):
         "saturation": 0,
         "color_temp": 0,
     }
-    preset = BulbPreset(**data)
+    preset = LightPreset(**data)
 
     assert preset.index == 0
     assert preset.brightness == 10
@@ -305,7 +305,7 @@ async def test_modify_preset(dev: IotBulb, mocker):
 
     with pytest.raises(KasaException):
         await dev.save_preset(
-            BulbPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)
+            LightPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)
         )
 
 
@@ -314,11 +314,11 @@ async def test_modify_preset(dev: IotBulb, mocker):
     ("preset", "payload"),
     [
         (
-            BulbPreset(index=0, hue=0, brightness=1, saturation=0),
+            LightPreset(index=0, hue=0, brightness=1, saturation=0),
             {"index": 0, "hue": 0, "brightness": 1, "saturation": 0},
         ),
         (
-            BulbPreset(index=0, brightness=1, id="testid", mode=2, custom=0),
+            LightPreset(index=0, brightness=1, id="testid", mode=2, custom=0),
             {"index": 0, "brightness": 1, "id": "testid", "mode": 2, "custom": 0},
         ),
     ],

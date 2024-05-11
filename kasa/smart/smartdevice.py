@@ -8,14 +8,14 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
-from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
-from ..fan import Fan
 from ..feature import Feature
+from ..interfaces.fan import Fan
+from ..interfaces.light import HSV, ColorTempRange, Light, LightPreset
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
@@ -41,7 +41,7 @@ WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
-class SmartDevice(Bulb, Fan, Device):
+class SmartDevice(Light, Fan, Device):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -768,7 +768,7 @@ class SmartDevice(Bulb, Fan, Device):
         return await self.modules[Module.Brightness].set_brightness(brightness)
 
     @property
-    def presets(self) -> list[BulbPreset]:
+    def presets(self) -> list[LightPreset]:
         """Return a list of available bulb setting presets."""
         return []
 

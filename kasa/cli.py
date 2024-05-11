@@ -18,7 +18,6 @@ from pydantic.v1 import ValidationError
 
 from kasa import (
     AuthenticationError,
-    Bulb,
     ConnectionType,
     Credentials,
     Device,
@@ -28,6 +27,7 @@ from kasa import (
     EncryptType,
     Feature,
     KasaException,
+    Light,
     UnsupportedDeviceError,
 )
 from kasa.discover import DiscoveryResult
@@ -859,7 +859,7 @@ async def usage(dev: Device, year, month, erase):
 @click.argument("brightness", type=click.IntRange(0, 100), default=None, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def brightness(dev: Bulb, brightness: int, transition: int):
+async def brightness(dev: Light, brightness: int, transition: int):
     """Get or set brightness."""
     if not dev.is_dimmable:
         echo("This device does not support brightness.")
@@ -879,7 +879,7 @@ async def brightness(dev: Bulb, brightness: int, transition: int):
 )
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def temperature(dev: Bulb, temperature: int, transition: int):
+async def temperature(dev: Light, temperature: int, transition: int):
     """Get or set color temperature."""
     if not dev.is_variable_color_temp:
         echo("Device does not support color temperature")
