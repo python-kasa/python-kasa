@@ -25,6 +25,7 @@ def _get_subclasses(of_class):
                 inspect.isclass(obj)
                 and issubclass(obj, of_class)
                 and module.__package__ != "kasa"
+                and module.__package__ != "kasa.interfaces"
             ):
                 subclasses.add((module.__package__ + "." + name, obj))
     return subclasses
