@@ -52,7 +52,7 @@ async def test_sleep_mode(dev: SmartDevice, mocker: MockerFixture):
 
 
 @fan
-async def test_fan_interface(dev: SmartDevice, mocker: MockerFixture):
+async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     """Test fan speed on device interface."""
     assert isinstance(dev, SmartDevice)
     fan = dev.modules.get(Module.Fan)
@@ -60,21 +60,21 @@ async def test_fan_interface(dev: SmartDevice, mocker: MockerFixture):
     device = fan._device
     assert device.is_fan
 
-    await device.set_fan_speed_level(1)
+    await fan.set_fan_speed_level(1)
     await dev.update()
-    assert device.fan_speed_level == 1
+    assert fan.fan_speed_level == 1
     assert device.is_on
 
-    await device.set_fan_speed_level(4)
+    await fan.set_fan_speed_level(4)
     await dev.update()
-    assert device.fan_speed_level == 4
+    assert fan.fan_speed_level == 4
 
-    await device.set_fan_speed_level(0)
+    await fan.set_fan_speed_level(0)
     await dev.update()
     assert not device.is_on
 
     with pytest.raises(ValueError):
-        await device.set_fan_speed_level(-1)
+        await fan.set_fan_speed_level(-1)
 
     with pytest.raises(ValueError):
-        await device.set_fan_speed_level(5)
+        await fan.set_fan_speed_level(5)

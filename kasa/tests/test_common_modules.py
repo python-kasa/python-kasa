@@ -3,7 +3,9 @@ from pytest_mock import MockerFixture
 
 from kasa import Device, Module
 from kasa.tests.device_fixtures import (
-    lightstrip,
+    dimmable_iot,
+    dimmer_iot,
+    lightstrip_iot,
     parametrize,
     parametrize_combine,
     plug_iot,
@@ -17,7 +19,12 @@ led = parametrize_combine([led_smart, plug_iot])
 light_effect_smart = parametrize(
     "has light effect smart", component_filter="light_effect", protocol_filter={"SMART"}
 )
-light_effect = parametrize_combine([light_effect_smart, lightstrip])
+light_effect = parametrize_combine([light_effect_smart, lightstrip_iot])
+
+dimmable_smart = parametrize(
+    "dimmable smart", component_filter="brightness", protocol_filter={"SMART"}
+)
+dimmable_iot = parametrize_combine([dimmable_smart, dimmer_iot, dimmable_iot])
 
 
 @led
@@ -93,3 +100,26 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     with pytest.raises(ValueError):
         await light_effect_module.set_effect("foobar")
         assert call.call_count == 4
+
+
+@dimmable_iot
+async def test_light_brightness(dev: Device):
+    """Test brightness setter and getter."""
+    assert isinstance(dev, Device)
+    brightness = dev.modules.get(Module.Brightness)
+    assert brightness
+
+    # Test getting the value
+    feature = brightness._module_features["brightness"]
+    assert feature.minimum_value == 0
+    assert feature.maximum_value == 100
+
+    await brightness.set_brightness(10)
+    await dev.update()
+    assert brightness.brightness == 10
+
+    with pytest.raises(ValueError):
+        await brightness.set_brightness(feature.minimum_value - 10)
+
+    with pytest.raises(ValueError):
+        await brightness.set_brightness(feature.maximum_value + 10)

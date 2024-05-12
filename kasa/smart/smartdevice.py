@@ -14,8 +14,7 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature
-from ..interfaces.fan import Fan
-from ..interfaces.light import HSV, ColorTempRange, Light, LightPreset
+from ..interfaces.light import LightPreset
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
@@ -23,6 +22,7 @@ from .modules import (
     Cloud,
     DeviceModule,
     Firmware,
+    Light,
     Time,
 )
 from .smartmodule import SmartModule
@@ -39,7 +39,7 @@ WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
-class SmartDevice(Light, Fan, Device):
+class SmartDevice(Device):
     """Base class to represent a SMART protocol based device."""
 
     def __init__(
@@ -230,6 +230,13 @@ class SmartDevice(Light, Fan, Device):
                 module = mod(self, mod.REQUIRED_COMPONENT)
                 if await module._check_supported():
                     self._modules[module.name] = module
+
+        if (
+            Module.Brightness in self._modules
+            or Module.Color in self._modules
+            or Module.ColorTemperature in self._modules
+        ):
+            self._modules[Light.__name__] = Light(self, "light")
 
     async def _initialize_features(self):
         """Initialize device features."""
@@ -639,138 +646,7 @@ class SmartDevice(Light, Fan, Device):
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
 
-    # Fan interface methods
-
-    @property
-    def is_fan(self) -> bool:
-        """Return True if the device is a fan."""
-        return Module.Fan in self.modules
-
-    @property
-    def fan_speed_level(self) -> int:
-        """Return fan speed level."""
-        if not self.is_fan:
-            raise KasaException("Device is not a Fan")
-        return self.modules[Module.Fan].fan_speed_level
-
-    async def set_fan_speed_level(self, level: int):
-        """Set fan speed level."""
-        if not self.is_fan:
-            raise KasaException("Device is not a Fan")
-        await self.modules[Module.Fan].set_fan_speed_level(level)
-
-    # Bulb interface methods
-
-    @property
-    def is_color(self) -> bool:
-        """Whether the bulb supports color changes."""
-        return Module.Color in self.modules
-
-    @property
-    def is_dimmable(self) -> bool:
-        """Whether the bulb supports brightness changes."""
-        return Module.Brightness in self.modules
-
-    @property
-    def is_variable_color_temp(self) -> bool:
-        """Whether the bulb supports color temperature changes."""
-        return Module.ColorTemperature in self.modules
-
-    @property
-    def valid_temperature_range(self) -> ColorTempRange:
-        """Return the device-specific white temperature range (in Kelvin).
-
-        :return: White temperature range in Kelvin (minimum, maximum)
-        """
-        if not self.is_variable_color_temp:
-            raise KasaException("Color temperature not supported")
-
-        return self.modules[Module.ColorTemperature].valid_temperature_range
-
-    @property
-    def hsv(self) -> HSV:
-        """Return the current HSV state of the bulb.
-
-        :return: hue, saturation and value (degrees, %, %)
-        """
-        if not self.is_color:
-            raise KasaException("Bulb does not support color.")
-
-        return self.modules[Module.Color].hsv
-
-    @property
-    def color_temp(self) -> int:
-        """Whether the bulb supports color temperature changes."""
-        if not self.is_variable_color_temp:
-            raise KasaException("Bulb does not support colortemp.")
-
-        return self.modules[Module.ColorTemperature].color_temp
-
-    @property
-    def brightness(self) -> int:
-        """Return the current brightness in percentage."""
-        if not self.is_dimmable:  # pragma: no cover
-            raise KasaException("Bulb is not dimmable.")
-
-        return self.modules[Module.Brightness].brightness
-
-    async def set_hsv(
-        self,
-        hue: int,
-        saturation: int,
-        value: int | None = None,
-        *,
-        transition: int | None = None,
-    ) -> dict:
-        """Set new HSV.
-
-        Note, transition is not supported and will be ignored.
-
-        :param int hue: hue in degrees
-        :param int saturation: saturation in percentage [0,100]
-        :param int value: value between 1 and 100
-        :param int transition: transition in milliseconds.
-        """
-        if not self.is_color:
-            raise KasaException("Bulb does not support color.")
-
-        return await self.modules[Module.Color].set_hsv(hue, saturation, value)
-
-    async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
-    ) -> dict:
-        """Set the color temperature of the device in kelvin.
-
-        Note, transition is not supported and will be ignored.
-
-        :param int temp: The new color temperature, in Kelvin
-        :param int transition: transition in milliseconds.
-        """
-        if not self.is_variable_color_temp:
-            raise KasaException("Bulb does not support colortemp.")
-        return await self.modules[Module.ColorTemperature].set_color_temp(temp)
-
-    async def set_brightness(
-        self, brightness: int, *, transition: int | None = None
-    ) -> dict:
-        """Set the brightness in percentage.
-
-        Note, transition is not supported and will be ignored.
-
-        :param int brightness: brightness in percent
-        :param int transition: transition in milliseconds.
-        """
-        if not self.is_dimmable:  # pragma: no cover
-            raise KasaException("Bulb is not dimmable.")
-
-        return await self.modules[Module.Brightness].set_brightness(brightness)
-
     @property
     def presets(self) -> list[LightPreset]:
         """Return a list of available bulb setting presets."""
         return []
-
-    @property
-    def has_effects(self) -> bool:
-        """Return True if the device supports effects."""
-        return Module.LightEffect in self.modules

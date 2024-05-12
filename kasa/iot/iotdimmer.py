@@ -7,12 +7,11 @@ from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature
 from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
-from .modules import AmbientLight, Motion
+from .modules import AmbientLight, Brightness, Light, Motion
 
 
 class ButtonAction(Enum):
@@ -80,29 +79,19 @@ class IotDimmer(IotPlug):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Dimmer
+
+    async def _initialize_modules(self):
+        """Initialize modules."""
+        await super()._initialize_modules()
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
         # TODO: need to be figured out what's the best approach to detect support
         self.add_module(Module.IotMotion, Motion(self, "smartlife.iot.PIR"))
         self.add_module(Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS"))
-
-    async def _initialize_features(self):
-        await super()._initialize_features()
-
+        self.add_module(Module.Light, Light(self, "light"))
+        self.add_module(Module.Brightness, Brightness(self, "brightness"))
         if "brightness" in self.sys_info:  # pragma: no branch
-            self._add_feature(
-                Feature(
-                    device=self,
-                    id="brightness",
-                    name="Brightness",
-                    attribute_getter="brightness",
-                    attribute_setter="set_brightness",
-                    minimum_value=1,
-                    maximum_value=100,
-                    unit="%",
-                    type=Feature.Type.Number,
-                    category=Feature.Category.Primary,
-                )
-            )
+            self.add_module(Module.Light, Light(self, "light"))
+            self.add_module(Module.Brightness, Brightness(self, "brightness"))
 
     @property  # type: ignore
     @requires_update

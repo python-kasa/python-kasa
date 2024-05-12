@@ -12,11 +12,21 @@ from pydantic.v1 import BaseModel, Field, root_validator
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..feature import Feature
-from ..interfaces.light import HSV, ColorTempRange, Light, LightPreset
+from ..interfaces.light import HSV, ColorTempRange, LightPreset
 from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
-from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
+from .modules import (
+    Antitheft,
+    Brightness,
+    Cloud,
+    Countdown,
+    Emeter,
+    Light,
+    Schedule,
+    Time,
+    Usage,
+)
 
 
 class BehaviorMode(str, Enum):
@@ -88,7 +98,7 @@ NON_COLOR_MODE_FLAGS = {"transition_period", "on_off"}
 _LOGGER = logging.getLogger(__name__)
 
 
-class IotBulb(IotDevice, Light):
+class IotBulb(IotDevice):
     r"""Representation of a TP-Link Smart Bulb.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -199,6 +209,10 @@ class IotBulb(IotDevice, Light):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb
+
+    async def _initialize_modules(self):
+        """Initialize modules not added in init."""
+        await super()._initialize_modules()
         self.add_module(
             Module.IotSchedule, Schedule(self, "smartlife.iot.common.schedule")
         )
@@ -210,24 +224,12 @@ class IotBulb(IotDevice, Light):
         self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.IotCloud, Cloud(self, "smartlife.iot.common.cloud"))
+        if bool(self.sys_info["is_dimmable"]):  # pragma: no branch
+            self.add_module(Module.Light, Light(self, "light"))
+            self.add_module(Module.Brightness, Brightness(self, "brightness"))
 
     async def _initialize_features(self):
         await super()._initialize_features()
-
-        if bool(self.sys_info["is_dimmable"]):  # pragma: no branch
-            self._add_feature(
-                Feature(
-                    device=self,
-                    id="brightness",
-                    name="Brightness",
-                    attribute_getter="brightness",
-                    attribute_setter="set_brightness",
-                    minimum_value=1,
-                    maximum_value=100,
-                    type=Feature.Type.Number,
-                    category=Feature.Category.Primary,
-                )
-            )
 
         if self.is_variable_color_temp:
             self._add_feature(
@@ -457,6 +459,10 @@ class IotBulb(IotDevice, Light):
             light_state["brightness"] = brightness
 
         return await self.set_light_state(light_state, transition=transition)
+
+    def _raise_for_invalid_brightness(self, value):
+        if not isinstance(value, int) or not (0 <= value <= 100):
+            raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     @property  # type: ignore
     @requires_update

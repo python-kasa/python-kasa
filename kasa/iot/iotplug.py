@@ -53,6 +53,10 @@ class IotPlug(IotDevice):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
+
+    async def _initialize_modules(self):
+        """Initialize modules."""
+        await super()._initialize_modules()
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
         self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))

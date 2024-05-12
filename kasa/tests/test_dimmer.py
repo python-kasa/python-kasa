@@ -3,10 +3,10 @@ import pytest
 from kasa import DeviceType
 from kasa.iot import IotDimmer
 
-from .conftest import dimmer, handle_turn_on, turn_on
+from .conftest import dimmer_iot, handle_turn_on, turn_on
 
 
-@dimmer
+@dimmer_iot
 @turn_on
 async def test_set_brightness(dev, turn_on):
     await handle_turn_on(dev, turn_on)
@@ -22,7 +22,7 @@ async def test_set_brightness(dev, turn_on):
     assert dev.is_on == turn_on
 
 
-@dimmer
+@dimmer_iot
 @turn_on
 async def test_set_brightness_transition(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
@@ -44,7 +44,7 @@ async def test_set_brightness_transition(dev, turn_on, mocker):
     assert dev.brightness == 1
 
 
-@dimmer
+@dimmer_iot
 async def test_set_brightness_invalid(dev):
     for invalid_brightness in [-1, 101, 0.5]:
         with pytest.raises(ValueError):
@@ -55,7 +55,7 @@ async def test_set_brightness_invalid(dev):
             await dev.set_brightness(1, transition=invalid_transition)
 
 
-@dimmer
+@dimmer_iot
 async def test_turn_on_transition(dev, mocker):
     query_helper = mocker.spy(IotDimmer, "_query_helper")
     original_brightness = dev.brightness
@@ -72,7 +72,7 @@ async def test_turn_on_transition(dev, mocker):
     assert dev.brightness == original_brightness
 
 
-@dimmer
+@dimmer_iot
 async def test_turn_off_transition(dev, mocker):
     await handle_turn_on(dev, True)
     query_helper = mocker.spy(IotDimmer, "_query_helper")
@@ -90,7 +90,7 @@ async def test_turn_off_transition(dev, mocker):
     )
 
 
-@dimmer
+@dimmer_iot
 @turn_on
 async def test_set_dimmer_transition(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
@@ -108,7 +108,7 @@ async def test_set_dimmer_transition(dev, turn_on, mocker):
     assert dev.brightness == 99
 
 
-@dimmer
+@dimmer_iot
 @turn_on
 async def test_set_dimmer_transition_to_off(dev, turn_on, mocker):
     await handle_turn_on(dev, turn_on)
@@ -127,7 +127,7 @@ async def test_set_dimmer_transition_to_off(dev, turn_on, mocker):
     )
 
 
-@dimmer
+@dimmer_iot
 async def test_set_dimmer_transition_invalid(dev):
     for invalid_brightness in [-1, 101, 0.5]:
         with pytest.raises(ValueError):
@@ -138,6 +138,6 @@ async def test_set_dimmer_transition_invalid(dev):
             await dev.set_dimmer_transition(1, invalid_transition)
 
 
-@dimmer
+@dimmer_iot
 def test_device_type_dimmer(dev):
     assert dev.device_type == DeviceType.Dimmer

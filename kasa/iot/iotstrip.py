@@ -255,6 +255,10 @@ class IotStripPlug(IotPlug):
         self._set_sys_info(parent.sys_info)
         self._device_type = DeviceType.StripSocket
         self.protocol = parent.protocol  # Must use the same connection as the parent
+
+    async def _initialize_modules(self):
+        """Initialize modules not added in init."""
+        await super()._initialize_modules()
         self.add_module("time", Time(self, "time"))
 
     async def update(self, update_children: bool = True):

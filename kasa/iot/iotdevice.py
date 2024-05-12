@@ -307,12 +307,18 @@ class IotDevice(Device):
             self._last_update = response
             self._set_sys_info(response["system"]["get_sysinfo"])
 
+        if not self._modules:
+            await self._initialize_modules()
+
         await self._modular_update(req)
 
         if not self._features:
             await self._initialize_features()
 
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
+
+    async def _initialize_modules(self):
+        """Initialize modules not added in init."""
 
     async def _initialize_features(self):
         self._add_feature(
