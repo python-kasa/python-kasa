@@ -226,21 +226,21 @@ class IotBulb(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def is_color(self) -> bool:
+    def _is_color(self) -> bool:
         """Whether the bulb supports color changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_color"])
 
     @property  # type: ignore
     @requires_update
-    def is_dimmable(self) -> bool:
+    def _is_dimmable(self) -> bool:
         """Whether the bulb supports brightness changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_dimmable"])
 
     @property  # type: ignore
     @requires_update
-    def is_variable_color_temp(self) -> bool:
+    def _is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_variable_color_temp"])
@@ -252,7 +252,7 @@ class IotBulb(IotDevice):
 
         :return: White temperature range in Kelvin (minimum, maximum)
         """
-        if not self.is_variable_color_temp:
+        if not self._is_variable_color_temp:
             raise KasaException("Color temperature not supported")
 
         for model, temp_range in TPLINK_KELVIN.items():
@@ -352,7 +352,7 @@ class IotBulb(IotDevice):
 
         :return: hue, saturation and value (degrees, %, %)
         """
-        if not self.is_color:
+        if not self._is_color:
             raise KasaException("Bulb does not support color.")
 
         light_state = cast(dict, self.light_state)
@@ -379,7 +379,7 @@ class IotBulb(IotDevice):
         :param int value: value in percentage [0, 100]
         :param int transition: transition in milliseconds.
         """
-        if not self.is_color:
+        if not self._is_color:
             raise KasaException("Bulb does not support color.")
 
         if not isinstance(hue, int) or not (0 <= hue <= 360):
@@ -406,7 +406,7 @@ class IotBulb(IotDevice):
     @requires_update
     def color_temp(self) -> int:
         """Return color temperature of the device in kelvin."""
-        if not self.is_variable_color_temp:
+        if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
         light_state = self.light_state
@@ -421,7 +421,7 @@ class IotBulb(IotDevice):
         :param int temp: The new color temperature, in Kelvin
         :param int transition: transition in milliseconds.
         """
-        if not self.is_variable_color_temp:
+        if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
         valid_temperature_range = self.valid_temperature_range
@@ -446,7 +446,7 @@ class IotBulb(IotDevice):
     @requires_update
     def brightness(self) -> int:
         """Return the current brightness in percentage."""
-        if not self.is_dimmable:  # pragma: no cover
+        if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
         light_state = self.light_state
@@ -461,7 +461,7 @@ class IotBulb(IotDevice):
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
-        if not self.is_dimmable:  # pragma: no cover
+        if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
         self._raise_for_invalid_brightness(brightness)

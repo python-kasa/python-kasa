@@ -96,7 +96,7 @@ class IotDimmer(IotPlug):
 
         Will return a range between 0 - 100.
         """
-        if not self.is_dimmable:
+        if not self._is_dimmable:
             raise KasaException("Device is not dimmable.")
 
         sys_info = self.sys_info
@@ -109,7 +109,7 @@ class IotDimmer(IotPlug):
         :param int transition: transition duration in milliseconds.
             Using a transition will cause the dimmer to turn on.
         """
-        if not self.is_dimmable:
+        if not self._is_dimmable:
             raise KasaException("Device is not dimmable.")
 
         if not isinstance(brightness, int):
@@ -218,7 +218,7 @@ class IotDimmer(IotPlug):
 
     @property  # type: ignore
     @requires_update
-    def is_dimmable(self) -> bool:
+    def _is_dimmable(self) -> bool:
         """Whether the switch supports brightness changes."""
         sys_info = self.sys_info
         return "brightness" in sys_info

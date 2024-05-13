@@ -58,7 +58,6 @@ async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     fan = dev.modules.get(Module.Fan)
     assert fan
     device = fan._device
-    assert device.is_fan
 
     await fan.set_fan_speed_level(1)
     await dev.update()
