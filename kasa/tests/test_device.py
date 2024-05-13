@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 import kasa
-from kasa import Credentials, Device, DeviceConfig
+from kasa import Credentials, Device, DeviceConfig, DeviceType
 from kasa.iot import IotDevice
 from kasa.smart import SmartChildDevice, SmartDevice
 
@@ -121,3 +121,56 @@ def test_deprecated_exceptions(exceptions_class, use_class):
     with pytest.deprecated_call(match=msg):
         getattr(kasa, exceptions_class)
     getattr(kasa, use_class.__name__)
+
+
+deprecated_is_device_type = {
+    "is_bulb": DeviceType.Bulb,
+    "is_plug": DeviceType.Plug,
+    "is_dimmer": DeviceType.Dimmer,
+    "is_light_strip": DeviceType.LightStrip,
+    "is_wallswitch": DeviceType.WallSwitch,
+    "is_strip": DeviceType.Strip,
+    "is_strip_socket": DeviceType.StripSocket,
+}
+deprecated_is_light_function_smart_module = {
+    "is_color": "Color",
+    "is_dimmable": "Brightness",
+    "is_variable_color_temp": "ColorTemperature",
+}
+
+
+def test_deprecated_attributes(dev: SmartDevice):
+    """Test deprecated attributes on all devices."""
+    tested_keys = set()
+
+    def _test_attr(attribute):
+        tested_keys.add(attribute)
+        msg = f"{attribute} is deprecated"
+        if module := Device._deprecated_attributes[attribute][0]:
+            msg += f", use: {module} in device.modules: instead"
+        with pytest.deprecated_call(match=msg):
+            val = getattr(dev, attribute)
+        return val
+
+    for attribute in deprecated_is_device_type:
+        val = _test_attr(attribute)
+        expected_val = dev.device_type == deprecated_is_device_type[attribute]
+        assert val == expected_val
+
+    for attribute in deprecated_is_light_function_smart_module:
+        val = _test_attr(attribute)
+        if isinstance(dev, SmartDevice):
+            expected_val = (
+                deprecated_is_light_function_smart_module[attribute] in dev.modules
+            )
+        elif hasattr(dev, f"_{attribute}"):
+            expected_val = getattr(dev, f"_{attribute}")
+        else:
+            expected_val = False
+        assert val == expected_val
+
+    assert len(tested_keys) == len(Device._deprecated_attributes)
+    untested_keys = [
+        key for key in Device._deprecated_attributes if key not in tested_keys
+    ]
+    assert len(untested_keys) == 0

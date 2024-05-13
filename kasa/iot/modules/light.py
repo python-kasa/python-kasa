@@ -78,6 +78,10 @@ class Light(IotModule, LightInterface):
         return {}
 
     def _get_bulb_device(self) -> IotBulb | None:
+        """For type checker this get an IotBulb.
+
+        Using isinstance here at runtime would create a circular import.
+        """
         if self._device.is_bulb or self._device.is_light_strip:
             return cast("IotBulb", self._device)
         return None
@@ -85,7 +89,7 @@ class Light(IotModule, LightInterface):
     @property  # type: ignore
     def is_dimmable(self) -> int:
         """Whether the bulb supports brightness changes."""
-        return self._device.is_dimmable
+        return self._device._is_dimmable
 
     @property  # type: ignore
     def brightness(self) -> int:
@@ -107,14 +111,14 @@ class Light(IotModule, LightInterface):
         """Whether the light supports color changes."""
         if (bulb := self._get_bulb_device()) is None:
             return False
-        return bulb.is_color
+        return bulb._is_color
 
     @property
     def is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes."""
         if (bulb := self._get_bulb_device()) is None:
             return False
-        return bulb.is_variable_color_temp
+        return bulb._is_variable_color_temp
 
     @property
     def has_effects(self) -> bool:
@@ -129,7 +133,7 @@ class Light(IotModule, LightInterface):
 
         :return: hue, saturation and value (degrees, %, %)
         """
-        if (bulb := self._get_bulb_device()) is None or not bulb.is_color:
+        if (bulb := self._get_bulb_device()) is None or not bulb._is_color:
             raise KasaException("Light does not support color.")
         return bulb.hsv
 
@@ -150,7 +154,7 @@ class Light(IotModule, LightInterface):
         :param int value: value in percentage [0, 100]
         :param int transition: transition in milliseconds.
         """
-        if (bulb := self._get_bulb_device()) is None or not bulb.is_color:
+        if (bulb := self._get_bulb_device()) is None or not bulb._is_color:
             raise KasaException("Light does not support color.")
         return await bulb.set_hsv(hue, saturation, value, transition=transition)
 
@@ -160,14 +164,18 @@ class Light(IotModule, LightInterface):
 
         :return: White temperature range in Kelvin (minimum, maximum)
         """
-        if (bulb := self._get_bulb_device()) is None or not bulb.is_variable_color_temp:
+        if (
+            bulb := self._get_bulb_device()
+        ) is None or not bulb._is_variable_color_temp:
             raise KasaException("Light does not support colortemp.")
         return bulb.valid_temperature_range
 
     @property
     def color_temp(self) -> int:
         """Whether the bulb supports color temperature changes."""
-        if (bulb := self._get_bulb_device()) is None or not bulb.is_variable_color_temp:
+        if (
+            bulb := self._get_bulb_device()
+        ) is None or not bulb._is_variable_color_temp:
             raise KasaException("Light does not support colortemp.")
         return bulb.color_temp
 
@@ -181,7 +189,9 @@ class Light(IotModule, LightInterface):
         :param int temp: The new color temperature, in Kelvin
         :param int transition: transition in milliseconds.
         """
-        if (bulb := self._get_bulb_device()) is None or not bulb.is_variable_color_temp:
+        if (
+            bulb := self._get_bulb_device()
+        ) is None or not bulb._is_variable_color_temp:
             raise KasaException("Light does not support colortemp.")
         return await bulb.set_color_temp(
             temp, brightness=brightness, transition=transition

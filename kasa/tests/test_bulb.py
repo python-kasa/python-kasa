@@ -208,7 +208,7 @@ async def test_non_variable_temp(dev: Device):
 async def test_dimmable_brightness(dev: IotBulb, turn_on):
     assert isinstance(dev, (IotBulb, IotDimmer))
     await handle_turn_on(dev, turn_on)
-    assert dev.is_dimmable
+    assert dev._is_dimmable
 
     await dev.set_brightness(50)
     await dev.update()
@@ -244,7 +244,7 @@ async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
 
 @dimmable_iot
 async def test_invalid_brightness(dev: IotBulb):
-    assert dev.is_dimmable
+    assert dev._is_dimmable
 
     with pytest.raises(ValueError):
         await dev.set_brightness(110)
@@ -255,7 +255,7 @@ async def test_invalid_brightness(dev: IotBulb):
 
 @non_dimmable_iot
 async def test_non_dimmable(dev: IotBulb):
-    assert not dev.is_dimmable
+    assert not dev._is_dimmable
 
     with pytest.raises(KasaException):
         assert dev.brightness == 0

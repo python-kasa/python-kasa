@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
+from warnings import warn
 
 from .credentials import Credentials
 from .device_type import DeviceType
@@ -208,61 +209,6 @@ class Device(ABC):
     def sys_info(self) -> dict[str, Any]:
         """Returns the device info."""
 
-    @property
-    def is_bulb(self) -> bool:
-        """Return True if the device is a bulb."""
-        return self.device_type == DeviceType.Bulb
-
-    @property
-    def is_light_strip(self) -> bool:
-        """Return True if the device is a led strip."""
-        return self.device_type == DeviceType.LightStrip
-
-    @property
-    def is_plug(self) -> bool:
-        """Return True if the device is a plug."""
-        return self.device_type == DeviceType.Plug
-
-    @property
-    def is_wallswitch(self) -> bool:
-        """Return True if the device is a switch."""
-        return self.device_type == DeviceType.WallSwitch
-
-    @property
-    def is_strip(self) -> bool:
-        """Return True if the device is a strip."""
-        return self.device_type == DeviceType.Strip
-
-    @property
-    def is_strip_socket(self) -> bool:
-        """Return True if the device is a strip socket."""
-        return self.device_type == DeviceType.StripSocket
-
-    @property
-    def is_dimmer(self) -> bool:
-        """Return True if the device is a dimmer."""
-        return self.device_type == DeviceType.Dimmer
-
-    @property
-    def is_dimmable(self) -> bool:
-        """Return  True if the device is dimmable."""
-        return False
-
-    @property
-    def is_fan(self) -> bool:
-        """Return True if the device is a fan."""
-        return self.device_type == DeviceType.Fan
-
-    @property
-    def is_variable_color_temp(self) -> bool:
-        """Return True if the device supports color temperature."""
-        return False
-
-    @property
-    def is_color(self) -> bool:
-        """Return True if the device supports color changes."""
-        return False
-
     def get_plug_by_name(self, name: str) -> Device:
         """Return child device for the given name."""
         for p in self.children:
@@ -383,3 +329,53 @@ class Device(ABC):
         if self._last_update is None:
             return f"<{self.device_type} at {self.host} - update() needed>"
         return f"<{self.device_type} at {self.host} - {self.alias} ({self.model})>"
+
+    _deprecated_attributes = {
+        # is_type
+        "is_bulb": (Module.Light, lambda self: self.device_type == DeviceType.Bulb),
+        "is_dimmer": (
+            Module.Light,
+            lambda self: self.device_type == DeviceType.Dimmer,
+        ),
+        "is_light_strip": (
+            Module.LightEffect,
+            lambda self: self.device_type == DeviceType.LightStrip,
+        ),
+        "is_plug": (Module.Led, lambda self: self.device_type == DeviceType.Plug),
+        "is_wallswitch": (
+            Module.Led,
+            lambda self: self.device_type == DeviceType.WallSwitch,
+        ),
+        "is_strip": (None, lambda self: self.device_type == DeviceType.Strip),
+        "is_strip_socket": (
+            None,
+            lambda self: self.device_type == DeviceType.StripSocket,
+        ),  # TODO
+        # is_light_function
+        "is_color": (
+            Module.Light,
+            lambda self: Module.Light in self.modules
+            and self.modules[Module.Light].is_color,
+        ),
+        "is_dimmable": (
+            Module.Light,
+            lambda self: Module.Light in self.modules
+            and self.modules[Module.Light].is_dimmable,
+        ),
+        "is_variable_color_temp": (
+            Module.Light,
+            lambda self: Module.Light in self.modules
+            and self.modules[Module.Light].is_variable_color_temp,
+        ),
+    }
+
+    def __getattr__(self, name) -> bool:
+        if name in self._deprecated_attributes:
+            module = self._deprecated_attributes[name][0]
+            func = self._deprecated_attributes[name][1]
+            msg = f"{name} is deprecated"
+            if module:
+                msg += f", use: {module} in device.modules: instead"
+            warn(msg, DeprecationWarning, stacklevel=1)
+            return func(self)
+        raise AttributeError(f"Device has no attribute {name!r}")
