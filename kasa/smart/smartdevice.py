@@ -14,7 +14,6 @@ from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature
-from ..interfaces.light import LightPreset
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
@@ -445,11 +444,6 @@ class SmartDevice(Device):
         return Module.Energy in self.modules
 
     @property
-    def is_dimmer(self) -> bool:
-        """Whether the device acts as a dimmer."""
-        return self.is_dimmable
-
-    @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))
@@ -648,8 +642,3 @@ class SmartDevice(Device):
             return DeviceType.Thermostat
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
-
-    @property
-    def presets(self) -> list[LightPreset]:
-        """Return a list of available bulb setting presets."""
-        return []
