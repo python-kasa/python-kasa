@@ -14,7 +14,7 @@ async def test_fan_speed(dev: SmartDevice, mocker: MockerFixture):
     fan = dev.modules.get(Module.Fan)
     assert fan
 
-    level_feature = fan._module_features["fan_speed_level"]
+    level_feature = dev.features["fan_speed_level"]
     assert (
         level_feature.minimum_value
         <= level_feature.value
@@ -38,7 +38,7 @@ async def test_sleep_mode(dev: SmartDevice, mocker: MockerFixture):
     """Test sleep mode feature."""
     fan = dev.modules.get(Module.Fan)
     assert fan
-    sleep_feature = fan._module_features["fan_sleep_mode"]
+    sleep_feature = dev.features["fan_sleep_mode"]
     assert isinstance(sleep_feature.value, bool)
 
     call = mocker.spy(fan, "call")

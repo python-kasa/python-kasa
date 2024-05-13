@@ -47,7 +47,7 @@ class Light(IotModule, LightInterface):
         if self._device.is_variable_color_temp:
             self._add_feature(
                 Feature(
-                    device=self,
+                    device=device,
                     id="color_temperature",
                     name="Color temperature",
                     container=self,
@@ -61,9 +61,9 @@ class Light(IotModule, LightInterface):
         if self._device.is_color:
             self._add_feature(
                 Feature(
-                    device,
-                    "hsv",
-                    "HSV",
+                    device=device,
+                    id="hsv",
+                    name="HSV",
                     container=self,
                     attribute_getter="hsv",
                     attribute_setter="set_hsv",

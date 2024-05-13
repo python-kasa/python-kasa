@@ -1,5 +1,6 @@
 import logging
 import sys
+from unittest.mock import patch
 
 import pytest
 from pytest_mock import MockerFixture
@@ -180,11 +181,10 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
 
     async def _test_features(dev):
         exceptions = []
-        query = mocker.patch.object(dev.protocol, "query")
         for feat in dev.features.values():
-            query.reset_mock()
             try:
-                await _test_feature(feat, query)
+                with patch.object(feat.device.protocol, "query") as query:
+                    await _test_feature(feat, query)
             # we allow our own exceptions to avoid mocking valid responses
             except KasaException:
                 pass

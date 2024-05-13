@@ -16,7 +16,7 @@ async def test_brightness_component(dev: SmartDevice):
     assert "brightness" in dev._components
 
     # Test getting the value
-    feature = brightness._module_features["brightness"]
+    feature = dev.features["brightness"]
     assert isinstance(feature.value, int)
     assert feature.value > 1 and feature.value <= 100
 
