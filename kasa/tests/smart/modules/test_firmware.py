@@ -43,7 +43,7 @@ async def test_firmware_features(
     prop = getattr(fw, prop_name)
     assert isinstance(prop, type)
 
-    feat = fw._module_features[feature]
+    feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
 

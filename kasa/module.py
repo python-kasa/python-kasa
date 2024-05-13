@@ -15,9 +15,8 @@ from .feature import Feature
 from .modulemapping import ModuleName
 
 if TYPE_CHECKING:
+    from . import interfaces
     from .device import Device
-    from .interfaces.led import Led
-    from .interfaces.lighteffect import LightEffect
     from .iot import modules as iot
     from .smart import modules as smart
 
@@ -34,8 +33,9 @@ class Module(ABC):
     """
 
     # Common Modules
-    LightEffect: Final[ModuleName[LightEffect]] = ModuleName("LightEffect")
-    Led: Final[ModuleName[Led]] = ModuleName("Led")
+    LightEffect: Final[ModuleName[interfaces.LightEffect]] = ModuleName("LightEffect")
+    Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
+    Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")

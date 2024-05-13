@@ -14,7 +14,6 @@ from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
 
 from .conftest import (
-    bulb_smart,
     device_smart,
     get_device_for_fixture_protocol,
 )
@@ -157,28 +156,6 @@ async def test_get_modules():
 
     module = dummy_device.modules.get(Module.IotAmbientLight)
     assert module is None
-
-
-@bulb_smart
-async def test_smartdevice_brightness(dev: SmartDevice):
-    """Test brightness setter and getter."""
-    assert isinstance(dev, SmartDevice)
-    assert "brightness" in dev._components
-
-    # Test getting the value
-    feature = dev.features["brightness"]
-    assert feature.minimum_value == 1
-    assert feature.maximum_value == 100
-
-    await dev.set_brightness(10)
-    await dev.update()
-    assert dev.brightness == 10
-
-    with pytest.raises(ValueError):
-        await dev.set_brightness(feature.minimum_value - 10)
-
-    with pytest.raises(ValueError):
-        await dev.set_brightness(feature.maximum_value + 10)
 
 
 @device_smart

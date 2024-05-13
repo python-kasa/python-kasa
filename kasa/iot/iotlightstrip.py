@@ -56,6 +56,10 @@ class IotLightStrip(IotBulb):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.LightStrip
+
+    async def _initialize_modules(self):
+        """Initialize modules not added in init."""
+        await super()._initialize_modules()
         self.add_module(
             Module.LightEffect,
             LightEffect(self, "smartlife.iot.lighting_effect"),

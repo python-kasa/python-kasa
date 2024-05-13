@@ -25,7 +25,7 @@ async def test_waterleak_properties(dev, feature, prop_name, type):
     prop = getattr(waterleak, prop_name)
     assert isinstance(prop, type)
 
-    feat = waterleak._module_features[feature]
+    feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
 

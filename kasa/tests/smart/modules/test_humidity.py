@@ -23,6 +23,6 @@ async def test_humidity_features(dev, feature, type):
     prop = getattr(humidity, feature)
     assert isinstance(prop, type)
 
-    feat = humidity._module_features[feature]
+    feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)

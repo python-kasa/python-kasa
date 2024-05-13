@@ -23,6 +23,6 @@ async def test_contact_features(dev: SmartDevice, feature, type):
     prop = getattr(contact, feature)
     assert isinstance(prop, type)
 
-    feat = contact._module_features[feature]
+    feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)

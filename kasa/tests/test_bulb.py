@@ -7,19 +7,18 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import Device, DeviceType, KasaException, Light, LightPreset
+from kasa import Device, DeviceType, KasaException, LightPreset, Module
 from kasa.iot import IotBulb, IotDimmer
-from kasa.smart import SmartDevice
 
 from .conftest import (
     bulb,
     bulb_iot,
     color_bulb,
     color_bulb_iot,
-    dimmable,
+    dimmable_iot,
     handle_turn_on,
     non_color_bulb,
-    non_dimmable,
+    non_dimmable_iot,
     non_variable_temp,
     turn_on,
     variable_temp,
@@ -65,19 +64,20 @@ async def test_get_light_state(dev: IotBulb):
 @color_bulb
 @turn_on
 async def test_hsv(dev: Device, turn_on):
-    assert isinstance(dev, Light)
+    light = dev.modules.get(Module.Light)
+    assert light
     await handle_turn_on(dev, turn_on)
-    assert dev.is_color
+    assert light.is_color
 
-    hue, saturation, brightness = dev.hsv
+    hue, saturation, brightness = light.hsv
     assert 0 <= hue <= 360
     assert 0 <= saturation <= 100
     assert 0 <= brightness <= 100
 
-    await dev.set_hsv(hue=1, saturation=1, value=1)
+    await light.set_hsv(hue=1, saturation=1, value=1)
 
     await dev.update()
-    hue, saturation, brightness = dev.hsv
+    hue, saturation, brightness = light.hsv
     assert hue == 1
     assert saturation == 1
     assert brightness == 1
@@ -96,57 +96,64 @@ async def test_set_hsv_transition(dev: IotBulb, mocker):
 
 @color_bulb
 @turn_on
-async def test_invalid_hsv(dev: Light, turn_on):
+async def test_invalid_hsv(dev: Device, turn_on):
+    light = dev.modules.get(Module.Light)
+    assert light
     await handle_turn_on(dev, turn_on)
-    assert dev.is_color
+    assert light.is_color
 
     for invalid_hue in [-1, 361, 0.5]:
         with pytest.raises(ValueError):
-            await dev.set_hsv(invalid_hue, 0, 0)  # type: ignore[arg-type]
+            await light.set_hsv(invalid_hue, 0, 0)  # type: ignore[arg-type]
 
     for invalid_saturation in [-1, 101, 0.5]:
         with pytest.raises(ValueError):
-            await dev.set_hsv(0, invalid_saturation, 0)  # type: ignore[arg-type]
+            await light.set_hsv(0, invalid_saturation, 0)  # type: ignore[arg-type]
 
     for invalid_brightness in [-1, 101, 0.5]:
         with pytest.raises(ValueError):
-            await dev.set_hsv(0, 0, invalid_brightness)  # type: ignore[arg-type]
+            await light.set_hsv(0, 0, invalid_brightness)  # type: ignore[arg-type]
 
 
 @color_bulb
 @pytest.mark.skip("requires color feature")
 async def test_color_state_information(dev: Device):
-    assert isinstance(dev, Light)
+    light = dev.modules.get(Module.Light)
+    assert light
     assert "HSV" in dev.state_information
-    assert dev.state_information["HSV"] == dev.hsv
+    assert dev.state_information["HSV"] == light.hsv
 
 
 @non_color_bulb
-async def test_hsv_on_non_color(dev: Light):
-    assert not dev.is_color
+async def test_hsv_on_non_color(dev: Device):
+    light = dev.modules.get(Module.Light)
+    assert light
+    assert not light.is_color
 
     with pytest.raises(KasaException):
-        await dev.set_hsv(0, 0, 0)
+        await light.set_hsv(0, 0, 0)
     with pytest.raises(KasaException):
-        print(dev.hsv)
+        print(light.hsv)
 
 
 @variable_temp
 @pytest.mark.skip("requires colortemp module")
 async def test_variable_temp_state_information(dev: Device):
-    assert isinstance(dev, Light)
+    light = dev.modules.get(Module.Light)
+    assert light
     assert "Color temperature" in dev.state_information
-    assert dev.state_information["Color temperature"] == dev.color_temp
+    assert dev.state_information["Color temperature"] == light.color_temp
 
 
 @variable_temp
 @turn_on
 async def test_try_set_colortemp(dev: Device, turn_on):
-    assert isinstance(dev, Light)
+    light = dev.modules.get(Module.Light)
+    assert light
     await handle_turn_on(dev, turn_on)
-    await dev.set_color_temp(2700)
+    await light.set_color_temp(2700)
     await dev.update()
-    assert dev.color_temp == 2700
+    assert light.color_temp == 2700
 
 
 @variable_temp_iot
@@ -166,34 +173,40 @@ async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
 
 
 @variable_temp_smart
-async def test_smart_temp_range(dev: SmartDevice):
-    assert dev.valid_temperature_range
+async def test_smart_temp_range(dev: Device):
+    light = dev.modules.get(Module.Light)
+    assert light
+    assert light.valid_temperature_range
 
 
 @variable_temp
-async def test_out_of_range_temperature(dev: Light):
+async def test_out_of_range_temperature(dev: Device):
+    light = dev.modules.get(Module.Light)
+    assert light
     with pytest.raises(ValueError):
-        await dev.set_color_temp(1000)
+        await light.set_color_temp(1000)
     with pytest.raises(ValueError):
-        await dev.set_color_temp(10000)
+        await light.set_color_temp(10000)
 
 
 @non_variable_temp
-async def test_non_variable_temp(dev: Light):
+async def test_non_variable_temp(dev: Device):
+    light = dev.modules.get(Module.Light)
+    assert light
     with pytest.raises(KasaException):
-        await dev.set_color_temp(2700)
+        await light.set_color_temp(2700)
 
     with pytest.raises(KasaException):
-        print(dev.valid_temperature_range)
+        print(light.valid_temperature_range)
 
     with pytest.raises(KasaException):
-        print(dev.color_temp)
+        print(light.color_temp)
 
 
-@dimmable
+@dimmable_iot
 @turn_on
-async def test_dimmable_brightness(dev: Device, turn_on):
-    assert isinstance(dev, (Light, IotDimmer))
+async def test_dimmable_brightness(dev: IotBulb, turn_on):
+    assert isinstance(dev, (IotBulb, IotDimmer))
     await handle_turn_on(dev, turn_on)
     assert dev.is_dimmable
 
@@ -229,8 +242,8 @@ async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
     set_light_state.assert_called_with({"brightness": 10}, transition=1000)
 
 
-@dimmable
-async def test_invalid_brightness(dev: Light):
+@dimmable_iot
+async def test_invalid_brightness(dev: IotBulb):
     assert dev.is_dimmable
 
     with pytest.raises(ValueError):
@@ -240,8 +253,8 @@ async def test_invalid_brightness(dev: Light):
         await dev.set_brightness(-100)
 
 
-@non_dimmable
-async def test_non_dimmable(dev: Light):
+@non_dimmable_iot
+async def test_non_dimmable(dev: IotBulb):
     assert not dev.is_dimmable
 
     with pytest.raises(KasaException):
@@ -380,7 +393,7 @@ SYSINFO_SCHEMA_BULB = SYSINFO_SCHEMA.extend(
 
 
 @bulb
-def test_device_type_bulb(dev):
+def test_device_type_bulb(dev: Device):
     if dev.is_light_strip:
         pytest.skip("bulb has also lightstrips to test the api")
     assert dev.device_type == DeviceType.Bulb

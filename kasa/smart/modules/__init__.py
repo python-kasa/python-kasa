@@ -16,6 +16,7 @@ from .firmware import Firmware
 from .frostprotection import FrostProtection
 from .humiditysensor import HumiditySensor
 from .led import Led
+from .light import Light
 from .lighteffect import LightEffect
 from .lighttransition import LightTransition
 from .reportmode import ReportMode
@@ -41,6 +42,7 @@ __all__ = [
     "Fan",
     "Firmware",
     "Cloud",
+    "Light",
     "LightEffect",
     "LightTransition",
     "ColorTemperature",

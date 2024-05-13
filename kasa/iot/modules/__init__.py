@@ -6,6 +6,7 @@ from .cloud import Cloud
 from .countdown import Countdown
 from .emeter import Emeter
 from .led import Led
+from .light import Light
 from .lighteffect import LightEffect
 from .motion import Motion
 from .rulemodule import Rule, RuleModule
@@ -20,6 +21,7 @@ __all__ = [
     "Countdown",
     "Emeter",
     "Led",
+    "Light",
     "LightEffect",
     "Motion",
     "Rule",

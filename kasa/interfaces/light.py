@@ -7,7 +7,7 @@ from typing import NamedTuple, Optional
 
 from pydantic.v1 import BaseModel
 
-from ..device import Device
+from ..module import Module
 
 
 class ColorTempRange(NamedTuple):
@@ -42,12 +42,13 @@ class LightPreset(BaseModel):
     mode: Optional[int]  # noqa: UP007
 
 
-class Light(Device, ABC):
+class Light(Module, ABC):
     """Base class for TP-Link Light."""
 
-    def _raise_for_invalid_brightness(self, value):
-        if not isinstance(value, int) or not (0 <= value <= 100):
-            raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
+    @property
+    @abstractmethod
+    def is_dimmable(self) -> bool:
+        """Whether the light supports brightness changes."""
 
     @property
     @abstractmethod
@@ -132,8 +133,3 @@ class Light(Device, ABC):
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
-
-    @property
-    @abstractmethod
-    def presets(self) -> list[LightPreset]:
-        """Return a list of available bulb setting presets."""

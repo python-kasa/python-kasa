@@ -20,7 +20,7 @@ async def test_light_effect(dev: Device, mocker: MockerFixture):
     light_effect = dev.modules.get(Module.LightEffect)
     assert isinstance(light_effect, LightEffect)
 
-    feature = light_effect._module_features["light_effect"]
+    feature = dev.features["light_effect"]
     assert feature.type == Feature.Type.Choice
 
     call = mocker.spy(light_effect, "call")
