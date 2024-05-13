@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from ...device_type import DeviceType
 from ...exceptions import KasaException
 from ...feature import Feature
 from ...interfaces.light import HSV, ColorTempRange
@@ -78,11 +79,12 @@ class Light(IotModule, LightInterface):
         return {}
 
     def _get_bulb_device(self) -> IotBulb | None:
-        """For type checker this get an IotBulb.
+        """For type checker this gets an IotBulb.
 
-        Using isinstance here at runtime would create a circular import.
+        IotDimmer is not a subclass of IotBulb and using isinstance
+        here at runtime would create a circular import.
         """
-        if self._device.is_bulb or self._device.is_light_strip:
+        if self._device.device_type in {DeviceType.Bulb, DeviceType.LightStrip}:
             return cast("IotBulb", self._device)
         return None
 
