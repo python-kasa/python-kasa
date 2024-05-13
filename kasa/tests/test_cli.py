@@ -13,6 +13,7 @@ from kasa import (
     DeviceError,
     EmeterStatus,
     KasaException,
+    Module,
     UnsupportedDeviceError,
 )
 from kasa.cli import (
@@ -34,7 +35,6 @@ from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
 
 from .conftest import (
-    device_iot,
     device_smart,
     get_device_for_fixture_protocol,
     handle_turn_on,
@@ -78,11 +78,10 @@ async def test_update_called_by_cli(dev, mocker, runner):
     update.assert_called()
 
 
-@device_iot
-async def test_sysinfo(dev, runner):
+async def test_sysinfo(dev: Device, runner):
     res = await runner.invoke(sysinfo, obj=dev)
     assert "System info" in res.output
-    assert dev.alias in res.output
+    assert dev.model in res.output
 
 
 @turn_on
@@ -108,7 +107,6 @@ async def test_toggle(dev, turn_on, runner):
     assert dev.is_on != turn_on
 
 
-@device_iot
 async def test_alias(dev, runner):
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {dev.alias}" in res.output
@@ -308,15 +306,14 @@ async def test_emeter(dev: Device, mocker, runner):
     daily.assert_called_with(year=1900, month=12)
 
 
-@device_iot
-async def test_brightness(dev, runner):
+async def test_brightness(dev: Device, runner):
     res = await runner.invoke(brightness, obj=dev)
-    if not dev.is_dimmable:
+    if not (light := dev.modules.get(Module.Light)) or not light.is_dimmable:
         assert "This device does not support brightness." in res.output
         return
 
     res = await runner.invoke(brightness, obj=dev)
-    assert f"Brightness: {dev.brightness}" in res.output
+    assert f"Brightness: {light.brightness}" in res.output
 
     res = await runner.invoke(brightness, ["12"], obj=dev)
     assert "Setting brightness" in res.output
@@ -326,7 +323,6 @@ async def test_brightness(dev, runner):
     assert "Brightness: 12" in res.output
 
 
-@device_iot
 async def test_json_output(dev: Device, mocker, runner):
     """Test that the json output produces correct output."""
     mocker.patch("kasa.Discover.discover", return_value={"127.0.0.1": dev})
@@ -375,7 +371,6 @@ async def test_credentials(discovery_mock, mocker, runner):
     assert "Username:foo Password:bar\n" in res.output
 
 
-@device_iot
 async def test_without_device_type(dev, mocker, runner):
     """Test connecting without the device type."""
     discovery_mock = mocker.patch(
