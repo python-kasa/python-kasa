@@ -29,7 +29,7 @@ async def test_temperature_features(dev, feature, type):
     prop = getattr(temp_module, feature)
     assert isinstance(prop, type)
 
-    feat = temp_module._module_features[feature]
+    feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
 
@@ -42,6 +42,6 @@ async def test_temperature_warning(dev):
     assert hasattr(temp_module, "temperature_warning")
     assert isinstance(temp_module.temperature_warning, bool)
 
-    feat = temp_module._module_features["temperature_warning"]
+    feat = dev.features["temperature_warning"]
     assert feat.value == temp_module.temperature_warning
     assert isinstance(feat.value, bool)

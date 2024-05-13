@@ -2,7 +2,6 @@
 
 from .ambientlight import AmbientLight
 from .antitheft import Antitheft
-from .brightness import Brightness
 from .cloud import Cloud
 from .countdown import Countdown
 from .emeter import Emeter
@@ -18,7 +17,6 @@ from .usage import Usage
 __all__ = [
     "AmbientLight",
     "Antitheft",
-    "Brightness",
     "Cloud",
     "Countdown",
     "Emeter",

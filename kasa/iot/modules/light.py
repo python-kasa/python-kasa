@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from ...exceptions import KasaException
+from ...feature import Feature
 from ...interfaces.light import HSV, ColorTempRange
 from ...interfaces.light import Light as LightInterface
 from ..iotmodule import IotModule
@@ -22,6 +23,54 @@ class Light(IotModule, LightInterface):
     """Implementation of brightness module."""
 
     _device: IotBulb | IotDimmer
+
+    def _initialize_features(self):
+        """Initialize features."""
+        super()._initialize_features()
+        device = self._device
+
+        if self._device.is_dimmable:
+            self._add_feature(
+                Feature(
+                    device,
+                    id="brightness",
+                    name="Brightness",
+                    container=self,
+                    attribute_getter="brightness",
+                    attribute_setter="set_brightness",
+                    minimum_value=BRIGHTNESS_MIN,
+                    maximum_value=BRIGHTNESS_MAX,
+                    type=Feature.Type.Number,
+                    category=Feature.Category.Primary,
+                )
+            )
+        if self._device.is_variable_color_temp:
+            self._add_feature(
+                Feature(
+                    device=self,
+                    id="color_temperature",
+                    name="Color temperature",
+                    container=self,
+                    attribute_getter="color_temp",
+                    attribute_setter="set_color_temp",
+                    range_getter="valid_temperature_range",
+                    category=Feature.Category.Primary,
+                    type=Feature.Type.Number,
+                )
+            )
+        if self._device.is_color:
+            self._add_feature(
+                Feature(
+                    device,
+                    "hsv",
+                    "HSV",
+                    container=self,
+                    attribute_getter="hsv",
+                    attribute_setter="set_hsv",
+                    # TODO proper type for setting hsv
+                    type=Feature.Type.Unknown,
+                )
+            )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -45,7 +94,7 @@ class Light(IotModule, LightInterface):
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set the brightness in percentage.
 
         :param int brightness: brightness in percent
@@ -91,7 +140,7 @@ class Light(IotModule, LightInterface):
         value: int | None = None,
         *,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -103,7 +152,7 @@ class Light(IotModule, LightInterface):
         """
         if (bulb := self._get_bulb_device()) is None or not bulb.is_color:
             raise KasaException("Light does not support color.")
-        await bulb.set_hsv(hue, saturation, value, transition=transition)
+        return await bulb.set_hsv(hue, saturation, value, transition=transition)
 
     @property
     def valid_temperature_range(self) -> ColorTempRange:
@@ -124,7 +173,7 @@ class Light(IotModule, LightInterface):
 
     async def set_color_temp(
         self, temp: int, *, brightness=None, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -134,4 +183,6 @@ class Light(IotModule, LightInterface):
         """
         if (bulb := self._get_bulb_device()) is None or not bulb.is_variable_color_temp:
             raise KasaException("Light does not support colortemp.")
-        await bulb.set_color_temp(temp, brightness=brightness, transition=transition)
+        return await bulb.set_color_temp(
+            temp, brightness=brightness, transition=transition
+        )

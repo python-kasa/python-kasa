@@ -11,7 +11,7 @@ from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
-from .modules import AmbientLight, Brightness, Light, Motion
+from .modules import AmbientLight, Light, Motion
 
 
 class ButtonAction(Enum):
@@ -88,10 +88,6 @@ class IotDimmer(IotPlug):
         self.add_module(Module.IotMotion, Motion(self, "smartlife.iot.PIR"))
         self.add_module(Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS"))
         self.add_module(Module.Light, Light(self, "light"))
-        self.add_module(Module.Brightness, Brightness(self, "brightness"))
-        if "brightness" in self.sys_info:  # pragma: no branch
-            self.add_module(Module.Light, Light(self, "light"))
-            self.add_module(Module.Brightness, Brightness(self, "brightness"))
 
     @property  # type: ignore
     @requires_update

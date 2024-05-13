@@ -36,7 +36,6 @@ class Module(ABC):
     LightEffect: Final[ModuleName[interfaces.LightEffect]] = ModuleName("LightEffect")
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
-    Brightness: Final[ModuleName[interfaces.Brightness]] = ModuleName("Brightness")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
@@ -53,6 +52,7 @@ class Module(ABC):
     Alarm: Final[ModuleName[smart.Alarm]] = ModuleName("Alarm")
     AutoOff: Final[ModuleName[smart.AutoOff]] = ModuleName("AutoOff")
     BatterySensor: Final[ModuleName[smart.BatterySensor]] = ModuleName("BatterySensor")
+    Brightness: Final[ModuleName[smart.Brightness]] = ModuleName("Brightness")
     ChildDevice: Final[ModuleName[smart.ChildDevice]] = ModuleName("ChildDevice")
     Cloud: Final[ModuleName[smart.Cloud]] = ModuleName("Cloud")
     Color: Final[ModuleName[smart.Color]] = ModuleName("Color")

@@ -2,19 +2,37 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from ...interfaces.brightness import Brightness as BrightnessInterface
+from ...feature import Feature
 from ..smartmodule import SmartModule
 
-if TYPE_CHECKING:
-    pass
+BRIGHTNESS_MIN = 0
+BRIGHTNESS_MAX = 100
 
 
-class Brightness(SmartModule, BrightnessInterface):
+class Brightness(SmartModule):
     """Implementation of brightness module."""
 
     REQUIRED_COMPONENT = "brightness"
+
+    def _initialize_features(self):
+        """Initialize features."""
+        super()._initialize_features()
+
+        device = self._device
+        self._add_feature(
+            Feature(
+                device,
+                id="brightness",
+                name="Brightness",
+                container=self,
+                attribute_getter="brightness",
+                attribute_setter="set_brightness",
+                minimum_value=BRIGHTNESS_MIN,
+                maximum_value=BRIGHTNESS_MAX,
+                type=Feature.Type.Number,
+                category=Feature.Category.Primary,
+            )
+        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -32,11 +50,11 @@ class Brightness(SmartModule, BrightnessInterface):
         Note, transition is not supported and will be ignored.
         """
         if not isinstance(brightness, int) or not (
-            self.BRIGHTNESS_MIN <= brightness <= self.BRIGHTNESS_MAX
+            BRIGHTNESS_MIN <= brightness <= BRIGHTNESS_MAX
         ):
             raise ValueError(
                 f"Invalid brightness value: {brightness} "
-                f"(valid range: {self.BRIGHTNESS_MIN}-{self.BRIGHTNESS_MAX}%)"
+                f"(valid range: {BRIGHTNESS_MIN}-{BRIGHTNESS_MAX}%)"
             )
 
         if brightness == 0:

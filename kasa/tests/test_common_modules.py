@@ -24,7 +24,7 @@ light_effect = parametrize_combine([light_effect_smart, lightstrip_iot])
 dimmable_smart = parametrize(
     "dimmable smart", component_filter="brightness", protocol_filter={"SMART"}
 )
-dimmable_iot = parametrize_combine([dimmable_smart, dimmer_iot, dimmable_iot])
+dimmable = parametrize_combine([dimmable_smart, dimmer_iot, dimmable_iot])
 
 
 @led
@@ -32,7 +32,7 @@ async def test_led_module(dev: Device, mocker: MockerFixture):
     """Test fan speed feature."""
     led_module = dev.modules.get(Module.Led)
     assert led_module
-    feat = led_module._module_features["led"]
+    feat = dev.features["led"]
 
     call = mocker.spy(led_module, "call")
     await led_module.set_led(True)
@@ -59,7 +59,7 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     """Test fan speed feature."""
     light_effect_module = dev.modules[Module.LightEffect]
     assert light_effect_module
-    feat = light_effect_module._module_features["light_effect"]
+    feat = dev.features["light_effect"]
 
     call = mocker.spy(light_effect_module, "call")
     effect_list = light_effect_module.effect_list
@@ -102,24 +102,24 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
         assert call.call_count == 4
 
 
-@dimmable_iot
+@dimmable
 async def test_light_brightness(dev: Device):
     """Test brightness setter and getter."""
     assert isinstance(dev, Device)
-    brightness = dev.modules.get(Module.Brightness)
-    assert brightness
+    light = dev.modules.get(Module.Light)
+    assert light
 
     # Test getting the value
-    feature = brightness._module_features["brightness"]
+    feature = dev.features["brightness"]
     assert feature.minimum_value == 0
     assert feature.maximum_value == 100
 
-    await brightness.set_brightness(10)
+    await light.set_brightness(10)
     await dev.update()
-    assert brightness.brightness == 10
+    assert light.brightness == 10
 
     with pytest.raises(ValueError):
-        await brightness.set_brightness(feature.minimum_value - 10)
+        await light.set_brightness(feature.minimum_value - 10)
 
     with pytest.raises(ValueError):
-        await brightness.set_brightness(feature.maximum_value + 10)
+        await light.set_brightness(feature.maximum_value + 10)

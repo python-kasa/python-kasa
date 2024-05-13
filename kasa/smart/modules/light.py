@@ -76,7 +76,7 @@ class Light(SmartModule, LightInterface):
         value: int | None = None,
         *,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -89,11 +89,11 @@ class Light(SmartModule, LightInterface):
         if not self.is_color:
             raise KasaException("Bulb does not support color.")
 
-        await self._device.modules[Module.Color].set_hsv(hue, saturation, value)
+        return await self._device.modules[Module.Color].set_hsv(hue, saturation, value)
 
     async def set_color_temp(
         self, temp: int, *, brightness=None, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -103,11 +103,11 @@ class Light(SmartModule, LightInterface):
         """
         if not self.is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
-        await self._device.modules[Module.ColorTemperature].set_color_temp(temp)
+        return await self._device.modules[Module.ColorTemperature].set_color_temp(temp)
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set the brightness in percentage.
 
         Note, transition is not supported and will be ignored.
@@ -118,7 +118,7 @@ class Light(SmartModule, LightInterface):
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
-        await self._device.modules[Module.Brightness].set_brightness(brightness)
+        return await self._device.modules[Module.Brightness].set_brightness(brightness)
 
     @property
     def has_effects(self) -> bool:

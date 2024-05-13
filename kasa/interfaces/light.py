@@ -99,7 +99,7 @@ class Light(Module, ABC):
         value: int | None = None,
         *,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -113,7 +113,7 @@ class Light(Module, ABC):
     @abstractmethod
     async def set_color_temp(
         self, temp: int, *, brightness=None, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -125,7 +125,7 @@ class Light(Module, ABC):
     @abstractmethod
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set the brightness in percentage.
 
         Note, transition is not supported and will be ignored.
