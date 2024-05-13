@@ -147,7 +147,7 @@ def test_deprecated_attributes(dev: SmartDevice):
         tested_keys.add(attribute)
         msg = f"{attribute} is deprecated"
         if module := Device._deprecated_attributes[attribute][0]:
-            msg += f", use: {module} in device.modules: instead"
+            msg += f", use: {module} in device.modules instead"
         with pytest.deprecated_call(match=msg):
             val = getattr(dev, attribute)
         return val

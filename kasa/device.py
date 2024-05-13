@@ -375,7 +375,7 @@ class Device(ABC):
             func = self._deprecated_attributes[name][1]
             msg = f"{name} is deprecated"
             if module:
-                msg += f", use: {module} in device.modules: instead"
+                msg += f", use: {module} in device.modules instead"
             warn(msg, DeprecationWarning, stacklevel=1)
             return func(self)
         raise AttributeError(f"Device has no attribute {name!r}")
