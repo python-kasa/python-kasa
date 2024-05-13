@@ -954,7 +954,7 @@ async def hsv(dev: Device, ctx, h, s, v, transition):
 async def led(dev: Device, state):
     """Get or set (Plug's) led state."""
     if not (led := dev.modules.get(Module.Led)):
-        echo("Device does not support colors")
+        echo("Device does not support led.")
         return
     if state is not None:
         echo(f"Turning led to {state}")
@@ -1003,7 +1003,7 @@ async def off(dev: Device, index: int, name: str, transition: int):
     """Turn the device off."""
     if index is not None or name is not None:
         if not dev.children:
-            echo("ndex and name are only for devices with children.")
+            echo("Index and name are only for devices with children.")
             return
 
         if index is not None:
