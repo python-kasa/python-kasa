@@ -22,11 +22,15 @@ from kasa.cli import (
     brightness,
     cli,
     cmd_command,
+    effect,
     emeter,
+    hsv,
+    led,
     raw_command,
     reboot,
     state,
     sysinfo,
+    temperature,
     toggle,
     update_credentials,
     wifi,
@@ -321,6 +325,110 @@ async def test_brightness(dev: Device, runner):
 
     res = await runner.invoke(brightness, obj=dev)
     assert "Brightness: 12" in res.output
+
+
+async def test_color_temperature(dev: Device, runner):
+    res = await runner.invoke(temperature, obj=dev)
+    if not (light := dev.modules.get(Module.Light)) or not light.is_variable_color_temp:
+        assert "Device does not support color temperature" in res.output
+        return
+
+    res = await runner.invoke(temperature, obj=dev)
+    assert f"Color temperature: {light.color_temp}" in res.output
+    valid_range = light.valid_temperature_range
+    assert f"(min: {valid_range.min}, max: {valid_range.max})" in res.output
+
+    val = int((valid_range.min + valid_range.max) / 2)
+    res = await runner.invoke(temperature, [str(val)], obj=dev)
+    assert "Setting color temperature to " in res.output
+    await dev.update()
+
+    res = await runner.invoke(temperature, obj=dev)
+    assert f"Color temperature: {val}" in res.output
+    assert res.exit_code == 0
+
+    invalid_max = valid_range.max + 100
+    # Lights that support the maximum range will not get past the click cli range check
+    # So can't be tested for the internal range check.
+    if invalid_max < 9000:
+        res = await runner.invoke(temperature, [str(invalid_max)], obj=dev)
+        assert res.exit_code == 1
+        assert isinstance(res.exception, ValueError)
+
+    res = await runner.invoke(temperature, [str(9100)], obj=dev)
+    assert res.exit_code == 2
+
+
+async def test_color_hsv(dev: Device, runner: CliRunner):
+    res = await runner.invoke(hsv, obj=dev)
+    if not (light := dev.modules.get(Module.Light)) or not light.is_color:
+        assert "Device does not support colors" in res.output
+        return
+
+    res = await runner.invoke(hsv, obj=dev)
+    assert f"Current HSV: {light.hsv}" in res.output
+
+    res = await runner.invoke(hsv, ["180", "50", "50"], obj=dev)
+    assert "Setting HSV: 180 50 50" in res.output
+    assert res.exit_code == 0
+    await dev.update()
+
+    res = await runner.invoke(hsv, ["180", "50"], obj=dev)
+    assert "Setting a color requires 3 values." in res.output
+    assert res.exit_code == 2
+
+
+async def test_light_effect(dev: Device, runner: CliRunner):
+    res = await runner.invoke(effect, obj=dev)
+    if not (light_effect := dev.modules.get(Module.LightEffect)):
+        assert "Device does not support effects" in res.output
+        return
+
+    # Start off with a known state of off
+    await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
+    await dev.update()
+    assert light_effect.effect == light_effect.LIGHT_EFFECTS_OFF
+
+    res = await runner.invoke(effect, obj=dev)
+    msg = (
+        "Setting an effect requires a named built-in effect: "
+        + f"{light_effect.effect_list}"
+    )
+    assert msg in res.output
+    assert res.exit_code == 2
+
+    res = await runner.invoke(effect, [light_effect.effect_list[1]], obj=dev)
+    assert f"Setting Effect: {light_effect.effect_list[1]}" in res.output
+    assert res.exit_code == 0
+    await dev.update()
+    assert light_effect.effect == light_effect.effect_list[1]
+
+    res = await runner.invoke(effect, ["foobar"], obj=dev)
+    assert f"Effect must be one of: {light_effect.effect_list}" in res.output
+    assert res.exit_code == 2
+
+
+async def test_led(dev: Device, runner: CliRunner):
+    res = await runner.invoke(led, obj=dev)
+    if not (led_module := dev.modules.get(Module.Led)):
+        assert "Device does not support led" in res.output
+        return
+
+    res = await runner.invoke(led, obj=dev)
+    assert f"LED state: {led_module.led}" in res.output
+    assert res.exit_code == 0
+
+    res = await runner.invoke(led, ["on"], obj=dev)
+    assert "Turning led to True" in res.output
+    assert res.exit_code == 0
+    await dev.update()
+    assert led_module.led is True
+
+    res = await runner.invoke(led, ["off"], obj=dev)
+    assert "Turning led to False" in res.output
+    assert res.exit_code == 0
+    await dev.update()
+    assert led_module.led is False
 
 
 async def test_json_output(dev: Device, mocker, runner):

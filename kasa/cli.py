@@ -938,7 +938,7 @@ async def hsv(dev: Device, ctx, h, s, v, transition):
         echo("Device does not support colors")
         return
 
-    if h is None or s is None or v is None:
+    if h is None and s is None and v is None:
         echo(f"Current HSV: {light.hsv}")
         return light.hsv
     elif s is None or v is None:
