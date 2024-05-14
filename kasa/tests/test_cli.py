@@ -390,12 +390,8 @@ async def test_light_effect(dev: Device, runner: CliRunner):
     assert light_effect.effect == light_effect.LIGHT_EFFECTS_OFF
 
     res = await runner.invoke(effect, obj=dev)
-    msg = (
-        "Setting an effect requires a named built-in effect: "
-        + f"{light_effect.effect_list}"
-    )
-    assert msg in res.output
-    assert res.exit_code == 2
+    assert f"Light effect: {light_effect.effect}" in res.output
+    assert res.exit_code == 0
 
     res = await runner.invoke(effect, [light_effect.effect_list[1]], obj=dev)
     assert f"Setting Effect: {light_effect.effect_list[1]}" in res.output

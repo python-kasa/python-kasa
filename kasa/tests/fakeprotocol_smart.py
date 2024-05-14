@@ -176,7 +176,7 @@ class FakeSmartTransport(BaseTransport):
             "Method %s not implemented for children" % child_method
         )
 
-    def _set_light_effect(self, info, params):
+    def _set_dynamic_light_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
         info["get_device_info"]["dynamic_light_effect_enable"] = params["enable"]
         info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
@@ -188,6 +188,13 @@ class FakeSmartTransport(BaseTransport):
                 del info["get_device_info"]["dynamic_light_effect_id"]
             if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
                 del info["get_dynamic_light_effect_rules"]["current_rule_id"]
+
+    def _set_light_strip_effect(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
+        info["get_device_info"]["lighting_effect"]["name"] = params["name"]
+        info["get_device_info"]["lighting_effect"]["id"] = params["id"]
+        info["get_lighting_effect"] = copy.deepcopy(params)
 
     def _set_led_info(self, info, params):
         """Set or remove values as per the device behaviour."""
@@ -244,7 +251,10 @@ class FakeSmartTransport(BaseTransport):
         elif method in ["set_qs_info", "fw_download"]:
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
-            self._set_light_effect(info, params)
+            self._set_dynamic_light_effect(info, params)
+            return {"error_code": 0}
+        elif method == "set_lighting_effect":
+            self._set_light_strip_effect(info, params)
             return {"error_code": 0}
         elif method == "set_led_info":
             self._set_led_info(info, params)
