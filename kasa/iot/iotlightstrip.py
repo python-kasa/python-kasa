@@ -6,9 +6,8 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..module import Module
 from ..protocol import BaseProtocol
-from .effects import EFFECT_NAMES_V1
 from .iotbulb import IotBulb
-from .iotdevice import KasaException, requires_update
+from .iotdevice import requires_update
 from .modules.lighteffect import LightEffect
 
 
@@ -70,68 +69,3 @@ class IotLightStrip(IotBulb):
     def length(self) -> int:
         """Return length of the strip."""
         return self.sys_info["length"]
-
-    @property  # type: ignore
-    @requires_update
-    def effect(self) -> dict:
-        """Return effect state.
-
-        Example:
-            {'brightness': 50,
-             'custom': 0,
-             'enable': 0,
-             'id': '',
-             'name': ''}
-        """
-        # LightEffectModule returns the current effect name
-        # so return the dict here for backwards compatibility
-        return self.sys_info["lighting_effect_state"]
-
-    @property  # type: ignore
-    @requires_update
-    def effect_list(self) -> list[str] | None:
-        """Return built-in effects list.
-
-        Example:
-            ['Aurora', 'Bubbling Cauldron', ...]
-        """
-        # LightEffectModule returns effect names along with a LIGHT_EFFECTS_OFF value
-        # so return the original effect names here for backwards compatibility
-        return EFFECT_NAMES_V1 if self.has_effects else None
-
-    @requires_update
-    async def set_effect(
-        self,
-        effect: str,
-        *,
-        brightness: int | None = None,
-        transition: int | None = None,
-    ) -> None:
-        """Set an effect on the device.
-
-        If brightness or transition is defined,
-        its value will be used instead of the effect-specific default.
-
-        See :meth:`effect_list` for available effects,
-        or use :meth:`set_custom_effect` for custom effects.
-
-        :param str effect: The effect to set
-        :param int brightness: The wanted brightness
-        :param int transition: The wanted transition time
-        """
-        await self.modules[Module.LightEffect].set_effect(
-            effect, brightness=brightness, transition=transition
-        )
-
-    @requires_update
-    async def set_custom_effect(
-        self,
-        effect_dict: dict,
-    ) -> None:
-        """Set a custom effect on the device.
-
-        :param str effect_dict: The custom effect dict to set
-        """
-        if not self.has_effects:
-            raise KasaException("Bulb does not support effects.")
-        await self.modules[Module.LightEffect].set_custom_effect(effect_dict)

@@ -247,7 +247,7 @@ class IotBulb(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def valid_temperature_range(self) -> ColorTempRange:
+    def _valid_temperature_range(self) -> ColorTempRange:
         """Return the device-specific white temperature range (in Kelvin).
 
         :return: White temperature range in Kelvin (minimum, maximum)
@@ -284,7 +284,7 @@ class IotBulb(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def has_effects(self) -> bool:
+    def _has_effects(self) -> bool:
         """Return True if the device supports effects."""
         return "lighting_effect_state" in self.sys_info
 
@@ -347,7 +347,7 @@ class IotBulb(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def hsv(self) -> HSV:
+    def _hsv(self) -> HSV:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
@@ -364,7 +364,7 @@ class IotBulb(IotDevice):
         return HSV(hue, saturation, value)
 
     @requires_update
-    async def set_hsv(
+    async def _set_hsv(
         self,
         hue: int,
         saturation: int,
@@ -404,7 +404,7 @@ class IotBulb(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def color_temp(self) -> int:
+    def _color_temp(self) -> int:
         """Return color temperature of the device in kelvin."""
         if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
@@ -413,7 +413,7 @@ class IotBulb(IotDevice):
         return int(light_state["color_temp"])
 
     @requires_update
-    async def set_color_temp(
+    async def _set_color_temp(
         self, temp: int, *, brightness=None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
@@ -444,7 +444,7 @@ class IotBulb(IotDevice):
 
     @property  # type: ignore
     @requires_update
-    def brightness(self) -> int:
+    def _brightness(self) -> int:
         """Return the current brightness in percentage."""
         if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
@@ -453,7 +453,7 @@ class IotBulb(IotDevice):
         return int(light_state["brightness"])
 
     @requires_update
-    async def set_brightness(
+    async def _set_brightness(
         self, brightness: int, *, transition: int | None = None
     ) -> dict:
         """Set the brightness in percentage.

@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 import kasa
-from kasa import Credentials, Device, DeviceConfig, DeviceType
+from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import IotDevice
 from kasa.smart import SmartChildDevice, SmartDevice
 
@@ -174,3 +174,80 @@ def test_deprecated_attributes(dev: SmartDevice):
         key for key in Device._deprecated_attributes if key not in tested_keys
     ]
     assert len(untested_keys) == 0
+
+
+async def _test_attribute(
+    dev: Device, attribute_name, is_expected, module_name, *args, will_raise=False
+):
+    if is_expected and will_raise:
+        ctx = pytest.raises(will_raise)
+    elif is_expected:
+        ctx = pytest.deprecated_call(
+            match=f"{attribute_name} is deprecated, use: Module.{module_name} in device.modules instead"
+        )
+    else:
+        ctx = pytest.raises(
+            AttributeError, match=f"Device has no attribute '{attribute_name}'"
+        )
+
+    with ctx:
+        if args:
+            await getattr(dev, attribute_name)(*args)
+        else:
+            attribute_val = getattr(dev, attribute_name)
+            assert attribute_val is not None
+
+
+async def test_deprecated_light_effect_attributes(dev: Device):
+    light_effect = dev.modules.get(Module.LightEffect)
+
+    await _test_attribute(dev, "effect", bool(light_effect), "LightEffect")
+    await _test_attribute(dev, "effect_list", bool(light_effect), "LightEffect")
+    await _test_attribute(dev, "set_effect", bool(light_effect), "LightEffect", "Off")
+    exc = (
+        NotImplementedError
+        if light_effect and not light_effect.has_custom_effects
+        else None
+    )
+    await _test_attribute(
+        dev,
+        "set_custom_effect",
+        bool(light_effect),
+        "LightEffect",
+        {"enable": 0, "name": "foo", "id": "bar"},
+        will_raise=exc,
+    )
+
+
+async def test_deprecated_light_attributes(dev: Device):
+    light = dev.modules.get(Module.Light)
+
+    exc = KasaException if light and not light.is_dimmable else None
+    await _test_attribute(dev, "brightness", bool(light), "Light", will_raise=exc)
+    await _test_attribute(
+        dev, "set_brightness", bool(light), "Light", 50, will_raise=exc
+    )
+
+    exc = KasaException if light and not light.is_color else None
+    await _test_attribute(dev, "hsv", bool(light), "Light", will_raise=exc)
+    await _test_attribute(
+        dev, "set_hsv", bool(light), "Light", 50, 50, 50, will_raise=exc
+    )
+
+    exc = KasaException if light and not light.is_variable_color_temp else None
+    await _test_attribute(dev, "color_temp", bool(light), "Light", will_raise=exc)
+    await _test_attribute(
+        dev, "set_color_temp", bool(light), "Light", 2700, will_raise=exc
+    )
+    await _test_attribute(
+        dev, "valid_temperature_range", bool(light), "Light", will_raise=exc
+    )
+
+    await _test_attribute(dev, "has_effects", bool(light), "Light")
+
+
+async def test_deprecated_other_attributes(dev: Device):
+    led_module = dev.modules.get(Module.Led)
+
+    await _test_attribute(dev, "led", bool(led_module), "Led")
+    await _test_attribute(dev, "set_led", bool(led_module), "Led", True)

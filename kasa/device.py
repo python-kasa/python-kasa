@@ -369,13 +369,125 @@ class Device(ABC):
         ),
     }
 
-    def __getattr__(self, name) -> bool:
-        if name in self._deprecated_attributes:
+    _deprecated_effect_attributes = {
+        # Light Effects
+        # The return values for effect is a str instead of dict so the lightstrip
+        # modules have a _deprecated method to return the value as before.
+        "effect": (
+            Module.LightEffect,
+            lambda self: self.modules[Module.LightEffect]._deprecated_effect
+            if Module.LightEffect in self.modules
+            and hasattr(self.modules[Module.LightEffect], "_deprecated_effect")
+            else self.modules[Module.LightEffect].effect
+            if Module.LightEffect in self.modules
+            else None,
+        ),
+        # The return values for effect_list includes the Off effect so the lightstrip
+        # modules have a _deprecated method to return the values as before.
+        "effect_list": (
+            Module.LightEffect,
+            lambda self: self.modules[Module.LightEffect]._deprecated_effect_list
+            if Module.LightEffect in self.modules
+            and hasattr(self.modules[Module.LightEffect], "_deprecated_effect_list")
+            else self.modules[Module.LightEffect].effect_list
+            if Module.LightEffect in self.modules
+            else None,
+        ),
+        "set_effect": (
+            Module.LightEffect,
+            lambda self: self.modules[Module.LightEffect].set_effect
+            if Module.LightEffect in self.modules
+            else None,
+        ),
+        "set_custom_effect": (
+            Module.LightEffect,
+            lambda self: self.modules[Module.LightEffect].set_custom_effect
+            if Module.LightEffect in self.modules
+            else None,
+        ),
+    }
+
+    _deprecated_light_attributes = {
+        # Light device methods
+        "brightness": lambda self: self.modules[Module.Light].brightness
+        if Module.Light in self.modules
+        else None,
+        "set_brightness": lambda self: self.modules[Module.Light].set_brightness
+        if Module.Light in self.modules
+        else None,
+        "hsv": lambda self: self.modules[Module.Light].hsv
+        if Module.Light in self.modules
+        else None,
+        "set_hsv": lambda self: self.modules[Module.Light].set_hsv
+        if Module.Light in self.modules
+        else None,
+        "color_temp": lambda self: self.modules[Module.Light].color_temp
+        if Module.Light in self.modules
+        else None,
+        "set_color_temp": lambda self: self.modules[Module.Light].set_color_temp
+        if Module.Light in self.modules
+        else None,
+        "valid_temperature_range": lambda self: self.modules[
+            Module.Light
+        ].valid_temperature_range
+        if Module.Light in self.modules
+        else None,
+        "has_effects": lambda self: self.modules[Module.Light].has_effects
+        if Module.Light in self.modules
+        else None,
+    }
+
+    _deprecated_other_attributes = {
+        "led": (
+            Module.Led,
+            lambda self: self.modules[Module.Led].led
+            if Module.Led in self.modules
+            else None,
+        ),
+        "set_led": (
+            Module.Led,
+            lambda self: self.modules[Module.Led].set_led
+            if Module.Led in self.modules
+            else None,
+        ),
+    }
+
+    def __getattr__(self, name):
+        # All devices
+        if (check_func := self._deprecated_attributes.get(name)) and (
+            (func := check_func[1](self)) is not None
+        ):
             module = self._deprecated_attributes[name][0]
-            func = self._deprecated_attributes[name][1]
             msg = f"{name} is deprecated"
             if module:
                 msg += f", use: {module} in device.modules instead"
             warn(msg, DeprecationWarning, stacklevel=1)
-            return func(self)
+            return func
+        # Light effects
+        if (effect_check_func := self._deprecated_effect_attributes.get(name)) and (
+            (func := effect_check_func[1](self)) is not None
+        ):
+            msg = (
+                f"{name} is deprecated, use: Module.LightEffect"
+                + " in device.modules instead"
+            )
+            warn(msg, DeprecationWarning, stacklevel=1)
+            return func
+        # Bulb only
+        if (light_check_func := self._deprecated_light_attributes.get(name)) and (
+            (light_func := light_check_func(self)) is not None
+        ):
+            msg = f"{name} is deprecated, use: Module.Light in device.modules instead"
+            warn(msg, DeprecationWarning, stacklevel=1)
+            return light_func
+        # Other misc attributes
+        if (other_check_func := self._deprecated_other_attributes.get(name)) and (
+            (other_func := other_check_func[1](self)) is not None
+        ):
+            module = self._deprecated_other_attributes[name][0]
+            msg = (
+                f"{name} is deprecated, use: Module.{module} in device.modules instead"
+            )
+            warn(msg, DeprecationWarning, stacklevel=1)
+            return other_func
         raise AttributeError(f"Device has no attribute {name!r}")

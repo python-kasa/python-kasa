@@ -107,3 +107,29 @@ class LightStripEffect(SmartModule, LightEffectInterface):
     def query(self):
         """Return the base query."""
         return {}
+
+    @property  # type: ignore
+    def _deprecated_effect(self) -> dict:
+        """Return effect state.
+
+        Example:
+            {'brightness': 50,
+             'custom': 0,
+             'enable': 0,
+             'id': '',
+             'name': ''}
+        """
+        # LightEffectModule returns the current effect name
+        # so return the dict here for backwards compatibility
+        return self.data["lighting_effect"]
+
+    @property  # type: ignore
+    def _deprecated_effect_list(self) -> list[str] | None:
+        """Return built-in effects list.
+
+        Example:
+            ['Aurora', 'Bubbling Cauldron', ...]
+        """
+        # LightEffectModule returns effect names along with a LIGHT_EFFECTS_OFF value
+        # so return the original effect names here for backwards compatibility
+        return EFFECT_NAMES
