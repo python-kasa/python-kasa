@@ -5,10 +5,8 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Optional
 
-# When support for cpython older than 3.11 is dropped
-# async_timeout can be replaced with asyncio.timeout
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
@@ -16,9 +14,12 @@ from pydantic.v1 import BaseModel, Field, validator
 
 from ...exceptions import SmartErrorCode
 from ...feature import Feature
-from ...firmware import Firmware as FirmwareInterface
-from ...firmware import FirmwareUpdate as FirmwareUpdateInterface
-from ...firmware import UpdateResult
+from ...interfaces import Firmware as FirmwareInterface
+from ...interfaces.firmware import (
+    FirmwareDownloadState as FirmwareDownloadStateInterface,
+)
+from ...interfaces.firmware import FirmwareUpdateInfo as FirmwareUpdateInfoInterface
+from ...interfaces.firmware import UpdateResult
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -28,7 +29,20 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class FirmwareUpdate(BaseModel):
+class DownloadState(BaseModel):
+    """Download state."""
+
+    # Example:
+    #   {'status': 0, 'download_progress': 0, 'reboot_time': 5,
+    #    'upgrade_time': 5, 'auto_upgrade': False}
+    status: int
+    progress: int = Field(alias="download_progress")
+    reboot_time: int
+    upgrade_time: int
+    auto_upgrade: bool
+
+
+class FirmwareUpdateInfo(BaseModel):
     """Update info status object."""
 
     status: int = Field(alias="type")
@@ -91,7 +105,7 @@ class Firmware(SmartModule, FirmwareInterface):
                 name="Current firmware version",
                 container=self,
                 attribute_getter="current_firmware",
-                category=Feature.Category.Info,
+                category=Feature.Category.Debug,
             )
         )
         self._add_feature(
@@ -101,7 +115,7 @@ class Firmware(SmartModule, FirmwareInterface):
                 name="Available firmware version",
                 container=self,
                 attribute_getter="latest_firmware",
-                category=Feature.Category.Info,
+                category=Feature.Category.Debug,
             )
         )
 
@@ -128,9 +142,9 @@ class Firmware(SmartModule, FirmwareInterface):
         fw = self.data.get("get_latest_fw") or self.data
         if not self._device.is_cloud_connected or isinstance(fw, SmartErrorCode):
             # Error in response, probably disconnected from the cloud.
-            return FirmwareUpdate(type=0, need_to_upgrade=False)
+            return FirmwareUpdateInfo(type=0, need_to_upgrade=False)
 
-        return FirmwareUpdate.parse_obj(fw)
+        return FirmwareUpdateInfo.parse_obj(fw)
 
     @property
     def update_available(self) -> bool | None:
@@ -139,31 +153,60 @@ class Firmware(SmartModule, FirmwareInterface):
             return None
         return self.firmware_update_info.update_available
 
-    async def get_update_state(self):
+    async def get_update_state(self) -> DownloadState:
         """Return update state."""
-        return await self.call("get_fw_download_state")
+        resp = await self.call("get_fw_download_state")
+        state = resp["get_fw_download_state"]
+        return DownloadState(**state)
 
-    async def update(self):
+    async def update(
+        self, progress_cb: Callable[[DownloadState], Coroutine] | None = None
+    ):
         """Update the device firmware."""
         current_fw = self.current_firmware
-        _LOGGER.debug(
+        _LOGGER.info(
             "Going to upgrade from %s to %s",
             current_fw,
             self.firmware_update_info.version,
         )
-        resp = await self.call("fw_download")
-        _LOGGER.debug("Update request response: %s", resp)
+        await self.call("fw_download")
+
         # TODO: read timeout from get_auto_update_info or from get_fw_download_state?
         async with asyncio_timeout(60 * 5):
             while True:
                 await asyncio.sleep(0.5)
-                state = await self.get_update_state()
-                _LOGGER.debug("Update state: %s" % state)
-                # TODO: this could await a given callable for progress
+                try:
+                    state = await self.get_update_state()
+                except Exception as ex:
+                    _LOGGER.warning(
+                        "Got exception, maybe the device is rebooting? %s", ex
+                    )
+                    continue
 
-                if self.firmware_update_info.version != current_fw:
-                    _LOGGER.info("Updated to %s", self.firmware_update_info.version)
+                _LOGGER.debug("Update state: %s" % state)
+                if progress_cb is not None:
+                    asyncio.create_task(progress_cb(state))
+
+                if state.status == 0:
+                    _LOGGER.info(
+                        "Update idle, hopefully updated to %s",
+                        self.firmware_update_info.version,
+                    )
                     break
+                elif state.status == 2:
+                    _LOGGER.info("Downloading firmware, progress: %s", state.progress)
+                elif state.status == 3:
+                    upgrade_sleep = state.upgrade_time
+                    _LOGGER.info(
+                        "Flashing firmware, sleeping for %s before checking status",
+                        upgrade_sleep,
+                    )
+                    await asyncio.sleep(upgrade_sleep)
+                elif state.status < 0:
+                    _LOGGER.error("Got error: %s", state.status)
+                    break
+                else:
+                    _LOGGER.warning("Unhandled state code: %s", state)
 
     @property
     def auto_update_enabled(self):
@@ -178,16 +221,21 @@ class Firmware(SmartModule, FirmwareInterface):
         data = {**self.data["get_auto_update_info"], "enable": enabled}
         await self.call("set_auto_update_info", data)
 
-    async def update_firmware(self, *, progress_cb) -> UpdateResult:
+    async def update_firmware(
+        self,
+        *,
+        progress_cb: Callable[[FirmwareDownloadStateInterface], Coroutine]
+        | None = None,
+    ) -> UpdateResult:
         """Update the firmware."""
         # TODO: implement, this is part of the common firmware API
         raise NotImplementedError
 
-    async def check_for_updates(self) -> FirmwareUpdateInterface:
+    async def check_for_updates(self) -> FirmwareUpdateInfoInterface:
         """Return firmware update information."""
         # TODO: naming of the common firmware API methods
         info = self.firmware_update_info
-        return FirmwareUpdateInterface(
+        return FirmwareUpdateInfoInterface(
             current_version=self.current_firmware,
             update_available=info.update_available,
             available_version=info.version,

@@ -18,8 +18,13 @@ class SmartModule(Module):
     """Base class for SMART modules."""
 
     NAME: str
-    REQUIRED_COMPONENT: str
+    #: Module is initialized, if the given component is available
+    REQUIRED_COMPONENT: str | None = None
+    #: Module is initialized, if the given key available in the main sysinfo
+    REQUIRED_KEY_ON_PARENT: str | None = None
+    #: Query to execute during the main update cycle
     QUERY_GETTER_NAME: str
+
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
     def __init__(self, device: SmartDevice, module: str):
@@ -27,8 +32,6 @@ class SmartModule(Module):
         super().__init__(device, module)
 
     def __init_subclass__(cls, **kwargs):
-        assert cls.REQUIRED_COMPONENT is not None  # noqa: S101
-
         name = getattr(cls, "NAME", cls.__name__)
         _LOGGER.debug("Registering %s" % cls)
         cls.REGISTERED_MODULES[name] = cls
@@ -91,8 +94,13 @@ class SmartModule(Module):
 
     @property
     def supported_version(self) -> int:
-        """Return version supported by the device."""
-        return self._device._components[self.REQUIRED_COMPONENT]
+        """Return version supported by the device.
+
+        If the module has no required component, this will return -1.
+        """
+        if self.REQUIRED_COMPONENT is not None:
+            return self._device._components[self.REQUIRED_COMPONENT]
+        return -1
 
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device.

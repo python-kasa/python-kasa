@@ -28,7 +28,7 @@ async def test_temperature_control_features(dev, feature, type):
     prop = getattr(temp_module, feature)
     assert isinstance(prop, type)
 
-    feat = temp_module._module_features[feature]
+    feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
 

@@ -1,29 +1,28 @@
 import pytest
 
 from kasa import DeviceType
-from kasa.exceptions import KasaException
 from kasa.iot import IotLightStrip
 
-from .conftest import lightstrip
+from .conftest import lightstrip_iot
 
 
-@lightstrip
+@lightstrip_iot
 async def test_lightstrip_length(dev: IotLightStrip):
     assert dev.is_light_strip
     assert dev.device_type == DeviceType.LightStrip
     assert dev.length == dev.sys_info["length"]
 
 
-@lightstrip
+@lightstrip_iot
 async def test_lightstrip_effect(dev: IotLightStrip):
     assert isinstance(dev.effect, dict)
     for k in ["brightness", "custom", "enable", "id", "name"]:
         assert k in dev.effect
 
 
-@lightstrip
+@lightstrip_iot
 async def test_effects_lightstrip_set_effect(dev: IotLightStrip):
-    with pytest.raises(KasaException):
+    with pytest.raises(ValueError):
         await dev.set_effect("Not real")
 
     await dev.set_effect("Candy Cane")
@@ -31,7 +30,7 @@ async def test_effects_lightstrip_set_effect(dev: IotLightStrip):
     assert dev.effect["name"] == "Candy Cane"
 
 
-@lightstrip
+@lightstrip_iot
 @pytest.mark.parametrize("brightness", [100, 50])
 async def test_effects_lightstrip_set_effect_brightness(
     dev: IotLightStrip, brightness, mocker
@@ -49,7 +48,7 @@ async def test_effects_lightstrip_set_effect_brightness(
     assert payload["brightness"] == brightness
 
 
-@lightstrip
+@lightstrip_iot
 @pytest.mark.parametrize("transition", [500, 1000])
 async def test_effects_lightstrip_set_effect_transition(
     dev: IotLightStrip, transition, mocker
@@ -67,12 +66,12 @@ async def test_effects_lightstrip_set_effect_transition(
     assert payload["transition"] == transition
 
 
-@lightstrip
+@lightstrip_iot
 async def test_effects_lightstrip_has_effects(dev: IotLightStrip):
     assert dev.has_effects is True
     assert dev.effect_list
 
 
-@lightstrip
+@lightstrip_iot
 def test_device_type_lightstrip(dev):
     assert dev.device_type == DeviceType.LightStrip

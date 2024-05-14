@@ -18,7 +18,6 @@ from pydantic.v1 import ValidationError
 
 from kasa import (
     AuthenticationError,
-    Bulb,
     ConnectionType,
     Credentials,
     Device,
@@ -28,6 +27,7 @@ from kasa import (
     EncryptType,
     Feature,
     KasaException,
+    Module,
     UnsupportedDeviceError,
 )
 from kasa.discover import DiscoveryResult
@@ -859,18 +859,18 @@ async def usage(dev: Device, year, month, erase):
 @click.argument("brightness", type=click.IntRange(0, 100), default=None, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def brightness(dev: Bulb, brightness: int, transition: int):
+async def brightness(dev: Device, brightness: int, transition: int):
     """Get or set brightness."""
-    if not dev.is_dimmable:
+    if not (light := dev.modules.get(Module.Light)) or not light.is_dimmable:
         echo("This device does not support brightness.")
         return
 
     if brightness is None:
-        echo(f"Brightness: {dev.brightness}")
-        return dev.brightness
+        echo(f"Brightness: {light.brightness}")
+        return light.brightness
     else:
         echo(f"Setting brightness to {brightness}")
-        return await dev.set_brightness(brightness, transition=transition)
+        return await light.set_brightness(brightness, transition=transition)
 
 
 @cli.command()
@@ -879,15 +879,15 @@ async def brightness(dev: Bulb, brightness: int, transition: int):
 )
 @click.option("--transition", type=int, required=False)
 @pass_dev
-async def temperature(dev: Bulb, temperature: int, transition: int):
+async def temperature(dev: Device, temperature: int, transition: int):
     """Get or set color temperature."""
-    if not dev.is_variable_color_temp:
+    if not (light := dev.modules.get(Module.Light)) or not light.is_variable_color_temp:
         echo("Device does not support color temperature")
         return
 
     if temperature is None:
-        echo(f"Color temperature: {dev.color_temp}")
-        valid_temperature_range = dev.valid_temperature_range
+        echo(f"Color temperature: {light.color_temp}")
+        valid_temperature_range = light.valid_temperature_range
         if valid_temperature_range != (0, 0):
             echo("(min: {}, max: {})".format(*valid_temperature_range))
         else:
@@ -895,31 +895,34 @@ async def temperature(dev: Bulb, temperature: int, transition: int):
                 "Temperature range unknown, please open a github issue"
                 f" or a pull request for model '{dev.model}'"
             )
-        return dev.valid_temperature_range
+        return light.valid_temperature_range
     else:
         echo(f"Setting color temperature to {temperature}")
-        return await dev.set_color_temp(temperature, transition=transition)
+        return await light.set_color_temp(temperature, transition=transition)
 
 
 @cli.command()
 @click.argument("effect", type=click.STRING, default=None, required=False)
 @click.pass_context
 @pass_dev
-async def effect(dev, ctx, effect):
+async def effect(dev: Device, ctx, effect):
     """Set an effect."""
-    if not dev.has_effects:
+    if not (light_effect := dev.modules.get(Module.LightEffect)):
         echo("Device does not support effects")
         return
     if effect is None:
         raise click.BadArgumentUsage(
-            f"Setting an effect requires a named built-in effect: {dev.effect_list}",
+            "Setting an effect requires a named built-in effect: "
+            + f"{light_effect.effect_list}",
             ctx,
         )
-    if effect not in dev.effect_list:
-        raise click.BadArgumentUsage(f"Effect must be one of: {dev.effect_list}", ctx)
+    if effect not in light_effect.effect_list:
+        raise click.BadArgumentUsage(
+            f"Effect must be one of: {light_effect.effect_list}", ctx
+        )
 
     echo(f"Setting Effect: {effect}")
-    return await dev.set_effect(effect)
+    return await light_effect.set_effect(effect)
 
 
 @cli.command()
@@ -929,33 +932,36 @@ async def effect(dev, ctx, effect):
 @click.option("--transition", type=int, required=False)
 @click.pass_context
 @pass_dev
-async def hsv(dev, ctx, h, s, v, transition):
+async def hsv(dev: Device, ctx, h, s, v, transition):
     """Get or set color in HSV."""
-    if not dev.is_color:
+    if not (light := dev.modules.get(Module.Light)) or not light.is_color:
         echo("Device does not support colors")
         return
 
-    if h is None or s is None or v is None:
-        echo(f"Current HSV: {dev.hsv}")
-        return dev.hsv
+    if h is None and s is None and v is None:
+        echo(f"Current HSV: {light.hsv}")
+        return light.hsv
     elif s is None or v is None:
         raise click.BadArgumentUsage("Setting a color requires 3 values.", ctx)
     else:
         echo(f"Setting HSV: {h} {s} {v}")
-        return await dev.set_hsv(h, s, v, transition=transition)
+        return await light.set_hsv(h, s, v, transition=transition)
 
 
 @cli.command()
 @click.argument("state", type=bool, required=False)
 @pass_dev
-async def led(dev, state):
+async def led(dev: Device, state):
     """Get or set (Plug's) led state."""
+    if not (led := dev.modules.get(Module.Led)):
+        echo("Device does not support led.")
+        return
     if state is not None:
         echo(f"Turning led to {state}")
-        return await dev.set_led(state)
+        return await led.set_led(state)
     else:
-        echo(f"LED state: {dev.led}")
-        return dev.led
+        echo(f"LED state: {led.led}")
+        return led.led
 
 
 @cli.command()
@@ -975,8 +981,8 @@ async def time(dev):
 async def on(dev: Device, index: int, name: str, transition: int):
     """Turn the device on."""
     if index is not None or name is not None:
-        if not dev.is_strip:
-            echo("Index and name are only for power strips!")
+        if not dev.children:
+            echo("Index and name are only for devices with children.")
             return
 
         if index is not None:
@@ -996,8 +1002,8 @@ async def on(dev: Device, index: int, name: str, transition: int):
 async def off(dev: Device, index: int, name: str, transition: int):
     """Turn the device off."""
     if index is not None or name is not None:
-        if not dev.is_strip:
-            echo("Index and name are only for power strips!")
+        if not dev.children:
+            echo("Index and name are only for devices with children.")
             return
 
         if index is not None:
@@ -1017,8 +1023,8 @@ async def off(dev: Device, index: int, name: str, transition: int):
 async def toggle(dev: Device, index: int, name: str, transition: int):
     """Toggle the device on/off."""
     if index is not None or name is not None:
-        if not dev.is_strip:
-            echo("Index and name are only for power strips!")
+        if not dev.children:
+            echo("Index and name are only for devices with children.")
             return
 
         if index is not None:
@@ -1266,7 +1272,11 @@ async def firmware(ctx: click.Context, dev: Device):
 @click.pass_context
 async def firmware_info(ctx: click.Context, dev: Device):
     """Return firmware information."""
-    res = await dev.firmware.check_for_updates()
+    if not (firmware := dev.modules.get(Module.Firmware)):
+        echo("This device does not support firmware info.")
+        return
+
+    res = await firmware.check_for_updates()
     if res.update_available:
         echo("[green bold]Update available![/green bold]")
         echo(f"Current firmware: {res.current_version}")
@@ -1291,7 +1301,7 @@ async def firmware_update(ctx: click.Context, dev: Device):
         echo(f"Progress: {x}")
 
     echo("Going to update %s", dev)
-    await dev.firmware.update_firmware(progress_cb=progress)  # type: ignore
+    await dev.modules.get[Module.Firmware].update_firmware(progress_cb=progress)  # type: ignore
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class ReportModule(SmartModule):
+class ReportMode(SmartModule):
     """Implementation of report module."""
 
     REQUIRED_COMPONENT = "report_mode"

@@ -26,8 +26,8 @@ from kasa.xortransport import XorEncryption
 
 from .conftest import (
     bulb_iot,
-    dimmer,
-    lightstrip,
+    dimmer_iot,
+    lightstrip_iot,
     new_discovery,
     plug_iot,
     strip_iot,
@@ -86,14 +86,14 @@ async def test_type_detection_strip(dev: Device):
     assert d.device_type == DeviceType.Strip
 
 
-@dimmer
+@dimmer_iot
 async def test_type_detection_dimmer(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_dimmer
     assert d.device_type == DeviceType.Dimmer
 
 
-@lightstrip
+@lightstrip_iot
 async def test_type_detection_lightstrip(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     assert d.is_light_strip

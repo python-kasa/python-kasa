@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from .device import Device
+from ..module import Module
 
 
-class Fan(Device, ABC):
+class Fan(Module, ABC):
     """Interface for a Fan."""
 
     @property

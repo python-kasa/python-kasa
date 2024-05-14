@@ -4,19 +4,22 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Optional
+from typing import Callable, Coroutine, Optional
 
 from pydantic.v1 import BaseModel, Field, validator
 
 from ...feature import Feature
-from ...firmware import (
+from ...interfaces.firmware import (
     Firmware,
     UpdateResult,
 )
-from ...firmware import (
-    FirmwareUpdate as FirmwareUpdateInterface,
+from ...interfaces.firmware import (
+    FirmwareDownloadState as FirmwareDownloadStateInterface,
 )
-from ..iotmodule import IotModule, merge
+from ...interfaces.firmware import (
+    FirmwareUpdateInfo as FirmwareUpdateInfoInterface,
+)
+from ..iotmodule import IotModule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,8 +92,11 @@ class Cloud(IotModule, Firmware):
 
         # TODO: this is problematic, as it will fail the whole query on some
         #  devices if they are not connected to the internet
-        if self._module in self._device._last_update and self.is_connected:
-            req = merge(req, self.get_available_firmwares())
+
+        # The following causes a recursion error as self.is_connected
+        # accesses self.data which calls query.  Also get_available_firmwares is async
+        # if self._module in self._device._last_update and self.is_connected:
+        #    req = merge(req, self.get_available_firmwares())
 
         return req
 
@@ -130,7 +136,12 @@ class Cloud(IotModule, Firmware):
         """Disconnect from the cloud."""
         return await self.call("unbind")
 
-    async def update_firmware(self, *, progress_cb=None) -> UpdateResult:
+    async def update_firmware(
+        self,
+        *,
+        progress_cb: Callable[[FirmwareDownloadStateInterface], Coroutine]
+        | None = None,
+    ) -> UpdateResult:
         """Perform firmware update."""
         raise NotImplementedError
         i = 0
@@ -144,11 +155,16 @@ class Cloud(IotModule, Firmware):
 
         return UpdateResult("")
 
-    async def check_for_updates(self) -> FirmwareUpdateInterface:
+    async def check_for_updates(self) -> FirmwareUpdateInfoInterface:
+        """Return firmware update information."""
+        # TODO: naming of the common firmware API methods
+        raise NotImplementedError
+
+    async def get_update_state(self) -> FirmwareUpdateInfoInterface:
         """Return firmware update information."""
         fw = await self.get_firmware_update()
 
-        return FirmwareUpdateInterface(
+        return FirmwareUpdateInfoInterface(
             update_available=fw.update_available,
             current_version=self._device.hw_info.get("sw_ver"),
             available_version=fw.version,

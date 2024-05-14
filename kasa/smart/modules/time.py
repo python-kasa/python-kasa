@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class TimeModule(SmartModule):
+class Time(SmartModule):
     """Implementation of device_local_time."""
 
     REQUIRED_COMPONENT = "time"

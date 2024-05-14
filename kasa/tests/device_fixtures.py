@@ -109,7 +109,7 @@ DIMMERS = {
 }
 
 HUBS_SMART = {"H100", "KH100"}
-SENSORS_SMART = {"T310", "T315", "T300"}
+SENSORS_SMART = {"T310", "T315", "T300", "T110"}
 THERMOSTATS_SMART = {"KE100"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
@@ -203,14 +203,14 @@ wallswitch_iot = parametrize(
     "wall switches iot", model_filter=SWITCHES, protocol_filter={"IOT"}
 )
 strip = parametrize("strips", model_filter=STRIPS, protocol_filter={"SMART", "IOT"})
-dimmer = parametrize("dimmers", model_filter=DIMMERS, protocol_filter={"IOT"})
-lightstrip = parametrize(
+dimmer_iot = parametrize("dimmers", model_filter=DIMMERS, protocol_filter={"IOT"})
+lightstrip_iot = parametrize(
     "lightstrips", model_filter=LIGHT_STRIPS, protocol_filter={"IOT"}
 )
 
 # bulb types
-dimmable = parametrize("dimmable", model_filter=DIMMABLE, protocol_filter={"IOT"})
-non_dimmable = parametrize(
+dimmable_iot = parametrize("dimmable", model_filter=DIMMABLE, protocol_filter={"IOT"})
+non_dimmable_iot = parametrize(
     "non-dimmable", model_filter=BULBS - DIMMABLE, protocol_filter={"IOT"}
 )
 variable_temp = parametrize(
@@ -292,12 +292,12 @@ device_iot = parametrize(
 def check_categories():
     """Check that every fixture file is categorized."""
     categorized_fixtures = set(
-        dimmer.args[1]
+        dimmer_iot.args[1]
         + strip.args[1]
         + plug.args[1]
         + bulb.args[1]
         + wallswitch.args[1]
-        + lightstrip.args[1]
+        + lightstrip_iot.args[1]
         + bulb_smart.args[1]
         + dimmers_smart.args[1]
         + hubs_smart.args[1]

@@ -10,6 +10,7 @@ from typing import Any
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
+from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import (
     EmeterStatus,
@@ -95,11 +96,11 @@ class IotStrip(IotDevice):
         super().__init__(host=host, config=config, protocol=protocol)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
-        self.add_module("antitheft", Antitheft(self, "anti_theft"))
-        self.add_module("schedule", Schedule(self, "schedule"))
-        self.add_module("usage", Usage(self, "schedule"))
-        self.add_module("time", Time(self, "time"))
-        self.add_module("countdown", Countdown(self, "countdown"))
+        self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
+        self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
+        self.add_module(Module.IotUsage, Usage(self, "schedule"))
+        self.add_module(Module.IotTime, Time(self, "time"))
+        self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
 
     @property  # type: ignore
     @requires_update
@@ -253,8 +254,11 @@ class IotStripPlug(IotPlug):
         self._last_update = parent._last_update
         self._set_sys_info(parent.sys_info)
         self._device_type = DeviceType.StripSocket
-        self._modules = {}
         self.protocol = parent.protocol  # Must use the same connection as the parent
+
+    async def _initialize_modules(self):
+        """Initialize modules not added in init."""
+        await super()._initialize_modules()
         self.add_module("time", Time(self, "time"))
 
     async def update(self, update_children: bool = True):

@@ -6,14 +6,14 @@ import base64
 import copy
 from typing import TYPE_CHECKING, Any
 
-from ...feature import Feature
+from ...interfaces.lighteffect import LightEffect as LightEffectInterface
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class LightEffectModule(SmartModule):
+class LightEffect(SmartModule, LightEffectInterface):
     """Implementation of dynamic light effects."""
 
     REQUIRED_COMPONENT = "light_effect"
@@ -22,28 +22,10 @@ class LightEffectModule(SmartModule):
         "L1": "Party",
         "L2": "Relax",
     }
-    LIGHT_EFFECTS_OFF = "Off"
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
         self._scenes_names_to_id: dict[str, str] = {}
-
-    def _initialize_features(self):
-        """Initialize features."""
-        device = self._device
-        self._add_feature(
-            Feature(
-                device,
-                id="light_effect",
-                name="Light effect",
-                container=self,
-                attribute_getter="effect",
-                attribute_setter="set_effect",
-                category=Feature.Category.Config,
-                type=Feature.Type.Choice,
-                choices_getter="effect_list",
-            )
-        )
 
     def _initialize_effects(self) -> dict[str, dict[str, Any]]:
         """Return built-in effects."""
@@ -64,7 +46,7 @@ class LightEffectModule(SmartModule):
         return effects
 
     @property
-    def effect_list(self) -> list[str] | None:
+    def effect_list(self) -> list[str]:
         """Return built-in effects list.
 
         Example:
@@ -90,6 +72,9 @@ class LightEffectModule(SmartModule):
     async def set_effect(
         self,
         effect: str,
+        *,
+        brightness: int | None = None,
+        transition: int | None = None,
     ) -> None:
         """Set an effect for the device.
 
@@ -107,6 +92,24 @@ class LightEffectModule(SmartModule):
             effect_id = self._scenes_names_to_id[effect]
             params["id"] = effect_id
         return await self.call("set_dynamic_light_effect_rule_enable", params)
+
+    async def set_custom_effect(
+        self,
+        effect_dict: dict,
+    ) -> None:
+        """Set a custom effect on the device.
+
+        :param str effect_dict: The custom effect dict to set
+        """
+        raise NotImplementedError(
+            "Device does not support setting custom effects. "
+            "Use has_custom_effects to check for support."
+        )
+
+    @property
+    def has_custom_effects(self) -> bool:
+        """Return True if the device supports setting custom effects."""
+        return False
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""

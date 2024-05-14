@@ -7,11 +7,11 @@ from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature
+from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
-from .modules import AmbientLight, Motion
+from .modules import AmbientLight, Light, Motion
 
 
 class ButtonAction(Enum):
@@ -79,29 +79,15 @@ class IotDimmer(IotPlug):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Dimmer
+
+    async def _initialize_modules(self):
+        """Initialize modules."""
+        await super()._initialize_modules()
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
         # TODO: need to be figured out what's the best approach to detect support
-        self.add_module("motion", Motion(self, "smartlife.iot.PIR"))
-        self.add_module("ambient", AmbientLight(self, "smartlife.iot.LAS"))
-
-    async def _initialize_features(self):
-        await super()._initialize_features()
-
-        if "brightness" in self.sys_info:  # pragma: no branch
-            self._add_feature(
-                Feature(
-                    device=self,
-                    id="brightness",
-                    name="Brightness",
-                    attribute_getter="brightness",
-                    attribute_setter="set_brightness",
-                    minimum_value=1,
-                    maximum_value=100,
-                    unit="%",
-                    type=Feature.Type.Number,
-                    category=Feature.Category.Primary,
-                )
-            )
+        self.add_module(Module.IotMotion, Motion(self, "smartlife.iot.PIR"))
+        self.add_module(Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS"))
+        self.add_module(Module.Light, Light(self, "light"))
 
     @property  # type: ignore
     @requires_update
@@ -110,7 +96,7 @@ class IotDimmer(IotPlug):
 
         Will return a range between 0 - 100.
         """
-        if not self.is_dimmable:
+        if not self._is_dimmable:
             raise KasaException("Device is not dimmable.")
 
         sys_info = self.sys_info
@@ -123,7 +109,7 @@ class IotDimmer(IotPlug):
         :param int transition: transition duration in milliseconds.
             Using a transition will cause the dimmer to turn on.
         """
-        if not self.is_dimmable:
+        if not self._is_dimmable:
             raise KasaException("Device is not dimmable.")
 
         if not isinstance(brightness, int):
@@ -232,7 +218,7 @@ class IotDimmer(IotPlug):
 
     @property  # type: ignore
     @requires_update
-    def is_dimmable(self) -> bool:
+    def _is_dimmable(self) -> bool:
         """Whether the switch supports brightness changes."""
         sys_info = self.sys_info
         return "brightness" in sys_info

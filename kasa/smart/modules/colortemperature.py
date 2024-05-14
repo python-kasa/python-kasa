@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from ...bulb import ColorTempRange
 from ...feature import Feature
+from ...interfaces.light import ColorTempRange
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_TEMP_RANGE = [2500, 6500]
 
 
-class ColorTemperatureModule(SmartModule):
+class ColorTemperature(SmartModule):
     """Implementation of color temp module."""
 
     REQUIRED_COMPONENT = "color_temperature"

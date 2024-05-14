@@ -1,8 +1,8 @@
 import pytest
 from pytest_mock import MockerFixture
 
+from kasa import Module
 from kasa.smart import SmartDevice
-from kasa.smart.modules import FanModule
 from kasa.tests.device_fixtures import parametrize
 
 fan = parametrize("has fan", component_filter="fan_control", protocol_filter={"SMART"})
@@ -11,10 +11,10 @@ fan = parametrize("has fan", component_filter="fan_control", protocol_filter={"S
 @fan
 async def test_fan_speed(dev: SmartDevice, mocker: MockerFixture):
     """Test fan speed feature."""
-    fan = dev.get_module(FanModule)
+    fan = dev.modules.get(Module.Fan)
     assert fan
 
-    level_feature = fan._module_features["fan_speed_level"]
+    level_feature = dev.features["fan_speed_level"]
     assert (
         level_feature.minimum_value
         <= level_feature.value
@@ -36,9 +36,9 @@ async def test_fan_speed(dev: SmartDevice, mocker: MockerFixture):
 @fan
 async def test_sleep_mode(dev: SmartDevice, mocker: MockerFixture):
     """Test sleep mode feature."""
-    fan = dev.get_module(FanModule)
+    fan = dev.modules.get(Module.Fan)
     assert fan
-    sleep_feature = fan._module_features["fan_sleep_mode"]
+    sleep_feature = dev.features["fan_sleep_mode"]
     assert isinstance(sleep_feature.value, bool)
 
     call = mocker.spy(fan, "call")
@@ -52,29 +52,28 @@ async def test_sleep_mode(dev: SmartDevice, mocker: MockerFixture):
 
 
 @fan
-async def test_fan_interface(dev: SmartDevice, mocker: MockerFixture):
+async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     """Test fan speed on device interface."""
     assert isinstance(dev, SmartDevice)
-    fan = dev.get_module(FanModule)
+    fan = dev.modules.get(Module.Fan)
     assert fan
     device = fan._device
-    assert device.is_fan
 
-    await device.set_fan_speed_level(1)
+    await fan.set_fan_speed_level(1)
     await dev.update()
-    assert device.fan_speed_level == 1
+    assert fan.fan_speed_level == 1
     assert device.is_on
 
-    await device.set_fan_speed_level(4)
+    await fan.set_fan_speed_level(4)
     await dev.update()
-    assert device.fan_speed_level == 4
+    assert fan.fan_speed_level == 4
 
-    await device.set_fan_speed_level(0)
+    await fan.set_fan_speed_level(0)
     await dev.update()
     assert not device.is_on
 
     with pytest.raises(ValueError):
-        await device.set_fan_speed_level(-1)
+        await fan.set_fan_speed_level(-1)
 
     with pytest.raises(ValueError):
-        await device.set_fan_speed_level(5)
+        await fan.set_fan_speed_level(5)

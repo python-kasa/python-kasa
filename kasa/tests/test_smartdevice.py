@@ -9,12 +9,11 @@ from unittest.mock import patch
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import KasaException
+from kasa import KasaException, Module
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
 
 from .conftest import (
-    bulb_smart,
     device_smart,
     get_device_for_fixture_protocol,
 )
@@ -123,63 +122,40 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
 
 
 async def test_get_modules():
-    """Test get_modules for child and parent modules."""
+    """Test getting modules for child and parent modules."""
     dummy_device = await get_device_for_fixture_protocol(
         "KS240(US)_1.0_1.0.5.json", "SMART"
     )
-    from kasa.iot.modules import AmbientLight
-    from kasa.smart.modules import CloudModule, FanModule
+    from kasa.smart.modules import Cloud
 
     # Modules on device
-    module = dummy_device.get_module("CloudModule")
+    module = dummy_device.modules.get("Cloud")
     assert module
     assert module._device == dummy_device
-    assert isinstance(module, CloudModule)
+    assert isinstance(module, Cloud)
 
-    module = dummy_device.get_module(CloudModule)
+    module = dummy_device.modules.get(Module.Cloud)
     assert module
     assert module._device == dummy_device
-    assert isinstance(module, CloudModule)
+    assert isinstance(module, Cloud)
 
     # Modules on child
-    module = dummy_device.get_module("FanModule")
+    module = dummy_device.modules.get("Fan")
     assert module
     assert module._device != dummy_device
     assert module._device._parent == dummy_device
 
-    module = dummy_device.get_module(FanModule)
+    module = dummy_device.modules.get(Module.Fan)
     assert module
     assert module._device != dummy_device
     assert module._device._parent == dummy_device
 
     # Invalid modules
-    module = dummy_device.get_module("DummyModule")
+    module = dummy_device.modules.get("DummyModule")
     assert module is None
 
-    module = dummy_device.get_module(AmbientLight)
+    module = dummy_device.modules.get(Module.IotAmbientLight)
     assert module is None
-
-
-@bulb_smart
-async def test_smartdevice_brightness(dev: SmartDevice):
-    """Test brightness setter and getter."""
-    assert isinstance(dev, SmartDevice)
-    assert "brightness" in dev._components
-
-    # Test getting the value
-    feature = dev.features["brightness"]
-    assert feature.minimum_value == 1
-    assert feature.maximum_value == 100
-
-    await dev.set_brightness(10)
-    await dev.update()
-    assert dev.brightness == 10
-
-    with pytest.raises(ValueError):
-        await dev.set_brightness(feature.minimum_value - 10)
-
-    with pytest.raises(ValueError):
-        await dev.set_brightness(feature.maximum_value + 10)
 
 
 @device_smart

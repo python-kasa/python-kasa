@@ -9,13 +9,22 @@ from typing import Optional, cast
 
 from pydantic.v1 import BaseModel, Field, root_validator
 
-from ..bulb import HSV, Bulb, BulbPreset, ColorTempRange
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..feature import Feature
+from ..interfaces.light import HSV, ColorTempRange, LightPreset
+from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
-from .modules import Antitheft, Cloud, Countdown, Emeter, Schedule, Time, Usage
+from .modules import (
+    Antitheft,
+    Cloud,
+    Countdown,
+    Emeter,
+    Light,
+    Schedule,
+    Time,
+    Usage,
+)
 
 
 class BehaviorMode(str, Enum):
@@ -87,7 +96,7 @@ NON_COLOR_MODE_FLAGS = {"transition_period", "on_off"}
 _LOGGER = logging.getLogger(__name__)
 
 
-class IotBulb(IotDevice, Bulb):
+class IotBulb(IotDevice):
     r"""Representation of a TP-Link Smart Bulb.
 
     To initialize, you have to await :func:`update()` at least once.
@@ -169,9 +178,9 @@ class IotBulb(IotDevice, Bulb):
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
         >>> bulb.presets
-        [BulbPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), BulbPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), BulbPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), BulbPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
+        [LightPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), LightPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
-        To modify an existing preset, pass :class:`~kasa.smartbulb.SmartBulbPreset`
+        To modify an existing preset, pass :class:`~kasa.smartbulb.LightPreset`
         instance to :func:`save_preset` method:
 
         >>> preset = bulb.presets[0]
@@ -198,64 +207,40 @@ class IotBulb(IotDevice, Bulb):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb
-        self.add_module("schedule", Schedule(self, "smartlife.iot.common.schedule"))
-        self.add_module("usage", Usage(self, "smartlife.iot.common.schedule"))
-        self.add_module("antitheft", Antitheft(self, "smartlife.iot.common.anti_theft"))
-        self.add_module("time", Time(self, "smartlife.iot.common.timesetting"))
-        self.add_module("emeter", Emeter(self, self.emeter_type))
-        self.add_module("countdown", Countdown(self, "countdown"))
-        self.add_module("cloud", Cloud(self, "smartlife.iot.common.cloud"))
 
-    async def _initialize_features(self):
-        await super()._initialize_features()
-
-        if bool(self.sys_info["is_dimmable"]):  # pragma: no branch
-            self._add_feature(
-                Feature(
-                    device=self,
-                    id="brightness",
-                    name="Brightness",
-                    attribute_getter="brightness",
-                    attribute_setter="set_brightness",
-                    minimum_value=1,
-                    maximum_value=100,
-                    type=Feature.Type.Number,
-                    category=Feature.Category.Primary,
-                )
-            )
-
-        if self.is_variable_color_temp:
-            self._add_feature(
-                Feature(
-                    device=self,
-                    id="color_temperature",
-                    name="Color temperature",
-                    container=self,
-                    attribute_getter="color_temp",
-                    attribute_setter="set_color_temp",
-                    range_getter="valid_temperature_range",
-                    category=Feature.Category.Primary,
-                    type=Feature.Type.Number,
-                )
-            )
+    async def _initialize_modules(self):
+        """Initialize modules not added in init."""
+        await super()._initialize_modules()
+        self.add_module(
+            Module.IotSchedule, Schedule(self, "smartlife.iot.common.schedule")
+        )
+        self.add_module(Module.IotUsage, Usage(self, "smartlife.iot.common.schedule"))
+        self.add_module(
+            Module.IotAntitheft, Antitheft(self, "smartlife.iot.common.anti_theft")
+        )
+        self.add_module(Module.IotTime, Time(self, "smartlife.iot.common.timesetting"))
+        self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
+        self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
+        self.add_module(Module.IotCloud, Cloud(self, "smartlife.iot.common.cloud"))
+        self.add_module(Module.Light, Light(self, "light"))
 
     @property  # type: ignore
     @requires_update
-    def is_color(self) -> bool:
+    def _is_color(self) -> bool:
         """Whether the bulb supports color changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_color"])
 
     @property  # type: ignore
     @requires_update
-    def is_dimmable(self) -> bool:
+    def _is_dimmable(self) -> bool:
         """Whether the bulb supports brightness changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_dimmable"])
 
     @property  # type: ignore
     @requires_update
-    def is_variable_color_temp(self) -> bool:
+    def _is_variable_color_temp(self) -> bool:
         """Whether the bulb supports color temperature changes."""
         sys_info = self.sys_info
         return bool(sys_info["is_variable_color_temp"])
@@ -267,7 +252,7 @@ class IotBulb(IotDevice, Bulb):
 
         :return: White temperature range in Kelvin (minimum, maximum)
         """
-        if not self.is_variable_color_temp:
+        if not self._is_variable_color_temp:
             raise KasaException("Color temperature not supported")
 
         for model, temp_range in TPLINK_KELVIN.items():
@@ -367,7 +352,7 @@ class IotBulb(IotDevice, Bulb):
 
         :return: hue, saturation and value (degrees, %, %)
         """
-        if not self.is_color:
+        if not self._is_color:
             raise KasaException("Bulb does not support color.")
 
         light_state = cast(dict, self.light_state)
@@ -394,7 +379,7 @@ class IotBulb(IotDevice, Bulb):
         :param int value: value in percentage [0, 100]
         :param int transition: transition in milliseconds.
         """
-        if not self.is_color:
+        if not self._is_color:
             raise KasaException("Bulb does not support color.")
 
         if not isinstance(hue, int) or not (0 <= hue <= 360):
@@ -421,7 +406,7 @@ class IotBulb(IotDevice, Bulb):
     @requires_update
     def color_temp(self) -> int:
         """Return color temperature of the device in kelvin."""
-        if not self.is_variable_color_temp:
+        if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
         light_state = self.light_state
@@ -436,7 +421,7 @@ class IotBulb(IotDevice, Bulb):
         :param int temp: The new color temperature, in Kelvin
         :param int transition: transition in milliseconds.
         """
-        if not self.is_variable_color_temp:
+        if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
         valid_temperature_range = self.valid_temperature_range
@@ -453,11 +438,15 @@ class IotBulb(IotDevice, Bulb):
 
         return await self.set_light_state(light_state, transition=transition)
 
+    def _raise_for_invalid_brightness(self, value):
+        if not isinstance(value, int) or not (0 <= value <= 100):
+            raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
+
     @property  # type: ignore
     @requires_update
     def brightness(self) -> int:
         """Return the current brightness in percentage."""
-        if not self.is_dimmable:  # pragma: no cover
+        if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
         light_state = self.light_state
@@ -472,7 +461,7 @@ class IotBulb(IotDevice, Bulb):
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
-        if not self.is_dimmable:  # pragma: no cover
+        if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
         self._raise_for_invalid_brightness(brightness)
@@ -518,11 +507,11 @@ class IotBulb(IotDevice, Bulb):
 
     @property  # type: ignore
     @requires_update
-    def presets(self) -> list[BulbPreset]:
+    def presets(self) -> list[LightPreset]:
         """Return a list of available bulb setting presets."""
-        return [BulbPreset(**vals) for vals in self.sys_info["preferred_state"]]
+        return [LightPreset(**vals) for vals in self.sys_info["preferred_state"]]
 
-    async def save_preset(self, preset: BulbPreset):
+    async def save_preset(self, preset: LightPreset):
         """Save a setting preset.
 
         You can either construct a preset object manually, or pass an existing one
