@@ -30,7 +30,7 @@ class Light(IotModule, LightInterface):
         super()._initialize_features()
         device = self._device
 
-        if self._device.is_dimmable:
+        if self._device._is_dimmable:
             self._add_feature(
                 Feature(
                     device,
@@ -45,7 +45,7 @@ class Light(IotModule, LightInterface):
                     category=Feature.Category.Primary,
                 )
             )
-        if self._device.is_variable_color_temp:
+        if self._device._is_variable_color_temp:
             self._add_feature(
                 Feature(
                     device=device,
@@ -59,7 +59,7 @@ class Light(IotModule, LightInterface):
                     type=Feature.Type.Number,
                 )
             )
-        if self._device.is_color:
+        if self._device._is_color:
             self._add_feature(
                 Feature(
                     device=device,
@@ -96,7 +96,7 @@ class Light(IotModule, LightInterface):
     @property  # type: ignore
     def brightness(self) -> int:
         """Return the current brightness in percentage."""
-        return self._device.brightness
+        return self._device._brightness
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
@@ -106,7 +106,7 @@ class Light(IotModule, LightInterface):
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
-        return await self._device.set_brightness(brightness, transition=transition)
+        return await self._device._set_brightness(brightness, transition=transition)
 
     @property
     def is_color(self) -> bool:
@@ -127,7 +127,7 @@ class Light(IotModule, LightInterface):
         """Return True if the device supports effects."""
         if (bulb := self._get_bulb_device()) is None:
             return False
-        return bulb.has_effects
+        return bulb._has_effects
 
     @property
     def hsv(self) -> HSV:
@@ -137,7 +137,7 @@ class Light(IotModule, LightInterface):
         """
         if (bulb := self._get_bulb_device()) is None or not bulb._is_color:
             raise KasaException("Light does not support color.")
-        return bulb.hsv
+        return bulb._hsv
 
     async def set_hsv(
         self,
@@ -158,7 +158,7 @@ class Light(IotModule, LightInterface):
         """
         if (bulb := self._get_bulb_device()) is None or not bulb._is_color:
             raise KasaException("Light does not support color.")
-        return await bulb.set_hsv(hue, saturation, value, transition=transition)
+        return await bulb._set_hsv(hue, saturation, value, transition=transition)
 
     @property
     def valid_temperature_range(self) -> ColorTempRange:
@@ -170,7 +170,7 @@ class Light(IotModule, LightInterface):
             bulb := self._get_bulb_device()
         ) is None or not bulb._is_variable_color_temp:
             raise KasaException("Light does not support colortemp.")
-        return bulb.valid_temperature_range
+        return bulb._valid_temperature_range
 
     @property
     def color_temp(self) -> int:
@@ -179,7 +179,7 @@ class Light(IotModule, LightInterface):
             bulb := self._get_bulb_device()
         ) is None or not bulb._is_variable_color_temp:
             raise KasaException("Light does not support colortemp.")
-        return bulb.color_temp
+        return bulb._color_temp
 
     async def set_color_temp(
         self, temp: int, *, brightness=None, transition: int | None = None
@@ -195,6 +195,6 @@ class Light(IotModule, LightInterface):
             bulb := self._get_bulb_device()
         ) is None or not bulb._is_variable_color_temp:
             raise KasaException("Light does not support colortemp.")
-        return await bulb.set_color_temp(
+        return await bulb._set_color_temp(
             temp, brightness=brightness, transition=transition
         )

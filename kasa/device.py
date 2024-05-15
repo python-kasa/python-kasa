@@ -21,7 +21,7 @@ from .protocol import BaseProtocol
 from .xortransport import XorTransport
 
 if TYPE_CHECKING:
-    from .modulemapping import ModuleMapping
+    from .modulemapping import ModuleMapping, ModuleName
 
 
 @dataclass
@@ -330,52 +330,73 @@ class Device(ABC):
             return f"<{self.device_type} at {self.host} - update() needed>"
         return f"<{self.device_type} at {self.host} - {self.alias} ({self.model})>"
 
-    _deprecated_attributes = {
+    _deprecated_device_type_attributes = {
         # is_type
-        "is_bulb": (Module.Light, lambda self: self.device_type == DeviceType.Bulb),
-        "is_dimmer": (
-            Module.Light,
-            lambda self: self.device_type == DeviceType.Dimmer,
-        ),
-        "is_light_strip": (
-            Module.LightEffect,
-            lambda self: self.device_type == DeviceType.LightStrip,
-        ),
-        "is_plug": (Module.Led, lambda self: self.device_type == DeviceType.Plug),
-        "is_wallswitch": (
-            Module.Led,
-            lambda self: self.device_type == DeviceType.WallSwitch,
-        ),
-        "is_strip": (None, lambda self: self.device_type == DeviceType.Strip),
-        "is_strip_socket": (
-            None,
-            lambda self: self.device_type == DeviceType.StripSocket,
-        ),  # TODO
-        # is_light_function
-        "is_color": (
-            Module.Light,
-            lambda self: Module.Light in self.modules
-            and self.modules[Module.Light].is_color,
-        ),
-        "is_dimmable": (
-            Module.Light,
-            lambda self: Module.Light in self.modules
-            and self.modules[Module.Light].is_dimmable,
-        ),
-        "is_variable_color_temp": (
-            Module.Light,
-            lambda self: Module.Light in self.modules
-            and self.modules[Module.Light].is_variable_color_temp,
-        ),
+        "is_bulb": (Module.Light, DeviceType.Bulb),
+        "is_dimmer": (Module.Light, DeviceType.Dimmer),
+        "is_light_strip": (Module.LightEffect, DeviceType.LightStrip),
+        "is_plug": (Module.Led, DeviceType.Plug),
+        "is_wallswitch": (Module.Led, DeviceType.WallSwitch),
+        "is_strip": (None, DeviceType.Strip),
+        "is_strip_socket": (None, DeviceType.StripSocket),
     }
 
-    def __getattr__(self, name) -> bool:
-        if name in self._deprecated_attributes:
-            module = self._deprecated_attributes[name][0]
-            func = self._deprecated_attributes[name][1]
+    def _get_replacing_attr(self, module_name: ModuleName, *attrs):
+        if module_name not in self.modules:
+            return None
+
+        for attr in attrs:
+            if hasattr(self.modules[module_name], attr):
+                return getattr(self.modules[module_name], attr)
+
+        return None
+
+    _deprecated_other_attributes = {
+        # light attributes
+        "is_color": (Module.Light, ["is_color"]),
+        "is_dimmable": (Module.Light, ["is_dimmable"]),
+        "is_variable_color_temp": (Module.Light, ["is_variable_color_temp"]),
+        "brightness": (Module.Light, ["brightness"]),
+        "set_brightness": (Module.Light, ["set_brightness"]),
+        "hsv": (Module.Light, ["hsv"]),
+        "set_hsv": (Module.Light, ["set_hsv"]),
+        "color_temp": (Module.Light, ["color_temp"]),
+        "set_color_temp": (Module.Light, ["set_color_temp"]),
+        "valid_temperature_range": (Module.Light, ["valid_temperature_range"]),
+        "has_effects": (Module.Light, ["has_effects"]),
+        # led attributes
+        "led": (Module.Led, ["led"]),
+        "set_led": (Module.Led, ["set_led"]),
+        # light effect attributes
+        # The return values for effect is a str instead of dict so the lightstrip
+        # modules have a _deprecated method to return the value as before.
+        "effect": (Module.LightEffect, ["_deprecated_effect", "effect"]),
+        # The return values for effect_list includes the Off effect so the lightstrip
+        # modules have a _deprecated method to return the values as before.
+        "effect_list": (Module.LightEffect, ["_deprecated_effect_list", "effect_list"]),
+        "set_effect": (Module.LightEffect, ["set_effect"]),
+        "set_custom_effect": (Module.LightEffect, ["set_custom_effect"]),
+    }
+
+    def __getattr__(self, name):
+        # is_device_type
+        if dep_device_type_attr := self._deprecated_device_type_attributes.get(name):
+            module = dep_device_type_attr[0]
             msg = f"{name} is deprecated"
             if module:
                 msg += f", use: {module} in device.modules instead"
             warn(msg, DeprecationWarning, stacklevel=1)
-            return func(self)
+            return self.device_type == dep_device_type_attr[1]
+        # Other deprecated attributes
+        if (dep_attr := self._deprecated_other_attributes.get(name)) and (
+            (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
+            is not None
+        ):
+            module_name = dep_attr[0]
+            msg = (
+                f"{name} is deprecated, use: "
+                + f"Module.{module_name} in device.modules instead"
+            )
+            warn(msg, DeprecationWarning, stacklevel=1)
+            return replacing_attr
         raise AttributeError(f"Device has no attribute {name!r}")

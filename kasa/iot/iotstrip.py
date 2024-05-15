@@ -147,17 +147,6 @@ class IotStrip(IotDevice):
 
         return max(plug.on_since for plug in self.children if plug.on_since is not None)
 
-    @property  # type: ignore
-    @requires_update
-    def led(self) -> bool:
-        """Return the state of the led."""
-        sys_info = self.sys_info
-        return bool(1 - sys_info["led_off"])
-
-    async def set_led(self, state: bool):
-        """Set the state of the led (night mode)."""
-        await self._query_helper("system", "set_led_off", {"off": int(not state)})
-
     async def current_consumption(self) -> float:
         """Get the current power consumption in watts."""
         return sum([await plug.current_consumption() for plug in self.children])
