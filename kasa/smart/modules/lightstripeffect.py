@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...interfaces.lighteffect import LightEffect as LightEffectInterface
 from ..effects import EFFECT_MAPPING, EFFECT_NAMES
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    pass
 
 
 class LightStripEffect(SmartModule, LightEffectInterface):
@@ -19,7 +14,14 @@ class LightStripEffect(SmartModule, LightEffectInterface):
 
     @property
     def name(self) -> str:
-        """Name of the module."""
+        """Name of the module.
+
+        By default smart modules are keyed in the module mapping by class name.
+        The name is overriden here as this module implements the same common interface
+        as the bulb light_effect and the assumption is a device only supports one
+        or the other.
+
+        """
         return "LightEffect"
 
     @property
@@ -33,12 +35,9 @@ class LightStripEffect(SmartModule, LightEffectInterface):
              'id': '',
              'name': ''}
         """
-        if (
-            (lighting_effect := self.data.get("lighting_effect"))
-            and lighting_effect.get("enable")
-            and (name := lighting_effect.get("name"))
-            and name in EFFECT_NAMES
-        ):
+        eff = self.data["lighting_effect"]
+        name = eff["name"]
+        if eff["enable"]:
             return name
         return self.LIGHT_EFFECTS_OFF
 
@@ -79,6 +78,7 @@ class LightStripEffect(SmartModule, LightEffectInterface):
             raise ValueError(f"The effect {effect} is not a built in effect.")
         else:
             effect_dict = EFFECT_MAPPING[effect]
+
         if brightness is not None:
             effect_dict["brightness"] = brightness
         if transition is not None:

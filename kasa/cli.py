@@ -911,7 +911,10 @@ async def effect(dev: Device, ctx, effect):
         echo("Device does not support effects")
         return
     if effect is None:
-        echo(f"Light effect: {light_effect.effect}")
+        echo(
+            f"Light effect: {light_effect.effect}\n"
+            + f"Available Effects: {light_effect.effect_list}"
+        )
         return light_effect.effect
 
     if effect not in light_effect.effect_list:

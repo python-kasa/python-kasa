@@ -21,13 +21,11 @@ class LightEffect(IotModule, LightEffectInterface):
              'id': '',
              'name': ''}
         """
-        if (
-            (state := self.data.get("lighting_effect_state"))
-            and state.get("enable")
-            and (name := state.get("name"))
-            and name in EFFECT_NAMES_V1
-        ):
+        eff = self.data["lighting_effect_state"]
+        name = eff["name"]
+        if eff["enable"]:
             return name
+
         return self.LIGHT_EFFECTS_OFF
 
     @property
@@ -67,6 +65,7 @@ class LightEffect(IotModule, LightEffectInterface):
             raise ValueError(f"The effect {effect} is not a built in effect.")
         else:
             effect_dict = EFFECT_MAPPING_V1[effect]
+
         if brightness is not None:
             effect_dict["brightness"] = brightness
         if transition is not None:
