@@ -7,6 +7,7 @@
 
    Home <self>
    cli
+   tutorial
    discover
    smartdevice
    design
