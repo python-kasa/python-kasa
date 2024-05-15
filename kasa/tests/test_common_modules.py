@@ -19,7 +19,14 @@ led = parametrize_combine([led_smart, plug_iot])
 light_effect_smart = parametrize(
     "has light effect smart", component_filter="light_effect", protocol_filter={"SMART"}
 )
-light_effect = parametrize_combine([light_effect_smart, lightstrip_iot])
+light_strip_effect_smart = parametrize(
+    "has light strip effect smart",
+    component_filter="light_strip_lighting_effect",
+    protocol_filter={"SMART"},
+)
+light_effect = parametrize_combine(
+    [light_effect_smart, light_strip_effect_smart, lightstrip_iot]
+)
 
 dimmable_smart = parametrize(
     "dimmable smart", component_filter="brightness", protocol_filter={"SMART"}

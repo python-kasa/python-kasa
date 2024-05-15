@@ -911,11 +911,12 @@ async def effect(dev: Device, ctx, effect):
         echo("Device does not support effects")
         return
     if effect is None:
-        raise click.BadArgumentUsage(
-            "Setting an effect requires a named built-in effect: "
-            + f"{light_effect.effect_list}",
-            ctx,
+        echo(
+            f"Light effect: {light_effect.effect}\n"
+            + f"Available Effects: {light_effect.effect_list}"
         )
+        return light_effect.effect
+
     if effect not in light_effect.effect_list:
         raise click.BadArgumentUsage(
             f"Effect must be one of: {light_effect.effect_list}", ctx

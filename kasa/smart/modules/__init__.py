@@ -18,6 +18,7 @@ from .humiditysensor import HumiditySensor
 from .led import Led
 from .light import Light
 from .lighteffect import LightEffect
+from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
 from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
@@ -44,6 +45,7 @@ __all__ = [
     "Cloud",
     "Light",
     "LightEffect",
+    "LightStripEffect",
     "LightTransition",
     "ColorTemperature",
     "Color",
