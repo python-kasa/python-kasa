@@ -1,7 +1,8 @@
 # ruff: noqa
 """
 The kasa library is fully async and methods that perform IO need to be run inside an async couroutine.
-These examples assume async code is called from within `async def`
+These examples assume async code is called from within `async def` or are running in a asyncio REPL
+(python -m asyncio)
 
 The main entry point for the api is :func:`~kasa.Discover.discover` and
 :func:`~kasa.Discover.discover_single` which return Device objects.
