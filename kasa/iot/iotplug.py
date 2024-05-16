@@ -79,16 +79,6 @@ class IotPlug(IotDevice):
         """Turn the switch off."""
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 
-    @property  # type: ignore
-    @requires_update
-    def led(self) -> bool:
-        """Return the state of the led."""
-        return self.modules[Module.Led].led
-
-    async def set_led(self, state: bool):
-        """Set the state of the led (night mode)."""
-        return await self.modules[Module.Led].set_led(state)
-
 
 class IotWallSwitch(IotPlug):
     """Representation of a TP-Link Smart Wall Switch."""

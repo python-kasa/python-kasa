@@ -91,7 +91,7 @@ class IotDimmer(IotPlug):
 
     @property  # type: ignore
     @requires_update
-    def brightness(self) -> int:
+    def _brightness(self) -> int:
         """Return current brightness on dimmers.
 
         Will return a range between 0 - 100.
@@ -103,7 +103,7 @@ class IotDimmer(IotPlug):
         return int(sys_info["brightness"])
 
     @requires_update
-    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+    async def _set_brightness(self, brightness: int, *, transition: int | None = None):
         """Set the new dimmer brightness level in percentage.
 
         :param int transition: transition duration in milliseconds.
@@ -222,3 +222,13 @@ class IotDimmer(IotPlug):
         """Whether the switch supports brightness changes."""
         sys_info = self.sys_info
         return "brightness" in sys_info
+
+    @property
+    def _is_variable_color_temp(self) -> bool:
+        """Whether the device supports variable color temp."""
+        return False
+
+    @property
+    def _is_color(self) -> bool:
+        """Whether the device supports color."""
+        return False
