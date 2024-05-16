@@ -83,7 +83,7 @@ class IotStrip(IotDevice):
         >>> strip.is_on
         True
 
-    For more examples, see the :class:`SmartDevice` class.
+    For more examples, see the :class:`Device` class.
     """
 
     def __init__(

@@ -150,7 +150,7 @@ class DeviceConfig:
     credentials: Optional[Credentials] = None
     #: Credentials hash for devices requiring authentication.
     #: If credentials are also supplied they take precendence over credentials_hash.
-    #: Credentials hash can be retrieved from :attr:`SmartDevice.credentials_hash`
+    #: Credentials hash can be retrieved from :attr:`Device.credentials_hash`
     credentials_hash: Optional[str] = None
     #: The protocol specific type of connection.  Defaults to the legacy type.
     batch_size: Optional[int] = None

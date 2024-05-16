@@ -3,6 +3,7 @@ import asyncio
 import pytest
 import xdoctest
 
+from kasa import Discover
 from kasa.tests.conftest import get_device_for_fixture_protocol
 
 
@@ -79,9 +80,13 @@ def test_tutorial_examples(mocker, top_level_await):
     a.host = "127.0.0.1"
     b.host = "127.0.0.2"
 
-    mocker.patch("kasa.discover.Discover.discover_single", return_value=a)
-    mocker.patch("kasa.discover.Discover.discover", return_value=[a, b])
-    res = xdoctest.doctest_module("docs/tutorial.py", "all")
+    # Note autospec does not work for staticmethods in python < 3.12
+    # https://github.com/python/cpython/issues/102978
+    mocker.patch(
+        "kasa.discover.Discover.discover_single", return_value=a, autospec=True
+    )
+    mocker.patch.object(Discover, "discover", return_value=[a, b], autospec=True)
+    res = xdoctest.doctest_module("docs.tutorial", "all")
     assert not res["failed"]
 
 

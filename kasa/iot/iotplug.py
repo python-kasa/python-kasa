@@ -41,7 +41,7 @@ class IotPlug(IotDevice):
         >>> plug.led
         True
 
-    For more examples, see the :class:`SmartDevice` class.
+    For more examples, see the :class:`Device` class.
     """
 
     def __init__(

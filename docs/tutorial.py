@@ -1,27 +1,28 @@
 # ruff: noqa
 """
-The kasa library is fully async and methods that perform IO need to be run inside an async couroutine.
-These examples assume async code is called from within `async def` or are running in a asyncio REPL
-(python -m asyncio)
+The kasa library is fully async and methods that perform IO need to be run inside an async couroutine.\n
+These examples assume you are following the tutorial inside `asyncio REPL` (python -m asyncio) or the code
+is running inside an async function (`async def`).
 
-The main entry point for the api is :func:`~kasa.Discover.discover` and
-:func:`~kasa.Discover.discover_single` which return Device objects.
+
+The main entry point for the api is :meth:`~kasa.Discover.discover` and
+:meth:`~kasa.Discover.discover_single` which return Device objects.\n
 Most newer devices require your tplink cloud username and password but this can be ommitted for older devices.
 
->>> from kasa import Device, Discover
+>>> from kasa import Device, Discover, Credentials
 
 :func:`~kasa.Discover.discover` returns a list of devices on your network
 
->>> devices = await Discover.discover(username="user@mail.com", password="great_password")
+>>> devices = await Discover.discover(credentials=Credentials("user@mail.com", "great_password"))
 >>> for dev in devices:
 >>>     await dev.update()
 >>>     print(dev.host)
 127.0.0.1
 127.0.0.2
 
-:func:`~kasa.Discover.discover_single` returns a single device by hostname
+:meth:`~kasa.Discover.discover_single` returns a single device by hostname
 
->>> dev = await Discover.discover_single("127.0.0.1", username="user@mail.com", password="great_password")
+>>> dev = await Discover.discover_single("127.0.0.1", credentials=Credentials("user@mail.com", "great_password"))
 >>> await dev.update()
 >>> dev.alias
 Living Room
@@ -31,12 +32,17 @@ L530
 -52
 >>> dev.mac
 5C:E9:31:00:00:00
+
+You can update devices by calling set methods. You need to call :meth:`~kasa.Device.update()` for updates to be propogated
+back to the device.
+
 >>> await dev.set_alias("Dining Room")
 >>> await dev.update()
 >>> dev.alias
 Dining Room
 
-Different groups of functionality are supported by modules which you can access with Module.Name.
+Different groups of functionality are supported by modules which you can access via :attr:`~kasa.Device.modules` with a typed
+key from :class:`~kasa.Module`.\n
 Modules will only be available on the device if they are supported but some individual features of
 a module may not be available for your device.  You can check for this with `is_feature`, e.g. is_color.
 
@@ -56,7 +62,7 @@ True
 >>>     print(light.hsv)
 HSV(hue=0, saturation=100, value=50)
 
-You can test if a module is supported before trying to access it.
+You can test if a module is supported by using `get` to access it.
 
 >>> if effect := dev.modules.get(Module.LightEffect):
 >>>     print(effect.effect)
@@ -69,10 +75,21 @@ Off
 ['Off', 'Party', 'Relax']
 Party
 
-Individual pieces of functionality are also exposed via features and will only be present if they are supported.
+Individual pieces of functionality are also exposed via features which you can access via :attr:`~kasa.Device.features` and will only be present if they are supported.\n
+Features are similar to modules in that they provide functionality that may or may not be present.\n
+Whereas modules group functionality into a common interface, features expose a single function that may or may not be part of a module.\n
+The advantage of features is that they have a simple common interface of `id`, `name`, `value` and `set_value` so no need to learn the module api.\n
+They are useful if you want write code that dynamically adapts as new features are added to the api.
 
->>> if "overheated" in dev.features:
->>>     print(dev.features["overheated"].value)
+>>> if auto_update := dev.features.get("auto_update_enabled"):
+>>>     print(auto_update.value)
 False
-
+>>> if auto_update:
+>>>     await auto_update.set_value(True)
+>>>     await dev.update()
+>>>     print(auto_update.value)
+True
+>>> for feat in dev.features.values():
+>>>     print(f"{feat.name}: {feat.value}")
+Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nOverheated: False\nBrightness: 50\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: False\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: 1.1.6 Build 240130 Rel.173828\nLight effect: Party\nSmooth transition on: 2\nSmooth transition off: 2\nTime: 2024-02-23 02:40:15+01:00
 """

@@ -67,13 +67,13 @@ API documentation
     :members:
     :undoc-members:
 
-.. autoclass:: kasa.smartbulb.BehaviorMode
+.. autoclass:: kasa.iot.iotbulb.BehaviorMode
     :members:
 
-.. autoclass:: kasa.TurnOnBehaviors
+.. autoclass:: kasa.iot.iotbulb.TurnOnBehaviors
     :members:
 
 
-.. autoclass:: kasa.TurnOnBehavior
+.. autoclass:: kasa.iot.iotbulb.TurnOnBehavior
     :undoc-members:
     :members:
