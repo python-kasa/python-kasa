@@ -7,22 +7,22 @@ is running inside an async function (`async def`).
 
 The main entry point for the api is :meth:`~kasa.Discover.discover` and
 :meth:`~kasa.Discover.discover_single` which return Device objects.\n
-Most newer devices require your tplink cloud username and password but this can be ommitted for older devices.
+Most newer devices require your TP-Link cloud username and password, but this can be omitted for older devices.
 
 >>> from kasa import Device, Discover, Credentials
 
-:func:`~kasa.Discover.discover` returns a list of devices on your network
+:func:`~kasa.Discover.discover` returns a list of devices on your network:
 
->>> devices = await Discover.discover(credentials=Credentials("user@mail.com", "great_password"))
+>>> devices = await Discover.discover(credentials=Credentials("user@example.com", "great_password"))
 >>> for dev in devices:
 >>>     await dev.update()
 >>>     print(dev.host)
 127.0.0.1
 127.0.0.2
 
-:meth:`~kasa.Discover.discover_single` returns a single device by hostname
+:meth:`~kasa.Discover.discover_single` returns a single device by hostname:
 
->>> dev = await Discover.discover_single("127.0.0.1", credentials=Credentials("user@mail.com", "great_password"))
+>>> dev = await Discover.discover_single("127.0.0.1", credentials=Credentials("user@example.com", "great_password"))
 >>> await dev.update()
 >>> dev.alias
 Living Room
@@ -33,7 +33,8 @@ L530
 >>> dev.mac
 5C:E9:31:00:00:00
 
-You can update devices by calling set methods. You need to call :meth:`~kasa.Device.update()` for updates to be propogated
+You can update devices by calling different methods (e.g., ``set_``-prefixed ones).
+Note, that these do not update the internal state, but you need to call :meth:`~kasa.Device.update()` to query the device again.
 back to the device.
 
 >>> await dev.set_alias("Dining Room")
@@ -43,8 +44,8 @@ Dining Room
 
 Different groups of functionality are supported by modules which you can access via :attr:`~kasa.Device.modules` with a typed
 key from :class:`~kasa.Module`.\n
-Modules will only be available on the device if they are supported but some individual features of
-a module may not be available for your device.  You can check for this with `is_feature`, e.g. is_color.
+Modules will only be available on the device if they are supported but some individual features of a module may not be available for your device.
+You can check the availability using ``is_``-prefixed properties like `is_color`.
 
 >>> from kasa import Module
 >>> Module.Light in dev.modules
@@ -78,7 +79,7 @@ Party
 Individual pieces of functionality are also exposed via features which you can access via :attr:`~kasa.Device.features` and will only be present if they are supported.\n
 Features are similar to modules in that they provide functionality that may or may not be present.\n
 Whereas modules group functionality into a common interface, features expose a single function that may or may not be part of a module.\n
-The advantage of features is that they have a simple common interface of `id`, `name`, `value` and `set_value` so no need to learn the module api.\n
+The advantage of features is that they have a simple common interface of `id`, `name`, `value` and `set_value` so no need to learn the module API.\n
 They are useful if you want write code that dynamically adapts as new features are added to the api.
 
 >>> if auto_update := dev.features.get("auto_update_enabled"):
