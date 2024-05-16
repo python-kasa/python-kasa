@@ -1,12 +1,14 @@
 # ruff: noqa
 """
-The kasa library is fully async and methods that perform IO need to be run inside an async couroutine.\n
+The kasa library is fully async and methods that perform IO need to be run inside an async couroutine.
+
 These examples assume you are following the tutorial inside `asyncio REPL` (python -m asyncio) or the code
 is running inside an async function (`async def`).
 
 
-The main entry point for the api is :meth:`~kasa.Discover.discover` and
-:meth:`~kasa.Discover.discover_single` which return Device objects.\n
+The main entry point for the API is :meth:`~kasa.Discover.discover` and
+:meth:`~kasa.Discover.discover_single` which return Device objects.
+
 Most newer devices require your TP-Link cloud username and password, but this can be omitted for older devices.
 
 >>> from kasa import Device, Discover, Credentials
@@ -43,7 +45,8 @@ back to the device.
 Dining Room
 
 Different groups of functionality are supported by modules which you can access via :attr:`~kasa.Device.modules` with a typed
-key from :class:`~kasa.Module`.\n
+key from :class:`~kasa.Module`.
+
 Modules will only be available on the device if they are supported but some individual features of a module may not be available for your device.
 You can check the availability using ``is_``-prefixed properties like `is_color`.
 
@@ -76,11 +79,15 @@ Off
 ['Off', 'Party', 'Relax']
 Party
 
-Individual pieces of functionality are also exposed via features which you can access via :attr:`~kasa.Device.features` and will only be present if they are supported.\n
-Features are similar to modules in that they provide functionality that may or may not be present.\n
-Whereas modules group functionality into a common interface, features expose a single function that may or may not be part of a module.\n
-The advantage of features is that they have a simple common interface of `id`, `name`, `value` and `set_value` so no need to learn the module API.\n
-They are useful if you want write code that dynamically adapts as new features are added to the api.
+Individual pieces of functionality are also exposed via features which you can access via :attr:`~kasa.Device.features` and will only be present if they are supported.
+
+Features are similar to modules in that they provide functionality that may or may not be present.
+
+Whereas modules group functionality into a common interface, features expose a single function that may or may not be part of a module.
+
+The advantage of features is that they have a simple common interface of `id`, `name`, `value` and `set_value` so no need to learn the module API.
+
+They are useful if you want write code that dynamically adapts as new features are added to the API.
 
 >>> if auto_update := dev.features.get("auto_update_enabled"):
 >>>     print(auto_update.value)
