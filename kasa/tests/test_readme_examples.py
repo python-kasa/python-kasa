@@ -86,7 +86,7 @@ def test_tutorial_examples(mocker, top_level_await):
         "kasa.discover.Discover.discover_single", return_value=a, autospec=True
     )
     mocker.patch.object(Discover, "discover", return_value=[a, b], autospec=True)
-    res = xdoctest.doctest_module("docs.tutorial", "all")
+    res = xdoctest.doctest_module("docs/tutorial.py", "all")
     assert not res["failed"]
 
 

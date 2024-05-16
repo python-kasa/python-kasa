@@ -1,7 +1,7 @@
 Tutorial
 ========
 
-.. automodule:: docs.tutorial
+.. automodule:: tutorial
     :members:
     :inherited-members:
     :undoc-members:
