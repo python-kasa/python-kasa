@@ -6,12 +6,12 @@ Common API
 .. contents:: Contents
    :local:
 
-SmartDevice class
-*****************
+Device class
+************
 
-The basic functionalities of all supported devices are accessible using the common :class:`SmartDevice` base class.
+The basic functionalities of all supported devices are accessible using the common :class:`Device` base class.
 
-The property accesses use the data obtained before by awaiting :func:`SmartDevice.update()`.
+The property accesses use the data obtained before by awaiting :func:`Device.update()`.
 The values are cached until the next update call. In practice this means that property accesses do no I/O and are dependent, while I/O producing methods need to be awaited.
 See :ref:`library_design` for more detailed information.
 
@@ -20,7 +20,7 @@ See :ref:`library_design` for more detailed information.
     This means that you need to use the same event loop for subsequent requests.
     The library gives a warning ("Detected protocol reuse between different event loop") to hint if you are accessing the device incorrectly.
 
-Methods changing the state of the device do not invalidate the cache (i.e., there is no implicit :func:`SmartDevice.update()` call made by the library).
+Methods changing the state of the device do not invalidate the cache (i.e., there is no implicit :func:`Device.update()` call made by the library).
 You can assume that the operation has succeeded if no exception is raised.
 These methods will return the device response, which can be useful for some use cases.
 
@@ -103,10 +103,10 @@ Currently there are three known types of encryption for TP-Link devices and two 
 Devices with automatic firmware updates enabled may update to newer versions of the encryption without separate notice,
 so discovery can be helpful to determine the correct config.
 
-To connect directly pass a :class:`DeviceConfig` object to :meth:`SmartDevice.connect()`.
+To connect directly pass a :class:`DeviceConfig` object to :meth:`Device.connect()`.
 
 A :class:`DeviceConfig` can be constucted manually if you know the :attr:`DeviceConfig.connection_type` values for the device or
-alternatively the config can be retrieved from :attr:`SmartDevice.config` post discovery and then re-used.
+alternatively the config can be retrieved from :attr:`Device.config` post discovery and then re-used.
 
 Energy Consumption and Usage Statistics
 ***************************************
@@ -141,7 +141,7 @@ You can access this information using through the usage module (:class:`kasa.mod
 API documentation
 *****************
 
-.. autoclass:: SmartDevice
+.. autoclass:: Device
     :members:
     :undoc-members:
 

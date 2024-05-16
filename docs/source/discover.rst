@@ -13,7 +13,7 @@ Discovery works by sending broadcast UDP packets to two known TP-link discovery 
 Port 9999 is used for legacy devices that do not use strong encryption and 20002 is for newer devices that use different
 levels of encryption.
 If a device uses port 20002 for discovery you will obtain some basic information from the device via discovery, but you
-will need to await :func:`SmartDevice.update() <kasa.SmartDevice.update()>` to get full device information.
+will need to await :func:`Device.update() <kasa.SmartDevice.update()>` to get full device information.
 Credentials will most likely be required for port 20002 devices although if the device has never been connected to the tplink
 cloud it may work without credentials.
 

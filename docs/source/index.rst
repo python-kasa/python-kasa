@@ -7,8 +7,9 @@
 
    Home <self>
    cli
+   tutorial
    discover
-   smartdevice
+   device
    design
    contribute
    smartbulb
