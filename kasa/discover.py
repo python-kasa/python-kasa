@@ -270,10 +270,10 @@ class Discover:
         you can use *target* parameter to specify the network for discovery.
 
         If given, `on_discovered` coroutine will get awaited with
-        a :class:`SmartDevice`-derived object as parameter.
+        a :class:`Device`-derived object as parameter.
 
         The results of the discovery are returned as a dict of
-        :class:`SmartDevice`-derived objects keyed with IP addresses.
+        :class:`Device`-derived objects keyed with IP addresses.
         The devices are already initialized and all but emeter-related properties
         can be accessed directly.
 
@@ -332,7 +332,7 @@ class Discover:
         """Discover a single device by the given IP address.
 
         It is generally preferred to avoid :func:`discover_single()` and
-        use :meth:`SmartDevice.connect()` instead as it should perform better when
+        use :meth:`Device.connect()` instead as it should perform better when
         the WiFi network is congested or the device is not responding
         to discovery requests.
 

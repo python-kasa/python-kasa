@@ -1,12 +1,12 @@
 """Python interface for TP-Link's smart home devices.
 
-All common, shared functionalities are available through `SmartDevice` class::
+All common, shared functionalities are available through `Device` class::
 
-    x = SmartDevice("192.168.1.1")
-    print(x.sys_info)
+>>> from kasa import Discover
+>>> x = await Discover.discover_single("192.168.1.1")
+>>> print(x.model)
 
-For device type specific actions `SmartBulb`, `SmartPlug`, or `SmartStrip`
- should be used instead.
+For device type specific actions `modules` and `features` should be used instead.
 
 Module-specific errors are raised as `KasaException` and are expected
 to be handled by the user of the library.

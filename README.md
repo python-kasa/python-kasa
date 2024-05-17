@@ -171,7 +171,8 @@ Current state: {'total': 133.105, 'power': 108.223577, 'current': 0.54463, 'volt
 
 # Library usage
 
-If you want to use this library in your own project, a good starting point is to check [the documentation on discovering devices](https://python-kasa.readthedocs.io/en/latest/discover.html).
+If you want to use this library in your own project, a good starting point is [the tutorial in the documentation](https://python-kasa.readthedocs.io/en/latest/tutorial.html).
+
 You can find several code examples in the API documentation of each of the implementation base classes, check out the [documentation for the base class shared by all supported devices](https://python-kasa.readthedocs.io/en/latest/smartdevice.html).
 
 [The library design and module structure is described in a separate page](https://python-kasa.readthedocs.io/en/latest/design.html).

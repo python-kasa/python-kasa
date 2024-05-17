@@ -181,7 +181,7 @@ class IotBulb(IotDevice):
         >>> bulb.presets
         [LightState(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), LightState(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightState(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightState(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
-        To modify an existing preset, pass :class:`~kasa.smartbulb.LightState`
+        To modify an existing preset, pass :class:`~kasa.interfaces.light.LightPreset`
         instance to :func:`save_preset` method:
 
         >>> preset = bulb.presets[0]
