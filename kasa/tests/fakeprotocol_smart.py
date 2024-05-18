@@ -28,6 +28,8 @@ class FakeSmartTransport(BaseTransport):
         *,
         list_return_size=10,
         component_nego_not_included=False,
+        warn_fixture_missing_methods=True,
+        fix_incomplete_fixture_lists=True,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -46,6 +48,8 @@ class FakeSmartTransport(BaseTransport):
                 for comp in self.info["component_nego"]["component_list"]
             }
         self.list_return_size = list_return_size
+        self.warn_fixture_missing_methods = warn_fixture_missing_methods
+        self.fix_incomplete_fixture_lists = fix_incomplete_fixture_lists
 
     @property
     def default_port(self):
@@ -220,6 +224,18 @@ class FakeSmartTransport(BaseTransport):
                         if (params and (start_index := params.get("start_index")))
                         else 0
                     )
+                    # Fixtures generated before _handle_response_lists was implemented
+                    # could have incomplete lists.
+                    if (
+                        len(result[list_key]) < result["sum"]
+                        and self.fix_incomplete_fixture_lists
+                    ):
+                        result["sum"] = len(result[list_key])
+                        if self.warn_fixture_missing_methods:
+                            pytest.fixtures_missing_methods.setdefault(
+                                self.fixture_name, set()
+                            ).add(f"{method} (incomplete '{list_key}' list)")
+
                     result[list_key] = result[list_key][
                         start_index : start_index + self.list_return_size
                     ]
@@ -244,9 +260,10 @@ class FakeSmartTransport(BaseTransport):
                     "method": method,
                 }
             # Reduce warning spam by consolidating and reporting at the end of the run
-            if self.fixture_name not in pytest.fixtures_missing_methods:
-                pytest.fixtures_missing_methods[self.fixture_name] = set()
-            pytest.fixtures_missing_methods[self.fixture_name].add(method)
+            if self.warn_fixture_missing_methods:
+                pytest.fixtures_missing_methods.setdefault(
+                    self.fixture_name, set()
+                ).add(method)
             return retval
         elif method in ["set_qs_info", "fw_download"]:
             return {"error_code": 0}

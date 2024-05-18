@@ -229,6 +229,13 @@ class SmartProtocol(BaseProtocol):
                 iterate_list_pages=False,
             )
             next_batch = response[method]
+            # In case the device returns empty lists avoid infinite looping
+            if not next_batch[response_list_name]:
+                _LOGGER.error(
+                    f"Device {self._host} received empty "
+                    + f"results query a partial list for method {method}"
+                )
+                break
             response_result[response_list_name].extend(next_batch[response_list_name])
 
     def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):

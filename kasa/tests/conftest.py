@@ -58,6 +58,8 @@ def pytest_configure():
 
 
 def pytest_sessionfinish(session, exitstatus):
+    if not pytest.fixtures_missing_methods:
+        return
     msg = "\n"
     for fixture, methods in sorted(pytest.fixtures_missing_methods.items()):
         method_list = ", ".join(methods)

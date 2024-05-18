@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from ..credentials import Credentials
@@ -242,3 +244,49 @@ async def test_smart_protocol_lists_multiple_request(mocker, list_sum, batch_siz
     )
     assert query_spy.call_count == expected_count
     assert resp == response
+
+
+async def test_incomplete_list(mocker, caplog):
+    """Test for handling incomplete lists returned from queries."""
+    info = {
+        "get_preset_rules": {
+            "start_index": 0,
+            "states": [
+                {
+                    "brightness": 50,
+                },
+                {
+                    "brightness": 100,
+                },
+            ],
+            "sum": 7,
+        }
+    }
+    caplog.set_level(logging.ERROR)
+    transport = FakeSmartTransport(
+        info,
+        "dummy-name",
+        component_nego_not_included=True,
+        warn_fixture_missing_methods=False,
+    )
+    protocol = SmartProtocol(transport=transport)
+    resp = await protocol.query({"get_preset_rules": None})
+    assert resp
+    assert resp["get_preset_rules"]["sum"] == 2  # FakeTransport fixes sum
+    assert caplog.text == ""
+
+    # Test behaviour without FakeTranport fix
+    transport = FakeSmartTransport(
+        info,
+        "dummy-name",
+        component_nego_not_included=True,
+        warn_fixture_missing_methods=False,
+        fix_incomplete_fixture_lists=False,
+    )
+    protocol = SmartProtocol(transport=transport)
+    resp = await protocol.query({"get_preset_rules": None})
+    assert resp["get_preset_rules"]["sum"] == 7
+    assert (
+        "Device 127.0.0.123 received empty results query a partial list for method get_preset_rules"
+        in caplog.text
+    )
