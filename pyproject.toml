@@ -57,7 +57,7 @@ pytest-mock = "*"
 codecov = "*"
 xdoctest = "*"
 coverage = {version = "*", extras = ["toml"]}
-pytest-timeout = "^2.3.1"
+pytest-timeout = "^2"
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]

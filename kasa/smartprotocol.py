@@ -232,7 +232,7 @@ class SmartProtocol(BaseProtocol):
             # In case the device returns empty lists avoid infinite looping
             if not next_batch[response_list_name]:
                 _LOGGER.error(
-                    f"Device {self._host} received empty "
+                    f"Device {self._host} returned empty "
                     + f"results query a partial list for method {method}"
                 )
                 break
