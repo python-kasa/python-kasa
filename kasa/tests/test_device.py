@@ -13,7 +13,7 @@ import pytest
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import IotDevice
-from kasa.iot.modules.lightpreset import IotLightPreset
+from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
 
 

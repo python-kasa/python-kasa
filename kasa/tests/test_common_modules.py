@@ -190,6 +190,17 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
         await preset_mod.set_preset("foobar")
         assert call.call_count == 3
 
+
+@light_preset
+async def test_light_preset_save(dev: Device, mocker: MockerFixture):
+    """Test saving a new preset value."""
+    preset_mod = dev.modules[Module.LightPreset]
+    assert preset_mod
+    preset_list = preset_mod.preset_list
+    if len(preset_list) == 1:
+        return
+
+    second_preset = preset_list[1]
     if preset_mod.preset_states_list[0].hue is None:
         new_preset = LightState(brightness=52)
     else:

@@ -2,22 +2,12 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Sequence
 
 from ..feature import Feature
 from ..module import Module
 from .light import LightState
-
-
-class LightPresetInfo(ABC):
-    """Light configuration preset."""
-
-    brightness: int
-
-    hue: int | None
-    saturation: int | None
-    color_temp: int | None
 
 
 class LightPreset(Module):
@@ -45,7 +35,7 @@ class LightPreset(Module):
     @property
     @abstractmethod
     def preset_list(self) -> list[str]:
-        """Return built-in effects list.
+        """Return list of preset names.
 
         Example:
             ['Off', 'Preset 1', 'Preset 2', ...]
@@ -54,7 +44,7 @@ class LightPreset(Module):
     @property
     @abstractmethod
     def preset_states_list(self) -> Sequence[LightState]:
-        """Return built-in effects list.
+        """Return list of preset states.
 
         Example:
             ['Off', 'Preset 1', 'Preset 2', ...]
@@ -70,10 +60,7 @@ class LightPreset(Module):
         self,
         preset_name: str,
     ) -> None:
-        """Set a light preset for the device.
-
-        The device doesn't store an active effect while not enabled so store locally.
-        """
+        """Set a light preset for the device."""
 
     @abstractmethod
     async def save_preset(
@@ -81,7 +68,7 @@ class LightPreset(Module):
         preset_name: str,
         preset_info: LightState,
     ) -> None:
-        """Update the preset with preset_name with the new preset_info."""
+        """Update the preset with *preset_name* with the new *preset_info*."""
 
     @property
     @abstractmethod
