@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import NamedTuple, Optional
-
-from pydantic.v1 import BaseModel
+from dataclasses import dataclass
+from typing import NamedTuple
 
 from ..module import Module
+
+
+@dataclass
+class LightState:
+    """Class for smart light preset info."""
+
+    light_on: bool | None = None
+    brightness: int | None = None
+    hue: int | None = None
+    saturation: int | None = None
+    color_temp: int | None = None
+    transition: bool | None = None
 
 
 class ColorTempRange(NamedTuple):
@@ -23,23 +34,6 @@ class HSV(NamedTuple):
     hue: int
     saturation: int
     value: int
-
-
-class LightPreset(BaseModel):
-    """Light configuration preset."""
-
-    index: int
-    brightness: int
-
-    # These are not available for effect mode presets on light strips
-    hue: Optional[int]  # noqa: UP007
-    saturation: Optional[int]  # noqa: UP007
-    color_temp: Optional[int]  # noqa: UP007
-
-    # Variables for effect mode presets
-    custom: Optional[int]  # noqa: UP007
-    id: Optional[str]  # noqa: UP007
-    mode: Optional[int]  # noqa: UP007
 
 
 class Light(Module, ABC):
@@ -133,3 +127,7 @@ class Light(Module, ABC):
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
+
+    @abstractmethod
+    async def set_state(self, state: LightState) -> dict:
+        """Set the light state."""

@@ -338,7 +338,6 @@ class SmartDevice(Device):
                 module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
-
         for child in self._children.values():
             await child._initialize_features()
 

@@ -8,6 +8,7 @@ from .emeter import Emeter
 from .led import Led
 from .light import Light
 from .lighteffect import LightEffect
+from .lightpreset import IotLightPreset, LightPreset
 from .motion import Motion
 from .rulemodule import Rule, RuleModule
 from .schedule import Schedule
@@ -23,6 +24,8 @@ __all__ = [
     "Led",
     "Light",
     "LightEffect",
+    "LightPreset",
+    "IotLightPreset",
     "Motion",
     "Rule",
     "RuleModule",

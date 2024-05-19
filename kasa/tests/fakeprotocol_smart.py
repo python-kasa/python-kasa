@@ -157,6 +157,8 @@ class FakeSmartTransport(BaseTransport):
         elif child_method == "set_device_info":
             info.update(child_params)
             return {"error_code": 0}
+        elif child_method == "set_preset_rules":
+            return self._set_child_preset_rules(info, child_params)
         elif (
             # FIXTURE_MISSING is for service calls not in place when
             # SMART fixtures started to be generated
@@ -204,6 +206,30 @@ class FakeSmartTransport(BaseTransport):
         """Set or remove values as per the device behaviour."""
         info["get_led_info"]["led_status"] = params["led_rule"] != "never"
         info["get_led_info"]["led_rule"] = params["led_rule"]
+
+    def _set_preset_rules(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        if "brightness" not in info["get_preset_rules"]:
+            return {"error_code": SmartErrorCode.PARAMS_ERROR}
+        info["get_preset_rules"]["brightness"] = params["brightness"]
+        return {"error_code": 0}
+
+    def _set_child_preset_rules(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        # So far the only child device with light preset (KS240) has the
+        # data available to read in the device_info.  If a child device
+        # appears that doesn't have this this will need to be extended.
+        if "preset_state" not in info:
+            return {"error_code": SmartErrorCode.PARAMS_ERROR}
+        info["preset_state"] = [{"brightness": b} for b in params["brightness"]]
+        return {"error_code": 0}
+
+    def _edit_preset_rules(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        if "states" not in info["get_preset_rules"] is None:
+            return {"error_code": SmartErrorCode.PARAMS_ERROR}
+        info["get_preset_rules"]["states"][params["index"]] = params["state"]
+        return {"error_code": 0}
 
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
@@ -276,6 +302,10 @@ class FakeSmartTransport(BaseTransport):
         elif method == "set_led_info":
             self._set_led_info(info, params)
             return {"error_code": 0}
+        elif method == "set_preset_rules":
+            return self._set_preset_rules(info, params)
+        elif method == "edit_preset_rules":
+            return self._edit_preset_rules(info, params)
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)

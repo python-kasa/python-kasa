@@ -1,5 +1,7 @@
 """Tests for all devices."""
 
+from __future__ import annotations
+
 import importlib
 import inspect
 import pkgutil
@@ -11,6 +13,7 @@ import pytest
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import IotDevice
+from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
 
 
@@ -238,3 +241,28 @@ async def test_deprecated_other_attributes(dev: Device):
 
     await _test_attribute(dev, "led", bool(led_module), "Led")
     await _test_attribute(dev, "set_led", bool(led_module), "Led", True)
+
+
+async def test_deprecated_light_preset_attributes(dev: Device):
+    preset = dev.modules.get(Module.LightPreset)
+
+    exc: type[AttributeError] | type[KasaException] | None = (
+        AttributeError if not preset else None
+    )
+    await _test_attribute(dev, "presets", bool(preset), "LightPreset", will_raise=exc)
+
+    exc = None
+    # deprecated save_preset not implemented for smart devices as it's unlikely anyone
+    # has an existing reliance on this for the newer devices.
+    if not preset or isinstance(dev, SmartDevice):
+        exc = AttributeError
+    elif len(preset.preset_states_list) == 0:
+        exc = KasaException
+    await _test_attribute(
+        dev,
+        "save_preset",
+        bool(preset),
+        "LightPreset",
+        IotLightPreset(index=0, hue=100, brightness=100, saturation=0, color_temp=0),  # type: ignore[call-arg]
+        will_raise=exc,
+    )

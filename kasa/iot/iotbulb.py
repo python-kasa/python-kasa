@@ -11,7 +11,7 @@ from pydantic.v1 import BaseModel, Field, root_validator
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..interfaces.light import HSV, ColorTempRange, LightPreset
+from ..interfaces.light import HSV, ColorTempRange
 from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
@@ -21,6 +21,7 @@ from .modules import (
     Countdown,
     Emeter,
     Light,
+    LightPreset,
     Schedule,
     Time,
     Usage,
@@ -178,7 +179,7 @@ class IotBulb(IotDevice):
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
         >>> bulb.presets
-        [LightPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), LightPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), LightPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
+        [IotLightPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), IotLightPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), IotLightPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), IotLightPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
 
         To modify an existing preset, pass :class:`~kasa.interfaces.light.LightPreset`
         instance to :func:`save_preset` method:
@@ -222,7 +223,8 @@ class IotBulb(IotDevice):
         self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.IotCloud, Cloud(self, "smartlife.iot.common.cloud"))
-        self.add_module(Module.Light, Light(self, "light"))
+        self.add_module(Module.Light, Light(self, self.LIGHT_SERVICE))
+        self.add_module(Module.LightPreset, LightPreset(self, self.LIGHT_SERVICE))
 
     @property  # type: ignore
     @requires_update
@@ -320,7 +322,7 @@ class IotBulb(IotDevice):
         # TODO: add warning and refer to use light.state?
         return await self._query_helper(self.LIGHT_SERVICE, "get_light_state")
 
-    async def set_light_state(
+    async def _set_light_state(
         self, state: dict, *, transition: int | None = None
     ) -> dict:
         """Set the light state."""
@@ -400,7 +402,7 @@ class IotBulb(IotDevice):
             self._raise_for_invalid_brightness(value)
             light_state["brightness"] = value
 
-        return await self.set_light_state(light_state, transition=transition)
+        return await self._set_light_state(light_state, transition=transition)
 
     @property  # type: ignore
     @requires_update
@@ -436,7 +438,7 @@ class IotBulb(IotDevice):
         if brightness is not None:
             light_state["brightness"] = brightness
 
-        return await self.set_light_state(light_state, transition=transition)
+        return await self._set_light_state(light_state, transition=transition)
 
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int) or not (0 <= value <= 100):
@@ -467,7 +469,7 @@ class IotBulb(IotDevice):
         self._raise_for_invalid_brightness(brightness)
 
         light_state = {"brightness": brightness}
-        return await self.set_light_state(light_state, transition=transition)
+        return await self._set_light_state(light_state, transition=transition)
 
     @property  # type: ignore
     @requires_update
@@ -481,14 +483,14 @@ class IotBulb(IotDevice):
 
         :param int transition: transition in milliseconds.
         """
-        return await self.set_light_state({"on_off": 0}, transition=transition)
+        return await self._set_light_state({"on_off": 0}, transition=transition)
 
     async def turn_on(self, *, transition: int | None = None, **kwargs) -> dict:
         """Turn the bulb on.
 
         :param int transition: transition in milliseconds.
         """
-        return await self.set_light_state({"on_off": 1}, transition=transition)
+        return await self._set_light_state({"on_off": 1}, transition=transition)
 
     @property  # type: ignore
     @requires_update
@@ -503,28 +505,6 @@ class IotBulb(IotDevice):
         """
         return await self._query_helper(
             "smartlife.iot.common.system", "set_dev_alias", {"alias": alias}
-        )
-
-    @property  # type: ignore
-    @requires_update
-    def presets(self) -> list[LightPreset]:
-        """Return a list of available bulb setting presets."""
-        return [LightPreset(**vals) for vals in self.sys_info["preferred_state"]]
-
-    async def save_preset(self, preset: LightPreset):
-        """Save a setting preset.
-
-        You can either construct a preset object manually, or pass an existing one
-        obtained using :func:`presets`.
-        """
-        if len(self.presets) == 0:
-            raise KasaException("Device does not supported saving presets")
-
-        if preset.index >= len(self.presets):
-            raise KasaException("Invalid preset index")
-
-        return await self._query_helper(
-            self.LIGHT_SERVICE, "set_preferred_state", preset.dict(exclude_none=True)
         )
 
     @property

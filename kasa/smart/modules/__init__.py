@@ -18,6 +18,7 @@ from .humiditysensor import HumiditySensor
 from .led import Led
 from .light import Light
 from .lighteffect import LightEffect
+from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
 from .reportmode import ReportMode
@@ -41,6 +42,7 @@ __all__ = [
     "Led",
     "Brightness",
     "Fan",
+    "LightPreset",
     "Firmware",
     "Cloud",
     "Light",
