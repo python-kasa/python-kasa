@@ -1259,5 +1259,51 @@ async def feature(dev: Device, child: str, name: str, value):
     return response
 
 
+@cli.group(invoke_without_command=True)
+@pass_dev
+@click.pass_context
+async def firmware(ctx: click.Context, dev: Device):
+    """Firmware update."""
+    if ctx.invoked_subcommand is None:
+        return await ctx.invoke(firmware_info)
+
+
+@firmware.command(name="info")
+@pass_dev
+@click.pass_context
+async def firmware_info(ctx: click.Context, dev: Device):
+    """Return firmware information."""
+    if not (firmware := dev.modules.get(Module.Firmware)):
+        echo("This device does not support firmware info.")
+        return
+
+    res = await firmware.check_for_updates()
+    if res.update_available:
+        echo("[green bold]Update available![/green bold]")
+        echo(f"Current firmware: {res.current_version}")
+        echo(f"Version {res.available_version} released at {res.release_date}")
+        echo("Release notes")
+        echo("=============")
+        echo(res.release_notes)
+        echo("=============")
+    else:
+        echo("[red bold]No updates available.[/red bold]")
+
+
+@firmware.command(name="update")
+@pass_dev
+@click.pass_context
+async def firmware_update(ctx: click.Context, dev: Device):
+    """Perform firmware update."""
+    await ctx.invoke(firmware_info)
+    click.confirm("Are you sure you want to upgrade the firmware?", abort=True)
+
+    async def progress(x):
+        echo(f"Progress: {x}")
+
+    echo("Going to update %s", dev)
+    await dev.modules.get[Module.Firmware].update_firmware(progress_cb=progress)  # type: ignore
+
+
 if __name__ == "__main__":
     cli()

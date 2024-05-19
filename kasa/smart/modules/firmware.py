@@ -14,6 +14,12 @@ from pydantic.v1 import BaseModel, Field, validator
 
 from ...exceptions import SmartErrorCode
 from ...feature import Feature
+from ...interfaces import Firmware as FirmwareInterface
+from ...interfaces.firmware import (
+    FirmwareDownloadState as FirmwareDownloadStateInterface,
+)
+from ...interfaces.firmware import FirmwareUpdateInfo as FirmwareUpdateInfoInterface
+from ...interfaces.firmware import UpdateResult
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -36,7 +42,7 @@ class DownloadState(BaseModel):
     auto_upgrade: bool
 
 
-class UpdateInfo(BaseModel):
+class FirmwareUpdateInfo(BaseModel):
     """Update info status object."""
 
     status: int = Field(alias="type")
@@ -62,7 +68,7 @@ class UpdateInfo(BaseModel):
         return False
 
 
-class Firmware(SmartModule):
+class Firmware(SmartModule, FirmwareInterface):
     """Implementation of firmware module."""
 
     REQUIRED_COMPONENT = "firmware"
@@ -136,9 +142,9 @@ class Firmware(SmartModule):
         fw = self.data.get("get_latest_fw") or self.data
         if not self._device.is_cloud_connected or isinstance(fw, SmartErrorCode):
             # Error in response, probably disconnected from the cloud.
-            return UpdateInfo(type=0, need_to_upgrade=False)
+            return FirmwareUpdateInfo(type=0, need_to_upgrade=False)
 
-        return UpdateInfo.parse_obj(fw)
+        return FirmwareUpdateInfo.parse_obj(fw)
 
     @property
     def update_available(self) -> bool | None:
@@ -214,3 +220,25 @@ class Firmware(SmartModule):
         """Change autoupdate setting."""
         data = {**self.data["get_auto_update_info"], "enable": enabled}
         await self.call("set_auto_update_info", data)
+
+    async def update_firmware(
+        self,
+        *,
+        progress_cb: Callable[[FirmwareDownloadStateInterface], Coroutine]
+        | None = None,
+    ) -> UpdateResult:
+        """Update the firmware."""
+        # TODO: implement, this is part of the common firmware API
+        raise NotImplementedError
+
+    async def check_for_updates(self) -> FirmwareUpdateInfoInterface:
+        """Return firmware update information."""
+        # TODO: naming of the common firmware API methods
+        info = self.firmware_update_info
+        return FirmwareUpdateInfoInterface(
+            current_version=self.current_firmware,
+            update_available=info.update_available,
+            available_version=info.version,
+            release_date=info.release_date,
+            release_notes=info.release_notes,
+        )

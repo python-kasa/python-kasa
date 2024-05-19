@@ -36,6 +36,7 @@ class Module(ABC):
     LightEffect: Final[ModuleName[interfaces.LightEffect]] = ModuleName("LightEffect")
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
+    Firmware: Final[ModuleName[interfaces.Firmware]] = ModuleName("Firmware")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
@@ -63,7 +64,6 @@ class Module(ABC):
     DeviceModule: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
     Energy: Final[ModuleName[smart.Energy]] = ModuleName("Energy")
     Fan: Final[ModuleName[smart.Fan]] = ModuleName("Fan")
-    Firmware: Final[ModuleName[smart.Firmware]] = ModuleName("Firmware")
     FrostProtection: Final[ModuleName[smart.FrostProtection]] = ModuleName(
         "FrostProtection"
     )
