@@ -108,6 +108,18 @@ class Module(ABC):
         """Initialize features after the initial update.
 
         This can be implemented if features depend on module query responses.
+        It will only be called once per module and will always be called
+        after *_post_update_hook* has been called for every device module and its
+        children's modules.
+        """
+
+    def _post_update_hook(self):  # noqa: B027
+        """Perform actions after a device update.
+
+        This can be implemented if a module needs to perform actions each time
+        the device has updated like generating collections for property access.
+        It will be called after every update and will be called prior to
+        *_initialize_features* on the first update.
         """
 
     def _handle_update(self):  # noqa: B027
