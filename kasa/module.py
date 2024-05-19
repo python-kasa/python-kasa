@@ -122,13 +122,6 @@ class Module(ABC):
         *_initialize_features* on the first update.
         """
 
-    def _handle_update(self):  # noqa: B027
-        """Perform actions after a device update.
-
-        This can be implemented if a module needs to perform actions after
-        the device has updated
-        """
-
     def _add_feature(self, feature: Feature):
         """Add module feature."""
         id_ = feature.id
