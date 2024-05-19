@@ -341,9 +341,6 @@ class SmartDevice(Device):
         for child in self._children.values():
             await child._initialize_features()
 
-        for child in self._children.values():
-            await child._initialize_features()
-
     @property
     def is_cloud_connected(self) -> bool:
         """Returns if the device is connected to the cloud."""
