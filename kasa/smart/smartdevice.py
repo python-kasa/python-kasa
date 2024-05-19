@@ -184,6 +184,13 @@ class SmartDevice(Device):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
+        # Call handle update for modules that want to update internal data
+        for module in self._modules.values():
+            module._post_update_hook()
+        for child in self._children.values():
+            for child_module in child._modules.values():
+                child_module._post_update_hook()
+
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
         if not self._features:
@@ -331,6 +338,9 @@ class SmartDevice(Device):
                 module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
+
+        for child in self._children.values():
+            await child._initialize_features()
 
     @property
     def is_cloud_connected(self) -> bool:
