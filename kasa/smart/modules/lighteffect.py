@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import base64
 import copy
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from ...interfaces.lighteffect import LightEffect as LightEffectInterface
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    pass
 
 
 class LightEffect(SmartModule, LightEffectInterface):
@@ -29,7 +26,7 @@ class LightEffect(SmartModule, LightEffectInterface):
     _scenes_names_to_id: dict[str, str]
 
     def _post_update_hook(self) -> None:
-        """Return built-in effects."""
+        """Update internal effect state."""
         # Copy the effects so scene name updates do not update the underlying dict.
         effects = copy.deepcopy(
             {effect["id"]: effect for effect in self.data["rule_list"]}
