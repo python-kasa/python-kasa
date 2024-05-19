@@ -233,7 +233,7 @@ class SmartProtocol(BaseProtocol):
             if not next_batch[response_list_name]:
                 _LOGGER.error(
                     f"Device {self._host} returned empty "
-                    + f"results query a partial list for method {method}"
+                    + f"results list for method {method}"
                 )
                 break
             response_result[response_list_name].extend(next_batch[response_list_name])

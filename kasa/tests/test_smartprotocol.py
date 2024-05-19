@@ -287,6 +287,6 @@ async def test_incomplete_list(mocker, caplog):
     resp = await protocol.query({"get_preset_rules": None})
     assert resp["get_preset_rules"]["sum"] == 7
     assert (
-        "Device 127.0.0.123 received empty results query a partial list for method get_preset_rules"
+        "Device 127.0.0.123 returned empty results list for method get_preset_rules"
         in caplog.text
     )
