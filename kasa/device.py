@@ -138,6 +138,14 @@ class Device(ABC):
     async def turn_off(self, **kwargs) -> dict | None:
         """Turn off the device."""
 
+    @abstractmethod
+    async def set_state(self, on: bool):
+        """Set the device state to *on*.
+
+        This allows turning the device on and off.
+        See also *turn_off* and *turn_on*.
+        """
+
     @property
     def host(self) -> str:
         """The device host."""
