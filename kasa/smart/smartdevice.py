@@ -15,8 +15,8 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature
 from ..module import Module
-from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
+from ..typedmapping import ModuleMapping, ModuleName
 from .modules import (
     Cloud,
     DeviceModule,

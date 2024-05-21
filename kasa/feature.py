@@ -4,19 +4,55 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Final, Generic, TypeVar, cast
+
+from kasa.typedmapping import FeatureId
 
 if TYPE_CHECKING:
     from .device import Device
+    from .interfaces.light import HSV
 
 
 _LOGGER = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
+
 
 @dataclass
-class Feature:
+class Feature(Generic[_T]):
     """Feature defines a generic interface for device features."""
+
+    class Id:
+        """Class containing typed common feature ids."""
+
+        LED: Final[FeatureId[bool]] = FeatureId("led")
+        LIGHT_EFFECT: Final[FeatureId[str]] = FeatureId("light_effect")
+        LIGHT_PRESET: Final[FeatureId[str]] = FeatureId("light_preset")
+        RSSI: Final[FeatureId[int]] = FeatureId("rssi")
+        ON_SINCE: Final[FeatureId[datetime]] = FeatureId("on_since")
+        AMBIENT_LIGHT: Final[FeatureId[int]] = FeatureId("ambient_light")
+
+        CLOUD_CONNECTION: Final[FeatureId[bool]] = FeatureId("cloud_connection")
+        CURRENT_CONSUMPTION: Final[FeatureId[float]] = FeatureId("current_consumption")
+        EMETER_TODAY: Final[FeatureId[float]] = FeatureId("emeter_today")
+        CONSUMPTION_THIS_MONTH: Final[FeatureId[float]] = FeatureId(
+            "consumption_this_month"
+        )
+        EMETER_TOTAL: Final[FeatureId[float]] = FeatureId("emeter_total")
+        VOLTAGE: Final[FeatureId[float]] = FeatureId("voltage")
+        CURRENT: Final[FeatureId[float]] = FeatureId("current")
+
+        BRIGHTNESS: Final[FeatureId[int]] = FeatureId("brightness")
+        COLOUR_TEMPERATURE: Final[FeatureId[int]] = FeatureId("color_temp")
+        HSV: Final[FeatureId[HSV]] = FeatureId("hsv")
+
+        DEVICE_ID: Final[FeatureId[str]] = FeatureId("device_id")
+        STATE: Final[FeatureId[bool]] = FeatureId("state")
+        SIGNAL_LEVEL: Final[FeatureId[int]] = FeatureId("signal_level")
+        SSID: Final[FeatureId[str]] = FeatureId("ssid")
+        OVERHEATED: Final[FeatureId[bool]] = FeatureId("overheated")
 
     class Type(Enum):
         """Type to help decide how to present the feature."""
@@ -96,7 +132,7 @@ class Feature:
 
     # Choice-specific attributes
     #: List of choices as enum
-    choices: list[str] | None = None
+    choices: list[_T] | None = None
     #: Attribute name of the choices getter property.
     #: If set, this property will be used to set *choices*.
     choices_getter: str | None = None
@@ -131,30 +167,32 @@ class Feature:
             )
 
     @property
-    def value(self):
+    def value(self) -> _T:
         """Return the current value."""
         if self.type == Feature.Type.Action:
-            return "<Action>"
+            return cast(_T, "<Action>")
         if self.attribute_getter is None:
             raise ValueError("Not an action and no attribute_getter set")
 
         container = self.container if self.container is not None else self.device
-        if isinstance(self.attribute_getter, Callable):
+        if callable(self.attribute_getter):
             return self.attribute_getter(container)
         return getattr(container, self.attribute_getter)
 
-    async def set_value(self, value):
+    async def set_value(self, value: _T) -> Any:
         """Set the value."""
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
         if self.type == Feature.Type.Number:  # noqa: SIM102
+            if not isinstance(value, (int, float)):
+                raise ValueError("value must be a number")
             if value < self.minimum_value or value > self.maximum_value:
                 raise ValueError(
                     f"Value {value} out of range "
                     f"[{self.minimum_value}, {self.maximum_value}]"
                 )
         elif self.type == Feature.Type.Choice:  # noqa: SIM102
-            if value not in self.choices:
+            if not self.choices or value not in self.choices:
                 raise ValueError(
                     f"Unexpected value for {self.name}: {value}"
                     f" - allowed: {self.choices}"

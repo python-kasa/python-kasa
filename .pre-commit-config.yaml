@@ -23,7 +23,7 @@ repos:
     additional_dependencies: [types-click]
     exclude: |
       (?x)^(
-          kasa/modulemapping\.py|
+          kasa/typedmapping\.py|
       )$
 
 

@@ -18,7 +18,7 @@ class DummyDevice:
 def dummy_feature() -> Feature:
     # create_autospec for device slows tests way too much, so we use a dummy here
 
-    feat = Feature(
+    feat: Feature = Feature(
         device=DummyDevice(),  # type: ignore[arg-type]
         id="dummy_feature",
         name="dummy_feature",

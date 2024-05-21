@@ -6,7 +6,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 from warnings import warn
 
 from .credentials import Credentials
@@ -18,10 +18,11 @@ from .feature import Feature
 from .iotprotocol import IotProtocol
 from .module import Module
 from .protocol import BaseProtocol
+from .typedmapping import FeatureMapping
 from .xortransport import XorTransport
 
 if TYPE_CHECKING:
-    from .modulemapping import ModuleMapping, ModuleName
+    from .typedmapping import ModuleMapping, ModuleName
 
 
 @dataclass
@@ -271,9 +272,9 @@ class Device(ABC):
         return {feat.name: feat.value for feat in self._features.values()}
 
     @property
-    def features(self) -> dict[str, Feature]:
+    def features(self) -> FeatureMapping:
         """Return the list of supported features."""
-        return self._features
+        return cast(FeatureMapping, self._features)
 
     def _add_feature(self, feature: Feature):
         """Add a new feature to the device."""
