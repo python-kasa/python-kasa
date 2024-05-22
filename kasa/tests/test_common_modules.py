@@ -4,6 +4,7 @@ from pytest_mock import MockerFixture
 from kasa import Device, LightState, Module
 from kasa.tests.device_fixtures import (
     bulb_iot,
+    bulb_smart,
     dimmable_iot,
     dimmer_iot,
     lightstrip_iot,
@@ -39,6 +40,8 @@ light_preset_smart = parametrize(
 )
 
 light_preset = parametrize_combine([light_preset_smart, bulb_iot])
+
+light = parametrize_combine([bulb_smart, bulb_iot, dimmable])
 
 
 @led
@@ -139,6 +142,30 @@ async def test_light_brightness(dev: Device):
         await light.set_brightness(feature.maximum_value + 10)
 
 
+@light
+async def test_light_set_state(dev: Device):
+    """Test brightness setter and getter."""
+    assert isinstance(dev, Device)
+    light = dev.modules.get(Module.Light)
+    assert light
+
+    await light.set_state(LightState(light_on=False))
+    await dev.update()
+    assert light.state.light_on is False
+
+    await light.set_state(LightState(light_on=True))
+    await dev.update()
+    assert light.state.light_on is True
+
+    await light.set_state(LightState(brightness=0))
+    await dev.update()
+    assert light.state.light_on is False
+
+    await light.set_state(LightState(brightness=50))
+    await dev.update()
+    assert light.state.light_on is True
+
+
 @light_preset
 async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     """Test light preset module."""
@@ -148,7 +175,6 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     assert light_mod
     feat = dev.features["light_preset"]
 
-    call = mocker.spy(light_mod, "set_state")
     preset_list = preset_mod.preset_list
     assert "Not set" in preset_list
     assert preset_list.index("Not set") == 0
@@ -157,7 +183,6 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     assert preset_mod.has_save_preset is True
 
     await light_mod.set_brightness(33)  # Value that should not be a preset
-    assert call.call_count == 0
     await dev.update()
     assert preset_mod.preset == "Not set"
     assert feat.value == "Not set"
@@ -165,6 +190,7 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     if len(preset_list) == 1:
         return
 
+    call = mocker.spy(light_mod, "set_state")
     second_preset = preset_list[1]
     await preset_mod.set_preset(second_preset)
     assert call.call_count == 1

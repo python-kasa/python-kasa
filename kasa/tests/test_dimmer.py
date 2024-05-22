@@ -7,19 +7,19 @@ from .conftest import dimmer_iot, handle_turn_on, turn_on
 
 
 @dimmer_iot
-@turn_on
-async def test_set_brightness(dev, turn_on):
-    await handle_turn_on(dev, turn_on)
+async def test_set_brightness(dev):
+    await handle_turn_on(dev, False)
+    assert dev.is_on is False
 
     await dev.set_brightness(99)
     await dev.update()
     assert dev.brightness == 99
-    assert dev.is_on == turn_on
+    assert dev.is_on is True
 
     await dev.set_brightness(0)
     await dev.update()
-    assert dev.brightness == 1
-    assert dev.is_on == turn_on
+    assert dev.brightness == 99
+    assert dev.is_on is False
 
 
 @dimmer_iot
@@ -41,7 +41,7 @@ async def test_set_brightness_transition(dev, turn_on, mocker):
 
     await dev.set_brightness(0, transition=1000)
     await dev.update()
-    assert dev.brightness == 1
+    assert dev.is_on is False
 
 
 @dimmer_iot
@@ -50,7 +50,7 @@ async def test_set_brightness_invalid(dev):
         with pytest.raises(ValueError):
             await dev.set_brightness(invalid_brightness)
 
-    for invalid_transition in [-1, 0, 0.5]:
+    for invalid_transition in [-1, 0.5]:
         with pytest.raises(ValueError):
             await dev.set_brightness(1, transition=invalid_transition)
 
@@ -133,7 +133,7 @@ async def test_set_dimmer_transition_invalid(dev):
         with pytest.raises(ValueError):
             await dev.set_dimmer_transition(invalid_brightness, 1000)
 
-    for invalid_transition in [-1, 0, 0.5]:
+    for invalid_transition in [-1, 0.5]:
         with pytest.raises(ValueError):
             await dev.set_dimmer_transition(1, invalid_transition)
 

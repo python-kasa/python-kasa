@@ -18,7 +18,7 @@ class LightState:
     hue: int | None = None
     saturation: int | None = None
     color_temp: int | None = None
-    transition: bool | None = None
+    transition: int | None = None
 
 
 class ColorTempRange(NamedTuple):
@@ -127,6 +127,11 @@ class Light(Module, ABC):
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
+
+    @property
+    @abstractmethod
+    def state(self) -> LightState:
+        """Return the current light state."""
 
     @abstractmethod
     async def set_state(self, state: LightState) -> dict:

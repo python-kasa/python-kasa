@@ -241,7 +241,7 @@ async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
     await dev.set_brightness(10, transition=1000)
 
-    set_light_state.assert_called_with({"brightness": 10}, transition=1000)
+    set_light_state.assert_called_with({"brightness": 10, "on_off": 1}, transition=1000)
 
 
 @dimmable_iot
