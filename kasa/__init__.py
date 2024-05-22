@@ -35,7 +35,7 @@ from kasa.exceptions import (
     UnsupportedDeviceError,
 )
 from kasa.feature import Feature
-from kasa.interfaces.light import Light, LightState
+from kasa.interfaces.light import HSV, ColorTempRange, Light, LightState
 from kasa.iotprotocol import (
     IotProtocol,
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
@@ -60,6 +60,8 @@ __all__ = [
     "EmeterStatus",
     "Device",
     "Light",
+    "ColorTempRange",
+    "HSV",
     "Plug",
     "Module",
     "KasaException",
