@@ -323,6 +323,18 @@ class IotDevice(Device):
         """Initialize modules not added in init."""
 
     async def _initialize_features(self):
+        """Initialize common features."""
+        self._add_feature(
+            Feature(
+                self,
+                id="state",
+                name="State",
+                attribute_getter="is_on",
+                attribute_setter="set_state",
+                type=Feature.Type.Switch,
+                category=Feature.Category.Primary,
+            )
+        )
         self._add_feature(
             Feature(
                 device=self,
@@ -633,6 +645,13 @@ class IotDevice(Device):
     def is_on(self) -> bool:
         """Return True if the device is on."""
         raise NotImplementedError("Device subclass needs to implement this.")
+
+    async def set_state(self, on: bool):
+        """Set the device state."""
+        if on:
+            return await self.turn_on()
+        else:
+            return await self.turn_off()
 
     @property  # type: ignore
     @requires_update
