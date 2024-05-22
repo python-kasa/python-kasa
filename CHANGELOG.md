@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev1) (2024-05-22)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev0...0.7.0.dev1)
+
+**Implemented enhancements:**
+
+- Fix set\_state for common light modules [\#929](https://github.com/python-kasa/python-kasa/pull/929) (@sdb9696)
+- Add state feature for iot devices [\#924](https://github.com/python-kasa/python-kasa/pull/924) (@rytilahti)
+
 ## [0.7.0.dev0](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev0) (2024-05-19)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.2.1...0.7.0.dev0)
@@ -120,6 +129,7 @@
 
 **Merged pull requests:**
 
+- Prepare 0.7.0.dev0 [\#922](https://github.com/python-kasa/python-kasa/pull/922) (@rytilahti)
 - Fix potential infinite loop if incomplete lists returned [\#920](https://github.com/python-kasa/python-kasa/pull/920) (@sdb9696)
 - Deprecate device level light, effect and led attributes [\#916](https://github.com/python-kasa/python-kasa/pull/916) (@sdb9696)
 - Update cli to use common modules and remove iot specific cli testing [\#913](https://github.com/python-kasa/python-kasa/pull/913) (@sdb9696)
