@@ -14,6 +14,8 @@ from ..smartmodule import SmartModule
 class Light(SmartModule, LightInterface):
     """Implementation of a light."""
 
+    _light_state: LightState
+
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {}
@@ -131,9 +133,34 @@ class Light(SmartModule, LightInterface):
         """Set the light state."""
         state_dict = asdict(state)
         # brightness of 0 turns off the light, it's not a valid brightness
-        if state.brightness and state.brightness == 0:
+        if state.brightness == 0:
             state_dict["device_on"] = False
             del state_dict["brightness"]
+        elif state.light_on is not None:
+            state_dict["device_on"] = state.light_on
+            del state_dict["light_on"]
+        else:
+            state_dict["device_on"] = True
 
         params = {k: v for k, v in state_dict.items() if v is not None}
         return await self.call("set_device_info", params)
+
+    @property
+    def state(self) -> LightState:
+        """Return the current light state."""
+        return self._light_state
+
+    def _post_update_hook(self) -> None:
+        if self._device.is_on is False:
+            state = LightState(light_on=False)
+        else:
+            state = LightState(light_on=True)
+            if self.is_dimmable:
+                state.brightness = self.brightness
+            if self.is_color:
+                hsv = self.hsv
+                state.hue = hsv.hue
+                state.saturation = hsv.saturation
+            if self.is_variable_color_temp:
+                state.color_temp = self.color_temp
+        self._light_state = state

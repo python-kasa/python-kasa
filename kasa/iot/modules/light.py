@@ -25,6 +25,7 @@ class Light(IotModule, LightInterface):
     """Implementation of brightness module."""
 
     _device: IotBulb | IotDimmer
+    _light_state: LightState
 
     def _initialize_features(self):
         """Initialize features."""
@@ -102,12 +103,14 @@ class Light(IotModule, LightInterface):
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
     ) -> dict:
-        """Set the brightness in percentage.
+        """Set the brightness in percentage. A value of 0 will turn off the light.
 
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
-        return await self._device._set_brightness(brightness, transition=transition)
+        return await self.set_state(
+            LightState(brightness=brightness, transition=transition)
+        )
 
     @property
     def is_color(self) -> bool:
@@ -202,14 +205,53 @@ class Light(IotModule, LightInterface):
 
     async def set_state(self, state: LightState) -> dict:
         """Set the light state."""
-        if (bulb := self._get_bulb_device()) is None:
-            return await self.set_brightness(state.brightness or 0)
+        # iot protocol Dimmers and smart protocol devices do not support
+        # brightness of 0 so 0 will turn off all devices for consistency
+        if (bulb := self._get_bulb_device()) is None:  # Dimmer
+            if state.brightness == 0 or state.light_on is False:
+                return await self._device.turn_off(transition=state.transition)
+            elif state.brightness:
+                # set_dimmer_transition will turn on the device
+                return await self._device.set_dimmer_transition(
+                    state.brightness, state.transition or 0
+                )
+            return await self._device.turn_on(transition=state.transition)
         else:
             transition = state.transition
             state_dict = asdict(state)
             state_dict = {k: v for k, v in state_dict.items() if v is not None}
+            if "transition" in state_dict:
+                del state_dict["transition"]
             state_dict["on_off"] = 1 if state.light_on is None else int(state.light_on)
+            if state_dict.get("brightness") == 0:
+                state_dict["on_off"] = 0
+                del state_dict["brightness"]
+            # If light on state not set default to on.
+            elif state.light_on is None:
+                state_dict["on_off"] = 1
+            else:
+                state_dict["on_off"] = int(state.light_on)
             return await bulb._set_light_state(state_dict, transition=transition)
+
+    @property
+    def state(self) -> LightState:
+        """Return the current light state."""
+        return self._light_state
+
+    def _post_update_hook(self) -> None:
+        if self._device.is_on is False:
+            state = LightState(light_on=False)
+        else:
+            state = LightState(light_on=True)
+            if self.is_dimmable:
+                state.brightness = self.brightness
+            if self.is_color:
+                hsv = self.hsv
+                state.hue = hsv.hue
+                state.saturation = hsv.saturation
+            if self.is_variable_color_temp:
+                state.color_temp = self.color_temp
+        self._light_state = state
 
     async def _deprecated_set_light_state(
         self, state: dict, *, transition: int | None = None

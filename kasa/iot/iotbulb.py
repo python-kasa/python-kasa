@@ -329,6 +329,9 @@ class IotBulb(IotDevice):
         if transition is not None:
             state["transition_period"] = transition
 
+        if "brightness" in state:
+            self._raise_for_invalid_brightness(state["brightness"])
+
         # if no on/off is defined, turn on the light
         if "on_off" not in state:
             state["on_off"] = 1
