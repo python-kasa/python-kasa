@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from datetime import datetime
 
 import pytest
@@ -21,12 +20,8 @@ autooff = parametrize(
     [
         ("auto_off_enabled", "enabled", bool),
         ("auto_off_minutes", "delay", int),
-        ("auto_off_at", "auto_off_at", datetime | None),
+        ("auto_off_at", "auto_off_at", datetime),
     ],
-)
-@pytest.mark.skipif(
-    sys.version_info < (3, 10),
-    reason="union type shortcut requires python3.10",
 )
 async def test_autooff_features(
     dev: SmartDevice, feature: str, prop_name: str, type: type
@@ -36,11 +31,12 @@ async def test_autooff_features(
     assert autooff is not None
 
     prop = getattr(autooff, prop_name)
-    assert isinstance(prop, type)
+    # Note, special handling for None as this is allowed for auto_off_at
+    assert isinstance(prop, type) or prop is None
 
     feat = dev.features[feature]
     assert feat.value == prop
-    assert isinstance(feat.value, type)
+    assert isinstance(feat.value, type) or feat.value is None
 
 
 @autooff
