@@ -69,4 +69,4 @@ As with all other commands, you can also pass ``--help`` to both ``join`` and ``
 ``kasa --help``
 ***************
 
-.. program-output:: kasa --help --debug
+.. program-output:: kasa --help
