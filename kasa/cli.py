@@ -111,7 +111,7 @@ def CatchAllExceptions(cls):
     def _handle_exception(debug, exc):
         if isinstance(exc, click.ClickException):
             raise
-        echo(f"Raised error: {exc!r} {type(exc)=}")
+        echo(f"Raised error: {exc}")
         if debug:
             raise
         echo("Run with --debug enabled to see stacktrace")
