@@ -4,7 +4,11 @@ import pytest
 import xdoctest
 
 from kasa import Discover
-from kasa.tests.conftest import get_device_for_fixture_protocol
+from kasa.tests.conftest import (
+    get_device_for_fixture_protocol,
+    get_fixture_info,
+    patch_discovery,
+)
 
 
 def test_bulb_examples(mocker):
@@ -62,12 +66,10 @@ def test_lightstrip_examples(mocker):
     assert not res["failed"]
 
 
-def test_discovery_examples(mocker):
+def test_discovery_examples(mocker, patch_readmes, top_level_await):
     """Test discovery examples."""
-    p = asyncio.run(get_device_for_fixture_protocol("KP303(UK)_1.0_1.0.3.json", "IOT"))
-
-    mocker.patch("kasa.discover.Discover.discover", return_value=[p])
     res = xdoctest.doctest_module("kasa.discover", "all")
+    assert res["n_passed"] > 0
     assert not res["failed"]
 
 
@@ -87,7 +89,17 @@ def test_tutorial_examples(mocker, top_level_await):
     )
     mocker.patch.object(Discover, "discover", return_value=[a, b], autospec=True)
     res = xdoctest.doctest_module("docs/tutorial.py", "all")
+    assert res["n_passed"] > 0
     assert not res["failed"]
+
+
+@pytest.fixture
+def patch_readmes(mocker):
+    fixture_infos = {
+        "127.0.0.1": get_fixture_info("KP303(UK)_1.0_1.0.3.json", "IOT"),
+        "127.0.0.2": get_fixture_info("HS110(EU)_1.0_1.2.5.json", "IOT"),
+    }
+    yield patch_discovery(fixture_infos, mocker)
 
 
 @pytest.fixture

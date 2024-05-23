@@ -1,6 +1,6 @@
 # How-to Guides
 
-This section contains guides of how to perform common functions with the api
+This page contains guides of how to perform common actions using the library.
 
 ## Discover devices
 
@@ -25,12 +25,12 @@ This section contains guides of how to perform common functions with the api
 
 The availability of energy consumption sensors depend on the device.
 While most of the bulbs support it, only specific switches (e.g., HS110) or strips (e.g., HS300) support it.
-You can use {attr}`~SmartDevice.has_emeter` to check for the availability.
+You can use {attr}`~Device.has_emeter` to check for the availability.
 
 
 ### Usage statistics
 
-You can use {attr}`~SmartDevice.on_since` to query for the time the device has been turned on.
+You can use {attr}`~Device.on_since` to query for the time the device has been turned on.
 Some devices also support reporting the usage statistics on daily or monthly basis.
 You can access this information using through the usage module ({class}`kasa.modules.Usage`):
 

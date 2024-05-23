@@ -2,11 +2,10 @@
 
 ```{currentmodule} kasa
 ```
-The page contains the documentation for the deprecated library api that only works
-with the older kasa devices.
+The page contains the documentation for the deprecated library API that only works with the older kasa devices.
 
-If you want to continue to use the old api for older devices you can use the classes
-in the `iot` module to avoid deprecation warnings.
+If you want to continue to use the old API for older devices,
+you can use the classes in the `iot` module to avoid deprecation warnings.
 
 ```py
 from kasa.iot import IotDevice, IotBulb, IotPlug, IotDimmer, IotStrip, IotLightStrip

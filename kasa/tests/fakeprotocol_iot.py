@@ -178,7 +178,7 @@ MOTION_MODULE = {
 
 
 class FakeIotProtocol(IotProtocol):
-    def __init__(self, info):
+    def __init__(self, info, fixture_name=None):
         super().__init__(
             transport=XorTransport(
                 config=DeviceConfig("127.0.0.123"),

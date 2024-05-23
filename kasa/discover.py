@@ -16,39 +16,44 @@ Newer devices that respond on port 20002 will most likely require TP-Link cloud
 credentials to be passed if queries or updates are to be performed on the returned
 devices.
 
-Examples:
-    Discovery returns a list of discovered devices:
+Discovery returns a dict of {ip: discovered devices}:
 
-    >>> import asyncio
-    >>> found_devices = await Discover.discover()
-    >>> [dev.alias for dev in found_devices]
-    ['TP-LINK_Power Strip_CF69']
+>>> import asyncio
+>>> from kasa import Discover, Credentials
+>>>
+>>> found_devices = await Discover.discover()
+>>> [dev.alias for dev in found_devices.values()]
+['TP-LINK_Power Strip_CF69', 'Kitchen']
 
-    Discovery can also be targeted to a specific broadcast address instead of
-    the default 255.255.255.255:
+Discovery can also be targeted to a specific broadcast address instead of
+the default 255.255.255.255:
 
-    >>> asyncio.run(Discover.discover(target="192.168.8.255"))
+>>> found_devices = await Discover.discover(target="192.168.8.255")
 
-    It is also possible to pass a coroutine to be executed for each found device:
+It is also possible to pass a coroutine to be executed for each found device:
 
-    >>> async def print_alias(dev):
-    >>>    print(f"Discovered {dev.alias}")
-    >>> devices = await Discover.discover(on_discovered=print_alias))
+>>> async def print_alias(dev):
+>>>     print(f"Discovered {dev.alias}")
+>>>
+>>> devices = await Discover.discover(on_discovered=print_alias)
+>>> await asyncio.sleep(2)
+Discovered TP-LINK_Power Strip_CF69
+Discovered Kitchen
 
-    You can pass credentials for devices requiring authentication
+You can pass credentials for devices requiring authentication
 
-    >>> devices = await Discover.discover(
-    >>>     credentials=Credentials("myusername", "mypassword"),
-    >>>     discovery_timeout=10
-    >>> )
+>>> devices = await Discover.discover(
+>>>     credentials=Credentials("myusername", "mypassword"),
+>>>     discovery_timeout=10
+>>> )
 
-    Discover a single device
+Discover a single device
 
-    >>> device = await Discover.discover_single(
-    >>>     "127.0.0.1",
-    >>>     credentials=Credentials("myusername", "mypassword"),
-    >>>     discovery_timeout=10
-    >>> )
+>>> device = await Discover.discover_single(
+>>>     "127.0.0.1",
+>>>     credentials=Credentials("myusername", "mypassword"),
+>>>     discovery_timeout=10
+>>> )
 
 """
 
