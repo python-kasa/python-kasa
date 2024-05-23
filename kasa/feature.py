@@ -30,7 +30,8 @@ class Feature:
         #: Action triggers some action on device
         Action = auto()
         #: Number defines a numeric setting
-        #: See :ref:`range_getter`, :ref:`minimum_value`, and :ref:`maximum_value`
+        #: See :attr:`range_getter`, :attr:`Feature.minimum_value`,
+        #: and :attr:`maximum_value`
         Number = auto()
         #: Choice defines a setting with pre-defined values
         Choice = auto()

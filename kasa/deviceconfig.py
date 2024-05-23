@@ -1,10 +1,27 @@
-"""Module for holding connection parameters.
+"""Configuration for connecting directly to a device without discovery.
 
-Note that this module does not work with from __future__ import annotations
-due to it's use of type returned by fields() which becomes a string with the import.
-https://bugs.python.org/issue39442
+If you are connecting to a newer KASA or TAPO device you can get the device
+via discovery or connect directly with :class:`DeviceConfig`.
+
+Example:
+    Discovery returns a list of discovered devices:
+
+    >>> from kasa import Discover, Credentials
+    >>> device = await Discover.discover_single(
+    >>>     "127.0.0.1",
+    >>>     credentials=Credentials("myusername", "mypassword"),
+    >>>     discovery_timeout=10
+    >>> )
+    >>> config = device.config # DeviceConfig.to_dict() can be used to store for later
+    >>> later_device = await SmartDevice.connect(config=config)
+    >>> await later_device.update()
+    >>> print(later_device.alias)  # Print out the alias
+
 """
 
+# Note that this module does not work with from __future__ import annotations
+# due to it's use of type returned by fields() which becomes a string with the import.
+# https://bugs.python.org/issue39442
 # ruff: noqa: FA100
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
