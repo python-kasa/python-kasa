@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 import pytest
 from pytest_mock import MockerFixture
@@ -20,7 +21,7 @@ autooff = parametrize(
     [
         ("auto_off_enabled", "enabled", bool),
         ("auto_off_minutes", "delay", int),
-        ("auto_off_at", "auto_off_at", datetime),
+        ("auto_off_at", "auto_off_at", Optional[datetime]),
     ],
 )
 async def test_autooff_features(
@@ -31,12 +32,11 @@ async def test_autooff_features(
     assert autooff is not None
 
     prop = getattr(autooff, prop_name)
-    # Note, special handling for None as this is allowed for auto_off_at
-    assert isinstance(prop, type) or prop is None
+    assert isinstance(prop, type)
 
     feat = dev.features[feature]
     assert feat.value == prop
-    assert isinstance(feat.value, type) or feat.value is None
+    assert isinstance(feat.value, type)
 
 
 @autooff
