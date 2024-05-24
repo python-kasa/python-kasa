@@ -70,7 +70,7 @@ new_discovery = parametrize_discovery(
     params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
     ids=idgenerator,
 )
-def discovery_mock(request, mocker):
+async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
     fixture_info: FixtureInfo = request.param
     yield patch_discovery({"127.0.0.123": fixture_info}, mocker)

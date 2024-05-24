@@ -28,7 +28,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Living room left dimmer",
+            "alias": "Living Room Dimmer Switch",
             "brightness": 25,
             "dev_name": "Smart Wi-Fi Dimmer",
             "deviceId": "000000000000000000000000000000000000000",

@@ -3,7 +3,6 @@ import asyncio
 import pytest
 import xdoctest
 
-from kasa import Discover
 from kasa.tests.conftest import (
     get_device_for_fixture_protocol,
     get_fixture_info,
@@ -66,38 +65,28 @@ def test_lightstrip_examples(mocker):
     assert not res["failed"]
 
 
-def test_discovery_examples(mocker, patch_readmes, top_level_await):
+def test_discovery_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("kasa.discover", "all")
     assert res["n_passed"] > 0
     assert not res["failed"]
 
 
-def test_tutorial_examples(mocker, top_level_await):
+def test_tutorial_examples(readmes_mock):
     """Test discovery examples."""
-    a = asyncio.run(
-        get_device_for_fixture_protocol("L530E(EU)_3.0_1.1.6.json", "SMART")
-    )
-    b = asyncio.run(get_device_for_fixture_protocol("HS110(EU)_1.0_1.2.5.json", "IOT"))
-    a.host = "127.0.0.1"
-    b.host = "127.0.0.2"
-
-    # Note autospec does not work for staticmethods in python < 3.12
-    # https://github.com/python/cpython/issues/102978
-    mocker.patch(
-        "kasa.discover.Discover.discover_single", return_value=a, autospec=True
-    )
-    mocker.patch.object(Discover, "discover", return_value=[a, b], autospec=True)
     res = xdoctest.doctest_module("docs/tutorial.py", "all")
     assert res["n_passed"] > 0
     assert not res["failed"]
 
 
 @pytest.fixture
-def patch_readmes(mocker):
+async def readmes_mock(mocker, top_level_await):
     fixture_infos = {
-        "127.0.0.1": get_fixture_info("KP303(UK)_1.0_1.0.3.json", "IOT"),
-        "127.0.0.2": get_fixture_info("HS110(EU)_1.0_1.2.5.json", "IOT"),
+        "127.0.0.1": get_fixture_info("KP303(UK)_1.0_1.0.3.json", "IOT"),  # Strip
+        "127.0.0.2": get_fixture_info("HS110(EU)_1.0_1.2.5.json", "IOT"),  # Plug
+        "127.0.0.3": get_fixture_info("L530E(EU)_3.0_1.1.6.json", "SMART"),  # Bulb
+        "127.0.0.4": get_fixture_info("KL430(US)_1.0_1.0.10.json", "IOT"),  # Lightstrip
+        "127.0.0.5": get_fixture_info("HS220(US)_1.0_1.5.7.json", "IOT"),  # Dimmer
     }
     yield patch_discovery(fixture_infos, mocker)
 
@@ -111,19 +100,26 @@ def top_level_await(mocker):
     """
     import ast
     from inspect import CO_COROUTINE
+    from types import CodeType
 
     orig_exec = exec
     orig_eval = eval
     orig_compile = compile
 
     def patch_exec(source, globals=None, locals=None, /, **kwargs):
-        if source.co_flags & CO_COROUTINE == CO_COROUTINE:
+        if (
+            isinstance(source, CodeType)
+            and source.co_flags & CO_COROUTINE == CO_COROUTINE
+        ):
             asyncio.run(orig_eval(source, globals, locals))
         else:
             orig_exec(source, globals, locals, **kwargs)
 
     def patch_eval(source, globals=None, locals=None, /, **kwargs):
-        if source.co_flags & CO_COROUTINE == CO_COROUTINE:
+        if (
+            isinstance(source, CodeType)
+            and source.co_flags & CO_COROUTINE == CO_COROUTINE
+        ):
             return asyncio.run(orig_eval(source, globals, locals, **kwargs))
         else:
             return orig_eval(source, globals, locals, **kwargs)

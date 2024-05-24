@@ -105,7 +105,7 @@ class IotDevice(Device):
         All devices provide several informational properties:
 
         >>> dev.alias
-        Kitchen
+        Bedroom Lamp Plug
         >>> dev.model
         HS110(EU)
         >>> dev.rssi

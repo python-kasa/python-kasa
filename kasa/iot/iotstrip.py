@@ -55,7 +55,7 @@ class IotStrip(IotDevice):
         >>> strip = IotStrip("127.0.0.1")
         >>> asyncio.run(strip.update())
         >>> strip.alias
-        TP-LINK_Power Strip_CF69
+        Bedroom Power Strip
 
         All methods act on the whole strip:
 

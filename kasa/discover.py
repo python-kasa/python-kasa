@@ -22,23 +22,39 @@ Discovery returns a dict of {ip: discovered devices}:
 >>> from kasa import Discover, Credentials
 >>>
 >>> found_devices = await Discover.discover()
->>> [dev.alias for dev in found_devices.values()]
-['TP-LINK_Power Strip_CF69', 'Kitchen']
+>>> [dev.model for dev in found_devices.values()]
+['KP303(UK)', 'HS110(EU)', 'L530E', 'KL430(US)', 'HS220(US)']
 
 Discovery can also be targeted to a specific broadcast address instead of
 the default 255.255.255.255:
 
->>> found_devices = await Discover.discover(target="192.168.8.255")
+>>> found_devices = await Discover.discover(target="127.0.0.255")
+>>> print(len(found_devices))
+5
+
+Basic information is available on the device from the discovery broadcast response
+but it is important to call device.update() after discovery if you want to access
+all the attributes without getting errors or None.
+
+>>> dev = found_devices["127.0.0.3"]
+>>> dev.alias
+None
+>>> await dev.update()
+>>> dev.alias
+'Living Room Bulb'
 
 It is also possible to pass a coroutine to be executed for each found device:
 
 >>> async def print_alias(dev):
+>>>     await dev.update()
 >>>     print(f"Discovered {dev.alias}")
 >>>
 >>> devices = await Discover.discover(on_discovered=print_alias)
->>> await asyncio.sleep(2)
-Discovered TP-LINK_Power Strip_CF69
-Discovered Kitchen
+Discovered Bedroom Power Strip
+Discovered Bedroom Lamp Plug
+Discovered Living Room Bulb
+Discovered Bedroom Lightstrip
+Discovered Living Room Dimmer Switch
 
 You can pass credentials for devices requiring authentication
 
@@ -46,14 +62,18 @@ You can pass credentials for devices requiring authentication
 >>>     credentials=Credentials("myusername", "mypassword"),
 >>>     discovery_timeout=10
 >>> )
+>>> print(len(devices))
+5
 
-Discover a single device
+Discovering a single device returns a kasa.Device object.
 
 >>> device = await Discover.discover_single(
 >>>     "127.0.0.1",
 >>>     credentials=Credentials("myusername", "mypassword"),
 >>>     discovery_timeout=10
 >>> )
+>>> device.model
+'KP303(UK)'
 
 """
 
