@@ -15,7 +15,7 @@ Most newer devices require your TP-Link cloud username and password, but this ca
 
 :func:`~kasa.Discover.discover` returns a list of devices on your network:
 
->>> devices = await Discover.discover(credentials=Credentials("user@example.com", "great_password"))
+>>> devices = await Discover.discover(username="user@example.com", password="great_password")
 >>> for dev in devices:
 >>>     await dev.update()
 >>>     print(dev.host)
@@ -24,7 +24,7 @@ Most newer devices require your TP-Link cloud username and password, but this ca
 
 :meth:`~kasa.Discover.discover_single` returns a single device by hostname:
 
->>> dev = await Discover.discover_single("127.0.0.1", credentials=Credentials("user@example.com", "great_password"))
+>>> dev = await Discover.discover_single("127.0.0.1", username="user@example.com", password="great_password")
 >>> await dev.update()
 >>> dev.alias
 Living Room

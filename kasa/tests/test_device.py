@@ -266,3 +266,27 @@ async def test_deprecated_light_preset_attributes(dev: Device):
         IotLightPreset(index=0, hue=100, brightness=100, saturation=0, color_temp=0),  # type: ignore[call-arg]
         will_raise=exc,
     )
+
+
+async def test_device_type_aliases():
+    """Test that the device type aliases in Device work."""
+
+    def _mock_connect(config, *args, **kwargs):
+        mock = Mock()
+        mock.config = config
+        return mock
+
+    with patch("kasa.device_factory.connect", side_effect=_mock_connect):
+        dev = await Device.connect(
+            config=Device.Config(
+                host="127.0.0.1",
+                credentials=Device.Credentials(username="user", password="foobar"),  # noqa: S106
+                connection_type=Device.ConnectionType(
+                    device_family=Device.FamilyType.SmartKasaPlug,
+                    encryption_type=Device.EncryptionType.Klap,
+                    login_version=2,
+                ),
+            )
+        )
+        assert isinstance(dev.config, DeviceConfig)
+        assert DeviceType.Dimmer == Device.Type.Dimmer

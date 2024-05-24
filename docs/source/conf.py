@@ -61,7 +61,15 @@ html_static_path = ["_static"]
 todo_include_todos = True
 myst_heading_anchors = 3
 
+autodoc_type_aliases = {"Device.Credentials": "kasa.Credentials"}
+
 
 def setup(app):
     # add copybutton to hide the >>> prompts, see https://github.com/readthedocs/sphinx_rtd_theme/issues/167
     app.add_js_file("copybutton.js")
+    from kasa import Device
+
+    # need to assign the different names here, otherwise autodoc will document the
+    # whole class instead of 'alias of ...' with a link to the class.
+    Device.ConnectionType.__name__ = "_ConnectionType"
+    Device.Credentials.__name__ = "_Credentials"

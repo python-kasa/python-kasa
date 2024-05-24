@@ -9,9 +9,11 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 from warnings import warn
 
+from typing_extensions import TypeAlias
+
 from .credentials import Credentials
 from .device_type import DeviceType
-from .deviceconfig import DeviceConfig
+from .deviceconfig import ConnectionType, DeviceConfig, DeviceFamilyType, EncryptType
 from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
@@ -50,6 +52,15 @@ class Device(ABC):
     :func:`Device.connect()`, :func:`Discover.discover()`
     or :func:`Discover.discover_single()`.
     """
+
+    # All types required to create devices directly via connect are aliased here
+    # to avoid consumers having to do multiple imports.
+    Type: TypeAlias = DeviceType
+    Credentials: TypeAlias = Credentials
+    Config: TypeAlias = DeviceConfig
+    FamilyType: TypeAlias = DeviceFamilyType
+    EncryptionType: TypeAlias = EncryptType
+    ConnectionType: TypeAlias = ConnectionType
 
     def __init__(
         self,

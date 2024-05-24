@@ -257,6 +257,8 @@ class Discover:
         interface=None,
         on_unsupported=None,
         credentials=None,
+        username: str | None = None,
+        password: str | None = None,
         port=None,
         timeout=None,
     ) -> DeviceDict:
@@ -284,11 +286,16 @@ class Discover:
         :param discovery_packets: Number of discovery packets to broadcast
         :param interface: Bind to specific interface
         :param on_unsupported: Optional callback when unsupported devices are discovered
-        :param credentials: Credentials for devices requiring authentication
+        :param credentials: Credentials for devices that require authentication.
+            username and password are ignored if provided.
+        :param username: Username for devices that require authentication
+        :param password: Password for devices that require authentication
         :param port: Override the discovery port for devices listening on 9999
         :param timeout: Query timeout in seconds for devices returned by discovery
         :return: dictionary with discovered devices
         """
+        if not credentials and username and password:
+            credentials = Credentials(username, password)
         loop = asyncio.get_event_loop()
         transport, protocol = await loop.create_datagram_endpoint(
             lambda: _DiscoverProtocol(
@@ -328,6 +335,8 @@ class Discover:
         port: int | None = None,
         timeout: int | None = None,
         credentials: Credentials | None = None,
+        username: str | None = None,
+        password: str | None = None,
     ) -> Device:
         """Discover a single device by the given IP address.
 
@@ -340,10 +349,15 @@ class Discover:
         :param discovery_timeout: Timeout in seconds for discovery
         :param port: Optionally set a different port for legacy devices using port 9999
         :param timeout: Timeout in seconds device for devices queries
-        :param credentials: Credentials for devices that require authentication
+        :param credentials: Credentials for devices that require authentication.
+            username and password are ignored if provided.
+        :param username: Username for devices that require authentication
+        :param password: Password for devices that require authentication
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
+        if not credentials and username and password:
+            credentials = Credentials(username, password)
         loop = asyncio.get_event_loop()
 
         try:
