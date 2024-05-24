@@ -1,4 +1,6 @@
 # type: ignore
+# ruff: noqa: S106
+
 import asyncio
 import re
 import socket
@@ -161,6 +163,40 @@ async def test_discover_single_hostname(discovery_mock, mocker):
     mocker.patch("socket.getaddrinfo", side_effect=socket.gaierror())
     with pytest.raises(KasaException):
         x = await Discover.discover_single(host, credentials=Credentials())
+
+
+async def test_discovery_credentials(mocker):
+    """Make sure that discover gives credentials precedence over un and pw."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.discover._DiscoverProtocol.wait_for_discovery_to_complete")
+
+    def mock_discover(self, *_, **__):
+        self.discovered_devices = {host: MagicMock()}
+
+    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    dp = mocker.spy(_DiscoverProtocol, "__init__")
+
+    await Discover.discover_single(host, credentials=Credentials(), timeout=0)
+    assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
+    await Discover.discover_single(
+        host, credentials=Credentials(), username="Foo", password="Bar", timeout=0
+    )
+    assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
+    await Discover.discover_single(host, username="Foo", password="Bar", timeout=0)
+    assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
+    await Discover.discover_single(host, username="Foo", timeout=0)
+    assert dp.mock_calls[3].kwargs["credentials"] is None
+    dp.reset_mock()
+    await Discover.discover(credentials=Credentials(), timeout=0)
+    assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
+    await Discover.discover(
+        credentials=Credentials(), username="Foo", password="Bar", timeout=0
+    )
+    assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
+    await Discover.discover(username="Foo", password="Bar", timeout=0)
+    assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
+    await Discover.discover(username="Foo", timeout=0)
+    assert dp.mock_calls[3].kwargs["credentials"] is None
 
 
 async def test_discover_single_unsupported(unsupported_device_info, mocker):
