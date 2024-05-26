@@ -43,7 +43,10 @@ class HttpClient:
             return self._config.http_client
 
         if not self._client_session:
-            self._client_session = aiohttp.ClientSession(cookie_jar=get_cookie_jar())
+            self._client_session = aiohttp.ClientSession(
+                cookie_jar=get_cookie_jar(),
+                connector=aiohttp.TCPConnector(verify_ssl=False),
+            )
         return self._client_session
 
     async def post(
