@@ -42,7 +42,10 @@ def _md5(payload: bytes) -> str:
 
 
 class TransportState(Enum):
-    """Enum for AES state."""
+    """Enum for transport state.
+
+    TODO: cleartext requires only login
+    """
 
     HANDSHAKE_REQUIRED = auto()  # Handshake needed
     LOGIN_REQUIRED = auto()  # Login needed
@@ -57,7 +60,7 @@ class CleartextTokenTransport(BaseTransport):
     """
 
     DEFAULT_PORT: int = 4433
-    SESSION_COOKIE_NAME = "TP_SESSIONID"
+    SESSION_COOKIE_NAME = "TP_SESSIONID"  # TODO: cleanup cookie handling
     TIMEOUT_COOKIE_NAME = "TIMEOUT"
     COMMON_HEADERS = {
         "Content-Type": "application/json",
@@ -80,6 +83,7 @@ class CleartextTokenTransport(BaseTransport):
         if self._credentials:
             self._login_params = self._get_login_params(self._credentials)
         else:
+            # TODO: Figure out how to handle credential hash
             self._login_params = json_loads(
                 base64.b64decode(self._credentials_hash.encode()).decode()  # type: ignore[union-attr]
             )
@@ -87,12 +91,11 @@ class CleartextTokenTransport(BaseTransport):
         self._http_client: HttpClient = HttpClient(config)
 
         self._state = TransportState.LOGIN_REQUIRED
-
         self._session_expire_at: float | None = None
 
         # self._session_cookie: dict[str, str] | None = None
 
-        self._app_url = URL(f"http://{self._host}:{self._port}/app")
+        self._app_url = URL(f"https://{self._host}:{self._port}/app")
         self._token_url: URL | None = None
 
         _LOGGER.debug("Created Cleartext transport for %s", self._host)
@@ -110,7 +113,8 @@ class CleartextTokenTransport(BaseTransport):
     def _get_login_params(self, credentials: Credentials) -> dict[str, str]:
         """Get the login parameters based on the login_version."""
         un, pw = self.hash_credentials(credentials)
-        return {"password": pw, "username": un}
+        # The password hash needs to be upper-case
+        return {"password": pw.upper(), "username": un}
 
     @staticmethod
     def hash_credentials(credentials: Credentials) -> tuple[str, str]:
@@ -139,8 +143,10 @@ class CleartextTokenTransport(BaseTransport):
     async def send_cleartext_request(self, request: str) -> dict[str, Any]:
         """Send encrypted message as passthrough."""
         if self._state is TransportState.ESTABLISHED and self._token_url:
+            _LOGGER.info("We are logged in, sending to %s", self._token_url)
             url = self._token_url
         else:
+            _LOGGER.info("We are not logged in, sending to %s", self._app_url)
             url = self._app_url
 
         status_code, resp_dict = await self._http_client.post(
@@ -149,7 +155,7 @@ class CleartextTokenTransport(BaseTransport):
             headers=self.COMMON_HEADERS,
             # cookies_dict=self._session_cookie,
         )
-        # _LOGGER.debug(f"secure_passthrough response is {status_code}: {resp_dict}")
+        _LOGGER.debug(f"Response is {status_code}: {resp_dict!r}")
 
         if status_code != 200:
             raise KasaException(
@@ -174,6 +180,7 @@ class CleartextTokenTransport(BaseTransport):
 
     async def perform_login(self):
         """Login to the device."""
+        _LOGGER.info("Trying to login")
         try:
             await self.try_login(self._login_params)
         except AuthenticationError as aex:
@@ -224,7 +231,11 @@ class CleartextTokenTransport(BaseTransport):
 
     async def send(self, request: str) -> dict[str, Any]:
         """Send the request."""
+        _LOGGER.info("Going to send %s", request)
         if self._state is not TransportState.ESTABLISHED or self._session_expired():
+            _LOGGER.info(
+                "Transport not established or session expired, performing login"
+            )
             await self.perform_login()
 
         return await self.send_cleartext_request(request)
