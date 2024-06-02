@@ -171,9 +171,7 @@ class CleartextTokenTransport(BaseTransport):
         if TYPE_CHECKING:
             resp_dict = cast(Dict[str, Any], resp_dict)
 
-        result: str = resp_dict["result"]
-
-        return result  # type: ignore[return-value]
+        return resp_dict  # type: ignore[return-value]
 
     async def perform_login(self):
         """Login to the device."""
