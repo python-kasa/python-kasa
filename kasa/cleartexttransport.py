@@ -149,13 +149,14 @@ class CleartextTokenTransport(BaseTransport):
             _LOGGER.info("We are not logged in, sending to %s", self._app_url)
             url = self._app_url
 
-        status_code, resp_dict = await self._http_client.post(
+        status_code, resp = await self._http_client.post(
             url,
             data=request.encode(),
             headers=self.COMMON_HEADERS,
             # cookies_dict=self._session_cookie,
         )
-        _LOGGER.debug(f"Response is {status_code}: {resp_dict!r}")
+        _LOGGER.debug(f"Response is {status_code}: {resp!r}")
+        resp_dict = json_loads(resp)
 
         if status_code != 200:
             raise KasaException(
