@@ -149,6 +149,8 @@ class CleartextTokenTransport(BaseTransport):
             _LOGGER.info("We are not logged in, sending to %s", self._app_url)
             url = self._app_url
 
+        _LOGGER.info("Request payload: %s", request)
+
         status_code, resp = await self._http_client.post(
             url,
             data=request.encode(),
@@ -216,6 +218,9 @@ class CleartextTokenTransport(BaseTransport):
         self._token_url = self._app_url.with_query(f"token={login_token}")
         _LOGGER.info("Our token url: %s", self._token_url)
         self._state = TransportState.ESTABLISHED
+        self._session_expire_at = (
+            time.time() + ONE_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
+        )
 
     def _session_expired(self):
         """Return true if session has expired."""
