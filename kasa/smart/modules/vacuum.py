@@ -93,7 +93,7 @@ class Vacuum(SmartModule):
             return await self.resume()
 
         # TODO: we need to create settings for clean_modes
-        return self.call(
+        return await self.call(
             "setSwitchClean",
             {
                 "clean_mode": 0,
@@ -113,7 +113,7 @@ class Vacuum(SmartModule):
 
     async def set_pause(self, enabled: bool) -> None:
         """Pause or resume cleaning."""
-        return self.call("setRobotPause", {"pause": enabled})
+        return await self.call("setRobotPause", {"pause": enabled})
 
     async def return_home(self):
         """Return home."""
@@ -121,7 +121,7 @@ class Vacuum(SmartModule):
 
     async def set_return_home(self, enabled: bool) -> None:
         """Return home / pause returning."""
-        return self.call("setSwitchCharge", {"switch_charge": enabled})
+        return await self.call("setSwitchCharge", {"switch_charge": enabled})
 
     @property
     def status(self) -> Status:
