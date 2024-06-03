@@ -23,7 +23,7 @@ class IotLightStrip(IotBulb):
         >>> strip = IotLightStrip("127.0.0.1")
         >>> asyncio.run(strip.update())
         >>> print(strip.alias)
-        KL430 pantry lightstrip
+        Bedroom Lightstrip
 
         Getting the length of the strip:
 

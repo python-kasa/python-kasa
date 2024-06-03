@@ -107,7 +107,6 @@ async def test_type_unknown():
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
-# @pytest.mark.parametrize("discovery_mock", [("127.0.0.1",123), ("127.0.0.1",None)], indirect=True)
 async def test_discover_single(discovery_mock, custom_port, mocker):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
     host = "127.0.0.1"
@@ -115,7 +114,8 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     discovery_mock.port_override = custom_port
 
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
-    update_mock = mocker.patch.object(device_class, "update")
+    # discovery_mock patches protocol query methods so use spy here.
+    update_mock = mocker.spy(device_class, "update")
 
     x = await Discover.discover_single(
         host, port=custom_port, credentials=Credentials()
@@ -123,6 +123,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     assert issubclass(x.__class__, Device)
     assert x._discovery_info is not None
     assert x.port == custom_port or x.port == discovery_mock.default_port
+    # Make sure discovery does not call update()
     assert update_mock.call_count == 0
     if discovery_mock.default_port == 80:
         assert x.alias is None

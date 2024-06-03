@@ -111,6 +111,10 @@ def CatchAllExceptions(cls):
     def _handle_exception(debug, exc):
         if isinstance(exc, click.ClickException):
             raise
+        # Handle exit request from click.
+        if isinstance(exc, click.exceptions.Exit):
+            sys.exit(exc.exit_code)
+
         echo(f"Raised error: {exc}")
         if debug:
             raise

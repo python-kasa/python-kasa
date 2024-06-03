@@ -207,7 +207,7 @@ async def handle_device(basedir, autosave, device: Device, batch_size: int):
         + " Do not use this flag unless you are sure you know what it means."
     ),
 )
-@click.option("--port", help="Port override")
+@click.option("--port", help="Port override", type=int)
 async def cli(
     host,
     target,

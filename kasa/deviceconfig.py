@@ -1,10 +1,35 @@
-"""Module for holding connection parameters.
+"""Configuration for connecting directly to a device without discovery.
 
-Note that this module does not work with from __future__ import annotations
-due to it's use of type returned by fields() which becomes a string with the import.
-https://bugs.python.org/issue39442
+If you are connecting to a newer KASA or TAPO device you can get the device
+via discovery or connect directly with :class:`DeviceConfig`.
+
+Discovery returns a list of discovered devices:
+
+>>> from kasa import Discover, Credentials, Device, DeviceConfig
+>>> device = await Discover.discover_single(
+>>>     "127.0.0.3",
+>>>     credentials=Credentials("myusername", "mypassword"),
+>>>     discovery_timeout=10
+>>> )
+>>> print(device.alias)  # Alias is None because update() has not been called
+None
+
+>>> config_dict = device.config.to_dict()
+>>> # DeviceConfig.to_dict() can be used to store for later
+>>> print(config_dict)
+{'host': '127.0.0.3', 'timeout': 5, 'credentials': Credentials(), 'connection_type'\
+: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2},\
+ 'uses_http': True}
+
+>>> later_device = await Device.connect(config=DeviceConfig.from_dict(config_dict))
+>>> print(later_device.alias)  # Alias is available as connect() calls update()
+Living Room Bulb
+
 """
 
+# Note that this module does not work with from __future__ import annotations
+# due to it's use of type returned by fields() which becomes a string with the import.
+# https://bugs.python.org/issue39442
 # ruff: noqa: FA100
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
