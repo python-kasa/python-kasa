@@ -21,8 +21,8 @@ from kasa import (
     Credentials,
     Device,
     DeviceConfig,
-    DeviceConnection,
-    DeviceEncryption,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
     DeviceFamily,
     Discover,
     Feature,
@@ -87,7 +87,7 @@ TYPE_TO_CLASS = {
     "smart.bulb": SmartDevice,
 }
 
-ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryption]
+ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
 DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in DeviceFamily]
 
@@ -372,9 +372,9 @@ async def cli(
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
     elif device_family and encrypt_type:
-        ctype = DeviceConnection(
+        ctype = DeviceConnectionParameters(
             DeviceFamily(device_family),
-            DeviceEncryption(encrypt_type),
+            DeviceEncryptionType(encrypt_type),
             login_version,
         )
         config = DeviceConfig(

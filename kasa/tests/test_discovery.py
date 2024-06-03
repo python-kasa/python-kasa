@@ -19,7 +19,7 @@ from kasa import (
 )
 from kasa.deviceconfig import (
     DeviceConfig,
-    DeviceConnection,
+    DeviceConnectionParameters,
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
@@ -130,7 +130,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     if discovery_mock.default_port == 80:
         assert x.alias is None
 
-    ct = DeviceConnection.from_values(
+    ct = DeviceConnectionParameters.from_values(
         discovery_mock.device_type,
         discovery_mock.encrypt_type,
         discovery_mock.login_version,

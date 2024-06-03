@@ -100,7 +100,11 @@ from kasa.device_factory import (
     get_device_class_from_sys_info,
     get_protocol,
 )
-from kasa.deviceconfig import DeviceConfig, DeviceConnection, DeviceEncryption
+from kasa.deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+)
 from kasa.exceptions import (
     KasaException,
     TimeoutError,
@@ -485,8 +489,9 @@ class Discover:
         device = device_class(config.host, config=config)
         sys_info = info["system"]["get_sysinfo"]
         if device_type := sys_info.get("mic_type", sys_info.get("type")):
-            config.connection_type = DeviceConnection.from_values(
-                device_family=device_type, encryption_type=DeviceEncryption.Xor.value
+            config.connection_type = DeviceConnectionParameters.from_values(
+                device_family=device_type,
+                encryption_type=DeviceEncryptionType.Xor.value,
             )
         device.protocol = get_protocol(config)  # type: ignore[assignment]
         device.update_from_discover_info(info)
@@ -518,7 +523,7 @@ class Discover:
         type_ = discovery_result.device_type
 
         try:
-            config.connection_type = DeviceConnection.from_values(
+            config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
                 discovery_result.mgt_encrypt_schm.encrypt_type,
                 discovery_result.mgt_encrypt_schm.lv,

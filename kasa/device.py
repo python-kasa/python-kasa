@@ -13,7 +13,12 @@ from typing_extensions import TypeAlias
 
 from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
-from .deviceconfig import DeviceConfig, DeviceConnection, DeviceEncryption, DeviceFamily
+from .deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
 from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
@@ -65,9 +70,9 @@ class Device(ABC):
     #: The family of the device, e.g. SMART.KASASWITCH.
     Family: TypeAlias = DeviceFamily
     #: The encryption for the device, e.g. Klap or Aes
-    Encryption = DeviceEncryption
+    EncryptionType: TypeAlias = DeviceEncryptionType
     #: The connection type for the device.
-    Connection: TypeAlias = DeviceConnection
+    ConnectionParameters: TypeAlias = DeviceConnectionParameters
 
     def __init__(
         self,

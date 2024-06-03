@@ -21,8 +21,8 @@ from kasa.device import Device
 from kasa.device_type import DeviceType
 from kasa.deviceconfig import (
     DeviceConfig,
-    DeviceConnection,
-    DeviceEncryption,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
     DeviceFamily,
 )
 from kasa.discover import Discover
@@ -71,8 +71,8 @@ __all__ = [
     "TimeoutError",
     "Credentials",
     "DeviceConfig",
-    "DeviceConnection",
-    "DeviceEncryption",
+    "DeviceConnectionParameters",
+    "DeviceEncryptionType",
     "DeviceFamily",
 ]
 
@@ -94,8 +94,8 @@ deprecated_classes = {
     "UnsupportedDeviceException": UnsupportedDeviceError,
     "AuthenticationException": AuthenticationError,
     "TimeoutException": TimeoutError,
-    "ConnectionType": DeviceConnection,
-    "EncryptType": DeviceEncryption,
+    "ConnectionType": DeviceConnectionParameters,
+    "EncryptType": DeviceEncryptionType,
     "DeviceFamilyType": DeviceFamily,
 }
 
@@ -136,8 +136,8 @@ if TYPE_CHECKING:
     UnsupportedDeviceException = UnsupportedDeviceError
     AuthenticationException = AuthenticationError
     TimeoutException = TimeoutError
-    ConnectionType = DeviceConnection
-    EncryptType = DeviceEncryption
+    ConnectionType = DeviceConnectionParameters
+    EncryptType = DeviceEncryptionType
     DeviceFamilyType = DeviceFamily
 
     # Instanstiate all classes so the type checkers catch abstract issues

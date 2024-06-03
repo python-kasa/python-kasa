@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class DeviceEncryption(Enum):
+class DeviceEncryptionType(Enum):
     """Encrypt type enum."""
 
     Klap = "KLAP"
@@ -105,11 +105,11 @@ def _dataclass_to_dict(in_val):
 
 
 @dataclass
-class DeviceConnection:
+class DeviceConnectionParameters:
     """Class to hold the the parameters determining connection type."""
 
     device_family: DeviceFamily
-    encryption_type: DeviceEncryption
+    encryption_type: DeviceEncryptionType
     login_version: Optional[int] = None
 
     @staticmethod
@@ -117,12 +117,12 @@ class DeviceConnection:
         device_family: str,
         encryption_type: str,
         login_version: Optional[int] = None,
-    ) -> "DeviceConnection":
+    ) -> "DeviceConnectionParameters":
         """Return connection parameters from string values."""
         try:
-            return DeviceConnection(
+            return DeviceConnectionParameters(
                 DeviceFamily(device_family),
-                DeviceEncryption(encryption_type),
+                DeviceEncryptionType(encryption_type),
                 login_version,
             )
         except (ValueError, TypeError) as ex:
@@ -132,7 +132,7 @@ class DeviceConnection:
             ) from ex
 
     @staticmethod
-    def from_dict(connection_type_dict: Dict[str, str]) -> "DeviceConnection":
+    def from_dict(connection_type_dict: Dict[str, str]) -> "DeviceConnectionParameters":
         """Return connection parameters from dict."""
         if (
             isinstance(connection_type_dict, dict)
@@ -141,7 +141,7 @@ class DeviceConnection:
         ):
             if login_version := connection_type_dict.get("login_version"):
                 login_version = int(login_version)  # type: ignore[assignment]
-            return DeviceConnection.from_values(
+            return DeviceConnectionParameters.from_values(
                 device_family,
                 encryption_type,
                 login_version,  # type: ignore[arg-type]
@@ -180,9 +180,9 @@ class DeviceConfig:
     #: The protocol specific type of connection.  Defaults to the legacy type.
     batch_size: Optional[int] = None
     #: The batch size for protoools supporting multiple request batches.
-    connection_type: DeviceConnection = field(
-        default_factory=lambda: DeviceConnection(
-            DeviceFamily.IotSmartPlugSwitch, DeviceEncryption.Xor, 1
+    connection_type: DeviceConnectionParameters = field(
+        default_factory=lambda: DeviceConnectionParameters(
+            DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor, 1
         )
     )
     #: True if the device uses http.  Consumers should retrieve rather than set this
@@ -195,8 +195,8 @@ class DeviceConfig:
 
     def __post_init__(self):
         if self.connection_type is None:
-            self.connection_type = DeviceConnection(
-                DeviceFamily.IotSmartPlugSwitch, DeviceEncryption.Xor
+            self.connection_type = DeviceConnectionParameters(
+                DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
             )
 
     def to_dict(

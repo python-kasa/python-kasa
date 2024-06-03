@@ -11,7 +11,7 @@ The main entry point for the API is :meth:`~kasa.Discover.discover` and
 
 Most newer devices require your TP-Link cloud username and password, but this can be omitted for older devices.
 
->>> from kasa import Device, Discover
+>>> from kasa import Discover
 
 :func:`~kasa.Discover.discover` returns a dict[str,Device] of devices on your network:
 
