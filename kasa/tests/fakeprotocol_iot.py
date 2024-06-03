@@ -3,7 +3,7 @@ import logging
 
 from ..deviceconfig import DeviceConfig
 from ..iotprotocol import IotProtocol
-from ..xortransport import XorTransport
+from ..protocol import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -178,17 +178,26 @@ MOTION_MODULE = {
 
 
 class FakeIotProtocol(IotProtocol):
-    def __init__(self, info):
+    def __init__(self, info, fixture_name=None):
         super().__init__(
-            transport=XorTransport(
-                config=DeviceConfig("127.0.0.123"),
-            )
+            transport=FakeIotTransport(info, fixture_name),
         )
+
+    async def query(self, request, retry_count: int = 3):
+        """Implement query here so tests can still patch IotProtocol.query."""
+        resp_dict = await self._query(request, retry_count)
+        return resp_dict
+
+
+class FakeIotTransport(BaseTransport):
+    def __init__(self, info, fixture_name=None):
+        super().__init__(config=DeviceConfig("127.0.0.123"))
         info = copy.deepcopy(info)
         self.discovery_data = info
+        self.fixture_name = fixture_name
         self.writer = None
         self.reader = None
-        proto = copy.deepcopy(FakeIotProtocol.baseproto)
+        proto = copy.deepcopy(FakeIotTransport.baseproto)
 
         for target in info:
             # print("target %s" % target)
@@ -219,6 +228,14 @@ class FakeIotProtocol(IotProtocol):
             # print("initialized: %s" % proto[module])
 
         self.proto = proto
+
+    @property
+    def default_port(self) -> int:
+        return 9999
+
+    @property
+    def credentials_hash(self) -> str:
+        return ""
 
     def set_alias(self, x, child_ids=None):
         if child_ids is None:
@@ -367,7 +384,7 @@ class FakeIotProtocol(IotProtocol):
         "smartlife.iot.common.cloud": CLOUD_MODULE,
     }
 
-    async def query(self, request, port=9999):
+    async def send(self, request, port=9999):
         proto = self.proto
 
         # collect child ids from context
@@ -414,3 +431,9 @@ class FakeIotProtocol(IotProtocol):
             response.update(get_response_for_module(target))
 
         return copy.deepcopy(response)
+
+    async def close(self) -> None:
+        pass
+
+    async def reset(self) -> None:
+        pass

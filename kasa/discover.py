@@ -1,4 +1,81 @@
-"""Discovery module for TP-Link Smart Home devices."""
+"""Discover TPLink Smart Home devices.
+
+The main entry point for this library is :func:`Discover.discover()`,
+which returns a dictionary of the found devices. The key is the IP address
+of the device and the value contains ready-to-use, SmartDevice-derived
+device object.
+
+:func:`discover_single()` can be used to initialize a single device given its
+IP address. If the :class:`DeviceConfig` of the device is already known,
+you can initialize the corresponding device class directly without discovery.
+
+The protocol uses UDP broadcast datagrams on port 9999 and 20002 for discovery.
+Legacy devices support discovery on port 9999 and newer devices on 20002.
+
+Newer devices that respond on port 20002 will most likely require TP-Link cloud
+credentials to be passed if queries or updates are to be performed on the returned
+devices.
+
+Discovery returns a dict of {ip: discovered devices}:
+
+>>> import asyncio
+>>> from kasa import Discover, Credentials
+>>>
+>>> found_devices = await Discover.discover()
+>>> [dev.model for dev in found_devices.values()]
+['KP303(UK)', 'HS110(EU)', 'L530E', 'KL430(US)', 'HS220(US)']
+
+Discovery can also be targeted to a specific broadcast address instead of
+the default 255.255.255.255:
+
+>>> found_devices = await Discover.discover(target="127.0.0.255")
+>>> print(len(found_devices))
+5
+
+Basic information is available on the device from the discovery broadcast response
+but it is important to call device.update() after discovery if you want to access
+all the attributes without getting errors or None.
+
+>>> dev = found_devices["127.0.0.3"]
+>>> dev.alias
+None
+>>> await dev.update()
+>>> dev.alias
+'Living Room Bulb'
+
+It is also possible to pass a coroutine to be executed for each found device:
+
+>>> async def print_dev_info(dev):
+>>>     await dev.update()
+>>>     print(f"Discovered {dev.alias} (model: {dev.model})")
+>>>
+>>> devices = await Discover.discover(on_discovered=print_dev_info)
+Discovered Bedroom Power Strip (model: KP303(UK))
+Discovered Bedroom Lamp Plug (model: HS110(EU))
+Discovered Living Room Bulb (model: L530)
+Discovered Bedroom Lightstrip (model: KL430(US))
+Discovered Living Room Dimmer Switch (model: HS220(US))
+
+You can pass credentials for devices requiring authentication
+
+>>> devices = await Discover.discover(
+>>>     credentials=Credentials("myusername", "mypassword"),
+>>>     discovery_timeout=10
+>>> )
+>>> print(len(devices))
+5
+
+Discovering a single device returns a kasa.Device object.
+
+>>> device = await Discover.discover_single(
+>>>     "127.0.0.1",
+>>>     credentials=Credentials("myusername", "mypassword"),
+>>>     discovery_timeout=10
+>>> )
+>>> device.model
+'KP303(UK)'
+
+"""
 
 from __future__ import annotations
 
@@ -198,45 +275,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
 
 class Discover:
-    """Discover TPLink Smart Home devices.
-
-    The main entry point for this library is :func:`Discover.discover()`,
-    which returns a dictionary of the found devices. The key is the IP address
-    of the device and the value contains ready-to-use, SmartDevice-derived
-    device object.
-
-    :func:`discover_single()` can be used to initialize a single device given its
-    IP address. If the :class:`DeviceConfig` of the device is already known,
-    you can initialize the corresponding device class directly without discovery.
-
-    The protocol uses UDP broadcast datagrams on port 9999 and 20002 for discovery.
-    Legacy devices support discovery on port 9999 and newer devices on 20002.
-
-    Newer devices that respond on port 20002 will most likely require TP-Link cloud
-    credentials to be passed if queries or updates are to be performed on the returned
-    devices.
-
-    Examples:
-        Discovery returns a list of discovered devices:
-
-        >>> import asyncio
-        >>> found_devices = asyncio.run(Discover.discover())
-        >>> [dev.alias for dev in found_devices]
-        ['TP-LINK_Power Strip_CF69']
-
-        Discovery can also be targeted to a specific broadcast address instead of
-        the default 255.255.255.255:
-
-        >>> asyncio.run(Discover.discover(target="192.168.8.255"))
-
-        It is also possible to pass a coroutine to be executed for each found device:
-
-        >>> async def print_alias(dev):
-        >>>    print(f"Discovered {dev.alias}")
-        >>> devices = asyncio.run(Discover.discover(on_discovered=print_alias))
-
-
-    """
+    """Class for discovering devices."""
 
     DISCOVERY_PORT = 9999
 

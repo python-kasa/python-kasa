@@ -32,7 +32,7 @@ class IotPlug(IotDevice):
         >>> plug = IotPlug("127.0.0.1")
         >>> asyncio.run(plug.update())
         >>> plug.alias
-        Kitchen
+        Bedroom Lamp Plug
 
         Setting the LED state:
 

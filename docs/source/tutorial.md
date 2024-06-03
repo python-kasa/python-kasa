@@ -1,4 +1,4 @@
-# Tutorial
+# Getting started
 
 ```{eval-rst}
 .. automodule:: tutorial

@@ -396,6 +396,13 @@ async def get_device_for_fixture_protocol(fixture, protocol):
             return await get_device_for_fixture(fixture_info)
 
 
+def get_fixture_info(fixture, protocol):
+    finfo = FixtureInfo(name=fixture, protocol=protocol, data={})
+    for fixture_info in FIXTURE_DATA:
+        if finfo == fixture_info:
+            return fixture_info
+
+
 @pytest.fixture(params=filter_fixtures("main devices"), ids=idgenerator)
 async def dev(request) -> AsyncGenerator[Device, None]:
     """Device fixture.
