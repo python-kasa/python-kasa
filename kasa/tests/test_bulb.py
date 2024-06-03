@@ -287,10 +287,16 @@ async def test_list_presets(dev: IotBulb):
 
     for preset, raw in zip(presets, dev.sys_info["preferred_state"]):
         assert preset.index == raw["index"]
-        assert preset.hue == raw["hue"]
         assert preset.brightness == raw["brightness"]
-        assert preset.saturation == raw["saturation"]
-        assert preset.color_temp == raw["color_temp"]
+        # Effect mode states have no hue/sat/colortemp
+        if preset.id is None:
+            assert preset.hue == raw["hue"]
+            assert preset.saturation == raw["saturation"]
+            assert preset.color_temp == raw["color_temp"]
+        else:
+            assert preset.hue is None
+            assert preset.saturation is None
+            assert preset.color_temp is None
 
 
 @bulb_iot

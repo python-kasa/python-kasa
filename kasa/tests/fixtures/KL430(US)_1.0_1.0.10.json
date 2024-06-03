@@ -23,7 +23,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "schedule",
-            "alias": "Home Master Bed Strip",
+            "alias": "Bedroom Lightstrip",
             "ctrl_protocols": {
                 "name": "Linkie",
                 "version": "1.0"
@@ -40,7 +40,7 @@
             "is_factory": false,
             "is_variable_color_temp": 1,
             "latitude_i": 0,
-            "length": 14,
+            "length": 16,
             "light_state": {
                 "brightness": 15,
                 "color_temp": 2500,
