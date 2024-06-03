@@ -9,9 +9,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 from warnings import warn
 
-from typing_extensions import TypeAlias
+from typing_extensions import NewType, TypeAlias
 
-from .credentials import Credentials
+from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig, DeviceConnection, DeviceEncryption, DeviceFamily
 from .emeterstatus import EmeterStatus
@@ -55,11 +55,18 @@ class Device(ABC):
 
     # All types required to create devices directly via connect are aliased here
     # to avoid consumers having to do multiple imports.
+
+    #: The type of device
     Type: TypeAlias = DeviceType
-    Credentials: TypeAlias = Credentials
+    #: The credentials for authentication
+    Credentials = NewType("Credentials", _Credentials)  # NewType needed for autodocs
+    #: Configuration for connecting to the device
     Config: TypeAlias = DeviceConfig
+    #: The family of the device, e.g. SMART.KASASWITCH.
     Family: TypeAlias = DeviceFamily
-    Encryption: TypeAlias = DeviceEncryption
+    #: The encryption for the device, e.g. Klap or Aes
+    Encryption = DeviceEncryption
+    #: The connection type for the device.
     Connection: TypeAlias = DeviceConnection
 
     def __init__(
@@ -177,7 +184,7 @@ class Device(ABC):
         return self.protocol._transport._port
 
     @property
-    def credentials(self) -> Credentials | None:
+    def credentials(self) -> _Credentials | None:
         """The device credentials."""
         return self.protocol._transport._credentials
 
