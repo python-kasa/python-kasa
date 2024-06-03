@@ -6,12 +6,14 @@ This page contains guides of how to perform common actions using the library.
 
 ```{eval-rst}
 .. automodule:: kasa.discover
+    :noindex:
 ```
 
 ## Connect without discovery
 
 ```{eval-rst}
 .. automodule:: kasa.deviceconfig
+    :noindex:
 ```
 
 ## Get Energy Consumption and Usage Statistics
