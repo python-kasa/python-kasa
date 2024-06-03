@@ -11,11 +11,11 @@ The main entry point for the API is :meth:`~kasa.Discover.discover` and
 
 Most newer devices require your TP-Link cloud username and password, but this can be omitted for older devices.
 
->>> from kasa import Device, Discover, Credentials
+>>> from kasa import Device, Discover
 
 :func:`~kasa.Discover.discover` returns a dict[str,Device] of devices on your network:
 
->>> devices = await Discover.discover(credentials=Credentials("user@example.com", "great_password"))
+>>> devices = await Discover.discover(username="user@example.com", password="great_password")
 >>> for dev in devices.values():
 >>>     await dev.update()
 >>>     print(dev.host)
@@ -27,7 +27,7 @@ Most newer devices require your TP-Link cloud username and password, but this ca
 
 :meth:`~kasa.Discover.discover_single` returns a single device by hostname:
 
->>> dev = await Discover.discover_single("127.0.0.3", credentials=Credentials("user@example.com", "great_password"))
+>>> dev = await Discover.discover_single("127.0.0.3", username="user@example.com", password="great_password")
 >>> await dev.update()
 >>> dev.alias
 Living Room Bulb

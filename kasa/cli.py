@@ -18,13 +18,13 @@ from pydantic.v1 import ValidationError
 
 from kasa import (
     AuthenticationError,
-    ConnectionType,
     Credentials,
     Device,
     DeviceConfig,
-    DeviceFamilyType,
+    DeviceConnection,
+    DeviceEncryption,
+    DeviceFamily,
     Discover,
-    EncryptType,
     Feature,
     KasaException,
     Module,
@@ -87,11 +87,9 @@ TYPE_TO_CLASS = {
     "smart.bulb": SmartDevice,
 }
 
-ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in EncryptType]
+ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryption]
 
-DEVICE_FAMILY_TYPES = [
-    device_family_type.value for device_family_type in DeviceFamilyType
-]
+DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in DeviceFamily]
 
 # Block list of commands which require no update
 SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
@@ -374,9 +372,9 @@ async def cli(
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
     elif device_family and encrypt_type:
-        ctype = ConnectionType(
-            DeviceFamilyType(device_family),
-            EncryptType(encrypt_type),
+        ctype = DeviceConnection(
+            DeviceFamily(device_family),
+            DeviceEncryption(encrypt_type),
             login_version,
         )
         config = DeviceConfig(

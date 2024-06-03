@@ -20,10 +20,10 @@ from kasa.credentials import Credentials
 from kasa.device import Device
 from kasa.device_type import DeviceType
 from kasa.deviceconfig import (
-    ConnectionType,
     DeviceConfig,
-    DeviceFamilyType,
-    EncryptType,
+    DeviceConnection,
+    DeviceEncryption,
+    DeviceFamily,
 )
 from kasa.discover import Discover
 from kasa.emeterstatus import EmeterStatus
@@ -71,9 +71,9 @@ __all__ = [
     "TimeoutError",
     "Credentials",
     "DeviceConfig",
-    "ConnectionType",
-    "EncryptType",
-    "DeviceFamilyType",
+    "DeviceConnection",
+    "DeviceEncryption",
+    "DeviceFamily",
 ]
 
 from . import iot
@@ -89,11 +89,14 @@ deprecated_smart_devices = {
     "SmartDimmer": iot.IotDimmer,
     "SmartBulbPreset": IotLightPreset,
 }
-deprecated_exceptions = {
+deprecated_classes = {
     "SmartDeviceException": KasaException,
     "UnsupportedDeviceException": UnsupportedDeviceError,
     "AuthenticationException": AuthenticationError,
     "TimeoutException": TimeoutError,
+    "ConnectionType": DeviceConnection,
+    "EncryptType": DeviceEncryption,
+    "DeviceFamilyType": DeviceFamily,
 }
 
 
@@ -112,8 +115,8 @@ def __getattr__(name):
             stacklevel=1,
         )
         return new_class
-    if name in deprecated_exceptions:
-        new_class = deprecated_exceptions[name]
+    if name in deprecated_classes:
+        new_class = deprecated_classes[name]
         msg = f"{name} is deprecated, use {new_class.__name__} instead"
         warn(msg, DeprecationWarning, stacklevel=1)
         return new_class
@@ -133,6 +136,10 @@ if TYPE_CHECKING:
     UnsupportedDeviceException = UnsupportedDeviceError
     AuthenticationException = AuthenticationError
     TimeoutException = TimeoutError
+    ConnectionType = DeviceConnection
+    EncryptType = DeviceEncryption
+    DeviceFamilyType = DeviceFamily
+
     # Instanstiate all classes so the type checkers catch abstract issues
     from . import smart
 

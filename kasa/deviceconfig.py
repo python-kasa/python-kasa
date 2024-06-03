@@ -5,11 +5,11 @@ via discovery or connect directly with :class:`DeviceConfig`.
 
 Discovery returns a list of discovered devices:
 
->>> from kasa import Discover, Credentials, Device, DeviceConfig
+>>> from kasa import Discover, Device
 >>> device = await Discover.discover_single(
 >>>     "127.0.0.3",
->>>     credentials=Credentials("myusername", "mypassword"),
->>>     discovery_timeout=10
+>>>     username="user@example.com",
+>>>     password="great_password",
 >>> )
 >>> print(device.alias)  # Alias is None because update() has not been called
 None
@@ -21,7 +21,7 @@ None
 : {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2},\
  'uses_http': True}
 
->>> later_device = await Device.connect(config=DeviceConfig.from_dict(config_dict))
+>>> later_device = await Device.connect(config=Device.Config.from_dict(config_dict))
 >>> print(later_device.alias)  # Alias is available as connect() calls update()
 Living Room Bulb
 
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class EncryptType(Enum):
+class DeviceEncryption(Enum):
     """Encrypt type enum."""
 
     Klap = "KLAP"
@@ -53,7 +53,7 @@ class EncryptType(Enum):
     Xor = "XOR"
 
 
-class DeviceFamilyType(Enum):
+class DeviceFamily(Enum):
     """Encrypt type enum."""
 
     IotSmartPlugSwitch = "IOT.SMARTPLUGSWITCH"
@@ -105,11 +105,11 @@ def _dataclass_to_dict(in_val):
 
 
 @dataclass
-class ConnectionType:
+class DeviceConnection:
     """Class to hold the the parameters determining connection type."""
 
-    device_family: DeviceFamilyType
-    encryption_type: EncryptType
+    device_family: DeviceFamily
+    encryption_type: DeviceEncryption
     login_version: Optional[int] = None
 
     @staticmethod
@@ -117,12 +117,12 @@ class ConnectionType:
         device_family: str,
         encryption_type: str,
         login_version: Optional[int] = None,
-    ) -> "ConnectionType":
+    ) -> "DeviceConnection":
         """Return connection parameters from string values."""
         try:
-            return ConnectionType(
-                DeviceFamilyType(device_family),
-                EncryptType(encryption_type),
+            return DeviceConnection(
+                DeviceFamily(device_family),
+                DeviceEncryption(encryption_type),
                 login_version,
             )
         except (ValueError, TypeError) as ex:
@@ -132,7 +132,7 @@ class ConnectionType:
             ) from ex
 
     @staticmethod
-    def from_dict(connection_type_dict: Dict[str, str]) -> "ConnectionType":
+    def from_dict(connection_type_dict: Dict[str, str]) -> "DeviceConnection":
         """Return connection parameters from dict."""
         if (
             isinstance(connection_type_dict, dict)
@@ -141,7 +141,7 @@ class ConnectionType:
         ):
             if login_version := connection_type_dict.get("login_version"):
                 login_version = int(login_version)  # type: ignore[assignment]
-            return ConnectionType.from_values(
+            return DeviceConnection.from_values(
                 device_family,
                 encryption_type,
                 login_version,  # type: ignore[arg-type]
@@ -180,9 +180,9 @@ class DeviceConfig:
     #: The protocol specific type of connection.  Defaults to the legacy type.
     batch_size: Optional[int] = None
     #: The batch size for protoools supporting multiple request batches.
-    connection_type: ConnectionType = field(
-        default_factory=lambda: ConnectionType(
-            DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor, 1
+    connection_type: DeviceConnection = field(
+        default_factory=lambda: DeviceConnection(
+            DeviceFamily.IotSmartPlugSwitch, DeviceEncryption.Xor, 1
         )
     )
     #: True if the device uses http.  Consumers should retrieve rather than set this
@@ -195,8 +195,8 @@ class DeviceConfig:
 
     def __post_init__(self):
         if self.connection_type is None:
-            self.connection_type = ConnectionType(
-                DeviceFamilyType.IotSmartPlugSwitch, EncryptType.Xor
+            self.connection_type = DeviceConnection(
+                DeviceFamily.IotSmartPlugSwitch, DeviceEncryption.Xor
             )
 
     def to_dict(

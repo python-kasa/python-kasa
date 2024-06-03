@@ -13,7 +13,7 @@ from typing_extensions import TypeAlias
 
 from .credentials import Credentials
 from .device_type import DeviceType
-from .deviceconfig import ConnectionType, DeviceConfig, DeviceFamilyType, EncryptType
+from .deviceconfig import DeviceConfig, DeviceConnection, DeviceEncryption, DeviceFamily
 from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
@@ -58,9 +58,9 @@ class Device(ABC):
     Type: TypeAlias = DeviceType
     Credentials: TypeAlias = Credentials
     Config: TypeAlias = DeviceConfig
-    FamilyType: TypeAlias = DeviceFamilyType
-    EncryptionType: TypeAlias = EncryptType
-    ConnectionType: TypeAlias = ConnectionType
+    Family: TypeAlias = DeviceFamily
+    Encryption: TypeAlias = DeviceEncryption
+    Connection: TypeAlias = DeviceConnection
 
     def __init__(
         self,

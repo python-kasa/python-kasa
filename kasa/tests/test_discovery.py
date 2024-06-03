@@ -18,8 +18,8 @@ from kasa import (
     KasaException,
 )
 from kasa.deviceconfig import (
-    ConnectionType,
     DeviceConfig,
+    DeviceConnection,
 )
 from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
@@ -130,7 +130,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     if discovery_mock.default_port == 80:
         assert x.alias is None
 
-    ct = ConnectionType.from_values(
+    ct = DeviceConnection.from_values(
         discovery_mock.device_type,
         discovery_mock.encrypt_type,
         discovery_mock.login_version,
@@ -166,7 +166,7 @@ async def test_discover_single_hostname(discovery_mock, mocker):
         x = await Discover.discover_single(host, credentials=Credentials())
 
 
-async def test_discovery_credentials(mocker):
+async def test_discover_credentials(mocker):
     """Make sure that discover gives credentials precedence over un and pw."""
     host = "127.0.0.1"
     mocker.patch("kasa.discover._DiscoverProtocol.wait_for_discovery_to_complete")
@@ -177,26 +177,46 @@ async def test_discovery_credentials(mocker):
     mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
-    await Discover.discover_single(host, credentials=Credentials(), timeout=0)
-    assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
-    await Discover.discover_single(
-        host, credentials=Credentials(), username="Foo", password="Bar", timeout=0
-    )
-    assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
-    await Discover.discover_single(host, username="Foo", password="Bar", timeout=0)
-    assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
-    await Discover.discover_single(host, username="Foo", timeout=0)
-    assert dp.mock_calls[3].kwargs["credentials"] is None
-    dp.reset_mock()
+    # Only credentials passed
     await Discover.discover(credentials=Credentials(), timeout=0)
     assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
+    # Credentials and un/pw passed
     await Discover.discover(
         credentials=Credentials(), username="Foo", password="Bar", timeout=0
     )
     assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
+    # Only un/pw passed
     await Discover.discover(username="Foo", password="Bar", timeout=0)
     assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
+    # Only un passed, credentials should be None
     await Discover.discover(username="Foo", timeout=0)
+    assert dp.mock_calls[3].kwargs["credentials"] is None
+
+
+async def test_discover_single_credentials(mocker):
+    """Make sure that discover_single gives credentials precedence over un and pw."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.discover._DiscoverProtocol.wait_for_discovery_to_complete")
+
+    def mock_discover(self, *_, **__):
+        self.discovered_devices = {host: MagicMock()}
+
+    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    dp = mocker.spy(_DiscoverProtocol, "__init__")
+
+    # Only credentials passed
+    await Discover.discover_single(host, credentials=Credentials(), timeout=0)
+    assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
+    # Credentials and un/pw passed
+    await Discover.discover_single(
+        host, credentials=Credentials(), username="Foo", password="Bar", timeout=0
+    )
+    assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
+    # Only un/pw passed
+    await Discover.discover_single(host, username="Foo", password="Bar", timeout=0)
+    assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
+    # Only un passed, credentials should be None
+    await Discover.discover_single(host, username="Foo", timeout=0)
     assert dp.mock_calls[3].kwargs["credentials"] is None
 
 

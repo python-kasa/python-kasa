@@ -17,10 +17,10 @@ from kasa.device_factory import (
     get_protocol,
 )
 from kasa.deviceconfig import (
-    ConnectionType,
     DeviceConfig,
-    DeviceFamilyType,
-    EncryptType,
+    DeviceConnection,
+    DeviceEncryption,
+    DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
 from kasa.smart.smartdevice import SmartDevice
@@ -31,12 +31,12 @@ def _get_connection_type_device_class(discovery_info):
         device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult(**discovery_info["result"])
 
-        connection_type = ConnectionType.from_values(
+        connection_type = DeviceConnection.from_values(
             dr.device_type, dr.mgt_encrypt_schm.encrypt_type
         )
     else:
-        connection_type = ConnectionType.from_values(
-            DeviceFamilyType.IotSmartPlugSwitch.value, EncryptType.Xor.value
+        connection_type = DeviceConnection.from_values(
+            DeviceFamily.IotSmartPlugSwitch.value, DeviceEncryption.Xor.value
         )
         device_class = Discover._get_device_class(discovery_info)
 
@@ -137,7 +137,7 @@ async def test_connect_http_client(discovery_data, mocker):
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
     dev = await connect(config=config)
-    if ctype.encryption_type != EncryptType.Xor:
+    if ctype.encryption_type != DeviceEncryption.Xor:
         assert dev.protocol._transport._http_client.client != http_client
     await dev.disconnect()
 
@@ -148,7 +148,7 @@ async def test_connect_http_client(discovery_data, mocker):
         http_client=http_client,
     )
     dev = await connect(config=config)
-    if ctype.encryption_type != EncryptType.Xor:
+    if ctype.encryption_type != DeviceEncryption.Xor:
         assert dev.protocol._transport._http_client.client == http_client
     await dev.disconnect()
     await http_client.close()
