@@ -115,6 +115,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     discovery_mock.port_override = custom_port
 
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    # Make sure discovery does not call update()
     update_mock = mocker.spy(device_class, "update")
 
     x = await Discover.discover_single(
@@ -123,6 +124,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     assert issubclass(x.__class__, Device)
     assert x._discovery_info is not None
     assert x.port == custom_port or x.port == discovery_mock.default_port
+    # Make sure discovery does not call update()
     assert update_mock.call_count == 0
     if discovery_mock.default_port == 80:
         assert x.alias is None

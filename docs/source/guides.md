@@ -16,10 +16,10 @@ This page contains guides of how to perform common actions using the library.
 
 ## Get Energy Consumption and Usage Statistics
 
-```{note}
-    In order to use the helper methods to calculate the statistics correctly, your devices need to have correct time set.
-    The devices use NTP and public servers from `NTP Pool Project <https://www.ntppool.org/>`_ to synchronize their time.
-```
+:::{note}
+In order to use the helper methods to calculate the statistics correctly, your devices need to have correct time set.
+The devices use NTP and public servers from [NTP Pool Project](https://www.ntppool.org/) to synchronize their time.
+:::
 
 ### Energy Consumption
 

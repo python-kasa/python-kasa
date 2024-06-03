@@ -1,8 +1,8 @@
-# Library API
+# Library usage
 
 ```{currentmodule} kasa
 ```
-The page contains all information about the library api:
+The page contains all information about the library usage:
 
 ```{toctree}
 :maxdepth: 2

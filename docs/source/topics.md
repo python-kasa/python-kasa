@@ -20,7 +20,7 @@ If the device's host is already known, you can use to construct a device instanc
 
 The {meth}`~kasa.Device.connect()` also enables support for connecting to new
 KASA SMART protocol and TAPO devices directly using the parameter {class}`~kasa.DeviceConfig`.
-Simply serialize the :attr:`~kasa.Device.config` property via {meth}`~kasa.DeviceConfig.to_dict()`
+Simply serialize the {attr}`~kasa.Device.config` property via {meth}`~kasa.DeviceConfig.to_dict()`
 and then deserialize it later with {func}`~kasa.DeviceConfig.from_dict()`
 and then pass it into {meth}`~kasa.Device.connect()`.
 
@@ -73,7 +73,7 @@ All properties defined both in the device class and in the module classes follow
 
 While the properties are designed to provide a nice API to use for common use cases,
 you may sometimes want to access the raw, cached data as returned by the device.
-This can be done using the :attr:`~kasa.Device.internal_state` property.
+This can be done using the {attr}`~kasa.Device.internal_state` property.
 
 
 (topics-modules-and-features)=
@@ -81,8 +81,8 @@ This can be done using the :attr:`~kasa.Device.internal_state` property.
 
 The functionality provided by all {class}`~kasa.Device` instances is (mostly) done inside separate modules.
 While the individual device-type specific classes provide an easy access for the most import features,
-you can also access individual modules through :attr:`kasa.SmartDevice.modules`.
-You can get the list of supported modules for a given device instance using :attr:`~kasa.Device.supported_modules`.
+you can also access individual modules through {attr}`kasa.Device.modules`.
+You can get the list of supported modules for a given device instance using {attr}`~kasa.Device.supported_modules`.
 
 ```{note}
 If you only need some module-specific information,

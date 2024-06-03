@@ -45,16 +45,16 @@ None
 
 It is also possible to pass a coroutine to be executed for each found device:
 
->>> async def print_alias(dev):
+>>> async def print_dev_info(dev):
 >>>     await dev.update()
->>>     print(f"Discovered {dev.alias}")
+>>>     print(f"Discovered {dev.alias} (model: {dev.model})")
 >>>
->>> devices = await Discover.discover(on_discovered=print_alias)
-Discovered Bedroom Power Strip
-Discovered Bedroom Lamp Plug
-Discovered Living Room Bulb
-Discovered Bedroom Lightstrip
-Discovered Living Room Dimmer Switch
+>>> devices = await Discover.discover(on_discovered=print_dev_info)
+Discovered Bedroom Power Strip (model: KP303(UK))
+Discovered Bedroom Lamp Plug (model: HS110(EU))
+Discovered Living Room Bulb (model: L530)
+Discovered Bedroom Lightstrip (model: KL430(US))
+Discovered Living Room Dimmer Switch (model: HS220(US))
 
 You can pass credentials for devices requiring authentication
 

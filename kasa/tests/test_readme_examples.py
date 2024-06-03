@@ -72,6 +72,13 @@ def test_discovery_examples(readmes_mock):
     assert not res["failed"]
 
 
+def test_deviceconfig_examples(readmes_mock):
+    """Test discovery examples."""
+    res = xdoctest.doctest_module("kasa.deviceconfig", "all")
+    assert res["n_passed"] > 0
+    assert not res["failed"]
+
+
 def test_tutorial_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("docs/tutorial.py", "all")

@@ -3,19 +3,27 @@
 If you are connecting to a newer KASA or TAPO device you can get the device
 via discovery or connect directly with :class:`DeviceConfig`.
 
-Example:
-    Discovery returns a list of discovered devices:
+Discovery returns a list of discovered devices:
 
-    >>> from kasa import Discover, Credentials
-    >>> device = await Discover.discover_single(
-    >>>     "127.0.0.1",
-    >>>     credentials=Credentials("myusername", "mypassword"),
-    >>>     discovery_timeout=10
-    >>> )
-    >>> config = device.config # DeviceConfig.to_dict() can be used to store for later
-    >>> later_device = await SmartDevice.connect(config=config)
-    >>> await later_device.update()
-    >>> print(later_device.alias)  # Print out the alias
+>>> from kasa import Discover, Credentials, Device, DeviceConfig
+>>> device = await Discover.discover_single(
+>>>     "127.0.0.3",
+>>>     credentials=Credentials("myusername", "mypassword"),
+>>>     discovery_timeout=10
+>>> )
+>>> print(device.alias)  # Alias is None because update() has not been called
+None
+
+>>> config_dict = device.config.to_dict()
+>>> # DeviceConfig.to_dict() can be used to store for later
+>>> print(config_dict)
+{'host': '127.0.0.3', 'timeout': 5, 'credentials': Credentials(), 'connection_type'\
+: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2},\
+ 'uses_http': True}
+
+>>> later_device = await Device.connect(config=DeviceConfig.from_dict(config_dict))
+>>> print(later_device.alias)  # Alias is available as connect() calls update()
+Living Room Bulb
 
 """
 

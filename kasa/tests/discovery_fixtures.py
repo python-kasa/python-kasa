@@ -152,16 +152,21 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     first_host = None
 
     async def mock_discover(self):
+        """Call datagram_received for all mock fixtures.
+
+        Handles test cases modifying the ip and hostname of the first fixture
+        for discover_single testing.
+        """
         for ip, dm in discovery_mocks.items():
             first_ip = list(discovery_mocks.values())[0].ip
-            fixture_info = fixture_infos[
-                ip
-            ]  # Ip of first fixture could have been changed for testing
-            if dm.ip == first_ip:  # hostname could have been used
+            fixture_info = fixture_infos[ip]
+            # Ip of first fixture could have been modified by a test
+            if dm.ip == first_ip:
+                # hostname could have been used
                 host = first_host if first_host else first_ip
             else:
                 host = dm.ip
-            # update the protos for any host testing or the test overrding the first ip
+            # update the protos for any host testing or the test overriding the first ip
             protos[host] = (
                 FakeSmartProtocol(fixture_info.data, fixture_info.name)
                 if "SMART" in fixture_info.protocol
