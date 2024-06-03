@@ -44,9 +44,14 @@ UNSUPPORTED_DEVICES = {
 }
 
 
-def parametrize_discovery(desc, *, data_root_filter, protocol_filter=None):
+def parametrize_discovery(
+    desc, *, data_root_filter=None, protocol_filter=None, model_filter=None
+):
     filtered_fixtures = filter_fixtures(
-        desc, data_root_filter=data_root_filter, protocol_filter=protocol_filter
+        desc,
+        data_root_filter=data_root_filter,
+        protocol_filter=protocol_filter,
+        model_filter=model_filter,
     )
     return pytest.mark.parametrize(
         "discovery_mock",
@@ -65,10 +70,14 @@ new_discovery = parametrize_discovery(
     params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
     ids=idgenerator,
 )
-def discovery_mock(request, mocker):
+async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
     fixture_info: FixtureInfo = request.param
-    fixture_data = fixture_info.data
+    yield patch_discovery({"127.0.0.123": fixture_info}, mocker)
+
+
+def create_discovery_mock(ip: str, fixture_data: dict):
+    """Mock discovery and patch protocol queries to use Fake protocols."""
 
     @dataclass
     class _DiscoveryMock:
@@ -79,6 +88,7 @@ def discovery_mock(request, mocker):
         query_data: dict
         device_type: str
         encrypt_type: str
+        _datagram: bytes
         login_version: int | None = None
         port_override: int | None = None
 
@@ -94,13 +104,14 @@ def discovery_mock(request, mocker):
             + json_dumps(discovery_data).encode()
         )
         dm = _DiscoveryMock(
-            "127.0.0.123",
+            ip,
             80,
             20002,
             discovery_data,
             fixture_data,
             device_type,
             encrypt_type,
+            datagram,
             login_version,
         )
     else:
@@ -111,45 +122,87 @@ def discovery_mock(request, mocker):
         login_version = None
         datagram = XorEncryption.encrypt(json_dumps(discovery_data))[4:]
         dm = _DiscoveryMock(
-            "127.0.0.123",
+            ip,
             9999,
             9999,
             discovery_data,
             fixture_data,
             device_type,
             encrypt_type,
+            datagram,
             login_version,
         )
 
-    async def mock_discover(self):
-        port = (
-            dm.port_override
-            if dm.port_override and dm.discovery_port != 20002
-            else dm.discovery_port
-        )
-        self.datagram_received(
-            datagram,
-            (dm.ip, port),
-        )
+    return dm
 
+
+def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
+    """Mock discovery and patch protocol queries to use Fake protocols."""
+    discovery_mocks = {
+        ip: create_discovery_mock(ip, fixture_info.data)
+        for ip, fixture_info in fixture_infos.items()
+    }
+    protos = {
+        ip: FakeSmartProtocol(fixture_info.data, fixture_info.name)
+        if "SMART" in fixture_info.protocol
+        else FakeIotProtocol(fixture_info.data, fixture_info.name)
+        for ip, fixture_info in fixture_infos.items()
+    }
+    first_ip = list(fixture_infos.keys())[0]
+    first_host = None
+
+    async def mock_discover(self):
+        """Call datagram_received for all mock fixtures.
+
+        Handles test cases modifying the ip and hostname of the first fixture
+        for discover_single testing.
+        """
+        for ip, dm in discovery_mocks.items():
+            first_ip = list(discovery_mocks.values())[0].ip
+            fixture_info = fixture_infos[ip]
+            # Ip of first fixture could have been modified by a test
+            if dm.ip == first_ip:
+                # hostname could have been used
+                host = first_host if first_host else first_ip
+            else:
+                host = dm.ip
+            # update the protos for any host testing or the test overriding the first ip
+            protos[host] = (
+                FakeSmartProtocol(fixture_info.data, fixture_info.name)
+                if "SMART" in fixture_info.protocol
+                else FakeIotProtocol(fixture_info.data, fixture_info.name)
+            )
+            port = (
+                dm.port_override
+                if dm.port_override and dm.discovery_port != 20002
+                else dm.discovery_port
+            )
+            self.datagram_received(
+                dm._datagram,
+                (dm.ip, port),
+            )
+
+    async def _query(self, request, retry_count: int = 3):
+        return await protos[self._host].query(request)
+
+    def _getaddrinfo(host, *_, **__):
+        nonlocal first_host, first_ip
+        first_host = host  # Store the hostname used by discover single
+        first_ip = list(discovery_mocks.values())[
+            0
+        ].ip  # ip could have been overridden in test
+        return [(None, None, None, None, (first_ip, 0))]
+
+    mocker.patch("kasa.IotProtocol.query", _query)
+    mocker.patch("kasa.SmartProtocol.query", _query)
     mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
     mocker.patch(
         "socket.getaddrinfo",
-        side_effect=lambda *_, **__: [(None, None, None, None, (dm.ip, 0))],
+        # side_effect=lambda *_, **__: [(None, None, None, None, (first_ip, 0))],
+        side_effect=_getaddrinfo,
     )
-
-    if "SMART" in fixture_info.protocol:
-        proto = FakeSmartProtocol(fixture_data, fixture_info.name)
-    else:
-        proto = FakeIotProtocol(fixture_data)
-
-    async def _query(request, retry_count: int = 3):
-        return await proto.query(request)
-
-    mocker.patch("kasa.IotProtocol.query", side_effect=_query)
-    mocker.patch("kasa.SmartProtocol.query", side_effect=_query)
-
-    yield dm
+    # Only return the first discovery mock to be used for testing discover single
+    return discovery_mocks[first_ip]
 
 
 @pytest.fixture(

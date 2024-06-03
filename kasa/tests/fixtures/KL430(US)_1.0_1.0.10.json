@@ -23,7 +23,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "KL430 pantry lightstrip",
+            "alias": "Bedroom Lightstrip",
             "ctrl_protocols": {
                 "name": "Linkie",
                 "version": "1.0"

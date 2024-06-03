@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
 
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
+_LOGGER = logging.getLogger(__name__)
 
 
 class AutoOff(SmartModule):
@@ -18,11 +17,17 @@ class AutoOff(SmartModule):
     REQUIRED_COMPONENT = "auto_off"
     QUERY_GETTER_NAME = "get_auto_off_config"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
+        if not isinstance(self.data, dict):
+            _LOGGER.warning(
+                "No data available for module, skipping %s: %s", self, self.data
+            )
+            return
+
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="auto_off_enabled",
                 name="Auto off enabled",
                 container=self,
@@ -33,7 +38,7 @@ class AutoOff(SmartModule):
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="auto_off_minutes",
                 name="Auto off minutes",
                 container=self,
@@ -44,7 +49,7 @@ class AutoOff(SmartModule):
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="auto_off_at",
                 name="Auto off at",
                 container=self,
