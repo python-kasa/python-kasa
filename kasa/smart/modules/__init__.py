@@ -25,6 +25,7 @@ from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
 from .time import Time
+from .vacuum import Vacuum
 from .waterleaksensor import WaterleakSensor
 
 __all__ = [
@@ -54,4 +55,5 @@ __all__ = [
     "WaterleakSensor",
     "ContactSensor",
     "FrostProtection",
+    "Vacuum",
 ]
