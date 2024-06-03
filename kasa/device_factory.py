@@ -6,7 +6,7 @@ import logging
 import time
 from typing import Any
 
-from .cleartexttransport import CleartextTokenTransport
+from .cleartexttransport import CleartextTransport
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig

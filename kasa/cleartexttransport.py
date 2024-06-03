@@ -1,4 +1,8 @@
-"""Implementation of the TP-Link cleartext, token-based transport seen on robovacs."""
+"""Implementation of the TP-Link cleartext transport.
+
+This transport does not encrypt the payloads at all, but requires login to function.
+This has been seen on some devices (like robovacs) with self-signed HTTPS certificates.
+"""
 
 from __future__ import annotations
 
@@ -42,31 +46,22 @@ def _md5(payload: bytes) -> str:
 
 
 class TransportState(Enum):
-    """Enum for transport state.
+    """Enum for transport state."""
 
-    TODO: cleartext requires only login
-    """
-
-    HANDSHAKE_REQUIRED = auto()  # Handshake needed
     LOGIN_REQUIRED = auto()  # Login needed
     ESTABLISHED = auto()  # Ready to send requests
 
 
-class CleartextTokenTransport(BaseTransport):
-    """Implementation of the AES encryption protocol.
+class CleartextTransport(BaseTransport):
+    """Implementation of the cleartext transport protocol.
 
-    AES is the name used in device discovery for TP-Link's TAPO encryption
-    protocol, sometimes used by newer firmware versions on kasa devices.
+    This transport uses HTTPS without any further payload encryption.
     """
 
     DEFAULT_PORT: int = 4433
-    SESSION_COOKIE_NAME = "TP_SESSIONID"  # TODO: cleanup cookie handling
-    TIMEOUT_COOKIE_NAME = "TIMEOUT"
     COMMON_HEADERS = {
         "Content-Type": "application/json",
-        # "Accept": "application/json",
     }
-    CONTENT_LENGTH = "Content-Length"
     BACKOFF_SECONDS_AFTER_LOGIN_ERROR = 1
 
     def __init__(
@@ -93,12 +88,10 @@ class CleartextTokenTransport(BaseTransport):
         self._state = TransportState.LOGIN_REQUIRED
         self._session_expire_at: float | None = None
 
-        # self._session_cookie: dict[str, str] | None = None
-
         self._app_url = URL(f"https://{self._host}:{self._port}/app")
         self._token_url: URL | None = None
 
-        _LOGGER.debug("Created Cleartext transport for %s", self._host)
+        _LOGGER.debug("Created cleartext transport for %s", self._host)
 
     @property
     def default_port(self) -> int:
@@ -132,32 +125,33 @@ class CleartextTokenTransport(BaseTransport):
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         if error_code == SmartErrorCode.SUCCESS:
             return
+
         msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
+
         if error_code in SMART_RETRYABLE_ERRORS:
             raise _RetryableError(msg, error_code=error_code)
+
         if error_code in SMART_AUTHENTICATION_ERRORS:
-            self._state = TransportState.HANDSHAKE_REQUIRED
+            self._state = TransportState.LOGIN_REQUIRED
             raise AuthenticationError(msg, error_code=error_code)
+
         raise DeviceError(msg, error_code=error_code)
 
     async def send_cleartext_request(self, request: str) -> dict[str, Any]:
         """Send encrypted message as passthrough."""
         if self._state is TransportState.ESTABLISHED and self._token_url:
-            _LOGGER.info("We are logged in, sending to %s", self._token_url)
             url = self._token_url
         else:
-            _LOGGER.info("We are not logged in, sending to %s", self._app_url)
             url = self._app_url
 
-        _LOGGER.info("Request payload: %s", request)
+        _LOGGER.debug("Sending %s", request)
 
         status_code, resp = await self._http_client.post(
             url,
             data=request.encode(),
             headers=self.COMMON_HEADERS,
-            # cookies_dict=self._session_cookie,
         )
-        _LOGGER.debug(f"Response is {status_code}: {resp!r}")
+        _LOGGER.debug("Response with %s: %r", status_code, resp)
         resp_dict = json_loads(resp)
 
         if status_code != 200:
@@ -177,7 +171,6 @@ class CleartextTokenTransport(BaseTransport):
 
     async def perform_login(self):
         """Login to the device."""
-        _LOGGER.info("Trying to login")
         try:
             await self.try_login(self._login_params)
         except AuthenticationError as aex:
@@ -208,15 +201,15 @@ class CleartextTokenTransport(BaseTransport):
         login_request = {
             "method": "login",
             "params": login_params,
-            # "request_time_milis": round(time.time() * 1000),
         }
         request = json_dumps(login_request)
+        _LOGGER.debug("Going to send login request")
 
         resp_dict = await self.send_cleartext_request(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
+
         login_token = resp_dict["result"]["token"]
         self._token_url = self._app_url.with_query(f"token={login_token}")
-        _LOGGER.info("Our token url: %s", self._token_url)
         self._state = TransportState.ESTABLISHED
         self._session_expire_at = (
             time.time() + ONE_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
@@ -233,9 +226,7 @@ class CleartextTokenTransport(BaseTransport):
         """Send the request."""
         _LOGGER.info("Going to send %s", request)
         if self._state is not TransportState.ESTABLISHED or self._session_expired():
-            _LOGGER.info(
-                "Transport not established or session expired, performing login"
-            )
+            _LOGGER.debug("Transport not established or session expired, logging in")
             await self.perform_login()
 
         return await self.send_cleartext_request(request)
@@ -246,5 +237,5 @@ class CleartextTokenTransport(BaseTransport):
         await self._http_client.close()
 
     async def reset(self) -> None:
-        """Reset internal handshake and login state."""
-        self._state = TransportState.HANDSHAKE_REQUIRED
+        """Reset internal login state."""
+        self._state = TransportState.LOGIN_REQUIRED
