@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 from warnings import warn
 
-from typing_extensions import NewType, TypeAlias
+from typing_extensions import TypeAlias
 
 from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
@@ -59,7 +59,7 @@ class Device(ABC):
     #: The type of device
     Type: TypeAlias = DeviceType
     #: The credentials for authentication
-    Credentials = NewType("Credentials", _Credentials)  # NewType needed for autodocs
+    Credentials: TypeAlias = _Credentials
     #: Configuration for connecting to the device
     Config: TypeAlias = DeviceConfig
     #: The family of the device, e.g. SMART.KASASWITCH.

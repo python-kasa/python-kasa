@@ -22,6 +22,7 @@
     :undoc-members:
 ```
 
+
 ## Device Config
 
 ```{module} kasa.credentials
