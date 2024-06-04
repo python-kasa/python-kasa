@@ -69,6 +69,8 @@ class HttpClient:
 
         If the request is provided via the json parameter json will be returned.
         """
+        # Once we know a device needs a wait between sequential queries always wait
+        # first rather than keep erroring then waiting.
         if self._wait_between_requests:
             now = time.time()
             gap = now - self._last_request_time
@@ -121,6 +123,7 @@ class HttpClient:
                 f"Unable to query the device: {self._config.host}: {ex}", ex
             ) from ex
 
+        # For performance only request system time if waiting is enabled
         if self._wait_between_requests:
             self._last_request_time = time.time()
 
