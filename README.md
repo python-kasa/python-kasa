@@ -207,7 +207,7 @@ The following devices have been tested and confirmed as working. If your device 
 
 ### Supported Tapo<sup>\*</sup> devices
 
-- **Plugs**: P100, P110, P125M, P135, TP15
+- **Plugs**: P100, P110, P115, P125M, P135, TP15
 - **Power Strips**: P300, TP25
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E
