@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, Dict
 
 import aiohttp
@@ -28,11 +29,19 @@ def get_cookie_jar() -> aiohttp.CookieJar:
 class HttpClient:
     """HttpClient Class."""
 
+    # Some devices (only P100 so far) close the http connection after each request
+    # and aiohttp doesn't seem to handle it. If a Client OS error is received the
+    # http client will start ensuring that sequential requests have a wait delay.
+    WAIT_BETWEEN_REQUESTS_ON_OSERROR = 0.25
+
     def __init__(self, config: DeviceConfig) -> None:
         self._config = config
         self._client_session: aiohttp.ClientSession = None
         self._jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
         self._last_url = URL(f"http://{self._config.host}/")
+
+        self._wait_between_requests = 0.0
+        self._last_request_time = 0.0
 
     @property
     def client(self) -> aiohttp.ClientSession:
@@ -60,6 +69,14 @@ class HttpClient:
 
         If the request is provided via the json parameter json will be returned.
         """
+        # Once we know a device needs a wait between sequential queries always wait
+        # first rather than keep erroring then waiting.
+        if self._wait_between_requests:
+            now = time.time()
+            gap = now - self._last_request_time
+            if gap < self._wait_between_requests:
+                await asyncio.sleep(self._wait_between_requests - gap)
+
         _LOGGER.debug("Posting to %s", url)
         response_data = None
         self._last_url = url
@@ -89,6 +106,9 @@ class HttpClient:
                         response_data = json_loads(response_data.decode())
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
+            if isinstance(ex, aiohttp.ClientOSError):
+                self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
+                self._last_request_time = time.time()
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
@@ -102,6 +122,10 @@ class HttpClient:
             raise KasaException(
                 f"Unable to query the device: {self._config.host}: {ex}", ex
             ) from ex
+
+        # For performance only request system time if waiting is enabled
+        if self._wait_between_requests:
+            self._last_request_time = time.time()
 
         return resp.status, response_data
 

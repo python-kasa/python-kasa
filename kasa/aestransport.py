@@ -6,7 +6,6 @@ under compatible GNU GPL3 license.
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import hashlib
 import logging
@@ -74,7 +73,6 @@ class AesTransport(BaseTransport):
     }
     CONTENT_LENGTH = "Content-Length"
     KEY_PAIR_CONTENT_LENGTH = 314
-    BACKOFF_SECONDS_AFTER_LOGIN_ERROR = 1
 
     def __init__(
         self,
@@ -216,7 +214,6 @@ class AesTransport(BaseTransport):
                     self._default_credentials = get_default_credentials(
                         DEFAULT_CREDENTIALS["TAPO"]
                     )
-                    await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_LOGIN_ERROR)
                 await self.perform_handshake()
                 await self.try_login(self._get_login_params(self._default_credentials))
                 _LOGGER.debug(
