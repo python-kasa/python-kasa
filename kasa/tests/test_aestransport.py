@@ -301,7 +301,7 @@ async def test_device_closes_connection(
     host = "127.0.0.1"
 
     # Speed up the test by dividing all times by a factor.
-    speed_up_factor = 10
+    speed_up_factor = 5
     default_delay = HttpClient.WAIT_BETWEEN_REQUESTS_ON_OSERROR / speed_up_factor
     request_delay = request_delay / speed_up_factor
     mock_aes_device = MockAesDevice(
