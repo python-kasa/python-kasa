@@ -24,6 +24,7 @@ from ..exceptions import (
     AuthenticationError,
     KasaException,
     SmartErrorCode,
+    _ConnectionError,
 )
 from ..httpclient import HttpClient
 
@@ -137,7 +138,7 @@ async def test_login_errors(mocker, inner_error_codes, expectation, call_count):
     transport._state = TransportState.LOGIN_REQUIRED
     transport._session_expire_at = time.time() + 86400
     transport._encryption_session = mock_aes_device.encryption_session
-    mocker.patch.object(transport, "BACKOFF_SECONDS_AFTER_LOGIN_ERROR", 0)
+    mocker.patch.object(transport._http_client, "WAIT_BETWEEN_REQUESTS_ON_OSERROR", 0)
 
     assert transport._token_url is None
 
@@ -285,6 +286,67 @@ async def test_port_override():
     assert str(transport._app_url) == "http://127.0.0.1:12345/app"
 
 
+@pytest.mark.parametrize(
+    "request_delay, should_error, should_succeed",
+    [(0, False, True), (0.125, True, True), (0.3, True, True), (0.7, True, False)],
+    ids=["No error", "Error then succeed", "Two errors then succeed", "No succeed"],
+)
+async def test_device_closes_connection(
+    mocker, request_delay, should_error, should_succeed
+):
+    """Test the delay logic in http client to deal with devices that close connections after each request.
+
+    Currently only the P100 on older firmware.
+    """
+    host = "127.0.0.1"
+
+    # Speed up the test by dividing all times by a factor.
+    speed_up_factor = 10
+    default_delay = HttpClient.WAIT_BETWEEN_REQUESTS_ON_OSERROR / speed_up_factor
+    request_delay = request_delay / speed_up_factor
+    mock_aes_device = MockAesDevice(
+        host, 200, 0, 0, sequential_request_delay=request_delay
+    )
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
+
+    config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
+    transport = AesTransport(config=config)
+    transport._http_client.WAIT_BETWEEN_REQUESTS_ON_OSERROR = default_delay
+    transport._state = TransportState.LOGIN_REQUIRED
+    transport._session_expire_at = time.time() + 86400
+    transport._encryption_session = mock_aes_device.encryption_session
+    transport._token_url = transport._app_url.with_query(
+        f"token={mock_aes_device.token}"
+    )
+    request = {
+        "method": "get_device_info",
+        "params": None,
+        "request_time_milis": round(time.time() * 1000),
+        "requestID": 1,
+        "terminal_uuid": "foobar",
+    }
+    error_count = 0
+    success = False
+
+    # If the device errors without a delay then it should error immedately ( + 1)
+    # and then the number of times the default delay passes within the request delay window
+    expected_error_count = (
+        0 if not should_error else int(request_delay / default_delay) + 1
+    )
+    for _ in range(3):
+        try:
+            await transport.send(json_dumps(request))
+        except _ConnectionError:
+            error_count += 1
+        else:
+            success = True
+
+    assert bool(transport._http_client._wait_between_requests) == should_error
+    assert bool(error_count) == should_error
+    assert error_count == expected_error_count
+    assert success == should_succeed
+
+
 class MockAesDevice:
     class _mock_response:
         def __init__(self, status, json: dict):
@@ -313,6 +375,7 @@ class MockAesDevice:
         *,
         do_not_encrypt_response=False,
         send_response=None,
+        sequential_request_delay=0,
     ):
         self.host = host
         self.status_code = status_code
@@ -323,6 +386,9 @@ class MockAesDevice:
         self.http_client = HttpClient(DeviceConfig(self.host))
         self.inner_call_count = 0
         self.token = "".join(random.choices(string.ascii_uppercase, k=32))  # noqa: S311
+        self.sequential_request_delay = sequential_request_delay
+        self.last_request_time = None
+        self.sequential_error_raised = False
 
     @property
     def inner_error_code(self):
@@ -332,10 +398,19 @@ class MockAesDevice:
             return self._inner_error_code
 
     async def post(self, url: URL, params=None, json=None, data=None, *_, **__):
+        if self.sequential_request_delay and self.last_request_time:
+            now = time.time()
+            print(now - self.last_request_time)
+            if (now - self.last_request_time) < self.sequential_request_delay:
+                self.sequential_error_raised = True
+                raise aiohttp.ClientOSError("Test connection closed")
         if data:
             async for item in data:
                 json = json_loads(item.decode())
-        return await self._post(url, json)
+        res = await self._post(url, json)
+        if self.sequential_request_delay:
+            self.last_request_time = time.time()
+        return res
 
     async def _post(self, url: URL, json: dict[str, Any]):
         if json["method"] == "handshake":

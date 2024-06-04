@@ -29,8 +29,10 @@ def get_cookie_jar() -> aiohttp.CookieJar:
 class HttpClient:
     """HttpClient Class."""
 
-    # Time to wait between requests if getting client os errors
-    WAIT_TIME = 0.5
+    # Some devices (only P100 so far) close the http connection after each request
+    # and aiohttp doesn't seem to handle it. If a Client OS error is received the
+    # http client will start ensuring that sequential requests have a wait delay.
+    WAIT_BETWEEN_REQUESTS_ON_OSERROR = 0.25
 
     def __init__(self, config: DeviceConfig) -> None:
         self._config = config
@@ -103,7 +105,8 @@ class HttpClient:
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
             if isinstance(ex, aiohttp.ClientOSError):
-                self._wait_between_requests = self.WAIT_TIME
+                self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
+                self._last_request_time = time.time()
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex

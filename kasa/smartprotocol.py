@@ -35,7 +35,7 @@ class SmartProtocol(BaseProtocol):
     """Class for the new TPLink SMART protocol."""
 
     BACKOFF_SECONDS_AFTER_TIMEOUT = 1
-    DEFAULT_MULTI_REQUEST_BATCH_SIZE = 5
+    DEFAULT_MULTI_REQUEST_BATCH_SIZE = 3
 
     def __init__(
         self,
