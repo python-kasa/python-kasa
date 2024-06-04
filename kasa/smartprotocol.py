@@ -402,7 +402,9 @@ class _ChildProtocolWrapper(SmartProtocol):
                 ret_val = {}
                 for multi_response in multi_responses:
                     method = multi_response["method"]
-                    self._handle_response_error_code(multi_response, method)
+                    self._handle_response_error_code(
+                        multi_response, method, raise_on_error=False
+                    )
                     ret_val[method] = multi_response.get("result")
                 return ret_val
 
