@@ -1,9 +1,10 @@
 # API Reference
 
-```{currentmodule} kasa
-```
-
 ## Discover
+
+
+```{module} kasa.discover
+```
 
 ```{eval-rst}
 .. autoclass:: kasa.Discover
@@ -12,8 +13,51 @@
 
 ## Device
 
+```{module} kasa.device
+```
+
 ```{eval-rst}
-.. autoclass:: kasa.Device
+.. autoclass:: Device
+    :members:
+    :undoc-members:
+```
+
+
+## Device Config
+
+```{module} kasa.credentials
+```
+
+```{eval-rst}
+.. autoclass:: Credentials
+    :members:
+    :undoc-members:
+```
+
+```{module} kasa.deviceconfig
+```
+
+```{eval-rst}
+.. autoclass:: DeviceConfig
+    :members:
+    :undoc-members:
+```
+
+
+```{eval-rst}
+.. autoclass:: kasa.DeviceFamily
+    :members:
+    :undoc-members:
+```
+
+```{eval-rst}
+.. autoclass:: kasa.DeviceConnection
+    :members:
+    :undoc-members:
+```
+
+```{eval-rst}
+.. autoclass:: kasa.DeviceEncryption
     :members:
     :undoc-members:
 ```

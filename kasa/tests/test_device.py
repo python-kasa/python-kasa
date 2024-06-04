@@ -116,13 +116,11 @@ def test_deprecated_devices(device_class, use_class):
     getattr(module, use_class.__name__)
 
 
-@pytest.mark.parametrize(
-    "exceptions_class, use_class", kasa.deprecated_exceptions.items()
-)
-def test_deprecated_exceptions(exceptions_class, use_class):
-    msg = f"{exceptions_class} is deprecated, use {use_class.__name__} instead"
+@pytest.mark.parametrize("deprecated_class, use_class", kasa.deprecated_classes.items())
+def test_deprecated_classes(deprecated_class, use_class):
+    msg = f"{deprecated_class} is deprecated, use {use_class.__name__} instead"
     with pytest.deprecated_call(match=msg):
-        getattr(kasa, exceptions_class)
+        getattr(kasa, deprecated_class)
     getattr(kasa, use_class.__name__)
 
 
@@ -266,3 +264,27 @@ async def test_deprecated_light_preset_attributes(dev: Device):
         IotLightPreset(index=0, hue=100, brightness=100, saturation=0, color_temp=0),  # type: ignore[call-arg]
         will_raise=exc,
     )
+
+
+async def test_device_type_aliases():
+    """Test that the device type aliases in Device work."""
+
+    def _mock_connect(config, *args, **kwargs):
+        mock = Mock()
+        mock.config = config
+        return mock
+
+    with patch("kasa.device_factory.connect", side_effect=_mock_connect):
+        dev = await Device.connect(
+            config=Device.Config(
+                host="127.0.0.1",
+                credentials=Device.Credentials(username="user", password="foobar"),  # noqa: S106
+                connection_type=Device.ConnectionParameters(
+                    device_family=Device.Family.SmartKasaPlug,
+                    encryption_type=Device.EncryptionType.Klap,
+                    login_version=2,
+                ),
+            )
+        )
+        assert isinstance(dev.config, DeviceConfig)
+        assert DeviceType.Dimmer == Device.Type.Dimmer

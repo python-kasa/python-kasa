@@ -9,9 +9,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 from warnings import warn
 
-from .credentials import Credentials
+from typing_extensions import TypeAlias
+
+from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
-from .deviceconfig import DeviceConfig
+from .deviceconfig import (
+    DeviceConfig,
+    DeviceConnectionParameters,
+    DeviceEncryptionType,
+    DeviceFamily,
+)
 from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
@@ -50,6 +57,22 @@ class Device(ABC):
     :func:`Device.connect()`, :func:`Discover.discover()`
     or :func:`Discover.discover_single()`.
     """
+
+    # All types required to create devices directly via connect are aliased here
+    # to avoid consumers having to do multiple imports.
+
+    #: The type of device
+    Type: TypeAlias = DeviceType
+    #: The credentials for authentication
+    Credentials: TypeAlias = _Credentials
+    #: Configuration for connecting to the device
+    Config: TypeAlias = DeviceConfig
+    #: The family of the device, e.g. SMART.KASASWITCH.
+    Family: TypeAlias = DeviceFamily
+    #: The encryption for the device, e.g. Klap or Aes
+    EncryptionType: TypeAlias = DeviceEncryptionType
+    #: The connection type for the device.
+    ConnectionParameters: TypeAlias = DeviceConnectionParameters
 
     def __init__(
         self,
@@ -166,7 +189,7 @@ class Device(ABC):
         return self.protocol._transport._port
 
     @property
-    def credentials(self) -> Credentials | None:
+    def credentials(self) -> _Credentials | None:
         """The device credentials."""
         return self.protocol._transport._credentials
 

@@ -181,8 +181,9 @@ async def test_childdevicewrapper_multiplerequest_error(dummy_protocol, mocker):
     }
     wrapped_protocol = _ChildProtocolWrapper("dummyid", dummy_protocol)
     mocker.patch.object(wrapped_protocol._transport, "send", return_value=mock_response)
-    with pytest.raises(KasaException):
-        await wrapped_protocol.query(DUMMY_QUERY)
+    res = await wrapped_protocol.query(DUMMY_QUERY)
+    assert res["get_device_info"] == {"foo": "bar"}
+    assert res["invalid_command"] == SmartErrorCode(-1001)
 
 
 @pytest.mark.parametrize("list_sum", [5, 10, 30])
