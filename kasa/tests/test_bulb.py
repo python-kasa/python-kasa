@@ -283,12 +283,17 @@ async def test_ignore_default_not_set_without_color_mode_change_turn_on(
 @bulb_iot
 async def test_list_presets(dev: IotBulb):
     presets = dev.presets
-    assert len(presets) == len(dev.sys_info["preferred_state"])
+    # Light strip devices may list some light effects along with normal presets but these
+    # are handled by the LightEffect module so exclude preferred states with id
+    raw_presets = [
+        pstate for pstate in dev.sys_info["preferred_state"] if "id" not in pstate
+    ]
+    assert len(presets) == len(raw_presets)
 
-    for preset, raw in zip(presets, dev.sys_info["preferred_state"]):
+    for preset, raw in zip(presets, raw_presets):
         assert preset.index == raw["index"]
-        assert preset.hue == raw["hue"]
         assert preset.brightness == raw["brightness"]
+        assert preset.hue == raw["hue"]
         assert preset.saturation == raw["saturation"]
         assert preset.color_temp == raw["color_temp"]
 

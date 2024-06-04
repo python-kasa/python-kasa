@@ -33,7 +33,8 @@ class IotLightStrip(IotBulb):
         Currently active effect:
 
         >>> strip.effect
-        {'brightness': 50, 'custom': 0, 'enable': 0, 'id': '', 'name': ''}
+        {'brightness': 100, 'custom': 0, 'enable': 0,
+        'id': 'bCTItKETDFfrKANolgldxfgOakaarARs', 'name': 'Flicker'}
 
     .. note::
         The device supports some features that are not currently implemented,
