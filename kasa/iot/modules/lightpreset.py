@@ -45,6 +45,9 @@ class LightPreset(IotModule, LightPresetInterface):
         self._presets = {
             f"Light preset {index+1}": IotLightPreset(**vals)
             for index, vals in enumerate(self.data["preferred_state"])
+            # Devices may list some light effects along with normal presets but these
+            # are handled by the LightEffect module so exclude preferred states with id
+            if "id" not in vals
         }
         self._preset_list = [self.PRESET_NOT_SET]
         self._preset_list.extend(self._presets.keys())
@@ -133,7 +136,9 @@ class LightPreset(IotModule, LightPresetInterface):
     def _deprecated_presets(self) -> list[IotLightPreset]:
         """Return a list of available bulb setting presets."""
         return [
-            IotLightPreset(**vals) for vals in self._device.sys_info["preferred_state"]
+            IotLightPreset(**vals)
+            for vals in self._device.sys_info["preferred_state"]
+            if "id" not in vals
         ]
 
     async def _deprecated_save_preset(self, preset: IotLightPreset):
