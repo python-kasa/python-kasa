@@ -992,9 +992,7 @@ async def time_sync(dev: SmartDevice):
     if not isinstance(dev, SmartDevice):
         raise NotImplementedError("setting time currently only implemented on smart")
 
-    from .smart.modules import Time
-
-    if (time := dev.get_module(Time)) is None:
+    if (time := dev.modules.get(Module.Time)) is None:
         echo("Device does not have time module")
         return
 
