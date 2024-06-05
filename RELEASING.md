@@ -1,38 +1,9 @@
-## Install Github CLI
+## Requirements
+* [github client](https://github.com/cli/cli#installation)
+* [gitchub_changelog_generator](https://github.com/github-changelog-generator)
+* [github access token](https://github.com/github-changelog-generator/github-changelog-generator#github-token)
 
-Install to use the command lines below.
-
-Alternatively can use the github website but ensure you follow the all the --labels --titles etc in the `gh` command lines below.
-
-https://github.com/cli/cli#installation
-
-For rpi:
-
-```bash
-sudo apt update
-sudo apt install gh
-```
-
-## Install github_changelog_generator
-
-If not already installed
-
-github_changelog_generator requires Ruby to be installed.
-Instructions vary based on OS. For rpi:
-
-```bash
-sudo apt-get install rbenv
-sudo apt-get install ruby-dev
-sudo gem install github_changelog_generator
-```
-
-## Get a githubtoken
-
-Or refresh an existing token
-
-This allows the generator to access github.com
-
-visit https://github.com/github-changelog-generator/github-changelog-generator#github-token
+## Export changelog token
 
 ```bash
 export CHANGELOG_GITHUB_TOKEN=token
@@ -40,14 +11,11 @@ export CHANGELOG_GITHUB_TOKEN=token
 
 ## Set release information
 
-Replace 0.7.0.dev2 with intended new version number
-
 0.3.5 should always be the previous release as it's the last pyhs100 release in HISTORY.md which is the changelog prior to github release notes.
 
 ```bash
-export NEW_RELEASE=0.7.0.dev2
+export NEW_RELEASE=x.x.x.devx
 export PREVIOUS_RELEASE=0.3.5
-
 ```
 
 ## Create a branch for the release
@@ -69,11 +37,6 @@ poetry version $NEW_RELEASE
 
 ```bash
 poetry install --all-extras --sync
-```
-
-If you want to update all dependencies to latest:
-
-```bash
 poetry update
 ```
 
@@ -84,9 +47,7 @@ pre-commit run --all-files
 pytest kasa
 ```
 
-## Create release summary
-
-Skip this step for dev releases
+## Create release summary (skip for dev releases)
 
 Write a short and understandable summary for the release.  Can include images.
 
@@ -139,13 +100,7 @@ Warning: PR 908 merge commit was not found in the release branch or tagged git h
 
 ```bash
 export RELEASE_NOTES=$(grep -Poz '(?<=\# Changelog\n\n)(.|\n)+?(?=\#\#)' CHANGELOG.md | tr '\0' '\n' )
-echo "$RELEASE_NOTES"
-```
-
-Check the release notes output and if it doesn't look right or the command doesn't work just copy paste from CHANGELOG.md for the latest release:
-
-```bash
-export RELEASE_NOTES="paste release notes from CHANGELOG.md here"
+echo "$RELEASE_NOTES"  # Check the output and copy paste if neccessary
 ```
 
 ## Commit and push the changed files
