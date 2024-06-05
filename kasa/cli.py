@@ -993,10 +993,10 @@ async def time_sync(dev: SmartDevice):
 
     from datetime import datetime
 
-    from .smart.modules import TimeModule
+    from .smart.modules import Time
 
-    if (time := dev.get_module(TimeModule)) is None:
-        echo("Device does not have timemodule")
+    if (time := dev.get_module(Time)) is None:
+        echo("Device does not have time module")
         return
 
     echo("Old time: %s" % time.time)
