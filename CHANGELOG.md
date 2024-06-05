@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.7.0.dev2](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev2) (2024-06-05)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev1...0.7.0.dev2)
+
+**Implemented enhancements:**
+
+- Make device initialisation easier by reducing required imports [\#936](https://github.com/python-kasa/python-kasa/pull/936) (@sdb9696)
+
+**Fixed bugs:**
+
+- Do not raise on multi-request errors on child devices [\#949](https://github.com/python-kasa/python-kasa/pull/949) (@rytilahti)
+- Do not show a zero error code when cli exits from showing help [\#935](https://github.com/python-kasa/python-kasa/pull/935) (@rytilahti)
+- Initialize autooff features only when data is available [\#933](https://github.com/python-kasa/python-kasa/pull/933) (@rytilahti)
+- Fix P100 errors on multi-requests [\#930](https://github.com/python-kasa/python-kasa/pull/930) (@sdb9696)
+
+**Documentation updates:**
+
+- Update documentation structure and start migrating to markdown [\#934](https://github.com/python-kasa/python-kasa/pull/934) (@sdb9696)
+
+**Closed issues:**
+
+- Simplify instance creation API [\#927](https://github.com/python-kasa/python-kasa/issues/927)
+
+**Merged pull requests:**
+
+- Add P115 fixture [\#950](https://github.com/python-kasa/python-kasa/pull/950) (@rytilahti)
+- Add some device fixtures [\#948](https://github.com/python-kasa/python-kasa/pull/948) (@rytilahti)
+- Add fixture for S505D [\#947](https://github.com/python-kasa/python-kasa/pull/947) (@rytilahti)
+- Fix passing custom port for dump\_devinfo [\#938](https://github.com/python-kasa/python-kasa/pull/938) (@rytilahti)
+
 ## [0.7.0.dev1](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev1) (2024-05-22)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev0...0.7.0.dev1)
@@ -8,6 +38,10 @@
 
 - Fix set\_state for common light modules [\#929](https://github.com/python-kasa/python-kasa/pull/929) (@sdb9696)
 - Add state feature for iot devices [\#924](https://github.com/python-kasa/python-kasa/pull/924) (@rytilahti)
+
+**Merged pull requests:**
+
+- Prepare 0.7.0.dev1 [\#931](https://github.com/python-kasa/python-kasa/pull/931) (@rytilahti)
 
 ## [0.7.0.dev0](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev0) (2024-05-19)
 
