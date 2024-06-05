@@ -9,6 +9,7 @@ import logging
 import re
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime
 from functools import singledispatch, wraps
 from pprint import pformat as pf
 from typing import Any, cast
@@ -990,8 +991,6 @@ async def time_sync(dev: SmartDevice):
     """Set the device time to current time."""
     if not isinstance(dev, SmartDevice):
         raise NotImplementedError("setting time currently only implemented on smart")
-
-    from datetime import datetime
 
     from .smart.modules import Time
 
