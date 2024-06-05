@@ -2,3 +2,4 @@ breaking_labels=breaking change
 add-sections={"docs":{"prefix":"**Documentation updates:**","labels":["documentation"]}}
 release_branch=master
 usernames-as-github-logins=true
+exclude-labels=duplicate,question,invalid,wontfix,release-prep
