@@ -92,7 +92,7 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in DeviceFamily]
 
 # Block list of commands which require no update
-SKIP_UPDATE_COMMANDS = ["wifi", "raw-command", "command"]
+SKIP_UPDATE_COMMANDS = ["raw-command", "command"]
 
 click.anyio_backend = "asyncio"
 
