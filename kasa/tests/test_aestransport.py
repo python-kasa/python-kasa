@@ -15,6 +15,7 @@ import aiohttp
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+from freezegun.api import FrozenDateTimeFactory
 from yarl import URL
 
 from ..aestransport import AesEncyptionSession, AesTransport, TransportState
@@ -287,12 +288,20 @@ async def test_port_override():
 
 
 @pytest.mark.parametrize(
-    "request_delay, should_error, should_succeed",
-    [(0, False, True), (0.125, True, True), (0.3, True, True), (0.7, True, False)],
-    ids=["No error", "Error then succeed", "Two errors then succeed", "No succeed"],
+    "device_delay_required, should_error, should_succeed",
+    [
+        pytest.param(0, False, True, id="No error"),
+        pytest.param(0.125, True, True, id="Error then succeed"),
+        pytest.param(0.3, True, True, id="Two errors then succeed"),
+        pytest.param(0.7, True, False, id="No succeed"),
+    ],
 )
 async def test_device_closes_connection(
-    mocker, request_delay, should_error, should_succeed
+    mocker,
+    freezer: FrozenDateTimeFactory,
+    device_delay_required,
+    should_error,
+    should_succeed,
 ):
     """Test the delay logic in http client to deal with devices that close connections after each request.
 
@@ -300,15 +309,18 @@ async def test_device_closes_connection(
     """
     host = "127.0.0.1"
 
-    # Speed up the test by dividing all times by a factor. Doesn't seem to work on windows
-    # but leaving here as a TODO to manipulate system time for testing.
-    speed_up_factor = 1
-    default_delay = HttpClient.WAIT_BETWEEN_REQUESTS_ON_OSERROR / speed_up_factor
-    request_delay = request_delay / speed_up_factor
+    default_delay = HttpClient.WAIT_BETWEEN_REQUESTS_ON_OSERROR
+
     mock_aes_device = MockAesDevice(
-        host, 200, 0, 0, sequential_request_delay=request_delay
+        host, 200, 0, 0, sequential_request_delay=device_delay_required
     )
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
+
+    async def _asyncio_sleep_mock(delay, result=None):
+        freezer.tick(delay)
+        return result
+
+    mocker.patch("asyncio.sleep", side_effect=_asyncio_sleep_mock)
 
     config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
     transport = AesTransport(config=config)
@@ -332,7 +344,7 @@ async def test_device_closes_connection(
     # If the device errors without a delay then it should error immedately ( + 1)
     # and then the number of times the default delay passes within the request delay window
     expected_error_count = (
-        0 if not should_error else int(request_delay / default_delay) + 1
+        0 if not should_error else int(device_delay_required / default_delay) + 1
     )
     for _ in range(3):
         try:
