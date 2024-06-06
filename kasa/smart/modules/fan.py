@@ -5,13 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...feature import Feature
+from ...interfaces.fan import Fan as FanInterface
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class Fan(SmartModule):
+class Fan(SmartModule, FanInterface):
     """Implementation of fan_control module."""
 
     REQUIRED_COMPONENT = "fan_control"
@@ -54,7 +55,7 @@ class Fan(SmartModule):
     @property
     def fan_speed_level(self) -> int:
         """Return fan speed level."""
-        return self.data["fan_speed_level"]
+        return 0 if self.data["device_on"] is False else self.data["fan_speed_level"]
 
     async def set_fan_speed_level(self, level: int):
         """Set fan speed level, 0 for off, 1-4 for on."""

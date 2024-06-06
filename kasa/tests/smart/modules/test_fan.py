@@ -64,6 +64,11 @@ async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     assert fan.fan_speed_level == 1
     assert device.is_on
 
+    # Check that if the device is off the speed level is 0.
+    await device.set_state(False)
+    await dev.update()
+    assert fan.fan_speed_level == 0
+
     await fan.set_fan_speed_level(4)
     await dev.update()
     assert fan.fan_speed_level == 4
