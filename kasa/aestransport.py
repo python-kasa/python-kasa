@@ -28,6 +28,8 @@ from .exceptions import (
     DeviceError,
     KasaException,
     SmartErrorCode,
+    TimeoutError,
+    _ConnectionError,
     _RetryableError,
 )
 from .httpclient import HttpClient
@@ -220,7 +222,7 @@ class AesTransport(BaseTransport):
                     "%s: logged in with default credentials",
                     self._host,
                 )
-            except AuthenticationError:
+            except (AuthenticationError, _ConnectionError, TimeoutError):
                 raise
             except Exception as ex:
                 raise KasaException(
