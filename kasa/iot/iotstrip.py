@@ -275,11 +275,9 @@ class IotStripPlug(IotPlug):
                 icon="mdi:clock",
             )
         )
-
-        for module in self._modules.values():
-            module._initialize_features()
-            for module_feat in module._module_features.values():
-                self._add_feature(module_feat)
+        # If the strip plug has it's own modules we should call initialize
+        # features for the modules here. However the _initialize_modules function
+        # above does not seem to be called.
 
     async def update(self, update_children: bool = True):
         """Query the device to update the data.
