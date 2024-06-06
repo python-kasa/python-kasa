@@ -10,6 +10,7 @@ from typing import Any
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
+from ..feature import Feature
 from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import (
@@ -125,6 +126,8 @@ class IotStrip(IotDevice):
                 )
                 for child in children
             }
+            for child in self._children.values():
+                await child._initialize_features()
 
         if update_children and self.has_emeter:
             for plug in self.children:
@@ -249,6 +252,34 @@ class IotStripPlug(IotPlug):
         """Initialize modules not added in init."""
         await super()._initialize_modules()
         self.add_module("time", Time(self, "time"))
+
+    async def _initialize_features(self):
+        """Initialize common features."""
+        self._add_feature(
+            Feature(
+                self,
+                id="state",
+                name="State",
+                attribute_getter="is_on",
+                attribute_setter="set_state",
+                type=Feature.Type.Switch,
+                category=Feature.Category.Primary,
+            )
+        )
+        self._add_feature(
+            Feature(
+                device=self,
+                id="on_since",
+                name="On since",
+                attribute_getter="on_since",
+                icon="mdi:clock",
+            )
+        )
+
+        for module in self._modules.values():
+            module._initialize_features()
+            for module_feat in module._module_features.values():
+                self._add_feature(module_feat)
 
     async def update(self, update_children: bool = True):
         """Query the device to update the data.
