@@ -78,7 +78,7 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     assert light_effect_module
     feat = dev.features["light_effect"]
 
-    call = mocker.spy(light_effect_module, "call")
+    call = mocker.spy(dev, "_query_helper")
     effect_list = light_effect_module.effect_list
     assert "Off" in effect_list
     assert effect_list.index("Off") == 0
