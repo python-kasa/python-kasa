@@ -82,13 +82,13 @@ Regex should be something like this `^((?!0\.7\.0)(.*dev\d))+`. The first match 
 ```bash
 EXCLUDE_TAGS=${NEW_RELEASE%.dev*}; EXCLUDE_TAGS=${EXCLUDE_TAGS//"."/"\."}; EXCLUDE_TAGS="^((?!"$EXCLUDE_TAGS")(.*dev\d))+"
 echo "$EXCLUDE_TAGS"
-github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md --exclude-tags-regex "$EXCLUDE_TAGS"
+github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md --no-issues --exclude-tags-regex "$EXCLUDE_TAGS"
 ```
 
 ### For production
 
 ```bash
-github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md --exclude-tags-regex 'dev\d$'
+github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md --no-issues --exclude-tags-regex 'dev\d$'
 ```
 
 You can ignore warnings about missing PR commits like below as these relate to PRs to branches other than master:
