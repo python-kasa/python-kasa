@@ -1,6 +1,6 @@
-"""Module for Implementation for ModuleMapping and ModuleName types.
+"""Module for Implementation for typed mappings.
 
-Custom dict for getting typed modules from the module dict.
+Custom mappings for getting typed modules and features from mapping collections.
 """
 
 from __future__ import annotations
@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 _ModuleT = TypeVar("_ModuleT", bound="Module")
 
+_FeatureT = TypeVar("_FeatureT")
+
 
 class ModuleName(str, Generic[_ModuleT]):
     """Generic Module name type.
@@ -22,4 +24,14 @@ class ModuleName(str, Generic[_ModuleT]):
     __slots__ = ()
 
 
+class FeatureId(str, Generic[_FeatureT]):
+    """Generic feature id type.
+
+    At runtime this is a generic subclass of str.
+    """
+
+    __slots__ = ()
+
+
 ModuleMapping = dict
+FeatureMapping = dict

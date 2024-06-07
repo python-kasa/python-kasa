@@ -27,8 +27,8 @@ from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
 from ..module import Module
-from ..modulemapping import ModuleMapping, ModuleName
 from ..protocol import BaseProtocol
+from ..typedmapping import ModuleMapping, ModuleName
 from .iotmodule import IotModule
 from .modules import Emeter
 

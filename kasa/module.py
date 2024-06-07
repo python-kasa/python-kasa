@@ -12,7 +12,7 @@ from typing import (
 
 from .exceptions import KasaException
 from .feature import Feature
-from .modulemapping import ModuleName
+from .typedmapping import ModuleName
 
 if TYPE_CHECKING:
     from . import interfaces

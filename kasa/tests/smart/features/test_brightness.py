@@ -1,5 +1,9 @@
-import pytest
+from typing import TYPE_CHECKING
 
+import pytest
+from typing_extensions import assert_type
+
+from kasa import Feature
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
 from kasa.tests.conftest import dimmable_iot, parametrize
@@ -16,7 +20,9 @@ async def test_brightness_component(dev: SmartDevice):
     assert "brightness" in dev._components
 
     # Test getting the value
-    feature = dev.features["brightness"]
+    feature = dev.features[Feature.Id.BRIGHTNESS]
+    if TYPE_CHECKING:
+        assert_type(feature.value, int)
     assert isinstance(feature.value, int)
     assert feature.value > 1 and feature.value <= 100
 
