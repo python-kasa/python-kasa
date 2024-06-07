@@ -58,10 +58,10 @@ If not already created
 ### Create new issue linked to the milestone
 
 ```bash
-gh issue create --label "release-summary" --milestone $NEW_RELEASE --title "$NEW_RELEASE Release Summary" --body "Some summary text"
+gh issue create --label "release-summary" --milestone $NEW_RELEASE --title "$NEW_RELEASE Release Summary" --body "## Release Summary"
 ```
 
-You can exclude the --body option to get an interactive editor or leave blank and go into the issue on github and edit there.
+You can exclude the --body option to get an interactive editor or go into the issue on github and edit there.
 
 ### Close the issue
 
@@ -81,6 +81,7 @@ Regex should be something like this `^((?!0\.7\.0)(.*dev\d))+`. The first match 
 
 ```bash
 EXCLUDE_TAGS=${NEW_RELEASE%.dev*}; EXCLUDE_TAGS=${EXCLUDE_TAGS//"."/"\."}; EXCLUDE_TAGS="^((?!"$EXCLUDE_TAGS")(.*dev\d))+"
+echo "$EXCLUDE_TAGS"
 github_changelog_generator --base HISTORY.md --user python-kasa --project python-kasa --since-tag $PREVIOUS_RELEASE --future-release $NEW_RELEASE -o CHANGELOG.md --exclude-tags-regex "$EXCLUDE_TAGS"
 ```
 
