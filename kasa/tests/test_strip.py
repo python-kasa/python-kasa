@@ -88,6 +88,14 @@ async def test_get_plug_by_index(dev: IotStrip):
         dev.get_plug_by_index(len(dev.children))
 
 
+@strip
+async def test_plug_features(dev: IotStrip):
+    """Test the child plugs have default features."""
+    for child in dev.children:
+        assert "state" in child.features
+        assert "on_since" in child.features
+
+
 @pytest.mark.skip("this test will wear out your relays")
 async def test_all_binary_states(dev):
     # test every binary state
