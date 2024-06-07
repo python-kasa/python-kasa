@@ -12,7 +12,7 @@
 - Fix fan speed level when off and derive smart fan module from common fan interface [\#957](https://github.com/python-kasa/python-kasa/pull/957) (@sdb9696)
 - Require update in cli for wifi commands [\#956](https://github.com/python-kasa/python-kasa/pull/956) (@rytilahti)
 
-**Project maintenance**
+**Project maintenance:**
 
 - Use freezegun for testing aes http client delays [\#954](https://github.com/python-kasa/python-kasa/pull/954) (@sdb9696)
 - Update release playbook [\#932](https://github.com/python-kasa/python-kasa/pull/932) (@rytilahti)
@@ -36,7 +36,7 @@
 
 - Update documentation structure and start migrating to markdown [\#934](https://github.com/python-kasa/python-kasa/pull/934) (@sdb9696)
 
-**Project maintenance**
+**Project maintenance:**
 
 - Add P115 fixture [\#950](https://github.com/python-kasa/python-kasa/pull/950) (@rytilahti)
 - Add some device fixtures [\#948](https://github.com/python-kasa/python-kasa/pull/948) (@rytilahti)
