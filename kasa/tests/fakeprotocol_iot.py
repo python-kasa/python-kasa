@@ -317,6 +317,12 @@ class FakeIotTransport(BaseTransport):
         _LOGGER.debug("New light state: %s", new_state)
         self.proto["system"]["get_sysinfo"]["light_state"] = new_state
 
+        # Setting the light state on a device will turn off any active lighting effects.
+        if lighting_effect_state := self.proto["system"]["get_sysinfo"].get(
+            "lighting_effect_state"
+        ):
+            lighting_effect_state["enable"] = 0
+
     def set_preferred_state(self, new_state, *args):
         """Implement set_preferred_state."""
         self.proto["system"]["get_sysinfo"]["preferred_state"][new_state["index"]] = (
