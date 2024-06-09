@@ -29,11 +29,11 @@ from .smartmodule import SmartModule
 _LOGGER = logging.getLogger(__name__)
 
 
-# List of modules that wall switches with children, i.e. ks240 report on
+# List of modules that non hub devices with children, i.e. ks240/P300, report on
 # the child but only work on the parent.  See longer note below in _initialize_modules.
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
-WALL_SWITCH_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
+NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -207,9 +207,11 @@ class SmartDevice(Device):
         # when they need to be accessed through the children.
         # The logic below ensures that such devices add all but whitelisted, only on
         # the child device.
+        # It also ensures that devices like power strips do not add modules such as
+        # firmware to the child devices.
         skip_parent_only_modules = False
         child_modules_to_skip = {}
-        if self._parent and self._parent.device_type == DeviceType.WallSwitch:
+        if self._parent and self._parent.device_type != DeviceType.Hub:
             skip_parent_only_modules = True
         elif self._children and self.device_type == DeviceType.WallSwitch:
             # _initialize_modules is called on the parent after the children
@@ -221,7 +223,7 @@ class SmartDevice(Device):
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
             if (
-                skip_parent_only_modules and mod in WALL_SWITCH_PARENT_ONLY_MODULES
+                skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
                 continue
             if (
