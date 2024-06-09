@@ -434,3 +434,16 @@ async def dev(request) -> AsyncGenerator[Device, None]:
     yield dev
 
     await dev.disconnect()
+
+
+def get_parent_and_child_modules(device: Device, module_name):
+    """Return iterator of module if exists on parent and children.
+
+    Useful for testing devices that have components listed on the parent that are only
+    supported on the children, i.e. ks240.
+    """
+    if module_name in device.modules:
+        yield device.modules[module_name]
+    for child in device.children:
+        if module_name in child.modules:
+            yield child.modules[module_name]

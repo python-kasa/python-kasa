@@ -7,6 +7,7 @@ from kasa.tests.device_fixtures import (
     bulb_smart,
     dimmable_iot,
     dimmer_iot,
+    get_parent_and_child_modules,
     lightstrip_iot,
     parametrize,
     parametrize_combine,
@@ -123,11 +124,11 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
 async def test_light_brightness(dev: Device):
     """Test brightness setter and getter."""
     assert isinstance(dev, Device)
-    light = dev.modules.get(Module.Light)
+    light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
 
     # Test getting the value
-    feature = dev.features["brightness"]
+    feature = light._device.features["brightness"]
     assert feature.minimum_value == 0
     assert feature.maximum_value == 100
 
@@ -146,7 +147,7 @@ async def test_light_brightness(dev: Device):
 async def test_light_set_state(dev: Device):
     """Test brightness setter and getter."""
     assert isinstance(dev, Device)
-    light = dev.modules.get(Module.Light)
+    light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
 
     await light.set_state(LightState(light_on=False))
@@ -169,11 +170,11 @@ async def test_light_set_state(dev: Device):
 @light_preset
 async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     """Test light preset module."""
-    preset_mod = dev.modules[Module.LightPreset]
+    preset_mod = next(get_parent_and_child_modules(dev, Module.LightPreset))
     assert preset_mod
-    light_mod = dev.modules[Module.Light]
+    light_mod = next(get_parent_and_child_modules(dev, Module.Light))
     assert light_mod
-    feat = dev.features["light_preset"]
+    feat = preset_mod._device.features["light_preset"]
 
     preset_list = preset_mod.preset_list
     assert "Not set" in preset_list
@@ -220,7 +221,7 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
 @light_preset
 async def test_light_preset_save(dev: Device, mocker: MockerFixture):
     """Test saving a new preset value."""
-    preset_mod = dev.modules[Module.LightPreset]
+    preset_mod = next(get_parent_and_child_modules(dev, Module.LightPreset))
     assert preset_mod
     preset_list = preset_mod.preset_list
     if len(preset_list) == 1:

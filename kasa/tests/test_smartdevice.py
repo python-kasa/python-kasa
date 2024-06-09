@@ -16,6 +16,7 @@ from kasa.smart import SmartDevice
 from .conftest import (
     device_smart,
     get_device_for_fixture_protocol,
+    get_parent_and_child_modules,
 )
 
 
@@ -144,11 +145,8 @@ async def test_get_modules():
 
     # Modules on child
     module = dummy_device.modules.get("Fan")
-    assert module
-    assert module._device != dummy_device
-    assert module._device._parent == dummy_device
-
-    module = dummy_device.modules.get(Module.Fan)
+    assert module is None
+    module = next(get_parent_and_child_modules(dummy_device, "Fan"))
     assert module
     assert module._device != dummy_device
     assert module._device._parent == dummy_device
