@@ -51,13 +51,13 @@
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceConnection
+.. autoclass:: kasa.DeviceConnectionParameters
     :members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceEncryption
+.. autoclass:: kasa.DeviceEncryptionType
     :members:
     :undoc-members:
 ```

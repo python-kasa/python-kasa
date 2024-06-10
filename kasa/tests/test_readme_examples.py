@@ -69,6 +69,7 @@ def test_discovery_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("kasa.discover", "all")
     assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -76,6 +77,31 @@ def test_deviceconfig_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("kasa.deviceconfig", "all")
     assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
+    assert not res["failed"]
+
+
+def test_device_examples(readmes_mock):
+    """Test device examples."""
+    res = xdoctest.doctest_module("kasa.device", "all")
+    assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
+    assert not res["failed"]
+
+
+def test_light_examples(readmes_mock):
+    """Test device examples."""
+    res = xdoctest.doctest_module("kasa.interfaces.light", "all")
+    assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
+    assert not res["failed"]
+
+
+def test_child_examples(readmes_mock):
+    """Test device examples."""
+    res = xdoctest.doctest_module("kasa.smart.modules.childdevice", "all")
+    assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -83,6 +109,7 @@ def test_tutorial_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("docs/tutorial.py", "all")
     assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
     assert not res["failed"]
 
 

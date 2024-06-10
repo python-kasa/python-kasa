@@ -1,4 +1,103 @@
-"""Module for Device base class."""
+"""Interact with TPLink Smart Home devices.
+
+Once you have a device via :ref:`Discovery <discover_target>` or
+:ref:`Connect <connect_target>` you can start interacting with a device.
+
+>>> from kasa import Discover
+>>>
+>>> dev = await Discover.discover_single(
+>>>     "127.0.0.2",
+>>>     username="user@example.com",
+>>>     password="great_password"
+>>> )
+>>>
+
+Most devices can be turned on and off
+
+>>> await dev.turn_on()
+>>> await dev.update()
+>>> print(dev.is_on)
+True
+
+>>> await dev.turn_off()
+>>> await dev.update()
+>>> print(dev.is_on)
+False
+
+All devices provide several informational properties:
+
+>>> dev.alias
+Bedroom Lamp Plug
+>>> dev.model
+HS110(EU)
+>>> dev.rssi
+-71
+>>> dev.mac
+50:C7:BF:00:00:00
+
+Some information can also be changed programmatically:
+
+>>> await dev.set_alias("new alias")
+>>> await dev.update()
+>>> dev.alias
+new alias
+
+Devices support different functionality that can accessed via modules:
+
+>>> for module_name in dev.modules:
+>>>     print(module_name)
+schedule
+usage
+anti_theft
+time
+cloud
+Led
+emeter
+
+>>> led_module = dev.modules["Led"]
+>>> print(led_module.led)
+False
+>>> await led_module.set_led(True)
+>>> await dev.update()
+>>> print(led_module.led)
+True
+
+Individual pieces of functionality are also exposed via features which you can access
+via :attr:`~kasa.Device.features` and will only be present if they are supported.
+
+Features are similar to modules in that they provide functionality that may or may
+not be present.
+
+Whereas modules group functionality into a common interface, features expose a single
+function that may or may not be part of a module.
+
+The advantage of features is that they have a simple common interface of `id`, `name`,
+`value` and `set_value` so no need to learn the module API.
+
+They are useful if you want write code that dynamically adapts as new features are
+added to the API.
+
+>>> for feature_name in dev.features:
+>>>     print(feature_name)
+state
+rssi
+on_since
+cloud_connection
+led
+current_power_w
+today_energy_kwh
+consumption_this_month
+total_energy_kwh
+voltage
+current_a
+>>> led_feature = dev.features["led"]
+>>> print(led_feature.value)
+True
+>>> await led_feature.set_value(False)
+>>> await dev.update()
+>>> print(led_feature.value)
+False
+"""
 
 from __future__ import annotations
 
