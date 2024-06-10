@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -34,7 +35,17 @@ class SmartChildDevice(SmartDevice):
         self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
     async def update(self, update_children: bool = True):
-        """Noop update. The parent updates our internals."""
+        """Update child module info.
+
+        The parent updates our internal info so just update modules with
+        their own queries.
+        """
+        req: dict[str, Any] = {}
+        for module in self.modules.values():
+            if mod_query := module.query():
+                req.update(mod_query)
+        if req:
+            self._last_update = await self.protocol.query(req)
 
     @classmethod
     async def create(cls, parent: SmartDevice, child_info, child_components):

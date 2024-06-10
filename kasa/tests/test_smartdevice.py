@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import KasaException, Module
+from kasa import Device, KasaException, Module
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
 
@@ -112,6 +112,11 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     device_queries: dict[SmartDevice, dict[str, Any]] = {}
     for mod in dev._modules.values():
         device_queries.setdefault(mod._device, {}).update(mod.query())
+    # Hubs do not query child modules by default.
+    if dev.device_type != Device.Type.Hub:
+        for child in dev.children:
+            for mod in child.modules.values():
+                device_queries.setdefault(mod._device, {}).update(mod.query())
 
     spies = {}
     for device in device_queries:
@@ -120,7 +125,8 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     await dev.update()
     for device in device_queries:
         if device_queries[device]:
-            spies[device].assert_called_with(device_queries[device])
+            # Need assert any here because the child device updates use the parent's protocol
+            spies[device].assert_any_call(device_queries[device])
         else:
             spies[device].assert_not_called()
 
