@@ -149,7 +149,7 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = False):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
@@ -167,9 +167,14 @@ class SmartDevice(Device):
         self._last_update = resp = await self.protocol.query(req)
 
         self._info = self._try_get_response(resp, "get_device_info")
+
+        # Call child update which will only update module calls, info is updated
+        # from get_child_device_list. update_children only affects hub devices, other
+        # devices will always update children to prevent errors on module access.
+        if update_children or self.device_type != DeviceType.Hub:
+            for child in self._children.values():
+                await child.update()
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
-            # TODO: we don't currently perform queries on children based on modules,
-            #  but just update the information that is returned in the main query.
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
@@ -352,8 +357,7 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        # TODO: Default to parent's time module for child devices
-        if self._parent and Module.Time in self.modules:
+        if self._parent and Module.Time in self._parent.modules:
             _timemod = self._parent.modules[Module.Time]
         else:
             _timemod = self.modules[Module.Time]
