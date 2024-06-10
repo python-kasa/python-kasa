@@ -140,3 +140,13 @@ class LightPreset(SmartModule, LightPresetInterface):
         if self._state_in_sysinfo:  # Child lights can have states in the child info
             return {}
         return {self.QUERY_GETTER_NAME: None}
+
+    async def _check_supported(self):
+        """Additional check to see if the module is supported by the device.
+
+        Parent devices that report components of children such as ks240 will not have
+        the brightness value is sysinfo.
+        """
+        # Look in _device.sys_info here because self.data is either sys_info or
+        # get_preset_rules depending on whether it's a child device or not.
+        return "brightness" in self._device.sys_info
