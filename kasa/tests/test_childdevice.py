@@ -3,10 +3,20 @@ import sys
 
 import pytest
 
+from kasa.device_type import DeviceType
 from kasa.smart.smartchilddevice import SmartChildDevice
+from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES
 from kasa.smartprotocol import _ChildProtocolWrapper
 
-from .conftest import strip_smart
+from .conftest import parametrize, parametrize_subtract, strip_smart
+
+has_children_smart = parametrize(
+    "has children", component_filter="control_child", protocol_filter={"SMART"}
+)
+hub_smart = parametrize(
+    "smart hub", device_type_filter=[DeviceType.Hub], protocol_filter={"SMART"}
+)
+non_hub_parent_smart = parametrize_subtract(has_children_smart, hub_smart)
 
 
 @strip_smart
@@ -82,3 +92,11 @@ async def test_childdevice_properties(dev: SmartChildDevice):
     exceptions = list(_test_property_getters())
     if exceptions:
         raise ExceptionGroup("Accessing child properties caused exceptions", exceptions)
+
+
+@non_hub_parent_smart
+async def test_parent_only_modules(dev, dummy_protocol, mocker):
+    """Test that parent only modules are not available on children."""
+    for child in dev.children:
+        for module in NON_HUB_PARENT_ONLY_MODULES:
+            assert module not in [type(module) for module in child.modules.values()]

@@ -152,6 +152,24 @@ def parametrize_combine(parametrized: list[pytest.MarkDecorator]):
     )
 
 
+def parametrize_subtract(params: pytest.MarkDecorator, subtract: pytest.MarkDecorator):
+    """Combine multiple pytest parametrize dev marks into one set of fixtures."""
+    if params.args[0] != "dev" or subtract.args[0] != "dev":
+        raise Exception(
+            f"Supplied mark is not for dev fixture: {params.args[0]} {subtract.args[0]}"
+        )
+    fixtures = []
+    for param in params.args[1]:
+        if param not in subtract.args[1]:
+            fixtures.append(param)
+    return pytest.mark.parametrize(
+        "dev",
+        sorted(fixtures),
+        indirect=True,
+        ids=idgenerator,
+    )
+
+
 def parametrize(
     desc,
     *,
