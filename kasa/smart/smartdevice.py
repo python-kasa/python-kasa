@@ -57,7 +57,6 @@ class SmartDevice(Device):
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
         self._modules: dict[str | ModuleName[Module], SmartModule] = {}
-        self._exposes_child_modules = False
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
@@ -99,16 +98,6 @@ class SmartDevice(Device):
     @property
     def modules(self) -> ModuleMapping[SmartModule]:
         """Return the device modules."""
-        if self._exposes_child_modules:
-            modules = {k: v for k, v in self._modules.items()}
-            for child in self._children.values():
-                for k, v in child._modules.items():
-                    if k not in modules:
-                        modules[k] = v
-            if TYPE_CHECKING:
-                return cast(ModuleMapping[SmartModule], modules)
-            return modules
-
         if TYPE_CHECKING:  # Needed for python 3.8
             return cast(ModuleMapping[SmartModule], self._modules)
         return self._modules
@@ -215,7 +204,6 @@ class SmartDevice(Device):
             skip_parent_only_modules = True
         elif self._children and self.device_type == DeviceType.WallSwitch:
             # _initialize_modules is called on the parent after the children
-            self._exposes_child_modules = True
             for child in self._children.values():
                 child_modules_to_skip.update(**child.modules)
 
@@ -334,10 +322,7 @@ class SmartDevice(Device):
             )
 
         for module in self.modules.values():
-            # Check if module features have already been initialized.
-            # i.e. when _exposes_child_modules is true
-            if not module._module_features:
-                module._initialize_features()
+            module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
         for child in self._children.values():
