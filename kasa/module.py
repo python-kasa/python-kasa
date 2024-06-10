@@ -1,4 +1,42 @@
-"""Base class for all module implementations."""
+"""Interact with modules.
+
+Modules are implemented by devices to encapsulate sets of functionality like
+Light, AutoOff, Firmware etc.
+
+>>> from kasa import Discover, Module
+>>>
+>>> dev = await Discover.discover_single(
+>>>     "127.0.0.3",
+>>>     username="user@example.com",
+>>>     password="great_password"
+>>> )
+>>> await dev.update()
+>>> print(dev.alias)
+Living Room Bulb
+
+To see whether a device supports functionality check for the existence of the module:
+
+>>> if light := dev.modules.get("Light"):
+>>>     print(light.hsv)
+HSV(hue=0, saturation=100, value=100)
+
+If you know or expect the module to exist you can access by index:
+
+>>> light_preset = dev.modules["LightPreset"]
+>>> print(light_preset.preset_list)
+['Not set', 'Light preset 1', 'Light preset 2', 'Light preset 3',\
+ 'Light preset 4', 'Light preset 5', 'Light preset 6', 'Light preset 7']
+
+Modules support typing via the Module names in Module:
+
+>>> from typing_extensions import reveal_type, TYPE_CHECKING
+>>> light_effect = dev.modules.get("LightEffect")
+>>> light_effect_typed = dev.modules.get(Module.LightEffect)
+>>> if TYPE_CHECKING:
+>>>     reveal_type(light_effect)  # Static checker will reveal: str
+>>>     reveal_type(light_effect_typed)  # Static checker will reveal: LightEffect
+
+"""
 
 from __future__ import annotations
 

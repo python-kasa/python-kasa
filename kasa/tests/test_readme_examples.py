@@ -105,6 +105,22 @@ def test_child_examples(readmes_mock):
     assert not res["failed"]
 
 
+def test_module_examples(readmes_mock):
+    """Test device examples."""
+    res = xdoctest.doctest_module("kasa.module", "all")
+    assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
+    assert not res["failed"]
+
+
+def test_feature_examples(readmes_mock):
+    """Test device examples."""
+    res = xdoctest.doctest_module("kasa.feature", "all")
+    assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
+    assert not res["failed"]
+
+
 def test_tutorial_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("docs/tutorial.py", "all")
