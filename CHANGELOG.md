@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0.dev4](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev4) (2024-06-10)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev3...0.7.0.dev4)
+
+**Implemented enhancements:**
+
+- Support smart child modules queries [\#967](https://github.com/python-kasa/python-kasa/pull/967) (@sdb9696)
+- Do not expose child modules on parent devices [\#964](https://github.com/python-kasa/python-kasa/pull/964) (@sdb9696)
+- Do not add parent only modules to strip sockets [\#963](https://github.com/python-kasa/python-kasa/pull/963) (@sdb9696)
+
+**Project maintenance:**
+
+- Better checking of child modules not supported by parent device [\#966](https://github.com/python-kasa/python-kasa/pull/966) (@sdb9696)
+- Add fixture for p300 1.0.15 [\#915](https://github.com/python-kasa/python-kasa/pull/915) (@rytilahti)
+
 ## [0.7.0.dev3](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev3) (2024-06-07)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev2...0.7.0.dev3)
