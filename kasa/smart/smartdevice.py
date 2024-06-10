@@ -202,10 +202,6 @@ class SmartDevice(Device):
         child_modules_to_skip = {}
         if self._parent and self._parent.device_type != DeviceType.Hub:
             skip_parent_only_modules = True
-        elif self._children and self.device_type == DeviceType.WallSwitch:
-            # _initialize_modules is called on the parent after the children
-            for child in self._children.values():
-                child_modules_to_skip.update(**child.modules)
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
