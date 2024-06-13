@@ -38,14 +38,14 @@ CURRENT_CONSUMPTION_SCHEMA = Schema(
 async def test_no_emeter(dev):
     assert not dev.has_emeter
 
-    with pytest.raises(KasaException):
+    with pytest.raises(AttributeError):
         await dev.get_emeter_realtime()
     # Only iot devices support the historical stats so other
     # devices will not implement the methods below
     if isinstance(dev, IotDevice):
-        with pytest.raises(KasaException):
+        with pytest.raises(AttributeError):
             await dev.get_emeter_daily()
-        with pytest.raises(KasaException):
+        with pytest.raises(AttributeError):
             await dev.get_emeter_monthly()
         with pytest.raises(KasaException):
             await dev.erase_emeter_stats()
@@ -99,7 +99,7 @@ async def test_get_emeter_monthly(dev):
     assert v * 1000 == v2
 
 
-@has_emeter_iot
+@has_emeter
 async def test_emeter_status(dev):
     assert dev.has_emeter
 
@@ -128,11 +128,11 @@ async def test_erase_emeter_stats(dev):
 @has_emeter_iot
 async def test_current_consumption(dev):
     if dev.has_emeter:
-        x = await dev.current_consumption()
+        x = dev.current_consumption
         assert isinstance(x, float)
         assert x >= 0.0
     else:
-        assert await dev.current_consumption() is None
+        assert dev.current_consumption is None
 
 
 async def test_emeterstatus_missing_current():

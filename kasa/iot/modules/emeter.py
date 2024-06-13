@@ -6,95 +6,23 @@ from datetime import datetime
 
 from ... import Device
 from ...emeterstatus import EmeterStatus
-from ...feature import Feature
+from ...interfaces.energy import Energy as EnergyInterface
 from .usage import Usage
 
 
-class Emeter(Usage):
+class Emeter(Usage, EnergyInterface):
     """Emeter module."""
 
     def __init__(self, device: Device, module: str):
         super().__init__(device, module)
-        self._add_feature(
-            Feature(
-                device,
-                name="Current consumption",
-                attribute_getter="current_consumption",
-                container=self,
-                unit="W",
-                id="current_power_w",  # for homeassistant backwards compat
-                precision_hint=1,
-                category=Feature.Category.Primary,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                name="Today's consumption",
-                attribute_getter="emeter_today",
-                container=self,
-                unit="kWh",
-                id="today_energy_kwh",  # for homeassistant backwards compat
-                precision_hint=3,
-                category=Feature.Category.Info,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                id="consumption_this_month",
-                name="This month's consumption",
-                attribute_getter="emeter_this_month",
-                container=self,
-                unit="kWh",
-                precision_hint=3,
-                category=Feature.Category.Info,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                name="Total consumption since reboot",
-                attribute_getter="emeter_total",
-                container=self,
-                unit="kWh",
-                id="total_energy_kwh",  # for homeassistant backwards compat
-                precision_hint=3,
-                category=Feature.Category.Info,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                name="Voltage",
-                attribute_getter="voltage",
-                container=self,
-                unit="V",
-                id="voltage",  # for homeassistant backwards compat
-                precision_hint=1,
-                category=Feature.Category.Primary,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                name="Current",
-                attribute_getter="current",
-                container=self,
-                unit="A",
-                id="current_a",  # for homeassistant backwards compat
-                precision_hint=2,
-                category=Feature.Category.Primary,
-            )
-        )
 
     @property  # type: ignore
-    def realtime(self) -> EmeterStatus:
+    def status(self) -> EmeterStatus:
         """Return current energy readings."""
         return EmeterStatus(self.data["get_realtime"])
 
     @property
-    def emeter_today(self) -> float | None:
+    def consumption_today(self) -> float | None:
         """Return today's energy consumption in kWh."""
         raw_data = self.daily_data
         today = datetime.now().day
@@ -102,7 +30,7 @@ class Emeter(Usage):
         return data.get(today)
 
     @property
-    def emeter_this_month(self) -> float | None:
+    def consumption_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
         raw_data = self.monthly_data
         current_month = datetime.now().month
@@ -112,22 +40,37 @@ class Emeter(Usage):
     @property
     def current_consumption(self) -> float | None:
         """Get the current power consumption in Watt."""
-        return self.realtime.power
+        return self.status.power
 
     @property
-    def emeter_total(self) -> float | None:
+    def consumption_total(self) -> float | None:
         """Return total consumption since last reboot in kWh."""
-        return self.realtime.total
+        return self.status.total
 
     @property
     def current(self) -> float | None:
         """Return the current in A."""
-        return self.realtime.current
+        return self.status.current
 
     @property
     def voltage(self) -> float | None:
         """Get the current voltage in V."""
-        return self.realtime.voltage
+        return self.status.voltage
+
+    @property
+    def has_voltage_current(self) -> bool:
+        """Return True if the device reports current and voltage."""
+        return True
+
+    @property
+    def has_total_consumption(self) -> bool:
+        """Return True if device reports total energy consumption since last reboot."""
+        return True
+
+    @property
+    def has_periodic_stats(self) -> bool:
+        """Return True if device can report statistics for different time periods."""
+        return True
 
     async def erase_stats(self):
         """Erase all stats.
@@ -136,9 +79,9 @@ class Emeter(Usage):
         """
         return await self.call("erase_emeter_stat")
 
-    async def get_realtime(self):
+    async def get_status(self) -> EmeterStatus:
         """Return real-time statistics."""
-        return await self.call("get_realtime")
+        return EmeterStatus(await self.call("get_realtime"))
 
     async def get_daystat(self, *, year=None, month=None, kwh=True) -> dict:
         """Return daily stats for the given year & month.

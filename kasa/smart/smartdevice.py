@@ -11,7 +11,6 @@ from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature
 from ..module import Module
@@ -463,31 +462,6 @@ class SmartDevice(Device):
         """Update state from info from the discover call."""
         self._discovery_info = info
         self._info = info
-
-    async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrieve current energy readings."""
-        _LOGGER.warning("Deprecated, use `emeter_realtime`.")
-        if not self.has_emeter:
-            raise KasaException("Device has no emeter")
-        return self.emeter_realtime
-
-    @property
-    def emeter_realtime(self) -> EmeterStatus:
-        """Get the emeter status."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_realtime
-
-    @property
-    def emeter_this_month(self) -> float | None:
-        """Get the emeter value for this month."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_this_month
-
-    @property
-    def emeter_today(self) -> float | None:
-        """Get the emeter value for today."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_today
 
     @property
     def on_since(self) -> datetime | None:

@@ -5,56 +5,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...emeterstatus import EmeterStatus
-from ...feature import Feature
+from ...exceptions import KasaException
+from ...interfaces.energy import Energy as EnergyInterface
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
+    pass
 
 
-class Energy(SmartModule):
+class Energy(SmartModule, EnergyInterface):
     """Implementation of energy monitoring module."""
 
     REQUIRED_COMPONENT = "energy_monitoring"
-
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
-        self._add_feature(
-            Feature(
-                device,
-                "consumption_current",
-                name="Current consumption",
-                attribute_getter="current_power",
-                container=self,
-                unit="W",
-                precision_hint=1,
-                category=Feature.Category.Primary,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                "consumption_today",
-                name="Today's consumption",
-                attribute_getter="emeter_today",
-                container=self,
-                unit="Wh",
-                precision_hint=2,
-                category=Feature.Category.Info,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device,
-                "consumption_this_month",
-                name="This month's consumption",
-                attribute_getter="emeter_this_month",
-                container=self,
-                unit="Wh",
-                precision_hint=2,
-                category=Feature.Category.Info,
-            )
-        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -66,7 +28,7 @@ class Energy(SmartModule):
         return req
 
     @property
-    def current_power(self) -> float | None:
+    def current_consumption(self) -> float | None:
         """Current power in watts."""
         if power := self.energy.get("current_power"):
             return power / 1_000
@@ -79,23 +41,79 @@ class Energy(SmartModule):
             return en
         return self.data
 
-    @property
-    def emeter_realtime(self):
-        """Get the emeter status."""
-        # TODO: Perhaps we should get rid of emeterstatus altogether for smartdevices
+    def _get_status_from_energy(self, energy) -> EmeterStatus:
         return EmeterStatus(
             {
-                "power_mw": self.energy.get("current_power"),
-                "total": self.energy.get("today_energy") / 1_000,
+                "power_mw": energy.get("current_power"),
+                "total": energy.get("today_energy") / 1_000,
             }
         )
 
     @property
-    def emeter_this_month(self) -> float | None:
+    def status(self):
+        """Get the emeter status."""
+        return self._get_status_from_energy(self.energy)
+
+    async def get_status(self):
+        """Return real-time statistics."""
+        res = await self.call("get_energy_usage")
+        return self._get_status_from_energy(res["get_energy_usage"])
+
+    @property
+    def consumption_this_month(self) -> float | None:
         """Get the emeter value for this month."""
         return self.energy.get("month_energy")
 
     @property
-    def emeter_today(self) -> float | None:
+    def consumption_today(self) -> float | None:
         """Get the emeter value for today."""
         return self.energy.get("today_energy")
+
+    @property
+    def consumption_total(self) -> float | None:
+        """Return total consumption since last reboot in kWh."""
+        return None
+
+    @property
+    def current(self) -> float | None:
+        """Return the current in A."""
+        return None
+
+    @property
+    def voltage(self) -> float | None:
+        """Get the current voltage in V."""
+        return None
+
+    @property
+    def has_voltage_current(self) -> bool:
+        """Return True if the device reports current and voltage."""
+        return False
+
+    @property
+    def has_total_consumption(self) -> bool:
+        """Return True if device reports total energy consumption since last reboot."""
+        return False
+
+    async def _deprecated_get_realtime(self) -> EmeterStatus:
+        """Retrieve current energy readings."""
+        return self.status
+
+    @property
+    def has_periodic_stats(self) -> bool:
+        """Return True if device can report statistics for different time periods."""
+        return False
+
+    async def erase_stats(self):
+        """Erase all stats."""
+        raise KasaException("Device does not support periodic statistics")
+
+    async def get_daystat(self, *, year=None, month=None, kwh=True) -> dict:
+        """Return daily stats for the given year & month.
+
+        The return value is a dictionary of {day: energy, ...}.
+        """
+        raise KasaException("Device does not support periodic statistics")
+
+    async def get_monthstat(self, *, year=None, kwh=True) -> dict:
+        """Return monthly stats for the given year."""
+        raise KasaException("Device does not support periodic statistics")
