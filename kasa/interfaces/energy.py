@@ -85,7 +85,7 @@ class Energy(Module, ABC):
                     attribute_getter="current",
                     container=self,
                     unit="A",
-                    id="current_a",
+                    id="current",
                     precision_hint=2,
                     category=Feature.Category.Primary,
                 )

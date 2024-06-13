@@ -10,7 +10,7 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import EmeterStatus, KasaException
+from kasa import EmeterStatus
 from kasa.iot import IotDevice
 from kasa.iot.modules.emeter import Emeter
 
@@ -47,7 +47,7 @@ async def test_no_emeter(dev):
             await dev.get_emeter_daily()
         with pytest.raises(AttributeError):
             await dev.get_emeter_monthly()
-        with pytest.raises(KasaException):
+        with pytest.raises(AttributeError):
             await dev.erase_emeter_stats()
 
 
@@ -99,7 +99,7 @@ async def test_get_emeter_monthly(dev):
     assert v * 1000 == v2
 
 
-@has_emeter
+@has_emeter_iot
 async def test_emeter_status(dev):
     assert dev.has_emeter
 
