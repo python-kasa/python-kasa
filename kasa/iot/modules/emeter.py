@@ -27,7 +27,7 @@ class Emeter(Usage, EnergyInterface):
         raw_data = self.daily_data
         today = datetime.now().day
         data = self._convert_stat_data(raw_data, entry_key="day", key=today)
-        return data.get(today)
+        return data.get(today, 0.0)
 
     @property
     def consumption_this_month(self) -> float | None:
@@ -35,7 +35,7 @@ class Emeter(Usage, EnergyInterface):
         raw_data = self.monthly_data
         current_month = datetime.now().month
         data = self._convert_stat_data(raw_data, entry_key="month", key=current_month)
-        return data.get(current_month)
+        return data.get(current_month, 0.0)
 
     @property
     def current_consumption(self) -> float | None:
