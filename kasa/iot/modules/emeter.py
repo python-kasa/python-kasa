@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from ... import Device
 from ...emeterstatus import EmeterStatus
 from ...interfaces.energy import Energy as EnergyInterface
 from .usage import Usage
@@ -13,8 +12,15 @@ from .usage import Usage
 class Emeter(Usage, EnergyInterface):
     """Emeter module."""
 
-    def __init__(self, device: Device, module: str):
-        super().__init__(device, module)
+    _supported = (
+        EnergyInterface.ModuleFeature.CONSUMPTION_TOTAL
+        | EnergyInterface.ModuleFeature.PERIODIC_STATS
+        | EnergyInterface.ModuleFeature.VOLTAGE_CURRENT
+    )
+
+    def supports(self, module_feature: EnergyInterface.ModuleFeature) -> bool:
+        """Return True if module supports the feature."""
+        return self._supported & module_feature == module_feature
 
     @property  # type: ignore
     def status(self) -> EmeterStatus:
@@ -56,21 +62,6 @@ class Emeter(Usage, EnergyInterface):
     def voltage(self) -> float | None:
         """Get the current voltage in V."""
         return self.status.voltage
-
-    @property
-    def has_voltage_current(self) -> bool:
-        """Return True if the device reports current and voltage."""
-        return True
-
-    @property
-    def has_total_consumption(self) -> bool:
-        """Return True if device reports total energy consumption since last reboot."""
-        return True
-
-    @property
-    def has_periodic_stats(self) -> bool:
-        """Return True if device can report statistics for different time periods."""
-        return True
 
     async def erase_stats(self):
         """Erase all stats.

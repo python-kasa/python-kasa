@@ -18,6 +18,10 @@ class Energy(SmartModule, EnergyInterface):
 
     REQUIRED_COMPONENT = "energy_monitoring"
 
+    def supports(self, module_feature: EnergyInterface.ModuleFeature) -> bool:
+        """Return True if module supports the feature."""
+        return False
+
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         req = {
@@ -84,24 +88,9 @@ class Energy(SmartModule, EnergyInterface):
         """Get the current voltage in V."""
         return None
 
-    @property
-    def has_voltage_current(self) -> bool:
-        """Return True if the device reports current and voltage."""
-        return False
-
-    @property
-    def has_total_consumption(self) -> bool:
-        """Return True if device reports total energy consumption since last reboot."""
-        return False
-
     async def _deprecated_get_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
         return self.status
-
-    @property
-    def has_periodic_stats(self) -> bool:
-        """Return True if device can report statistics for different time periods."""
-        return False
 
     async def erase_stats(self):
         """Erase all stats."""

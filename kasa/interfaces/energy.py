@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from enum import IntFlag, auto
 from warnings import warn
 
 from ..emeterstatus import EmeterStatus
@@ -11,7 +12,22 @@ from ..module import Module
 
 
 class Energy(Module, ABC):
-    """Base interface to represent a LED module."""
+    """Base interface to represent an Energy module."""
+
+    class ModuleFeature(IntFlag):
+        """Features supported by the device."""
+
+        #: Device reports :attr:`voltage` and :attr:`current`
+        VOLTAGE_CURRENT = auto()
+        #: Device reports :attr:`consumption_total`
+        CONSUMPTION_TOTAL = auto()
+        #: Device reports periodic stats via :meth:`get_daily_stats`
+        #: and :meth:`get_monthly_stats`
+        PERIODIC_STATS = auto()
+
+    @abstractmethod
+    def supports(self, module_feature: ModuleFeature) -> bool:
+        """Return True if module supports the feature."""
 
     def _initialize_features(self):
         """Initialize features."""
@@ -52,7 +68,7 @@ class Energy(Module, ABC):
                 category=Feature.Category.Info,
             )
         )
-        if self.has_total_consumption:
+        if self.supports(self.ModuleFeature.CONSUMPTION_TOTAL):
             self._add_feature(
                 Feature(
                     device,
@@ -65,7 +81,7 @@ class Energy(Module, ABC):
                     category=Feature.Category.Info,
                 )
             )
-        if self.has_voltage_current:
+        if self.supports(self.ModuleFeature.VOLTAGE_CURRENT):
             self._add_feature(
                 Feature(
                     device,
@@ -126,24 +142,9 @@ class Energy(Module, ABC):
     def voltage(self) -> float | None:
         """Get the current voltage in V."""
 
-    @property
-    @abstractmethod
-    def has_voltage_current(self) -> bool:
-        """Return True if the device reports current and voltage."""
-
-    @property
-    @abstractmethod
-    def has_total_consumption(self) -> bool:
-        """Return True if device reports total energy consumption since last reboot."""
-
     @abstractmethod
     async def get_status(self):
         """Return real-time statistics."""
-
-    @property
-    @abstractmethod
-    def has_periodic_stats(self) -> bool:
-        """Return True if device can report statistics for different time periods."""
 
     @abstractmethod
     async def erase_stats(self):

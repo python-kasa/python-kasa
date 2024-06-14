@@ -166,9 +166,15 @@ class IotStrip(IotDevice):
 class StripEmeter(IotModule, Energy):
     """Energy module implementation to aggregate child modules."""
 
-    def __init__(self, device: IotStrip, module: str):
-        super().__init__(device, module)
-        self._device = device
+    _supported = (
+        Energy.ModuleFeature.CONSUMPTION_TOTAL
+        | Energy.ModuleFeature.PERIODIC_STATS
+        | Energy.ModuleFeature.VOLTAGE_CURRENT
+    )
+
+    def supports(self, module_feature: Energy.ModuleFeature) -> bool:
+        """Return True if module supports the feature."""
+        return self._supported & module_feature == module_feature
 
     def query(self):
         """Return the base query."""
@@ -228,11 +234,6 @@ class StripEmeter(IotModule, Energy):
             ]
         )
 
-    @property
-    def has_periodic_stats(self) -> bool:
-        """Return True if device can report statistics for different time periods."""
-        return True
-
     async def erase_stats(self):
         """Erase energy meter statistics for all plugs."""
         for plug in self._device.children:
@@ -282,16 +283,6 @@ class StripEmeter(IotModule, Energy):
     def voltage(self) -> float | None:
         """Get the current voltage in V."""
         return self.status.voltage
-
-    @property
-    def has_voltage_current(self) -> bool:
-        """Return True if the device reports current and voltage."""
-        return True
-
-    @property
-    def has_total_consumption(self) -> bool:
-        """Return True if device reports total energy consumption since last reboot."""
-        return True
 
 
 class IotStripPlug(IotPlug):
