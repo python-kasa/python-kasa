@@ -150,14 +150,14 @@ class Energy(Module, ABC):
         """Erase all stats."""
 
     @abstractmethod
-    async def get_daystat(self, *, year=None, month=None, kwh=True) -> dict:
+    async def get_daily_stats(self, *, year=None, month=None, kwh=True) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: energy, ...}.
         """
 
     @abstractmethod
-    async def get_monthstat(self, *, year=None, kwh=True) -> dict:
+    async def get_monthly_stats(self, *, year=None, kwh=True) -> dict:
         """Return monthly stats for the given year."""
 
     _deprecated_attributes = {
@@ -166,6 +166,8 @@ class Energy(Module, ABC):
         "realtime": "status",
         "get_realtime": "get_status",
         "erase_emeter_stats": "erase_stats",
+        "get_daystat": "get_daily_stats",
+        "get_monthstat": "get_monthly_stats",
     }
 
     def __getattr__(self, name):

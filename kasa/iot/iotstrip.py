@@ -192,7 +192,7 @@ class StripEmeter(IotModule, Energy):
         )
         return EmeterStatus(emeter_rt)
 
-    async def get_daystat(
+    async def get_daily_stats(
         self, year: int | None = None, month: int | None = None, kwh: bool = True
     ) -> dict:
         """Retrieve daily statistics for a given month.
@@ -204,17 +204,19 @@ class StripEmeter(IotModule, Energy):
         :return: mapping of day of month to value
         """
         return await self._async_get_emeter_sum(
-            "get_daystat", {"year": year, "month": month, "kwh": kwh}
+            "get_daily_stats", {"year": year, "month": month, "kwh": kwh}
         )
 
-    async def get_monthstat(self, year: int | None = None, kwh: bool = True) -> dict:
+    async def get_monthly_stats(
+        self, year: int | None = None, kwh: bool = True
+    ) -> dict:
         """Retrieve monthly statistics for a given year.
 
         :param year: year for which to retrieve statistics (default: this year)
         :param kwh: return usage in kWh (default: True)
         """
         return await self._async_get_emeter_sum(
-            "get_monthstat", {"year": year, "kwh": kwh}
+            "get_monthly_stats", {"year": year, "kwh": kwh}
         )
 
     async def _async_get_emeter_sum(self, func: str, kwargs: dict[str, Any]) -> dict:

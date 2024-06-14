@@ -30,7 +30,7 @@ class Energy(SmartModule, EnergyInterface):
     @property
     def current_consumption(self) -> float | None:
         """Current power in watts."""
-        if power := self.energy.get("current_power"):
+        if (power := self.energy.get("current_power")) is not None:
             return power / 1_000
         return None
 
@@ -61,13 +61,13 @@ class Energy(SmartModule, EnergyInterface):
 
     @property
     def consumption_this_month(self) -> float | None:
-        """Get the emeter value for this month."""
-        return self.energy.get("month_energy")
+        """Get the emeter value for this month in kWh."""
+        return self.energy.get("month_energy") / 1_000
 
     @property
     def consumption_today(self) -> float | None:
-        """Get the emeter value for today."""
-        return self.energy.get("today_energy")
+        """Get the emeter value for today in kWh."""
+        return self.energy.get("today_energy") / 1_000
 
     @property
     def consumption_total(self) -> float | None:
@@ -107,13 +107,13 @@ class Energy(SmartModule, EnergyInterface):
         """Erase all stats."""
         raise KasaException("Device does not support periodic statistics")
 
-    async def get_daystat(self, *, year=None, month=None, kwh=True) -> dict:
+    async def get_daily_stats(self, *, year=None, month=None, kwh=True) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: energy, ...}.
         """
         raise KasaException("Device does not support periodic statistics")
 
-    async def get_monthstat(self, *, year=None, kwh=True) -> dict:
+    async def get_monthly_stats(self, *, year=None, kwh=True) -> dict:
         """Return monthly stats for the given year."""
         raise KasaException("Device does not support periodic statistics")
