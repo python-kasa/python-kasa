@@ -12,15 +12,22 @@ from .usage import Usage
 class Emeter(Usage, EnergyInterface):
     """Emeter module."""
 
-    _supported = (
-        EnergyInterface.ModuleFeature.CONSUMPTION_TOTAL
-        | EnergyInterface.ModuleFeature.PERIODIC_STATS
-        | EnergyInterface.ModuleFeature.VOLTAGE_CURRENT
-    )
-
-    def supports(self, module_feature: EnergyInterface.ModuleFeature) -> bool:
-        """Return True if module supports the feature."""
-        return self._supported & module_feature == module_feature
+    def _post_update_hook(self) -> None:
+        self._supported = EnergyInterface.ModuleFeature.PERIODIC_STATS
+        if (
+            "voltage_mv" in self.data["get_realtime"]
+            or "voltage" in self.data["get_realtime"]
+        ):
+            self._supported = (
+                self._supported | EnergyInterface.ModuleFeature.VOLTAGE_CURRENT
+            )
+        if (
+            "total_wh" in self.data["get_realtime"]
+            or "total" in self.data["get_realtime"]
+        ):
+            self._supported = (
+                self._supported | EnergyInterface.ModuleFeature.CONSUMPTION_TOTAL
+            )
 
     @property  # type: ignore
     def status(self) -> EmeterStatus:

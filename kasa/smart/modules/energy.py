@@ -2,25 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...emeterstatus import EmeterStatus
 from ...exceptions import KasaException
 from ...interfaces.energy import Energy as EnergyInterface
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    pass
 
 
 class Energy(SmartModule, EnergyInterface):
     """Implementation of energy monitoring module."""
 
     REQUIRED_COMPONENT = "energy_monitoring"
-
-    def supports(self, module_feature: EnergyInterface.ModuleFeature) -> bool:
-        """Return True if module supports the feature."""
-        return False
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""

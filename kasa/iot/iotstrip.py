@@ -145,6 +145,16 @@ class IotStrip(IotDevice):
             for plug in self.children:
                 await plug.update()
 
+        if not self.features:
+            await self._initialize_features()
+
+    async def _initialize_features(self):
+        """Initialize common features."""
+        # Do not initialize features until children are created
+        if not self.children:
+            return
+        await super()._initialize_features()
+
     async def turn_on(self, **kwargs):
         """Turn the strip on."""
         await self._query_helper("system", "set_relay_state", {"state": 1})
@@ -174,7 +184,7 @@ class StripEmeter(IotModule, Energy):
 
     def supports(self, module_feature: Energy.ModuleFeature) -> bool:
         """Return True if module supports the feature."""
-        return self._supported & module_feature == module_feature
+        return module_feature in self._supported
 
     def query(self):
         """Return the base query."""

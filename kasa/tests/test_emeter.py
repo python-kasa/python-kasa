@@ -10,8 +10,9 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import EmeterStatus
-from kasa.iot import IotDevice
+from kasa import Device, EmeterStatus, Module
+from kasa.interfaces.energy import Energy
+from kasa.iot import IotDevice, IotStrip
 from kasa.iot.modules.emeter import Emeter
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
@@ -173,3 +174,30 @@ async def test_emeter_daily():
         {"day": now.day, "energy_wh": 500, "month": now.month, "year": now.year}
     )
     assert emeter.emeter_today == 0.500
+
+
+@has_emeter
+async def test_supported(dev: Device):
+    energy_module = dev.modules.get(Module.Energy)
+    assert energy_module
+    if isinstance(dev, IotDevice):
+        info = (
+            dev._last_update
+            if not isinstance(dev, IotStrip)
+            else dev.children[0].internal_state
+        )
+        emeter = info[energy_module._module]["get_realtime"]
+        has_total = "total" in emeter or "total_wh" in emeter
+        has_voltage_current = "voltage" in emeter or "voltage_mv" in emeter
+        assert (
+            energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is has_total
+        )
+        assert (
+            energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT)
+            is has_voltage_current
+        )
+        assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is True
+    else:
+        assert energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
+        assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is False
+        assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False

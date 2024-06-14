@@ -25,9 +25,11 @@ class Energy(Module, ABC):
         #: and :meth:`get_monthly_stats`
         PERIODIC_STATS = auto()
 
-    @abstractmethod
+    _supported: ModuleFeature = ModuleFeature(0)
+
     def supports(self, module_feature: ModuleFeature) -> bool:
         """Return True if module supports the feature."""
+        return module_feature in self._supported
 
     def _initialize_features(self):
         """Initialize features."""
