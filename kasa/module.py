@@ -37,6 +37,7 @@ class Module(ABC):
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
     LightPreset: Final[ModuleName[interfaces.LightPreset]] = ModuleName("LightPreset")
+    Thermostat: Final[ModuleName[interfaces.Thermostat]] = ModuleName("Thermostat")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")

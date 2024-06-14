@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from typing import TYPE_CHECKING
 
 from ...feature import Feature
+from ...interfaces.thermostat import ThermostatState
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -14,16 +14,6 @@ if TYPE_CHECKING:
 
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class ThermostatState(Enum):
-    """Thermostat state."""
-
-    Heating = "heating"
-    Calibrating = "progress_calibration"
-    Idle = "idle"
-    Off = "off"
-    Unknown = "unknown"
 
 
 class TemperatureControl(SmartModule):

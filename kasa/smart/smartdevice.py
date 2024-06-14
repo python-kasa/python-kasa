@@ -22,6 +22,7 @@ from .modules import (
     DeviceModule,
     Firmware,
     Light,
+    Thermostat,
     Time,
 )
 from .smartmodule import SmartModule
@@ -204,16 +205,13 @@ class SmartDevice(Device):
         # It also ensures that devices like power strips do not add modules such as
         # firmware to the child devices.
         skip_parent_only_modules = False
-        child_modules_to_skip = {}
         if self._parent and self._parent.device_type != DeviceType.Hub:
             skip_parent_only_modules = True
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
 
-            if (
-                skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
-            ) or mod.__name__ in child_modules_to_skip:
+            if skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES:
                 continue
             if (
                 mod.REQUIRED_COMPONENT in self._components
@@ -234,6 +232,12 @@ class SmartDevice(Device):
             or Module.ColorTemperature in self._modules
         ):
             self._modules[Light.__name__] = Light(self, "light")
+        if (
+            Module.TemperatureControl in self._modules
+            or Module.TemperatureSensor in self._modules
+            or Module.FrostProtection in self._modules
+        ):
+            self._modules[Thermostat.__name__] = Thermostat(self, "thermostat")
 
     async def _initialize_features(self):
         """Initialize device features."""
