@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from ..device_type import DeviceType
@@ -170,7 +170,7 @@ class IotStrip(IotDevice):
         if self.is_off:
             return None
 
-        return max(plug.on_since for plug in self.children if plug.on_since is not None)
+        return min(plug.on_since for plug in self.children if plug.on_since is not None)
 
 
 class StripEmeter(IotModule, Energy):
@@ -422,7 +422,9 @@ class IotStripPlug(IotPlug):
         info = self._get_child_info()
         on_time = info["on_time"]
 
-        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
+        return datetime.now(timezone.utc).astimezone().replace(
+            microsecond=0
+        ) - timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update

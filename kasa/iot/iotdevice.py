@@ -18,7 +18,7 @@ import collections.abc
 import functools
 import inspect
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..device import Device, WifiNetwork
@@ -342,7 +342,8 @@ class IotDevice(Device):
                 category=Feature.Category.Debug,
             )
         )
-        if "on_time" in self._sys_info:
+        # iot strips calculate on_since from the children
+        if "on_time" in self._sys_info or self.device_type == Device.Type.Strip:
             self._add_feature(
                 Feature(
                     device=self,
@@ -587,7 +588,9 @@ class IotDevice(Device):
 
         on_time = self._sys_info["on_time"]
 
-        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
+        return datetime.now(timezone.utc).astimezone().replace(
+            microsecond=0
+        ) - timedelta(seconds=on_time)
 
     @property  # type: ignore
     @requires_update

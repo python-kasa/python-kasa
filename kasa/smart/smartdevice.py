@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
@@ -356,12 +356,25 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        if self._parent and Module.Time in self._parent.modules:
-            _timemod = self._parent.modules[Module.Time]
-        else:
-            _timemod = self.modules[Module.Time]
+        if (self._parent and (time_mod := self._parent.modules.get(Module.Time))) or (
+            time_mod := self.modules.get(Module.Time)
+        ):
+            return time_mod.time
 
-        return _timemod.time
+        # We have no device time, use current local time.
+        return datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+
+    @property
+    def on_since(self) -> datetime | None:
+        """Return the time that the device was turned on or None if turned off."""
+        if (
+            not self._info.get("device_on")
+            or (on_time := self._info.get("on_time")) is None
+        ):
+            return None
+
+        on_time = cast(float, on_time)
+        return self.time - timedelta(seconds=on_time)
 
     @property
     def timezone(self) -> dict:
@@ -462,20 +475,6 @@ class SmartDevice(Device):
         """Update state from info from the discover call."""
         self._discovery_info = info
         self._info = info
-
-    @property
-    def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
-        if (
-            not self._info.get("device_on")
-            or (on_time := self._info.get("on_time")) is None
-        ):
-            return None
-        on_time = cast(float, on_time)
-        if (timemod := self.modules.get(Module.Time)) is not None:
-            return timemod.time - timedelta(seconds=on_time)
-        else:  # We have no device time, use current local time.
-            return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""
