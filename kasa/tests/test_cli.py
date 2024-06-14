@@ -31,6 +31,7 @@ from kasa.cli import (
     state,
     sysinfo,
     temperature,
+    time,
     toggle,
     update_credentials,
     wifi,
@@ -258,6 +259,37 @@ async def test_update_credentials(dev, runner):
         "Do you really want to replace the existing credentials? [y/N]: y\n"
         in res.output
     )
+
+
+async def test_time_get(dev, runner):
+    """Test time get command."""
+    res = await runner.invoke(
+        time,
+        obj=dev,
+    )
+    assert res.exit_code == 0
+    assert "Current time: " in res.output
+
+
+@device_smart
+async def test_time_sync(dev, mocker, runner):
+    """Test time sync command.
+
+    Currently implemented only for SMART.
+    """
+    update = mocker.patch.object(dev, "update")
+    set_time_mock = mocker.spy(dev.modules[Module.Time], "set_time")
+    res = await runner.invoke(
+        time,
+        ["sync"],
+        obj=dev,
+    )
+    set_time_mock.assert_called()
+    update.assert_called()
+
+    assert res.exit_code == 0
+    assert "Old time: " in res.output
+    assert "New time: " in res.output
 
 
 async def test_emeter(dev: Device, mocker, runner):
