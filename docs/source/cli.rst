@@ -58,6 +58,11 @@ As with all other commands, you can also pass ``--help`` to both ``join`` and ``
     However, note that communications with devices provisioned using this method will stop working
     when connected to the cloud.
 
+.. note::
+
+    Some commands do not work if the device time is out-of-sync.
+    You can use ``kasa time sync`` command to set the device time from the system where the command is run.
+
 .. warning::
 
     At least some devices (e.g., Tapo lights L530 and L900) are known to have a watchdog that reboots them every 10 minutes if they are unable to connect to the cloud.
