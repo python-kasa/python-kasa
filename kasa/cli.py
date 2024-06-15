@@ -998,7 +998,8 @@ async def time_sync(dev: SmartDevice):
 
     echo("Old time: %s" % time.time)
 
-    await time.set_time(datetime.now(tz=time.time.tzinfo))
+    local_tz = datetime.now().astimezone().tzinfo
+    await time.set_time(datetime.now(tz=local_tz))
 
     await dev.update()
     echo("New time: %s" % time.time)
