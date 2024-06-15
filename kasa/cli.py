@@ -70,6 +70,12 @@ except ImportError:
 echo = _do_echo
 
 
+def error(msg: str):
+    """Print an error and exit."""
+    echo(f"[bold red]{msg}[/bold red]")
+    sys.exit(1)
+
+
 TYPE_TO_CLASS = {
     "plug": IotPlug,
     "switch": IotWallSwitch,
@@ -366,6 +372,9 @@ async def cli(
         credentials = None
 
     if host is None:
+        if ctx.invoked_subcommand and ctx.invoked_subcommand != "discover":
+            error("Only discover is available without --host or --alias")
+
         echo("No host name given, trying discovery..")
         return await ctx.invoke(discover)
 
@@ -763,7 +772,7 @@ async def emeter(dev: Device, index: int, name: str, year, month, erase):
     """
     if index is not None or name is not None:
         if not dev.is_strip:
-            echo("Index and name are only for power strips!")
+            error("Index and name are only for power strips!")
             return
 
         if index is not None:
@@ -773,11 +782,11 @@ async def emeter(dev: Device, index: int, name: str, year, month, erase):
 
     echo("[bold]== Emeter ==[/bold]")
     if not dev.has_emeter:
-        echo("Device has no emeter")
+        error("Device has no emeter")
         return
 
     if (year or month or erase) and not isinstance(dev, IotDevice):
-        echo("Device has no historical statistics")
+        error("Device has no historical statistics")
         return
     else:
         dev = cast(IotDevice, dev)
@@ -864,7 +873,7 @@ async def usage(dev: Device, year, month, erase):
 async def brightness(dev: Device, brightness: int, transition: int):
     """Get or set brightness."""
     if not (light := dev.modules.get(Module.Light)) or not light.is_dimmable:
-        echo("This device does not support brightness.")
+        error("This device does not support brightness.")
         return
 
     if brightness is None:
@@ -884,7 +893,7 @@ async def brightness(dev: Device, brightness: int, transition: int):
 async def temperature(dev: Device, temperature: int, transition: int):
     """Get or set color temperature."""
     if not (light := dev.modules.get(Module.Light)) or not light.is_variable_color_temp:
-        echo("Device does not support color temperature")
+        error("Device does not support color temperature")
         return
 
     if temperature is None:
@@ -910,7 +919,7 @@ async def temperature(dev: Device, temperature: int, transition: int):
 async def effect(dev: Device, ctx, effect):
     """Set an effect."""
     if not (light_effect := dev.modules.get(Module.LightEffect)):
-        echo("Device does not support effects")
+        error("Device does not support effects")
         return
     if effect is None:
         echo(
@@ -938,7 +947,7 @@ async def effect(dev: Device, ctx, effect):
 async def hsv(dev: Device, ctx, h, s, v, transition):
     """Get or set color in HSV."""
     if not (light := dev.modules.get(Module.Light)) or not light.is_color:
-        echo("Device does not support colors")
+        error("Device does not support colors")
         return
 
     if h is None and s is None and v is None:
@@ -957,7 +966,7 @@ async def hsv(dev: Device, ctx, h, s, v, transition):
 async def led(dev: Device, state):
     """Get or set (Plug's) led state."""
     if not (led := dev.modules.get(Module.Led)):
-        echo("Device does not support led.")
+        error("Device does not support led.")
         return
     if state is not None:
         echo(f"Turning led to {state}")
@@ -985,7 +994,7 @@ async def on(dev: Device, index: int, name: str, transition: int):
     """Turn the device on."""
     if index is not None or name is not None:
         if not dev.children:
-            echo("Index and name are only for devices with children.")
+            error("Index and name are only for devices with children.")
             return
 
         if index is not None:
@@ -1006,7 +1015,7 @@ async def off(dev: Device, index: int, name: str, transition: int):
     """Turn the device off."""
     if index is not None or name is not None:
         if not dev.children:
-            echo("Index and name are only for devices with children.")
+            error("Index and name are only for devices with children.")
             return
 
         if index is not None:
@@ -1027,7 +1036,7 @@ async def toggle(dev: Device, index: int, name: str, transition: int):
     """Toggle the device on/off."""
     if index is not None or name is not None:
         if not dev.children:
-            echo("Index and name are only for devices with children.")
+            error("Index and name are only for devices with children.")
             return
 
         if index is not None:
@@ -1067,7 +1076,7 @@ def _schedule_list(dev, type):
     for rule in sched.rules:
         print(rule)
     else:
-        echo(f"No rules of type {type}")
+        error(f"No rules of type {type}")
 
     return sched.rules
 
@@ -1083,7 +1092,7 @@ async def delete_rule(dev, id):
         echo(f"Deleting rule id {id}")
         return await schedule.delete_rule(rule_to_delete)
     else:
-        echo(f"No rule with id {id} was found")
+        error(f"No rule with id {id} was found")
 
 
 @cli.group(invoke_without_command=True)
@@ -1099,7 +1108,7 @@ async def presets(ctx):
 def presets_list(dev: IotBulb):
     """List presets."""
     if not dev.is_bulb or not isinstance(dev, IotBulb):
-        echo("Presets only supported on iot bulbs")
+        error("Presets only supported on iot bulbs")
         return
 
     for preset in dev.presets:
@@ -1121,7 +1130,7 @@ async def presets_modify(dev: IotBulb, index, brightness, hue, saturation, tempe
         if preset.index == index:
             break
     else:
-        echo(f"No preset found for index {index}")
+        error(f"No preset found for index {index}")
         return
 
     if brightness is not None:
@@ -1146,7 +1155,7 @@ async def presets_modify(dev: IotBulb, index, brightness, hue, saturation, tempe
 async def turn_on_behavior(dev: IotBulb, type, last, preset):
     """Modify bulb turn-on behavior."""
     if not dev.is_bulb or not isinstance(dev, IotBulb):
-        echo("Presets only supported on iot bulbs")
+        error("Presets only supported on iot bulbs")
         return
     settings = await dev.get_turn_on_behavior()
     echo(f"Current turn on behavior: {settings}")
@@ -1183,9 +1192,7 @@ async def turn_on_behavior(dev: IotBulb, type, last, preset):
 async def update_credentials(dev, username, password):
     """Update device credentials for authenticated devices."""
     if not isinstance(dev, SmartDevice):
-        raise NotImplementedError(
-            "Credentials can only be updated on authenticated devices."
-        )
+        error("Credentials can only be updated on authenticated devices.")
 
     click.confirm("Do you really want to replace the existing credentials?", abort=True)
 
@@ -1242,7 +1249,7 @@ async def feature(dev: Device, child: str, name: str, value):
         return
 
     if name not in dev.features:
-        echo(f"No feature by name '{name}'")
+        error(f"No feature by name '{name}'")
         return
 
     feat = dev.features[name]
