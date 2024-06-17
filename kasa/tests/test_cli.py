@@ -31,6 +31,7 @@ from kasa.cli import (
     state,
     sysinfo,
     temperature,
+    time,
     toggle,
     update_credentials,
     wifi,
@@ -260,6 +261,37 @@ async def test_update_credentials(dev, runner):
     )
 
 
+async def test_time_get(dev, runner):
+    """Test time get command."""
+    res = await runner.invoke(
+        time,
+        obj=dev,
+    )
+    assert res.exit_code == 0
+    assert "Current time: " in res.output
+
+
+@device_smart
+async def test_time_sync(dev, mocker, runner):
+    """Test time sync command.
+
+    Currently implemented only for SMART.
+    """
+    update = mocker.patch.object(dev, "update")
+    set_time_mock = mocker.spy(dev.modules[Module.Time], "set_time")
+    res = await runner.invoke(
+        time,
+        ["sync"],
+        obj=dev,
+    )
+    set_time_mock.assert_called()
+    update.assert_called()
+
+    assert res.exit_code == 0
+    assert "Old time: " in res.output
+    assert "New time: " in res.output
+
+
 async def test_emeter(dev: Device, mocker, runner):
     res = await runner.invoke(emeter, obj=dev)
     if not dev.has_emeter:
@@ -429,12 +461,12 @@ async def test_led(dev: Device, runner: CliRunner):
 
 async def test_json_output(dev: Device, mocker, runner):
     """Test that the json output produces correct output."""
-    mocker.patch("kasa.Discover.discover", return_value={"127.0.0.1": dev})
-    # These will mock the features to avoid accessing non-existing
+    mocker.patch("kasa.Discover.discover_single", return_value=dev)
+    # These will mock the features to avoid accessing non-existing ones
     mocker.patch("kasa.device.Device.features", return_value={})
     mocker.patch("kasa.iot.iotdevice.IotDevice.features", return_value={})
 
-    res = await runner.invoke(cli, ["--json", "state"], obj=dev)
+    res = await runner.invoke(cli, ["--host", "127.0.0.1", "--json", "state"], obj=dev)
     assert res.exit_code == 0
     assert json.loads(res.output) == dev.internal_state
 
@@ -757,7 +789,7 @@ async def test_errors(mocker, runner):
     )
     assert res.exit_code == 1
     assert (
-        "Raised error: Managed to invoke callback without a context object of type 'Device' existing."
+        "Only discover is available without --host or --alias"
         in res.output.replace("\n", "")  # Remove newlines from rich formatting
     )
     assert isinstance(res.exception, SystemExit)
@@ -828,7 +860,7 @@ async def test_feature_missing(mocker, runner):
     )
     assert "No feature by name 'missing'" in res.output
     assert "== Features ==" not in res.output
-    assert res.exit_code == 0
+    assert res.exit_code == 1
 
 
 async def test_feature_set(mocker, runner):
