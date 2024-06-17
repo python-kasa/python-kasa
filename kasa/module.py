@@ -33,6 +33,8 @@ class Module(ABC):
     """
 
     # Common Modules
+    Energy: Final[ModuleName[interfaces.Energy]] = ModuleName("Energy")
+    Fan: Final[ModuleName[interfaces.Fan]] = ModuleName("Fan")
     LightEffect: Final[ModuleName[interfaces.LightEffect]] = ModuleName("LightEffect")
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
@@ -42,7 +44,6 @@ class Module(ABC):
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
     IotAntitheft: Final[ModuleName[iot.Antitheft]] = ModuleName("anti_theft")
     IotCountdown: Final[ModuleName[iot.Countdown]] = ModuleName("countdown")
-    IotEmeter: Final[ModuleName[iot.Emeter]] = ModuleName("emeter")
     IotMotion: Final[ModuleName[iot.Motion]] = ModuleName("motion")
     IotSchedule: Final[ModuleName[iot.Schedule]] = ModuleName("schedule")
     IotUsage: Final[ModuleName[iot.Usage]] = ModuleName("usage")
@@ -62,8 +63,6 @@ class Module(ABC):
     )
     ContactSensor: Final[ModuleName[smart.ContactSensor]] = ModuleName("ContactSensor")
     DeviceModule: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
-    Energy: Final[ModuleName[smart.Energy]] = ModuleName("Energy")
-    Fan: Final[ModuleName[smart.Fan]] = ModuleName("Fan")
     Firmware: Final[ModuleName[smart.Firmware]] = ModuleName("Firmware")
     FrostProtection: Final[ModuleName[smart.FrostProtection]] = ModuleName(
         "FrostProtection"

@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
-from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
 from ..module import Module
@@ -188,7 +187,7 @@ class IotDevice(Device):
         super().__init__(host=host, config=config, protocol=protocol)
 
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
-        self._supported_modules: dict[str, IotModule] | None = None
+        self._supported_modules: dict[str | ModuleName[Module], IotModule] | None = None
         self._legacy_features: set[str] = set()
         self._children: Mapping[str, IotDevice] = {}
         self._modules: dict[str | ModuleName[Module], IotModule] = {}
@@ -199,15 +198,16 @@ class IotDevice(Device):
         return list(self._children.values())
 
     @property
+    @requires_update
     def modules(self) -> ModuleMapping[IotModule]:
         """Return the device modules."""
         if TYPE_CHECKING:
-            return cast(ModuleMapping[IotModule], self._modules)
-        return self._modules
+            return cast(ModuleMapping[IotModule], self._supported_modules)
+        return self._supported_modules
 
     def add_module(self, name: str | ModuleName[Module], module: IotModule):
         """Register a module."""
-        if name in self.modules:
+        if name in self._modules:
             _LOGGER.debug("Module %s already registered, ignoring..." % name)
             return
 
@@ -274,14 +274,6 @@ class IotDevice(Device):
 
     @property  # type: ignore
     @requires_update
-    def supported_modules(self) -> list[str | ModuleName[Module]]:
-        """Return a set of modules supported by the device."""
-        # TODO: this should rather be called `features`, but we don't want to break
-        #       the API now. Maybe just deprecate it and point the users to use this?
-        return list(self._modules.keys())
-
-    @property  # type: ignore
-    @requires_update
     def has_emeter(self) -> bool:
         """Return True if device has an energy meter."""
         return "ENE" in self._legacy_features
@@ -321,6 +313,11 @@ class IotDevice(Device):
 
     async def _initialize_modules(self):
         """Initialize modules not added in init."""
+        if self.has_emeter:
+            _LOGGER.debug(
+                "The device has emeter, querying its information along sysinfo"
+            )
+            self.add_module(Module.Energy, Emeter(self, self.emeter_type))
 
     async def _initialize_features(self):
         """Initialize common features."""
@@ -357,29 +354,13 @@ class IotDevice(Device):
                 )
             )
 
-        for module in self._modules.values():
+        for module in self._supported_modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)
 
     async def _modular_update(self, req: dict) -> None:
         """Execute an update query."""
-        if self.has_emeter:
-            _LOGGER.debug(
-                "The device has emeter, querying its information along sysinfo"
-            )
-            self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
-
-        # TODO: perhaps modules should not have unsupported modules,
-        #  making separate handling for this unnecessary
-        if self._supported_modules is None:
-            supported = {}
-            for module in self._modules.values():
-                if module.is_supported:
-                    supported[module._module] = module
-
-            self._supported_modules = supported
-
         request_list = []
         est_response_size = 1024 if "system" in req else 0
         for module in self._modules.values():
@@ -410,6 +391,15 @@ class IotDevice(Device):
         for response in responses:
             update = {**update, **response}
         self._last_update = update
+
+        # IOT modules are added as default but could be unsupported post first update
+        if self._supported_modules is None:
+            supported = {}
+            for module_name, module in self._modules.items():
+                if module.is_supported:
+                    supported[module_name] = module
+
+            self._supported_modules = supported
 
     def update_from_discover_info(self, info: dict[str, Any]) -> None:
         """Update state from info from the discover call."""
@@ -556,74 +546,6 @@ class IotDevice(Device):
         :param str mac: mac in hexadecimal with colons, e.g. 01:23:45:67:89:ab
         """
         return await self._query_helper("system", "set_mac_addr", {"mac": mac})
-
-    @property
-    @requires_update
-    def emeter_realtime(self) -> EmeterStatus:
-        """Return current energy readings."""
-        self._verify_emeter()
-        return EmeterStatus(self.modules[Module.IotEmeter].realtime)
-
-    async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrieve current energy readings."""
-        self._verify_emeter()
-        return EmeterStatus(await self.modules[Module.IotEmeter].get_realtime())
-
-    @property
-    @requires_update
-    def emeter_today(self) -> float | None:
-        """Return today's energy consumption in kWh."""
-        self._verify_emeter()
-        return self.modules[Module.IotEmeter].emeter_today
-
-    @property
-    @requires_update
-    def emeter_this_month(self) -> float | None:
-        """Return this month's energy consumption in kWh."""
-        self._verify_emeter()
-        return self.modules[Module.IotEmeter].emeter_this_month
-
-    async def get_emeter_daily(
-        self, year: int | None = None, month: int | None = None, kwh: bool = True
-    ) -> dict:
-        """Retrieve daily statistics for a given month.
-
-        :param year: year for which to retrieve statistics (default: this year)
-        :param month: month for which to retrieve statistics (default: this
-                      month)
-        :param kwh: return usage in kWh (default: True)
-        :return: mapping of day of month to value
-        """
-        self._verify_emeter()
-        return await self.modules[Module.IotEmeter].get_daystat(
-            year=year, month=month, kwh=kwh
-        )
-
-    @requires_update
-    async def get_emeter_monthly(
-        self, year: int | None = None, kwh: bool = True
-    ) -> dict:
-        """Retrieve monthly statistics for a given year.
-
-        :param year: year for which to retrieve statistics (default: this year)
-        :param kwh: return usage in kWh (default: True)
-        :return: dict: mapping of month to value
-        """
-        self._verify_emeter()
-        return await self.modules[Module.IotEmeter].get_monthstat(year=year, kwh=kwh)
-
-    @requires_update
-    async def erase_emeter_stats(self) -> dict:
-        """Erase energy meter statistics."""
-        self._verify_emeter()
-        return await self.modules[Module.IotEmeter].erase_stats()
-
-    @requires_update
-    async def current_consumption(self) -> float:
-        """Get the current power consumption in Watt."""
-        self._verify_emeter()
-        response = self.emeter_realtime
-        return float(response["power"])
 
     async def reboot(self, delay: int = 1) -> None:
         """Reboot the device.

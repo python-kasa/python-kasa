@@ -19,7 +19,6 @@ from .deviceconfig import (
     DeviceEncryptionType,
     DeviceFamily,
 )
-from .emeterstatus import EmeterStatus
 from .exceptions import KasaException
 from .feature import Feature
 from .iotprotocol import IotProtocol
@@ -324,27 +323,6 @@ class Device(ABC):
         """Return the time that the device was turned on or None if turned off."""
 
     @abstractmethod
-    async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrieve current energy readings."""
-
-    @property
-    @abstractmethod
-    def emeter_realtime(self) -> EmeterStatus:
-        """Get the emeter status."""
-
-    @property
-    @abstractmethod
-    def emeter_this_month(self) -> float | None:
-        """Get the emeter value for this month."""
-
-    @property
-    @abstractmethod
-    def emeter_today(self) -> float | None | Any:
-        """Get the emeter value for today."""
-        # Return type of Any ensures consumers being shielded from the return
-        # type by @update_required are not affected.
-
-    @abstractmethod
     async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""
 
@@ -373,12 +351,15 @@ class Device(ABC):
     }
 
     def _get_replacing_attr(self, module_name: ModuleName, *attrs):
-        if module_name not in self.modules:
+        # If module name is None check self
+        if not module_name:
+            check = self
+        elif (check := self.modules.get(module_name)) is None:
             return None
 
         for attr in attrs:
-            if hasattr(self.modules[module_name], attr):
-                return getattr(self.modules[module_name], attr)
+            if hasattr(check, attr):
+                return attr
 
         return None
 
@@ -411,6 +392,16 @@ class Device(ABC):
         # light preset attributes
         "presets": (Module.LightPreset, ["_deprecated_presets", "preset_states_list"]),
         "save_preset": (Module.LightPreset, ["_deprecated_save_preset"]),
+        # Emeter attribues
+        "get_emeter_realtime": (Module.Energy, ["get_status"]),
+        "emeter_realtime": (Module.Energy, ["status"]),
+        "emeter_today": (Module.Energy, ["consumption_today"]),
+        "emeter_this_month": (Module.Energy, ["consumption_this_month"]),
+        "current_consumption": (Module.Energy, ["current_consumption"]),
+        "get_emeter_daily": (Module.Energy, ["get_daily_stats"]),
+        "get_emeter_monthly": (Module.Energy, ["get_monthly_stats"]),
+        # Other attributes
+        "supported_modules": (None, ["modules"]),
     }
 
     def __getattr__(self, name):
@@ -427,11 +418,10 @@ class Device(ABC):
             (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
             is not None
         ):
-            module_name = dep_attr[0]
-            msg = (
-                f"{name} is deprecated, use: "
-                + f"Module.{module_name} in device.modules instead"
-            )
+            mod = dep_attr[0]
+            dev_or_mod = self.modules[mod] if mod else self
+            replacing = f"Module.{mod} in device.modules" if mod else replacing_attr
+            msg = f"{name} is deprecated, use: {replacing} instead"
             warn(msg, DeprecationWarning, stacklevel=1)
-            return replacing_attr
+            return getattr(dev_or_mod, replacing_attr)
         raise AttributeError(f"Device has no attribute {name!r}")
