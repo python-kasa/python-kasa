@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0.dev5](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev5) (2024-06-17)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev4...0.7.0.dev5)
+
+**Implemented enhancements:**
+
+- Add timezone to on\_since attributes [\#978](https://github.com/python-kasa/python-kasa/pull/978) (@sdb9696)
+- Add common energy module and deprecate device emeter attributes [\#976](https://github.com/python-kasa/python-kasa/pull/976) (@sdb9696)
+- Add type hints to feature set\_value [\#974](https://github.com/python-kasa/python-kasa/pull/974) (@sdb9696)
+- Handle unknown light effect names and only calculate effect list once [\#973](https://github.com/python-kasa/python-kasa/pull/973) (@sdb9696)
+- Add time sync command [\#951](https://github.com/python-kasa/python-kasa/pull/951) (@rytilahti)
+
+**Fixed bugs:**
+
+- Disallow non-targeted device commands [\#982](https://github.com/python-kasa/python-kasa/pull/982) (@rytilahti)
+- Add supported check to light transition module [\#971](https://github.com/python-kasa/python-kasa/pull/971) (@sdb9696)
+
+**Project maintenance:**
+
+- Add fixture for L920-5\(EU\) 1.0.7 [\#972](https://github.com/python-kasa/python-kasa/pull/972) (@rytilahti)
+
 ## [0.7.0.dev4](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev4) (2024-06-10)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev3...0.7.0.dev4)
