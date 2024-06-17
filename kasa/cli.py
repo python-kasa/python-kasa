@@ -9,6 +9,7 @@ import logging
 import re
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime
 from functools import singledispatch, wraps
 from pprint import pformat as pf
 from typing import Any, cast
@@ -967,13 +968,41 @@ async def led(dev: Device, state):
         return led.led
 
 
-@cli.command()
+@cli.group(invoke_without_command=True)
+@click.pass_context
+async def time(ctx: click.Context):
+    """Get and set time."""
+    if ctx.invoked_subcommand is None:
+        await ctx.invoke(time_get)
+
+
+@time.command(name="get")
 @pass_dev
-async def time(dev):
+async def time_get(dev: Device):
     """Get the device time."""
     res = dev.time
     echo(f"Current time: {res}")
     return res
+
+
+@time.command(name="sync")
+@pass_dev
+async def time_sync(dev: SmartDevice):
+    """Set the device time to current time."""
+    if not isinstance(dev, SmartDevice):
+        raise NotImplementedError("setting time currently only implemented on smart")
+
+    if (time := dev.modules.get(Module.Time)) is None:
+        echo("Device does not have time module")
+        return
+
+    echo("Old time: %s" % time.time)
+
+    local_tz = datetime.now().astimezone().tzinfo
+    await time.set_time(datetime.now(tz=local_tz))
+
+    await dev.update()
+    echo("New time: %s" % time.time)
 
 
 @cli.command()

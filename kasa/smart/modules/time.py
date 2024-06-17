@@ -51,7 +51,13 @@ class Time(SmartModule):
     async def set_time(self, dt: datetime):
         """Set device time."""
         unixtime = mktime(dt.timetuple())
+        offset = cast(timedelta, dt.utcoffset())
+        diff = offset / timedelta(minutes=1)
         return await self.call(
             "set_device_time",
-            {"timestamp": unixtime, "time_diff": dt.utcoffset(), "region": dt.tzname()},
+            {
+                "timestamp": int(unixtime),
+                "time_diff": int(diff),
+                "region": dt.tzname(),
+            },
         )
