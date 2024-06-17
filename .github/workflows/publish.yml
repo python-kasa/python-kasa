@@ -3,6 +3,9 @@ on:
   release:
     types: [published]
 
+env:
+  UV_VERSION: 0.4.5
+
 jobs:
   build-n-publish:
     name: Build release packages
@@ -17,19 +20,10 @@ jobs:
       with:
         python-version: "3.x"
 
-    - name: Install pypa/build
-      run: >-
-        python -m
-        pip install
-        build
-        --user
+    - name: Install uv
+      run: |-
+        pipx install uv==${{ inputs.uv-version }} --python "${{ steps.setup-python.outputs.python-path }}"
     - name: Build a binary wheel and a source tarball
-      run: >-
-        python -m
-        build
-        --sdist
-        --wheel
-        --outdir dist/
-        .
+      run: uv build
     - name: Publish release on pypi
       uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,4 +1,12 @@
 repos:
+
+- repo: https://github.com/astral-sh/uv-pre-commit
+  # uv version.
+  rev: 0.4.5
+  hooks:
+    # Update the uv lockfile
+    - id: uv-lock
+
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.6.0
   hooks:
@@ -28,7 +36,7 @@ repos:
   # for more accurate checking than using the pre-commit mypy mirror
   - id: mypy
     name: mypy
-    entry: devtools/run-in-env.sh mypy
+    entry: uv run mypy
     language: system
     types_or: [python, pyi]
     require_serial: true
@@ -39,8 +47,7 @@ repos:
   - id: generate-supported
     name: Generate supported devices
     description: This hook generates the supported device sections of README.md and SUPPORTED.md
-    entry: devtools/run-in-env.sh ./devtools/generate_supported.py
+    entry: uv run ./devtools/generate_supported.py
     language: system # Required or pre-commit creates a new venv
-    verbose: true # Show output on success
     types: [json]
     pass_filenames: false # passing filenames causes the hook to run in batches against all-files

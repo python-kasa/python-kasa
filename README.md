@@ -20,11 +20,12 @@ You can install the most recent release using pip:
 pip install python-kasa
 ```
 
-Alternatively, you can clone this repository and use poetry to install the development version:
+Alternatively, you can clone this repository and use `uv` to install the development version:
 ```
 git clone https://github.com/python-kasa/python-kasa.git
 cd python-kasa/
-poetry install
+uv sync --all-extras
+uv run kasa
 ```
 
 If you have not yet provisioned your device, [you can do so using the cli tool](https://python-kasa.readthedocs.io/en/latest/cli.html#provisioning).

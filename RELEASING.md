@@ -33,21 +33,21 @@ git checkout -b release/$NEW_RELEASE
 ### Update the version number
 
 ```bash
-poetry version $NEW_RELEASE
+sed -i "0,/version = /{s/version = .*/version = \"${NEW_RELEASE}\"/}" pyproject.toml
 ```
 
 ### Update dependencies
 
 ```bash
-poetry install --all-extras --sync
-poetry update
+uv sync --all-extras
+uv lock --upgrade
 ```
 
 ### Run pre-commit and tests
 
 ```bash
-pre-commit run --all-files
-pytest kasa
+uv run pre-commit run --all-files
+uv run pytest
 ```
 
 ### Create release summary (skip for dev releases)
@@ -215,7 +215,7 @@ git cherry-pick commitSHA2 -S
 ### Update the version number
 
 ```bash
-poetry version $NEW_RELEASE
+sed -i "0,/version = /{s/version = .*/version = \"${NEW_RELEASE}\"/}" pyproject.toml
 ```
 
 ### Manually edit the changelog
