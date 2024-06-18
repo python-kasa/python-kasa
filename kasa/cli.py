@@ -379,6 +379,7 @@ async def cli(
         echo("No host name given, trying discovery..")
         return await ctx.invoke(discover)
 
+    device_updated = False
     if type is not None:
         dev = TYPE_TO_CLASS[type](host)
     elif device_family and encrypt_type:
@@ -396,11 +397,19 @@ async def cli(
             connection_type=ctype,
         )
         dev = await Device.connect(config=config)
+        device_updated = True
     else:
-        echo(
-            "No --type or --device-family and --encrypt-type defined, "
-            + f"discovering for {discovery_timeout} seconds.."
-        )
+        if device_family or encrypt_type:
+            echo(
+                "--device-family and --encrypt-type options must both be "
+                "provided or they are ignored\n"
+                f"discovering for {discovery_timeout} seconds.."
+            )
+        else:
+            echo(
+                "No --type or --device-family and --encrypt-type defined, "
+                + f"discovering for {discovery_timeout} seconds.."
+            )
         dev = await Discover.discover_single(
             host,
             port=port,
@@ -411,7 +420,7 @@ async def cli(
 
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.
-    if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_family:
+    if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_updated:
         await dev.update()
 
     @asynccontextmanager
