@@ -47,13 +47,13 @@ Devices support different functionality that are exposed via
 
 >>> for module_name in dev.modules:
 >>>     print(module_name)
+Energy
 schedule
 usage
 anti_theft
 time
 cloud
 Led
-emeter
 
 >>> led_module = dev.modules["Led"]
 >>> print(led_module.led)
@@ -84,14 +84,15 @@ added to the API.
 state
 rssi
 on_since
+current_consumption
+consumption_today
+consumption_this_month
+consumption_total
+voltage
+current
 cloud_connection
 led
-current_power_w
-today_energy_kwh
-consumption_this_month
-total_energy_kwh
-voltage
-current_a
+
 >>> led_feature = dev.features["led"]
 >>> print(led_feature.value)
 True
