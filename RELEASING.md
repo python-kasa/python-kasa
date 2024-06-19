@@ -30,21 +30,23 @@ git checkout -b release/$NEW_RELEASE
 ## Update the version number
 
 ```bash
-poetry version $NEW_RELEASE
+sed -i "0,/version = /{s/version = .*/version = \"${NEW_RELEASE}\"/}" pyproject.toml
 ```
 
 ## Update dependencies
 
 ```bash
-poetry install --all-extras --sync
-poetry update
+uv lock
+uv sync --all-extras
 ```
 
 ## Run pre-commit and tests
 
 ```bash
+source .venv/bin/activate
 pre-commit run --all-files
 pytest kasa
+deactivate
 ```
 
 ## Create release summary (skip for dev releases)

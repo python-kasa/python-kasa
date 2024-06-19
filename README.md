@@ -35,11 +35,11 @@ pip install python-kasa[speedups, shell]
 ```
 With `[speedups]`, the protocol overhead is roughly an order of magnitude lower (benchmarks available in devtools).
 
-Alternatively, you can clone this repository and use poetry to install the development version:
-```
+Alternatively, you can clone this repository and use [uv](https://github.com/astral-sh/uv) to install the development version:
+```bash
 git clone https://github.com/python-kasa/python-kasa.git
 cd python-kasa/
-poetry install
+uv sync --all-extras
 ```
 
 If you have not yet provisioned your device, [you can do so using the cli tool](https://python-kasa.readthedocs.io/en/latest/cli.html#provisioning).
