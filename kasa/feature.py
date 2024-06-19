@@ -1,4 +1,67 @@
-"""Generic interface for defining device features."""
+"""Interact with feature.
+
+Features are implemented by devices to represent individual pieces of functionality like
+state, time, firmware.
+
+>>> from kasa import Discover, Module
+>>>
+>>> dev = await Discover.discover_single(
+>>>     "127.0.0.3",
+>>>     username="user@example.com",
+>>>     password="great_password"
+>>> )
+>>> await dev.update()
+>>> print(dev.alias)
+Living Room Bulb
+
+Features allow for instrospection and can be interacted with as new features are added
+to the API:
+
+>>> for feature_id, feature in dev.features.items():
+>>>     print(f"{feature.name} ({feature_id}): {feature.value}")
+Device ID (device_id): 0000000000000000000000000000000000000000
+State (state): True
+Signal Level (signal_level): 2
+RSSI (rssi): -52
+SSID (ssid): #MASKED_SSID#
+Overheated (overheated): False
+Brightness (brightness): 100
+Cloud connection (cloud_connection): True
+HSV (hsv): HSV(hue=0, saturation=100, value=100)
+Color temperature (color_temperature): 2700
+Auto update enabled (auto_update_enabled): False
+Update available (update_available): False
+Current firmware version (current_firmware_version): 1.1.6 Build 240130 Rel.173828
+Available firmware version (available_firmware_version): 1.1.6 Build 240130 Rel.173828
+Light effect (light_effect): Off
+Light preset (light_preset): Not set
+Smooth transition on (smooth_transition_on): 2
+Smooth transition off (smooth_transition_off): 2
+Time (time): 2024-02-23 02:40:15+01:00
+
+To see whether a device supports a feature, check for the existence of it:
+
+>>> if feature := dev.features.get("brightness"):
+>>>     print(feature.value)
+100
+
+You can update the value of a feature
+
+>>> await feature.set_value(50)
+>>> await dev.update()
+>>> print(feature.value)
+50
+
+Features have types that can be used for introspection:
+
+>>> feature = dev.features["light_preset"]
+>>> print(feature.type)
+Type.Choice
+
+>>> print(feature.choices)
+['Not set', 'Light preset 1', 'Light preset 2', 'Light preset 3',\
+ 'Light preset 4', 'Light preset 5', 'Light preset 6', 'Light preset 7']
+"""
 
 from __future__ import annotations
 

@@ -173,16 +173,9 @@ Current state: {'total': 133.105, 'power': 108.223577, 'current': 0.54463, 'volt
 
 If you want to use this library in your own project, a good starting point is [the tutorial in the documentation](https://python-kasa.readthedocs.io/en/latest/tutorial.html).
 
-You can find several code examples in the API documentation of each of the implementation base classes, check out the [documentation for the base class shared by all supported devices](https://python-kasa.readthedocs.io/en/latest/smartdevice.html).
+You can find several code examples in the API documentation [How to guides](https://python-kasa.readthedocs.io/en/latest/guides.html).
 
-[The library design and module structure is described in a separate page](https://python-kasa.readthedocs.io/en/latest/design.html).
-
-The device type specific documentation can be found in their separate pages:
-* [Plugs](https://python-kasa.readthedocs.io/en/latest/smartplug.html)
-* [Bulbs](https://python-kasa.readthedocs.io/en/latest/smartbulb.html)
-* [Dimmers](https://python-kasa.readthedocs.io/en/latest/smartdimmer.html)
-* [Power strips](https://python-kasa.readthedocs.io/en/latest/smartstrip.html)
-* [Light strips](https://python-kasa.readthedocs.io/en/latest/smartlightstrip.html)
+Information about the library design and the way the devices work can be found in the [topics section](https://python-kasa.readthedocs.io/en/latest/topics.html).
 
 ## Contributing
 

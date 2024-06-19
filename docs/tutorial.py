@@ -1,16 +1,5 @@
 # ruff: noqa
 """
-The kasa library is fully async and methods that perform IO need to be run inside an async couroutine.
-
-These examples assume you are following the tutorial inside `asyncio REPL` (python -m asyncio) or the code
-is running inside an async function (`async def`).
-
-
-The main entry point for the API is :meth:`~kasa.Discover.discover` and
-:meth:`~kasa.Discover.discover_single` which return Device objects.
-
-Most newer devices require your TP-Link cloud username and password, but this can be omitted for older devices.
-
 >>> from kasa import Discover
 
 :func:`~kasa.Discover.discover` returns a dict[str,Device] of devices on your network:
