@@ -101,9 +101,7 @@ DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in Device
 # Block list of commands which require no update
 SKIP_UPDATE_COMMANDS = ["raw-command", "command"]
 
-click.anyio_backend = "asyncio"
-
-pass_dev = click.make_pass_decorator(Device)
+pass_dev = click.make_pass_decorator(Device)  # type: ignore[type-abstract]
 
 
 def CatchAllExceptions(cls):
@@ -1005,7 +1003,7 @@ async def time_get(dev: Device):
 
 @time.command(name="sync")
 @pass_dev
-async def time_sync(dev: SmartDevice):
+async def time_sync(dev: Device):
     """Set the device time to current time."""
     if not isinstance(dev, SmartDevice):
         raise NotImplementedError("setting time currently only implemented on smart")
@@ -1143,7 +1141,7 @@ async def presets(ctx):
 
 @presets.command(name="list")
 @pass_dev
-def presets_list(dev: IotBulb):
+def presets_list(dev: Device):
     """List presets."""
     if not dev.is_bulb or not isinstance(dev, IotBulb):
         error("Presets only supported on iot bulbs")
@@ -1162,7 +1160,7 @@ def presets_list(dev: IotBulb):
 @click.option("--saturation", type=int)
 @click.option("--temperature", type=int)
 @pass_dev
-async def presets_modify(dev: IotBulb, index, brightness, hue, saturation, temperature):
+async def presets_modify(dev: Device, index, brightness, hue, saturation, temperature):
     """Modify a preset."""
     for preset in dev.presets:
         if preset.index == index:
@@ -1190,7 +1188,7 @@ async def presets_modify(dev: IotBulb, index, brightness, hue, saturation, tempe
 @click.option("--type", type=click.Choice(["soft", "hard"], case_sensitive=False))
 @click.option("--last", is_flag=True)
 @click.option("--preset", type=int)
-async def turn_on_behavior(dev: IotBulb, type, last, preset):
+async def turn_on_behavior(dev: Device, type, last, preset):
     """Modify bulb turn-on behavior."""
     if not dev.is_bulb or not isinstance(dev, IotBulb):
         error("Presets only supported on iot bulbs")
@@ -1248,7 +1246,7 @@ async def shell(dev: Device):
     logging.getLogger("asyncio").setLevel(logging.WARNING)
     loop = asyncio.get_event_loop()
     try:
-        await embed(
+        await embed(  # type: ignore[func-returns-value]
             globals=globals(),
             locals=locals(),
             return_asyncio_coroutine=True,

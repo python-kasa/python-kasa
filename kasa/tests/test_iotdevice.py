@@ -207,7 +207,7 @@ async def test_mac(dev):
 
 @device_iot
 async def test_representation(dev):
-    pattern = re.compile("<DeviceType\..+ at .+? - .*? \(.+?\)>")
+    pattern = re.compile(r"<DeviceType\..+ at .+? - .*? \(.+?\)>")
     assert pattern.match(str(dev))
 
 

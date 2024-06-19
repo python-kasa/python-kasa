@@ -231,7 +231,9 @@ def discovery_data(request, mocker):
         return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
 
 
-@pytest.fixture(params=UNSUPPORTED_DEVICES.values(), ids=UNSUPPORTED_DEVICES.keys())
+@pytest.fixture(
+    params=UNSUPPORTED_DEVICES.values(), ids=list(UNSUPPORTED_DEVICES.keys())
+)
 def unsupported_device_info(request, mocker):
     """Return unsupported devices for cli and discovery tests."""
     discovery_data = request.param

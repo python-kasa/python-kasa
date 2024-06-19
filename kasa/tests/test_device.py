@@ -6,6 +6,7 @@ import importlib
 import inspect
 import pkgutil
 import sys
+from contextlib import AbstractContextManager
 from unittest.mock import Mock, patch
 
 import pytest
@@ -161,7 +162,7 @@ async def _test_attribute(
     dev: Device, attribute_name, is_expected, module_name, *args, will_raise=False
 ):
     if is_expected and will_raise:
-        ctx = pytest.raises(will_raise)
+        ctx: AbstractContextManager = pytest.raises(will_raise)
     elif is_expected:
         ctx = pytest.deprecated_call(match=(f"{attribute_name} is deprecated, use:"))
     else:

@@ -36,7 +36,7 @@ class HttpClient:
 
     def __init__(self, config: DeviceConfig) -> None:
         self._config = config
-        self._client_session: aiohttp.ClientSession = None
+        self._client_session: aiohttp.ClientSession | None = None
         self._jar = aiohttp.CookieJar(unsafe=True, quote_cookie=False)
         self._last_url = URL(f"http://{self._config.host}/")
 

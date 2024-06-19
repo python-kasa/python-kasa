@@ -5,7 +5,7 @@ import pytest
 from voluptuous import (
     All,
     Any,
-    Coerce,  # type: ignore
+    Coerce,
     Range,
     Schema,
 )
@@ -21,14 +21,14 @@ CURRENT_CONSUMPTION_SCHEMA = Schema(
     Any(
         {
             "voltage": Any(All(float, Range(min=0, max=300)), None),
-            "power": Any(Coerce(float, Range(min=0)), None),
-            "total": Any(Coerce(float, Range(min=0)), None),
-            "current": Any(All(float, Range(min=0)), None),
+            "power": Any(Coerce(float), None),
+            "total": Any(Coerce(float), None),
+            "current": Any(All(float), None),
             "voltage_mv": Any(All(float, Range(min=0, max=300000)), int, None),
-            "power_mw": Any(Coerce(float, Range(min=0)), None),
-            "total_wh": Any(Coerce(float, Range(min=0)), None),
-            "current_ma": Any(All(float, Range(min=0)), int, None),
-            "slot_id": Any(Coerce(int, Range(min=0)), None),
+            "power_mw": Any(Coerce(float), None),
+            "total_wh": Any(Coerce(float), None),
+            "current_ma": Any(All(float), int, None),
+            "slot_id": Any(Coerce(int), None),
         },
         None,
     )

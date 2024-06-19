@@ -16,17 +16,6 @@ repos:
       args: [--fix, --exit-non-zero-on-fix]
     - id: ruff-format
 
-- repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.9.0
-  hooks:
-  - id: mypy
-    additional_dependencies: [types-click]
-    exclude: |
-      (?x)^(
-          kasa/modulemapping\.py|
-      )$
-
-
 - repo: https://github.com/PyCQA/doc8
   rev: 'v1.1.1'
   hooks:
@@ -35,6 +24,18 @@ repos:
 
 - repo: local
   hooks:
+  # Run mypy in the virtual environment so it uses the installed dependencies
+  # for more accurate checking than using the pre-commit mypy mirror
+  - id: mypy
+    name: mypy
+    entry: devtools/run-in-env.sh mypy
+    language: script
+    types_or: [python, pyi]
+    require_serial: true
+    exclude: |  # exclude required because --all-files passes py and pyi
+      (?x)^(
+          kasa/modulemapping\.py|
+      )$
   - id: generate-supported
     name: Generate supported devices
     description: This hook generates the supported device sections of README.md and SUPPORTED.md
