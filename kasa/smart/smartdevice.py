@@ -6,7 +6,7 @@ import base64
 import logging
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -98,9 +98,7 @@ class SmartDevice(Device):
     @property
     def modules(self) -> ModuleMapping[SmartModule]:
         """Return the device modules."""
-        if TYPE_CHECKING:  # Needed for python 3.8
-            return cast(ModuleMapping[SmartModule], self._modules)
-        return self._modules
+        return cast(ModuleMapping[SmartModule], self._modules)
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
