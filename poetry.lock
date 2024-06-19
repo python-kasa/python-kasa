@@ -2243,4 +2243,4 @@ speedups = ["kasa-crypt", "orjson"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "4c764f6e2bf98fb41e8f9ceeeb8e2fe86ea0c29c5018951509c30bde2e2f5305"
+content-hash = "3aa0872e4188aad6e75025d47b026fa2a922bf039df38bfaac15f409e38d6889"
