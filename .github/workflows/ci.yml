@@ -62,7 +62,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.9", "pypy-3.10"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "pypy-3.9", "pypy-3.10"]
         os: [ubuntu-latest, macos-latest, windows-latest]
         extras: [false, true]
         exclude:
@@ -70,8 +70,6 @@ jobs:
             extras: true
           # setup-python not currently working with macos-latest
           # https://github.com/actions/setup-python/issues/808
-          - os: macos-latest
-            python-version: "3.8"
           - os: macos-latest
             python-version: "3.9"
           - os: windows-latest
@@ -81,9 +79,6 @@ jobs:
             extras: true
           - os: ubuntu-latest
             python-version: "pypy-3.10"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "3.8"
             extras: true
           - os: ubuntu-latest
             python-version: "3.9"
