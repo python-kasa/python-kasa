@@ -18,8 +18,8 @@ import errno
 import logging
 import socket
 import struct
+from collections.abc import Generator
 from pprint import pformat as pf
-from typing import Generator
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout

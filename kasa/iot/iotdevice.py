@@ -18,8 +18,9 @@ import collections.abc
 import functools
 import inspect
 import logging
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig

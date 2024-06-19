@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 from ...interfaces import LightPreset as LightPresetInterface
 from ...interfaces import LightState

@@ -86,7 +86,8 @@ import binascii
 import ipaddress
 import logging
 import socket
-from typing import Awaitable, Callable, Dict, Optional, Type, cast
+from collections.abc import Awaitable
+from typing import Callable, Dict, Optional, Type, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout

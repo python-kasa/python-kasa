@@ -21,7 +21,7 @@ include = [
 kasa = "kasa.cli:cli"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 asyncclick = ">=8.1.7"
 pydantic = ">=1.10.15"
 cryptography = ">=1.9"
@@ -58,7 +58,7 @@ xdoctest = "*"
 coverage = {version = "*", extras = ["toml"]}
 pytest-timeout = "^2"
 pytest-freezer = "^0.4"
-mypy = "1.9.0"
+mypy = "^1"
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]
