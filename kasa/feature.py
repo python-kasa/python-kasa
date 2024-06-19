@@ -73,7 +73,6 @@ from typing import TYPE_CHECKING, Any, Callable
 if TYPE_CHECKING:
     from .device import Device
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -203,22 +202,24 @@ class Feature:
             raise ValueError("Not an action and no attribute_getter set")
 
         container = self.container if self.container is not None else self.device
-        if isinstance(self.attribute_getter, Callable):
+        if callable(self.attribute_getter):
             return self.attribute_getter(container)
         return getattr(container, self.attribute_getter)
 
-    async def set_value(self, value):
+    async def set_value(self, value: int | float | bool | str | Enum | None) -> Any:
         """Set the value."""
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
         if self.type == Feature.Type.Number:  # noqa: SIM102
+            if not isinstance(value, (int, float)):
+                raise ValueError("value must be a number")
             if value < self.minimum_value or value > self.maximum_value:
                 raise ValueError(
                     f"Value {value} out of range "
                     f"[{self.minimum_value}, {self.maximum_value}]"
                 )
         elif self.type == Feature.Type.Choice:  # noqa: SIM102
-            if value not in self.choices:
+            if not self.choices or value not in self.choices:
                 raise ValueError(
                     f"Unexpected value for {self.name}: {value}"
                     f" - allowed: {self.choices}"

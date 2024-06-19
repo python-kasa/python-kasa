@@ -116,9 +116,16 @@ async def test_initial_update_no_emeter(dev, mocker):
     dev._legacy_features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
-    # 2 calls are necessary as some devices crash on unexpected modules
+    # child calls will happen if a child has a module with a query (e.g. schedule)
+    child_calls = 0
+    for child in dev.children:
+        for module in child.modules.values():
+            if module.query():
+                child_calls += 1
+                break
+    # 2 parent are necessary as some devices crash on unexpected modules
     # See #105, #120, #161
-    assert spy.call_count == 2
+    assert spy.call_count == 2 + child_calls
 
 
 @device_iot

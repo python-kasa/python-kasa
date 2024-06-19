@@ -30,3 +30,8 @@ class Led(IotModule, LedInterface):
     async def set_led(self, state: bool):
         """Set the state of the led (night mode)."""
         return await self.call("set_led_off", {"off": int(not state)})
+
+    @property
+    def is_supported(self) -> bool:
+        """Return whether the module is supported by the device."""
+        return "led_off" in self.data

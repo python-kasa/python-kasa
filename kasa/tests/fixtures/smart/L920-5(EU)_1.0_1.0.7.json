@@ -1,0 +1,350 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "light_strip",
+                "ver_code": 1
+            },
+            {
+                "id": "light_strip_lighting_effect",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "brightness",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "color_temperature",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "preset",
+                "ver_code": 3
+            },
+            {
+                "id": "color",
+                "ver_code": 1
+            },
+            {
+                "id": "on_off_gradually",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "music_rhythm",
+                "ver_code": 2
+            },
+            {
+                "id": "segment",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "L920-5(EU)",
+        "device_type": "SMART.TAPOBULB",
+        "factory_default": true,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "1C-61-B4-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "AES",
+            "http_port": 80,
+            "is_support_https": false
+        },
+        "obd_src": "tplink",
+        "owner": ""
+    },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 1
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_device_info": {
+        "avatar": "",
+        "brightness": 100,
+        "color_temp": 9000,
+        "color_temp_range": [
+            9000,
+            9000
+        ],
+        "default_states": {
+            "state": {
+                "brightness": 100,
+                "color_temp": 9000,
+                "hue": 0,
+                "saturation": 100
+            },
+            "type": "last_states"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": true,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.0.7 Build 220119 Rel.221439",
+        "has_set_location_info": false,
+        "hue": 0,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "",
+        "latitude": 0,
+        "lighting_effect": {
+            "brightness": 0,
+            "custom": 0,
+            "display_colors": [],
+            "enable": 1,
+            "id": "",
+            "name": "softAP"
+        },
+        "longitude": 0,
+        "mac": "1C-61-B4-00-00-00",
+        "model": "L920",
+        "music_rhythm_enable": false,
+        "music_rhythm_mode": "single_lamp",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "",
+        "rssi": -46,
+        "saturation": 100,
+        "signal_level": 3,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 0,
+        "type": "SMART.TAPOBULB"
+    },
+    "get_device_segment": {
+        "segment": 50
+    },
+    "get_device_time": {
+        "region": "",
+        "time_diff": 0,
+        "timestamp": 946771372
+    },
+    "get_fw_download_state": {
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_lighting_effect": {
+        "brightness": 0,
+        "custom": 0,
+        "direction": 1,
+        "display_colors": [],
+        "duration": 0,
+        "enable": 1,
+        "expansion_strategy": 0,
+        "id": "",
+        "name": "softAP",
+        "repeat_times": 0,
+        "segment_length": 1,
+        "sequence": [
+            [
+                30,
+                100,
+                0
+            ],
+            [
+                30,
+                100,
+                50
+            ],
+            [
+                30,
+                100,
+                0
+            ],
+            [
+                120,
+                100,
+                0
+            ],
+            [
+                120,
+                100,
+                50
+            ],
+            [
+                120,
+                100,
+                0
+            ]
+        ],
+        "spread": 8,
+        "transition": 400,
+        "type": "sequence"
+    },
+    "get_next_event": {},
+    "get_on_off_gradually_info": {
+        "enable": false
+    },
+    "get_preset_rules": {
+        "start_index": 0,
+        "states": [
+            {
+                "brightness": 50,
+                "color_temp": 9000,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 240,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 0,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 120,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 277,
+                "saturation": 86
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 60,
+                "saturation": 100
+            },
+            {
+                "brightness": 100,
+                "color_temp": 0,
+                "hue": 300,
+                "saturation": 100
+            }
+        ],
+        "sum": 7
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 24,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 1,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            }
+        ],
+        "extra_info": {
+            "device_model": "L920",
+            "device_type": "SMART.TAPOBULB"
+        }
+    }
+}

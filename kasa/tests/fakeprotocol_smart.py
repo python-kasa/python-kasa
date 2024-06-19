@@ -149,6 +149,11 @@ class FakeSmartTransport(BaseTransport):
             if child["device_id"] == device_id:
                 info = child
                 break
+        # Create the child_devices fixture section for fixtures generated before it was added
+        if "child_devices" not in self.info:
+            self.info["child_devices"] = {}
+        # Get the method calls made directly on the child devices
+        child_device_calls = self.info["child_devices"].setdefault(device_id, {})
 
         # We only support get & set device info for now.
         if child_method == "get_device_info":
@@ -159,14 +164,27 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif child_method == "set_preset_rules":
             return self._set_child_preset_rules(info, child_params)
+        elif child_method in child_device_calls:
+            result = copy.deepcopy(child_device_calls[child_method])
+            return {"result": result, "error_code": 0}
         elif (
             # FIXTURE_MISSING is for service calls not in place when
             # SMART fixtures started to be generated
             missing_result := self.FIXTURE_MISSING_MAP.get(child_method)
         ) and missing_result[0] in self.components:
-            result = copy.deepcopy(missing_result[1])
+            # Copy to info so it will work with update methods
+            child_device_calls[child_method] = copy.deepcopy(missing_result[1])
+            result = copy.deepcopy(info[child_method])
             retval = {"result": result, "error_code": 0}
             return retval
+        elif child_method[:4] == "set_":
+            target_method = f"get_{child_method[4:]}"
+            if target_method not in child_device_calls:
+                raise RuntimeError(
+                    f"No {target_method} in child info, calling set before get not supported."
+                )
+            child_device_calls[target_method].update(child_params)
+            return {"error_code": 0}
         else:
             # PARAMS error returned for KS240 when get_device_usage called
             # on parent device.  Could be any error code though.

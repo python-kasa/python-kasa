@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 
 from kasa import Module
 from kasa.smart import SmartDevice
-from kasa.tests.device_fixtures import parametrize
+from kasa.tests.device_fixtures import get_parent_and_child_modules, parametrize
 
 autooff = parametrize(
     "has autooff", component_filter="auto_off", protocol_filter={"SMART"}
@@ -33,13 +33,13 @@ async def test_autooff_features(
     dev: SmartDevice, feature: str, prop_name: str, type: type
 ):
     """Test that features are registered and work as expected."""
-    autooff = dev.modules.get(Module.AutoOff)
+    autooff = next(get_parent_and_child_modules(dev, Module.AutoOff))
     assert autooff is not None
 
     prop = getattr(autooff, prop_name)
     assert isinstance(prop, type)
 
-    feat = dev.features[feature]
+    feat = autooff._device.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
 
@@ -47,13 +47,13 @@ async def test_autooff_features(
 @autooff
 async def test_settings(dev: SmartDevice, mocker: MockerFixture):
     """Test autooff settings."""
-    autooff = dev.modules.get(Module.AutoOff)
+    autooff = next(get_parent_and_child_modules(dev, Module.AutoOff))
     assert autooff
 
-    enabled = dev.features["auto_off_enabled"]
+    enabled = autooff._device.features["auto_off_enabled"]
     assert autooff.enabled == enabled.value
 
-    delay = dev.features["auto_off_minutes"]
+    delay = autooff._device.features["auto_off_minutes"]
     assert autooff.delay == delay.value
 
     call = mocker.spy(autooff, "call")
@@ -86,10 +86,10 @@ async def test_auto_off_at(
     dev: SmartDevice, mocker: MockerFixture, is_timer_active: bool
 ):
     """Test auto-off at sensor."""
-    autooff = dev.modules.get(Module.AutoOff)
+    autooff = next(get_parent_and_child_modules(dev, Module.AutoOff))
     assert autooff
 
-    autooff_at = dev.features["auto_off_at"]
+    autooff_at = autooff._device.features["auto_off_at"]
 
     mocker.patch.object(
         type(autooff),

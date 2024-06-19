@@ -10,8 +10,9 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import EmeterStatus, KasaException
-from kasa.iot import IotDevice
+from kasa import Device, EmeterStatus, Module
+from kasa.interfaces.energy import Energy
+from kasa.iot import IotDevice, IotStrip
 from kasa.iot.modules.emeter import Emeter
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
@@ -38,16 +39,16 @@ CURRENT_CONSUMPTION_SCHEMA = Schema(
 async def test_no_emeter(dev):
     assert not dev.has_emeter
 
-    with pytest.raises(KasaException):
+    with pytest.raises(AttributeError):
         await dev.get_emeter_realtime()
     # Only iot devices support the historical stats so other
     # devices will not implement the methods below
     if isinstance(dev, IotDevice):
-        with pytest.raises(KasaException):
+        with pytest.raises(AttributeError):
             await dev.get_emeter_daily()
-        with pytest.raises(KasaException):
+        with pytest.raises(AttributeError):
             await dev.get_emeter_monthly()
-        with pytest.raises(KasaException):
+        with pytest.raises(AttributeError):
             await dev.erase_emeter_stats()
 
 
@@ -128,11 +129,11 @@ async def test_erase_emeter_stats(dev):
 @has_emeter_iot
 async def test_current_consumption(dev):
     if dev.has_emeter:
-        x = await dev.current_consumption()
+        x = dev.current_consumption
         assert isinstance(x, float)
         assert x >= 0.0
     else:
-        assert await dev.current_consumption() is None
+        assert dev.current_consumption is None
 
 
 async def test_emeterstatus_missing_current():
@@ -173,3 +174,30 @@ async def test_emeter_daily():
         {"day": now.day, "energy_wh": 500, "month": now.month, "year": now.year}
     )
     assert emeter.emeter_today == 0.500
+
+
+@has_emeter
+async def test_supported(dev: Device):
+    energy_module = dev.modules.get(Module.Energy)
+    assert energy_module
+    if isinstance(dev, IotDevice):
+        info = (
+            dev._last_update
+            if not isinstance(dev, IotStrip)
+            else dev.children[0].internal_state
+        )
+        emeter = info[energy_module._module]["get_realtime"]
+        has_total = "total" in emeter or "total_wh" in emeter
+        has_voltage_current = "voltage" in emeter or "voltage_mv" in emeter
+        assert (
+            energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is has_total
+        )
+        assert (
+            energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT)
+            is has_voltage_current
+        )
+        assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is True
+    else:
+        assert energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
+        assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is False
+        assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False

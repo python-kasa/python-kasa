@@ -163,12 +163,7 @@ async def _test_attribute(
     if is_expected and will_raise:
         ctx = pytest.raises(will_raise)
     elif is_expected:
-        ctx = pytest.deprecated_call(
-            match=(
-                f"{attribute_name} is deprecated, use: Module."
-                + f"{module_name} in device.modules instead"
-            )
-        )
+        ctx = pytest.deprecated_call(match=(f"{attribute_name} is deprecated, use:"))
     else:
         ctx = pytest.raises(
             AttributeError, match=f"Device has no attribute '{attribute_name}'"
@@ -239,6 +234,19 @@ async def test_deprecated_other_attributes(dev: Device):
 
     await _test_attribute(dev, "led", bool(led_module), "Led")
     await _test_attribute(dev, "set_led", bool(led_module), "Led", True)
+    await _test_attribute(dev, "supported_modules", True, None)
+
+
+async def test_deprecated_emeter_attributes(dev: Device):
+    energy_module = dev.modules.get(Module.Energy)
+
+    await _test_attribute(dev, "get_emeter_realtime", bool(energy_module), "Energy")
+    await _test_attribute(dev, "emeter_realtime", bool(energy_module), "Energy")
+    await _test_attribute(dev, "emeter_today", bool(energy_module), "Energy")
+    await _test_attribute(dev, "emeter_this_month", bool(energy_module), "Energy")
+    await _test_attribute(dev, "current_consumption", bool(energy_module), "Energy")
+    await _test_attribute(dev, "get_emeter_daily", bool(energy_module), "Energy")
+    await _test_attribute(dev, "get_emeter_monthly", bool(energy_module), "Energy")
 
 
 async def test_deprecated_light_preset_attributes(dev: Device):

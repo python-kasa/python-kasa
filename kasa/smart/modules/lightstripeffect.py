@@ -2,15 +2,26 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from ...interfaces.lighteffect import LightEffect as LightEffectInterface
 from ..effects import EFFECT_MAPPING, EFFECT_NAMES
 from ..smartmodule import SmartModule
+
+if TYPE_CHECKING:
+    from ..smartdevice import SmartDevice
 
 
 class LightStripEffect(SmartModule, LightEffectInterface):
     """Implementation of dynamic light effects."""
 
     REQUIRED_COMPONENT = "light_strip_lighting_effect"
+
+    def __init__(self, device: SmartDevice, module: str):
+        super().__init__(device, module)
+        effect_list = [self.LIGHT_EFFECTS_OFF]
+        effect_list.extend(EFFECT_NAMES)
+        self._effect_list = effect_list
 
     @property
     def name(self) -> str:
@@ -37,7 +48,8 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         """
         eff = self.data["lighting_effect"]
         name = eff["name"]
-        if eff["enable"]:
+        # When devices are unpaired effect name is softAP which is not in our list
+        if eff["enable"] and name in self._effect_list:
             return name
         return self.LIGHT_EFFECTS_OFF
 
@@ -48,9 +60,7 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         Example:
             ['Aurora', 'Bubbling Cauldron', ...]
         """
-        effect_list = [self.LIGHT_EFFECTS_OFF]
-        effect_list.extend(EFFECT_NAMES)
-        return effect_list
+        return self._effect_list
 
     async def set_effect(
         self,

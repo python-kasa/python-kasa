@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import base64
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature
 from ..module import Module
@@ -149,7 +148,7 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = False):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
@@ -167,9 +166,14 @@ class SmartDevice(Device):
         self._last_update = resp = await self.protocol.query(req)
 
         self._info = self._try_get_response(resp, "get_device_info")
+
+        # Call child update which will only update module calls, info is updated
+        # from get_child_device_list. update_children only affects hub devices, other
+        # devices will always update children to prevent errors on module access.
+        if update_children or self.device_type != DeviceType.Hub:
+            for child in self._children.values():
+                await child.update()
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
-            # TODO: we don't currently perform queries on children based on modules,
-            #  but just update the information that is returned in the main query.
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
@@ -202,10 +206,6 @@ class SmartDevice(Device):
         child_modules_to_skip = {}
         if self._parent and self._parent.device_type != DeviceType.Hub:
             skip_parent_only_modules = True
-        elif self._children and self.device_type == DeviceType.WallSwitch:
-            # _initialize_modules is called on the parent after the children
-            for child in self._children.values():
-                child_modules_to_skip.update(**child.modules)
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
@@ -356,13 +356,25 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        # TODO: Default to parent's time module for child devices
-        if self._parent and Module.Time in self.modules:
-            _timemod = self._parent.modules[Module.Time]
-        else:
-            _timemod = self.modules[Module.Time]
+        if (self._parent and (time_mod := self._parent.modules.get(Module.Time))) or (
+            time_mod := self.modules.get(Module.Time)
+        ):
+            return time_mod.time
 
-        return _timemod.time
+        # We have no device time, use current local time.
+        return datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+
+    @property
+    def on_since(self) -> datetime | None:
+        """Return the time that the device was turned on or None if turned off."""
+        if (
+            not self._info.get("device_on")
+            or (on_time := self._info.get("on_time")) is None
+        ):
+            return None
+
+        on_time = cast(float, on_time)
+        return self.time - timedelta(seconds=on_time)
 
     @property
     def timezone(self) -> dict:
@@ -463,45 +475,6 @@ class SmartDevice(Device):
         """Update state from info from the discover call."""
         self._discovery_info = info
         self._info = info
-
-    async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrieve current energy readings."""
-        _LOGGER.warning("Deprecated, use `emeter_realtime`.")
-        if not self.has_emeter:
-            raise KasaException("Device has no emeter")
-        return self.emeter_realtime
-
-    @property
-    def emeter_realtime(self) -> EmeterStatus:
-        """Get the emeter status."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_realtime
-
-    @property
-    def emeter_this_month(self) -> float | None:
-        """Get the emeter value for this month."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_this_month
-
-    @property
-    def emeter_today(self) -> float | None:
-        """Get the emeter value for today."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_today
-
-    @property
-    def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
-        if (
-            not self._info.get("device_on")
-            or (on_time := self._info.get("on_time")) is None
-        ):
-            return None
-        on_time = cast(float, on_time)
-        if (timemod := self.modules.get(Module.Time)) is not None:
-            return timemod.time - timedelta(seconds=on_time)
-        else:  # We have no device time, use current local time.
-            return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
 
     async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""

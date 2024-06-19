@@ -99,3 +99,11 @@ class AutoOff(SmartModule):
         sysinfo = self._device.sys_info
 
         return self._device.time + timedelta(seconds=sysinfo["auto_off_remain_time"])
+
+    async def _check_supported(self):
+        """Additional check to see if the module is supported by the device.
+
+        Parent devices that report components of children such as P300 will not have
+        the auto_off_status is sysinfo.
+        """
+        return "auto_off_status" in self._device.sys_info

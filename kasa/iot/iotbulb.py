@@ -220,7 +220,7 @@ class IotBulb(IotDevice):
             Module.IotAntitheft, Antitheft(self, "smartlife.iot.common.anti_theft")
         )
         self.add_module(Module.IotTime, Time(self, "smartlife.iot.common.timesetting"))
-        self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
+        self.add_module(Module.Energy, Emeter(self, self.emeter_type))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.IotCloud, Cloud(self, "smartlife.iot.common.cloud"))
         self.add_module(Module.Light, Light(self, self.LIGHT_SERVICE))

@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.7.0.dev5](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev5) (2024-06-17)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev4...0.7.0.dev5)
+
+**Implemented enhancements:**
+
+- Add timezone to on\_since attributes [\#978](https://github.com/python-kasa/python-kasa/pull/978) (@sdb9696)
+- Add common energy module and deprecate device emeter attributes [\#976](https://github.com/python-kasa/python-kasa/pull/976) (@sdb9696)
+- Add type hints to feature set\_value [\#974](https://github.com/python-kasa/python-kasa/pull/974) (@sdb9696)
+- Handle unknown light effect names and only calculate effect list once [\#973](https://github.com/python-kasa/python-kasa/pull/973) (@sdb9696)
+- Add time sync command [\#951](https://github.com/python-kasa/python-kasa/pull/951) (@rytilahti)
+
+**Fixed bugs:**
+
+- Disallow non-targeted device commands [\#982](https://github.com/python-kasa/python-kasa/pull/982) (@rytilahti)
+- Add supported check to light transition module [\#971](https://github.com/python-kasa/python-kasa/pull/971) (@sdb9696)
+
+**Project maintenance:**
+
+- Add fixture for L920-5\(EU\) 1.0.7 [\#972](https://github.com/python-kasa/python-kasa/pull/972) (@rytilahti)
+
+## [0.7.0.dev4](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev4) (2024-06-10)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev3...0.7.0.dev4)
+
+**Implemented enhancements:**
+
+- Support smart child modules queries [\#967](https://github.com/python-kasa/python-kasa/pull/967) (@sdb9696)
+- Do not expose child modules on parent devices [\#964](https://github.com/python-kasa/python-kasa/pull/964) (@sdb9696)
+- Do not add parent only modules to strip sockets [\#963](https://github.com/python-kasa/python-kasa/pull/963) (@sdb9696)
+
+**Project maintenance:**
+
+- Better checking of child modules not supported by parent device [\#966](https://github.com/python-kasa/python-kasa/pull/966) (@sdb9696)
+- Add fixture for p300 1.0.15 [\#915](https://github.com/python-kasa/python-kasa/pull/915) (@rytilahti)
+
 ## [0.7.0.dev3](https://github.com/python-kasa/python-kasa/tree/0.7.0.dev3) (2024-06-07)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.dev2...0.7.0.dev3)
