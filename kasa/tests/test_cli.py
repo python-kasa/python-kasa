@@ -57,7 +57,15 @@ def runner():
     return runner
 
 
-async def test_update_called_by_cli(dev, mocker, runner):
+@pytest.mark.parametrize(
+    ("device_family", "encrypt_type"),
+    [
+        pytest.param(None, None, id="No connect params"),
+        pytest.param("SMART.TAPOPLUG", None, id="Only device_family"),
+        pytest.param(None, "KLAP", id="Only encrypt_type"),
+    ],
+)
+async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_type):
     """Test that device update is called on main."""
     update = mocker.patch.object(dev, "update")
 
@@ -76,6 +84,10 @@ async def test_update_called_by_cli(dev, mocker, runner):
             "foo",
             "--password",
             "bar",
+            "--device-family",
+            device_family,
+            "--encrypt-type",
+            encrypt_type,
         ],
         catch_exceptions=False,
     )
