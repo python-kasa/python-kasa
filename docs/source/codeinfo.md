@@ -1,6 +1,6 @@
 
 :::{note}
-The kasa library is fully async and methods that perform IO need to be run inside an async coroutine.
+The library is fully async and methods that perform IO need to be run inside an async coroutine.
 Code examples assume you are following them inside `asyncio REPL`:
 ```
     $ python -m asyncio

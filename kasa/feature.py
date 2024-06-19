@@ -39,7 +39,7 @@ Smooth transition on (smooth_transition_on): 2
 Smooth transition off (smooth_transition_off): 2
 Time (time): 2024-02-23 02:40:15+01:00
 
-To see whether a device supporta feature check for the existence of it:
+To see whether a device supports a feature, check for the existence of it:
 
 >>> if feature := dev.features.get("brightness"):
 >>>     print(feature.value)

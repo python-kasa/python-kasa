@@ -3,7 +3,7 @@
 
 :::{note}
 In order to use the helper methods to calculate the statistics correctly, your devices need to have correct time set.
-The devices use NTP and public servers from [NTP Pool Project](https://www.ntppool.org/) to synchronize their time.
+The devices use NTP (123/UDP) and public servers from [NTP Pool Project](https://www.ntppool.org/) to synchronize their time.
 :::
 
 ## Energy Consumption
