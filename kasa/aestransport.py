@@ -10,8 +10,9 @@ import base64
 import hashlib
 import logging
 import time
+from collections.abc import AsyncGenerator
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, cast
+from typing import TYPE_CHECKING, Any, Dict, cast
 
 from cryptography.hazmat.primitives import padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding

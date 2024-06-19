@@ -71,7 +71,7 @@ Light preset 1
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Sequence
+from collections.abc import Sequence
 
 from ..feature import Feature
 from ..module import Module

@@ -91,9 +91,10 @@ async def test_state_info(dev):
 @pytest.mark.requires_dummy
 @device_iot
 async def test_invalid_connection(mocker, dev):
-    with mocker.patch.object(
-        FakeIotProtocol, "query", side_effect=KasaException
-    ), pytest.raises(KasaException):
+    with (
+        mocker.patch.object(FakeIotProtocol, "query", side_effect=KasaException),
+        pytest.raises(KasaException),
+    ):
         await dev.update()
 
 
