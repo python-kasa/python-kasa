@@ -3,18 +3,16 @@
 ## Discover
 
 
-```{module} kasa.discover
+```{module} kasa
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.Discover
+.. autoclass:: Discover
     :members:
 ```
 
 ## Device
 
-```{module} kasa.device
-```
 
 ```{eval-rst}
 .. autoclass:: Device
@@ -25,17 +23,14 @@
 
 ## Device Config
 
-```{module} kasa.credentials
-```
 
 ```{eval-rst}
 .. autoclass:: Credentials
     :members:
     :undoc-members:
+    :noindex:
 ```
 
-```{module} kasa.deviceconfig
-```
 
 ```{eval-rst}
 .. autoclass:: DeviceConfig
@@ -45,19 +40,19 @@
 
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceFamily
+.. autoclass:: DeviceFamily
     :members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceConnectionParameters
+.. autoclass:: DeviceConnectionParameters
     :members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceEncryptionType
+.. autoclass:: DeviceEncryptionType
     :members:
     :undoc-members:
 ```
@@ -65,7 +60,15 @@
 ## Modules and Features
 
 ```{eval-rst}
-.. autoclass:: kasa.Module
+.. autoclass:: Module
+    :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+```
+
+```{eval-rst}
+.. autoclass:: Feature
     :noindex:
     :members:
     :inherited-members:
@@ -74,14 +77,6 @@
 
 ```{eval-rst}
 .. automodule:: kasa.interfaces
-    :noindex:
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
-
-```{eval-rst}
-.. autoclass:: kasa.Feature
     :noindex:
     :members:
     :inherited-members:

@@ -1,3 +1,4 @@
+(module_target)=
 # Interact with modules
 
 :::{include} ../codeinfo.md

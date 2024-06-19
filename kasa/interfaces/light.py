@@ -1,6 +1,6 @@
 """Interact with a TPLink Light.
 
->>> from kasa import Discover
+>>> from kasa import Discover, Module
 >>>
 >>> dev = await Discover.discover_single(
 >>>     "127.0.0.3",
@@ -21,7 +21,7 @@ True
 
 Get the light module to interact:
 
->>> light = dev.modules["Light"]
+>>> light = dev.modules[Module.Light]
 
 You can use the ``is_``-prefixed properties to check for supported features:
 

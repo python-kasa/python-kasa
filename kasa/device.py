@@ -42,7 +42,8 @@ Some information can also be changed programmatically:
 >>> dev.alias
 new alias
 
-Devices support different functionality that can accessed via modules:
+Devices support different functionality that are exposed via
+:ref:`modules <module_target>` that you can access via :attr:`~kasa.Device.modules`:
 
 >>> for module_name in dev.modules:
 >>>     print(module_name)
@@ -62,8 +63,9 @@ False
 >>> print(led_module.led)
 True
 
-Individual pieces of functionality are also exposed via features which you can access
-via :attr:`~kasa.Device.features` and will only be present if they are supported.
+Individual pieces of functionality are also exposed via :ref:`features <feature_target>`
+which you can access via :attr:`~kasa.Device.features` and will only be present if
+they are supported.
 
 Features are similar to modules in that they provide functionality that may or may
 not be present.
