@@ -27,6 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
           poetry-version: ${{ env.POETRY_VERSION }}
+          poetry-install-options: "--all-extras"
       - name: "Check supported device md files are up to date"
         run: |
           poetry run pre-commit run generate-supported --all-files

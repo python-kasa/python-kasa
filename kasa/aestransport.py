@@ -371,7 +371,10 @@ class AesEncyptionSession:
         handshake_key_bytes: bytes = base64.b64decode(handshake_key.encode("UTF-8"))
         private_key_data = base64.b64decode(keypair.get_private_key().encode("UTF-8"))
 
-        private_key = serialization.load_der_private_key(private_key_data, None, None)
+        private_key = cast(
+            rsa.RSAPrivateKey,
+            serialization.load_der_private_key(private_key_data, None, None),
+        )
         key_and_iv = private_key.decrypt(
             handshake_key_bytes, asymmetric_padding.PKCS1v15()
         )

@@ -229,7 +229,7 @@ class XorEncryption:
 try:
     from kasa_crypt import decrypt, encrypt
 
-    XorEncryption.decrypt = decrypt  # type: ignore[method-assign]
-    XorEncryption.encrypt = encrypt  # type: ignore[method-assign]
+    XorEncryption.decrypt = decrypt  # type: ignore[assignment]
+    XorEncryption.encrypt = encrypt  # type: ignore[assignment]
 except ImportError:
     pass

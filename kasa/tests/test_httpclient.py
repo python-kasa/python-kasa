@@ -38,7 +38,7 @@ from ..httpclient import HttpClient
         ),
         (Exception(), KasaException, "Unable to query the device: "),
         (
-            aiohttp.ServerFingerprintMismatch("exp", "got", "host", 1),
+            aiohttp.ServerFingerprintMismatch(b"exp", b"got", "host", 1),
             KasaException,
             "Unable to query the device: ",
         ),
@@ -84,7 +84,7 @@ async def test_httpclient_errors(mocker, error, error_raises, error_message, moc
     client = HttpClient(DeviceConfig(host))
     # Exceptions with parameters print with double quotes, without use single quotes
     full_msg = (
-        "\("  # type: ignore
+        re.escape("(")
         + "['\"]"
         + re.escape(f"{error_message}{host}: {error}")
         + "['\"]"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import TypedDict
 
 import pytest
 from pytest_mock import MockerFixture
@@ -71,7 +72,17 @@ async def test_firmware_update(
     assert fw
 
     upgrade_time = 5
-    extras = {"reboot_time": 5, "upgrade_time": upgrade_time, "auto_upgrade": False}
+
+    class Extras(TypedDict):
+        reboot_time: int
+        upgrade_time: int
+        auto_upgrade: bool
+
+    extras: Extras = {
+        "reboot_time": 5,
+        "upgrade_time": upgrade_time,
+        "auto_upgrade": False,
+    }
     update_states = [
         # Unknown 1
         DownloadState(status=1, download_progress=0, **extras),

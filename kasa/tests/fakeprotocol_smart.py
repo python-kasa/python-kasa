@@ -276,7 +276,7 @@ class FakeSmartTransport(BaseTransport):
                     ):
                         result["sum"] = len(result[list_key])
                         if self.warn_fixture_missing_methods:
-                            pytest.fixtures_missing_methods.setdefault(
+                            pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
                                 self.fixture_name, set()
                             ).add(f"{method} (incomplete '{list_key}' list)")
 
@@ -305,7 +305,7 @@ class FakeSmartTransport(BaseTransport):
                 }
             # Reduce warning spam by consolidating and reporting at the end of the run
             if self.warn_fixture_missing_methods:
-                pytest.fixtures_missing_methods.setdefault(
+                pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
                     self.fixture_name, set()
                 ).add(method)
             return retval
