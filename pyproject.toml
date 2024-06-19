@@ -58,7 +58,7 @@ xdoctest = "*"
 coverage = {version = "*", extras = ["toml"]}
 pytest-timeout = "^2"
 pytest-freezer = "^0.4"
-mypy = "1.9.0"
+mypy = "^1"
 
 [tool.poetry.extras]
 docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]
