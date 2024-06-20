@@ -99,7 +99,7 @@ class Feature:
         Choice = auto()
         Unknown = -1
 
-    # TODO: unsure if this is a great idea..
+    # Aliases for easy access
     Sensor = Type.Sensor
     BinarySensor = Type.BinarySensor
     Switch = Type.Switch
@@ -139,6 +139,9 @@ class Feature:
     icon: str | None = None
     #: Unit, if applicable
     unit: str | None = None
+    #: Attribute containing the name of the unit getter property.
+    #: If set, this property will be used to set *unit*.
+    unit_getter: str | None = None
     #: Category hint for downstreams
     category: Feature.Category = Category.Unset
     #: Type of the feature
@@ -176,6 +179,10 @@ class Feature:
         # Populate choices, if choices_getter is given
         if self.choices_getter is not None:
             self.choices = getattr(container, self.choices_getter)
+
+        # Populate unit, if unit_getter is given
+        if self.unit_getter is not None:
+            self.unit = getattr(container, self.unit_getter)
 
         # Set the category, if unset
         if self.category is Feature.Category.Unset:

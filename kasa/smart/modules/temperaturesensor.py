@@ -28,6 +28,7 @@ class TemperatureSensor(SmartModule):
                 attribute_getter="temperature",
                 icon="mdi:thermometer",
                 category=Feature.Category.Primary,
+                unit_getter="temperature_unit",
             )
         )
         if "current_temp_exception" in device.sys_info:
@@ -55,7 +56,6 @@ class TemperatureSensor(SmartModule):
                 choices=["celsius", "fahrenheit"],
             )
         )
-        # TODO: use temperature_unit for feature creation
 
     @property
     def temperature(self):
@@ -68,7 +68,7 @@ class TemperatureSensor(SmartModule):
         return self._device.sys_info.get("current_temp_exception", 0) != 0
 
     @property
-    def temperature_unit(self):
+    def temperature_unit(self) -> Literal["celsius", "fahrenheit"]:
         """Return current temperature unit."""
         return self._device.sys_info["temp_unit"]
 
