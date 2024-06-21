@@ -143,7 +143,7 @@ Light effect (light_effect): *Off* Party Relax
 Light preset (light_preset): *Not set* Light preset 1 Light preset 2 Light preset 3 Light preset 4 Light preset 5 Light preset 6 Light preset 7
 Smooth transition on (smooth_transition_on): 2 (range: 0-60)
 Smooth transition off (smooth_transition_off): 20 (range: 0-60)
-Time (time): 2024-06-21 15:36:32+02:00
+Device time (device_time): 2024-06-21 15:36:32+02:00
 ```
 
 Some features are changeable:
