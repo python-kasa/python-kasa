@@ -79,8 +79,8 @@ class TemperatureControl(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                id="mode",
-                name="Mode",
+                id="thermostat_mode",
+                name="Thermostat mode",
                 container=self,
                 attribute_getter="mode",
                 category=Feature.Category.Primary,
