@@ -120,7 +120,7 @@ All devices are also controllable through a generic feature-based interface.
 The available features differ from device to device
 
 ```
-$ kasa --host 192.0.2.123 feature                                                                                                                                                 
+$ kasa --host 192.0.2.123 feature
 No --type or --device-family and --encrypt-type defined, discovering for 5 seconds..
 
 == Features ==
@@ -148,7 +148,7 @@ Device time (device_time): 2024-06-21 15:36:32+02:00
 
 Some features are changeable:
 ```
-kasa --host 192.0.2.123 feature color_temperature 2500                                                                                                                          
+kasa --host 192.0.2.123 feature color_temperature 2500
 No --type or --device-family and --encrypt-type defined, discovering for 5 seconds..
 Changing color_temperature from 0 to 2500
 New state: 2500
