@@ -40,11 +40,12 @@ class AutoOff(SmartModule):
             Feature(
                 self._device,
                 id="auto_off_minutes",
-                name="Auto off minutes",
+                name="Auto off in",
                 container=self,
                 attribute_getter="delay",
                 attribute_setter="set_delay",
                 type=Feature.Type.Number,
+                unit="minutes",
             )
         )
         self._add_feature(
