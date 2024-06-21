@@ -277,6 +277,7 @@ class SmartDevice(Device):
                     name="RSSI",
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
+                    unit="dBm",
                     category=Feature.Category.Debug,
                 )
             )

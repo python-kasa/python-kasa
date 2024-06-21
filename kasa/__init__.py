@@ -42,6 +42,7 @@ from kasa.iotprotocol import (
 )
 from kasa.module import Module
 from kasa.protocol import BaseProtocol
+from kasa.smart.modules.temperaturecontrol import ThermostatState
 from kasa.smartprotocol import SmartProtocol
 
 __version__ = version("python-kasa")
@@ -74,6 +75,7 @@ __all__ = [
     "DeviceConnectionParameters",
     "DeviceEncryptionType",
     "DeviceFamily",
+    "ThermostatState",
 ]
 
 from . import iot
