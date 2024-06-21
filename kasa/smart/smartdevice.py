@@ -277,6 +277,7 @@ class SmartDevice(Device):
                     name="RSSI",
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
+                    unit="dBm",
                     category=Feature.Category.Debug,
                 )
             )
@@ -316,7 +317,7 @@ class SmartDevice(Device):
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",
-                    category=Feature.Category.Info,
+                    category=Feature.Category.Debug,
                 )
             )
 

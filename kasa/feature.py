@@ -37,7 +37,7 @@ Light effect (light_effect): Off
 Light preset (light_preset): Not set
 Smooth transition on (smooth_transition_on): 2
 Smooth transition off (smooth_transition_off): 2
-Time (time): 2024-02-23 02:40:15+01:00
+Device time (device_time): 2024-02-23 02:40:15+01:00
 
 To see whether a device supports a feature, check for the existence of it:
 
