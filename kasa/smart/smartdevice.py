@@ -317,7 +317,7 @@ class SmartDevice(Device):
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",
-                    category=Feature.Category.Info,
+                    category=Feature.Category.Debug,
                 )
             )
 

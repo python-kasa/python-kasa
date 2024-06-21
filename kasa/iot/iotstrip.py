@@ -340,6 +340,7 @@ class IotStripPlug(IotPlug):
                 name="On since",
                 attribute_getter="on_since",
                 icon="mdi:clock",
+                category=Feature.Category.Debug,
             )
         )
         for module in self._supported_modules.values():
