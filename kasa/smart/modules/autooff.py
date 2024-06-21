@@ -45,7 +45,7 @@ class AutoOff(SmartModule):
                 attribute_getter="delay",
                 attribute_setter="set_delay",
                 type=Feature.Type.Number,
-                unit="minutes",
+                unit="min",  # ha-friendly unit, see UnitOfTime.MINUTES
             )
         )
         self._add_feature(
