@@ -403,11 +403,6 @@ async def cli(
                 "provided or they are ignored\n"
                 f"discovering for {discovery_timeout} seconds.."
             )
-        else:
-            echo(
-                "No --type or --device-family and --encrypt-type defined, "
-                + f"discovering for {discovery_timeout} seconds.."
-            )
         dev = await Discover.discover_single(
             host,
             port=port,
@@ -615,7 +610,7 @@ def _echo_features(
 
     if not features:
         return
-    echo(f"[bold]{title}[/bold]")
+    echo(f"{indent}[bold]{title}[/bold]")
     for _, feat in features.items():
         try:
             echo(f"{indent}{feat}")
@@ -627,33 +622,40 @@ def _echo_features(
             echo(f"{indent}{feat.name} ({feat.id}): [red]got exception ({ex})[/red]")
 
 
-def _echo_all_features(features, *, verbose=False, title_prefix=None):
+def _echo_all_features(features, *, verbose=False, title_prefix=None, indent=""):
     """Print out all features by category."""
     if title_prefix is not None:
-        echo(f"[bold]\n\t == {title_prefix} ==[/bold]")
+        echo(f"[bold]\n{indent}== {title_prefix} ==[/bold]")
     _echo_features(
         features,
-        title="\n\t== Primary features ==",
+        title="== Primary features ==",
         category=Feature.Category.Primary,
         verbose=verbose,
+        indent=indent,
     )
+    echo()
     _echo_features(
         features,
-        title="\n\t== Information ==",
+        title="== Information ==",
         category=Feature.Category.Info,
         verbose=verbose,
+        indent=indent,
     )
+    echo()
     _echo_features(
         features,
-        title="\n\t== Configuration ==",
+        title="== Configuration ==",
         category=Feature.Category.Config,
         verbose=verbose,
+        indent=indent,
     )
+    echo()
     _echo_features(
         features,
-        title="\n\t== Debug ==",
+        title="== Debug ==",
         category=Feature.Category.Debug,
         verbose=verbose,
+        indent=indent,
     )
 
 
@@ -665,38 +667,42 @@ async def state(ctx, dev: Device):
     verbose = ctx.parent.params.get("verbose", False) if ctx.parent else False
 
     echo(f"[bold]== {dev.alias} - {dev.model} ==[/bold]")
-    echo(f"\tHost: {dev.host}")
-    echo(f"\tPort: {dev.port}")
-    echo(f"\tDevice state: {dev.is_on}")
+    echo(f"Host: {dev.host}")
+    echo(f"Port: {dev.port}")
+    echo(f"Device state: {dev.is_on}")
+
+    echo(f"Time:         {dev.time} (tz: {dev.timezone}")
+    echo(f"Hardware:     {dev.hw_info['hw_ver']}")
+    echo(f"Software:     {dev.hw_info['sw_ver']}")
+    echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
+    if verbose:
+        echo(f"Location:     {dev.location}")
+
+    _echo_all_features(dev.features, verbose=verbose)
+    echo()
+
     if dev.children:
-        echo("\t== Children ==")
+        echo("[bold]== Children ==[/bold]")
         for child in dev.children:
             _echo_all_features(
                 child.features,
-                title_prefix=f"{child.alias} ({child.model}, {child.device_type})",
+                title_prefix=f"{child.alias} ({child.model})",
                 verbose=verbose,
+                indent="\t",
             )
 
         echo()
 
-    echo("\t[bold]== Generic information ==[/bold]")
-    echo(f"\tTime:         {dev.time} (tz: {dev.timezone}")
-    echo(f"\tHardware:     {dev.hw_info['hw_ver']}")
-    echo(f"\tSoftware:     {dev.hw_info['sw_ver']}")
-    echo(f"\tMAC (rssi):   {dev.mac} ({dev.rssi})")
-    echo(f"\tLocation:     {dev.location}")
-
-    _echo_all_features(dev.features, verbose=verbose)
-
-    echo("\n\t[bold]== Modules ==[/bold]")
-    for module in dev.modules.values():
-        echo(f"\t[green]+ {module}[/green]")
-
     if verbose:
+        echo("\n\t[bold]== Modules ==[/bold]")
+        for module in dev.modules.values():
+            echo(f"\t[green]+ {module}[/green]")
+
         echo("\n\t[bold]== Protocol information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
         echo()
         _echo_discovery_info(dev._discovery_info)
+
     return dev.internal_state
 
 
@@ -1261,25 +1267,29 @@ async def shell(dev: Device):
 @click.argument("value", required=False)
 @click.option("--child", required=False)
 @pass_dev
-async def feature(dev: Device, child: str, name: str, value):
+@click.pass_context
+async def feature(ctx: click.Context, dev: Device, child: str, name: str, value):
     """Access and modify features.
 
     If no *name* is given, lists available features and their values.
     If only *name* is given, the value of named feature is returned.
     If both *name* and *value* are set, the described setting is changed.
     """
+    verbose = ctx.parent.params.get("verbose", False) if ctx.parent else False
+
     if child is not None:
         echo(f"Targeting child device {child}")
         dev = dev.get_child_device(child)
     if not name:
-        _echo_features(dev.features, "\n[bold]== Features ==[/bold]\n", indent="")
+        _echo_all_features(dev.features, verbose=verbose, indent="")
 
         if dev.children:
             for child_dev in dev.children:
-                _echo_features(
+                _echo_all_features(
                     child_dev.features,
-                    f"\n[bold]== Child {child_dev.alias} ==\n",
-                    indent="",
+                    verbose=verbose,
+                    title_prefix=f"Child {child_dev.alias}",
+                    indent="\t",
                 )
 
         return
