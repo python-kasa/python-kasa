@@ -29,7 +29,7 @@ class Time(SmartModule):
                 name="Device time",
                 attribute_getter="time",
                 container=self,
-                category=Feature.Category.Info,
+                category=Feature.Category.Debug,
             )
         )
 
