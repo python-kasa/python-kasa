@@ -608,8 +608,6 @@ def _echo_features(
             id_: feat for id_, feat in features.items() if feat.category == category
         }
 
-    if not features:
-        return
     echo(f"{indent}[bold]{title}[/bold]")
     for _, feat in features.items():
         try:
