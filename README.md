@@ -45,55 +45,39 @@ $ kasa discover
 Discovering devices on 255.255.255.255 for 3 seconds
 
 == Bulb McBulby - L530 ==
-        Host: 192.0.2.123
-        Port: 80
-        Device state: False
-        == Generic information ==
-        Time:         2024-06-21 15:09:35+02:00 (tz: {'timezone': 'CEST'}
-        Hardware:     3.0
-        Software:     1.1.6 Build 240130 Rel.173828
-        MAC (rssi):   5C:E9:31:aa:bb:cc (-50)
-        Location:     {'latitude': -1, 'longitude': -1}
+Host: 192.0.2.123
+Port: 80
+Device state: False
+Time:         2024-06-22 15:42:15+02:00 (tz: {'timezone': 'CEST'}
+Hardware:     3.0
+Software:     1.1.6 Build 240130 Rel.173828
+MAC (rssi):   5C:E9:31:aa:bb:cc (-50)
+== Primary features ==
+State (state): False
+Brightness (brightness): 11 (range: 0-100)
+Color temperature (color_temperature): 0 (range: 2500-6500)
+Light effect (light_effect): *Off* Party Relax
 
-        == Primary features ==
-        State (state): False
-        Brightness (brightness): 11 (range: 0-100)
-        Color temperature (color_temperature): 0 (range: 2500-6500)
-        Light effect (light_effect): *Off* Party Relax
+== Information ==
+Signal Level (signal_level): 2
+Overheated (overheated): False
+Cloud connection (cloud_connection): False
+Update available (update_available): None
+Device time (device_time): 2024-06-22 15:42:15+02:00
 
-        == Information ==
-        Signal Level (signal_level): 2
-        Overheated (overheated): False
-        Cloud connection (cloud_connection): False
-        Update available (update_available): None
+== Configuration ==
+HSV (hsv): HSV(hue=35, saturation=70, value=11)
+Auto update enabled (auto_update_enabled): False
+Light preset (light_preset): *Not set* Light preset 1 Light preset 2 Light preset 3 Light preset 4 Light preset 5 Light preset 6 Light preset 7
+Smooth transition on (smooth_transition_on): 2 (range: 0-60)
+Smooth transition off (smooth_transition_off): 20 (range: 0-60)
 
-        == Configuration ==
-        HSV (hsv): HSV(hue=35, saturation=70, value=11)
-        Auto update enabled (auto_update_enabled): False
-        Light preset (light_preset): *Not set* Light preset 1 Light preset 2 Light preset 3 Light preset 4 Light preset 5 Light preset 6 Light preset 7
-        Smooth transition on (smooth_transition_on): 2 (range: 0-60)
-        Smooth transition off (smooth_transition_off): 20 (range: 0-60)
-
-        == Debug ==
-        Device ID (device_id): someuniqueidentifier
-        RSSI (rssi): -50
-        SSID (ssid): SecretNetwork
-        Current firmware version (current_firmware_version): 1.1.6 Build 240130 Rel.173828
-        Available firmware version (available_firmware_version): None
-        Time (time): 2024-06-21 15:09:35+02:00
-
-        == Modules ==
-        + <Module Brightness (brightness) for 192.0.2.123>
-        + <Module Cloud (cloud_connect) for 192.0.2.123>
-        + <Module Color (color) for 192.0.2.123>
-        + <Module ColorTemperature (color_temperature) for 192.0.2.123>
-        + <Module DeviceModule (device) for 192.0.2.123>
-        + <Module Firmware (firmware) for 192.0.2.123>
-        + <Module LightEffect (light_effect) for 192.0.2.123>
-        + <Module LightPreset (preset) for 192.0.2.123>
-        + <Module LightTransition (on_off_gradually) for 192.0.2.123>
-        + <Module Time (time) for 192.0.2.123>
-        + <Module Light (light) for 192.0.2.123>
+== Debug ==
+Device ID (device_id): soneuniqueidentifier
+RSSI (rssi): -50 dBm
+SSID (ssid): HomeNet
+Current firmware version (current_firmware_version): 1.1.6 Build 240130 Rel.173828
+Available firmware version (available_firmware_version): None
 ```
 
 
@@ -107,7 +91,7 @@ $ kasa --host 192.0.2.123 on
 ```
 
 Use `kasa --help` ([or consult the documentation](https://python-kasa.readthedocs.io/en/latest/cli.html#kasa-help)) to get a list of all available commands and options.
-Some examples of available options include JSON output (`--json`), defining timeouts (`--timeout` and `--discovery-timeout`).
+Some examples of available options include JSON output (`--json`), more verbose output (`--verbose`), and defining timeouts (`--timeout` and `--discovery-timeout`).
 Refer [the documentation](https://python-kasa.readthedocs.io/en/latest/cli.html) for more details.
 
 > [!NOTE]
@@ -117,39 +101,41 @@ Refer [the documentation](https://python-kasa.readthedocs.io/en/latest/cli.html)
 ### Feature interface
 
 All devices are also controllable through a generic feature-based interface.
-The available features differ from device to device
+The available features differ from device to device and are accessible using `kasa feature` command:
 
 ```
 $ kasa --host 192.0.2.123 feature
-No --type or --device-family and --encrypt-type defined, discovering for 5 seconds..
-
-== Features ==
-
-Device ID (device_id): someuniqueidentifier
+== Primary features ==
 State (state): False
-Signal Level (signal_level): 3
-RSSI (rssi): -49
-SSID (ssid): SecretNetwork
-Overheated (overheated): False
 Brightness (brightness): 11 (range: 0-100)
-Cloud connection (cloud_connection): False
-HSV (hsv): HSV(hue=35, saturation=70, value=11)
 Color temperature (color_temperature): 0 (range: 2500-6500)
-Auto update enabled (auto_update_enabled): False
-Update available (update_available): None
-Current firmware version (current_firmware_version): 1.1.6 Build 240130 Rel.173828
-Available firmware version (available_firmware_version): None
 Light effect (light_effect): *Off* Party Relax
+
+== Information ==
+Signal Level (signal_level): 2
+Overheated (overheated): False
+Cloud connection (cloud_connection): False
+Update available (update_available): None
+Device time (device_time): 2024-06-22 15:39:44+02:00
+
+== Configuration ==
+HSV (hsv): HSV(hue=35, saturation=70, value=11)
+Auto update enabled (auto_update_enabled): False
 Light preset (light_preset): *Not set* Light preset 1 Light preset 2 Light preset 3 Light preset 4 Light preset 5 Light preset 6 Light preset 7
 Smooth transition on (smooth_transition_on): 2 (range: 0-60)
 Smooth transition off (smooth_transition_off): 20 (range: 0-60)
-Device time (device_time): 2024-06-21 15:36:32+02:00
+
+== Debug ==
+Device ID (device_id): soneuniqueidentifier
+RSSI (rssi): -50 dBm
+SSID (ssid): HomeNet
+Current firmware version (current_firmware_version): 1.1.6 Build 240130 Rel.173828
+Available firmware version (available_firmware_version): None
 ```
 
-Some features are changeable:
+Some features present configuration that can be changed:
 ```
 kasa --host 192.0.2.123 feature color_temperature 2500
-No --type or --device-family and --encrypt-type defined, discovering for 5 seconds..
 Changing color_temperature from 0 to 2500
 New state: 2500
 ```
@@ -233,17 +219,11 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 * [Home Assistant](https://www.home-assistant.io/integrations/tplink/)
 * [MQTT access to TP-Link devices, using python-kasa](https://github.com/flavio-fernandes/mqtt2kasa)
 
-### TP-Link Tapo support
-
-This library has recently added a limited supported for devices that carry Tapo branding.
-That support is currently limited to the cli.  The package `kasa.smart` is in flux and if you
-use it directly you should expect it could break in future releases until this statement is removed.
-
-Other TAPO libraries are:
+### Other related projects
 
 * [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
 * [Tapo P100 (Tapo plugs, Tapo bulbs)](https://github.com/fishbigger/TapoP100)
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
 * [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)
   * [Home Assistant integration](https://github.com/petretiandrea/home-assistant-tapo-p100)
-* [rust and python implementation](https://github.com/mihai-dinculescu/tapo/)
+* [rust and python implementation for tapo devices](https://github.com/mihai-dinculescu/tapo/)
