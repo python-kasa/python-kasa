@@ -839,7 +839,10 @@ async def test_features_all(discovery_mock, mocker, runner):
         ["--host", "127.0.0.123", "--debug", "feature"],
         catch_exceptions=False,
     )
-    assert "== Features ==" in res.output
+    assert "== Primary features ==" in res.output
+    assert "== Information ==" in res.output
+    assert "== Configuration ==" in res.output
+    assert "== Debug ==" in res.output
     assert res.exit_code == 0
 
 
