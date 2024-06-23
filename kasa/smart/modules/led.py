@@ -27,7 +27,7 @@ class Led(SmartModule, LedInterface):
     @property
     def led(self):
         """Return current led status."""
-        return self.data["led_status"]
+        return self.data["led_rule"] != "never"
 
     async def set_led(self, enable: bool):
         """Set led.
