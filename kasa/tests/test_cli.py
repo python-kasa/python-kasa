@@ -890,7 +890,7 @@ async def test_feature_set(mocker, runner):
     )
 
     led_setter.assert_called_with(True)
-    assert "Changing led from False to True" in res.output
+    assert "Changing led from True to True" in res.output
     assert res.exit_code == 0
 
 
