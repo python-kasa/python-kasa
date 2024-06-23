@@ -1,5 +1,5 @@
 breaking_labels=breaking change
-add-sections={"docs":{"prefix":"**Documentation updates:**","labels":["documentation"]},"maintenance":{"prefix":"**Project maintenance:**","labels":["maintenance"]}}
+add-sections={"new-device":{"prefix":"**Added support for devices:**","labels":["new device"]},"docs":{"prefix":"**Documentation updates:**","labels":["documentation"]},"maintenance":{"prefix":"**Project maintenance:**","labels":["maintenance"]}}
 release_branch=master
 usernames-as-github-logins=true
 exclude-labels=duplicate,question,invalid,wontfix,release-prep
