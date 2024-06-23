@@ -11,7 +11,6 @@ Other than the three breaking changes below, all changes are backwards compatibl
 
 * The library has now been restructured into `iot` and `smart` packages to contain the respective protocol (command set) implementations. The old `Smart{Plug,Bulb,Lightstrip}` that do not require authentication are now accessible through `kasa.iot` package.
 * Exception classes are renamed
-* Exception classes are renamed
 * Using .connect() or discover() is the preferred way to construct device instances rather than initiating constructors on a device.
 
 ### Breaking changes
