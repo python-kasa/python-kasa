@@ -129,6 +129,8 @@ class Feature:
     id: str
     #: User-friendly short description
     name: str
+    #: Type of the feature
+    type: Feature.Type
     #: Name of the property that allows accessing the value
     attribute_getter: str | Callable | None = None
     #: Name of the method that allows changing the value
@@ -144,8 +146,6 @@ class Feature:
     unit_getter: str | None = None
     #: Category hint for downstreams
     category: Feature.Category = Category.Unset
-    #: Type of the feature
-    type: Feature.Type = Type.Sensor
 
     # Display hints offer a way suggest how the value should be shown to users
     #: Hint to help rounding the sensor values to given after-comma digits
@@ -191,14 +191,19 @@ class Feature:
             else:
                 self.category = Feature.Category.Info
 
-        if self.category == Feature.Category.Config and self.type in [
+        if self.type in (
             Feature.Type.Sensor,
             Feature.Type.BinarySensor,
-        ]:
-            raise ValueError(
-                f"Invalid type for configurable feature: {self.name} ({self.id}):"
-                f" {self.type}"
-            )
+        ):
+            if self.category == Feature.Category.Config:
+                raise ValueError(
+                    f"Invalid type for configurable feature: {self.name} ({self.id}):"
+                    f" {self.type}"
+                )
+            elif self.attribute_setter is not None:
+                raise ValueError(
+                    f"Read-only feat defines attribute_setter: {self.name} ({self.id}):"
+                )
 
     @property
     def value(self):

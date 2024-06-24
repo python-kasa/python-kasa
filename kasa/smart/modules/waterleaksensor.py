@@ -36,6 +36,7 @@ class WaterleakSensor(SmartModule):
                 attribute_getter="status",
                 icon="mdi:water",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
         self._add_feature(
@@ -47,6 +48,7 @@ class WaterleakSensor(SmartModule):
                 attribute_getter="alert",
                 icon="mdi:water-alert",
                 category=Feature.Category.Primary,
+                type=Feature.Type.BinarySensor,
             )
         )
 
