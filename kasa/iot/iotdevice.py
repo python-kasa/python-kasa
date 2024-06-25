@@ -340,7 +340,9 @@ class IotDevice(Device):
                 name="RSSI",
                 attribute_getter="rssi",
                 icon="mdi:signal",
+                unit="dBm",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
         # iot strips calculate on_since from the children
@@ -353,6 +355,7 @@ class IotDevice(Device):
                     attribute_getter="on_since",
                     icon="mdi:clock",
                     category=Feature.Category.Info,
+                    type=Feature.Type.Sensor,
                 )
             )
 

@@ -44,8 +44,11 @@ def test_feature_api(dummy_feature: Feature):
     assert dummy_feature.unit == "dummyunit"
 
 
-def test_feature_missing_type():
-    """Test that creating a feature with a setter but without type causes an error."""
+@pytest.mark.parametrize(
+    "read_only_type", [Feature.Type.Sensor, Feature.Type.BinarySensor]
+)
+def test_feature_setter_on_sensor(read_only_type):
+    """Test that creating a sensor feature with a setter causes an error."""
     with pytest.raises(ValueError):
         Feature(
             device=DummyDevice(),  # type: ignore[arg-type]
@@ -53,6 +56,7 @@ def test_feature_missing_type():
             name="dummy error",
             attribute_getter="dummygetter",
             attribute_setter="dummysetter",
+            type=read_only_type,
         )
 
 
