@@ -44,6 +44,7 @@ class Energy(Module, ABC):
                 id="current_consumption",
                 precision_hint=1,
                 category=Feature.Category.Primary,
+                type=Feature.Type.Sensor,
             )
         )
         self._add_feature(
@@ -56,6 +57,7 @@ class Energy(Module, ABC):
                 id="consumption_today",
                 precision_hint=3,
                 category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
             )
         )
         self._add_feature(
@@ -68,6 +70,7 @@ class Energy(Module, ABC):
                 unit="kWh",
                 precision_hint=3,
                 category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
             )
         )
         if self.supports(self.ModuleFeature.CONSUMPTION_TOTAL):
@@ -81,6 +84,7 @@ class Energy(Module, ABC):
                     id="consumption_total",
                     precision_hint=3,
                     category=Feature.Category.Info,
+                    type=Feature.Type.Sensor,
                 )
             )
         if self.supports(self.ModuleFeature.VOLTAGE_CURRENT):
@@ -94,6 +98,7 @@ class Energy(Module, ABC):
                     id="voltage",
                     precision_hint=1,
                     category=Feature.Category.Primary,
+                    type=Feature.Type.Sensor,
                 )
             )
             self._add_feature(
@@ -106,6 +111,7 @@ class Energy(Module, ABC):
                     id="current",
                     precision_hint=2,
                     category=Feature.Category.Primary,
+                    type=Feature.Type.Sensor,
                 )
             )
 

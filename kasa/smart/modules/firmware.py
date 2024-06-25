@@ -101,6 +101,7 @@ class Firmware(SmartModule):
                 container=self,
                 attribute_getter="current_firmware",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
         self._add_feature(
@@ -111,6 +112,7 @@ class Firmware(SmartModule):
                 container=self,
                 attribute_getter="latest_firmware",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
 
