@@ -1,5 +1,23 @@
 # Changelog
 
+
+## [0.7.0.1](https://github.com/python-kasa/python-kasa/tree/0.7.0.1) (2024-06-25)
+
+This patch release fixes some minor issues found out during testing against all new homeassistant platforms.
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0...0.7.0.1)
+
+**Fixed bugs:**
+
+- Disable lighttransition module on child devices [\#1013](https://github.com/python-kasa/python-kasa/pull/1013) (@sdb9696)
+- Fix post update hook for iot child devices [\#1011](https://github.com/python-kasa/python-kasa/pull/1011) (@sdb9696)
+- Fix iot strip so the children do not have led and cloud modules [\#1010](https://github.com/python-kasa/python-kasa/pull/1010) (@sdb9696)
+- Require explicit feature type [\#1006](https://github.com/python-kasa/python-kasa/pull/1006) (@rytilahti)
+
+**Merged pull requests:**
+
+- Remove frost\_protection feature [\#1009](https://github.com/python-kasa/python-kasa/pull/1009) (@rytilahti)
+
 ## [0.7.0](https://github.com/python-kasa/python-kasa/tree/0.7.0) (2024-06-23)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.6.2.1...0.7.0)
