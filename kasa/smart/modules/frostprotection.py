@@ -2,14 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from ...feature import Feature
 from ..smartmodule import SmartModule
-
-# TODO: this may not be necessary with __future__.annotations
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class FrostProtection(SmartModule):
@@ -19,22 +12,7 @@ class FrostProtection(SmartModule):
     """
 
     REQUIRED_COMPONENT = "frost_protection"
-    # TODO: the information required for current features do not require this query
     QUERY_GETTER_NAME = "get_frost_protection"
-
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
-        self._add_feature(
-            Feature(
-                device,
-                "frost_protection_enabled",
-                name="Frost protection enabled",
-                container=self,
-                attribute_getter="enabled",
-                attribute_setter="set_enabled",
-                type=Feature.Type.Switch,
-            )
-        )
 
     @property
     def enabled(self) -> bool:
