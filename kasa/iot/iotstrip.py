@@ -21,7 +21,7 @@ from .iotdevice import (
 )
 from .iotmodule import IotModule
 from .iotplug import IotPlug
-from .modules import Antitheft, Countdown, Schedule, Time, Usage
+from .modules import Antitheft, Cloud, Countdown, Emeter, Led, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -107,6 +107,8 @@ class IotStrip(IotDevice):
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
         self.add_module(Module.IotTime, Time(self, "time"))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
+        self.add_module(Module.Led, Led(self, "system"))
+        self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
         if self.has_emeter:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
@@ -317,8 +319,12 @@ class IotStripPlug(IotPlug):
 
     async def _initialize_modules(self):
         """Initialize modules not added in init."""
-        await super()._initialize_modules()
-        self.add_module("time", Time(self, "time"))
+        if self.has_emeter:
+            self.add_module(Module.Energy, Emeter(self, self.emeter_type))
+        self.add_module(Module.IotUsage, Usage(self, "schedule"))
+        self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
+        self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
+        self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
 
     async def _initialize_features(self):
         """Initialize common features."""
