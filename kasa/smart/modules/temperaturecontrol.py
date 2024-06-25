@@ -84,6 +84,7 @@ class TemperatureControl(SmartModule):
                 container=self,
                 attribute_getter="mode",
                 category=Feature.Category.Primary,
+                type=Feature.Type.Sensor,
             )
         )
 

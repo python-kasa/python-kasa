@@ -29,6 +29,7 @@ class HumiditySensor(SmartModule):
                 icon="mdi:water-percent",
                 unit="%",
                 category=Feature.Category.Primary,
+                type=Feature.Type.Sensor,
             )
         )
         self._add_feature(

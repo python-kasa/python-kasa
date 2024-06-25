@@ -56,6 +56,7 @@ class AutoOff(SmartModule):
                 container=self,
                 attribute_getter="auto_off_at",
                 category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
             )
         )
 

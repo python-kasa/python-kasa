@@ -30,6 +30,7 @@ class Time(SmartModule):
                 attribute_getter="time",
                 container=self,
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
 

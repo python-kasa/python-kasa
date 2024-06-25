@@ -29,6 +29,7 @@ class TemperatureSensor(SmartModule):
                 icon="mdi:thermometer",
                 category=Feature.Category.Primary,
                 unit_getter="temperature_unit",
+                type=Feature.Type.Sensor,
             )
         )
         if "current_temp_exception" in device.sys_info:

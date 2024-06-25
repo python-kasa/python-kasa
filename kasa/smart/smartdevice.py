@@ -242,6 +242,7 @@ class SmartDevice(Device):
                 name="Device ID",
                 attribute_getter="device_id",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
         if "device_on" in self._info:
@@ -266,6 +267,7 @@ class SmartDevice(Device):
                     attribute_getter=lambda x: x._info["signal_level"],
                     icon="mdi:signal",
                     category=Feature.Category.Info,
+                    type=Feature.Type.Sensor,
                 )
             )
 
@@ -279,6 +281,7 @@ class SmartDevice(Device):
                     icon="mdi:signal",
                     unit="dBm",
                     category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
                 )
             )
 
@@ -291,6 +294,7 @@ class SmartDevice(Device):
                     attribute_getter="ssid",
                     icon="mdi:wifi",
                     category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
                 )
             )
 
@@ -318,6 +322,7 @@ class SmartDevice(Device):
                     attribute_getter="on_since",
                     icon="mdi:clock",
                     category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
                 )
             )
 

@@ -43,6 +43,7 @@ class Alarm(SmartModule):
                 container=self,
                 attribute_getter="source",
                 icon="mdi:bell",
+                type=Feature.Type.Sensor,
             )
         )
         self._add_feature(
