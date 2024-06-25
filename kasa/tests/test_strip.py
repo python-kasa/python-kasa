@@ -2,10 +2,10 @@ from datetime import datetime
 
 import pytest
 
-from kasa import KasaException
+from kasa import Device, KasaException, Module
 from kasa.iot import IotStrip
 
-from .conftest import handle_turn_on, strip, turn_on
+from .conftest import handle_turn_on, strip, strip_iot, turn_on
 
 
 @strip
@@ -147,3 +147,16 @@ def test_children_api(dev):
     first = dev.children[0]
     first_by_get_child_device = dev.get_child_device(first.device_id)
     assert first == first_by_get_child_device
+
+
+@strip_iot
+async def test_children_energy(dev: Device):
+    if Module.Energy not in dev.modules:
+        pytest.skip(f"skipping device {dev.model} does not support energy")
+
+    for plug in dev.children:
+        # For now all known strips with energy support these
+        energy = plug.modules[Module.Energy]
+        assert "voltage" in energy._module_features
+        assert "current" in energy._module_features
+        assert "current_consumption" in energy._module_features
