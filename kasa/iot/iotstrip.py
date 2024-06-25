@@ -361,6 +361,9 @@ class IotStripPlug(IotPlug):
         Needed for properties that are decorated with `requires_update`.
         """
         await self._modular_update({})
+        for module in self._modules.values():
+            module._post_update_hook()
+
         if not self._features:
             await self._initialize_features()
 
