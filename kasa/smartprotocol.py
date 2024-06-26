@@ -239,12 +239,20 @@ class SmartProtocol(BaseProtocol):
             response_result[response_list_name].extend(next_batch[response_list_name])
 
     def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
-        error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
+        error_code_raw = resp_dict.get("error_code")
+        try:
+            error_code = SmartErrorCode(error_code_raw)  # type: ignore[arg-type]
+        except ValueError:
+            _LOGGER.warning("Received unknown error code: %s", error_code_raw)
+            error_code = SmartErrorCode.UNKNOWN_ERROR
+
         if error_code == SmartErrorCode.SUCCESS:
             return
+
         if not raise_on_error:
             resp_dict["result"] = error_code
             return
+
         msg = (
             f"Error querying device: {self._host}: "
             + f"{error_code.name}({error_code.value})"

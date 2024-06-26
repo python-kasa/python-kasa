@@ -35,6 +35,25 @@ async def test_smart_device_errors(dummy_protocol, mocker, error_code):
     assert send_mock.call_count == expected_calls
 
 
+@pytest.mark.parametrize("error_code", [-13333, 13333])
+async def test_smart_device_unknown_errors(
+    dummy_protocol, mocker, error_code, caplog: pytest.LogCaptureFixture
+):
+    """Test handling of unknown error codes."""
+    mock_response = {"result": {"great": "success"}, "error_code": error_code}
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport, "send", return_value=mock_response
+    )
+
+    with pytest.raises(KasaException):
+        res = await dummy_protocol.query(DUMMY_QUERY)
+        assert res is SmartErrorCode.UNKNOWN_ERROR
+
+    send_mock.assert_called_once()
+    assert f"Received unknown error code: {error_code}" in caplog.text
+
+
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
 async def test_smart_device_errors_in_multiple_request(
     dummy_protocol, mocker, error_code
