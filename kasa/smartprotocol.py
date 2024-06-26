@@ -244,7 +244,7 @@ class SmartProtocol(BaseProtocol):
             error_code = SmartErrorCode(error_code_raw)  # type: ignore[arg-type]
         except ValueError:
             _LOGGER.warning("Received unknown error code: %s", error_code_raw)
-            error_code = SmartErrorCode.UNKNOWN_ERROR
+            error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
         if error_code == SmartErrorCode.SUCCESS:
             return

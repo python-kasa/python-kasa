@@ -48,7 +48,7 @@ async def test_smart_device_unknown_errors(
 
     with pytest.raises(KasaException):
         res = await dummy_protocol.query(DUMMY_QUERY)
-        assert res is SmartErrorCode.UNKNOWN_ERROR
+        assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
     send_mock.assert_called_once()
     assert f"Received unknown error code: {error_code}" in caplog.text

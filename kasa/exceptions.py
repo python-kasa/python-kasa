@@ -120,7 +120,7 @@ class SmartErrorCode(IntEnum):
     DST_SAVE_ERROR = -2302
 
     # Library internal for unknown error codes
-    UNKNOWN_ERROR = -100_000
+    INTERNAL_UNKNOWN_ERROR = -100_000
 
 
 SMART_RETRYABLE_ERRORS = [

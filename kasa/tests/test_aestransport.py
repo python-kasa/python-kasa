@@ -276,6 +276,33 @@ async def test_passthrough_errors(mocker, error_code):
         await transport.send(json_dumps(request))
 
 
+@pytest.mark.parametrize("error_code", [-13333, 13333])
+async def test_unknown_errors(mocker, error_code):
+    host = "127.0.0.1"
+    mock_aes_device = MockAesDevice(host, 200, error_code, 0)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
+
+    config = DeviceConfig(host, credentials=Credentials("foo", "bar"))
+    transport = AesTransport(config=config)
+    transport._handshake_done = True
+    transport._session_expire_at = time.time() + 86400
+    transport._encryption_session = mock_aes_device.encryption_session
+    transport._token_url = transport._app_url.with_query(
+        f"token={mock_aes_device.token}"
+    )
+
+    request = {
+        "method": "get_device_info",
+        "params": None,
+        "request_time_milis": round(time.time() * 1000),
+        "requestID": 1,
+        "terminal_uuid": "foobar",
+    }
+    with pytest.raises(KasaException):
+        res = await transport.send(json_dumps(request))
+        assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+
+
 async def test_port_override():
     """Test that port override sets the app_url."""
     host = "127.0.0.1"
