@@ -4,7 +4,7 @@ import glob
 import json
 import os
 from pathlib import Path
-from typing import NamedTuple
+from typing import Literal, NamedTuple, TypeAlias
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
@@ -16,6 +16,14 @@ class FixtureInfo(NamedTuple):
     protocol: str
     data: dict
 
+
+class ComponentFilter(NamedTuple):
+    component_name: str
+    version: int
+    include_version: bool
+
+
+ProtocolFilter: TypeAlias = Literal["IOT", "SMART", "SMART.CHILD"]
 
 FixtureInfo.__hash__ = lambda self: hash((self.name, self.protocol))  # type: ignore[attr-defined, method-assign]
 FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assign]
@@ -86,9 +94,9 @@ def filter_fixtures(
     desc,
     *,
     data_root_filter: str | None = None,
-    protocol_filter: set[str] | None = None,
+    protocol_filter: set[ProtocolFilter] | None = None,
     model_filter: set[str] | None = None,
-    component_filter: str | None = None,
+    component_filter: str | ComponentFilter | None = None,
     device_type_filter: list[DeviceType] | None = None,
 ):
     """Filter the fixtures based on supplied parameters.
@@ -106,14 +114,21 @@ def filter_fixtures(
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter
 
-    def _component_match(fixture_data: FixtureInfo, component_filter):
+    def _component_match(
+        fixture_data: FixtureInfo, component_filter: str | ComponentFilter
+    ):
         if (component_nego := fixture_data.data.get("component_nego")) is None:
             return False
         components = {
             component["id"]: component["ver_code"]
             for component in component_nego["component_list"]
         }
-        return component_filter in components
+        if isinstance(component_filter, str):
+            return component_filter in components
+        else:
+            return (ver_code := components.get(component_filter.component_name)) and (
+                ver_code == component_filter.version
+            ) is component_filter.include_version
 
     def _device_type_match(fixture_data: FixtureInfo, device_type):
         if (component_nego := fixture_data.data.get("component_nego")) is None:

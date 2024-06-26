@@ -107,6 +107,8 @@ class Feature:
     Number = Type.Number
     Choice = Type.Choice
 
+    DEFAULT_MAX = 2**16  # Arbitrary max
+
     class Category(Enum):
         """Category hint to allow feature grouping."""
 
@@ -155,7 +157,7 @@ class Feature:
     #: Minimum value
     minimum_value: int = 0
     #: Maximum value
-    maximum_value: int = 2**16  # Arbitrary max
+    maximum_value: int = DEFAULT_MAX
     #: Attribute containing the name of the range getter property.
     #: If set, this property will be used to set *minimum_value* and *maximum_value*.
     range_getter: str | None = None

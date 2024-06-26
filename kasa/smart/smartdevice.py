@@ -6,7 +6,7 @@ import base64
 import logging
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -25,6 +25,9 @@ from .modules import (
     Time,
 )
 from .smartmodule import SmartModule
+
+if TYPE_CHECKING:
+    from .smartchilddevice import SmartChildDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +61,7 @@ class SmartDevice(Device):
         self._state_information: dict[str, Any] = {}
         self._modules: dict[str | ModuleName[Module], SmartModule] = {}
         self._parent: SmartDevice | None = None
-        self._children: Mapping[str, SmartDevice] = {}
+        self._children: Mapping[str, SmartChildDevice] = {}
         self._last_update = {}
 
     async def _initialize_children(self):
@@ -171,7 +174,7 @@ class SmartDevice(Device):
         # devices will always update children to prevent errors on module access.
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
-                await child.update()
+                await child._update_modules()
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)

@@ -15,7 +15,14 @@ from kasa.smart import SmartDevice
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
-from .fixtureinfo import FIXTURE_DATA, FixtureInfo, filter_fixtures, idgenerator
+from .fixtureinfo import (
+    FIXTURE_DATA,
+    ComponentFilter,
+    FixtureInfo,
+    ProtocolFilter,
+    filter_fixtures,
+    idgenerator,
+)
 
 # Tapo bulbs
 BULBS_SMART_VARIABLE_TEMP = {"L530E", "L930-5"}
@@ -174,8 +181,8 @@ def parametrize(
     desc,
     *,
     model_filter=None,
-    protocol_filter=None,
-    component_filter=None,
+    protocol_filter: set[ProtocolFilter] | None = None,
+    component_filter: str | ComponentFilter | None = None,
     data_root_filter=None,
     device_type_filter=None,
     ids=None,

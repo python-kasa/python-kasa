@@ -28,17 +28,23 @@ class SmartChildDevice(SmartDevice):
         protocol: SmartProtocol | None = None,
     ) -> None:
         super().__init__(parent.host, config=parent.config, protocol=parent.protocol)
-        self._parent = parent
+        self._parent: SmartDevice = parent
         self._update_internal_state(info)
         self._components = component_info
         self._id = info["device_id"]
         self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
     async def update(self, update_children: bool = True):
+        """Call the parent update method."""
+        await self._parent.update()
+
+    async def _update_modules(self):
         """Update child module info.
 
-        The parent updates our internal info so just update modules with
-        their own queries.
+        The parent updates our internal info so just update modules with their
+        own queries. Wherever possible child modules should source data from
+        the get_child_device_list response on the parent. If not available like
+        get_auto_off_config P300 on child devices this will refresh the child.
         """
         req: dict[str, Any] = {}
         for module in self.modules.values():
