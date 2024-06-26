@@ -218,26 +218,30 @@ class FakeSmartTransport(BaseTransport):
             info["get_on_off_gradually_info"] = {"enable": params["enable"]}
         elif on_state := params.get("on_state"):
             if "fade_on_time" in info and "gradually_on_mode" in info:
-                info["fade_on_time"] = on_state["duration"]
                 info["gradually_on_mode"] = 1 if on_state["enable"] else 0
+                if "duration" in on_state:
+                    info["fade_on_time"] = on_state["duration"]
             else:
                 info["get_on_off_gradually_info"]["on_state"]["enable"] = on_state[
                     "enable"
                 ]
-                info["get_on_off_gradually_info"]["on_state"]["duration"] = on_state[
-                    "duration"
-                ]
+                if "duration" in on_state:
+                    info["get_on_off_gradually_info"]["on_state"]["duration"] = (
+                        on_state["duration"]
+                    )
         elif off_state := params.get("off_state"):
             if "fade_off_time" in info and "gradually_off_mode" in info:
-                info["fade_off_time"] = off_state["duration"]
                 info["gradually_off_mode"] = 1 if off_state["enable"] else 0
+                if "duration" in off_state:
+                    info["fade_off_time"] = off_state["duration"]
             else:
                 info["get_on_off_gradually_info"]["off_state"]["enable"] = off_state[
                     "enable"
                 ]
-                info["get_on_off_gradually_info"]["off_state"]["duration"] = off_state[
-                    "duration"
-                ]
+                if "duration" in off_state:
+                    info["get_on_off_gradually_info"]["off_state"]["duration"] = (
+                        off_state["duration"]
+                    )
         return {"error_code": 0}
 
     def _set_dynamic_light_effect(self, info, params):
@@ -371,7 +375,7 @@ class FakeSmartTransport(BaseTransport):
             return self._set_preset_rules(info, params)
         elif method == "edit_preset_rules":
             return self._edit_preset_rules(info, params)
-        elif method == "_set_on_off_gradually_info":
+        elif method == "set_on_off_gradually_info":
             return self._set_on_off_gradually_info(info, params)
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"

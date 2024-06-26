@@ -186,7 +186,7 @@ class LightTransition(SmartModule):
         if seconds <= 0:
             return await self.call(
                 "set_on_off_gradually_info",
-                {"on_state": {"enable": False, "duration": 0}},
+                {"on_state": {"enable": False}},
             )
 
         return await self.call(
@@ -226,7 +226,7 @@ class LightTransition(SmartModule):
         if seconds <= 0:
             return await self.call(
                 "set_on_off_gradually_info",
-                {"off_state": {"enable": False, "duration": 0}},
+                {"off_state": {"enable": False}},
             )
 
         return await self.call(
