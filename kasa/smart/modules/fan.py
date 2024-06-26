@@ -53,6 +53,11 @@ class Fan(SmartModule, FanInterface):
         return {}
 
     @property
+    def fan_speed_level_feature(self) -> Feature:
+        """Return fan speed level feature."""
+        return self._module_features["fan_speed_level"]
+
+    @property
     def fan_speed_level(self) -> int:
         """Return fan speed level."""
         return 0 if self.data["device_on"] is False else self.data["fan_speed_level"]
