@@ -4,7 +4,9 @@ import glob
 import json
 import os
 from pathlib import Path
-from typing import Literal, NamedTuple, TypeAlias
+from typing import Literal, NamedTuple
+
+from typing_extensions import TypeAlias
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
