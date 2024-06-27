@@ -25,9 +25,6 @@ class LightTransition(SmartModule):
     QUERY_GETTER_NAME = "get_on_off_gradually_info"
     MAXIMUM_DURATION = 60
 
-    # If calling the legacy set_enabled on a device that supports duration
-    DEFAULT_DURATION = 1
-
     # Key in sysinfo that indicates state can be retrieved from there.
     # Usually only for child lights, i.e, ks240.
     SYS_INFO_STATE_KEYS = (
@@ -144,9 +141,12 @@ class LightTransition(SmartModule):
         if not self._supports_on_and_off:
             return await self.call("set_on_off_gradually_info", {"enable": enable})
         else:
-            duration = self.DEFAULT_DURATION if enable else 0
-            on = await self.set_turn_on_transition(duration)
-            off = await self.set_turn_off_transition(duration)
+            on = await self.call(
+                "set_on_off_gradually_info", {"on_state": {"enable": enable}}
+            )
+            off = await self.call(
+                "set_on_off_gradually_info", {"off_state": {"enable": enable}}
+            )
             return {**on, **off}
 
     @property
