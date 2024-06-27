@@ -4,9 +4,7 @@ import glob
 import json
 import os
 from pathlib import Path
-from typing import Literal, NamedTuple
-
-from typing_extensions import TypeAlias
+from typing import NamedTuple
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
@@ -21,11 +19,9 @@ class FixtureInfo(NamedTuple):
 
 class ComponentFilter(NamedTuple):
     component_name: str
-    version: int
-    include_version: bool
+    minimum_version: int = 0
+    maximum_version: int | None = None
 
-
-ProtocolFilter: TypeAlias = Literal["IOT", "SMART", "SMART.CHILD"]
 
 FixtureInfo.__hash__ = lambda self: hash((self.name, self.protocol))  # type: ignore[attr-defined, method-assign]
 FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assign]
@@ -96,7 +92,7 @@ def filter_fixtures(
     desc,
     *,
     data_root_filter: str | None = None,
-    protocol_filter: set[ProtocolFilter] | None = None,
+    protocol_filter: set[str] | None = None,
     model_filter: set[str] | None = None,
     component_filter: str | ComponentFilter | None = None,
     device_type_filter: list[DeviceType] | None = None,
@@ -128,9 +124,14 @@ def filter_fixtures(
         if isinstance(component_filter, str):
             return component_filter in components
         else:
-            return (ver_code := components.get(component_filter.component_name)) and (
-                ver_code == component_filter.version
-            ) is component_filter.include_version
+            return (
+                (ver_code := components.get(component_filter.component_name))
+                and ver_code >= component_filter.minimum_version
+                and (
+                    component_filter.maximum_version is None
+                    or ver_code <= component_filter.maximum_version
+                )
+            )
 
     def _device_type_match(fixture_data: FixtureInfo, device_type):
         if (component_nego := fixture_data.data.get("component_nego")) is None:

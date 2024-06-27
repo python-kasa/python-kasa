@@ -155,11 +155,6 @@ class LightTransition(SmartModule):
         return self._enabled
 
     @property
-    def turn_on_transition_feature(self) -> Feature | None:
-        """Return inspectable details of the feature or None if unsupported."""
-        return self._module_features.get("smooth_transition_on")
-
-    @property
     def turn_on_transition(self) -> int:
         """Return transition time for turning the light on.
 
@@ -193,11 +188,6 @@ class LightTransition(SmartModule):
             "set_on_off_gradually_info",
             {"on_state": {"enable": True, "duration": seconds}},
         )
-
-    @property
-    def turn_off_transition_feature(self) -> Feature | None:
-        """Return inspectable details of the feature or None if unsupported."""
-        return self._module_features.get("smooth_transition_off")
 
     @property
     def turn_off_transition(self) -> int:

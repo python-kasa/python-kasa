@@ -8,14 +8,14 @@ from kasa.tests.fixtureinfo import ComponentFilter
 light_transition_v1 = parametrize(
     "has light transition",
     component_filter=ComponentFilter(
-        component_name="on_off_gradually", version=1, include_version=True
+        component_name="on_off_gradually", maximum_version=1
     ),
     protocol_filter={"SMART"},
 )
 light_transition_gt_v1 = parametrize(
     "has light transition",
     component_filter=ComponentFilter(
-        component_name="on_off_gradually", version=1, include_version=False
+        component_name="on_off_gradually", minimum_version=2
     ),
     protocol_filter={"SMART"},
 )
@@ -30,9 +30,6 @@ async def test_module_v1(dev: SmartDevice, mocker: MockerFixture):
     assert "smooth_transitions" in light_transition._module_features
     assert "smooth_transition_on" not in light_transition._module_features
     assert "smooth_transition_off" not in light_transition._module_features
-
-    assert light_transition.turn_off_transition_feature is None
-    assert light_transition.turn_on_transition_feature is None
 
     await light_transition.set_enabled(True)
     await dev.update()
@@ -53,9 +50,6 @@ async def test_module_gt_v1(dev: SmartDevice, mocker: MockerFixture):
     assert "smooth_transition_on" in light_transition._module_features
     assert "smooth_transition_off" in light_transition._module_features
 
-    assert light_transition.turn_off_transition_feature is not None
-    assert light_transition.turn_on_transition_feature is not None
-
     await light_transition.set_enabled(True)
     await dev.update()
     assert light_transition.enabled is True
@@ -75,9 +69,9 @@ async def test_module_gt_v1(dev: SmartDevice, mocker: MockerFixture):
     assert light_transition.turn_off_transition == 10
     assert light_transition.enabled is True
 
-    max_on = light_transition.turn_on_transition_feature.maximum_value
+    max_on = light_transition._module_features["smooth_transition_on"].maximum_value
     assert max_on < Feature.DEFAULT_MAX
-    max_off = light_transition.turn_off_transition_feature.maximum_value
+    max_off = light_transition._module_features["smooth_transition_off"].maximum_value
     assert max_off < Feature.DEFAULT_MAX
 
     await light_transition.set_turn_on_transition(0)
