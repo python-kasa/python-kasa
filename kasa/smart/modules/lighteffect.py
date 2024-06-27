@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import base64
+import binascii
+import contextlib
 import copy
 from typing import Any
 
@@ -36,8 +38,11 @@ class LightEffect(SmartModule, LightEffectInterface):
                 # If the name has not been edited scene_name will be an empty string
                 effect["scene_name"] = self.AVAILABLE_BULB_EFFECTS[effect["id"]]
             else:
-                # Otherwise it will be b64 encoded
-                effect["scene_name"] = base64.b64decode(effect["scene_name"]).decode()
+                # Otherwise it might be b64 encoded or raw string
+                with contextlib.suppress(binascii.Error):
+                    effect["scene_name"] = base64.b64decode(
+                        effect["scene_name"]
+                    ).decode()
 
         self._effect_state_list = effects
         self._effect_list = [self.LIGHT_EFFECTS_OFF]
@@ -91,6 +96,42 @@ class LightEffect(SmartModule, LightEffectInterface):
             effect_id = self._scenes_names_to_id[effect]
             params["id"] = effect_id
         return await self.call("set_dynamic_light_effect_rule_enable", params)
+
+    @property
+    def is_active(self) -> bool:
+        """Return True if effect is active."""
+        return bool(self._device._info["dynamic_light_effect_enable"])
+
+    @property
+    def current_effect_data(self) -> dict[str, Any]:
+        """Return current effect data."""
+        return self._effect_state_list[self.data["current_rule_id"]]
+
+    @property
+    def brightness(self) -> int:
+        """Return effect brightness."""
+        first_color_status = self.current_effect_data["color_status_list"][0]
+        brightness = first_color_status[0]
+        return brightness
+
+    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+        """Set effect brightness."""
+        new_effect = self.current_effect_data.copy()
+
+        def replace_brightness(data, new_brightness):
+            """Replace brightness.
+
+            The first element is the brightness, the rest are unknown.
+            [[33, 0, 0, 2700], [33, 321, 99, 0], [33, 196, 99, 0], .. ]
+            """
+            return [new_brightness, data[1], data[2], data[3]]
+
+        new_color_status_list = [
+            replace_brightness(state, brightness)
+            for state in new_effect["color_status_list"]
+        ]
+        new_effect["color_status_list"] = new_color_status_list
+        return await self.call("edit_dynamic_light_effect_rule", new_effect)
 
     async def set_custom_effect(
         self,
