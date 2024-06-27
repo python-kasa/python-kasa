@@ -1,7 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device, LightState, Module
+from kasa import Device, LightState, Module, ThermostatState
 from kasa.tests.device_fixtures import (
     bulb_iot,
     bulb_smart,
@@ -43,6 +43,12 @@ light_preset_smart = parametrize(
 light_preset = parametrize_combine([light_preset_smart, bulb_iot])
 
 light = parametrize_combine([bulb_smart, bulb_iot, dimmable])
+
+temp_control_smart = parametrize(
+    "has temp control smart",
+    component_filter="temp_control",
+    protocol_filter={"SMART.CHILD"},
+)
 
 
 @led
@@ -241,3 +247,42 @@ async def test_light_preset_save(dev: Device, mocker: MockerFixture):
         and new_preset_state.saturation == new_preset.saturation
         and new_preset_state.color_temp == new_preset.color_temp
     )
+
+
+@temp_control_smart
+async def test_thermostat(dev: Device, mocker: MockerFixture):
+    """Test saving a new preset value."""
+    therm_mod = next(get_parent_and_child_modules(dev, Module.Thermostat))
+    assert therm_mod
+
+    await therm_mod.set_state(False)
+    await dev.update()
+    assert therm_mod.state is False
+    assert therm_mod.mode is ThermostatState.Off
+
+    await therm_mod.set_target_temperature(10)
+    await dev.update()
+    assert therm_mod.state is True
+    assert therm_mod.mode is ThermostatState.Heating
+    assert therm_mod.target_temperature == 10
+
+    allowed_range = therm_mod.allowed_temperature_range
+    assert therm_mod.minimum_target_temperature == allowed_range[0]
+    assert therm_mod.maximum_target_temperature == allowed_range[1]
+
+    await therm_mod.set_temperature_offset(5)
+    await dev.update()
+    assert therm_mod.temperature_offset == 5
+
+    await therm_mod.set_temperature_unit("celsius")
+    await dev.update()
+    assert therm_mod.temperature_unit == "celsius"
+
+    await therm_mod.set_temperature_unit("fahrenheit")
+    await dev.update()
+    assert therm_mod.temperature_unit == "fahrenheit"
+
+    # get_frost_protection needs to be added to fixtures
+    # assert therm_mod.frost_control_temperature == 5
+
+    assert therm_mod.temperature_warning is False

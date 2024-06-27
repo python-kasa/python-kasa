@@ -249,6 +249,17 @@ class FakeSmartTransport(BaseTransport):
         info["get_preset_rules"]["states"][params["index"]] = params["state"]
         return {"error_code": 0}
 
+    def _set_temperature_unit(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        unit = params["temp_unit"]
+        if unit not in {"celsius", "fahrenheit"}:
+            raise ValueError(f"Invalid value for temperature unit {unit}")
+        if "temp_unit" not in info["get_device_info"]:
+            return {"error_code": SmartErrorCode.UNKNOWN_METHOD_ERROR}
+        else:
+            info["get_device_info"]["temp_unit"] = unit
+            return {"error_code": 0}
+
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
         params = request_dict["params"]
@@ -324,6 +335,8 @@ class FakeSmartTransport(BaseTransport):
             return self._set_preset_rules(info, params)
         elif method == "edit_preset_rules":
             return self._edit_preset_rules(info, params)
+        elif method == "set_temperature_unit":
+            return self._set_temperature_unit(info, params)
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)
