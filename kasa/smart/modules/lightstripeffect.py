@@ -54,6 +54,26 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         return self.LIGHT_EFFECTS_OFF
 
     @property
+    def is_active(self) -> bool:
+        """Return if effect is active."""
+        eff = self.data["lighting_effect"]
+        return bool(eff["enable"])
+
+    @property
+    def brightness(self) -> int:
+        """Return effect brightness."""
+        eff = self.data["lighting_effect"]
+        return eff["brightness"]
+
+    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+        """Set effect brightness."""
+        if brightness <= 0:
+            return await self.set_effect(self.LIGHT_EFFECTS_OFF)
+
+        eff = {"brightness": brightness, "bAdjusted": True}
+        return await self.set_custom_effect(eff)
+
+    @property
     def effect_list(self) -> list[str]:
         """Return built-in effects list.
 
