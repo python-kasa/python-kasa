@@ -119,6 +119,9 @@ class SmartErrorCode(IntEnum):
     DST_ERROR = -2301
     DST_SAVE_ERROR = -2302
 
+    # Library internal for unknown error codes
+    INTERNAL_UNKNOWN_ERROR = -100_000
+
 
 SMART_RETRYABLE_ERRORS = [
     SmartErrorCode.TRANSPORT_NOT_AVAILABLE_ERROR,
