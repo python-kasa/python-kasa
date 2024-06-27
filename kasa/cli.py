@@ -169,6 +169,84 @@ def json_formatter_cb(result, **kwargs):
     print(json_content)
 
 
+_global_child_options = [
+    click.option(
+        "--child",
+        "--name",
+        is_flag=False,
+        flag_value="",
+        default=None,
+        required=False,
+        type=click.STRING,
+        help=(
+            "Child ID or alias for controlling sub-devices. "
+            "If no value provided will show an interactive prompt allowing you to "
+            "select a child."
+        ),
+    ),
+    click.option(
+        "--child-index",
+        "--index",
+        required=False,
+        default=None,
+        type=click.INT,
+        help="Child index controlling sub-devices",
+    ),
+]
+
+
+def child_options(func):
+    """Return the child options."""
+    for option in reversed(_global_child_options):
+        func = option(func)
+    return func
+
+
+def _process_child_options(device: Device, child_option, child_index_option) -> Device:  # type: ignore[return]
+    def _list_children():
+        return "\n".join(
+            [
+                f"{idx}: {child.device_id} ({child.alias})"
+                for idx, child in enumerate(device.children)
+            ]
+        )
+
+    if child_option is None and child_index_option is None:
+        return device
+
+    if not device.children:
+        error(f"Device: {device} does not have children")
+
+    if child_option is not None and child_index_option is not None:
+        raise click.BadOptionUsage(
+            "child", "Use either --child or --child-index, not both."
+        )
+
+    if child_option is not None:
+        if child_option == "":  # default flag if no value set
+            msg = _list_children()
+            child_index_option = click.prompt(
+                f"\n{msg}\nEnter the index number of the child device",
+                type=click.IntRange(0, len(device.children) - 1),
+            )
+        elif child := device.get_child_device(child_option):
+            echo(f"Targeting child device {child}")
+            return child
+        else:
+            error(
+                "No child device found with device_id or name: "
+                f"{child_option} children are:\n{_list_children()}"
+            )
+    if child_index_option is not None:
+        child_by_index = device.children[child_index_option]
+        echo(f"Targeting child device {child_by_index}")
+        return child_by_index
+    error(
+        f"No child device found with device_id or name: "
+        f"{child_option} children are:\n{_list_children()}"
+    )
+
+
 @click.group(
     invoke_without_command=True,
     cls=CatchAllExceptions(click.Group),
@@ -696,6 +774,11 @@ async def state(ctx, dev: Device):
         for module in dev.modules.values():
             echo(f"\t[green]+ {module}[/green]")
 
+        for child in dev.children:
+            echo(f"\n\t[bold]== Child {child.alias} Modules ==[/bold]")
+            for module in child.modules.values():
+                echo(f"\t\t[green]+ {module}[/green]")
+
         echo("\n\t[bold]== Protocol information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
         echo()
@@ -707,14 +790,10 @@ async def state(ctx, dev: Device):
 @cli.command()
 @pass_dev
 @click.argument("new_alias", required=False, default=None)
-@click.option("--index", type=int)
-async def alias(dev, new_alias, index):
+@child_options
+async def alias(device, new_alias, child, child_index):
     """Get or set the device (or plug) alias."""
-    if index is not None:
-        if not dev.is_strip:
-            echo("Index can only used for power strips!")
-            return
-        dev = dev.get_plug_by_index(index)
+    dev = _process_child_options(device, child, child_index)
 
     if new_alias is not None:
         echo(f"Setting alias to {new_alias}")
@@ -722,7 +801,7 @@ async def alias(dev, new_alias, index):
         return res
 
     echo(f"Alias: {dev.alias}")
-    if dev.is_strip:
+    if dev.children:
         for plug in dev.children:
             echo(f"  * {plug.alias}")
 
@@ -744,21 +823,21 @@ async def raw_command(ctx, dev: Device, module, command, parameters):
 @cli.command(name="command")
 @pass_dev
 @click.option("--module", required=False, help="Module for IOT protocol.")
-@click.option("--child", required=False, help="Child ID for controlling sub-devices")
+@child_options
 @click.argument("command")
 @click.argument("parameters", default=None, required=False)
-async def cmd_command(dev: Device, module, child, command, parameters):
+async def cmd_command(device: Device, module, command, parameters, child, child_index):
     """Run a raw command on the device."""
     if parameters is not None:
         parameters = ast.literal_eval(parameters)
 
-    if child:
+    dev = _process_child_options(device, child, child_index)
+    if device != dev:
         # The way child devices are accessed requires a ChildDevice to
         # wrap the communications. Doing this properly would require creating
         # a common interfaces for both IOT and SMART child devices.
         # As a stop-gap solution, we perform an update instead.
-        await dev.update()
-        dev = dev.get_child_device(child)
+        await device.update()
 
     if isinstance(dev, IotDevice):
         res = await dev._query_helper(module, command, parameters)
@@ -841,14 +920,25 @@ async def emeter(dev: Device, index: int, name: str, year, month, erase):
 
 @cli.command()
 @pass_dev
+@click.option("--index", type=int, required=False)
+@click.option("--name", type=str, required=False)
 @click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
-async def usage(dev: Device, year, month, erase):
+async def usage(dev: Device, year, month, erase, index, name):
     """Query usage for historical consumption.
 
     Daily and monthly data provided in CSV format.
     """
+    if index is not None or name is not None:
+        if not dev.is_strip:
+            error("Index and name are only for power strips!")
+            return
+
+        if index is not None:
+            dev = dev.get_plug_by_index(index)
+        elif name:
+            dev = dev.get_plug_by_name(name)
     echo("[bold]== Usage ==[/bold]")
     usage = cast(Usage, dev.modules["usage"])
 
@@ -1109,9 +1199,20 @@ async def schedule(dev):
 
 @schedule.command(name="list")
 @pass_dev
+@click.option("--index", type=int, required=False)
+@click.option("--name", type=str, required=False)
 @click.argument("type", default="schedule")
-def _schedule_list(dev, type):
+def _schedule_list(dev, type, index, name):
     """Return the list of schedule actions for the given type."""
+    if index is not None or name is not None:
+        if not dev.is_strip:
+            error("Index and name are only for power strips!")
+            return
+
+        if index is not None:
+            dev = dev.get_plug_by_index(index)
+        elif name:
+            dev = dev.get_plug_by_name(name)
     sched = dev.modules[type]
     for rule in sched.rules:
         print(rule)
@@ -1263,10 +1364,17 @@ async def shell(dev: Device):
 @cli.command(name="feature")
 @click.argument("name", required=False)
 @click.argument("value", required=False)
-@click.option("--child", required=False)
+@child_options
 @pass_dev
 @click.pass_context
-async def feature(ctx: click.Context, dev: Device, child: str, name: str, value):
+async def feature(
+    ctx: click.Context,
+    device: Device,
+    name: str,
+    value,
+    child: str | None,
+    child_index: int | None,
+):
     """Access and modify features.
 
     If no *name* is given, lists available features and their values.
@@ -1275,9 +1383,8 @@ async def feature(ctx: click.Context, dev: Device, child: str, name: str, value)
     """
     verbose = ctx.parent.params.get("verbose", False) if ctx.parent else False
 
-    if child is not None:
-        echo(f"Targeting child device {child}")
-        dev = dev.get_child_device(child)
+    dev = _process_child_options(device, child, child_index)
+
     if not name:
         _echo_all_features(dev.features, verbose=verbose, indent="")
 
@@ -1306,7 +1413,7 @@ async def feature(ctx: click.Context, dev: Device, child: str, name: str, value)
     value = ast.literal_eval(value)
     echo(f"Changing {name} from {feat.value} to {value}")
     response = await dev.features[name].set_value(value)
-    await dev.update()
+    await device.update()
     echo(f"New state: {feat.value}")
 
     return response
