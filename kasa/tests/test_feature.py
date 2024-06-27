@@ -185,7 +185,8 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
 
     async def _test_features(dev):
         exceptions = []
-        for feat in dev.features.values():
+        feats = dev.features.copy()
+        for feat in feats.values():
             try:
                 with patch.object(feat.device.protocol, "query") as query:
                     await _test_feature(feat, query)
@@ -197,6 +198,10 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
                 exceptions.append(ex)
 
         return exceptions
+
+    # We mock the device state reset to avoid clearing our internal state.
+    # This is currently only available on smartdevice, so we set create=True
+    mocker.patch.object(dev, "request_renegotiation", create=True)
 
     exceptions = await _test_features(dev)
 

@@ -1312,5 +1312,43 @@ async def feature(ctx: click.Context, dev: Device, child: str, name: str, value)
     return response
 
 
+@cli.group()
+async def child():
+    """Commands controling child devices."""
+
+
+@child.command(name="list")
+@pass_dev
+async def child_list(dev):
+    """List children."""
+    for c in dev.children:
+        echo(f"{c.device_id}: {c}")
+
+
+@child.command(name="pair")
+@click.option("--timeout", default=10)
+@pass_dev
+async def child_pair(dev, timeout):
+    """Pair new device."""
+    if (cs := dev.modules.get(Module.ChildSetup)) is None:
+        error("%s does not support pairing." % dev)
+
+    echo("Finding new devices for %s seconds" % timeout)
+    return await cs.pair(timeout=timeout)
+
+
+@child.command(name="unpair")
+@click.argument("device_id")
+@pass_dev
+async def child_unpair(dev, device_id: str):
+    """Unpair given device."""
+    if (cs := dev.modules.get(Module.ChildSetup)) is None:
+        error("%s does not support pairing." % dev)
+
+    res = await cs.unpair(device_id=device_id)
+    echo("Unpaired %s (if it was paired)" % device_id)
+    return res
+
+
 if __name__ == "__main__":
     cli()

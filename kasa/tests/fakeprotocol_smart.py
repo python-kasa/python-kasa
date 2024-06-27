@@ -115,6 +115,16 @@ class FakeSmartTransport(BaseTransport):
             },
         ),
         "get_device_usage": ("device", {}),
+        # child setup
+        "get_support_child_device_category": (
+            "child_quick_setup",
+            {"device_category_list": [{"category": "subg.trv"}]},
+        ),
+        # no devices found
+        "get_scan_child_device_list": (
+            "child_quick_setup",
+            {"child_device_list": [{"dummy": "response"}], "scan_status": "idle"},
+        ),
     }
 
     async def send(self, request: str):
@@ -324,6 +334,13 @@ class FakeSmartTransport(BaseTransport):
             return self._set_preset_rules(info, params)
         elif method == "edit_preset_rules":
             return self._edit_preset_rules(info, params)
+        # childsetup methods
+        if method in [
+            "begin_scanning_child_device",
+            "add_child_device_list",
+            "remove_child_device_list",
+        ]:
+            return {"error_code": 0}
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)
