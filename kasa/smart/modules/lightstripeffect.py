@@ -57,7 +57,8 @@ class LightStripEffect(SmartModule, LightEffectInterface):
     def is_active(self) -> bool:
         """Return if effect is active."""
         eff = self.data["lighting_effect"]
-        return bool(eff["enable"])
+        # softAP has enable=1, but brightness 0 which fails on tests
+        return eff["enable"] and eff["name"] in self._effect_list
 
     @property
     def brightness(self) -> int:

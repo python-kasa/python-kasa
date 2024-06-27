@@ -206,7 +206,7 @@ class FakeSmartTransport(BaseTransport):
         info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
         if params["enable"]:
             info["get_device_info"]["dynamic_light_effect_id"] = params["id"]
-            info["get_dynamic_light_effect_rules"]["current_rule_id"] = params["enable"]
+            info["get_dynamic_light_effect_rules"]["current_rule_id"] = params["id"]
         else:
             if "dynamic_light_effect_id" in info["get_device_info"]:
                 del info["get_device_info"]["dynamic_light_effect_id"]
