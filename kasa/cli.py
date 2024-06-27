@@ -920,25 +920,16 @@ async def emeter(dev: Device, index: int, name: str, year, month, erase):
 
 @cli.command()
 @pass_dev
-@click.option("--index", type=int, required=False)
-@click.option("--name", type=str, required=False)
+@child_options
 @click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
-async def usage(dev: Device, year, month, erase, index, name):
+async def usage(device: Device, year, month, erase, child, child_index):
     """Query usage for historical consumption.
 
     Daily and monthly data provided in CSV format.
     """
-    if index is not None or name is not None:
-        if not dev.is_strip:
-            error("Index and name are only for power strips!")
-            return
-
-        if index is not None:
-            dev = dev.get_plug_by_index(index)
-        elif name:
-            dev = dev.get_plug_by_name(name)
+    dev = _process_child_options(device, child, child_index)
     echo("[bold]== Usage ==[/bold]")
     usage = cast(Usage, dev.modules["usage"])
 
@@ -1199,20 +1190,12 @@ async def schedule(dev):
 
 @schedule.command(name="list")
 @pass_dev
-@click.option("--index", type=int, required=False)
-@click.option("--name", type=str, required=False)
+@child_options
 @click.argument("type", default="schedule")
-def _schedule_list(dev, type, index, name):
+def _schedule_list(device, type, child, child_index):
     """Return the list of schedule actions for the given type."""
-    if index is not None or name is not None:
-        if not dev.is_strip:
-            error("Index and name are only for power strips!")
-            return
+    dev = _process_child_options(device, child, child_index)
 
-        if index is not None:
-            dev = dev.get_plug_by_index(index)
-        elif name:
-            dev = dev.get_plug_by_name(name)
     sched = dev.modules[type]
     for rule in sched.rules:
         print(rule)
