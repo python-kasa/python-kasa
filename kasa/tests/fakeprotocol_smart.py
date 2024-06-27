@@ -78,7 +78,6 @@ class FakeSmartTransport(BaseTransport):
                 },
             },
         ),
-        "get_on_off_gradually_info": ("on_off_gradually", {"enable": True}),
         "get_latest_fw": (
             "firmware",
             {
@@ -164,6 +163,8 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif child_method == "set_preset_rules":
             return self._set_child_preset_rules(info, child_params)
+        elif child_method == "set_on_off_gradually_info":
+            return self._set_on_off_gradually_info(info, child_params)
         elif child_method in child_device_calls:
             result = copy.deepcopy(child_device_calls[child_method])
             return {"result": result, "error_code": 0}
@@ -199,6 +200,49 @@ class FakeSmartTransport(BaseTransport):
         raise NotImplementedError(
             "Method %s not implemented for children" % child_method
         )
+
+    def _get_on_off_gradually_info(self, info, params):
+        if self.components["on_off_gradually"] == 1:
+            info["get_on_off_gradually_info"] = {"enable": True}
+        else:
+            info["get_on_off_gradually_info"] = {
+                "off_state": {"duration": 5, "enable": False, "max_duration": 60},
+                "on_state": {"duration": 5, "enable": False, "max_duration": 60},
+            }
+        return copy.deepcopy(info["get_on_off_gradually_info"])
+
+    def _set_on_off_gradually_info(self, info, params):
+        # Child devices can have the required properties directly in info
+
+        if self.components["on_off_gradually"] == 1:
+            info["get_on_off_gradually_info"] = {"enable": params["enable"]}
+        elif on_state := params.get("on_state"):
+            if "fade_on_time" in info and "gradually_on_mode" in info:
+                info["gradually_on_mode"] = 1 if on_state["enable"] else 0
+                if "duration" in on_state:
+                    info["fade_on_time"] = on_state["duration"]
+            else:
+                info["get_on_off_gradually_info"]["on_state"]["enable"] = on_state[
+                    "enable"
+                ]
+                if "duration" in on_state:
+                    info["get_on_off_gradually_info"]["on_state"]["duration"] = (
+                        on_state["duration"]
+                    )
+        elif off_state := params.get("off_state"):
+            if "fade_off_time" in info and "gradually_off_mode" in info:
+                info["gradually_off_mode"] = 1 if off_state["enable"] else 0
+                if "duration" in off_state:
+                    info["fade_off_time"] = off_state["duration"]
+            else:
+                info["get_on_off_gradually_info"]["off_state"]["enable"] = off_state[
+                    "enable"
+                ]
+                if "duration" in off_state:
+                    info["get_on_off_gradually_info"]["off_state"]["duration"] = (
+                        off_state["duration"]
+                    )
+        return {"error_code": 0}
 
     def _set_dynamic_light_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
@@ -294,6 +338,13 @@ class FakeSmartTransport(BaseTransport):
                 info[method] = copy.deepcopy(missing_result[1])
                 result = copy.deepcopy(info[method])
                 retval = {"result": result, "error_code": 0}
+            elif (
+                method == "get_on_off_gradually_info"
+                and "on_off_gradually" in self.components
+            ):
+                # Need to call a method here to determine which version schema to return
+                result = self._get_on_off_gradually_info(info, params)
+                return {"result": result, "error_code": 0}
             else:
                 # PARAMS error returned for KS240 when get_device_usage called
                 # on parent device.  Could be any error code though.
@@ -324,6 +375,8 @@ class FakeSmartTransport(BaseTransport):
             return self._set_preset_rules(info, params)
         elif method == "edit_preset_rules":
             return self._edit_preset_rules(info, params)
+        elif method == "set_on_off_gradually_info":
+            return self._set_on_off_gradually_info(info, params)
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)
