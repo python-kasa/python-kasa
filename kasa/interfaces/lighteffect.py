@@ -82,20 +82,6 @@ class LightEffect(Module, ABC):
 
     @property
     @abstractmethod
-    def is_active(self) -> bool:
-        """Return if effect is active."""
-
-    @property
-    @abstractmethod
-    def brightness(self) -> int:
-        """Return effect brightness."""
-
-    @abstractmethod
-    async def set_brightness(self, brightness: int, *, transition: int | None = None):
-        """Set effect brightness."""
-
-    @property
-    @abstractmethod
     def effect_list(self) -> list[str]:
         """Return built-in effects list.
 
