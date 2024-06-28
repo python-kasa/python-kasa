@@ -49,7 +49,7 @@ async def test_light_effect_brightness(
     """Test that light module uses light_effect for brightness when active."""
     light_module = dev.modules[Module.Light]
 
-    light_effect = dev.modules[Module.LightEffect]
+    light_effect = dev.modules[Module.SmartLightEffect]
     light_effect_set_brightness = mocker.spy(light_effect, "set_brightness")
     mock_light_effect_call = mocker.patch.object(light_effect, "call")
 

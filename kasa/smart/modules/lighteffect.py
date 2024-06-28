@@ -8,11 +8,11 @@ import contextlib
 import copy
 from typing import Any
 
-from ...interfaces.lighteffect import LightEffect as LightEffectInterface
+from ..effects import SmartLightEffect
 from ..smartmodule import SmartModule
 
 
-class LightEffect(SmartModule, LightEffectInterface):
+class LightEffect(SmartModule, SmartLightEffect):
     """Implementation of dynamic light effects."""
 
     REQUIRED_COMPONENT = "light_effect"

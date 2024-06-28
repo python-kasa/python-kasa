@@ -123,6 +123,10 @@ class Module(ABC):
         "WaterleakSensor"
     )
 
+    SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
+        "LightEffect"
+    )
+
     def __init__(self, device: Device, module: str):
         self._device = device
         self._module = module

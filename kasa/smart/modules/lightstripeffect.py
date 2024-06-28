@@ -4,15 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...interfaces.lighteffect import LightEffect as LightEffectInterface
-from ..effects import EFFECT_MAPPING, EFFECT_NAMES
-from ..smartmodule import SmartModule
+from ..effects import EFFECT_MAPPING, EFFECT_NAMES, SmartLightEffect
+from ..smartmodule import Module, SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class LightStripEffect(SmartModule, LightEffectInterface):
+class LightStripEffect(SmartModule, SmartLightEffect):
     """Implementation of dynamic light effects."""
 
     REQUIRED_COMPONENT = "light_strip_lighting_effect"
@@ -102,6 +101,7 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         :param int brightness: The wanted brightness
         :param int transition: The wanted transition time
         """
+        brightness_module = self._device.modules[Module.Brightness]
         if effect == self.LIGHT_EFFECTS_OFF:
             effect_dict = dict(self.data["lighting_effect"])
             effect_dict["enable"] = 0
@@ -110,8 +110,13 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         else:
             effect_dict = EFFECT_MAPPING[effect]
 
+        # Use explicitly given brightness
         if brightness is not None:
             effect_dict["brightness"] = brightness
+        # Fall back to brightness reported by the brightness module
+        elif brightness_module.brightness:
+            effect_dict["brightness"] = brightness_module.brightness
+
         if transition is not None:
             effect_dict["transition"] = transition
 
