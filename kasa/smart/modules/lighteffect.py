@@ -118,7 +118,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         """Set effect brightness."""
         new_effect = self.current_effect_data.copy()
 
-        def replace_brightness(data, new_brightness):
+        def _replace_brightness(data, new_brightness):
             """Replace brightness.
 
             The first element is the brightness, the rest are unknown.
@@ -127,7 +127,7 @@ class LightEffect(SmartModule, SmartLightEffect):
             return [new_brightness, data[1], data[2], data[3]]
 
         new_color_status_list = [
-            replace_brightness(state, brightness)
+            _replace_brightness(state, brightness)
             for state in new_effect["color_status_list"]
         ]
         new_effect["color_status_list"] = new_color_status_list

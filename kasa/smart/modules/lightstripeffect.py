@@ -70,6 +70,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         if brightness <= 0:
             return await self.set_effect(self.LIGHT_EFFECTS_OFF)
 
+        # Need to pass bAdjusted to keep the existing effect running
         eff = {"brightness": brightness, "bAdjusted": True}
         return await self.set_custom_effect(eff)
 
