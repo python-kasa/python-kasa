@@ -233,7 +233,7 @@ class Device(ABC):
         return await connect(host=host, config=config)  # type: ignore[arg-type]
 
     @abstractmethod
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True, update_parent: bool = True):
         """Update the device."""
 
     async def disconnect(self):

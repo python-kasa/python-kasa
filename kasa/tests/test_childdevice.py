@@ -2,13 +2,21 @@ import inspect
 import sys
 
 import pytest
+from pytest_mock import MockerFixture
 
+from kasa import Device
 from kasa.device_type import DeviceType
 from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES
 from kasa.smartprotocol import _ChildProtocolWrapper
 
-from .conftest import parametrize, parametrize_subtract, strip_smart
+from .conftest import (
+    parametrize,
+    parametrize_combine,
+    parametrize_subtract,
+    strip_iot,
+    strip_smart,
+)
 
 has_children_smart = parametrize(
     "has children", component_filter="control_child", protocol_filter={"SMART"}
@@ -17,6 +25,8 @@ hub_smart = parametrize(
     "smart hub", device_type_filter=[DeviceType.Hub], protocol_filter={"SMART"}
 )
 non_hub_parent_smart = parametrize_subtract(has_children_smart, hub_smart)
+
+has_children = parametrize_combine([has_children_smart, strip_iot])
 
 
 @strip_smart
@@ -100,3 +110,57 @@ async def test_parent_only_modules(dev, dummy_protocol, mocker):
     for child in dev.children:
         for module in NON_HUB_PARENT_ONLY_MODULES:
             assert module not in [type(module) for module in child.modules.values()]
+
+
+@has_children
+async def test_device_updates(dev: Device, mocker: MockerFixture):
+    if not dev.children and dev.device_type is Device.Type.Hub:
+        pytest.skip(f"Fixture for hub device {dev} does not have any children")
+    assert dev.children
+    parent_spy = mocker.spy(dev, "_update")
+    child_spies = {child: mocker.spy(child, "_update") for child in dev.children}
+
+    # update children
+    await dev.update(update_children=True)
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        child_spy.assert_called_once()
+
+    # do not update children
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    await dev.update(update_children=False)
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        child_spy.assert_not_called()
+
+    # update parent
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    child_to_update = dev.children[0]
+    await child_to_update.update(update_parent=True)
+    parent_spy.assert_called_once()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()
+
+    # do not update parent
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    await child_to_update.update(update_parent=False)
+    parent_spy.assert_not_called()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()

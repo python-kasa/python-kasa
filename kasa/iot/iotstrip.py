@@ -121,7 +121,18 @@ class IotStrip(IotDevice):
         """Return if any of the outlets are on."""
         return any(plug.is_on for plug in self.children)
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True, update_parent: bool = True):
+        """Update some of the attributes.
+
+        Needed for methods that are decorated with `requires_update`.
+        """
+        await self._update(update_children)
+
+    async def _update(
+        self,
+        update_children: bool = True,
+        called_from_child: IotStripPlug | None = None,
+    ):
         """Update some of the attributes.
 
         Needed for methods that are decorated with `requires_update`.
@@ -143,9 +154,11 @@ class IotStrip(IotDevice):
             for child in self._children.values():
                 await child._initialize_modules()
 
-        if update_children:
-            for plug in self.children:
-                await plug.update()
+        if called_from_child:
+            await called_from_child._update()
+        elif update_children:
+            for child in self._children.values():
+                await child._update()
 
         if not self.features:
             await self._initialize_features()
@@ -355,7 +368,17 @@ class IotStripPlug(IotPlug):
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True, update_parent: bool = True):
+        """Query the device to update the data.
+
+        Needed for properties that are decorated with `requires_update`.
+        """
+        if update_parent:
+            await self.parent._update(update_children=False, called_from_child=self)
+        else:
+            await self._update()
+
+    async def _update(self):
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.

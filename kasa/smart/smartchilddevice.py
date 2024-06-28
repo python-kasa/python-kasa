@@ -19,6 +19,8 @@ class SmartChildDevice(SmartDevice):
     This wraps the protocol communications and sets internal data for the child.
     """
 
+    _parent: SmartDevice
+
     def __init__(
         self,
         parent: SmartDevice,
@@ -34,12 +36,26 @@ class SmartChildDevice(SmartDevice):
         self._id = info["device_id"]
         self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True, update_parent: bool = True):
+        """Update the device.
+
+        Calling update directly on a child device will update the parent
+        and only this child.
+        """
+        if update_parent:
+            await self._parent._update(update_children=False, called_from_child=self)
+        else:
+            await self._update()
+
+    async def _update(self):
         """Update child module info.
 
         The parent updates our internal info so just update modules with
         their own queries.
         """
+        # Hubs attached devices only update via the parent hub
+        if self._parent.device_type == DeviceType.Hub:
+            return
         req: dict[str, Any] = {}
         for module in self.modules.values():
             if mod_query := module.query():
