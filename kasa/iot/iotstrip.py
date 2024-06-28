@@ -145,7 +145,7 @@ class IotStrip(IotDevice):
 
         if update_children:
             for plug in self.children:
-                await plug.update()
+                await plug._update()
 
         if not self.features:
             await self._initialize_features()
@@ -356,6 +356,13 @@ class IotStripPlug(IotPlug):
                 self._add_feature(module_feat)
 
     async def update(self, update_children: bool = True):
+        """Query the device to update the data.
+
+        Needed for properties that are decorated with `requires_update`.
+        """
+        await self._update(update_children)
+
+    async def _update(self, update_children: bool = True):
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.

@@ -40,6 +40,14 @@ class SmartChildDevice(SmartDevice):
         The parent updates our internal info so just update modules with
         their own queries.
         """
+        await self._update(update_children)
+
+    async def _update(self, update_children: bool = True):
+        """Update child module info.
+
+        The parent updates our internal info so just update modules with
+        their own queries.
+        """
         req: dict[str, Any] = {}
         for module in self.modules.values():
             if mod_query := module.query():

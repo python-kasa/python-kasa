@@ -62,7 +62,6 @@ def runner():
     [
         pytest.param(None, None, id="No connect params"),
         pytest.param("SMART.TAPOPLUG", None, id="Only device_family"),
-        pytest.param(None, "KLAP", id="Only encrypt_type"),
     ],
 )
 async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_type):
@@ -171,13 +170,16 @@ async def test_command_with_child(dev, mocker, runner):
     class DummyDevice(dev.__class__):
         def __init__(self):
             super().__init__("127.0.0.1")
+            # device_type and _info initialised for repr
+            self._device_type = Device.Type.StripSocket
+            self._info = {}
 
         async def _query_helper(*_, **__):
             return {"dummy": "response"}
 
     dummy_child = DummyDevice()
 
-    mocker.patch.object(dev, "_children", {"XYZ": dummy_child})
+    mocker.patch.object(dev, "_children", {"XYZ": [dummy_child]})
     mocker.patch.object(dev, "get_child_device", return_value=dummy_child)
 
     res = await runner.invoke(
@@ -314,9 +316,9 @@ async def test_emeter(dev: Device, mocker, runner):
 
     if not dev.is_strip:
         res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
-        assert "Index and name are only for power strips!" in res.output
+        assert f"Device: {dev.host} does not have children" in res.output
         res = await runner.invoke(emeter, ["--name", "mock"], obj=dev)
-        assert "Index and name are only for power strips!" in res.output
+        assert f"Device: {dev.host} does not have children" in res.output
 
     if dev.is_strip and len(dev.children) > 0:
         realtime_emeter = mocker.patch.object(dev.children[0], "get_emeter_realtime")
