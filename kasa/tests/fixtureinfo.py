@@ -17,6 +17,12 @@ class FixtureInfo(NamedTuple):
     data: dict
 
 
+class ComponentFilter(NamedTuple):
+    component_name: str
+    minimum_version: int = 0
+    maximum_version: int | None = None
+
+
 FixtureInfo.__hash__ = lambda self: hash((self.name, self.protocol))  # type: ignore[attr-defined, method-assign]
 FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assign]
 
@@ -88,7 +94,7 @@ def filter_fixtures(
     data_root_filter: str | None = None,
     protocol_filter: set[str] | None = None,
     model_filter: set[str] | None = None,
-    component_filter: str | None = None,
+    component_filter: str | ComponentFilter | None = None,
     device_type_filter: list[DeviceType] | None = None,
 ):
     """Filter the fixtures based on supplied parameters.
@@ -106,14 +112,26 @@ def filter_fixtures(
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter
 
-    def _component_match(fixture_data: FixtureInfo, component_filter):
+    def _component_match(
+        fixture_data: FixtureInfo, component_filter: str | ComponentFilter
+    ):
         if (component_nego := fixture_data.data.get("component_nego")) is None:
             return False
         components = {
             component["id"]: component["ver_code"]
             for component in component_nego["component_list"]
         }
-        return component_filter in components
+        if isinstance(component_filter, str):
+            return component_filter in components
+        else:
+            return (
+                (ver_code := components.get(component_filter.component_name))
+                and ver_code >= component_filter.minimum_version
+                and (
+                    component_filter.maximum_version is None
+                    or ver_code <= component_filter.maximum_version
+                )
+            )
 
     def _device_type_match(fixture_data: FixtureInfo, device_type):
         if (component_nego := fixture_data.data.get("component_nego")) is None:

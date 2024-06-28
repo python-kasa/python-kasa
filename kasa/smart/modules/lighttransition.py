@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from ...exceptions import KasaException
 from ...feature import Feature
@@ -12,6 +12,12 @@ if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
+class _State(TypedDict):
+    duration: int
+    enable: bool
+    max_duration: int
+
+
 class LightTransition(SmartModule):
     """Implementation of gradual on/off."""
 
@@ -19,14 +25,30 @@ class LightTransition(SmartModule):
     QUERY_GETTER_NAME = "get_on_off_gradually_info"
     MAXIMUM_DURATION = 60
 
+    # Key in sysinfo that indicates state can be retrieved from there.
+    # Usually only for child lights, i.e, ks240.
+    SYS_INFO_STATE_KEYS = (
+        "gradually_on_mode",
+        "gradually_off_mode",
+        "fade_on_time",
+        "fade_off_time",
+    )
+
+    _on_state: _State
+    _off_state: _State
+    _enabled: bool
+
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
-        self._create_features()
+        self._state_in_sysinfo = all(
+            key in device.sys_info for key in self.SYS_INFO_STATE_KEYS
+        )
+        self._supports_on_and_off: bool = self.supported_version > 1
 
-    def _create_features(self):
-        """Create features based on the available version."""
+    def _initialize_features(self):
+        """Initialize features."""
         icon = "mdi:transition"
-        if self.supported_version == 1:
+        if not self._supports_on_and_off:
             self._add_feature(
                 Feature(
                     device=self._device,
@@ -34,16 +56,12 @@ class LightTransition(SmartModule):
                     id="smooth_transitions",
                     name="Smooth transitions",
                     icon=icon,
-                    attribute_getter="enabled_v1",
-                    attribute_setter="set_enabled_v1",
+                    attribute_getter="enabled",
+                    attribute_setter="set_enabled",
                     type=Feature.Type.Switch,
                 )
             )
-        elif self.supported_version >= 2:
-            # v2 adds separate on & off states
-            # v3 adds max_duration
-            # TODO: note, hardcoding the maximums for now as the features get
-            #  initialized before the first update.
+        else:
             self._add_feature(
                 Feature(
                     self._device,
@@ -54,9 +72,9 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_on_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value=self.MAXIMUM_DURATION,
+                    maximum_value=self._turn_on_transition_max,
                 )
-            )  # self._turn_on_transition_max
+            )
             self._add_feature(
                 Feature(
                     self._device,
@@ -67,38 +85,74 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_off_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value=self.MAXIMUM_DURATION,
+                    maximum_value=self._turn_off_transition_max,
                 )
-            )  # self._turn_off_transition_max
+            )
 
-    @property
-    def _turn_on(self):
-        """Internal getter for turn on settings."""
-        if "on_state" not in self.data:
+    def _post_update_hook(self) -> None:
+        """Update the states."""
+        # Assumes any device with state in sysinfo supports on and off and
+        # has maximum values for both.
+        # v2 adds separate on & off states
+        # v3 adds max_duration except for ks240 which is v2 but supports it
+        if not self._supports_on_and_off:
+            self._enabled = self.data["enable"]
+            return
+
+        if self._state_in_sysinfo:
+            on_max = self._device.sys_info.get(
+                "max_fade_on_time", self.MAXIMUM_DURATION
+            )
+            off_max = self._device.sys_info.get(
+                "max_fade_off_time", self.MAXIMUM_DURATION
+            )
+            on_enabled = bool(self._device.sys_info["gradually_on_mode"])
+            off_enabled = bool(self._device.sys_info["gradually_off_mode"])
+            on_duration = self._device.sys_info["fade_on_time"]
+            off_duration = self._device.sys_info["fade_off_time"]
+        elif (on_state := self.data.get("on_state")) and (
+            off_state := self.data.get("off_state")
+        ):
+            on_max = on_state.get("max_duration", self.MAXIMUM_DURATION)
+            off_max = off_state.get("max_duration", self.MAXIMUM_DURATION)
+            on_enabled = on_state["enable"]
+            off_enabled = off_state["enable"]
+            on_duration = on_state["duration"]
+            off_duration = off_state["duration"]
+        else:
             raise KasaException(
                 f"Unsupported for {self.REQUIRED_COMPONENT} v{self.supported_version}"
             )
 
-        return self.data["on_state"]
+        self._enabled = on_enabled or off_enabled
+        self._on_state = {
+            "duration": on_duration,
+            "enable": on_enabled,
+            "max_duration": on_max,
+        }
+        self._off_state = {
+            "duration": off_duration,
+            "enable": off_enabled,
+            "max_duration": off_max,
+        }
 
-    @property
-    def _turn_off(self):
-        """Internal getter for turn off settings."""
-        if "off_state" not in self.data:
-            raise KasaException(
-                f"Unsupported for {self.REQUIRED_COMPONENT} v{self.supported_version}"
-            )
-
-        return self.data["off_state"]
-
-    async def set_enabled_v1(self, enable: bool):
+    async def set_enabled(self, enable: bool):
         """Enable gradual on/off."""
-        return await self.call("set_on_off_gradually_info", {"enable": enable})
+        if not self._supports_on_and_off:
+            return await self.call("set_on_off_gradually_info", {"enable": enable})
+        else:
+            on = await self.call(
+                "set_on_off_gradually_info", {"on_state": {"enable": enable}}
+            )
+            off = await self.call(
+                "set_on_off_gradually_info", {"off_state": {"enable": enable}}
+            )
+            return {**on, **off}
 
     @property
-    def enabled_v1(self) -> bool:
+    def enabled(self) -> bool:
         """Return True if gradual on/off is enabled."""
-        return bool(self.data["enable"])
+        return self._enabled
 
     @property
     def turn_on_transition(self) -> int:
@@ -106,15 +160,13 @@ class LightTransition(SmartModule):
 
         Available only from v2.
         """
-        if "fade_on_time" in self._device.sys_info:
-            return self._device.sys_info["fade_on_time"]
-        return self._turn_on["duration"]
+        return self._on_state["duration"] if self._on_state["enable"] else 0
 
     @property
     def _turn_on_transition_max(self) -> int:
         """Maximum turn on duration."""
         # v3 added max_duration, we default to 60 when it's not available
-        return self._turn_on.get("max_duration", 60)
+        return self._on_state["max_duration"]
 
     async def set_turn_on_transition(self, seconds: int):
         """Set turn on transition in seconds.
@@ -129,12 +181,12 @@ class LightTransition(SmartModule):
         if seconds <= 0:
             return await self.call(
                 "set_on_off_gradually_info",
-                {"on_state": {**self._turn_on, "enable": False}},
+                {"on_state": {"enable": False}},
             )
 
         return await self.call(
             "set_on_off_gradually_info",
-            {"on_state": {**self._turn_on, "duration": seconds}},
+            {"on_state": {"enable": True, "duration": seconds}},
         )
 
     @property
@@ -143,15 +195,13 @@ class LightTransition(SmartModule):
 
         Available only from v2.
         """
-        if "fade_off_time" in self._device.sys_info:
-            return self._device.sys_info["fade_off_time"]
-        return self._turn_off["duration"]
+        return self._off_state["duration"] if self._off_state["enable"] else 0
 
     @property
     def _turn_off_transition_max(self) -> int:
         """Maximum turn on duration."""
         # v3 added max_duration, we default to 60 when it's not available
-        return self._turn_off.get("max_duration", 60)
+        return self._off_state["max_duration"]
 
     async def set_turn_off_transition(self, seconds: int):
         """Set turn on transition in seconds.
@@ -166,26 +216,24 @@ class LightTransition(SmartModule):
         if seconds <= 0:
             return await self.call(
                 "set_on_off_gradually_info",
-                {"off_state": {**self._turn_off, "enable": False}},
+                {"off_state": {"enable": False}},
             )
 
         return await self.call(
             "set_on_off_gradually_info",
-            {"off_state": {**self._turn_on, "duration": seconds}},
+            {"off_state": {"enable": True, "duration": seconds}},
         )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         # Some devices have the required info in the device info.
-        if "gradually_on_mode" in self._device.sys_info:
+        if self._state_in_sysinfo:
             return {}
         else:
             return {self.QUERY_GETTER_NAME: None}
 
     async def _check_supported(self):
         """Additional check to see if the module is supported by the device."""
-        # TODO Temporarily disabled on child light devices until module fixed
-        # to support updates
-        if self._device._parent is not None:
-            return False
+        # For devices that report child components on the parent that are not
+        # actually supported by the parent.
         return "brightness" in self._device.sys_info

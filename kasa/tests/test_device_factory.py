@@ -1,16 +1,25 @@
-# type: ignore
+"""Module for testing device factory.
+
+As this module tests the factory with discovery data and expects update to be
+called on devices it uses the discovery_mock handles all the patching of the
+query methods without actually replacing the device protocol class with one of
+the testing fake protocols.
+"""
+
 import logging
+from typing import cast
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
     Credentials,
-    Device,
     Discover,
     KasaException,
 )
 from kasa.device_factory import (
+    Device,
+    SmartDevice,
     _get_device_type_from_sys_info,
     connect,
     get_device_class_from_family,
@@ -23,7 +32,8 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
-from kasa.smart.smartdevice import SmartDevice
+
+from .conftest import DISCOVERY_MOCK_IP
 
 
 def _get_connection_type_device_class(discovery_info):
@@ -44,18 +54,22 @@ def _get_connection_type_device_class(discovery_info):
 
 
 async def test_connect(
-    discovery_data,
+    discovery_mock,
     mocker,
 ):
     """Test that if the protocol is passed in it gets set correctly."""
-    host = "127.0.0.1"
-    ctype, device_class = _get_connection_type_device_class(discovery_data)
+    host = DISCOVERY_MOCK_IP
+    ctype, device_class = _get_connection_type_device_class(
+        discovery_mock.discovery_data
+    )
 
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
     protocol_class = get_protocol(config).__class__
     close_mock = mocker.patch.object(protocol_class, "close")
+    # mocker.patch.object(SmartDevice, "update")
+    # mocker.patch.object(Device, "update")
     dev = await connect(
         config=config,
     )
@@ -69,10 +83,11 @@ async def test_connect(
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
-async def test_connect_custom_port(discovery_data: dict, mocker, custom_port):
+async def test_connect_custom_port(discovery_mock, mocker, custom_port):
     """Make sure that connect returns an initialized SmartDevice instance."""
-    host = "127.0.0.1"
+    host = DISCOVERY_MOCK_IP
 
+    discovery_data = discovery_mock.discovery_data
     ctype, _ = _get_connection_type_device_class(discovery_data)
     config = DeviceConfig(
         host=host,
@@ -90,13 +105,14 @@ async def test_connect_custom_port(discovery_data: dict, mocker, custom_port):
 
 
 async def test_connect_logs_connect_time(
-    discovery_data: dict,
+    discovery_mock,
     caplog: pytest.LogCaptureFixture,
 ):
     """Test that the connect time is logged when debug logging is enabled."""
+    discovery_data = discovery_mock.discovery_data
     ctype, _ = _get_connection_type_device_class(discovery_data)
 
-    host = "127.0.0.1"
+    host = DISCOVERY_MOCK_IP
     config = DeviceConfig(
         host=host, credentials=Credentials("foor", "bar"), connection_type=ctype
     )
@@ -107,9 +123,10 @@ async def test_connect_logs_connect_time(
     assert "seconds to update" in caplog.text
 
 
-async def test_connect_query_fails(discovery_data, mocker):
+async def test_connect_query_fails(discovery_mock, mocker):
     """Make sure that connect fails when query fails."""
-    host = "127.0.0.1"
+    host = DISCOVERY_MOCK_IP
+    discovery_data = discovery_mock.discovery_data
     mocker.patch("kasa.IotProtocol.query", side_effect=KasaException)
     mocker.patch("kasa.SmartProtocol.query", side_effect=KasaException)
 
@@ -125,10 +142,10 @@ async def test_connect_query_fails(discovery_data, mocker):
     assert close_mock.call_count == 1
 
 
-async def test_connect_http_client(discovery_data, mocker):
+async def test_connect_http_client(discovery_mock, mocker):
     """Make sure that discover_single returns an initialized SmartDevice instance."""
-    host = "127.0.0.1"
-
+    host = DISCOVERY_MOCK_IP
+    discovery_data = discovery_mock.discovery_data
     ctype, _ = _get_connection_type_device_class(discovery_data)
 
     http_client = aiohttp.ClientSession()
@@ -157,9 +174,10 @@ async def test_connect_http_client(discovery_data, mocker):
 async def test_device_types(dev: Device):
     await dev.update()
     if isinstance(dev, SmartDevice):
-        device_type = dev._discovery_info["result"]["device_type"]
+        assert dev._discovery_info
+        device_type = cast(str, dev._discovery_info["result"]["device_type"])
         res = SmartDevice._get_device_type_from_components(
-            dev._components.keys(), device_type
+            list(dev._components.keys()), device_type
         )
     else:
         res = _get_device_type_from_sys_info(dev._last_update)
