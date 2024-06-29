@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import logging
 from asyncio import TimeoutError as _asyncioTimeoutError
 from enum import IntEnum
 from functools import cache
 from typing import Any
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class KasaException(Exception):
