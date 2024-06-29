@@ -283,7 +283,7 @@ class IotDevice(Device):
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children_or_parent: bool = True):
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.

@@ -147,9 +147,9 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def update(self, update_children: bool = True, update_parent: bool = True):
+    async def update(self, update_children_or_parent: bool = True):
         """Update the device."""
-        await self._update(update_children)
+        await self._update(update_children_or_parent)
 
     async def _update(
         self, update_children: bool = True, called_from_child: SmartDevice | None = None

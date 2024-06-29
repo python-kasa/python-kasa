@@ -120,29 +120,29 @@ async def test_device_updates(dev: Device, mocker: MockerFixture):
     parent_spy = mocker.spy(dev, "_update")
     child_spies = {child: mocker.spy(child, "_update") for child in dev.children}
 
-    # update children
-    await dev.update(update_children=True)
+    # update children, all devices call update
+    await dev.update(update_children_or_parent=True)
     parent_spy.assert_called_once()
     for child_spy in child_spies.values():
         child_spy.assert_called_once()
 
-    # do not update children
+    # do not update children, only parent calls update
     parent_spy.reset_mock()
     for child_spy in child_spies.values():
         child_spy.reset_mock()
 
-    await dev.update(update_children=False)
+    await dev.update(update_children_or_parent=False)
     parent_spy.assert_called_once()
     for child_spy in child_spies.values():
         child_spy.assert_not_called()
 
-    # update parent
+    # update parent, only the parent and one child call update
     parent_spy.reset_mock()
     for child_spy in child_spies.values():
         child_spy.reset_mock()
 
     child_to_update = dev.children[0]
-    await child_to_update.update(update_parent=True)
+    await child_to_update.update(update_children_or_parent=True)
     parent_spy.assert_called_once()
     assert child_to_update
     for child, child_spy in child_spies.items():
@@ -151,12 +151,12 @@ async def test_device_updates(dev: Device, mocker: MockerFixture):
         else:
             child_spy.assert_not_called()
 
-    # do not update parent
+    # do not update parent, only the one child calls update
     parent_spy.reset_mock()
     for child_spy in child_spies.values():
         child_spy.reset_mock()
 
-    await child_to_update.update(update_parent=False)
+    await child_to_update.update(update_children_or_parent=False)
     parent_spy.assert_not_called()
     assert child_to_update
     for child, child_spy in child_spies.items():
