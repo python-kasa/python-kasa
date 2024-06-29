@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from warnings import warn
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -36,12 +37,25 @@ class SmartChildDevice(SmartDevice):
         self._id = info["device_id"]
         self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
-    async def update(self, update_children_or_parent: bool = True):
+    async def update(
+        self,
+        update_children_or_parent: bool = True,
+        *,
+        update_children: bool | None = None,
+    ):
         """Update the device.
 
         Calling update directly on a child device will update the parent
         and only this child.
         """
+        if update_children is not None:
+            warn(
+                "update_children is deprecated, use update_children_or_parent",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+            update_children_or_parent = False
+
         if update_children_or_parent:
             await self._parent._update(called_from_child=self)
         else:

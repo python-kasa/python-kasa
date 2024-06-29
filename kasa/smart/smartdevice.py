@@ -7,6 +7,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from typing import Any, cast
+from warnings import warn
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -147,8 +148,21 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def update(self, update_children_or_parent: bool = True):
+    async def update(
+        self,
+        update_children_or_parent: bool = True,
+        *,
+        update_children: bool | None = None,
+    ):
         """Update the device."""
+        if update_children is not None:
+            warn(
+                "update_children is deprecated, use update_children_or_parent",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+            update_children_or_parent = update_children
+
         await self._update(update_children_or_parent)
 
     async def _update(

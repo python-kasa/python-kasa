@@ -114,6 +114,7 @@ async def test_parent_only_modules(dev, dummy_protocol, mocker):
 
 @has_children
 async def test_device_updates(dev: Device, mocker: MockerFixture):
+    """Test usage of the update_children_or_parent parameter."""
     if not dev.children and dev.device_type is Device.Type.Hub:
         pytest.skip(f"Fixture for hub device {dev} does not have any children")
     assert dev.children
@@ -157,6 +158,74 @@ async def test_device_updates(dev: Device, mocker: MockerFixture):
         child_spy.reset_mock()
 
     await child_to_update.update(update_children_or_parent=False)
+    parent_spy.assert_not_called()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()
+
+
+@pytest.mark.parametrize("update_children_or_parent", [True, False])
+@has_children
+async def test_device_updates_deprecated(
+    dev: Device, mocker: MockerFixture, update_children_or_parent
+):
+    """Test usage of the deprecated update_children parameter."""
+    # update_children_or_parent parameter ensures the value is ignored
+
+    if not dev.children and dev.device_type is Device.Type.Hub:
+        pytest.skip(f"Fixture for hub device {dev} does not have any children")
+    assert dev.children
+    parent_spy = mocker.spy(dev, "_update")
+    child_spies = {child: mocker.spy(child, "_update") for child in dev.children}
+
+    msg = "update_children is deprecated, use update_children_or_parent"
+    # update children, all devices call update
+    with pytest.deprecated_call(match=msg):
+        await dev.update(update_children_or_parent, update_children=True)
+
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        child_spy.assert_called_once()
+
+    # do not update children, only parent calls update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    with pytest.deprecated_call(match=msg):
+        await dev.update(update_children_or_parent, update_children=False)
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        child_spy.assert_not_called()
+
+    # on child update_children true
+    # only the child and no parent update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    child_to_update = dev.children[0]
+    with pytest.deprecated_call(match=msg):
+        await child_to_update.update(update_children_or_parent, update_children=True)
+    parent_spy.assert_not_called()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()
+
+    # on child update_children false
+    # only the child and no parent update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    with pytest.deprecated_call(match=msg):
+        await child_to_update.update(update_children_or_parent, update_children=False)
     parent_spy.assert_not_called()
     assert child_to_update
     for child, child_spy in child_spies.items():

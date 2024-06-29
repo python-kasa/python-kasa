@@ -233,7 +233,12 @@ class Device(ABC):
         return await connect(host=host, config=config)  # type: ignore[arg-type]
 
     @abstractmethod
-    async def update(self, update_children_or_parent: bool = True):
+    async def update(
+        self,
+        update_children_or_parent: bool = True,
+        *,
+        update_children: bool | None = None,
+    ):
         """Update the device.
 
         Must be called after updating any attributes for the state changes
@@ -244,6 +249,10 @@ class Device(ABC):
             will also update the parent device. Setting to false requires
             knowledge of the inner workings of the library and should be used
             with caution.
+        :param update_children: Deprecated and provided for backwards
+            compatability. If provided update_children_or_parent will be
+            ignored. Child devices will not update parent devices whether
+            true or false.
         """
 
     async def disconnect(self):

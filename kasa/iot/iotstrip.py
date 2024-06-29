@@ -6,6 +6,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from warnings import warn
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -121,11 +122,23 @@ class IotStrip(IotDevice):
         """Return if any of the outlets are on."""
         return any(plug.is_on for plug in self.children)
 
-    async def update(self, update_children_or_parent: bool = True):
+    async def update(
+        self,
+        update_children_or_parent: bool = True,
+        *,
+        update_children: bool | None = None,
+    ):
         """Update some of the attributes.
 
         Needed for methods that are decorated with `requires_update`.
         """
+        if update_children is not None:
+            warn(
+                "update_children is deprecated, use update_children_or_parent",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+            update_children_or_parent = update_children
         await self._update(update_children_or_parent)
 
     async def _update(
@@ -368,11 +381,24 @@ class IotStripPlug(IotPlug):
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)
 
-    async def update(self, update_children_or_parent: bool = True):
+    async def update(
+        self,
+        update_children_or_parent: bool = True,
+        *,
+        update_children: bool | None = None,
+    ):
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.
         """
+        if update_children is not None:
+            warn(
+                "update_children is deprecated, use update_children_or_parent",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+            update_children_or_parent = False
+
         if update_children_or_parent:
             await self.parent._update(called_from_child=self)
         else:
