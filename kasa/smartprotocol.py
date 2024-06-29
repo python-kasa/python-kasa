@@ -241,12 +241,12 @@ class SmartProtocol(BaseProtocol):
     def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
         error_code_raw = resp_dict.get("error_code")
         try:
-            error_code = SmartErrorCode(error_code_raw)  # type: ignore[arg-type]
+            error_code = SmartErrorCode.from_int(error_code_raw)
         except ValueError:
             _LOGGER.warning("Received unknown error code: %s", error_code_raw)
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
-        if error_code == SmartErrorCode.SUCCESS:
+        if error_code is SmartErrorCode.SUCCESS:
             return
 
         if not raise_on_error:
