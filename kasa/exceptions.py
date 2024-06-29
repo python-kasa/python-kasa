@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from asyncio import TimeoutError as _asyncioTimeoutError
 from enum import IntEnum
+from functools import cache
 from typing import Any
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class KasaException(Exception):
@@ -62,6 +66,16 @@ class SmartErrorCode(IntEnum):
 
     def __str__(self):
         return f"{self.name}({self.value})"
+
+    @staticmethod
+    @cache
+    def from_int(value: int) -> SmartErrorCode:
+        """Convert an integer to a SmartErrorCode."""
+        try:
+            return SmartErrorCode(value)  # type: ignore[arg-type]
+        except ValueError:
+            _LOGGER.warning("Received unknown error code: %s", value)
+            return SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
     SUCCESS = 0
 
