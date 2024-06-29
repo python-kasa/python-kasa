@@ -6,6 +6,7 @@ from pytest_mock import MockerFixture
 
 from kasa import Device
 from kasa.device_type import DeviceType
+from kasa.iot import IotDevice
 from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES
 from kasa.smartprotocol import _ChildProtocolWrapper
@@ -190,7 +191,8 @@ async def test_device_updates_deprecated(
     for child_spy in child_spies.values():
         child_spy.assert_called_once()
 
-    # do not update children, only parent calls update
+    # do not update children, only parent calls update for iot but for smart
+    # all children update
     parent_spy.reset_mock()
     for child_spy in child_spies.values():
         child_spy.reset_mock()
@@ -199,7 +201,10 @@ async def test_device_updates_deprecated(
         await dev.update(update_children_or_parent, update_children=False)
     parent_spy.assert_called_once()
     for child_spy in child_spies.values():
-        child_spy.assert_not_called()
+        if isinstance(dev, IotDevice):
+            child_spy.assert_not_called()
+        else:
+            child_spy.assert_called_once()
 
     # on child update_children true
     # only the child and no parent update

@@ -161,7 +161,9 @@ class SmartDevice(Device):
                 DeprecationWarning,
                 stacklevel=1,
             )
-            update_children_or_parent = update_children
+            # Previously this was ignored and children were always updated for
+            # smart devices
+            update_children_or_parent = True
 
         await self._update(update_children_or_parent)
 
