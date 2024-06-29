@@ -71,11 +71,7 @@ class SmartErrorCode(IntEnum):
     @cache
     def from_int(value: int) -> SmartErrorCode:
         """Convert an integer to a SmartErrorCode."""
-        try:
-            return SmartErrorCode(value)  # type: ignore[arg-type]
-        except ValueError:
-            _LOGGER.warning("Received unknown error code: %s", value)
-            return SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+        return SmartErrorCode(value)  # type: ignore[arg-type]
 
     SUCCESS = 0
 
