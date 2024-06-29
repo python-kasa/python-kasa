@@ -71,7 +71,7 @@ class SmartErrorCode(IntEnum):
     @cache
     def from_int(value: int) -> SmartErrorCode:
         """Convert an integer to a SmartErrorCode."""
-        return SmartErrorCode(value)  # type: ignore[arg-type]
+        return SmartErrorCode(value)
 
     SUCCESS = 0
 
