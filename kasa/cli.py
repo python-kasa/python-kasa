@@ -243,7 +243,6 @@ async def _get_child_device(
 
     if not device.children:
         error(f"Device: {device.host} does not have children")
-        return None
 
     if child_option is not None and child_index_option is not None:
         raise click.BadOptionUsage(
@@ -265,7 +264,6 @@ async def _get_child_device(
                 "No child device found with device_id or name: "
                 f"{child_option} children are:\n{_list_children()}"
             )
-            return None
 
     if child_index_option + 1 > len(device.children) or child_index_option < 0:
         error(
