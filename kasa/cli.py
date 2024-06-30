@@ -41,6 +41,7 @@ from kasa.iot import (
     IotStrip,
     IotWallSwitch,
 )
+from kasa.iot.iotstrip import IotStripPlug
 from kasa.iot.modules import Usage
 from kasa.smart import SmartDevice
 
@@ -913,8 +914,7 @@ async def energy(dev: Device, year, month, erase):
         usage_data = await dev.get_emeter_daily(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        # Call with no argument outputs summary data and returns
-        if dev.parent:
+        if isinstance(dev, IotStripPlug):
             emeter_status = await dev.get_emeter_realtime()
         else:
             emeter_status = dev.emeter_realtime
