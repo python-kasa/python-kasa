@@ -5,6 +5,7 @@ import re
 import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
+from pytest_mock import MockerFixture
 
 from kasa import (
     AuthenticationError,
@@ -24,6 +25,7 @@ from kasa.cli import (
     cmd_command,
     effect,
     emeter,
+    energy,
     hsv,
     led,
     raw_command,
@@ -932,3 +934,110 @@ async def test_feature_set_child(mocker, runner):
     assert f"Targeting child device {child_id}"
     assert "Changing state from False to True" in res.output
     assert res.exit_code == 0
+
+
+async def test_cli_child_commands(
+    dev: Device, runner: CliRunner, mocker: MockerFixture
+):
+    if not dev.children:
+        res = await runner.invoke(alias, ["--child-index", "0"], obj=dev)
+        assert f"Device: {dev.host} does not have children" in res.output
+        assert res.exit_code == 1
+
+        res = await runner.invoke(alias, ["--index", "0"], obj=dev)
+        assert f"Device: {dev.host} does not have children" in res.output
+        assert res.exit_code == 1
+
+        res = await runner.invoke(alias, ["--child", "Plug 2"], obj=dev)
+        assert f"Device: {dev.host} does not have children" in res.output
+        assert res.exit_code == 1
+
+        res = await runner.invoke(alias, ["--name", "Plug 2"], obj=dev)
+        assert f"Device: {dev.host} does not have children" in res.output
+        assert res.exit_code == 1
+
+    if dev.children:
+        child_alias = dev.children[0].alias
+        assert child_alias
+        child_device_id = dev.children[0].device_id
+        child_count = len(dev.children)
+        child_update_method = dev.children[0].update
+
+        # Test child retrieval
+        res = await runner.invoke(alias, ["--child-index", "0"], obj=dev)
+        assert f"Targeting child device {child_alias}" in res.output
+        assert res.exit_code == 0
+
+        res = await runner.invoke(alias, ["--index", "0"], obj=dev)
+        assert f"Targeting child device {child_alias}" in res.output
+        assert res.exit_code == 0
+
+        res = await runner.invoke(alias, ["--child", child_alias], obj=dev)
+        assert f"Targeting child device {child_alias}" in res.output
+        assert res.exit_code == 0
+
+        res = await runner.invoke(alias, ["--name", child_alias], obj=dev)
+        assert f"Targeting child device {child_alias}" in res.output
+        assert res.exit_code == 0
+
+        res = await runner.invoke(alias, ["--child", child_device_id], obj=dev)
+        assert f"Targeting child device {child_alias}" in res.output
+        assert res.exit_code == 0
+
+        res = await runner.invoke(alias, ["--name", child_device_id], obj=dev)
+        assert f"Targeting child device {child_alias}" in res.output
+        assert res.exit_code == 0
+
+        # Test invalid name and index
+        res = await runner.invoke(alias, ["--child-index", "-1"], obj=dev)
+        assert f"Invalid index -1, device has {child_count} children" in res.output
+        assert res.exit_code == 1
+
+        res = await runner.invoke(alias, ["--child-index", str(child_count)], obj=dev)
+        assert (
+            f"Invalid index {child_count}, device has {child_count} children"
+            in res.output
+        )
+        assert res.exit_code == 1
+
+        res = await runner.invoke(alias, ["--child", "foobar"], obj=dev)
+        assert "No child device found with device_id or name: foobar" in res.output
+        assert res.exit_code == 1
+
+        # Test using both options:
+
+        res = await runner.invoke(
+            alias, ["--child", child_alias, "--child-index", "0"], obj=dev
+        )
+        assert "Use either --child or --child-index, not both." in res.output
+        assert res.exit_code == 2
+
+        # Test child with no parameter interactive prompt
+
+        res = await runner.invoke(alias, ["--child"], obj=dev, input="0\n")
+        assert "Enter the index number of the child device:" in res.output
+        assert f"Alias: {child_alias}" in res.output
+        assert res.exit_code == 0
+
+        # Test values and updates
+
+        res = await runner.invoke(alias, ["foo", "--child", child_device_id], obj=dev)
+        assert "Alias set to: foo" in res.output
+        assert res.exit_code == 0
+
+        # Test help has command options plus child options
+
+        res = await runner.invoke(energy, ["--help"], obj=dev)
+        assert "--year" in res.output
+        assert "--child" in res.output
+        assert "--child-index" in res.output
+        assert res.exit_code == 0
+
+        # Test child update patching calls parent and is undone on exit
+
+        parent_update_spy = mocker.spy(dev, "update")
+        res = await runner.invoke(alias, ["bar", "--child", child_device_id], obj=dev)
+        assert "Alias set to: bar" in res.output
+        assert res.exit_code == 0
+        parent_update_spy.assert_called_once()
+        assert dev.children[0].update == child_update_method

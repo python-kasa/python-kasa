@@ -8,7 +8,7 @@ import json
 import logging
 import re
 import sys
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime
 from functools import singledispatch, update_wrapper, wraps
 from pprint import pformat as pf
@@ -178,6 +178,17 @@ def pass_dev_or_child(wrapped_function):
     )
     child_index_help = "Child index controlling sub-devices"
 
+    @contextmanager
+    def patched_device_update(parent: Device, child: Device):
+        try:
+            orig_update = child.update
+            # patch child update method. Can be removed once update can be called
+            # directly on child devices
+            child.update = parent.update  # type: ignore[method-assign]
+            yield child
+        finally:
+            child.update = orig_update  # type: ignore[method-assign]
+
     @click.pass_obj
     @click.pass_context
     @click.option(
@@ -198,13 +209,10 @@ def pass_dev_or_child(wrapped_function):
         type=click.INT,
         help=child_index_help,
     )
-    async def wrapper(ctx, dev, *args, child, child_index, **kwargs):
+    async def wrapper(ctx: click.Context, dev, *args, child, child_index, **kwargs):
         if child := await _get_child_device(dev, child, child_index, ctx.info_name):
-            # patch child update method. Can be removed once update can be called
-            # directly on child devices
-            child.update = dev.update
+            ctx.obj = ctx.with_resource(patched_device_update(dev, child))
             dev = child
-            ctx.obj = child
         return await ctx.invoke(wrapped_function, dev, *args, **kwargs)
 
     # Update wrapper function to look like wrapped function
@@ -250,7 +258,7 @@ async def _get_child_device(
                 type=click.IntRange(0, len(device.children) - 1),
             )
         elif child := device.get_child_device(child_option):
-            echo(f"Targeting child device {child}")
+            echo(f"Targeting child device {child.alias}")
             return child
         else:
             error(
@@ -258,15 +266,15 @@ async def _get_child_device(
                 f"{child_option} children are:\n{_list_children()}"
             )
             return None
-    if child_index_option is not None:
-        child_by_index = device.children[child_index_option]
-        echo(f"Targeting child device {child_by_index}")
-        return child_by_index
-    error(
-        f"No child device found with device_id or name: "
-        f"{child_option} children are:\n{_list_children()}"
-    )
-    return None
+
+    if child_index_option + 1 > len(device.children) or child_index_option < 0:
+        error(
+            f"Invalid index {child_index_option}, "
+            f"device has {len(device.children)} children"
+        )
+    child_by_index = device.children[child_index_option]
+    echo(f"Targeting child device {child_by_index.alias}")
+    return child_by_index
 
 
 @click.group(
