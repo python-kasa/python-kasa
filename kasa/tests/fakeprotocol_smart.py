@@ -257,6 +257,16 @@ class FakeSmartTransport(BaseTransport):
             if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
                 del info["get_dynamic_light_effect_rules"]["current_rule_id"]
 
+    def _set_edit_dynamic_light_effect_rule(self, info, params):
+        """Edit dynamic light effect rule."""
+        rules = info["get_dynamic_light_effect_rules"]["rule_list"]
+        for rule in rules:
+            if rule["id"] == params["id"]:
+                rule.update(params)
+                return
+
+        raise Exception("Unable to find rule with id")
+
     def _set_light_strip_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
         info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
@@ -367,6 +377,9 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
             self._set_dynamic_light_effect(info, params)
+            return {"error_code": 0}
+        elif method == "edit_dynamic_light_effect_rule":
+            self._set_edit_dynamic_light_effect_rule(info, params)
             return {"error_code": 0}
         elif method == "set_lighting_effect":
             self._set_light_strip_effect(info, params)

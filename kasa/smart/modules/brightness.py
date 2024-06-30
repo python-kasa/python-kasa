@@ -42,7 +42,7 @@ class Brightness(SmartModule):
     @property
     def brightness(self):
         """Return current brightness."""
-        # If the device supports effects and one is active, we adjust its brightness
+        # If the device supports effects and one is active, use its brightness
         if (
             light_effect := self._device.modules.get(Module.SmartLightEffect)
         ) is not None and light_effect.is_active:
@@ -66,6 +66,7 @@ class Brightness(SmartModule):
         if brightness == 0:
             return await self._device.turn_off()
 
+        # If the device supports effects and one is active, we adjust its brightness
         if (
             light_effect := self._device.modules.get(Module.SmartLightEffect)
         ) is not None and light_effect.is_active:

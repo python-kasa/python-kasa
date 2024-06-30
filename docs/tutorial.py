@@ -91,5 +91,5 @@ False
 True
 >>> for feat in dev.features.values():
 >>>     print(f"{feat.name}: {feat.value}")
-Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nOverheated: False\nBrightness: 100\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: False\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: 1.1.6 Build 240130 Rel.173828\nLight effect: Party\nLight preset: Not set\nSmooth transition on: 2\nSmooth transition off: 2\nDevice time: 2024-02-23 02:40:15+01:00
+Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nOverheated: False\nBrightness: 50\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: False\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: 1.1.6 Build 240130 Rel.173828\nLight effect: Party\nLight preset: Light preset 1\nSmooth transition on: 2\nSmooth transition off: 2\nDevice time: 2024-02-23 02:40:15+01:00
 """

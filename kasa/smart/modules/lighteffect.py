@@ -9,7 +9,7 @@ import copy
 from typing import Any
 
 from ..effects import SmartLightEffect
-from ..smartmodule import SmartModule
+from ..smartmodule import Module, SmartModule
 
 
 class LightEffect(SmartModule, SmartLightEffect):
@@ -95,28 +95,47 @@ class LightEffect(SmartModule, SmartLightEffect):
         if enable:
             effect_id = self._scenes_names_to_id[effect]
             params["id"] = effect_id
-        return await self.call("set_dynamic_light_effect_rule_enable", params)
+
+            # We need to set the wanted brightness before activating the effect
+            brightness_module = self._device.modules[Module.Brightness]
+            brightness = (
+                brightness if brightness is not None else brightness_module.brightness
+            )
+            await self.set_brightness(brightness, effect_id=effect_id)
+
+        # We set the effect first and set the new brightness directly afterwards
+        await self.call("set_dynamic_light_effect_rule_enable", params)
 
     @property
     def is_active(self) -> bool:
         """Return True if effect is active."""
         return bool(self._device._info["dynamic_light_effect_enable"])
 
-    @property
-    def current_effect_data(self) -> dict[str, Any]:
-        """Return current effect data."""
-        return self._effect_state_list[self.data["current_rule_id"]]
+    def _get_effect_data(self, effect_id: str | None = None) -> dict[str, Any]:
+        """Return effect data for the *effect_id*.
+
+        If *effect_id* is None, return the data for active effect.
+        """
+        if effect_id is None:
+            effect_id = self.data["current_rule_id"]
+        return self._effect_state_list[effect_id]
 
     @property
     def brightness(self) -> int:
         """Return effect brightness."""
-        first_color_status = self.current_effect_data["color_status_list"][0]
+        first_color_status = self._get_effect_data()["color_status_list"][0]
         brightness = first_color_status[0]
         return brightness
 
-    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+    async def set_brightness(
+        self,
+        brightness: int,
+        *,
+        transition: int | None = None,
+        effect_id: str | None = None,
+    ):
         """Set effect brightness."""
-        new_effect = self.current_effect_data.copy()
+        new_effect = self._get_effect_data(effect_id=effect_id).copy()
 
         def _replace_brightness(data, new_brightness):
             """Replace brightness.
