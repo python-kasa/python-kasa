@@ -142,12 +142,11 @@ class AesTransport(BaseTransport):
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
         error_code_raw = resp_dict.get("error_code")
         try:
-            error_code = SmartErrorCode(error_code_raw)  # type: ignore[arg-type]
+            error_code = SmartErrorCode.from_int(error_code_raw)
         except ValueError:
             _LOGGER.warning("Received unknown error code: %s", error_code_raw)
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
-
-        if error_code == SmartErrorCode.SUCCESS:
+        if error_code is SmartErrorCode.SUCCESS:
             return
         msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
         if error_code in SMART_RETRYABLE_ERRORS:
