@@ -262,6 +262,7 @@ class FakeSmartTransport(BaseTransport):
         info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
         info["get_device_info"]["lighting_effect"]["name"] = params["name"]
         info["get_device_info"]["lighting_effect"]["id"] = params["id"]
+        info["get_device_info"]["lighting_effect"]["brightness"] = params["brightness"]
         info["get_lighting_effect"] = copy.deepcopy(params)
 
     def _set_led_info(self, info, params):

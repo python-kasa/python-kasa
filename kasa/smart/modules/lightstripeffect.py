@@ -21,6 +21,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         effect_list = [self.LIGHT_EFFECTS_OFF]
         effect_list.extend(EFFECT_NAMES)
         self._effect_list = effect_list
+        self._effect_mapping = EFFECT_MAPPING
 
     @property
     def name(self) -> str:
@@ -106,10 +107,10 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         if effect == self.LIGHT_EFFECTS_OFF:
             effect_dict = dict(self.data["lighting_effect"])
             effect_dict["enable"] = 0
-        elif effect not in EFFECT_MAPPING:
+        elif effect not in self._effect_mapping:
             raise ValueError(f"The effect {effect} is not a built in effect.")
         else:
-            effect_dict = EFFECT_MAPPING[effect]
+            effect_dict = self._effect_mapping[effect]
 
         # Use explicitly given brightness
         if brightness is not None:

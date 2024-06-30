@@ -112,6 +112,9 @@ class Module(ABC):
         "LightTransition"
     )
     ReportMode: Final[ModuleName[smart.ReportMode]] = ModuleName("ReportMode")
+    SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
+        "LightEffect"
+    )
     TemperatureSensor: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
         "TemperatureSensor"
     )
@@ -121,10 +124,6 @@ class Module(ABC):
     Time: Final[ModuleName[smart.Time]] = ModuleName("Time")
     WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
         "WaterleakSensor"
-    )
-
-    SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
-        "LightEffect"
     )
 
     def __init__(self, device: Device, module: str):
