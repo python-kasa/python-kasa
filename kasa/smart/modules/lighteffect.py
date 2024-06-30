@@ -82,6 +82,8 @@ class LightEffect(SmartModule, SmartLightEffect):
     ) -> None:
         """Set an effect for the device.
 
+        Calling this will modify the brightness of the effect on the device.
+
         The device doesn't store an active effect while not enabled so store locally.
         """
         if effect != self.LIGHT_EFFECTS_OFF and effect not in self._scenes_names_to_id:
@@ -96,14 +98,13 @@ class LightEffect(SmartModule, SmartLightEffect):
             effect_id = self._scenes_names_to_id[effect]
             params["id"] = effect_id
 
-            # We need to set the wanted brightness before activating the effect
+            # We set the wanted brightness before activating the effect
             brightness_module = self._device.modules[Module.Brightness]
             brightness = (
                 brightness if brightness is not None else brightness_module.brightness
             )
             await self.set_brightness(brightness, effect_id=effect_id)
 
-        # We set the effect first and set the new brightness directly afterwards
         await self.call("set_dynamic_light_effect_rule_enable", params)
 
     @property
@@ -118,6 +119,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         """
         if effect_id is None:
             effect_id = self.data["current_rule_id"]
+
         return self._effect_state_list[effect_id]
 
     @property
@@ -125,6 +127,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         """Return effect brightness."""
         first_color_status = self._get_effect_data()["color_status_list"][0]
         brightness = first_color_status[0]
+
         return brightness
 
     async def set_brightness(
@@ -150,6 +153,7 @@ class LightEffect(SmartModule, SmartLightEffect):
             for state in new_effect["color_status_list"]
         ]
         new_effect["color_status_list"] = new_color_status_list
+
         return await self.call("edit_dynamic_light_effect_rule", new_effect)
 
     async def set_custom_effect(
