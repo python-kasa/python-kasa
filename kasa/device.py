@@ -329,6 +329,11 @@ class Device(ABC):
         return await self.protocol.query(request=request)
 
     @property
+    def parent(self) -> Device | None:
+        """Return the parent on child devices."""
+        return self._parent
+
+    @property
     def children(self) -> Sequence[Device]:
         """Returns the child devices."""
         return list(self._children.values())

@@ -250,18 +250,31 @@ class FakeSmartTransport(BaseTransport):
         info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
         if params["enable"]:
             info["get_device_info"]["dynamic_light_effect_id"] = params["id"]
-            info["get_dynamic_light_effect_rules"]["current_rule_id"] = params["enable"]
+            info["get_dynamic_light_effect_rules"]["current_rule_id"] = params["id"]
         else:
             if "dynamic_light_effect_id" in info["get_device_info"]:
                 del info["get_device_info"]["dynamic_light_effect_id"]
             if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
                 del info["get_dynamic_light_effect_rules"]["current_rule_id"]
 
+    def _set_edit_dynamic_light_effect_rule(self, info, params):
+        """Edit dynamic light effect rule."""
+        rules = info["get_dynamic_light_effect_rules"]["rule_list"]
+        for rule in rules:
+            if rule["id"] == params["id"]:
+                rule.update(params)
+                return
+
+        raise Exception("Unable to find rule with id")
+
     def _set_light_strip_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
         info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
         info["get_device_info"]["lighting_effect"]["name"] = params["name"]
         info["get_device_info"]["lighting_effect"]["id"] = params["id"]
+        # Brightness is not always available
+        if (brightness := params.get("brightness")) is not None:
+            info["get_device_info"]["lighting_effect"]["brightness"] = brightness
         info["get_lighting_effect"] = copy.deepcopy(params)
 
     def _set_led_info(self, info, params):
@@ -364,6 +377,9 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
             self._set_dynamic_light_effect(info, params)
+            return {"error_code": 0}
+        elif method == "edit_dynamic_light_effect_rule":
+            self._set_edit_dynamic_light_effect_rule(info, params)
             return {"error_code": 0}
         elif method == "set_lighting_effect":
             self._set_light_strip_effect(info, params)
