@@ -119,6 +119,69 @@ async def test_smart_device_multiple_request(
     assert send_mock.call_count == expected_count
 
 
+async def test_smart_device_multiple_request_json_decode_failure(
+    dummy_protocol, mocker
+):
+    """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR."""
+    host = "127.0.0.1"
+    requests = {}
+    mock_responses = []
+
+    mock_json_error = {
+        "result": {"responses": []},
+        "error_code": SmartErrorCode.JSON_DECODE_FAIL_ERROR.value,
+    }
+    for i in range(10):
+        method = f"get_method_{i}"
+        requests[method] = {"foo": "bar", "bar": "foo"}
+        mock_responses.append(
+            {"method": method, "result": {"great": "success"}, "error_code": 0}
+        )
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=[mock_json_error, *mock_responses],
+    )
+    config = DeviceConfig(host, credentials=Credentials("foo", "bar"), batch_size=5)
+    dummy_protocol._transport._config = config
+    assert dummy_protocol._multi_request_batch_size == 5
+    await dummy_protocol.query(requests, retry_count=1)
+    assert dummy_protocol._multi_request_batch_size == 1
+    # Call count should be the first error + number of requests
+    assert send_mock.call_count == len(requests) + 1
+
+
+async def test_smart_device_multiple_request_json_decode_failure_twice(
+    dummy_protocol, mocker
+):
+    """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR."""
+    host = "127.0.0.1"
+    requests = {}
+
+    mock_json_error = {
+        "result": {"responses": []},
+        "error_code": SmartErrorCode.JSON_DECODE_FAIL_ERROR.value,
+    }
+    for i in range(10):
+        method = f"get_method_{i}"
+        requests[method] = {"foo": "bar", "bar": "foo"}
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=[mock_json_error, KasaException],
+    )
+    config = DeviceConfig(host, credentials=Credentials("foo", "bar"), batch_size=5)
+    dummy_protocol._transport._config = config
+    assert dummy_protocol._multi_request_batch_size == 5
+    with pytest.raises(KasaException):
+        await dummy_protocol.query(requests, retry_count=1)
+    assert dummy_protocol._multi_request_batch_size == 1
+
+    assert send_mock.call_count == 2
+
+
 async def test_childdevicewrapper_unwrapping(dummy_protocol, mocker):
     """Test that responseData gets unwrapped correctly."""
     wrapped_protocol = _ChildProtocolWrapper("dummyid", dummy_protocol)
