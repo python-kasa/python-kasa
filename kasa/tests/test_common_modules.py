@@ -89,35 +89,39 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     assert light_effect_module.has_custom_effects is not None
 
     await light_effect_module.set_effect("Off")
-    assert call.call_count == 1
+    call.assert_called()
     await dev.update()
     assert light_effect_module.effect == "Off"
     assert feat.value == "Off"
+    call.reset_mock()
 
     second_effect = effect_list[1]
     await light_effect_module.set_effect(second_effect)
-    assert call.call_count == 2
+    call.assert_called()
     await dev.update()
     assert light_effect_module.effect == second_effect
     assert feat.value == second_effect
+    call.reset_mock()
 
     last_effect = effect_list[len(effect_list) - 1]
     await light_effect_module.set_effect(last_effect)
-    assert call.call_count == 3
+    call.assert_called()
     await dev.update()
     assert light_effect_module.effect == last_effect
     assert feat.value == last_effect
+    call.reset_mock()
 
     # Test feature set
     await feat.set_value(second_effect)
-    assert call.call_count == 4
+    call.assert_called()
     await dev.update()
     assert light_effect_module.effect == second_effect
     assert feat.value == second_effect
+    call.reset_mock()
 
     with pytest.raises(ValueError):
         await light_effect_module.set_effect("foobar")
-        assert call.call_count == 4
+        call.assert_not_called()
 
 
 @dimmable

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...feature import Feature
-from ..smartmodule import SmartModule
+from ..smartmodule import Module, SmartModule
 
 BRIGHTNESS_MIN = 0
 BRIGHTNESS_MAX = 100
@@ -42,6 +42,12 @@ class Brightness(SmartModule):
     @property
     def brightness(self):
         """Return current brightness."""
+        # If the device supports effects and one is active, use its brightness
+        if (
+            light_effect := self._device.modules.get(Module.SmartLightEffect)
+        ) is not None and light_effect.is_active:
+            return light_effect.brightness
+
         return self.data["brightness"]
 
     async def set_brightness(self, brightness: int, *, transition: int | None = None):
@@ -59,6 +65,13 @@ class Brightness(SmartModule):
 
         if brightness == 0:
             return await self._device.turn_off()
+
+        # If the device supports effects and one is active, we adjust its brightness
+        if (
+            light_effect := self._device.modules.get(Module.SmartLightEffect)
+        ) is not None and light_effect.is_active:
+            return await light_effect.set_brightness(brightness)
+
         return await self.call("set_device_info", {"brightness": brightness})
 
     async def _check_supported(self):

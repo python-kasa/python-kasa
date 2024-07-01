@@ -307,10 +307,12 @@ class IotStripPlug(IotPlug):
     The plug inherits (most of) the system information from the parent.
     """
 
+    _parent: IotStrip
+
     def __init__(self, host: str, parent: IotStrip, child_id: str) -> None:
         super().__init__(host)
 
-        self.parent = parent
+        self._parent = parent
         self.child_id = child_id
         self._last_update = parent._last_update
         self._set_sys_info(parent.sys_info)
@@ -387,7 +389,7 @@ class IotStripPlug(IotPlug):
         self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ) -> Any:
         """Override query helper to include the child_ids."""
-        return await self.parent._query_helper(
+        return await self._parent._query_helper(
             target, cmd, arg, child_ids=[self.child_id]
         )
 
@@ -448,13 +450,15 @@ class IotStripPlug(IotPlug):
     @requires_update
     def model(self) -> str:
         """Return device model for a child socket."""
-        sys_info = self.parent.sys_info
+        sys_info = self._parent.sys_info
         return f"Socket for {sys_info['model']}"
 
     def _get_child_info(self) -> dict:
         """Return the subdevice information for this device."""
-        for plug in self.parent.sys_info["children"]:
+        for plug in self._parent.sys_info["children"]:
             if plug["id"] == self.child_id:
                 return plug
 
-        raise KasaException(f"Unable to find children {self.child_id}")
+        raise KasaException(
+            f"Unable to find children {self.child_id}"
+        )  # pragma: no cover

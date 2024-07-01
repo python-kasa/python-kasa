@@ -112,6 +112,9 @@ class Module(ABC):
         "LightTransition"
     )
     ReportMode: Final[ModuleName[smart.ReportMode]] = ModuleName("ReportMode")
+    SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
+        "LightEffect"
+    )
     TemperatureSensor: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
         "TemperatureSensor"
     )

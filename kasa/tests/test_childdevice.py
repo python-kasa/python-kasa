@@ -3,12 +3,19 @@ import sys
 
 import pytest
 
+from kasa import Device
 from kasa.device_type import DeviceType
 from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES
 from kasa.smartprotocol import _ChildProtocolWrapper
 
-from .conftest import parametrize, parametrize_subtract, strip_smart
+from .conftest import (
+    parametrize,
+    parametrize_combine,
+    parametrize_subtract,
+    strip_iot,
+    strip_smart,
+)
 
 has_children_smart = parametrize(
     "has children", component_filter="control_child", protocol_filter={"SMART"}
@@ -17,6 +24,8 @@ hub_smart = parametrize(
     "smart hub", device_type_filter=[DeviceType.Hub], protocol_filter={"SMART"}
 )
 non_hub_parent_smart = parametrize_subtract(has_children_smart, hub_smart)
+
+has_children = parametrize_combine([has_children_smart, strip_iot])
 
 
 @strip_smart
@@ -100,3 +109,14 @@ async def test_parent_only_modules(dev, dummy_protocol, mocker):
     for child in dev.children:
         for module in NON_HUB_PARENT_ONLY_MODULES:
             assert module not in [type(module) for module in child.modules.values()]
+
+
+@has_children
+async def test_parent_property(dev: Device):
+    """Test a child device exposes it's parent."""
+    if not dev.children:
+        pytest.skip(f"Device {dev} fixture does not have any children")
+
+    assert dev.parent is None
+    for child in dev.children:
+        assert child.parent == dev
