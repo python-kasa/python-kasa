@@ -4,6 +4,7 @@ import pytest
 
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
+    DeviceError,
     KasaException,
     SmartErrorCode,
 )
@@ -169,6 +170,36 @@ async def test_smart_device_multiple_request_json_decode_failure_twice(
     assert dummy_protocol._multi_request_batch_size == 1
 
     assert send_mock.call_count == 2
+
+
+async def test_smart_device_multiple_request_non_json_decode_failure(
+    dummy_protocol, mocker
+):
+    """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR.
+
+    Ensure other exception types behave as expected.
+    """
+    requests = {}
+
+    mock_json_error = {
+        "result": {"responses": []},
+        "error_code": SmartErrorCode.UNKNOWN_METHOD_ERROR.value,
+    }
+    for i in range(10):
+        method = f"get_method_{i}"
+        requests[method] = {"foo": "bar", "bar": "foo"}
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=[mock_json_error, KasaException],
+    )
+    dummy_protocol._multi_request_batch_size = 5
+    with pytest.raises(DeviceError):
+        await dummy_protocol.query(requests, retry_count=1)
+    assert dummy_protocol._multi_request_batch_size == 5
+
+    assert send_mock.call_count == 1
 
 
 async def test_childdevicewrapper_unwrapping(dummy_protocol, mocker):
