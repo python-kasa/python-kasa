@@ -2,10 +2,9 @@ import logging
 
 import pytest
 
-from ..credentials import Credentials
-from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
+    DeviceError,
     KasaException,
     SmartErrorCode,
 )
@@ -93,7 +92,6 @@ async def test_smart_device_errors_in_multiple_request(
 async def test_smart_device_multiple_request(
     dummy_protocol, mocker, request_size, batch_size
 ):
-    host = "127.0.0.1"
     requests = {}
     mock_response = {
         "result": {"responses": []},
@@ -109,14 +107,99 @@ async def test_smart_device_multiple_request(
     send_mock = mocker.patch.object(
         dummy_protocol._transport, "send", return_value=mock_response
     )
-    config = DeviceConfig(
-        host, credentials=Credentials("foo", "bar"), batch_size=batch_size
-    )
-    dummy_protocol._transport._config = config
+    dummy_protocol._multi_request_batch_size = batch_size
 
     await dummy_protocol.query(requests, retry_count=0)
     expected_count = int(request_size / batch_size) + (request_size % batch_size > 0)
     assert send_mock.call_count == expected_count
+
+
+async def test_smart_device_multiple_request_json_decode_failure(
+    dummy_protocol, mocker
+):
+    """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR."""
+    requests = {}
+    mock_responses = []
+
+    mock_json_error = {
+        "result": {"responses": []},
+        "error_code": SmartErrorCode.JSON_DECODE_FAIL_ERROR.value,
+    }
+    for i in range(10):
+        method = f"get_method_{i}"
+        requests[method] = {"foo": "bar", "bar": "foo"}
+        mock_responses.append(
+            {"method": method, "result": {"great": "success"}, "error_code": 0}
+        )
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=[mock_json_error, *mock_responses],
+    )
+    dummy_protocol._multi_request_batch_size = 5
+    assert dummy_protocol._multi_request_batch_size == 5
+    await dummy_protocol.query(requests, retry_count=1)
+    assert dummy_protocol._multi_request_batch_size == 1
+    # Call count should be the first error + number of requests
+    assert send_mock.call_count == len(requests) + 1
+
+
+async def test_smart_device_multiple_request_json_decode_failure_twice(
+    dummy_protocol, mocker
+):
+    """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR."""
+    requests = {}
+
+    mock_json_error = {
+        "result": {"responses": []},
+        "error_code": SmartErrorCode.JSON_DECODE_FAIL_ERROR.value,
+    }
+    for i in range(10):
+        method = f"get_method_{i}"
+        requests[method] = {"foo": "bar", "bar": "foo"}
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=[mock_json_error, KasaException],
+    )
+    dummy_protocol._multi_request_batch_size = 5
+    with pytest.raises(KasaException):
+        await dummy_protocol.query(requests, retry_count=1)
+    assert dummy_protocol._multi_request_batch_size == 1
+
+    assert send_mock.call_count == 2
+
+
+async def test_smart_device_multiple_request_non_json_decode_failure(
+    dummy_protocol, mocker
+):
+    """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR.
+
+    Ensure other exception types behave as expected.
+    """
+    requests = {}
+
+    mock_json_error = {
+        "result": {"responses": []},
+        "error_code": SmartErrorCode.UNKNOWN_METHOD_ERROR.value,
+    }
+    for i in range(10):
+        method = f"get_method_{i}"
+        requests[method] = {"foo": "bar", "bar": "foo"}
+
+    send_mock = mocker.patch.object(
+        dummy_protocol._transport,
+        "send",
+        side_effect=[mock_json_error, KasaException],
+    )
+    dummy_protocol._multi_request_batch_size = 5
+    with pytest.raises(DeviceError):
+        await dummy_protocol.query(requests, retry_count=1)
+    assert dummy_protocol._multi_request_batch_size == 5
+
+    assert send_mock.call_count == 1
 
 
 async def test_childdevicewrapper_unwrapping(dummy_protocol, mocker):
