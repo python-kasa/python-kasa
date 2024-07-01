@@ -2,8 +2,6 @@ import logging
 
 import pytest
 
-from ..credentials import Credentials
-from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
     KasaException,
@@ -93,7 +91,6 @@ async def test_smart_device_errors_in_multiple_request(
 async def test_smart_device_multiple_request(
     dummy_protocol, mocker, request_size, batch_size
 ):
-    host = "127.0.0.1"
     requests = {}
     mock_response = {
         "result": {"responses": []},
@@ -109,10 +106,7 @@ async def test_smart_device_multiple_request(
     send_mock = mocker.patch.object(
         dummy_protocol._transport, "send", return_value=mock_response
     )
-    config = DeviceConfig(
-        host, credentials=Credentials("foo", "bar"), batch_size=batch_size
-    )
-    dummy_protocol._transport._config = config
+    dummy_protocol._multi_request_batch_size = batch_size
 
     await dummy_protocol.query(requests, retry_count=0)
     expected_count = int(request_size / batch_size) + (request_size % batch_size > 0)
@@ -123,7 +117,6 @@ async def test_smart_device_multiple_request_json_decode_failure(
     dummy_protocol, mocker
 ):
     """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR."""
-    host = "127.0.0.1"
     requests = {}
     mock_responses = []
 
@@ -143,8 +136,7 @@ async def test_smart_device_multiple_request_json_decode_failure(
         "send",
         side_effect=[mock_json_error, *mock_responses],
     )
-    config = DeviceConfig(host, credentials=Credentials("foo", "bar"), batch_size=5)
-    dummy_protocol._transport._config = config
+    dummy_protocol._multi_request_batch_size = 5
     assert dummy_protocol._multi_request_batch_size == 5
     await dummy_protocol.query(requests, retry_count=1)
     assert dummy_protocol._multi_request_batch_size == 1
@@ -156,7 +148,6 @@ async def test_smart_device_multiple_request_json_decode_failure_twice(
     dummy_protocol, mocker
 ):
     """Test the logic to disable multiple requests on JSON_DECODE_FAIL_ERROR."""
-    host = "127.0.0.1"
     requests = {}
 
     mock_json_error = {
@@ -172,9 +163,7 @@ async def test_smart_device_multiple_request_json_decode_failure_twice(
         "send",
         side_effect=[mock_json_error, KasaException],
     )
-    config = DeviceConfig(host, credentials=Credentials("foo", "bar"), batch_size=5)
-    dummy_protocol._transport._config = config
-    assert dummy_protocol._multi_request_batch_size == 5
+    dummy_protocol._multi_request_batch_size = 5
     with pytest.raises(KasaException):
         await dummy_protocol.query(requests, retry_count=1)
     assert dummy_protocol._multi_request_batch_size == 1
