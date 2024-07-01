@@ -20,6 +20,7 @@ light_strip_effect = parametrize(
 async def test_light_strip_effect(dev: Device, mocker: MockerFixture):
     """Test light strip effect."""
     light_effect = dev.modules.get(Module.LightEffect)
+
     assert isinstance(light_effect, LightStripEffect)
 
     brightness = dev.modules[Module.Brightness]
@@ -28,10 +29,18 @@ async def test_light_strip_effect(dev: Device, mocker: MockerFixture):
     assert feature.type == Feature.Type.Choice
 
     call = mocker.spy(light_effect, "call")
+
+    light = dev.modules[Module.Light]
+    light_call = mocker.spy(light, "call")
+
     assert feature.choices == light_effect.effect_list
     assert feature.choices
     for effect in chain(reversed(feature.choices), feature.choices):
         await light_effect.set_effect(effect)
+
+        if effect == LightEffect.LIGHT_EFFECTS_OFF:
+            light_call.assert_called()
+            continue
 
         # Start with the current effect data
         params = light_effect.data["lighting_effect"]
