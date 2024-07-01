@@ -1,5 +1,6 @@
 """Modules for SMART devices."""
 
+from ..effects import SmartLightEffect
 from .alarm import Alarm
 from .autooff import AutoOff
 from .batterysensor import BatterySensor
@@ -54,4 +55,5 @@ __all__ = [
     "WaterleakSensor",
     "ContactSensor",
     "FrostProtection",
+    "SmartLightEffect",
 ]
