@@ -2,7 +2,32 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import cast
+
+from ..interfaces.lighteffect import LightEffect as LightEffectInterface
+
+
+class SmartLightEffect(LightEffectInterface, ABC):
+    """Abstract interface for smart light effects.
+
+    This interface extends lighteffect interface to add brightness controls.
+    """
+
+    @abstractmethod
+    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+        """Set effect brightness."""
+
+    @property
+    @abstractmethod
+    def brightness(self) -> int:
+        """Return effect brightness."""
+
+    @property
+    @abstractmethod
+    def is_active(self) -> bool:
+        """Return True if effect is active."""
+
 
 EFFECT_AURORA = {
     "custom": 0,
