@@ -452,4 +452,6 @@ class IotStripPlug(IotPlug):
             if plug["id"] == self.child_id:
                 return plug
 
-        raise KasaException(f"Unable to find children {self.child_id}")
+        raise KasaException(
+            f"Unable to find children {self.child_id}"
+        )  # pragma: no cover

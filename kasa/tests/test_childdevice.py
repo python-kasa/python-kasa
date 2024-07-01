@@ -112,10 +112,11 @@ async def test_parent_only_modules(dev, dummy_protocol, mocker):
 
 
 @has_children
-async def test_parent_attribute(dev: Device):
+async def test_parent_property(dev: Device):
     """Test a child device exposes it's parent."""
     if not dev.children:
         pytest.skip(f"Device {dev} fixture does not have any children")
 
+    assert dev.parent is None
     for child in dev.children:
         assert child.parent == dev
