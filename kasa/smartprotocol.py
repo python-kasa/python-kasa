@@ -154,10 +154,14 @@ class SmartProtocol(BaseProtocol):
             try:
                 self._handle_response_error_code(response_step, batch_name)
             except DeviceError as ex:
-                # P100 sometimes raises JSON_DECODE_FAIL_ERROR on batched request so
-                # disable batching
+                # P100 sometimes raises JSON_DECODE_FAIL_ERROR or INTERNAL_UNKNOWN_ERROR
+                # on batched request so disable batching
                 if (
-                    ex.error_code is SmartErrorCode.JSON_DECODE_FAIL_ERROR
+                    ex.error_code
+                    in {
+                        SmartErrorCode.JSON_DECODE_FAIL_ERROR,
+                        SmartErrorCode.INTERNAL_UNKNOWN_ERROR,
+                    }
                     and self._multi_request_batch_size != 1
                 ):
                     self._multi_request_batch_size = 1
