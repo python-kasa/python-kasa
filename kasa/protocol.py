@@ -59,7 +59,7 @@ class BaseTransport(ABC):
 
     @property
     @abstractmethod
-    def credentials_hash(self) -> str:
+    def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
 
     @abstractmethod

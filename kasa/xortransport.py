@@ -54,9 +54,9 @@ class XorTransport(BaseTransport):
         return self.DEFAULT_PORT
 
     @property
-    def credentials_hash(self) -> str:
+    def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
-        return ""
+        return None
 
     async def _connect(self, timeout: int) -> None:
         """Try to connect or reconnect to the device."""
