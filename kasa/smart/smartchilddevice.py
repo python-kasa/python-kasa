@@ -64,12 +64,13 @@ class SmartChildDevice(SmartDevice):
     async def _update(self):
         """Update child module info.
 
-        The parent updates our internal info so just update modules with
-        their own queries.
+        Internal implementation to allow patching of public update in the cli
+        or test framework.
         """
         # Hubs attached devices only update via the parent hub
-        if self._parent.device_type == DeviceType.Hub:
+        if self._parent.device_type is DeviceType.Hub:
             return
+
         req: dict[str, Any] = {}
         for module in self.modules.values():
             if mod_query := module.query():
