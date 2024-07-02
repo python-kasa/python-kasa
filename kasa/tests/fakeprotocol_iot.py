@@ -234,8 +234,8 @@ class FakeIotTransport(BaseTransport):
         return 9999
 
     @property
-    def credentials_hash(self) -> str:
-        return ""
+    def credentials_hash(self) -> None:
+        return None
 
     def set_alias(self, x, child_ids=None):
         if child_ids is None:

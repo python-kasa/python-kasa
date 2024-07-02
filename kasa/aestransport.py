@@ -117,8 +117,10 @@ class AesTransport(BaseTransport):
         return self.DEFAULT_PORT
 
     @property
-    def credentials_hash(self) -> str:
+    def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
+        if self._credentials == Credentials():
+            return None
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
     def _get_login_params(self, credentials: Credentials) -> dict[str, str]:
