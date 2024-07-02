@@ -534,7 +534,7 @@ def test_transport_init_signature(class_name_obj):
             KlapTransportV2,
             1,
             "tEmiensOcZkP9twDEZKwU3JJl3asmseKCP7N9sfatVo=",
-            id="klapv2-lv-2",
+            id="klapv2-lv-1",
         ),
         pytest.param(
             KlapTransportV2,
