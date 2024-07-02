@@ -367,7 +367,8 @@ class IotStripPlug(IotPlug):
     async def _update(self, update_children: bool = True):
         """Query the device to update the data.
 
-        Needed for properties that are decorated with `requires_update`.
+        Internal implementation to allow patching of public update in the cli
+        or test framework.
         """
         await self._modular_update({})
         for module in self._modules.values():

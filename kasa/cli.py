@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime
 from functools import singledispatch, update_wrapper, wraps
 from pprint import pformat as pf
-from typing import Any, cast
+from typing import Any, Final, cast
 
 import asyncclick as click
 from pydantic.v1 import ValidationError
@@ -77,6 +77,9 @@ def error(msg: str):
     echo(f"[bold red]{msg}[/bold red]")
     sys.exit(1)
 
+
+# Value for optional options if passed without a value
+OPTIONAL_VALUE_FLAG: Final = "_FLAG_"
 
 TYPE_TO_CLASS = {
     "plug": IotPlug,
@@ -196,7 +199,7 @@ def pass_dev_or_child(wrapped_function):
         "--child",
         "--name",
         is_flag=False,
-        flag_value="",
+        flag_value=OPTIONAL_VALUE_FLAG,
         default=None,
         required=False,
         type=click.STRING,
@@ -251,7 +254,7 @@ async def _get_child_device(
         )
 
     if child_option is not None:
-        if child_option == "":  # default flag if no value set
+        if child_option is OPTIONAL_VALUE_FLAG:
             msg = _list_children()
             child_index_option = click.prompt(
                 f"\n{msg}\nEnter the index number of the child device",
@@ -728,6 +731,7 @@ def _echo_all_features(features, *, verbose=False, title_prefix=None, indent="")
     """Print out all features by category."""
     if title_prefix is not None:
         echo(f"[bold]\n{indent}== {title_prefix} ==[/bold]")
+        echo()
     _echo_features(
         features,
         title="== Primary features ==",
@@ -780,11 +784,16 @@ async def state(ctx, dev: Device):
     if verbose:
         echo(f"Location:     {dev.location}")
 
-    _echo_all_features(dev.features, verbose=verbose)
     echo()
+    _echo_all_features(dev.features, verbose=verbose)
+
+    if verbose:
+        echo("\n[bold]== Modules ==[/bold]")
+        for module in dev.modules.values():
+            echo(f"[green]+ {module}[/green]")
 
     if dev.children:
-        echo("[bold]== Children ==[/bold]")
+        echo("\n[bold]== Children ==[/bold]")
         for child in dev.children:
             _echo_all_features(
                 child.features,
@@ -792,19 +801,13 @@ async def state(ctx, dev: Device):
                 verbose=verbose,
                 indent="\t",
             )
-
+            if verbose:
+                echo(f"\n\t[bold]== Child {child.alias} Modules ==[/bold]")
+                for module in child.modules.values():
+                    echo(f"\t[green]+ {module}[/green]")
         echo()
 
     if verbose:
-        echo("\n\t[bold]== Modules ==[/bold]")
-        for module in dev.modules.values():
-            echo(f"\t[green]+ {module}[/green]")
-
-        for child in dev.children:
-            echo(f"\n\t[bold]== Child {child.alias} Modules ==[/bold]")
-            for module in child.modules.values():
-                echo(f"\t\t[green]+ {module}[/green]")
-
         echo("\n\t[bold]== Protocol information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
         echo()
@@ -1131,6 +1134,7 @@ async def on(dev: Device, transition: int):
     return await dev.turn_on(transition=transition)
 
 
+@cli.command
 @click.option("--transition", type=int, required=False)
 @pass_dev_or_child
 async def off(dev: Device, transition: int):
