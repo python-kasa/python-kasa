@@ -338,9 +338,15 @@ class Device(ABC):
         """Returns the child devices."""
         return list(self._children.values())
 
-    def get_child_device(self, id_: str) -> Device:
-        """Return child device by its ID."""
-        return self._children[id_]
+    def get_child_device(self, name_or_id: str) -> Device | None:
+        """Return child device by its device_id or alias."""
+        if name_or_id in self._children:
+            return self._children[name_or_id]
+        name_lower = name_or_id.lower()
+        for child in self.children:
+            if child.alias and child.alias.lower() == name_lower:
+                return child
+        return None
 
     @property
     @abstractmethod
