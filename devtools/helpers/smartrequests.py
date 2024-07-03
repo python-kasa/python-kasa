@@ -285,6 +285,15 @@ class SmartRequest:
         return SmartRequest("get_preset_rules", params or SmartRequest.GetRulesParams())
 
     @staticmethod
+    def get_on_off_gradually_info(
+        params: SmartRequestParams | None = None,
+    ) -> SmartRequest:
+        """Get preset rules."""
+        return SmartRequest(
+            "get_on_off_gradually_info", params or SmartRequest.SmartRequestParams()
+        )
+
+    @staticmethod
     def get_auto_light_info() -> SmartRequest:
         """Get auto light info."""
         return SmartRequest("get_auto_light_info")
@@ -382,7 +391,7 @@ COMPONENT_REQUESTS = {
     "auto_light": [SmartRequest.get_auto_light_info()],
     "light_effect": [SmartRequest.get_dynamic_light_effect_rules()],
     "bulb_quick_control": [],
-    "on_off_gradually": [SmartRequest.get_raw_request("get_on_off_gradually_info")],
+    "on_off_gradually": [SmartRequest.get_on_off_gradually_info()],
     "light_strip": [],
     "light_strip_lighting_effect": [
         SmartRequest.get_raw_request("get_lighting_effect")
