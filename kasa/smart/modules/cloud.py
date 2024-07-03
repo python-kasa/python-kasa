@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...exceptions import SmartErrorCode
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -44,6 +43,6 @@ class Cloud(SmartModule):
     @property
     def is_connected(self):
         """Return True if device is connected to the cloud."""
-        if isinstance(self.data, SmartErrorCode):
+        if self._has_data_error():
             return False
         return self.data["status"] == 0

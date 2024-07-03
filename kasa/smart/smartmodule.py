@@ -45,7 +45,7 @@ class SmartModule(Module):
         """Perform actions after a device update.
 
         Any modules overriding this should ensure that self.data is
-        accessed
+        accessed unless the module should remain active despite errors.
         """
         assert self.data  # noqa: S101
 
@@ -123,3 +123,10 @@ class SmartModule(Module):
         color_temp_range but only supports one value.
         """
         return True
+
+    def _has_data_error(self) -> bool:
+        try:
+            assert self.data  # noqa: S101
+            return False
+        except DeviceError:
+            return True

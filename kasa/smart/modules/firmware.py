@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, Field, validator
 
-from ...exceptions import SmartErrorCode
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -136,11 +135,11 @@ class Firmware(SmartModule):
     @property
     def firmware_update_info(self):
         """Return latest firmware information."""
-        fw = self.data.get("get_latest_fw") or self.data
-        if not self._device.is_cloud_connected or isinstance(fw, SmartErrorCode):
+        if not self._device.is_cloud_connected or self._has_data_error():
             # Error in response, probably disconnected from the cloud.
             return UpdateInfo(type=0, need_to_upgrade=False)
 
+        fw = self.data.get("get_latest_fw") or self.data
         return UpdateInfo.parse_obj(fw)
 
     @property

@@ -43,6 +43,10 @@ class BatterySensor(SmartModule):
                 )
             )
 
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        return {}
+
     @property
     def battery(self):
         """Return battery level."""
