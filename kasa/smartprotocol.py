@@ -433,7 +433,7 @@ class _ChildProtocolWrapper(SmartProtocol):
             }
         }
 
-        response = await self._protocol._query(wrapped_payload, retry_count)
+        response = await self._protocol.query(wrapped_payload, retry_count)
         result = response.get("control_child")
         # Unwrap responseData for control_child
         if result and (response_data := result.get("responseData")):
