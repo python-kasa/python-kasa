@@ -18,7 +18,7 @@ include = [
 "Documentation" = "https://python-kasa.readthedocs.io"
 
 [tool.poetry.scripts]
-kasa = "kasa.cli:cli"
+kasa = "kasa.cli:__main__"
 
 [tool.poetry.dependencies]
 python = "^3.9"

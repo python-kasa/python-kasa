@@ -17,7 +17,7 @@ from kasa import (
     Module,
     UnsupportedDeviceError,
 )
-from kasa.cli import (
+from kasa.cli.main import (
     TYPE_TO_CLASS,
     alias,
     brightness,
@@ -500,7 +500,7 @@ async def test_credentials(discovery_mock, mocker, runner):
                 f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
             )
 
-    mocker.patch("kasa.cli.state", new=_state)
+    mocker.patch("kasa.cli.main.state", new=_state)
 
     dr = DiscoveryResult(**discovery_mock.discovery_data["result"])
     res = await runner.invoke(
@@ -746,7 +746,7 @@ async def test_type_param(device_type, mocker, runner):
         nonlocal result_device
         result_device = dev
 
-    mocker.patch("kasa.cli.state", new=_state)
+    mocker.patch("kasa.cli.main.state", new=_state)
     expected_type = TYPE_TO_CLASS[device_type]
     mocker.patch.object(expected_type, "update")
     res = await runner.invoke(
