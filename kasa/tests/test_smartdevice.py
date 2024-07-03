@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -130,6 +130,78 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
             spies[device].assert_any_call(device_queries[device])
         else:
             spies[device].assert_not_called()
+
+
+@device_smart
+async def test_update_module_errors(dev: SmartDevice, mocker: MockerFixture):
+    """Test that modules that error are disabled / removed."""
+    # We need to have some modules initialized by now
+    assert dev._modules
+
+    critical_modules = {Module.DeviceModule, Module.ChildDevice}
+    not_disabling_modules = {Module.Firmware, Module.Cloud}
+
+    new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+
+    module_queries = {
+        modname: q
+        for modname, module in dev._modules.items()
+        if (q := module.query()) and modname not in critical_modules
+    }
+    child_module_queries = {
+        modname: q
+        for child in dev.children
+        for modname, module in child._modules.items()
+        if (q := module.query()) and modname not in critical_modules
+    }
+    all_queries_names = {
+        key for mod_query in module_queries.values() for key in mod_query
+    }
+    all_child_queries_names = {
+        key for mod_query in child_module_queries.values() for key in mod_query
+    }
+
+    async def _query(request, *args, **kwargs):
+        responses = await dev.protocol._query(request, *args, **kwargs)
+        for k in responses:
+            if k in all_queries_names:
+                responses[k] = SmartErrorCode.PARAMS_ERROR
+        return responses
+
+    async def _child_query(self, request, *args, **kwargs):
+        responses = await child_protocols[self._device_id]._query(
+            request, *args, **kwargs
+        )
+        for k in responses:
+            if k in all_child_queries_names:
+                responses[k] = SmartErrorCode.PARAMS_ERROR
+        return responses
+
+    mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
+
+    from kasa.smartprotocol import _ChildProtocolWrapper
+
+    child_protocols = {
+        cast(_ChildProtocolWrapper, child.protocol)._device_id: child.protocol
+        for child in dev.children
+    }
+    # children not created yet so cannot patch.object
+    mocker.patch("kasa.smartprotocol._ChildProtocolWrapper.query", new=_child_query)
+
+    await new_dev.update()
+    for modname in module_queries:
+        no_disable = modname in not_disabling_modules
+        mod_present = modname in new_dev._modules
+        assert (
+            mod_present is no_disable
+        ), f"{modname} present {mod_present} when no_disable {no_disable}"
+
+    for modname in child_module_queries:
+        no_disable = modname in not_disabling_modules
+        mod_present = any(modname in child._modules for child in new_dev.children)
+        assert (
+            mod_present is no_disable
+        ), f"{modname} present {mod_present} when no_disable {no_disable}"
 
 
 async def test_get_modules():

@@ -417,6 +417,10 @@ class _ChildProtocolWrapper(SmartProtocol):
 
     async def query(self, request: str | dict, retry_count: int = 3) -> dict:
         """Wrap request inside control_child envelope."""
+        return await self._query(request, retry_count)
+
+    async def _query(self, request: str | dict, retry_count: int = 3) -> dict:
+        """Wrap request inside control_child envelope."""
         method, params = self._get_method_and_params_for_request(request)
         request_data = {
             "method": method,
@@ -429,7 +433,7 @@ class _ChildProtocolWrapper(SmartProtocol):
             }
         }
 
-        response = await self._protocol.query(wrapped_payload, retry_count)
+        response = await self._protocol._query(wrapped_payload, retry_count)
         result = response.get("control_child")
         # Unwrap responseData for control_child
         if result and (response_data := result.get("responseData")):
