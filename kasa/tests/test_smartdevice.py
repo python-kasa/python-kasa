@@ -181,6 +181,9 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
     assert dev.is_cloud_connected == is_connected
     last_update = dev._last_update
 
+    for child in dev.children:
+        mocker.patch.object(child.protocol, "query", return_value=child._last_update)
+
     last_update["get_connect_cloud_state"] = {"status": 0}
     with patch.object(dev.protocol, "query", return_value=last_update):
         await dev.update()
@@ -207,21 +210,18 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
         "get_connect_cloud_state": last_update["get_connect_cloud_state"],
         "get_device_info": last_update["get_device_info"],
     }
-    # Child component list is not stored on the device
-    if "get_child_device_list" in last_update:
-        child_component_list = await dev.protocol.query(
-            "get_child_device_component_list"
-        )
-        last_update["get_child_device_component_list"] = child_component_list[
-            "get_child_device_component_list"
-        ]
+
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
 
     first_call = True
 
-    def side_effect_func(*_, **__):
+    async def side_effect_func(*args, **kwargs):
         nonlocal first_call
-        resp = initial_response if first_call else last_update
+        resp = (
+            initial_response
+            if first_call
+            else await new_dev.protocol._query(*args, **kwargs)
+        )
         first_call = False
         return resp
 
