@@ -17,27 +17,26 @@ from kasa import (
     Module,
     UnsupportedDeviceError,
 )
-from kasa.cli.main import (
-    TYPE_TO_CLASS,
+from kasa.cli.device import (
     alias,
-    brightness,
-    cli,
-    cmd_command,
-    effect,
-    emeter,
-    energy,
-    hsv,
     led,
-    raw_command,
     reboot,
     state,
     sysinfo,
-    temperature,
-    time,
     toggle,
     update_credentials,
-    wifi,
 )
+from kasa.cli.light import (
+    brightness,
+    effect,
+    hsv,
+    temperature,
+)
+from kasa.cli.main import TYPE_TO_CLASS, cli
+from kasa.cli.time import time
+from kasa.cli.usage import emeter, energy
+from kasa.cli.util import cmd_command, raw_command
+from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
 
@@ -500,7 +499,7 @@ async def test_credentials(discovery_mock, mocker, runner):
                 f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
             )
 
-    mocker.patch("kasa.cli.main.state", new=_state)
+    mocker.patch("kasa.cli.device.state", new=_state)
 
     dr = DiscoveryResult(**discovery_mock.discovery_data["result"])
     res = await runner.invoke(
@@ -746,7 +745,7 @@ async def test_type_param(device_type, mocker, runner):
         nonlocal result_device
         result_device = dev
 
-    mocker.patch("kasa.cli.main.state", new=_state)
+    mocker.patch("kasa.cli.device.state", new=_state)
     expected_type = TYPE_TO_CLASS[device_type]
     mocker.patch.object(expected_type, "update")
     res = await runner.invoke(
