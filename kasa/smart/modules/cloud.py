@@ -18,6 +18,13 @@ class Cloud(SmartModule):
     QUERY_GETTER_NAME = "get_connect_cloud_state"
     REQUIRED_COMPONENT = "cloud_connect"
 
+    def _post_update_hook(self):
+        """Perform actions after a device update.
+
+        Overrides the default behaviour to disable a module if the query returns
+        an error because the logic here is to treat that as not connected.
+        """
+
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
 
