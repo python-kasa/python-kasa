@@ -10,6 +10,13 @@ class DeviceModule(SmartModule):
 
     REQUIRED_COMPONENT = "device"
 
+    def _post_update_hook(self):
+        """Perform actions after a device update.
+
+        Overrides the default behaviour to disable a module if the query returns
+        an error because this module is critical.
+        """
+
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         query = {
