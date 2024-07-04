@@ -203,7 +203,7 @@ class SmartDevice(Device):
         try:
             module._post_update_hook()
             return True
-        except DeviceError as ex:
+        except Exception as ex:
             _LOGGER.error(
                 "Error processing %s for device %s, module will be unavailable: %s",
                 module.name,
