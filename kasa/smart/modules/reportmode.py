@@ -32,6 +32,10 @@ class ReportMode(SmartModule):
             )
         )
 
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        return {}
+
     @property
     def report_interval(self):
         """Reporting interval of a sensor device."""

@@ -132,7 +132,7 @@
     },
     "get_device_info": {
         "avatar": "switch_s500d",
-        "brightness": 100,
+        "brightness": 5,
         "default_states": {
             "re_power_type": "always_off",
             "re_power_type_capability": [
@@ -157,7 +157,7 @@
         "model": "KS225",
         "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
-        "on_time": 2924,
+        "on_time": 88,
         "overheat_status": "normal",
         "region": "America/Toronto",
         "rssi": -48,
@@ -170,13 +170,13 @@
     "get_device_time": {
         "region": "America/Toronto",
         "time_diff": -300,
-        "timestamp": 1719971593
+        "timestamp": 1720036002
     },
     "get_device_usage": {
         "time_usage": {
-            "past30": 1335,
-            "past7": 592,
-            "today": 50
+            "past30": 1371,
+            "past7": 659,
+            "today": 58
         }
     },
     "get_fw_download_state": {
@@ -205,9 +205,9 @@
         "led_rule": "always",
         "led_status": false,
         "night_mode": {
-            "end_time": 349,
+            "end_time": 350,
             "night_mode_type": "sunrise_sunset",
-            "start_time": 1267,
+            "start_time": 1266,
             "sunrise_offset": 0,
             "sunset_offset": 0
         }
@@ -217,6 +217,18 @@
         "setup_payload": "00:0000000000000000000"
     },
     "get_next_event": {},
+    "get_on_off_gradually_info": {
+        "off_state": {
+            "duration": 1,
+            "enable": true,
+            "max_duration": 60
+        },
+        "on_state": {
+            "duration": 1,
+            "enable": true,
+            "max_duration": 60
+        }
+    },
     "get_preset_rules": {
         "brightness": [
             100,
