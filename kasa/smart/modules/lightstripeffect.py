@@ -4,15 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...interfaces.lighteffect import LightEffect as LightEffectInterface
-from ..effects import EFFECT_MAPPING, EFFECT_NAMES
-from ..smartmodule import SmartModule
+from ..effects import EFFECT_MAPPING, EFFECT_NAMES, SmartLightEffect
+from ..smartmodule import Module, SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
 
 
-class LightStripEffect(SmartModule, LightEffectInterface):
+class LightStripEffect(SmartModule, SmartLightEffect):
     """Implementation of dynamic light effects."""
 
     REQUIRED_COMPONENT = "light_strip_lighting_effect"
@@ -22,6 +21,7 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         effect_list = [self.LIGHT_EFFECTS_OFF]
         effect_list.extend(EFFECT_NAMES)
         self._effect_list = effect_list
+        self._effect_mapping = EFFECT_MAPPING
 
     @property
     def name(self) -> str:
@@ -54,6 +54,28 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         return self.LIGHT_EFFECTS_OFF
 
     @property
+    def is_active(self) -> bool:
+        """Return if effect is active."""
+        eff = self.data["lighting_effect"]
+        # softAP has enable=1, but brightness 0 which fails on tests
+        return bool(eff["enable"]) and eff["name"] in self._effect_list
+
+    @property
+    def brightness(self) -> int:
+        """Return effect brightness."""
+        eff = self.data["lighting_effect"]
+        return eff["brightness"]
+
+    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+        """Set effect brightness."""
+        if brightness <= 0:
+            return await self.set_effect(self.LIGHT_EFFECTS_OFF)
+
+        # Need to pass bAdjusted to keep the existing effect running
+        eff = {"brightness": brightness, "bAdjusted": True}
+        return await self.set_custom_effect(eff)
+
+    @property
     def effect_list(self) -> list[str]:
         """Return built-in effects list.
 
@@ -81,16 +103,24 @@ class LightStripEffect(SmartModule, LightEffectInterface):
         :param int brightness: The wanted brightness
         :param int transition: The wanted transition time
         """
+        brightness_module = self._device.modules[Module.Brightness]
         if effect == self.LIGHT_EFFECTS_OFF:
-            effect_dict = dict(self.data["lighting_effect"])
-            effect_dict["enable"] = 0
-        elif effect not in EFFECT_MAPPING:
+            state = self._device.modules[Module.Light].state
+            await self._device.modules[Module.Light].set_state(state)
+            return
+
+        if effect not in self._effect_mapping:
             raise ValueError(f"The effect {effect} is not a built in effect.")
         else:
-            effect_dict = EFFECT_MAPPING[effect]
+            effect_dict = self._effect_mapping[effect]
 
+        # Use explicitly given brightness
         if brightness is not None:
             effect_dict["brightness"] = brightness
+        # Fall back to brightness reported by the brightness module
+        elif brightness_module.brightness:
+            effect_dict["brightness"] = brightness_module.brightness
+
         if transition is not None:
             effect_dict["transition"] = transition
 

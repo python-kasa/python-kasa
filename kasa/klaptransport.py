@@ -132,8 +132,10 @@ class KlapTransport(BaseTransport):
         return self.DEFAULT_PORT
 
     @property
-    def credentials_hash(self) -> str:
+    def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
+        if self._credentials == Credentials():
+            return None
         return base64.b64encode(self._local_auth_hash).decode()
 
     async def perform_handshake1(self) -> tuple[bytes, bytes, bytes]:

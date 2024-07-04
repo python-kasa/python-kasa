@@ -145,7 +145,7 @@ class IotStrip(IotDevice):
 
         if update_children:
             for plug in self.children:
-                await plug.update()
+                await plug._update()
 
         if not self.features:
             await self._initialize_features()
@@ -307,10 +307,12 @@ class IotStripPlug(IotPlug):
     The plug inherits (most of) the system information from the parent.
     """
 
+    _parent: IotStrip
+
     def __init__(self, host: str, parent: IotStrip, child_id: str) -> None:
         super().__init__(host)
 
-        self.parent = parent
+        self._parent = parent
         self.child_id = child_id
         self._last_update = parent._last_update
         self._set_sys_info(parent.sys_info)
@@ -360,6 +362,14 @@ class IotStripPlug(IotPlug):
 
         Needed for properties that are decorated with `requires_update`.
         """
+        await self._update(update_children)
+
+    async def _update(self, update_children: bool = True):
+        """Query the device to update the data.
+
+        Internal implementation to allow patching of public update in the cli
+        or test framework.
+        """
         await self._modular_update({})
         for module in self._modules.values():
             module._post_update_hook()
@@ -380,7 +390,7 @@ class IotStripPlug(IotPlug):
         self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ) -> Any:
         """Override query helper to include the child_ids."""
-        return await self.parent._query_helper(
+        return await self._parent._query_helper(
             target, cmd, arg, child_ids=[self.child_id]
         )
 
@@ -441,13 +451,15 @@ class IotStripPlug(IotPlug):
     @requires_update
     def model(self) -> str:
         """Return device model for a child socket."""
-        sys_info = self.parent.sys_info
+        sys_info = self._parent.sys_info
         return f"Socket for {sys_info['model']}"
 
     def _get_child_info(self) -> dict:
         """Return the subdevice information for this device."""
-        for plug in self.parent.sys_info["children"]:
+        for plug in self._parent.sys_info["children"]:
             if plug["id"] == self.child_id:
                 return plug
 
-        raise KasaException(f"Unable to find children {self.child_id}")
+        raise KasaException(
+            f"Unable to find children {self.child_id}"
+        )  # pragma: no cover

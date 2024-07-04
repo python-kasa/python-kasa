@@ -171,17 +171,26 @@ class SmartDevice(Device):
         # devices will always update children to prevent errors on module access.
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
-                await child.update()
+                await child._update()
         if child_info := self._try_get_response(resp, "get_child_device_list", {}):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
         # Call handle update for modules that want to update internal data
-        for module in self._modules.values():
-            module._post_update_hook()
+        errors = []
+        for module_name, module in self._modules.items():
+            if not self._handle_module_post_update_hook(module):
+                errors.append(module_name)
+        for error in errors:
+            self._modules.pop(error)
+
         for child in self._children.values():
-            for child_module in child._modules.values():
-                child_module._post_update_hook()
+            errors = []
+            for child_module_name, child_module in child._modules.items():
+                if not self._handle_module_post_update_hook(child_module):
+                    errors.append(child_module_name)
+            for error in errors:
+                child._modules.pop(error)
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
@@ -189,6 +198,19 @@ class SmartDevice(Device):
             await self._initialize_features()
 
         _LOGGER.debug("Got an update: %s", self._last_update)
+
+    def _handle_module_post_update_hook(self, module: SmartModule) -> bool:
+        try:
+            module._post_update_hook()
+            return True
+        except Exception as ex:
+            _LOGGER.error(
+                "Error processing %s for device %s, module will be unavailable: %s",
+                module.name,
+                self.host,
+                ex,
+            )
+            return False
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""

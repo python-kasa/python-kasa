@@ -117,8 +117,10 @@ class AesTransport(BaseTransport):
         return self.DEFAULT_PORT
 
     @property
-    def credentials_hash(self) -> str:
+    def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
+        if self._credentials == Credentials():
+            return None
         return base64.b64encode(json_dumps(self._login_params).encode()).decode()
 
     def _get_login_params(self, credentials: Credentials) -> dict[str, str]:
@@ -140,8 +142,13 @@ class AesTransport(BaseTransport):
         return un, pw
 
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
-        error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
-        if error_code == SmartErrorCode.SUCCESS:
+        error_code_raw = resp_dict.get("error_code")
+        try:
+            error_code = SmartErrorCode.from_int(error_code_raw)
+        except ValueError:
+            _LOGGER.warning("Received unknown error code: %s", error_code_raw)
+            error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+        if error_code is SmartErrorCode.SUCCESS:
             return
         msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
         if error_code in SMART_RETRYABLE_ERRORS:

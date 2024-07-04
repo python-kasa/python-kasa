@@ -65,6 +65,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KP400**
   - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 2.0 (US) / Firmware: 1.0.6
+  - Hardware: 3.0 (US) / Firmware: 1.0.3
 
 ### Wall Switches
 
@@ -81,6 +82,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KP405**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
 - **KS200M**
+  - Hardware: 1.0 (US) / Firmware: 1.0.11
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **KS205**
   - Hardware: 1.0 (US) / Firmware: 1.0.2<sup>\*</sup>
@@ -88,6 +90,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 1.0 (US) / Firmware: 1.0.4
 - **KS225**
   - Hardware: 1.0 (US) / Firmware: 1.0.2<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.1.0<sup>\*</sup>
 - **KS230**
   - Hardware: 1.0 (US) / Firmware: 1.0.14
 - **KS240**
@@ -209,6 +212,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.1.0
 - **L920-5**
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
+  - Hardware: 1.0 (EU) / Firmware: 1.1.3
   - Hardware: 1.0 (US) / Firmware: 1.1.0
   - Hardware: 1.0 (US) / Firmware: 1.1.3
 - **L930-5**

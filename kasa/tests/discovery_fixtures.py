@@ -12,6 +12,8 @@ from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol, FakeSmartTransport
 from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 
+DISCOVERY_MOCK_IP = "127.0.0.123"
+
 
 def _make_unsupported(device_family, encrypt_type):
     return {
@@ -73,7 +75,7 @@ new_discovery = parametrize_discovery(
 async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
     fixture_info: FixtureInfo = request.param
-    yield patch_discovery({"127.0.0.123": fixture_info}, mocker)
+    yield patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
 
 
 def create_discovery_mock(ip: str, fixture_data: dict):

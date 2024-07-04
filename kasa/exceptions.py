@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import TimeoutError as _asyncioTimeoutError
 from enum import IntEnum
+from functools import cache
 from typing import Any
 
 
@@ -63,6 +64,12 @@ class SmartErrorCode(IntEnum):
     def __str__(self):
         return f"{self.name}({self.value})"
 
+    @staticmethod
+    @cache
+    def from_int(value: int) -> SmartErrorCode:
+        """Convert an integer to a SmartErrorCode."""
+        return SmartErrorCode(value)
+
     SUCCESS = 0
 
     # Transport Errors
@@ -118,6 +125,9 @@ class SmartErrorCode(IntEnum):
     STAT_SAVE_ERROR = -2202
     DST_ERROR = -2301
     DST_SAVE_ERROR = -2302
+
+    # Library internal for unknown error codes
+    INTERNAL_UNKNOWN_ERROR = -100_000
 
 
 SMART_RETRYABLE_ERRORS = [

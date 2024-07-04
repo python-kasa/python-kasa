@@ -78,7 +78,6 @@ class FakeSmartTransport(BaseTransport):
                 },
             },
         ),
-        "get_on_off_gradually_info": ("on_off_gradually", {"enable": True}),
         "get_latest_fw": (
             "firmware",
             {
@@ -164,6 +163,8 @@ class FakeSmartTransport(BaseTransport):
             return {"error_code": 0}
         elif child_method == "set_preset_rules":
             return self._set_child_preset_rules(info, child_params)
+        elif child_method == "set_on_off_gradually_info":
+            return self._set_on_off_gradually_info(info, child_params)
         elif child_method in child_device_calls:
             result = copy.deepcopy(child_device_calls[child_method])
             return {"result": result, "error_code": 0}
@@ -200,24 +201,80 @@ class FakeSmartTransport(BaseTransport):
             "Method %s not implemented for children" % child_method
         )
 
+    def _get_on_off_gradually_info(self, info, params):
+        if self.components["on_off_gradually"] == 1:
+            info["get_on_off_gradually_info"] = {"enable": True}
+        else:
+            info["get_on_off_gradually_info"] = {
+                "off_state": {"duration": 5, "enable": False, "max_duration": 60},
+                "on_state": {"duration": 5, "enable": False, "max_duration": 60},
+            }
+        return copy.deepcopy(info["get_on_off_gradually_info"])
+
+    def _set_on_off_gradually_info(self, info, params):
+        # Child devices can have the required properties directly in info
+
+        if self.components["on_off_gradually"] == 1:
+            info["get_on_off_gradually_info"] = {"enable": params["enable"]}
+        elif on_state := params.get("on_state"):
+            if "fade_on_time" in info and "gradually_on_mode" in info:
+                info["gradually_on_mode"] = 1 if on_state["enable"] else 0
+                if "duration" in on_state:
+                    info["fade_on_time"] = on_state["duration"]
+            else:
+                info["get_on_off_gradually_info"]["on_state"]["enable"] = on_state[
+                    "enable"
+                ]
+                if "duration" in on_state:
+                    info["get_on_off_gradually_info"]["on_state"]["duration"] = (
+                        on_state["duration"]
+                    )
+        elif off_state := params.get("off_state"):
+            if "fade_off_time" in info and "gradually_off_mode" in info:
+                info["gradually_off_mode"] = 1 if off_state["enable"] else 0
+                if "duration" in off_state:
+                    info["fade_off_time"] = off_state["duration"]
+            else:
+                info["get_on_off_gradually_info"]["off_state"]["enable"] = off_state[
+                    "enable"
+                ]
+                if "duration" in off_state:
+                    info["get_on_off_gradually_info"]["off_state"]["duration"] = (
+                        off_state["duration"]
+                    )
+        return {"error_code": 0}
+
     def _set_dynamic_light_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
         info["get_device_info"]["dynamic_light_effect_enable"] = params["enable"]
         info["get_dynamic_light_effect_rules"]["enable"] = params["enable"]
         if params["enable"]:
             info["get_device_info"]["dynamic_light_effect_id"] = params["id"]
-            info["get_dynamic_light_effect_rules"]["current_rule_id"] = params["enable"]
+            info["get_dynamic_light_effect_rules"]["current_rule_id"] = params["id"]
         else:
             if "dynamic_light_effect_id" in info["get_device_info"]:
                 del info["get_device_info"]["dynamic_light_effect_id"]
             if "current_rule_id" in info["get_dynamic_light_effect_rules"]:
                 del info["get_dynamic_light_effect_rules"]["current_rule_id"]
 
+    def _set_edit_dynamic_light_effect_rule(self, info, params):
+        """Edit dynamic light effect rule."""
+        rules = info["get_dynamic_light_effect_rules"]["rule_list"]
+        for rule in rules:
+            if rule["id"] == params["id"]:
+                rule.update(params)
+                return
+
+        raise Exception("Unable to find rule with id")
+
     def _set_light_strip_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
         info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
         info["get_device_info"]["lighting_effect"]["name"] = params["name"]
         info["get_device_info"]["lighting_effect"]["id"] = params["id"]
+        # Brightness is not always available
+        if (brightness := params.get("brightness")) is not None:
+            info["get_device_info"]["lighting_effect"]["brightness"] = brightness
         info["get_lighting_effect"] = copy.deepcopy(params)
 
     def _set_led_info(self, info, params):
@@ -294,6 +351,13 @@ class FakeSmartTransport(BaseTransport):
                 info[method] = copy.deepcopy(missing_result[1])
                 result = copy.deepcopy(info[method])
                 retval = {"result": result, "error_code": 0}
+            elif (
+                method == "get_on_off_gradually_info"
+                and "on_off_gradually" in self.components
+            ):
+                # Need to call a method here to determine which version schema to return
+                result = self._get_on_off_gradually_info(info, params)
+                return {"result": result, "error_code": 0}
             else:
                 # PARAMS error returned for KS240 when get_device_usage called
                 # on parent device.  Could be any error code though.
@@ -314,6 +378,9 @@ class FakeSmartTransport(BaseTransport):
         elif method == "set_dynamic_light_effect_rule_enable":
             self._set_dynamic_light_effect(info, params)
             return {"error_code": 0}
+        elif method == "edit_dynamic_light_effect_rule":
+            self._set_edit_dynamic_light_effect_rule(info, params)
+            return {"error_code": 0}
         elif method == "set_lighting_effect":
             self._set_light_strip_effect(info, params)
             return {"error_code": 0}
@@ -324,6 +391,8 @@ class FakeSmartTransport(BaseTransport):
             return self._set_preset_rules(info, params)
         elif method == "edit_preset_rules":
             return self._edit_preset_rules(info, params)
+        elif method == "set_on_off_gradually_info":
+            return self._set_on_off_gradually_info(info, params)
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)

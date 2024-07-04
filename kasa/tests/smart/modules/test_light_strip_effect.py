@@ -6,33 +6,53 @@ import pytest
 from pytest_mock import MockerFixture
 
 from kasa import Device, Feature, Module
-from kasa.smart.modules import LightEffect
+from kasa.smart.modules import LightEffect, LightStripEffect
 from kasa.tests.device_fixtures import parametrize
 
-light_effect = parametrize(
-    "has light effect", component_filter="light_effect", protocol_filter={"SMART"}
+light_strip_effect = parametrize(
+    "has light strip effect",
+    component_filter="light_strip_lighting_effect",
+    protocol_filter={"SMART"},
 )
 
 
-@light_effect
-async def test_light_effect(dev: Device, mocker: MockerFixture):
-    """Test light effect."""
+@light_strip_effect
+async def test_light_strip_effect(dev: Device, mocker: MockerFixture):
+    """Test light strip effect."""
     light_effect = dev.modules.get(Module.LightEffect)
-    assert isinstance(light_effect, LightEffect)
+
+    assert isinstance(light_effect, LightStripEffect)
+
+    brightness = dev.modules[Module.Brightness]
 
     feature = dev.features["light_effect"]
     assert feature.type == Feature.Type.Choice
 
     call = mocker.spy(light_effect, "call")
+
+    light = dev.modules[Module.Light]
+    light_call = mocker.spy(light, "call")
+
     assert feature.choices == light_effect.effect_list
     assert feature.choices
     for effect in chain(reversed(feature.choices), feature.choices):
         await light_effect.set_effect(effect)
+
+        if effect == LightEffect.LIGHT_EFFECTS_OFF:
+            light_call.assert_called()
+            continue
+
+        # Start with the current effect data
+        params = light_effect.data["lighting_effect"]
         enable = effect != LightEffect.LIGHT_EFFECTS_OFF
-        params: dict[str, bool | str] = {"enable": enable}
+        params["enable"] = enable
         if enable:
-            params["id"] = light_effect._scenes_names_to_id[effect]
-        call.assert_called_with("set_dynamic_light_effect_rule_enable", params)
+            params = light_effect._effect_mapping[effect]
+            params["enable"] = enable
+            params["brightness"] = brightness.brightness  # use the existing brightness
+
+        call.assert_called_with("set_lighting_effect", params)
+
         await dev.update()
         assert light_effect.effect == effect
         assert feature.value == effect
@@ -41,7 +61,7 @@ async def test_light_effect(dev: Device, mocker: MockerFixture):
         await light_effect.set_effect("foobar")
 
 
-@light_effect
+@light_strip_effect
 @pytest.mark.parametrize("effect_active", [True, False])
 async def test_light_effect_brightness(
     dev: Device, effect_active: bool, mocker: MockerFixture
@@ -63,8 +83,6 @@ async def test_light_effect_brightness(
         new_callable=mocker.PropertyMock,
         return_value=effect_active,
     )
-    if effect_active:  # Set the rule L1 active for testing
-        light_effect.data["current_rule_id"] = "L1"
 
     await light_module.set_brightness(10)
 
@@ -74,7 +92,7 @@ async def test_light_effect_brightness(
 
         light_effect_set_brightness.assert_called_with(10)
         mock_light_effect_call.assert_called_with(
-            "edit_dynamic_light_effect_rule", mocker.ANY
+            "set_lighting_effect", {"brightness": 10, "bAdjusted": True}
         )
     else:
         assert not light_effect.is_active

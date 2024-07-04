@@ -1,11 +1,29 @@
 # Changelog
 
+## [0.7.0.2](https://github.com/python-kasa/python-kasa/tree/0.7.0.2) (2024-07-01)
 
-## [0.7.0.1](https://github.com/python-kasa/python-kasa/tree/0.7.0.1) (2024-06-25)
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.1...0.7.0.2)
 
 This patch release fixes some minor issues found out during testing against all new homeassistant platforms.
 
+**Fixed bugs:**
+
+- Disable multi-request on unknown errors [\#1027](https://github.com/python-kasa/python-kasa/pull/1027) (@sdb9696)
+- Disable multi requests on json decode error during multi-request [\#1025](https://github.com/python-kasa/python-kasa/pull/1025) (@sdb9696)
+- Fix changing brightness when effect is active [\#1019](https://github.com/python-kasa/python-kasa/pull/1019) (@rytilahti)
+- Update light transition module to work with child devices [\#1017](https://github.com/python-kasa/python-kasa/pull/1017) (@sdb9696)
+- Handle unknown error codes gracefully [\#1016](https://github.com/python-kasa/python-kasa/pull/1016) (@rytilahti)
+
+**Project maintenance:**
+
+- Make parent attribute on device consistent across iot and smart [\#1023](https://github.com/python-kasa/python-kasa/pull/1023) (@sdb9696)
+- Cache SmartErrorCode creation [\#1022](https://github.com/python-kasa/python-kasa/pull/1022) (@bdraco)
+
+## [0.7.0.1](https://github.com/python-kasa/python-kasa/tree/0.7.0.1) (2024-06-25)
+
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0...0.7.0.1)
+
+This patch release fixes some minor issues found out during testing against all new homeassistant platforms.
 
 **Fixed bugs:**
 
@@ -54,24 +72,19 @@ For more information on the changes please checkout our [documentation on the AP
 **Implemented enhancements:**
 
 - Cleanup cli output [\#1000](https://github.com/python-kasa/python-kasa/pull/1000) (@rytilahti)
-- Improve autooff name and unit [\#997](https://github.com/python-kasa/python-kasa/pull/997) (@rytilahti)
 - Update mode, time, rssi and report\_interval feature names/units [\#995](https://github.com/python-kasa/python-kasa/pull/995) (@sdb9696)
-- Add unit\_getter for feature [\#993](https://github.com/python-kasa/python-kasa/pull/993) (@rytilahti)
 - Add timezone to on\_since attributes [\#978](https://github.com/python-kasa/python-kasa/pull/978) (@sdb9696)
 - Add type hints to feature set\_value [\#974](https://github.com/python-kasa/python-kasa/pull/974) (@sdb9696)
 - Handle unknown light effect names and only calculate effect list once [\#973](https://github.com/python-kasa/python-kasa/pull/973) (@sdb9696)
 - Support smart child modules queries [\#967](https://github.com/python-kasa/python-kasa/pull/967) (@sdb9696)
 - Do not expose child modules on parent devices [\#964](https://github.com/python-kasa/python-kasa/pull/964) (@sdb9696)
 - Do not add parent only modules to strip sockets [\#963](https://github.com/python-kasa/python-kasa/pull/963) (@sdb9696)
-- Add time sync command [\#951](https://github.com/python-kasa/python-kasa/pull/951) (@rytilahti)
 - Make device initialisation easier by reducing required imports [\#936](https://github.com/python-kasa/python-kasa/pull/936) (@sdb9696)
 - Fix set\_state for common light modules [\#929](https://github.com/python-kasa/python-kasa/pull/929) (@sdb9696)
 - Add state feature for iot devices [\#924](https://github.com/python-kasa/python-kasa/pull/924) (@rytilahti)
 - Add post update hook to module and use in smart LightEffect [\#921](https://github.com/python-kasa/python-kasa/pull/921) (@sdb9696)
 - Add LightEffect module for smart light strips [\#918](https://github.com/python-kasa/python-kasa/pull/918) (@sdb9696)
-- Add light presets common module to devices. [\#907](https://github.com/python-kasa/python-kasa/pull/907) (@sdb9696)
 - Improve categorization of features [\#904](https://github.com/python-kasa/python-kasa/pull/904) (@rytilahti)
-- Create common interfaces for remaining device types [\#895](https://github.com/python-kasa/python-kasa/pull/895) (@sdb9696)
 - Make get\_module return typed module [\#892](https://github.com/python-kasa/python-kasa/pull/892) (@sdb9696)
 - Add LightEffectModule for dynamic light effects on SMART bulbs [\#887](https://github.com/python-kasa/python-kasa/pull/887) (@sdb9696)
 - Implement choice feature type [\#880](https://github.com/python-kasa/python-kasa/pull/880) (@rytilahti)
@@ -100,6 +113,11 @@ For more information on the changes please checkout our [documentation on the AP
 - Add --child option to feature command [\#789](https://github.com/python-kasa/python-kasa/pull/789) (@rytilahti)
 - Add temperature\_unit feature to t315 [\#788](https://github.com/python-kasa/python-kasa/pull/788) (@rytilahti)
 - Add feature for ambient light sensor [\#787](https://github.com/python-kasa/python-kasa/pull/787) (@shifty35)
+- Improve autooff name and unit [\#997](https://github.com/python-kasa/python-kasa/pull/997) (@rytilahti)
+- Add unit\_getter for feature [\#993](https://github.com/python-kasa/python-kasa/pull/993) (@rytilahti)
+- Add time sync command [\#951](https://github.com/python-kasa/python-kasa/pull/951) (@rytilahti)
+- Add light presets common module to devices. [\#907](https://github.com/python-kasa/python-kasa/pull/907) (@sdb9696)
+- Create common interfaces for remaining device types [\#895](https://github.com/python-kasa/python-kasa/pull/895) (@sdb9696)
 - Add initial support for H100 and T315 [\#776](https://github.com/python-kasa/python-kasa/pull/776) (@rytilahti)
 - Generalize smartdevice child support [\#775](https://github.com/python-kasa/python-kasa/pull/775) (@rytilahti)
 - Raise CLI errors in debug mode [\#771](https://github.com/python-kasa/python-kasa/pull/771) (@sdb9696)
@@ -117,18 +135,13 @@ For more information on the changes please checkout our [documentation on the AP
 
 - Fix smart led status to report rule status [\#1002](https://github.com/python-kasa/python-kasa/pull/1002) (@sdb9696)
 - Demote device\_time back to debug [\#1001](https://github.com/python-kasa/python-kasa/pull/1001) (@rytilahti)
-- Fix to call update when only --device-family passed to cli [\#987](https://github.com/python-kasa/python-kasa/pull/987) (@sdb9696)
-- Disallow non-targeted device commands [\#982](https://github.com/python-kasa/python-kasa/pull/982) (@rytilahti)
 - Add supported check to light transition module [\#971](https://github.com/python-kasa/python-kasa/pull/971) (@sdb9696)
 - Fix switching off light effects for iot lights strips [\#961](https://github.com/python-kasa/python-kasa/pull/961) (@sdb9696)
 - Add state features to iot strip sockets [\#960](https://github.com/python-kasa/python-kasa/pull/960) (@sdb9696)
 - Ensure http delay logic works during default login attempt [\#959](https://github.com/python-kasa/python-kasa/pull/959) (@sdb9696)
 - Fix fan speed level when off and derive smart fan module from common fan interface [\#957](https://github.com/python-kasa/python-kasa/pull/957) (@sdb9696)
-- Require update in cli for wifi commands [\#956](https://github.com/python-kasa/python-kasa/pull/956) (@rytilahti)
-- Do not raise on multi-request errors on child devices [\#949](https://github.com/python-kasa/python-kasa/pull/949) (@rytilahti)
 - Do not show a zero error code when cli exits from showing help [\#935](https://github.com/python-kasa/python-kasa/pull/935) (@rytilahti)
 - Initialize autooff features only when data is available [\#933](https://github.com/python-kasa/python-kasa/pull/933) (@rytilahti)
-- Fix P100 errors on multi-requests [\#930](https://github.com/python-kasa/python-kasa/pull/930) (@sdb9696)
 - Fix potential infinite loop if incomplete lists returned [\#920](https://github.com/python-kasa/python-kasa/pull/920) (@sdb9696)
 - Add 'battery\_percentage' only when it's available [\#906](https://github.com/python-kasa/python-kasa/pull/906) (@rytilahti)
 - Add missing alarm volume 'normal' [\#899](https://github.com/python-kasa/python-kasa/pull/899) (@rytilahti)
@@ -140,6 +153,11 @@ For more information on the changes please checkout our [documentation on the AP
 - smartbulb: Limit brightness range to 1-100 [\#829](https://github.com/python-kasa/python-kasa/pull/829) (@rytilahti)
 - Fix energy module calling get\_current\_power [\#798](https://github.com/python-kasa/python-kasa/pull/798) (@sdb9696)
 - Fix auto update switch [\#786](https://github.com/python-kasa/python-kasa/pull/786) (@rytilahti)
+- Fix to call update when only --device-family passed to cli [\#987](https://github.com/python-kasa/python-kasa/pull/987) (@sdb9696)
+- Disallow non-targeted device commands [\#982](https://github.com/python-kasa/python-kasa/pull/982) (@rytilahti)
+- Require update in cli for wifi commands [\#956](https://github.com/python-kasa/python-kasa/pull/956) (@rytilahti)
+- Do not raise on multi-request errors on child devices [\#949](https://github.com/python-kasa/python-kasa/pull/949) (@rytilahti)
+- Fix P100 errors on multi-requests [\#930](https://github.com/python-kasa/python-kasa/pull/930) (@sdb9696)
 - Retry query on 403 after successful handshake [\#785](https://github.com/python-kasa/python-kasa/pull/785) (@sdb9696)
 - Ensure connections are closed when cli is finished [\#752](https://github.com/python-kasa/python-kasa/pull/752) (@sdb9696)
 - Fix for P100 on fw 1.1.3 login\_version none [\#751](https://github.com/python-kasa/python-kasa/pull/751) (@sdb9696)
@@ -172,19 +190,18 @@ For more information on the changes please checkout our [documentation on the AP
 
 - Cleanup README to use the new cli format [\#999](https://github.com/python-kasa/python-kasa/pull/999) (@rytilahti)
 - Add 0.7 api changes section to docs [\#996](https://github.com/python-kasa/python-kasa/pull/996) (@sdb9696)
-- Update README to be more approachable for new users [\#994](https://github.com/python-kasa/python-kasa/pull/994) (@rytilahti)
 - Update docs with more howto examples [\#968](https://github.com/python-kasa/python-kasa/pull/968) (@sdb9696)
 - Update documentation structure and start migrating to markdown [\#934](https://github.com/python-kasa/python-kasa/pull/934) (@sdb9696)
 - Add tutorial doctest module and enable top level await [\#919](https://github.com/python-kasa/python-kasa/pull/919) (@sdb9696)
 - Add warning about tapo watchdog [\#902](https://github.com/python-kasa/python-kasa/pull/902) (@rytilahti)
 - Move contribution instructions into docs [\#901](https://github.com/python-kasa/python-kasa/pull/901) (@rytilahti)
 - Add rust tapo link to README [\#857](https://github.com/python-kasa/python-kasa/pull/857) (@rytilahti)
+- Update README to be more approachable for new users [\#994](https://github.com/python-kasa/python-kasa/pull/994) (@rytilahti)
 - Enable shell extra for installing ptpython and rich [\#782](https://github.com/python-kasa/python-kasa/pull/782) (@sdb9696)
 - Add WallSwitch device type and autogenerate supported devices docs [\#758](https://github.com/python-kasa/python-kasa/pull/758) (@sdb9696)
 
 **Project maintenance:**
 
-- Drop python3.8 support [\#992](https://github.com/python-kasa/python-kasa/pull/992) (@rytilahti)
 - Remove anyio dependency from pyproject.toml [\#990](https://github.com/python-kasa/python-kasa/pull/990) (@sdb9696)
 - Configure mypy to run in virtual environment and fix resulting issues [\#989](https://github.com/python-kasa/python-kasa/pull/989) (@sdb9696)
 - Better checking of child modules not supported by parent device [\#966](https://github.com/python-kasa/python-kasa/pull/966) (@sdb9696)
@@ -194,7 +211,6 @@ For more information on the changes please checkout our [documentation on the AP
 - Deprecate device level light, effect and led attributes [\#916](https://github.com/python-kasa/python-kasa/pull/916) (@sdb9696)
 - Update cli to use common modules and remove iot specific cli testing [\#913](https://github.com/python-kasa/python-kasa/pull/913) (@sdb9696)
 - Deprecate is\_something attributes [\#912](https://github.com/python-kasa/python-kasa/pull/912) (@sdb9696)
-- Make Light and Fan a common module interface [\#911](https://github.com/python-kasa/python-kasa/pull/911) (@sdb9696)
 - Rename bulb interface to light and move fan and light interface to interfaces [\#910](https://github.com/python-kasa/python-kasa/pull/910) (@sdb9696)
 - Make module names consistent and remove redundant module casting [\#909](https://github.com/python-kasa/python-kasa/pull/909) (@sdb9696)
 - Add child devices from hubs to generated list of supported devices [\#898](https://github.com/python-kasa/python-kasa/pull/898) (@sdb9696)
@@ -229,10 +245,12 @@ For more information on the changes please checkout our [documentation on the AP
 - Do not fail fast on pypy CI jobs [\#799](https://github.com/python-kasa/python-kasa/pull/799) (@sdb9696)
 - Update dump\_devinfo to collect child device info [\#796](https://github.com/python-kasa/python-kasa/pull/796) (@sdb9696)
 - Refactor test framework [\#794](https://github.com/python-kasa/python-kasa/pull/794) (@sdb9696)
+- Refactor devices into subpackages and deprecate old names [\#716](https://github.com/python-kasa/python-kasa/pull/716) (@sdb9696)
+- Drop python3.8 support [\#992](https://github.com/python-kasa/python-kasa/pull/992) (@rytilahti)
+- Make Light and Fan a common module interface [\#911](https://github.com/python-kasa/python-kasa/pull/911) (@sdb9696)
 - Add missing firmware module import [\#774](https://github.com/python-kasa/python-kasa/pull/774) (@rytilahti)
 - Fix dump\_devinfo scrubbing for ks240 [\#765](https://github.com/python-kasa/python-kasa/pull/765) (@rytilahti)
 - Rename and deprecate exception classes [\#739](https://github.com/python-kasa/python-kasa/pull/739) (@sdb9696)
-- Refactor devices into subpackages and deprecate old names [\#716](https://github.com/python-kasa/python-kasa/pull/716) (@sdb9696)
 
 ## [0.6.2.1](https://github.com/python-kasa/python-kasa/tree/0.6.2.1) (2024-02-02)
 

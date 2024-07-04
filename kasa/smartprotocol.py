@@ -47,6 +47,9 @@ class SmartProtocol(BaseProtocol):
         self._terminal_uuid: str = base64.b64encode(md5(uuid.uuid4().bytes)).decode()
         self._request_id_generator = SnowflakeId(1, 1)
         self._query_lock = asyncio.Lock()
+        self._multi_request_batch_size = (
+            self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
+        )
 
     def get_smart_request(self, method, params=None) -> str:
         """Get a request message as a string."""
@@ -117,9 +120,16 @@ class SmartProtocol(BaseProtocol):
 
         end = len(multi_requests)
         # Break the requests down as there can be a size limit
-        step = (
-            self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
-        )
+        step = self._multi_request_batch_size
+        if step == 1:
+            # If step is 1 do not send request batches
+            for request in multi_requests:
+                method = request["method"]
+                req = self.get_smart_request(method, request["params"])
+                resp = await self._transport.send(req)
+                self._handle_response_error_code(resp, method, raise_on_error=False)
+                multi_result[method] = resp["result"]
+            return multi_result
         for i in range(0, end, step):
             requests_step = multi_requests[i : i + step]
 
@@ -141,7 +151,25 @@ class SmartProtocol(BaseProtocol):
                     batch_name,
                     pf(response_step),
                 )
-            self._handle_response_error_code(response_step, batch_name)
+            try:
+                self._handle_response_error_code(response_step, batch_name)
+            except DeviceError as ex:
+                # P100 sometimes raises JSON_DECODE_FAIL_ERROR or INTERNAL_UNKNOWN_ERROR
+                # on batched request so disable batching
+                if (
+                    ex.error_code
+                    in {
+                        SmartErrorCode.JSON_DECODE_FAIL_ERROR,
+                        SmartErrorCode.INTERNAL_UNKNOWN_ERROR,
+                    }
+                    and self._multi_request_batch_size != 1
+                ):
+                    self._multi_request_batch_size = 1
+                    raise _RetryableError(
+                        "JSON Decode failure, multi requests disabled"
+                    ) from ex
+                raise ex
+
             responses = response_step["result"]["responses"]
             for response in responses:
                 method = response["method"]
@@ -239,12 +267,20 @@ class SmartProtocol(BaseProtocol):
             response_result[response_list_name].extend(next_batch[response_list_name])
 
     def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
-        error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
-        if error_code == SmartErrorCode.SUCCESS:
+        error_code_raw = resp_dict.get("error_code")
+        try:
+            error_code = SmartErrorCode.from_int(error_code_raw)
+        except ValueError:
+            _LOGGER.warning("Received unknown error code: %s", error_code_raw)
+            error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+
+        if error_code is SmartErrorCode.SUCCESS:
             return
+
         if not raise_on_error:
             resp_dict["result"] = error_code
             return
+
         msg = (
             f"Error querying device: {self._host}: "
             + f"{error_code.name}({error_code.value})"
@@ -380,6 +416,10 @@ class _ChildProtocolWrapper(SmartProtocol):
         return smart_method, smart_params
 
     async def query(self, request: str | dict, retry_count: int = 3) -> dict:
+        """Wrap request inside control_child envelope."""
+        return await self._query(request, retry_count)
+
+    async def _query(self, request: str | dict, retry_count: int = 3) -> dict:
         """Wrap request inside control_child envelope."""
         method, params = self._get_method_and_params_for_request(request)
         request_data = {
