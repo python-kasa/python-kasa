@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from dataclasses import asdict
 from typing import TYPE_CHECKING
@@ -12,6 +13,8 @@ from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class LightPreset(SmartModule, LightPresetInterface):
@@ -38,6 +41,14 @@ class LightPreset(SmartModule, LightPresetInterface):
         state_key = "states" if not self._state_in_sysinfo else self.SYS_INFO_STATE_KEY
         if preset_states := self.data.get(state_key):
             for preset_state in preset_states:
+                if "brightness" not in preset_state:
+                    # Some devices can store effects as a preset. These will be ignored
+                    # and handled in the effects module
+                    if "lighting_effect" not in preset_state:
+                        _LOGGER.info(
+                            "Unexpected keys %s in preset", list(preset_state.keys())
+                        )
+                    continue
                 color_temp = preset_state.get("color_temp")
                 hue = preset_state.get("hue")
                 saturation = preset_state.get("saturation")
