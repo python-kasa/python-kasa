@@ -19,12 +19,6 @@ class AutoOff(SmartModule):
 
     def _initialize_features(self):
         """Initialize features after the initial update."""
-        if not isinstance(self.data, dict):
-            _LOGGER.warning(
-                "No data available for module, skipping %s: %s", self, self.data
-            )
-            return
-
         self._add_feature(
             Feature(
                 self._device,

@@ -58,6 +58,10 @@ class TemperatureSensor(SmartModule):
             )
         )
 
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        return {}
+
     @property
     def temperature(self):
         """Return current humidity in percentage."""
