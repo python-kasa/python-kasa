@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...exceptions import SmartErrorCode
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -17,6 +16,13 @@ class Cloud(SmartModule):
 
     QUERY_GETTER_NAME = "get_connect_cloud_state"
     REQUIRED_COMPONENT = "cloud_connect"
+
+    def _post_update_hook(self):
+        """Perform actions after a device update.
+
+        Overrides the default behaviour to disable a module if the query returns
+        an error because the logic here is to treat that as not connected.
+        """
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
@@ -37,6 +43,6 @@ class Cloud(SmartModule):
     @property
     def is_connected(self):
         """Return True if device is connected to the cloud."""
-        if isinstance(self.data, SmartErrorCode):
+        if self._has_data_error():
             return False
         return self.data["status"] == 0

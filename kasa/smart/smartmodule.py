@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from ..exceptions import KasaException
+from ..exceptions import DeviceError, KasaException, SmartErrorCode
 from ..module import Module
 
 if TYPE_CHECKING:
@@ -40,6 +40,14 @@ class SmartModule(Module):
     def name(self) -> str:
         """Name of the module."""
         return getattr(self, "NAME", self.__class__.__name__)
+
+    def _post_update_hook(self):  # noqa: B027
+        """Perform actions after a device update.
+
+        Any modules overriding this should ensure that self.data is
+        accessed unless the module should remain active despite errors.
+        """
+        assert self.data  # noqa: S101
 
     def query(self) -> dict:
         """Query to execute during the update cycle.
@@ -87,6 +95,11 @@ class SmartModule(Module):
 
         filtered_data = {k: v for k, v in dev._last_update.items() if k in q_keys}
 
+        for data_item in filtered_data:
+            if isinstance(filtered_data[data_item], SmartErrorCode):
+                raise DeviceError(
+                    f"{data_item} for {self.name}", error_code=filtered_data[data_item]
+                )
         if len(filtered_data) == 1:
             return next(iter(filtered_data.values()))
 
@@ -110,3 +123,10 @@ class SmartModule(Module):
         color_temp_range but only supports one value.
         """
         return True
+
+    def _has_data_error(self) -> bool:
+        try:
+            assert self.data  # noqa: S101
+            return False
+        except DeviceError:
+            return True
