@@ -14,6 +14,10 @@ class FrostProtection(SmartModule):
     REQUIRED_COMPONENT = "frost_protection"
     QUERY_GETTER_NAME = "get_frost_protection"
 
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        return {}
+
     @property
     def enabled(self) -> bool:
         """Return True if frost protection is on."""

@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+import pytest_mock
 
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
@@ -17,6 +18,21 @@ DUMMY_MULTIPLE_QUERY = {
     "barfoo": {"foo": "bar", "bar": "foo"},
 }
 ERRORS = [e for e in SmartErrorCode if e != 0]
+
+
+async def test_smart_queries(dummy_protocol, mocker: pytest_mock.MockerFixture):
+    mock_response = {"result": {"great": "success"}, "error_code": 0}
+
+    mocker.patch.object(dummy_protocol._transport, "send", return_value=mock_response)
+    # test sending a method name as a string
+    resp = await dummy_protocol.query("foobar")
+    assert "foobar" in resp
+    assert resp["foobar"] == mock_response["result"]
+
+    # test sending a method name as a dict
+    resp = await dummy_protocol.query(DUMMY_QUERY)
+    assert "foobar" in resp
+    assert resp["foobar"] == mock_response["result"]
 
 
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
