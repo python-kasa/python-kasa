@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..effects import EFFECT_MAPPING, EFFECT_NAMES, SmartLightEffect
-from ..smartmodule import Module, SmartModule
+from ..smartmodule import Module, SmartModule, update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -84,6 +84,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         """
         return self._effect_list
 
+    @update_after
     async def set_effect(
         self,
         effect: str,
@@ -126,6 +127,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
 
         await self.set_custom_effect(effect_dict)
 
+    @update_after
     async def set_custom_effect(
         self,
         effect_dict: dict,

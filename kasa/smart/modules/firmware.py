@@ -14,7 +14,7 @@ from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, Field, validator
 
 from ...feature import Feature
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -162,6 +162,7 @@ class Firmware(SmartModule):
         state = resp["get_fw_download_state"]
         return DownloadState(**state)
 
+    @update_after
     async def update(
         self, progress_cb: Callable[[DownloadState], Coroutine] | None = None
     ):
@@ -219,6 +220,7 @@ class Firmware(SmartModule):
             and self.data["get_auto_update_info"]["enable"]
         )
 
+    @update_after
     async def set_auto_update_enabled(self, enabled: bool):
         """Change autoupdate setting."""
         data = {**self.data["get_auto_update_info"], "enable": enabled}

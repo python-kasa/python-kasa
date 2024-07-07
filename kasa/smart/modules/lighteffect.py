@@ -9,7 +9,7 @@ import copy
 from typing import Any
 
 from ..effects import SmartLightEffect
-from ..smartmodule import Module, SmartModule
+from ..smartmodule import Module, SmartModule, update_after
 
 
 class LightEffect(SmartModule, SmartLightEffect):
@@ -130,6 +130,7 @@ class LightEffect(SmartModule, SmartLightEffect):
 
         return brightness
 
+    @update_after
     async def set_brightness(
         self,
         brightness: int,
@@ -156,6 +157,7 @@ class LightEffect(SmartModule, SmartLightEffect):
 
         return await self.call("edit_dynamic_light_effect_rule", new_effect)
 
+    @update_after
     async def set_custom_effect(
         self,
         effect_dict: dict,

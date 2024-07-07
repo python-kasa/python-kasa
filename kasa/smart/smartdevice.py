@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import time
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from typing import Any, cast
@@ -22,6 +23,9 @@ from .modules import (
     DeviceModule,
     Firmware,
     Light,
+    LightEffect,
+    LightPreset,
+    LightTransition,
     Time,
 )
 from .smartmodule import SmartModule
@@ -34,6 +38,8 @@ _LOGGER = logging.getLogger(__name__)
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
+DELAY_UPDATE_MODULES = [Cloud, Firmware, LightPreset, LightEffect, LightTransition]
+DELAY_UPDATE_SECONDS = 60
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -158,11 +164,27 @@ class SmartDevice(Device):
 
         req: dict[str, Any] = {}
 
-        # TODO: this could be optimized by constructing the query only once
-        for module in self._modules.values():
-            req.update(module.query())
+        # Keep a track of actual module queries so we can track the time for
+        # modules that do not need to be updated frequently
+        now = time.time()
+        module_queries: list[SmartModule] = []
 
-        self._last_update = resp = await self.protocol.query(req)
+        for module in self._modules.values():
+            if (q := module.query()) and (
+                module.__class__ not in DELAY_UPDATE_MODULES
+                or not module._last_update_time
+                or (now - module._last_update_time) > DELAY_UPDATE_SECONDS
+            ):
+                module_queries.append(module)
+                req.update(q)
+
+        _LOGGER.debug(
+            "Querying %s for modules: %s",
+            self.host,
+            ", ".join(mod.name for mod in module_queries),
+        )
+        resp = await self.protocol.query(req)
+        self._last_update.update(**resp)
 
         self._info = self._try_get_response(resp, "get_device_info")
 
@@ -192,19 +214,23 @@ class SmartDevice(Device):
             for error in errors:
                 child._modules.pop(error)
 
+        # Set the last update time for modules that had queries made.
+        for module in module_queries:
+            module._last_update_time = now
+
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
         if not self._features:
             await self._initialize_features()
 
-        _LOGGER.debug("Got an update: %s", self._last_update)
+        _LOGGER.debug("Update completed %s: %s", self.host, self._last_update)
 
     def _handle_module_post_update_hook(self, module: SmartModule) -> bool:
         try:
             module._post_update_hook()
             return True
         except Exception as ex:
-            _LOGGER.error(
+            _LOGGER.warning(
                 "Error processing %s for device %s, module will be unavailable: %s",
                 module.name,
                 self.host,

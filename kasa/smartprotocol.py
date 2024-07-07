@@ -73,18 +73,32 @@ class SmartProtocol(BaseProtocol):
                 return await self._execute_query(
                     request, retry_count=retry, iterate_list_pages=True
                 )
-            except _ConnectionError as sdex:
+            except _ConnectionError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a connection error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
-                    raise sdex
+                    raise ex
                 continue
-            except AuthenticationError as auex:
+            except AuthenticationError as ex:
                 await self._transport.reset()
                 _LOGGER.debug(
-                    "Unable to authenticate with %s, not retrying", self._host
+                    "Unable to authenticate with %s, not retrying: %s", self._host, ex
                 )
-                raise auex
+                raise ex
             except _RetryableError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a retryable error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
@@ -92,6 +106,13 @@ class SmartProtocol(BaseProtocol):
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
             except TimeoutError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a timeout error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
