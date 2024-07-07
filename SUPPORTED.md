@@ -66,6 +66,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 2.0 (US) / Firmware: 1.0.6
   - Hardware: 3.0 (US) / Firmware: 1.0.3
+  - Hardware: 3.0 (US) / Firmware: 1.0.4
 
 ### Wall Switches
 
