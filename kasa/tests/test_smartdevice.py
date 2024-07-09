@@ -109,6 +109,9 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     """Test that the regular update uses queries from all supported modules."""
     # We need to have some modules initialized by now
     assert dev._modules
+    # Reset last update so all modules will query
+    for mod in dev._modules.values():
+        mod._last_update_time = None
 
     device_queries: dict[SmartDevice, dict[str, Any]] = {}
     for mod in dev._modules.values():
@@ -139,7 +142,7 @@ async def test_update_module_errors(dev: SmartDevice, mocker: MockerFixture):
     assert dev._modules
 
     critical_modules = {Module.DeviceModule, Module.ChildDevice}
-    not_disabling_modules = {Module.Firmware, Module.Cloud}
+    not_disabling_modules = {Module.Cloud}
 
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
 

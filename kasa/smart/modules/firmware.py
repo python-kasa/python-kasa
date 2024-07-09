@@ -122,13 +122,6 @@ class Firmware(SmartModule):
             req["get_auto_update_info"] = None
         return req
 
-    def _post_update_hook(self):
-        """Perform actions after a device update.
-
-        Overrides the default behaviour to disable a module if the query returns
-        an error because some of the module still functions.
-        """
-
     @property
     def current_firmware(self) -> str:
         """Return the current firmware version."""
