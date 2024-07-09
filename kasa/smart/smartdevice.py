@@ -19,6 +19,7 @@ from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
 from .modules import (
+    ChildDevice,
     Cloud,
     DeviceModule,
     Firmware,
@@ -66,6 +67,7 @@ class SmartDevice(Device):
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
+        self._last_update_time: float | None = None
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -158,22 +160,29 @@ class SmartDevice(Device):
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
 
-        if self._components_raw is None:
+        first_update = self._last_update_time is None
+        updated_modules: set[type[SmartModule]] = set()
+
+        if first_update:
             await self._negotiate()
             await self._initialize_modules()
+            updated_modules = {DeviceModule, ChildDevice, Cloud}
 
+        now = time.time()
+        self._last_update_time = now
         req: dict[str, Any] = {}
 
         # Keep a track of actual module queries so we can track the time for
         # modules that do not need to be updated frequently
-        now = time.time()
         module_queries: list[SmartModule] = []
-
         for module in self._modules.values():
             if (q := module.query()) and (
-                module.__class__ not in DELAY_UPDATE_MODULES
-                or not module._last_update_time
-                or (now - module._last_update_time) > DELAY_UPDATE_SECONDS
+                module.__class__ not in updated_modules
+                and (
+                    module.__class__ not in DELAY_UPDATE_MODULES
+                    or not module._last_update_time
+                    or (now - module._last_update_time) > DELAY_UPDATE_SECONDS
+                )
             ):
                 module_queries.append(module)
                 req.update(q)
@@ -183,10 +192,13 @@ class SmartDevice(Device):
             self.host,
             ", ".join(mod.name for mod in module_queries),
         )
+
         resp = await self.protocol.query(req)
         self._last_update.update(**resp)
 
-        self._info = self._try_get_response(resp, "get_device_info")
+        # If this is the first update the device info is already in _last_update
+        info_resp = self._last_update if first_update else resp
+        self._info = self._try_get_response(info_resp, "get_device_info")
 
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
@@ -194,7 +206,7 @@ class SmartDevice(Device):
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 await child._update()
-        if child_info := self._try_get_response(resp, "get_child_device_list", {}):
+        if child_info := self._try_get_response(info_resp, "get_child_device_list", {}):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
@@ -255,8 +267,6 @@ class SmartDevice(Device):
             skip_parent_only_modules = True
 
         for mod in SmartModule.REGISTERED_MODULES.values():
-            _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
-
             if (
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
@@ -266,7 +276,8 @@ class SmartDevice(Device):
                 or self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
             ):
                 _LOGGER.debug(
-                    "Found required %s, adding %s to modules.",
+                    "Device %s, found required %s, adding %s to modules.",
+                    self.host,
                     mod.REQUIRED_COMPONENT,
                     mod.__name__,
                 )

@@ -54,6 +54,8 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     dev._modules = {}
     dev._features = {}
     dev._children = {}
+    dev._last_update = {}
+    dev._last_update_time = None
 
     negotiate = mocker.spy(dev, "_negotiate")
     initialize_modules = mocker.spy(dev, "_initialize_modules")

@@ -75,7 +75,13 @@ class HttpClient:
             now = time.time()
             gap = now - self._last_request_time
             if gap < self._wait_between_requests:
-                await asyncio.sleep(self._wait_between_requests - gap)
+                sleep = self._wait_between_requests - gap
+                _LOGGER.debug(
+                    "Device %s waiting %s seconds to send request",
+                    self._config.host,
+                    sleep,
+                )
+                await asyncio.sleep(sleep)
 
         _LOGGER.debug("Posting to %s", url)
         response_data = None
@@ -106,9 +112,13 @@ class HttpClient:
                         response_data = json_loads(response_data.decode())
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
-            if isinstance(ex, aiohttp.ClientOSError):
-                self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
-                self._last_request_time = time.time()
+            _LOGGER.debug(
+                "Device %s received an os error, enabling sequential request delay: %s",
+                self._config.host,
+                ex,
+            )
+            self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
+            self._last_request_time = time.time()
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
