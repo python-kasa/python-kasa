@@ -193,8 +193,22 @@ class SmartDevice(Device):
             ", ".join(mod.name for mod in module_queries),
         )
 
-        resp = await self.protocol.query(req)
-        self._last_update.update(**resp)
+        try:
+            resp = await self.protocol.query(req)
+            self._last_update.update(**resp)
+        except Exception as ex:
+            if first_update:
+                _LOGGER.error(
+                    "Error querying %s for modules '%s' on first update, "
+                    "modules not updated: %s",
+                    self.host,
+                    ", ".join(mod.name for mod in module_queries),
+                    ex,
+                )
+                mod_errors = {key: SmartErrorCode.INTERNAL_QUERY_ERROR for key in req}
+                self._last_update.update(**mod_errors)
+            else:
+                raise
 
         # If this is the first update the device info is already in _last_update
         info_resp = self._last_update if first_update else resp

@@ -151,20 +151,21 @@ class SmartProtocol(BaseProtocol):
                 self._handle_response_error_code(resp, method, raise_on_error=False)
                 multi_result[method] = resp["result"]
             return multi_result
-        for i in range(0, end, step):
+
+        for batch_num, i in enumerate(range(0, end, step)):
             requests_step = multi_requests[i : i + step]
 
             smart_params = {"requests": requests_step}
             smart_request = self.get_smart_request(smart_method, smart_params)
+            batch_name = f"multi-request-batch-{batch_num+1}-of-{int(end/step)+1}"
             if debug_enabled:
                 _LOGGER.debug(
-                    "%s multi-request-batch-%s >> %s",
+                    "%s %s >> %s",
                     self._host,
-                    i + 1,
+                    batch_name,
                     pf(smart_request),
                 )
             response_step = await self._transport.send(smart_request)
-            batch_name = f"multi-request-batch-{i+1}"
             if debug_enabled:
                 _LOGGER.debug(
                     "%s %s << %s",

@@ -216,10 +216,18 @@ class AesTransport(BaseTransport):
         """Login to the device."""
         try:
             await self.try_login(self._login_params)
+            _LOGGER.debug(
+                "%s: logged in with provided credentials",
+                self._host,
+            )
         except AuthenticationError as aex:
             try:
                 if aex.error_code is not SmartErrorCode.LOGIN_ERROR:
                     raise aex
+                _LOGGER.debug(
+                    "%s: trying login with default TAPO credentials",
+                    self._host,
+                )
                 if self._default_credentials is None:
                     self._default_credentials = get_default_credentials(
                         DEFAULT_CREDENTIALS["TAPO"]
@@ -227,7 +235,7 @@ class AesTransport(BaseTransport):
                 await self.perform_handshake()
                 await self.try_login(self._get_login_params(self._default_credentials))
                 _LOGGER.debug(
-                    "%s: logged in with default credentials",
+                    "%s: logged in with default TAPO credentials",
                     self._host,
                 )
             except (AuthenticationError, _ConnectionError, TimeoutError):
