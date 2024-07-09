@@ -330,6 +330,9 @@ class SmartDevice(Device):
             skip_parent_only_modules = True
 
         for mod in SmartModule.REGISTERED_MODULES.values():
+            # firmware disabled as default due to stability issues
+            if mod is Firmware:
+                continue
             if (
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
