@@ -293,7 +293,9 @@ class SmartProtocol(BaseProtocol):
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
         except ValueError:
-            _LOGGER.warning("Received unknown error code: %s", error_code_raw)
+            _LOGGER.warning(
+                "Device %s received unknown error code: %s", self._host, error_code_raw
+            )
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
         if error_code is SmartErrorCode.SUCCESS:
