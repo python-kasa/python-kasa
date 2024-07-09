@@ -161,58 +161,15 @@ class SmartDevice(Device):
             raise AuthenticationError("Tapo plug requires authentication.")
 
         first_update = self._last_update_time is None
-        updated_modules: set[type[SmartModule]] = set()
 
         if first_update:
             await self._negotiate()
             await self._initialize_modules()
-            updated_modules = {DeviceModule, ChildDevice, Cloud}
 
         now = time.time()
         self._last_update_time = now
-        req: dict[str, Any] = {}
 
-        # Keep a track of actual module queries so we can track the time for
-        # modules that do not need to be updated frequently
-        module_queries: list[SmartModule] = []
-        for module in self._modules.values():
-            if (q := module.query()) and (
-                module.__class__ not in updated_modules
-                and (
-                    module.__class__ not in DELAY_UPDATE_MODULES
-                    or not module._last_update_time
-                    or (now - module._last_update_time) > DELAY_UPDATE_SECONDS
-                )
-            ):
-                module_queries.append(module)
-                req.update(q)
-
-        _LOGGER.debug(
-            "Querying %s for modules: %s",
-            self.host,
-            ", ".join(mod.name for mod in module_queries),
-        )
-
-        try:
-            resp = await self.protocol.query(req)
-            self._last_update.update(**resp)
-        except Exception as ex:
-            if first_update:
-                _LOGGER.error(
-                    "Error querying %s for modules '%s' on first update, "
-                    "modules not updated: %s",
-                    self.host,
-                    ", ".join(mod.name for mod in module_queries),
-                    ex,
-                )
-                mod_errors = {key: SmartErrorCode.INTERNAL_QUERY_ERROR for key in req}
-                self._last_update.update(**mod_errors)
-            else:
-                raise
-
-        # If this is the first update the device info is already in _last_update
-        info_resp = self._last_update if first_update else resp
-        self._info = self._try_get_response(info_resp, "get_device_info")
+        resp = await self._modular_update(first_update, now)
 
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
@@ -220,17 +177,11 @@ class SmartDevice(Device):
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 await child._update()
-        if child_info := self._try_get_response(info_resp, "get_child_device_list", {}):
+        if child_info := self._try_get_response(
+            self._last_update, "get_child_device_list", {}
+        ):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
-
-        # Call handle update for modules that want to update internal data
-        errors = []
-        for module_name, module in self._modules.items():
-            if not self._handle_module_post_update_hook(module):
-                errors.append(module_name)
-        for error in errors:
-            self._modules.pop(error)
 
         for child in self._children.values():
             errors = []
@@ -240,16 +191,16 @@ class SmartDevice(Device):
             for error in errors:
                 child._modules.pop(error)
 
-        # Set the last update time for modules that had queries made.
-        for module in module_queries:
-            module._last_update_time = now
-
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
         if not self._features:
             await self._initialize_features()
 
-        _LOGGER.debug("Update completed %s: %s", self.host, self._last_update)
+        _LOGGER.debug(
+            "Update completed %s: %s",
+            self.host,
+            self._last_update if first_update else resp,
+        )
 
     def _handle_module_post_update_hook(self, module: SmartModule) -> bool:
         try:
@@ -263,6 +214,104 @@ class SmartDevice(Device):
                 ex,
             )
             return False
+
+    async def _modular_update(
+        self, first_update: bool, update_time: float
+    ) -> dict[str, Any]:
+        """Update the device with via the module queries."""
+        updated_modules: set[type[SmartModule]] = set()
+        if first_update:
+            updated_modules = {DeviceModule, ChildDevice, Cloud}
+
+        req: dict[str, Any] = {}
+        # Keep a track of actual module queries so we can track the time for
+        # modules that do not need to be updated frequently
+        module_queries: list[SmartModule] = []
+        for module in self._modules.values():
+            if (q := module.query()) and (
+                module.__class__ not in updated_modules
+                and (
+                    module.__class__ not in DELAY_UPDATE_MODULES
+                    or not module._last_update_time
+                    or (update_time - module._last_update_time) > DELAY_UPDATE_SECONDS
+                )
+            ):
+                module_queries.append(module)
+                req.update(q)
+
+        _LOGGER.debug(
+            "Querying %s for modules: %s",
+            self.host,
+            ", ".join(mod.name for mod in module_queries),
+        )
+
+        try:
+            resp = await self.protocol.query(req)
+        except Exception as ex:
+            resp = await self._handle_modular_update_error(
+                ex, first_update, ", ".join(mod.name for mod in module_queries), req
+            )
+
+        info_resp = self._last_update if first_update else resp
+        self._last_update.update(**resp)
+        self._info = self._try_get_response(info_resp, "get_device_info")
+
+        # Call handle update for modules that want to update internal data
+        errors = []
+        for module_name, module in self._modules.items():
+            if not self._handle_module_post_update_hook(module):
+                errors.append(module_name)
+        for error in errors:
+            self._modules.pop(error)
+
+        # Set the last update time for modules that had queries made.
+        for module in module_queries:
+            module._last_update_time = update_time
+
+        return resp
+
+    async def _handle_modular_update_error(
+        self,
+        ex: Exception,
+        first_update: bool,
+        module_names: str,
+        requests: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Handle an error on calling module update.
+
+        If it's the first update will try to call all modules individually
+        and any errors such as timeouts will be set as a SmartErrorCode.
+        """
+        if first_update:
+            _LOGGER.error(
+                "Error querying %s for modules '%s' on first update: %s",
+                self.host,
+                module_names,
+                ex,
+            )
+            responses = {}
+            for meth, params in requests.items():
+                try:
+                    resp = await self.protocol.query({meth: params})
+                    responses[meth] = resp[meth]
+                except Exception as iex:
+                    _LOGGER.error(
+                        "Error querying %s for module '%s' on first update, "
+                        "module not updated: %s",
+                        self.host,
+                        meth,
+                        iex,
+                    )
+                    responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
+            return responses
+        else:
+            _LOGGER.error(
+                "Error querying %s for modules '%s' after first update: %s",
+                self.host,
+                module_names,
+                ex,
+            )
+            raise
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
