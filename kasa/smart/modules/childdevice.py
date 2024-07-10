@@ -38,7 +38,14 @@ Plug 3: False
 True
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ..smartmodule import SmartModule
+
+if TYPE_CHECKING:
+    from ..smartdevice import SmartDevice
 
 
 class ChildDevice(SmartModule):
@@ -46,3 +53,8 @@ class ChildDevice(SmartModule):
 
     REQUIRED_COMPONENT = "child_device"
     QUERY_GETTER_NAME = "get_child_device_list"
+
+    def __init__(self, device: SmartDevice, module: str):
+        super().__init__(device, module)
+        # Module is updated as part of device init
+        self._last_update_time = device._last_update_time

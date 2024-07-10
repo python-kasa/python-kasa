@@ -26,6 +26,8 @@ class Cloud(SmartModule):
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
+        # Module is updated as part of device init
+        self._last_update_time = device._last_update_time
 
         self._add_feature(
             Feature(

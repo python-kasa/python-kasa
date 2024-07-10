@@ -40,9 +40,16 @@ _LOGGER = logging.getLogger(__name__)
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
-# A memory leak in the P100 with the Led module so we delay it.
-DELAY_UPDATE_MODULES = [Cloud, Firmware, Led, LightPreset, LightEffect, LightTransition]
-DELAY_UPDATE_SECONDS = 60
+
+DELAY_UPDATE_MODULE_SECONDS = {
+    Cloud: 60,
+    Firmware: 60 * 60 * 24,
+    # A memory leak in the P100 with the Led module so we delay it.
+    Led: 60 * 60,
+    LightPreset: 60,
+    LightEffect: 60,
+    LightTransition: 60,
+}
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -163,13 +170,12 @@ class SmartDevice(Device):
             raise AuthenticationError("Tapo plug requires authentication.")
 
         first_update = self._last_update_time is None
+        now = time.time()
+        self._last_update_time = now
 
         if first_update:
             await self._negotiate()
             await self._initialize_modules()
-
-        now = time.time()
-        self._last_update_time = now
 
         resp = await self._modular_update(first_update, now)
 
@@ -233,9 +239,14 @@ class SmartDevice(Device):
             if (q := module.query()) and (
                 module.__class__ not in updated_modules
                 and (
-                    module.__class__ not in DELAY_UPDATE_MODULES
+                    (
+                        delay_update_seconds := DELAY_UPDATE_MODULE_SECONDS.get(
+                            module.__class__
+                        )
+                    )
+                    is None
                     or not module._last_update_time
-                    or (update_time - module._last_update_time) > DELAY_UPDATE_SECONDS
+                    or (update_time - module._last_update_time) >= delay_update_seconds
                 )
             ):
                 module_queries.append(module)
@@ -300,7 +311,7 @@ class SmartDevice(Device):
                 responses[meth] = resp[meth]
             except Exception as iex:
                 _LOGGER.error(
-                    "Error querying %s individually for module '%s' %s: %s",
+                    "Error querying %s individually for module query '%s' %s: %s",
                     self.host,
                     meth,
                     msg_part,
