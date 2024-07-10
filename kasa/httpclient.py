@@ -88,6 +88,9 @@ class HttpClient:
         self._last_url = url
         self.client.cookie_jar.clear()
         return_json = bool(json)
+        config_timeout = self._config.timeout
+        client_timeout = aiohttp.ClientTimeout(total=3)
+
         # If json is not a dict send as data.
         # This allows the json parameter to be used to pass other
         # types of data such as async_generator and still have json
@@ -101,7 +104,7 @@ class HttpClient:
                 params=params,
                 data=data,
                 json=json,
-                timeout=self._config.timeout,
+                timeout=client_timeout,
                 cookies=cookies_dict,
                 headers=headers,
             )
@@ -112,13 +115,14 @@ class HttpClient:
                         response_data = json_loads(response_data.decode())
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
-            _LOGGER.debug(
-                "Device %s received an os error, enabling sequential request delay: %s",
-                self._config.host,
-                ex,
-            )
-            self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
-            self._last_request_time = time.time()
+            if not self._wait_between_requests:
+                _LOGGER.debug(
+                    "Device %s received an os error, enabling sequential request delay: %s",
+                    self._config.host,
+                    ex,
+                )
+                self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
+                self._last_request_time = time.time()
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
