@@ -107,6 +107,7 @@ class HttpClient:
                 timeout=client_timeout,
                 cookies=cookies_dict,
                 headers=headers,
+                ssl=False,
             )
             async with resp:
                 if resp.status == 200:

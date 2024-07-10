@@ -331,7 +331,7 @@ class SmartDevice(Device):
 
         for mod in SmartModule.REGISTERED_MODULES.values():
             # firmware disabled as default due to stability issues
-            if mod is Firmware:
+            if mod in {Firmware, Cloud}:
                 continue
             if (
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
