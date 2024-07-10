@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...interfaces.led import Led as LedInterface
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, update_after
 
 
 class Led(SmartModule, LedInterface):
@@ -14,7 +14,7 @@ class Led(SmartModule, LedInterface):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {self.QUERY_GETTER_NAME: {"led_rule": None}}
+        return {self.QUERY_GETTER_NAME: {}}
 
     @property
     def mode(self):
@@ -29,6 +29,7 @@ class Led(SmartModule, LedInterface):
         """Return current led status."""
         return self.data["led_rule"] != "never"
 
+    @update_after
     async def set_led(self, enable: bool):
         """Set led.
 

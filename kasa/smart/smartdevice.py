@@ -23,6 +23,7 @@ from .modules import (
     Cloud,
     DeviceModule,
     Firmware,
+    Led,
     Light,
     LightEffect,
     LightPreset,
@@ -39,7 +40,8 @@ _LOGGER = logging.getLogger(__name__)
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
-DELAY_UPDATE_MODULES = [Cloud, Firmware, LightPreset, LightEffect, LightTransition]
+# A memory leak in the P100 with the Led module so we delay it.
+DELAY_UPDATE_MODULES = [Cloud, Firmware, Led, LightPreset, LightEffect, LightTransition]
 DELAY_UPDATE_SECONDS = 60
 
 
@@ -279,39 +281,33 @@ class SmartDevice(Device):
     ) -> dict[str, Any]:
         """Handle an error on calling module update.
 
-        If it's the first update will try to call all modules individually
+        Will try to call all modules individually
         and any errors such as timeouts will be set as a SmartErrorCode.
         """
-        if first_update:
-            _LOGGER.error(
-                "Error querying %s for modules '%s' on first update: %s",
-                self.host,
-                module_names,
-                ex,
-            )
-            responses = {}
-            for meth, params in requests.items():
-                try:
-                    resp = await self.protocol.query({meth: params})
-                    responses[meth] = resp[meth]
-                except Exception as iex:
-                    _LOGGER.error(
-                        "Error querying %s for module '%s' on first update, "
-                        "module not updated: %s",
-                        self.host,
-                        meth,
-                        iex,
-                    )
-                    responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
-            return responses
-        else:
-            _LOGGER.error(
-                "Error querying %s for modules '%s' after first update: %s",
-                self.host,
-                module_names,
-                ex,
-            )
-            raise
+        msg_part = "on first update" if first_update else "after first update"
+
+        _LOGGER.error(
+            "Error querying %s for modules '%s' %s: %s",
+            self.host,
+            module_names,
+            msg_part,
+            ex,
+        )
+        responses = {}
+        for meth, params in requests.items():
+            try:
+                resp = await self.protocol.query({meth: params})
+                responses[meth] = resp[meth]
+            except Exception as iex:
+                _LOGGER.error(
+                    "Error querying %s individually for module '%s' %s: %s",
+                    self.host,
+                    meth,
+                    msg_part,
+                    iex,
+                )
+                responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
+        return responses
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
@@ -330,9 +326,6 @@ class SmartDevice(Device):
             skip_parent_only_modules = True
 
         for mod in SmartModule.REGISTERED_MODULES.values():
-            # firmware disabled as default due to stability issues
-            if mod in {Firmware, Cloud}:
-                continue
             if (
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
