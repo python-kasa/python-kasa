@@ -4,14 +4,9 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING
 
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,11 +26,11 @@ class TemperatureControl(SmartModule):
 
     REQUIRED_COMPONENT = "temp_control"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="target_temperature",
                 name="Target temperature",
                 container=self,
@@ -50,7 +45,7 @@ class TemperatureControl(SmartModule):
         # TODO: this might belong into its own module, temperature_correction?
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="temperature_offset",
                 name="Temperature offset",
                 container=self,
@@ -65,7 +60,7 @@ class TemperatureControl(SmartModule):
 
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="state",
                 name="State",
                 container=self,
@@ -78,7 +73,7 @@ class TemperatureControl(SmartModule):
 
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="thermostat_mode",
                 name="Thermostat mode",
                 container=self,
@@ -109,23 +104,24 @@ class TemperatureControl(SmartModule):
         if self._device.sys_info.get("frost_protection_on", False):
             return ThermostatState.Off
 
-        states = self._device.sys_info["trv_states"]
+        states = self.states
 
         # If the states is empty, the device is idling
         if not states:
             return ThermostatState.Idle
 
+        # Discard known extra states, and report on unknown extra states
+        states.discard("low_battery")
         if len(states) > 1:
-            _LOGGER.warning(
-                "Got multiple states (%s), using the first one: %s", states, states[0]
-            )
+            _LOGGER.warning("Got multiple states: %s", states)
 
-        state = states[0]
-        try:
-            return ThermostatState(state)
-        except:  # noqa: E722
-            _LOGGER.warning("Got unknown state: %s", state)
-            return ThermostatState.Unknown
+        # Return the first known state
+        for state in ThermostatState:
+            if state.value in states:
+                return state
+
+        _LOGGER.warning("Got unknown state: %s", states)
+        return ThermostatState.Unknown
 
     @property
     def allowed_temperature_range(self) -> tuple[int, int]:
@@ -146,6 +142,11 @@ class TemperatureControl(SmartModule):
     def target_temperature(self) -> float:
         """Return target temperature."""
         return self._device.sys_info["target_temp"]
+
+    @property
+    def states(self) -> set:
+        """Return thermostat states."""
+        return set(self._device.sys_info["trv_states"])
 
     async def set_target_temperature(self, target: float):
         """Set target temperature."""
