@@ -73,18 +73,32 @@ class SmartProtocol(BaseProtocol):
                 return await self._execute_query(
                     request, retry_count=retry, iterate_list_pages=True
                 )
-            except _ConnectionError as sdex:
+            except _ConnectionError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a connection error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
-                    raise sdex
+                    raise ex
                 continue
-            except AuthenticationError as auex:
+            except AuthenticationError as ex:
                 await self._transport.reset()
                 _LOGGER.debug(
-                    "Unable to authenticate with %s, not retrying", self._host
+                    "Unable to authenticate with %s, not retrying: %s", self._host, ex
                 )
-                raise auex
+                raise ex
             except _RetryableError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a retryable error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
@@ -92,6 +106,13 @@ class SmartProtocol(BaseProtocol):
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
             except TimeoutError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a timeout error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
@@ -130,20 +151,21 @@ class SmartProtocol(BaseProtocol):
                 self._handle_response_error_code(resp, method, raise_on_error=False)
                 multi_result[method] = resp["result"]
             return multi_result
-        for i in range(0, end, step):
+
+        for batch_num, i in enumerate(range(0, end, step)):
             requests_step = multi_requests[i : i + step]
 
             smart_params = {"requests": requests_step}
             smart_request = self.get_smart_request(smart_method, smart_params)
+            batch_name = f"multi-request-batch-{batch_num+1}-of-{int(end/step)+1}"
             if debug_enabled:
                 _LOGGER.debug(
-                    "%s multi-request-batch-%s >> %s",
+                    "%s %s >> %s",
                     self._host,
-                    i + 1,
+                    batch_name,
                     pf(smart_request),
                 )
             response_step = await self._transport.send(smart_request)
-            batch_name = f"multi-request-batch-{i+1}"
             if debug_enabled:
                 _LOGGER.debug(
                     "%s %s << %s",
@@ -271,7 +293,9 @@ class SmartProtocol(BaseProtocol):
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
         except ValueError:
-            _LOGGER.warning("Received unknown error code: %s", error_code_raw)
+            _LOGGER.warning(
+                "Device %s received unknown error code: %s", self._host, error_code_raw
+            )
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
         if error_code is SmartErrorCode.SUCCESS:
