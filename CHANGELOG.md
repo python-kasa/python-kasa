@@ -4,7 +4,7 @@
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.3...0.7.0.4)
 
-Critical bugfixes for issues with P100s and thermostats
+Critical bugfixes for issues with P100s and thermostats.
 
 **Fixed bugs:**
 
