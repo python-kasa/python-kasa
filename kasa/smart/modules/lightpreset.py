@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from ...interfaces import LightPreset as LightPresetInterface
 from ...interfaces import LightState
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, allow_update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -19,6 +19,7 @@ class LightPreset(SmartModule, LightPresetInterface):
 
     REQUIRED_COMPONENT = "preset"
     QUERY_GETTER_NAME = "get_preset_rules"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60
 
     SYS_INFO_STATE_KEY = "preset_state"
 
@@ -113,6 +114,7 @@ class LightPreset(SmartModule, LightPresetInterface):
             raise ValueError(f"{preset_name} is not a valid preset: {self.preset_list}")
         await self._device.modules[SmartModule.Light].set_state(preset)
 
+    @allow_update_after
     async def save_preset(
         self,
         preset_name: str,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from ..device_type import DeviceType
@@ -46,6 +47,7 @@ class SmartChildDevice(SmartDevice):
                 req.update(mod_query)
         if req:
             self._last_update = await self.protocol.query(req)
+            self._last_update_time = time.time()
 
     @classmethod
     async def create(cls, parent: SmartDevice, child_info, child_components):
