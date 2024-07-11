@@ -23,11 +23,7 @@ from .modules import (
     Cloud,
     DeviceModule,
     Firmware,
-    Led,
     Light,
-    LightEffect,
-    LightPreset,
-    LightTransition,
     Time,
 )
 from .smartmodule import SmartModule
@@ -41,15 +37,8 @@ _LOGGER = logging.getLogger(__name__)
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
-DELAY_UPDATE_MODULE_SECONDS = {
-    Cloud: 60,
-    Firmware: 60 * 60 * 24,
-    # A memory leak in the P100 with the Led module so we delay it.
-    Led: 60 * 60,
-    LightPreset: 60,
-    LightEffect: 60,
-    LightTransition: 60,
-}
+# Modules that are called as part of the init procedure on first update
+FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -227,30 +216,26 @@ class SmartDevice(Device):
         self, first_update: bool, update_time: float
     ) -> dict[str, Any]:
         """Update the device with via the module queries."""
-        updated_modules: set[type[SmartModule]] = set()
-        if first_update:
-            updated_modules = {DeviceModule, ChildDevice, Cloud}
-
         req: dict[str, Any] = {}
         # Keep a track of actual module queries so we can track the time for
         # modules that do not need to be updated frequently
         module_queries: list[SmartModule] = []
-        for module in self._modules.values():
-            if (q := module.query()) and (
-                module.__class__ not in updated_modules
-                and (
-                    (
-                        delay_update_seconds := DELAY_UPDATE_MODULE_SECONDS.get(
-                            module.__class__
-                        )
-                    )
-                    is None
-                    or not module._last_update_time
-                    or (update_time - module._last_update_time) >= delay_update_seconds
-                )
+        for module, query in {
+            module: query
+            for module in self._modules.values()
+            if (query := module.query())
+        }.items():
+            if first_update and module.__class__ in FIRST_UPDATE_MODULES:
+                module._last_update_time = update_time
+                continue
+            if (
+                not module.MINIMUM_UPDATE_INTERVAL_SECS
+                or not module._last_update_time
+                or (update_time - module._last_update_time)
+                >= module.MINIMUM_UPDATE_INTERVAL_SECS
             ):
                 module_queries.append(module)
-                req.update(q)
+                req.update(query)
 
         _LOGGER.debug(
             "Querying %s for modules: %s",

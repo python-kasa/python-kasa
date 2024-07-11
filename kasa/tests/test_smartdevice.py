@@ -14,7 +14,6 @@ from pytest_mock import MockerFixture
 from kasa import Device, KasaException, Module
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
-from kasa.smart.smartdevice import DELAY_UPDATE_MODULE_SECONDS
 
 from .conftest import (
     device_smart,
@@ -240,7 +239,7 @@ async def test_update_module_update_delays(
         now = time.time()
         await new_dev.update()
         for module in new_dev.modules.values():
-            mod_delay = DELAY_UPDATE_MODULE_SECONDS.get(module.__class__, 0)
+            mod_delay = module.MINIMUM_UPDATE_INTERVAL_SECS
             if module.query():
                 expected_update_time = (
                     now if mod_delay == 0 else now - (seconds % mod_delay)
@@ -278,7 +277,9 @@ async def test_update_module_query_errors(
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
     if not first_update:
         await new_dev.update()
-        freezer.tick(max(secs for secs in DELAY_UPDATE_MODULE_SECONDS.values()))
+        freezer.tick(
+            max(module.MINIMUM_UPDATE_INTERVAL_SECS for module in dev._modules.values())
+        )
 
     module_queries = {
         modname: q

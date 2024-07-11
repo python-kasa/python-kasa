@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from ...exceptions import KasaException
 from ...feature import Feature
-from ..smartmodule import SmartModule, update_after
+from ..smartmodule import SmartModule, allow_update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -23,6 +23,7 @@ class LightTransition(SmartModule):
 
     REQUIRED_COMPONENT = "on_off_gradually"
     QUERY_GETTER_NAME = "get_on_off_gradually_info"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60
     MAXIMUM_DURATION = 60
 
     # Key in sysinfo that indicates state can be retrieved from there.
@@ -136,7 +137,7 @@ class LightTransition(SmartModule):
             "max_duration": off_max,
         }
 
-    @update_after
+    @allow_update_after
     async def set_enabled(self, enable: bool):
         """Enable gradual on/off."""
         if not self._supports_on_and_off:
@@ -169,7 +170,7 @@ class LightTransition(SmartModule):
         # v3 added max_duration, we default to 60 when it's not available
         return self._on_state["max_duration"]
 
-    @update_after
+    @allow_update_after
     async def set_turn_on_transition(self, seconds: int):
         """Set turn on transition in seconds.
 
@@ -205,7 +206,7 @@ class LightTransition(SmartModule):
         # v3 added max_duration, we default to 60 when it's not available
         return self._off_state["max_duration"]
 
-    @update_after
+    @allow_update_after
     async def set_turn_off_transition(self, seconds: int):
         """Set turn on transition in seconds.
 

@@ -20,7 +20,7 @@ _T = TypeVar("_T", bound="SmartModule")
 _P = ParamSpec("_P")
 
 
-def update_after(
+def allow_update_after(
     func: Callable[Concatenate[_T, _P], Awaitable[None]],
 ) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]]:
     """Define a wrapper to set _last_update_time to None.
@@ -50,6 +50,8 @@ class SmartModule(Module):
     QUERY_GETTER_NAME: str
 
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
+
+    MINIMUM_UPDATE_INTERVAL_SECS = 0
 
     def __init__(self, device: SmartDevice, module: str):
         self._device: SmartDevice
