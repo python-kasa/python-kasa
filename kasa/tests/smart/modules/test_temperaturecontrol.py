@@ -94,7 +94,7 @@ async def test_temperature_offset(dev):
         ),
         pytest.param(
             ThermostatState.Heating,
-            [ThermostatState.Heating],
+            ["heating"],
             False,
             id="heating is heating",
         ),
@@ -135,3 +135,11 @@ async def test_thermostat_mode_warnings(dev, mode, states, msg, caplog):
     temp_module.data["trv_states"] = states
     assert temp_module.mode is mode
     assert msg in caplog.text
+
+
+@thermostats_smart
+async def test_thermostat_heating_with_low_battery(dev):
+    """Test that mode is reported correctly with extra states."""
+    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module.data["trv_states"] = ["low_battery", "heating"]
+    assert temp_module.mode is ThermostatState.Heating
