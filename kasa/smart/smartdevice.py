@@ -173,7 +173,7 @@ class SmartDevice(Device):
         # devices will always update children to prevent errors on module access.
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
-                await child._update()
+                await child.update()
         if child_info := self._try_get_response(
             self._last_update, "get_child_device_list", {}
         ):
