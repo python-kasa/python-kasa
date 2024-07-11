@@ -220,11 +220,12 @@ class SmartDevice(Device):
         # Keep a track of actual module queries so we can track the time for
         # modules that do not need to be updated frequently
         module_queries: list[SmartModule] = []
-        for module, query in {
+        mq = {
             module: query
             for module in self._modules.values()
             if (query := module.query())
-        }.items():
+        }
+        for module, query in mq.items():
             if first_update and module.__class__ in FIRST_UPDATE_MODULES:
                 module._last_update_time = update_time
                 continue
