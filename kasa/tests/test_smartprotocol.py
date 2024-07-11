@@ -66,7 +66,7 @@ async def test_smart_device_unknown_errors(
         assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
     send_mock.assert_called_once()
-    assert f"Received unknown error code: {error_code}" in caplog.text
+    assert f"received unknown error code: {error_code}" in caplog.text
 
 
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)

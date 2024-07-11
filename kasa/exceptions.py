@@ -128,6 +128,8 @@ class SmartErrorCode(IntEnum):
 
     # Library internal for unknown error codes
     INTERNAL_UNKNOWN_ERROR = -100_000
+    # Library internal for query errors
+    INTERNAL_QUERY_ERROR = -100_001
 
 
 SMART_RETRYABLE_ERRORS = [

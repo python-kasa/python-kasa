@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from collections.abc import Awaitable, Callable, Coroutine
+from typing import TYPE_CHECKING, Any
+
+from typing_extensions import Concatenate, ParamSpec, TypeVar
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
 from ..module import Module
@@ -12,6 +15,27 @@ if TYPE_CHECKING:
     from .smartdevice import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
+
+_T = TypeVar("_T", bound="SmartModule")
+_P = ParamSpec("_P")
+
+
+def allow_update_after(
+    func: Callable[Concatenate[_T, _P], Awaitable[None]],
+) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]]:
+    """Define a wrapper to set _last_update_time to None.
+
+    This will ensure that a module is updated in the next update cycle after
+    a value has been changed.
+    """
+
+    async def _async_wrap(self: _T, *args: _P.args, **kwargs: _P.kwargs) -> None:
+        try:
+            await func(self, *args, **kwargs)
+        finally:
+            self._last_update_time = None
+
+    return _async_wrap
 
 
 class SmartModule(Module):
@@ -27,9 +51,12 @@ class SmartModule(Module):
 
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
+    MINIMUM_UPDATE_INTERVAL_SECS = 0
+
     def __init__(self, device: SmartDevice, module: str):
         self._device: SmartDevice
         super().__init__(device, module)
+        self._last_update_time: float | None = None
 
     def __init_subclass__(cls, **kwargs):
         name = getattr(cls, "NAME", cls.__name__)
