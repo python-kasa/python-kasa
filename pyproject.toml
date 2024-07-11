@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-kasa"
-version = "0.7.0.3"
+version = "0.7.0.4"
 description = "Python API for TP-Link Kasa Smarthome devices"
 license = "GPL-3.0-or-later"
 authors = ["python-kasa developers"]

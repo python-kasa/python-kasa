@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.0.4](https://github.com/python-kasa/python-kasa/tree/0.7.0.4) (2024-07-011)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.3...0.7.0.4)
+
+Critical bugfixes for issues with P100s and thermostats
+
+**Fixed bugs:**
+
+- Use first known thermostat state as main state (pick #1054) [\#1057](https://github.com/python-kasa/python-kasa/pull/1057)
+- Defer module updates for less volatile modules (pick 1052) [\#1056](https://github.com/python-kasa/python-kasa/pull/1056)
+
 ## [0.7.0.3](https://github.com/python-kasa/python-kasa/tree/0.7.0.3) (2024-07-04)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.2...0.7.0.3)
@@ -9,7 +20,7 @@ Partially fixes light preset module errors with L920 and L930.
 
 **Fixed bugs:**
 
-Handle module errors more robustly and add query params to light preset and transition [\#1043](https://github.com/python-kasa/python-kasa/pull/1043)
+- Handle module errors more robustly and add query params to light preset and transition [\#1043](https://github.com/python-kasa/python-kasa/pull/1043)
 
 ## [0.7.0.2](https://github.com/python-kasa/python-kasa/tree/0.7.0.2) (2024-07-01)
 
