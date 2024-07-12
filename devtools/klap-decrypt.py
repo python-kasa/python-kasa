@@ -47,15 +47,6 @@ fakeDevice = DeviceConfig(
     device_ip, connection_type=fakeConnection, credentials=myCreds
 )
 
-
-# In case any modifications need to be made in the future,
-# this class is created to allow for easy modification
-class MyKlapTransport(KlapTransportV2):
-    """A custom KlapTransportV2 class that allows for easy modification."""
-
-    pass
-
-
 # This is a custom error handler that replaces bad characters with '*',
 # in case something goes wrong in decryption.
 # Without this, the decryption could yield an error.
@@ -84,15 +75,15 @@ class Operator:
     """A class that handles the data decryption, and the encryption session updating."""
 
     def __init__(self, klap, creds):
-        self.__local_seed: bytes = None
-        self.__remote_seed: bytes = None
-        self.__session: MyEncryptionSession = None
-        self.__creds = creds
-        self.__klap: MyKlapTransport = klap
-        self.__auth_hash = self.__klap.generate_auth_hash(self.__creds)
-        self.__local_auth_hash = None
-        self.__remote_auth_hash = None
-        self.__seq = 0
+        self._local_seed: bytes = None
+        self._remote_seed: bytes = None
+        self._session: MyEncryptionSession = None
+        self._creds = creds
+        self._klap: KlapTransportV2 = klap
+        self._auth_hash = self._klap.generate_auth_hash(self._creds)
+        self._local_auth_hash = None
+        self._remote_auth_hash = None
+        self._seq = 0
         pass
 
     def update_encryption_session(self):
@@ -106,41 +97,41 @@ class Operator:
         Raises:
             ValueError: If the auth hashes do not match.
         """
-        if self.__local_seed is None or self.__remote_seed is None:
-            self.__session = None
+        if self._local_seed is None or self._remote_seed is None:
+            self._session = None
         else:
-            self.__local_auth_hash = self.__klap.handshake1_seed_auth_hash(
-                self.__local_seed, self.__remote_seed, self.__auth_hash
+            self._local_auth_hash = self._klap.handshake1_seed_auth_hash(
+                self._local_seed, self._remote_seed, self._auth_hash
             )
-            if (self.__remote_auth_hash is not None) and (
-                self.__local_auth_hash != self.__remote_auth_hash
+            if (self._remote_auth_hash is not None) and (
+                self._local_auth_hash != self._remote_auth_hash
             ):
                 raise ValueError(
                     "Local and remote auth hashes do not match.\
 This could mean an incorrect username and/or password."
                 )
-            self.__session = MyEncryptionSession(
-                self.__local_seed, self.__remote_seed, self.__auth_hash
+            self._session = MyEncryptionSession(
+                self._local_seed, self._remote_seed, self._auth_hash
             )
-            self.__session._seq = self.__seq
-            self.__session._generate_cipher()
+            self._session._seq = self._seq
+            self._session._generate_cipher()
 
     @property
     def seq(self) -> int:
         """Get the sequence number."""
-        return self.__seq
+        return self._seq
 
     @seq.setter
     def seq(self, value: int):
         if not isinstance(value, int):
             raise ValueError("seq must be an integer")
-        self.__seq = value
+        self._seq = value
         self.update_encryption_session()
 
     @property
     def local_seed(self) -> bytes:
         """Get the local seed."""
-        return self.__local_seed
+        return self._local_seed
 
     @local_seed.setter
     def local_seed(self, value: bytes):
@@ -149,13 +140,13 @@ This could mean an incorrect username and/or password."
         elif len(value) != 16:
             raise ValueError("local_seed must be 16 bytes")
         else:
-            self.__local_seed = value
+            self._local_seed = value
             self.update_encryption_session()
 
     @property
     def remote_auth_hash(self) -> bytes:
         """Get the remote auth hash."""
-        return self.__remote_auth_hash
+        return self._remote_auth_hash
 
     @remote_auth_hash.setter
     def remote_auth_hash(self, value: bytes):
@@ -165,13 +156,13 @@ This could mean an incorrect username and/or password."
         elif len(value) != 32:
             raise ValueError("remote_auth_hash must be 32 bytes")
         else:
-            self.__remote_auth_hash = value
+            self._remote_auth_hash = value
             self.update_encryption_session()
 
     @property
     def remote_seed(self) -> bytes:
         """Get the remote seed."""
-        return self.__remote_seed
+        return self._remote_seed
 
     @remote_seed.setter
     def remote_seed(self, value: bytes):
@@ -181,18 +172,18 @@ This could mean an incorrect username and/or password."
         elif len(value) != 16:
             raise ValueError("remote_seed must be 16 bytes")
         else:
-            self.__remote_seed = value
+            self._remote_seed = value
             self.update_encryption_session()
 
     # This function decrypts the data using the encryption session.
     def decrypt(self, *args, **kwargs):
         """Decrypt the data using the encryption session."""
-        if self.__session is None:
+        if self._session is None:
             raise ValueError("No session available")
-        return self.__session.decrypt(*args, **kwargs)
+        return self._session.decrypt(*args, **kwargs)
 
 
-operator = Operator(MyKlapTransport(config=fakeDevice), myCreds)
+operator = Operator(KlapTransportV2(config=fakeDevice), myCreds)
 
 finalArray = []
 
