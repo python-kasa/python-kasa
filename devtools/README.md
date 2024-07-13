@@ -99,3 +99,28 @@ id
 New parser, parsing 100000 messages took 0.6339647499989951 seconds
 Old parser, parsing 100000 messages took 9.473990250000497 seconds
 ```
+
+
+## parse_pcap_klap
+
+* A tool to allow KLAP data to be exported, in JSON, from a PCAP file of encrypted requests.
+
+* NOTE: must install pyshark (`pip install pyshark`)
+
+```shell
+Usage: parse_pcap_klap.py [OPTIONS]
+
+  Export KLAP data in JSON format from a PCAP file.
+
+Options:
+  --host TEXT            the IP of the smart device as it appears in the pcap
+                         file.  [required]
+  --username TEXT        Username/email address to authenticate to device.
+                         [required]
+  --password TEXT        Password to use to authenticate to device.
+                         [required]
+  --pcap-file-path TEXT  The path to the pcap file to parse.  [required]
+  -o, --output TEXT      The name of the output file, relative to the current
+                         directory.
+  --help                 Show this message and exit.
+```

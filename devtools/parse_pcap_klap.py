@@ -292,7 +292,7 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     help="The name of the output file, relative to the current directory.",
 )
 def cli(username, password, host, pcap_file_path, output):
-    """Run the main function."""
+    """Export KLAP data in JSON format from a PCAP file."""
     main(username, password, host, pcap_file_path, output)
 
 
