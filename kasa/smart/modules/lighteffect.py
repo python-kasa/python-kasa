@@ -17,7 +17,7 @@ class LightEffect(SmartModule, SmartLightEffect):
 
     REQUIRED_COMPONENT = "light_effect"
     QUERY_GETTER_NAME = "get_dynamic_light_effect_rules"
-    MINIMUM_UPDATE_INTERVAL_SECS = 60
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60 * 24
     AVAILABLE_BULB_EFFECTS = {
         "L1": "Party",
         "L2": "Relax",
