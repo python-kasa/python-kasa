@@ -287,13 +287,13 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     help="The path to the pcap file to parse.",
 )
 @click.option(
-    "--output-json-name",
+    "-o", "--output",
     required=False,
     help="The name of the output file, relative to the current directory.",
 )
-def cli(username, password, host, pcap_file_path, output_json_name):
+def cli(username, password, host, pcap_file_path, output):
     """Run the main function."""
-    main(username, password, host, pcap_file_path, output_json_name)
+    main(username, password, host, pcap_file_path, output)
 
 
 if __name__ == "__main__":
