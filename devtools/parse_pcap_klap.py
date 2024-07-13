@@ -9,6 +9,7 @@ import codecs
 import json
 import re
 
+import click
 import pyshark
 from cryptography.hazmat.primitives import padding
 
@@ -20,42 +21,6 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.klaptransport import KlapEncryptionSession, KlapTransportV2
-
-# These are the only variables that need to be changed in order to run this code.
-# ********** CHANGE THESE **********
-username = "hello@world.com"  # cloud account username (likely an email)
-password = "hunter2"  # cloud account password  # noqa: S105
-# the ip of the smart device as it appears in the pcap file
-device_ip = "192.168.1.100"
-pcap_file_path = "/path/to/my.pcap"  # the path to the pcap file
-output_json_name = (
-    "output.json"  # the name of the output file, relative to the current directory
-)
-# **********************************
-
-capture = pyshark.FileCapture(pcap_file_path, display_filter="http")
-
-# In an effort to keep this code tied into the original code
-# (so that this can hopefully leverage any future codebase updates inheriently),
-# some weird initialization is done here
-myCreds = Credentials(username, password)
-
-fakeConnection = DeviceConnectionParameters(
-    DeviceFamily.SmartTapoBulb, DeviceEncryptionType.Klap
-)
-fakeDevice = DeviceConfig(
-    device_ip, connection_type=fakeConnection, credentials=myCreds
-)
-
-# This is a custom error handler that replaces bad characters with '*',
-# in case something goes wrong in decryption.
-# Without this, the decryption could yield an error.
-def bad_chars_replacement(exception):
-    """Replace bad characters with '*'."""
-    return ("*", exception.start + 1)
-
-
-codecs.register_error("bad_chars_replacement", bad_chars_replacement)
 
 
 class MyEncryptionSession(KlapEncryptionSession):
@@ -183,81 +148,153 @@ This could mean an incorrect username and/or password."
         return self._session.decrypt(*args, **kwargs)
 
 
-operator = Operator(KlapTransportV2(config=fakeDevice), myCreds)
 
-finalArray = []
+# This is a custom error handler that replaces bad characters with '*',
+# in case something goes wrong in decryption.
+# Without this, the decryption could yield an error.
+def bad_chars_replacement(exception):
+    """Replace bad characters with '*'."""
+    return ("*", exception.start + 1)
 
-# pyshark is a little weird in how it handles iteration,
-# so this is a workaround to allow for (advanced) iteration over the packets.
-while True:
-    try:
-        packet = capture.next()
-        packet_number = capture._current_packet
-        # we only care about http packets
-        if hasattr(
-            packet, "http"
-        ):  # this is redundant, as pyshark is set to only load http packets
-            if hasattr(packet.http, "request_uri_path"):
-                uri = packet.http.get("request_uri_path")
-            elif hasattr(packet.http, "request_uri"):
-                uri = packet.http.get("request_uri")
-            else:
-                uri = None
-            if hasattr(packet.http, "request_uri_query"):
-                query = packet.http.get("request_uri_query")
-                # use regex to get: seq=(\d+)
-                seq = re.search(r"seq=(\d+)", query)
-                if seq is not None:
-                    operator.seq = int(
-                        seq.group(1)
-                    )  # grab the sequence number from the query
-            data = packet.http.file_data if hasattr(packet.http, "file_data") else None
-            match uri:
-                case "/app/request":
-                    if packet.ip.dst != device_ip:
+
+codecs.register_error("bad_chars_replacement", bad_chars_replacement)
+
+
+
+
+
+def main(username, password, device_ip, pcap_file_path, output_json_name=None):
+    """Run the main function."""
+    capture = pyshark.FileCapture(pcap_file_path, display_filter="http")
+
+    # In an effort to keep this code tied into the original code
+    # (so that this can hopefully leverage any future codebase updates inheriently),
+    # some weird initialization is done here
+    myCreds = Credentials(username, password)
+
+    fakeConnection = DeviceConnectionParameters(
+        DeviceFamily.SmartTapoBulb, DeviceEncryptionType.Klap
+    )
+    fakeDevice = DeviceConfig(
+        device_ip, connection_type=fakeConnection, credentials=myCreds
+    )
+
+
+
+    operator = Operator(KlapTransportV2(config=fakeDevice), myCreds)
+
+    finalArray = []
+
+    # pyshark is a little weird in how it handles iteration,
+    # so this is a workaround to allow for (advanced) iteration over the packets.
+    while True:
+        try:
+            packet = capture.next()
+            # packet_number = capture._current_packet
+            # we only care about http packets
+            if hasattr(
+                packet, "http"
+            ):  # this is redundant, as pyshark is set to only load http packets
+                if hasattr(packet.http, "request_uri_path"):
+                    uri = packet.http.get("request_uri_path")
+                elif hasattr(packet.http, "request_uri"):
+                    uri = packet.http.get("request_uri")
+                else:
+                    uri = None
+                if hasattr(packet.http, "request_uri_query"):
+                    query = packet.http.get("request_uri_query")
+                    # use regex to get: seq=(\d+)
+                    seq = re.search(r"seq=(\d+)", query)
+                    if seq is not None:
+                        operator.seq = int(
+                            seq.group(1)
+                        )  # grab the sequence number from the query
+                data = packet.http.file_data if hasattr(packet.http,
+                                                "file_data") else None
+                match uri:
+                    case "/app/request":
+                        if packet.ip.dst != device_ip:
+                            continue
+                        message = bytes.fromhex(data.replace(":", ""))
+                        try:
+                            plaintext = operator.decrypt(message)
+                            myDict = json.loads(plaintext)
+                            print(json.dumps(myDict, indent=2))
+                            finalArray.append(myDict)
+                        except ValueError:
+                            print("Insufficient data to decrypt thus far")
+
+                    case "/app/handshake1":
+                        if packet.ip.dst != device_ip:
+                            continue
+                        message = bytes.fromhex(data.replace(":", ""))
+                        operator.local_seed = message
+                        response = None
+                        while (
+                            True
+                        ):  # we are going to now look for the response to this request
+                            response = capture.next()
+                            if (
+                                hasattr(response, "http")
+                                and hasattr(response.http, "response_for_uri")
+                                and (
+                                    response.http.response_for_uri
+                                    == packet.http.request_full_uri
+                                )
+                            ):
+                                break
+                        data = response.http.file_data
+                        message = bytes.fromhex(data.replace(":", ""))
+                        operator.remote_seed = message[0:16]
+                        operator.remote_auth_hash = message[16:]
+
+                    case "/app/handshake2":
+                        continue  # we don't care about this
+                    case _:
                         continue
-                    message = bytes.fromhex(data.replace(":", ""))
-                    try:
-                        plaintext = operator.decrypt(message)
-                        myDict = json.loads(plaintext)
-                        print(json.dumps(myDict, indent=2))
-                        finalArray.append(myDict)
-                    except ValueError:
-                        print("Insufficient data to decrypt thus far")
+        except StopIteration:
+            break
 
-                case "/app/handshake1":
-                    if packet.ip.dst != device_ip:
-                        continue
-                    message = bytes.fromhex(data.replace(":", ""))
-                    operator.local_seed = message
-                    response = None
-                    while (
-                        True
-                    ):  # we are going to now look for the response to this request
-                        response = capture.next()
-                        if (
-                            hasattr(response, "http")
-                            and hasattr(response.http, "response_for_uri")
-                            and (
-                                response.http.response_for_uri
-                                == packet.http.request_full_uri
-                            )
-                        ):
-                            break
-                    data = response.http.file_data
-                    message = bytes.fromhex(data.replace(":", ""))
-                    operator.remote_seed = message[0:16]
-                    operator.remote_auth_hash = message[16:]
+    # save the final array to a file
+    if output_json_name is not None:
+        with open(output_json_name, "w") as f:
+            f.write(json.dumps(finalArray, indent=2))
+            f.write("\n" * 1)
+            f.close()
 
-                case "/app/handshake2":
-                    continue  # we don't care about this
-                case _:
-                    continue
-    except StopIteration:
-        break
 
-# save the final array to a file
-with open(output_json_name, "w") as f:
-    f.write(json.dumps(finalArray, indent=2))
-    f.write("\n" * 1)
-    f.close()
+
+@click.command()
+@click.option("--host",
+    required=True,
+    help="the IP of the smart device as it appears in the pcap file."
+)
+@click.option(
+    "--username",
+    required=True,
+    envvar="KASA_USERNAME",
+    help="Username/email address to authenticate to device.",
+)
+@click.option(
+    "--password",
+    required=True,
+    envvar="KASA_PASSWORD",
+    help="Password to use to authenticate to device.",
+)
+@click.option(
+    "--pcap-file-path",
+    required=True,
+    help="The path to the pcap file to parse.",
+)
+@click.option(
+    "--output-json-name",
+    required=False,
+    help="The name of the output file, relative to the current directory.",
+)
+def cli(username, password, host, pcap_file_path, output_json_name):
+    """Run the main function."""
+    main(username, password, host, pcap_file_path, output_json_name)
+
+
+if __name__ == "__main__":
+    cli()
