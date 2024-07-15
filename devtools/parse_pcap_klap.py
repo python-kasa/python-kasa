@@ -6,6 +6,7 @@ It will output the decrypted data to a file.
 This was designed and tested with a Tapo light strip setup using a cloud account.
 """
 
+import asyncio
 import codecs
 import json
 import re
@@ -23,6 +24,7 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.klaptransport import KlapEncryptionSession, KlapTransportV2
+from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 
 
 class MyEncryptionSession(KlapEncryptionSession):
@@ -69,18 +71,38 @@ class Operator:
             self._local_auth_hash = self._klap.handshake1_seed_auth_hash(
                 self._local_seed, self._remote_seed, self._auth_hash
             )
-            if (self._remote_auth_hash is not None) and (
-                self._local_auth_hash != self._remote_auth_hash
-            ):
-                raise ValueError(
-                    "Local and remote auth hashes do not match.\
-This could mean an incorrect username and/or password."
+            auth_hash = None
+            if self._remote_auth_hash is not None:
+                if self._local_auth_hash == self._remote_auth_hash:
+                    auth_hash = self._local_auth_hash
+                else:
+                    # Check whether default credentials were used.
+                    for value in DEFAULT_CREDENTIALS.values():
+                        default_credentials = get_default_credentials(value)
+                        default_auth_hash = self._klap.generate_auth_hash(
+                            default_credentials
+                        )
+
+                        default_credentials_seed_auth_hash = (
+                            self._klap.handshake1_seed_auth_hash(
+                                self._local_seed,
+                                self._remote_seed,
+                                default_auth_hash,  # type: ignore
+                            )
+                        )
+                        if self._remote_auth_hash == default_credentials_seed_auth_hash:
+                            auth_hash = self._remote_auth_hash
+                            break
+                if not auth_hash:
+                    raise ValueError(
+                        "Local and remote auth hashes do not match. "
+                        "This could mean an incorrect username and/or password."
+                    )
+                self._session = MyEncryptionSession(
+                    self._local_seed, self._remote_seed, self._auth_hash
                 )
-            self._session = MyEncryptionSession(
-                self._local_seed, self._remote_seed, self._auth_hash
-            )
-            self._session._seq = self._seq
-            self._session._generate_cipher()
+                self._session._seq = self._seq
+                self._session._generate_cipher()
 
     @property
     def seq(self) -> int:
@@ -107,6 +129,8 @@ This could mean an incorrect username and/or password."
             raise ValueError("local_seed must be 16 bytes")
         else:
             self._local_seed = value
+            self._remote_auth_hash = None
+            self._remote_seed = None
             self.update_encryption_session()
 
     @property
@@ -160,9 +184,17 @@ def bad_chars_replacement(exception):
 codecs.register_error("bad_chars_replacement", bad_chars_replacement)
 
 
-def main(username, password, device_ip, pcap_file_path, output_json_name=None):
+def main(
+    loop: asyncio.AbstractEventLoop,
+    username,
+    password,
+    device_ip,
+    pcap_file_path,
+    output_json_name=None,
+):
     """Run the main function."""
-    capture = pyshark.FileCapture(pcap_file_path, display_filter="http")
+    asyncio.set_event_loop(loop)
+    capture = pyshark.FileCapture(pcap_file_path, display_filter="http", eventloop=loop)
 
     # In an effort to keep this code tied into the original code
     # (so that this can hopefully leverage any future codebase updates inheriently),
@@ -262,6 +294,9 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
             f.write("\n" * 1)
             f.close()
 
+    # Call close method which cleans up event loop
+    capture.close()
+
 
 @click.command()
 @click.option(
@@ -292,12 +327,15 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     required=False,
     help="The name of the output file, relative to the current directory.",
 )
-def cli(username, password, host, pcap_file_path, output):
+async def cli(username, password, host, pcap_file_path, output):
     """Export KLAP data in JSON format from a PCAP file."""
     # pyshark does not work within a running event loop and we don't want to
     # install click as well as asyncclick so run in a new thread.
+    loop = asyncio.new_event_loop()
     thread = Thread(
-        target=main, args=[username, password, host, pcap_file_path, output]
+        target=main,
+        args=[loop, username, password, host, pcap_file_path, output],
+        daemon=True,
     )
     thread.start()
     thread.join()
