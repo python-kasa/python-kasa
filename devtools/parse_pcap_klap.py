@@ -147,8 +147,6 @@ This could mean an incorrect username and/or password."
             raise ValueError("No session available")
         return self._session.decrypt(*args, **kwargs)
 
-
-
 # This is a custom error handler that replaces bad characters with '*',
 # in case something goes wrong in decryption.
 # Without this, the decryption could yield an error.
