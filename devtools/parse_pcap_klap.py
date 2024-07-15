@@ -49,7 +49,6 @@ class Operator:
         self._local_auth_hash = None
         self._remote_auth_hash = None
         self._seq = 0
-        pass
 
     def update_encryption_session(self):
         """Update the encryption session used for decrypting data.
