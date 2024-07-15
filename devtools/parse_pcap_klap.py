@@ -159,10 +159,6 @@ def bad_chars_replacement(exception):
 
 codecs.register_error("bad_chars_replacement", bad_chars_replacement)
 
-
-
-
-
 def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     """Run the main function."""
     capture = pyshark.FileCapture(pcap_file_path, display_filter="http")
