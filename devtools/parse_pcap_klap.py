@@ -172,8 +172,6 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
         device_ip, connection_type=fakeConnection, credentials=myCreds
     )
 
-
-
     operator = Operator(KlapTransportV2(config=fakeDevice), myCreds)
 
     finalArray = []
