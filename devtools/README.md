@@ -105,7 +105,9 @@ Old parser, parsing 100000 messages took 9.473990250000497 seconds
 
 * A tool to allow KLAP data to be exported, in JSON, from a PCAP file of encrypted requests.
 
-* NOTE: must install pyshark (`pip install pyshark`)
+* NOTE: must install pyshark (`pip install pyshark`).
+* pyshark requires Wireshark or tshark to be installed on windows and tshark to be installed
+on linux (`apt get tshark`)
 
 ```shell
 Usage: parse_pcap_klap.py [OPTIONS]

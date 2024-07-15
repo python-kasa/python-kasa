@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 This code allow for the decryption of KlapV2 data from a pcap file.
 
@@ -8,8 +9,9 @@ This was designed and tested with a Tapo light strip setup using a cloud account
 import codecs
 import json
 import re
+from threading import Thread
 
-import click
+import asyncclick as click
 import pyshark
 from cryptography.hazmat.primitives import padding
 
@@ -203,13 +205,17 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
                             seq.group(1)
                         )  # grab the sequence number from the query
                 data = (
-                    packet.http.file_data if hasattr(packet.http, "file_data") else None
+                    # Windows and linux file_data attribute returns different
+                    # pretty format so get the raw field value.
+                    packet.http.get_field_value("file_data", raw=True)
+                    if hasattr(packet.http, "file_data")
+                    else None
                 )
                 match uri:
                     case "/app/request":
                         if packet.ip.dst != device_ip:
                             continue
-                        message = bytes.fromhex(data.replace(":", ""))
+                        message = bytes.fromhex(data)
                         try:
                             plaintext = operator.decrypt(message)
                             payload = json.loads(plaintext)
@@ -221,7 +227,7 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
                     case "/app/handshake1":
                         if packet.ip.dst != device_ip:
                             continue
-                        message = bytes.fromhex(data.replace(":", ""))
+                        message = bytes.fromhex(data)
                         operator.local_seed = message
                         response = None
                         while (
@@ -237,8 +243,8 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
                                 )
                             ):
                                 break
-                        data = response.http.file_data
-                        message = bytes.fromhex(data.replace(":", ""))
+                        data = response.http.get_field_value("file_data", raw=True)
+                        message = bytes.fromhex(data)
                         operator.remote_seed = message[0:16]
                         operator.remote_auth_hash = message[16:]
 
@@ -288,7 +294,13 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
 )
 def cli(username, password, host, pcap_file_path, output):
     """Export KLAP data in JSON format from a PCAP file."""
-    main(username, password, host, pcap_file_path, output)
+    # pyshark does not work within a running event loop and we don't want to
+    # install click as well as asyncclick so run in a new thread.
+    thread = Thread(
+        target=main, args=[username, password, host, pcap_file_path, output]
+    )
+    thread.start()
+    thread.join()
 
 
 if __name__ == "__main__":
