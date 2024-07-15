@@ -146,6 +146,7 @@ This could mean an incorrect username and/or password."
             raise ValueError("No session available")
         return self._session.decrypt(*args, **kwargs)
 
+
 # This is a custom error handler that replaces bad characters with '*',
 # in case something goes wrong in decryption.
 # Without this, the decryption could yield an error.
@@ -156,6 +157,7 @@ def bad_chars_replacement(exception):
 
 codecs.register_error("bad_chars_replacement", bad_chars_replacement)
 
+
 def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     """Run the main function."""
     capture = pyshark.FileCapture(pcap_file_path, display_filter="http")
@@ -163,18 +165,18 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     # In an effort to keep this code tied into the original code
     # (so that this can hopefully leverage any future codebase updates inheriently),
     # some weird initialization is done here
-    myCreds = Credentials(username, password)
+    creds = Credentials(username, password)
 
-    fakeConnection = DeviceConnectionParameters(
+    fake_connection = DeviceConnectionParameters(
         DeviceFamily.SmartTapoBulb, DeviceEncryptionType.Klap
     )
-    fakeDevice = DeviceConfig(
-        device_ip, connection_type=fakeConnection, credentials=myCreds
+    fake_device = DeviceConfig(
+        device_ip, connection_type=fake_connection, credentials=creds
     )
 
-    operator = Operator(KlapTransportV2(config=fakeDevice), myCreds)
+    operator = Operator(KlapTransportV2(config=fake_device), creds)
 
-    finalArray = []
+    packets = []
 
     # pyshark is a little weird in how it handles iteration,
     # so this is a workaround to allow for (advanced) iteration over the packets.
@@ -200,8 +202,9 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
                         operator.seq = int(
                             seq.group(1)
                         )  # grab the sequence number from the query
-                data = packet.http.file_data if hasattr(packet.http,
-                                                "file_data") else None
+                data = (
+                    packet.http.file_data if hasattr(packet.http, "file_data") else None
+                )
                 match uri:
                     case "/app/request":
                         if packet.ip.dst != device_ip:
@@ -209,9 +212,9 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
                         message = bytes.fromhex(data.replace(":", ""))
                         try:
                             plaintext = operator.decrypt(message)
-                            myDict = json.loads(plaintext)
-                            print(json.dumps(myDict, indent=2))
-                            finalArray.append(myDict)
+                            payload = json.loads(plaintext)
+                            print(json.dumps(payload, indent=2))
+                            packets.append(payload)
                         except ValueError:
                             print("Insufficient data to decrypt thus far")
 
@@ -249,16 +252,16 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     # save the final array to a file
     if output_json_name is not None:
         with open(output_json_name, "w") as f:
-            f.write(json.dumps(finalArray, indent=2))
+            f.write(json.dumps(packets, indent=2))
             f.write("\n" * 1)
             f.close()
 
 
-
 @click.command()
-@click.option("--host",
+@click.option(
+    "--host",
     required=True,
-    help="the IP of the smart device as it appears in the pcap file."
+    help="the IP of the smart device as it appears in the pcap file.",
 )
 @click.option(
     "--username",
@@ -278,7 +281,8 @@ def main(username, password, device_ip, pcap_file_path, output_json_name=None):
     help="The path to the pcap file to parse.",
 )
 @click.option(
-    "-o", "--output",
+    "-o",
+    "--output",
     required=False,
     help="The name of the output file, relative to the current directory.",
 )
