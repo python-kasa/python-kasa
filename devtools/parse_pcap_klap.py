@@ -6,6 +6,8 @@ It will output the decrypted data to a file.
 This was designed and tested with a Tapo light strip setup using a cloud account.
 """
 
+from __future__ import annotations
+
 import asyncio
 import codecs
 import json
@@ -44,9 +46,9 @@ class Operator:
     """A class that handles the data decryption, and the encryption session updating."""
 
     def __init__(self, klap, creds):
-        self._local_seed: bytes = None
-        self._remote_seed: bytes = None
-        self._session: MyEncryptionSession = None
+        self._local_seed: bytes | None = None
+        self._remote_seed: bytes | None = None
+        self._session: MyEncryptionSession | None = None
         self._creds = creds
         self._klap: KlapTransportV2 = klap
         self._auth_hash = self._klap.generate_auth_hash(self._creds)
@@ -117,7 +119,7 @@ class Operator:
         self.update_encryption_session()
 
     @property
-    def local_seed(self) -> bytes:
+    def local_seed(self) -> bytes | None:
         """Get the local seed."""
         return self._local_seed
 
@@ -134,7 +136,7 @@ class Operator:
             self.update_encryption_session()
 
     @property
-    def remote_auth_hash(self) -> bytes:
+    def remote_auth_hash(self) -> bytes | None:
         """Get the remote auth hash."""
         return self._remote_auth_hash
 
@@ -150,7 +152,7 @@ class Operator:
             self.update_encryption_session()
 
     @property
-    def remote_seed(self) -> bytes:
+    def remote_seed(self) -> bytes | None:
         """Get the remote seed."""
         return self._remote_seed
 
