@@ -50,7 +50,6 @@ import logging
 import secrets
 import struct
 import time
-from pprint import pformat as pf
 from typing import Any, cast
 
 from cryptography.hazmat.primitives import padding
@@ -351,7 +350,7 @@ class KlapTransport(BaseTransport):
                     + f"request with seq {seq}"
                 )
         else:
-            _LOGGER.debug("Query posted " + msg)
+            _LOGGER.debug("Device %s query posted %s", self._host, msg)
 
             # Check for mypy
             if self._encryption_session is not None:
@@ -359,11 +358,7 @@ class KlapTransport(BaseTransport):
 
             json_payload = json_loads(decrypted_response)
 
-            _LOGGER.debug(
-                "%s << %s",
-                self._host,
-                _LOGGER.isEnabledFor(logging.DEBUG) and pf(json_payload),
-            )
+            _LOGGER.debug("Device %s query response received", self._host)
 
             return json_payload
 

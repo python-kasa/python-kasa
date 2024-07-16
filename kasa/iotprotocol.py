@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pprint import pformat as pf
+from typing import Any, Callable
 
 from .deviceconfig import DeviceConfig
 from .exceptions import (
@@ -14,10 +16,26 @@ from .exceptions import (
     _RetryableError,
 )
 from .json import dumps as json_dumps
-from .protocol import BaseProtocol, BaseTransport
+from .protocol import BaseProtocol, BaseTransport, mask_mac, redact_data
 from .xortransport import XorEncryption, XorTransport
 
 _LOGGER = logging.getLogger(__name__)
+
+REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+    "latitude": lambda x: 0,
+    "longitude": lambda x: 0,
+    "latitude_i": lambda x: 0,
+    "longitude_i": lambda x: 0,
+    "deviceId": lambda x: "REDACTED_" + x[9::],
+    "id": lambda x: "REDACTED_" + x[9::],
+    "alias": lambda x: "#MASKED_NAME#" if x else "",
+    "mac": mask_mac,
+    "mic_mac": mask_mac,
+    "ssid": lambda x: "#MASKED_SSID#" if x else "",
+    "ip": lambda x: "127.0.0." + x.split(".")[3],
+    "oemId": lambda x: "REDACTED_" + x[9::],
+    "username": lambda _: "user@example.com",  # cnCloud
+}
 
 
 class IotProtocol(BaseProtocol):
@@ -34,6 +52,7 @@ class IotProtocol(BaseProtocol):
         super().__init__(transport=transport)
 
         self._query_lock = asyncio.Lock()
+        self._redact_data = True
 
     async def query(self, request: str | dict, retry_count: int = 3) -> dict:
         """Query the device retrying for retry_count on failure."""
@@ -85,7 +104,24 @@ class IotProtocol(BaseProtocol):
         raise KasaException("Query reached somehow to unreachable")
 
     async def _execute_query(self, request: str, retry_count: int) -> dict:
-        return await self._transport.send(request)
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+
+        if debug_enabled:
+            _LOGGER.debug(
+                "%s >> %s",
+                self._host,
+                request,
+            )
+        resp = await self._transport.send(request)
+
+        if debug_enabled:
+            data = redact_data(resp, REDACTORS) if self._redact_data else resp
+            _LOGGER.debug(
+                "%s << %s",
+                self._host,
+                pf(data),
+            )
+        return resp
 
     async def close(self) -> None:
         """Close the underlying transport."""
