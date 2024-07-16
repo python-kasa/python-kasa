@@ -1,4 +1,4 @@
-"""python-kasa cli tool."""
+"""Module for cli device commands."""
 
 from __future__ import annotations
 
@@ -10,21 +10,28 @@ from kasa import (
     Device,
     Module,
 )
-from kasa.cli.common import (
+from kasa.smart import SmartDevice
+
+from .common import (
     echo,
     error,
     pass_dev,
     pass_dev_or_child,
 )
-from kasa.smart import SmartDevice
 
 
-@click.command()
+@click.group()
+@pass_dev_or_child
+def device(dev):
+    """Commands to control basic device settings."""
+
+
+@device.command()
 @pass_dev_or_child
 @click.pass_context
 async def state(ctx, dev: Device):
     """Print out device state and versions."""
-    from kasa.cli.feature import _echo_all_features
+    from .feature import _echo_all_features
 
     verbose = ctx.parent.params.get("verbose", False) if ctx.parent else False
 
@@ -67,14 +74,14 @@ async def state(ctx, dev: Device):
         echo("\n\t[bold]== Protocol information ==[/bold]")
         echo(f"\tCredentials hash:  {dev.credentials_hash}")
         echo()
-        from kasa.cli.discover import _echo_discovery_info
+        from .discover import _echo_discovery_info
 
         _echo_discovery_info(dev._discovery_info)
 
     return dev.internal_state
 
 
-@click.command()
+@device.command()
 @pass_dev_or_child
 async def sysinfo(dev):
     """Print out full system information."""
@@ -83,7 +90,7 @@ async def sysinfo(dev):
     return dev.sys_info
 
 
-@click.command()
+@device.command()
 @click.option("--transition", type=int, required=False)
 @pass_dev_or_child
 async def on(dev: Device, transition: int):
@@ -101,7 +108,7 @@ async def off(dev: Device, transition: int):
     return await dev.turn_off(transition=transition)
 
 
-@click.command()
+@device.command()
 @click.option("--transition", type=int, required=False)
 @pass_dev_or_child
 async def toggle(dev: Device, transition: int):
@@ -114,7 +121,7 @@ async def toggle(dev: Device, transition: int):
     return await dev.turn_on(transition=transition)
 
 
-@click.command()
+@device.command()
 @click.argument("state", type=bool, required=False)
 @pass_dev_or_child
 async def led(dev: Device, state):
@@ -130,7 +137,7 @@ async def led(dev: Device, state):
         return led.led
 
 
-@click.command()
+@device.command()
 @click.argument("new_alias", required=False, default=None)
 @pass_dev_or_child
 async def alias(dev, new_alias):
@@ -150,7 +157,7 @@ async def alias(dev, new_alias):
     return dev.alias
 
 
-@click.command()
+@device.command()
 @click.option("--delay", default=1)
 @pass_dev
 async def reboot(plug, delay):
@@ -159,7 +166,7 @@ async def reboot(plug, delay):
     return await plug.reboot(delay)
 
 
-@click.command()
+@device.command()
 @pass_dev
 @click.option(
     "--username", required=True, prompt=True, help="New username to set on the device"

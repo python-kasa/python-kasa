@@ -1,4 +1,4 @@
-"""Module for cli features."""
+"""Module for cli feature commands."""
 
 from __future__ import annotations
 
@@ -10,7 +10,8 @@ from kasa import (
     Device,
     Feature,
 )
-from kasa.cli.common import (
+
+from .common import (
     echo,
     error,
     pass_dev_or_child,

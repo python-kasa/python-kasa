@@ -1,4 +1,4 @@
-"""python-kasa cli tool."""
+"""Module for cli time commands.."""
 
 from __future__ import annotations
 
@@ -10,11 +10,12 @@ from kasa import (
     Device,
     Module,
 )
-from kasa.cli.common import (
+from kasa.smart import SmartDevice
+
+from .common import (
     echo,
     pass_dev,
 )
-from kasa.smart import SmartDevice
 
 
 @click.group(invoke_without_command=True)

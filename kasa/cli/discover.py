@@ -1,4 +1,4 @@
-"""Module for cli discovery."""
+"""Module for cli discovery commands."""
 
 from __future__ import annotations
 
@@ -14,8 +14,9 @@ from kasa import (
     Discover,
     UnsupportedDeviceError,
 )
-from kasa.cli.common import echo
 from kasa.discover import DiscoveryResult
+
+from .common import echo
 
 
 @click.command()
@@ -50,7 +51,7 @@ async def discover(ctx):
 
     echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
 
-    from kasa.cli.device import state
+    from .device import state
 
     async def print_discovered(dev: Device):
         async with sem:

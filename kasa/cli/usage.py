@@ -1,4 +1,4 @@
-"""Module for cli usage."""
+"""Module for cli usage commands.."""
 
 from __future__ import annotations
 
@@ -10,16 +10,17 @@ import asyncclick as click
 from kasa import (
     Device,
 )
-from kasa.cli.common import (
-    echo,
-    error,
-    pass_dev_or_child,
-)
 from kasa.iot import (
     IotDevice,
 )
 from kasa.iot.iotstrip import IotStripPlug
 from kasa.iot.modules import Usage
+
+from .common import (
+    echo,
+    error,
+    pass_dev_or_child,
+)
 
 
 @click.command()

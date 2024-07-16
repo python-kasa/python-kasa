@@ -1,4 +1,4 @@
-"""python-kasa cli tool."""
+"""Module for cli wifi commands."""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ import asyncclick as click
 from kasa import (
     Device,
 )
-from kasa.cli.common import (
+
+from .common import (
     echo,
     pass_dev,
 )

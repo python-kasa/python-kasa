@@ -1,10 +1,10 @@
-"""python-kasa cli tool."""
+"""Module for cli schedule commands.."""
 
 from __future__ import annotations
 
 import asyncclick as click
 
-from kasa.cli.common import (
+from .common import (
     echo,
     error,
     pass_dev,

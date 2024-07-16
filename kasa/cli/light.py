@@ -1,4 +1,4 @@
-"""Module for cli light controls."""
+"""Module for cli light control commands."""
 
 import asyncclick as click
 
@@ -6,13 +6,20 @@ from kasa import (
     Device,
     Module,
 )
-from kasa.cli.common import echo, error, pass_dev_or_child
 from kasa.iot import (
     IotBulb,
 )
 
+from .common import echo, error, pass_dev_or_child
 
-@click.command()
+
+@click.group()
+@pass_dev_or_child
+def light(dev):
+    """Commands to control light settings."""
+
+
+@light.command()
 @click.argument("brightness", type=click.IntRange(0, 100), default=None, required=False)
 @click.option("--transition", type=int, required=False)
 @pass_dev_or_child
@@ -30,7 +37,7 @@ async def brightness(dev: Device, brightness: int, transition: int):
         return await light.set_brightness(brightness, transition=transition)
 
 
-@click.command()
+@light.command()
 @click.argument(
     "temperature", type=click.IntRange(2500, 9000), default=None, required=False
 )
@@ -58,7 +65,7 @@ async def temperature(dev: Device, temperature: int, transition: int):
         return await light.set_color_temp(temperature, transition=transition)
 
 
-@click.command()
+@light.command()
 @click.argument("effect", type=click.STRING, default=None, required=False)
 @click.pass_context
 @pass_dev_or_child
@@ -83,7 +90,7 @@ async def effect(dev: Device, ctx, effect):
     return await light_effect.set_effect(effect)
 
 
-@click.command()
+@light.command()
 @click.argument("h", type=click.IntRange(0, 360), default=None, required=False)
 @click.argument("s", type=click.IntRange(0, 100), default=None, required=False)
 @click.argument("v", type=click.IntRange(0, 100), default=None, required=False)
@@ -106,7 +113,7 @@ async def hsv(dev: Device, ctx, h, s, v, transition):
         return await light.set_hsv(h, s, v, transition=transition)
 
 
-@click.group(invoke_without_command=True)
+@light.group(invoke_without_command=True)
 @pass_dev_or_child
 @click.pass_context
 async def presets(ctx, dev):
@@ -159,7 +166,7 @@ async def presets_modify(dev: Device, index, brightness, hue, saturation, temper
     return await dev.save_preset(preset)
 
 
-@click.command()
+@light.command()
 @pass_dev_or_child
 @click.option("--type", type=click.Choice(["soft", "hard"], case_sensitive=False))
 @click.option("--last", is_flag=True)

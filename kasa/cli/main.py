@@ -1,92 +1,100 @@
-"""python-kasa cli tool."""
+"""Main module for cli tool."""
 
 from __future__ import annotations
 
+import ast
+import asyncio
+import json
 import logging
 import sys
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import asyncclick as click
 
-from kasa import (
-    Credentials,
-    Device,
-    DeviceConfig,
-    DeviceConnectionParameters,
-    DeviceEncryptionType,
-    DeviceFamily,
-    Discover,
-)
-from kasa.cli.common import (
+if TYPE_CHECKING:
+    from kasa import Device
+
+from kasa.deviceconfig import DeviceEncryptionType
+
+from .common import (
     SKIP_UPDATE_COMMANDS,
     CatchAllExceptions,
     echo,
     error,
     json_formatter_cb,
+    pass_dev_or_child,
 )
-from kasa.cli.lazygroup import LazyGroup
-from kasa.iot import (
-    IotBulb,
-    IotDimmer,
-    IotLightStrip,
-    IotPlug,
-    IotStrip,
-    IotWallSwitch,
-)
-from kasa.smart import SmartDevice
+from .lazygroup import LazyGroup
 
-TYPE_TO_CLASS = {
-    "plug": IotPlug,
-    "switch": IotWallSwitch,
-    "bulb": IotBulb,
-    "dimmer": IotDimmer,
-    "strip": IotStrip,
-    "lightstrip": IotLightStrip,
-    "iot.plug": IotPlug,
-    "iot.switch": IotWallSwitch,
-    "iot.bulb": IotBulb,
-    "iot.dimmer": IotDimmer,
-    "iot.strip": IotStrip,
-    "iot.lightstrip": IotLightStrip,
-    "smart.plug": SmartDevice,
-    "smart.bulb": SmartDevice,
-}
+TYPES = [
+    "plug",
+    "switch",
+    "bulb",
+    "dimmer",
+    "strip",
+    "lightstrip",
+    "smart",
+]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
-DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in DeviceFamily]
+
+def _legacy_type_to_class(_type):
+    if _type == "plug":
+        from kasa.iot import IotPlug
+
+        return IotPlug
+    if _type == "switch":
+        from kasa.iot import IotWallSwitch
+
+        return IotWallSwitch
+    if _type == "bulb":
+        from kasa.iot import IotBulb
+
+        return IotBulb
+    if _type == "dimmer":
+        from kasa.iot import IotDimmer
+
+        return IotDimmer
+    if _type == "strip":
+        from kasa.iot import IotStrip
+
+        return IotStrip
+    if _type == "lightstrip":
+        from kasa.iot import IotLightStrip
+
+        return IotLightStrip
 
 
 @click.group(
     invoke_without_command=True,
     cls=CatchAllExceptions(LazyGroup),
     lazy_subcommands={
-        "discover": "kasa.cli.discover.discover",
-        "wifi": "kasa.cli.wifi.wifi",
-        "feature": "kasa.cli.feature.feature",
-        "time": "kasa.cli.time.time",
-        "schedule": "kasa.cli.schedule.schedule",
-        # device
-        "state": "kasa.cli.device.state",
-        "on": "kasa.cli.device.on",
-        "off": "kasa.cli.device.off",
-        "toggle": "kasa.cli.device.toggle",
-        "led": "kasa.cli.device.led",
-        "alias": "kasa.cli.device.alias",
-        "reboot": "kasa.cli.device.reboot",
-        "update_credentials": "kasa.cli.device.update_credentials",
-        "sysinfo": "kasa.cli.device.sysinfo",
-        # light
-        "presets": "kasa.cli.light.presets",
-        "brightness": "kasa.cli.light.brightness",
-        "hsv": "kasa.cli.light.hsv",
-        "temperature": "kasa.cli.light.temperature",
-        "effect": "kasa.cli.light.effect",
-        # util
-        "shell": "kasa.cli.util.shell",
-        "command": "kasa.cli.util.cmd_command",
-        "raw_command": "kasa.cli.util.raw_command",
+        "discover": None,
+        "device": None,
+        "feature": None,
+        "light": None,
+        "wifi": None,
+        "time": None,
+        "schedule": None,
+        "usage": None,
+        # device commands runnnable at top level
+        "state": "device",
+        "on": "device",
+        "off": "device",
+        "toggle": "device",
+        "led": "device",
+        "alias": "device",
+        "reboot": "device",
+        "update_credentials": "device",
+        "sysinfo": "device",
+        # light commands runnnable at top level
+        "presets": "light",
+        "brightness": "light",
+        "hsv": "light",
+        "temperature": "light",
+        "effect": "light",
     },
     result_callback=json_formatter_cb,
 )
@@ -138,7 +146,8 @@ DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in Device
     "--type",
     envvar="KASA_TYPE",
     default=None,
-    type=click.Choice(list(TYPE_TO_CLASS), case_sensitive=False),
+    type=click.Choice(TYPES, case_sensitive=False),
+    help="The device type in order to bypass discovery. Use `smart` for newer devices",
 )
 @click.option(
     "--json/--no-json",
@@ -158,7 +167,7 @@ DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in Device
     "--device-family",
     envvar="KASA_DEVICE_FAMILY",
     default="SMART.TAPOPLUG",
-    type=click.Choice(DEVICE_FAMILY_TYPES, case_sensitive=False),
+    help="Device family type, e.g. `SMART.KASASWITCH`. Deprecated use `--type smart`",
 )
 @click.option(
     "-lv",
@@ -166,6 +175,7 @@ DEVICE_FAMILY_TYPES = [device_family_type.value for device_family_type in Device
     envvar="KASA_LOGIN_VERSION",
     default=2,
     type=int,
+    help="The login version for device authentication. Defaults to 2",
 )
 @click.option(
     "--timeout",
@@ -259,7 +269,7 @@ async def cli(
     if alias is not None and host is None:
         echo(f"Alias is given, using discovery to find host {alias}")
 
-        from kasa.cli.discover import find_host_from_alias
+        from .discover import find_host_from_alias
 
         host = await find_host_from_alias(alias=alias, target=target)
         if host:
@@ -274,6 +284,8 @@ async def cli(
         )
 
     if username:
+        from kasa.credentials import Credentials
+
         credentials = Credentials(username=username, password=password)
     else:
         credentials = None
@@ -283,15 +295,26 @@ async def cli(
             error("Only discover is available without --host or --alias")
 
         echo("No host name given, trying discovery..")
-        from kasa.cli.discover import discover
+        from .discover import discover
 
         return await ctx.invoke(discover)
 
     device_updated = False
-    if type is not None:
+    if type is not None and type != "smart":
+        from kasa.deviceconfig import DeviceConfig
+
         config = DeviceConfig(host=host, port_override=port, timeout=timeout)
-        dev = TYPE_TO_CLASS[type](host, config=config)
-    elif device_family and encrypt_type:
+        dev = _legacy_type_to_class(type)(host, config=config)
+    elif type == "smart" or (device_family and encrypt_type):
+        from kasa.deviceconfig import (
+            DeviceConfig,
+            DeviceConnectionParameters,
+            DeviceEncryptionType,
+            DeviceFamily,
+        )
+
+        if not encrypt_type:
+            encrypt_type = "KLAP"
         ctype = DeviceConnectionParameters(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
@@ -308,6 +331,8 @@ async def cli(
         dev = await Device.connect(config=config)
         device_updated = True
     else:
+        from kasa.discover import Discover
+
         dev = await Discover.discover_single(
             host,
             port=port,
@@ -331,9 +356,65 @@ async def cli(
     ctx.obj = await ctx.with_async_resource(async_wrapped_device(dev))
 
     if ctx.invoked_subcommand is None:
-        from kasa.cli.device import state
+        from .device import state
 
         return await ctx.invoke(state)
+
+
+@cli.command()
+@pass_dev_or_child
+async def shell(dev: Device):
+    """Open interactive shell."""
+    echo("Opening shell for %s" % dev)
+    from ptpython.repl import embed
+
+    logging.getLogger("parso").setLevel(logging.WARNING)  # prompt parsing
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+    loop = asyncio.get_event_loop()
+    try:
+        await embed(  # type: ignore[func-returns-value]
+            globals=globals(),
+            locals=locals(),
+            return_asyncio_coroutine=True,
+            patch_stdout=True,
+        )
+    except EOFError:
+        loop.stop()
+
+
+@cli.command()
+@click.pass_context
+@click.argument("module")
+@click.argument("command")
+@click.argument("parameters", default=None, required=False)
+async def raw_command(ctx, module, command, parameters):
+    """Run a raw command on the device."""
+    logging.warning("Deprecated, use 'kasa command --module %s %s'", module, command)
+    return await ctx.forward(cmd_command)
+
+
+@cli.command(name="command")
+@click.option("--module", required=False, help="Module for IOT protocol.")
+@click.argument("command")
+@click.argument("parameters", default=None, required=False)
+@pass_dev_or_child
+async def cmd_command(dev: Device, module, command, parameters):
+    """Run a raw command on the device."""
+    if parameters is not None:
+        parameters = ast.literal_eval(parameters)
+
+    from kasa import KasaException
+    from kasa.iot import IotDevice
+    from kasa.smart import SmartDevice
+
+    if isinstance(dev, IotDevice):
+        res = await dev._query_helper(module, command, parameters)
+    elif isinstance(dev, SmartDevice):
+        res = await dev._query_helper(command, parameters)
+    else:
+        raise KasaException("Unexpected device type %s.", dev)
+    echo(json.dumps(res))
+    return res
 
 
 if __name__ == "__main__":
