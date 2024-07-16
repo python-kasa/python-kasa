@@ -299,7 +299,9 @@ class KlapTransport(BaseTransport):
         # There is a 24 hour timeout on the session cookie
         # but the clock on the device is not always accurate
         # so we set the expiry to 24 hours from now minus a buffer
-        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
+        self._session_expire_at = (
+            time.monotonic() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
+        )
         self._encryption_session = await self.perform_handshake2(
             local_seed, remote_seed, auth_hash
         )
@@ -311,7 +313,7 @@ class KlapTransport(BaseTransport):
         """Return true if session has expired."""
         return (
             self._session_expire_at is None
-            or self._session_expire_at - time.time() <= 0
+            or self._session_expire_at - time.monotonic() <= 0
         )
 
     async def send(self, request: str):

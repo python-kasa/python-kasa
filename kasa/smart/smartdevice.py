@@ -159,7 +159,7 @@ class SmartDevice(Device):
             raise AuthenticationError("Tapo plug requires authentication.")
 
         first_update = self._last_update_time is None
-        now = time.time()
+        now = time.monotonic()
         self._last_update_time = now
 
         if first_update:

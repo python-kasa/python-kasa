@@ -224,7 +224,7 @@ async def test_update_module_update_delays(
 
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
     await new_dev.update()
-    first_update_time = time.time()
+    first_update_time = time.monotonic()
     assert new_dev._last_update_time == first_update_time
     for module in new_dev.modules.values():
         if module.query():
@@ -236,7 +236,7 @@ async def test_update_module_update_delays(
         seconds += tick
         freezer.tick(tick)
 
-        now = time.time()
+        now = time.monotonic()
         await new_dev.update()
         for module in new_dev.modules.values():
             mod_delay = module.MINIMUM_UPDATE_INTERVAL_SECS

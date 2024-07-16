@@ -72,7 +72,7 @@ class HttpClient:
         # Once we know a device needs a wait between sequential queries always wait
         # first rather than keep erroring then waiting.
         if self._wait_between_requests:
-            now = time.time()
+            now = time.monotonic()
             gap = now - self._last_request_time
             if gap < self._wait_between_requests:
                 sleep = self._wait_between_requests - gap
@@ -123,7 +123,7 @@ class HttpClient:
                     ex,
                 )
                 self._wait_between_requests = self.WAIT_BETWEEN_REQUESTS_ON_OSERROR
-            self._last_request_time = time.time()
+            self._last_request_time = time.monotonic()
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
@@ -140,7 +140,7 @@ class HttpClient:
 
         # For performance only request system time if waiting is enabled
         if self._wait_between_requests:
-            self._last_request_time = time.time()
+            self._last_request_time = time.monotonic()
 
         return resp.status, response_data
 
