@@ -392,7 +392,7 @@ class SnowflakeId:
         )
 
     def _current_millis(self):
-        return round(time.time() * 1000)
+        return round(time.monotonic() * 1000)
 
     def _wait_next_millis(self, last_timestamp):
         timestamp = self._current_millis()
