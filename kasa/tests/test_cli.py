@@ -32,13 +32,13 @@ from kasa.cli.light import (
     hsv,
     temperature,
 )
-from kasa.cli.main import TYPE_TO_CLASS, cli
+from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
 from kasa.cli.time import time
 from kasa.cli.usage import emeter, energy
-from kasa.cli.util import cmd_command, raw_command
 from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
+from kasa.smart import SmartDevice
 
 from .conftest import (
     device_smart,
@@ -734,7 +734,7 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
     assert isinstance(res.exception, AuthenticationError)
 
 
-@pytest.mark.parametrize("device_type", list(TYPE_TO_CLASS))
+@pytest.mark.parametrize("device_type", TYPES)
 async def test_type_param(device_type, mocker, runner):
     """Test for handling only one of username or password supplied."""
     result_device = FileNotFoundError
@@ -746,7 +746,10 @@ async def test_type_param(device_type, mocker, runner):
         result_device = dev
 
     mocker.patch("kasa.cli.device.state", new=_state)
-    expected_type = TYPE_TO_CLASS[device_type]
+    if device_type == "smart":
+        expected_type = SmartDevice
+    else:
+        expected_type = _legacy_type_to_class(device_type)
     mocker.patch.object(expected_type, "update")
     res = await runner.invoke(
         cli,

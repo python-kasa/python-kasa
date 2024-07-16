@@ -306,6 +306,7 @@ async def cli(
         config = DeviceConfig(host=host, port_override=port, timeout=timeout)
         dev = _legacy_type_to_class(type)(host, config=config)
     elif type == "smart" or (device_family and encrypt_type):
+        from kasa.device import Device
         from kasa.deviceconfig import (
             DeviceConfig,
             DeviceConnectionParameters,
