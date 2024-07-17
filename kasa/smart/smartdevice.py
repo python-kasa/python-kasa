@@ -441,6 +441,18 @@ class SmartDevice(Device):
                 )
             )
 
+        self._add_feature(
+            Feature(
+                device=self,
+                id="reboot",
+                name="Reboot",
+                attribute_setter="reboot",
+                icon="mdi:restart",
+                category=Feature.Category.Debug,
+                type=Feature.Type.Action,
+            )
+        )
+
         for module in self.modules.values():
             module._initialize_features()
             for feat in module._module_features.values():
