@@ -26,9 +26,9 @@ from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
 from ..feature import Feature
-from ..iotprotocol import IotProtocol
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
+from ..protocol import BaseProtocol
 from .iotmodule import IotModule
 from .modules import Emeter
 
@@ -182,11 +182,11 @@ class IotDevice(Device):
         host: str,
         *,
         config: DeviceConfig | None = None,
-        protocol: IotProtocol | None = None,
+        protocol: BaseProtocol | None = None,
     ) -> None:
         """Create a new IotDevice instance."""
         super().__init__(host=host, config=config, protocol=protocol)
-        self.protocol: IotProtocol
+
         self._sys_info: Any = None  # TODO: this is here to avoid changing tests
         self._supported_modules: dict[str | ModuleName[Module], IotModule] | None = None
         self._legacy_features: set[str] = set()

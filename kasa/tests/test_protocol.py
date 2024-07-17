@@ -703,13 +703,13 @@ async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFi
 
     # Debug no redaction
     caplog.clear()
-    dev.protocol._redact_data = False
+    cast(IotProtocol, dev.protocol)._redact_data = False
     await dev.update()
     assert device_id in caplog.text
 
     # Debug redaction
     caplog.clear()
-    dev.protocol._redact_data = True
+    cast(IotProtocol, dev.protocol)._redact_data = True
     await dev.update()
     assert device_id not in caplog.text
     assert "REDACTED_" + device_id[9::] in caplog.text

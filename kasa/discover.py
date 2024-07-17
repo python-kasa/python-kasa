@@ -130,7 +130,6 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
-    "ip": lambda x: "127.0.0." + x.split(".")[3],
 }
 
 
@@ -302,6 +301,8 @@ class Discover:
 
     DISCOVERY_PORT_2 = 20002
     DISCOVERY_QUERY_2 = binascii.unhexlify("020000010000000000000000463cb5d3")
+
+    _redact_data = True
 
     @staticmethod
     async def discover(
@@ -495,7 +496,7 @@ class Discover:
             ) from ex
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
-            data = redact_data(info, IOT_REDACTORS)
+            data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
 
         device_class = cast(Type[IotDevice], Discover._get_device_class(info))
@@ -528,7 +529,11 @@ class Discover:
             discovery_result = DiscoveryResult(**info["result"])
         except ValidationError as ex:
             if debug_enabled:
-                data = redact_data(info, NEW_DISCOVERY_REDACTORS)
+                data = (
+                    redact_data(info, NEW_DISCOVERY_REDACTORS)
+                    if Discover._redact_data
+                    else info
+                )
                 _LOGGER.debug(
                     "Unable to parse discovery from device %s: %s",
                     config.host,
@@ -569,7 +574,11 @@ class Discover:
             )
 
         if debug_enabled:
-            data = redact_data(info, NEW_DISCOVERY_REDACTORS)
+            data = (
+                redact_data(info, NEW_DISCOVERY_REDACTORS)
+                if Discover._redact_data
+                else info
+            )
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
         device = device_class(config.host, protocol=protocol)
 

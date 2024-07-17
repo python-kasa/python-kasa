@@ -90,9 +90,18 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         query_data: dict
         device_type: str
         encrypt_type: str
-        _datagram: bytes
         login_version: int | None = None
         port_override: int | None = None
+
+        @property
+        def _datagram(self) -> bytes:
+            if self.default_port == 9999:
+                return XorEncryption.encrypt(json_dumps(self.discovery_data))[4:]
+            else:
+                return (
+                    b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
+                    + json_dumps(self.discovery_data).encode()
+                )
 
     if "discovery_result" in fixture_data:
         discovery_data = {"result": fixture_data["discovery_result"]}
@@ -101,10 +110,6 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             "encrypt_type"
         ]
         login_version = fixture_data["discovery_result"]["mgt_encrypt_schm"].get("lv")
-        datagram = (
-            b"\x02\x00\x00\x01\x01[\x00\x00\x00\x00\x00\x00W\xcev\xf8"
-            + json_dumps(discovery_data).encode()
-        )
         dm = _DiscoveryMock(
             ip,
             80,
@@ -113,7 +118,6 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             fixture_data,
             device_type,
             encrypt_type,
-            datagram,
             login_version,
         )
     else:
@@ -122,7 +126,6 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         device_type = sys_info.get("mic_type") or sys_info.get("type")
         encrypt_type = "XOR"
         login_version = None
-        datagram = XorEncryption.encrypt(json_dumps(discovery_data))[4:]
         dm = _DiscoveryMock(
             ip,
             9999,
@@ -131,7 +134,6 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             fixture_data,
             device_type,
             encrypt_type,
-            datagram,
             login_version,
         )
 
