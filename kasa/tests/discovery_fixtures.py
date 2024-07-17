@@ -104,7 +104,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
                 )
 
     if "discovery_result" in fixture_data:
-        discovery_data = {"result": fixture_data["discovery_result"]}
+        discovery_data = {"result": fixture_data["discovery_result"].copy()}
         device_type = fixture_data["discovery_result"]["device_type"]
         encrypt_type = fixture_data["discovery_result"]["mgt_encrypt_schm"][
             "encrypt_type"
@@ -122,7 +122,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         )
     else:
         sys_info = fixture_data["system"]["get_sysinfo"]
-        discovery_data = {"system": {"get_sysinfo": sys_info}}
+        discovery_data = {"system": {"get_sysinfo": sys_info.copy()}}
         device_type = sys_info.get("mic_type") or sys_info.get("type")
         encrypt_type = "XOR"
         login_version = None
