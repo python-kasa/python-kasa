@@ -32,7 +32,6 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "mac": mask_mac,
     "mic_mac": mask_mac,
     "ssid": lambda x: "#MASKED_SSID#" if x else "",
-    "ip": lambda x: "127.0.0." + x.split(".")[3],
     "oemId": lambda x: "REDACTED_" + x[9::],
     "username": lambda _: "user@example.com",  # cnCloud
 }

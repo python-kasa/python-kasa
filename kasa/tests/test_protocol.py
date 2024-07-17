@@ -8,8 +8,11 @@ import os
 import pkgutil
 import struct
 import sys
+from typing import cast
 
 import pytest
+
+from kasa.iot import IotDevice
 
 from ..aestransport import AesTransport
 from ..credentials import Credentials
@@ -23,6 +26,8 @@ from ..protocol import (
     BaseTransport,
 )
 from ..xortransport import XorEncryption, XorTransport
+from .conftest import device_iot
+from .fakeprotocol_iot import FakeIotTransport
 
 
 @pytest.mark.parametrize(
@@ -676,3 +681,35 @@ def test_deprecated_protocol():
         host = "127.0.0.1"
         proto = TPLinkSmartHomeProtocol(host=host)
         assert proto.config.host == host
+
+
+@device_iot
+async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFixture):
+    """Test query sensitive info redaction."""
+    device_id = "123456789ABCDEF"
+    cast(FakeIotTransport, dev.protocol._transport).proto["system"]["get_sysinfo"][
+        "deviceId"
+    ] = device_id
+
+    # Info no message logging
+    caplog.set_level(logging.INFO)
+    await dev.update()
+    assert device_id not in caplog.text
+
+    caplog.set_level(logging.DEBUG, logger="kasa")
+    # The fake iot protocol also logs so disable it
+    test_logger = logging.getLogger("kasa.tests.fakeprotocol_iot")
+    test_logger.setLevel(logging.INFO)
+
+    # Debug no redaction
+    caplog.clear()
+    dev.protocol._redact_data = False
+    await dev.update()
+    assert device_id in caplog.text
+
+    # Debug redaction
+    caplog.clear()
+    dev.protocol._redact_data = True
+    await dev.update()
+    assert device_id not in caplog.text
+    assert "REDACTED_" + device_id[9::] in caplog.text

@@ -42,7 +42,6 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "mac": mask_mac,
     "ssid": lambda x: "I01BU0tFRF9TU0lEIw=" if x else "",
     "bssid": lambda _: "000000000000",
-    "ip": lambda x: "127.0.0." + x.split(".")[3],
     "oem_id": lambda x: "REDACTED_" + x[9::],
     "setup_code": None,  # matter
     "setup_payload": None,  # matter
