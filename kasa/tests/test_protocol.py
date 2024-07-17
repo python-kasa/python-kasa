@@ -24,6 +24,8 @@ from ..klaptransport import KlapTransport, KlapTransportV2
 from ..protocol import (
     BaseProtocol,
     BaseTransport,
+    mask_mac,
+    redact_data,
 )
 from ..xortransport import XorEncryption, XorTransport
 from .conftest import device_iot
@@ -713,3 +715,31 @@ async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFi
     await dev.update()
     assert device_id not in caplog.text
     assert "REDACTED_" + device_id[9::] in caplog.text
+
+
+async def test_redact_data():
+    """Test redact data function."""
+    data = {
+        "device_id": "123456789ABCDEF",
+        "owner": "0987654",
+        "mac": "12:34:56:78:90:AB",
+        "ip": "192.168.1",
+        "no_val": None,
+    }
+    excpected_data = {
+        "device_id": "REDACTED_ABCDEF",
+        "owner": "**REDACTED**",
+        "mac": "12:34:56:00:00:00",
+        "ip": "**REDACTEX**",
+        "no_val": None,
+    }
+    REDACTORS = {
+        "device_id": lambda x: "REDACTED_" + x[9::],
+        "owner": None,
+        "mac": mask_mac,
+        "ip": lambda x: "127.0.0." + x.split(".")[3],
+    }
+
+    redacted_data = redact_data(data, REDACTORS)
+
+    assert redacted_data == excpected_data
