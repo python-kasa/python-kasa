@@ -41,30 +41,24 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
 
 def _legacy_type_to_class(_type):
-    if _type == "plug":
-        from kasa.iot import IotPlug
+    from kasa.iot import (
+        IotBulb,
+        IotDimmer,
+        IotLightStrip,
+        IotPlug,
+        IotStrip,
+        IotWallSwitch,
+    )
 
-        return IotPlug
-    if _type == "switch":
-        from kasa.iot import IotWallSwitch
-
-        return IotWallSwitch
-    if _type == "bulb":
-        from kasa.iot import IotBulb
-
-        return IotBulb
-    if _type == "dimmer":
-        from kasa.iot import IotDimmer
-
-        return IotDimmer
-    if _type == "strip":
-        from kasa.iot import IotStrip
-
-        return IotStrip
-    if _type == "lightstrip":
-        from kasa.iot import IotLightStrip
-
-        return IotLightStrip
+    TYPE_TO_CLASS = {
+        "plug": IotPlug,
+        "switch": IotWallSwitch,
+        "bulb": IotBulb,
+        "dimmer": IotDimmer,
+        "strip": IotStrip,
+        "lightstrip": IotLightStrip,
+    }
+    return TYPE_TO_CLASS[_type]
 
 
 @click.group(
