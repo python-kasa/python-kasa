@@ -1,6 +1,20 @@
 # Changelog
 
-## [0.7.0.4](https://github.com/python-kasa/python-kasa/tree/0.7.0.4) (2024-07-011)
+## [0.7.0.5](https://github.com/python-kasa/python-kasa/tree/0.7.0.5) (2024-07-18)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.4...0.7.0.5)
+
+A critical bugfix for an issue with some L530 Series devices and a redactor for sensitive info from debug logs.
+
+**Fixed bugs:**
+
+- Only refresh smart LightEffect module daily [\#1064](https://github.com/python-kasa/python-kasa/pull/1064)
+
+**Project maintenance:**
+
+- Redact sensitive info from debug logs [\#1069](https://github.com/python-kasa/python-kasa/pull/1069)
+
+## [0.7.0.4](https://github.com/python-kasa/python-kasa/tree/0.7.0.4) (2024-07-11)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.3...0.7.0.4)
 
