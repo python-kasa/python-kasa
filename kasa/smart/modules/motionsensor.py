@@ -9,8 +9,7 @@ from ..smartmodule import SmartModule
 class MotionSensor(SmartModule):
     """Implementation of motion sensor module."""
 
-    REQUIRED_COMPONENT = None  # we depend on availability of key
-    REQUIRED_KEY_ON_PARENT = "detected"
+    REQUIRED_COMPONENT = "sensitivity"
 
     def _initialize_features(self):
         """Initialize features."""
