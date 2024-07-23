@@ -12,7 +12,7 @@ import logging
 import time
 import uuid
 from pprint import pformat as pf
-from typing import Any
+from typing import Any, Callable
 
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -26,9 +26,30 @@ from .exceptions import (
     _RetryableError,
 )
 from .json import dumps as json_dumps
-from .protocol import BaseProtocol, BaseTransport, md5
+from .protocol import BaseProtocol, BaseTransport, mask_mac, md5, redact_data
 
 _LOGGER = logging.getLogger(__name__)
+
+REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+    "latitude": lambda x: 0,
+    "longitude": lambda x: 0,
+    "la": lambda x: 0,  # lat on ks240
+    "lo": lambda x: 0,  # lon on ks240
+    "device_id": lambda x: "REDACTED_" + x[9::],
+    "parent_device_id": lambda x: "REDACTED_" + x[9::],  # Hub attached children
+    "original_device_id": lambda x: "REDACTED_" + x[9::],  # Strip children
+    "nickname": lambda x: "I01BU0tFRF9OQU1FIw==" if x else "",
+    "mac": mask_mac,
+    "ssid": lambda x: "I01BU0tFRF9TU0lEIw=" if x else "",
+    "bssid": lambda _: "000000000000",
+    "oem_id": lambda x: "REDACTED_" + x[9::],
+    "setup_code": None,  # matter
+    "setup_payload": None,  # matter
+    "mfi_setup_code": None,  # mfi_ for homekit
+    "mfi_setup_id": None,
+    "mfi_token_token": None,
+    "mfi_token_uuid": None,
+}
 
 
 class SmartProtocol(BaseProtocol):
@@ -49,6 +70,7 @@ class SmartProtocol(BaseProtocol):
         self._multi_request_batch_size = (
             self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
         )
+        self._redact_data = True
 
     def get_smart_request(self, method, params=None) -> str:
         """Get a request message as a string."""
@@ -168,11 +190,15 @@ class SmartProtocol(BaseProtocol):
                 )
             response_step = await self._transport.send(smart_request)
             if debug_enabled:
+                if self._redact_data:
+                    data = redact_data(response_step, REDACTORS)
+                else:
+                    data = response_step
                 _LOGGER.debug(
                     "%s %s << %s",
                     self._host,
                     batch_name,
-                    pf(response_step),
+                    pf(data),
                 )
             try:
                 self._handle_response_error_code(response_step, batch_name)

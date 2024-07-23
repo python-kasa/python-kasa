@@ -159,7 +159,7 @@ class SmartDevice(Device):
             raise AuthenticationError("Tapo plug requires authentication.")
 
         first_update = self._last_update_time is None
-        now = time.time()
+        now = time.monotonic()
         self._last_update_time = now
 
         if first_update:
@@ -193,11 +193,9 @@ class SmartDevice(Device):
         if not self._features:
             await self._initialize_features()
 
-        _LOGGER.debug(
-            "Update completed %s: %s",
-            self.host,
-            self._last_update if first_update else resp,
-        )
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            updated = self._last_update if first_update else resp
+            _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
     def _handle_module_post_update_hook(self, module: SmartModule) -> bool:
         try:
