@@ -410,7 +410,3 @@ async def cmd_command(dev: Device, module, command, parameters):
         raise KasaException("Unexpected device type %s.", dev)
     echo(json.dumps(res))
     return res
-
-
-if __name__ == "__main__":
-    cli()

@@ -58,6 +58,12 @@ def runner():
     return runner
 
 
+async def test_help(runner):
+    """Test that all the lazy modules are correctly names."""
+    res = await runner.invoke(cli, ["--help"])
+    assert res.exit_code == 0, "--help failed, check lazy module names"
+
+
 @pytest.mark.parametrize(
     ("device_family", "encrypt_type"),
     [
