@@ -119,8 +119,9 @@ class FakeSmartTransport(BaseTransport):
     async def send(self, request: str):
         request_dict = json_loads(request)
         method = request_dict["method"]
-        params = request_dict["params"]
+
         if method == "multipleRequest":
+            params = request_dict["params"]
             responses = []
             for request in params["requests"]:
                 response = self._send_request(request)  # type: ignore[arg-type]
@@ -308,12 +309,13 @@ class FakeSmartTransport(BaseTransport):
 
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
-        params = request_dict["params"]
 
         info = self.info
         if method == "control_child":
-            return self._handle_control_child(params)
-        elif method == "component_nego" or method[:4] == "get_":
+            return self._handle_control_child(request_dict["params"])
+
+        params = request_dict.get("params")
+        if method == "component_nego" or method[:4] == "get_":
             if method in info:
                 result = copy.deepcopy(info[method])
                 if "start_index" in result and "sum" in result:
