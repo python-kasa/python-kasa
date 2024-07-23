@@ -14,6 +14,7 @@ from pytest_mock import MockerFixture
 from kasa import Device, KasaException, Module
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartDevice
+from kasa.smart.smartmodule import SmartModule
 
 from .conftest import (
     device_smart,
@@ -145,8 +146,9 @@ async def test_update_module_errors(dev: SmartDevice, mocker: MockerFixture):
     # We need to have some modules initialized by now
     assert dev._modules
 
+    SmartModule.DISABLE_AFTER_ERROR_COUNT = 1
+
     critical_modules = {Module.DeviceModule, Module.ChildDevice}
-    not_disabling_modules = {Module.Cloud}
 
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
 
@@ -197,18 +199,18 @@ async def test_update_module_errors(dev: SmartDevice, mocker: MockerFixture):
 
     await new_dev.update()
     for modname in module_queries:
-        no_disable = modname in not_disabling_modules
-        mod_present = modname in new_dev._modules
         assert (
-            mod_present is no_disable
-        ), f"{modname} present {mod_present} when no_disable {no_disable}"
+            cast(SmartModule, new_dev.modules[modname]).disabled is True
+        ), f"{modname} not disabled"
+
+    # We don't query children for hubs
+    if new_dev.device_type == Device.Type.Hub:
+        return
 
     for modname in child_module_queries:
-        no_disable = modname in not_disabling_modules
-        mod_present = any(modname in child._modules for child in new_dev.children)
-        assert (
-            mod_present is no_disable
-        ), f"{modname} present {mod_present} when no_disable {no_disable}"
+        for child in new_dev.children:
+            module = child.modules[modname]
+            assert cast(SmartModule, module).disabled is True, f"{modname} not disabled"
 
 
 @device_smart
@@ -269,10 +271,10 @@ async def test_update_module_query_errors(
     # We need to have some modules initialized by now
     assert dev._modules
 
+    SmartModule.DISABLE_AFTER_ERROR_COUNT = 1
     first_update_queries = {"get_device_info", "get_connect_cloud_state"}
 
     critical_modules = {Module.DeviceModule, Module.ChildDevice}
-    not_disabling_modules = {Module.Cloud}
 
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
     if not first_update:
@@ -317,11 +319,9 @@ async def test_update_module_query_errors(
     msg = f"Error querying {new_dev.host} for modules"
     assert msg in caplog.text
     for modname in module_queries:
-        no_disable = modname in not_disabling_modules
-        mod_present = modname in new_dev._modules
         assert (
-            mod_present is no_disable
-        ), f"{modname} present {mod_present} when no_disable {no_disable}"
+            cast(SmartModule, new_dev.modules[modname]).disabled is True
+        ), f"{modname} not disabled"
         for mod_query in module_queries[modname]:
             if not first_update or mod_query not in first_update_queries:
                 msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"

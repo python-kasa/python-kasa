@@ -66,7 +66,7 @@ Type.Choice
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -157,30 +157,61 @@ class Feature:
     #: Minimum value
     minimum_value: int = 0
     #: Maximum value
-    maximum_value: int = DEFAULT_MAX
+    _maximum_value: int | None = None
+    maximum_value_getter: str | None = None
+
+    @property
+    def maximum_value(self) -> int:
+        """List of choices."""
+        if self._maximum_value:
+            return self._maximum_value
+        if self.maximum_value_getter is not None:
+            container = self.container if self.container is not None else self.device
+            return getattr(container, self.maximum_value_getter)
+        return self.DEFAULT_MAX
+
+    maximum_value: InitVar[int | None] = None  # type: ignore[no-redef]  # noqa: F811
+
     #: Attribute containing the name of the range getter property.
     #: If set, this property will be used to set *minimum_value* and *maximum_value*.
     range_getter: str | None = None
 
     # Choice-specific attributes
     #: List of choices as enum
-    choices: list[str] | None = None
+    _choices: list[str] | None = None
     #: Attribute name of the choices getter property.
     #: If set, this property will be used to set *choices*.
     choices_getter: str | None = None
 
-    def __post_init__(self):
+    @property
+    def choices(self) -> list[str] | None:
+        """List of choices."""
+        if self._choices:
+            return self._choices
+        if self.choices_getter is not None:
+            container = self.container if self.container is not None else self.device
+            return getattr(container, self.choices_getter)
+        return None
+
+    choices: InitVar[list[str] | None] = None  # type: ignore[no-redef]  # noqa: F811
+
+    def __post_init__(
+        self, maximum_value: int | None = None, choices: list[str] | None = None
+    ):
         """Handle late-binding of members."""
         # Populate minimum & maximum values, if range_getter is given
         container = self.container if self.container is not None else self.device
         if self.range_getter is not None:
-            self.minimum_value, self.maximum_value = getattr(
+            self.minimum_value, self._maximum_value = getattr(
                 container, self.range_getter
             )
 
-        # Populate choices, if choices_getter is given
-        if self.choices_getter is not None:
-            self.choices = getattr(container, self.choices_getter)
+        # Populate choices, if choices is given
+        if choices:
+            self._choices = choices
+
+        if maximum_value:
+            self._maximum_value = maximum_value
 
         # Populate unit, if unit_getter is given
         if self.unit_getter is not None:

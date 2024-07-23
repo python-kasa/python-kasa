@@ -38,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 # Modules that are called as part of the init procedure on first update
-FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
+FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice}
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -168,25 +168,19 @@ class SmartDevice(Device):
 
         resp = await self._modular_update(first_update, now)
 
-        # Call child update which will only update module calls, info is updated
-        # from get_child_device_list. update_children only affects hub devices, other
-        # devices will always update children to prevent errors on module access.
-        if update_children or self.device_type != DeviceType.Hub:
-            for child in self._children.values():
-                await child._update()
         if child_info := self._try_get_response(
             self._last_update, "get_child_device_list", {}
         ):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
-
-        for child in self._children.values():
-            errors = []
-            for child_module_name, child_module in child._modules.items():
-                if not self._handle_module_post_update_hook(child_module):
-                    errors.append(child_module_name)
-            for error in errors:
-                child._modules.pop(error)
+        # Call child update which will only update module calls, info is updated
+        # from get_child_device_list. update_children only affects hub devices, other
+        # devices will always update children to prevent errors on module access.
+        # This needs to go after updating the internal state of the children so that
+        # child modules have access to their sysinfo.
+        if update_children or self.device_type != DeviceType.Hub:
+            for child in self._children.values():
+                await child._update()
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
@@ -197,18 +191,24 @@ class SmartDevice(Device):
             updated = self._last_update if first_update else resp
             _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
-    def _handle_module_post_update_hook(self, module: SmartModule) -> bool:
+    def _handle_module_post_update(
+        self, module: SmartModule, update_time: float, had_query: bool
+    ):
+        if module.disabled:
+            return
         try:
             module._post_update_hook()
-            return True
+            module._set_error(None)
+            if had_query:
+                module._last_update_time = update_time
         except Exception as ex:
+            module._set_error(ex)
             _LOGGER.warning(
                 "Error processing %s for device %s, module will be unavailable: %s",
                 module.name,
                 self.host,
                 ex,
             )
-            return False
 
     async def _modular_update(
         self, first_update: bool, update_time: float
@@ -221,17 +221,16 @@ class SmartDevice(Device):
         mq = {
             module: query
             for module in self._modules.values()
-            if (query := module.query())
+            if module.disabled is False and (query := module.query())
         }
         for module, query in mq.items():
             if first_update and module.__class__ in FIRST_UPDATE_MODULES:
                 module._last_update_time = update_time
                 continue
             if (
-                not module.MINIMUM_UPDATE_INTERVAL_SECS
+                not module.update_interval
                 or not module._last_update_time
-                or (update_time - module._last_update_time)
-                >= module.MINIMUM_UPDATE_INTERVAL_SECS
+                or (update_time - module._last_update_time) >= module.update_interval
             ):
                 module_queries.append(module)
                 req.update(query)
@@ -254,16 +253,10 @@ class SmartDevice(Device):
         self._info = self._try_get_response(info_resp, "get_device_info")
 
         # Call handle update for modules that want to update internal data
-        errors = []
-        for module_name, module in self._modules.items():
-            if not self._handle_module_post_update_hook(module):
-                errors.append(module_name)
-        for error in errors:
-            self._modules.pop(error)
-
-        # Set the last update time for modules that had queries made.
-        for module in module_queries:
-            module._last_update_time = update_time
+        for module in self._modules.values():
+            self._handle_module_post_update(
+                module, update_time, had_query=module in module_queries
+            )
 
         return resp
 

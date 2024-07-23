@@ -5,7 +5,7 @@ from __future__ import annotations
 from ...emeterstatus import EmeterStatus
 from ...exceptions import KasaException
 from ...interfaces.energy import Energy as EnergyInterface
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, raise_if_update_error
 
 
 class Energy(SmartModule, EnergyInterface):
@@ -23,6 +23,7 @@ class Energy(SmartModule, EnergyInterface):
         return req
 
     @property
+    @raise_if_update_error
     def current_consumption(self) -> float | None:
         """Current power in watts."""
         if (power := self.energy.get("current_power")) is not None:
@@ -30,6 +31,7 @@ class Energy(SmartModule, EnergyInterface):
         return None
 
     @property
+    @raise_if_update_error
     def energy(self):
         """Return get_energy_usage results."""
         if en := self.data.get("get_energy_usage"):
@@ -45,6 +47,7 @@ class Energy(SmartModule, EnergyInterface):
         )
 
     @property
+    @raise_if_update_error
     def status(self):
         """Get the emeter status."""
         return self._get_status_from_energy(self.energy)
@@ -55,26 +58,31 @@ class Energy(SmartModule, EnergyInterface):
         return self._get_status_from_energy(res["get_energy_usage"])
 
     @property
+    @raise_if_update_error
     def consumption_this_month(self) -> float | None:
         """Get the emeter value for this month in kWh."""
         return self.energy.get("month_energy") / 1_000
 
     @property
+    @raise_if_update_error
     def consumption_today(self) -> float | None:
         """Get the emeter value for today in kWh."""
         return self.energy.get("today_energy") / 1_000
 
     @property
+    @raise_if_update_error
     def consumption_total(self) -> float | None:
         """Return total consumption since last reboot in kWh."""
         return None
 
     @property
+    @raise_if_update_error
     def current(self) -> float | None:
         """Return the current in A."""
         return None
 
     @property
+    @raise_if_update_error
     def voltage(self) -> float | None:
         """Get the current voltage in V."""
         return None
