@@ -14,7 +14,7 @@ from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, Field, validator
 
 from ...feature import Feature
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, allow_update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -66,6 +66,7 @@ class Firmware(SmartModule):
     """Implementation of firmware module."""
 
     REQUIRED_COMPONENT = "firmware"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60 * 24
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
@@ -122,13 +123,6 @@ class Firmware(SmartModule):
             req["get_auto_update_info"] = None
         return req
 
-    def _post_update_hook(self):
-        """Perform actions after a device update.
-
-        Overrides the default behaviour to disable a module if the query returns
-        an error because some of the module still functions.
-        """
-
     @property
     def current_firmware(self) -> str:
         """Return the current firmware version."""
@@ -162,6 +156,7 @@ class Firmware(SmartModule):
         state = resp["get_fw_download_state"]
         return DownloadState(**state)
 
+    @allow_update_after
     async def update(
         self, progress_cb: Callable[[DownloadState], Coroutine] | None = None
     ):
@@ -219,6 +214,7 @@ class Firmware(SmartModule):
             and self.data["get_auto_update_info"]["enable"]
         )
 
+    @allow_update_after
     async def set_auto_update_enabled(self, enabled: bool):
         """Change autoupdate setting."""
         data = {**self.data["get_auto_update_info"], "enable": enabled}

@@ -50,8 +50,7 @@ import logging
 import secrets
 import struct
 import time
-from pprint import pformat as pf
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -300,7 +299,9 @@ class KlapTransport(BaseTransport):
         # There is a 24 hour timeout on the session cookie
         # but the clock on the device is not always accurate
         # so we set the expiry to 24 hours from now minus a buffer
-        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
+        self._session_expire_at = (
+            time.monotonic() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
+        )
         self._encryption_session = await self.perform_handshake2(
             local_seed, remote_seed, auth_hash
         )
@@ -312,7 +313,7 @@ class KlapTransport(BaseTransport):
         """Return true if session has expired."""
         return (
             self._session_expire_at is None
-            or self._session_expire_at - time.time() <= 0
+            or self._session_expire_at - time.monotonic() <= 0
         )
 
     async def send(self, request: str):
@@ -351,19 +352,20 @@ class KlapTransport(BaseTransport):
                     + f"request with seq {seq}"
                 )
         else:
-            _LOGGER.debug("Query posted " + msg)
+            _LOGGER.debug("Device %s query posted %s", self._host, msg)
 
-            # Check for mypy
-            if self._encryption_session is not None:
+            if TYPE_CHECKING:
+                assert self._encryption_session
+            try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
+            except Exception as ex:
+                raise KasaException(
+                    f"Error trying to decrypt device {self._host} response: {ex}"
+                ) from ex
 
             json_payload = json_loads(decrypted_response)
 
-            _LOGGER.debug(
-                "%s << %s",
-                self._host,
-                _LOGGER.isEnabledFor(logging.DEBUG) and pf(json_payload),
-            )
+            _LOGGER.debug("Device %s query response received", self._host)
 
             return json_payload
 

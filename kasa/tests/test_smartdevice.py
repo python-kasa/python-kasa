@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 
 from kasa import Device, KasaException, Module
@@ -54,6 +56,8 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     dev._modules = {}
     dev._features = {}
     dev._children = {}
+    dev._last_update = {}
+    dev._last_update_time = None
 
     negotiate = mocker.spy(dev, "_negotiate")
     initialize_modules = mocker.spy(dev, "_initialize_modules")
@@ -109,6 +113,9 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     """Test that the regular update uses queries from all supported modules."""
     # We need to have some modules initialized by now
     assert dev._modules
+    # Reset last update so all modules will query
+    for mod in dev._modules.values():
+        mod._last_update_time = None
 
     device_queries: dict[SmartDevice, dict[str, Any]] = {}
     for mod in dev._modules.values():
@@ -139,7 +146,7 @@ async def test_update_module_errors(dev: SmartDevice, mocker: MockerFixture):
     assert dev._modules
 
     critical_modules = {Module.DeviceModule, Module.ChildDevice}
-    not_disabling_modules = {Module.Firmware, Module.Cloud}
+    not_disabling_modules = {Module.Cloud}
 
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
 
@@ -202,6 +209,123 @@ async def test_update_module_errors(dev: SmartDevice, mocker: MockerFixture):
         assert (
             mod_present is no_disable
         ), f"{modname} present {mod_present} when no_disable {no_disable}"
+
+
+@device_smart
+async def test_update_module_update_delays(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    freezer: FrozenDateTimeFactory,
+):
+    """Test that modules that disabled / removed on query failures."""
+    # We need to have some modules initialized by now
+    assert dev._modules
+
+    new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+    await new_dev.update()
+    first_update_time = time.monotonic()
+    assert new_dev._last_update_time == first_update_time
+    for module in new_dev.modules.values():
+        if module.query():
+            assert module._last_update_time == first_update_time
+
+    seconds = 0
+    tick = 30
+    while seconds <= 180:
+        seconds += tick
+        freezer.tick(tick)
+
+        now = time.monotonic()
+        await new_dev.update()
+        for module in new_dev.modules.values():
+            mod_delay = module.MINIMUM_UPDATE_INTERVAL_SECS
+            if module.query():
+                expected_update_time = (
+                    now if mod_delay == 0 else now - (seconds % mod_delay)
+                )
+
+                assert (
+                    module._last_update_time == expected_update_time
+                ), f"Expected update time {expected_update_time} after {seconds} seconds for {module.name} with delay {mod_delay} got {module._last_update_time}"
+
+
+@pytest.mark.parametrize(
+    ("first_update"),
+    [
+        pytest.param(True, id="First update true"),
+        pytest.param(False, id="First update false"),
+    ],
+)
+@device_smart
+async def test_update_module_query_errors(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    freezer: FrozenDateTimeFactory,
+    first_update,
+):
+    """Test that modules that disabled / removed on query failures."""
+    # We need to have some modules initialized by now
+    assert dev._modules
+
+    first_update_queries = {"get_device_info", "get_connect_cloud_state"}
+
+    critical_modules = {Module.DeviceModule, Module.ChildDevice}
+    not_disabling_modules = {Module.Cloud}
+
+    new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+    if not first_update:
+        await new_dev.update()
+        freezer.tick(
+            max(module.MINIMUM_UPDATE_INTERVAL_SECS for module in dev._modules.values())
+        )
+
+    module_queries = {
+        modname: q
+        for modname, module in dev._modules.items()
+        if (q := module.query()) and modname not in critical_modules
+    }
+
+    async def _query(request, *args, **kwargs):
+        if (
+            "component_nego" in request
+            or "get_child_device_component_list" in request
+            or "control_child" in request
+        ):
+            return await dev.protocol._query(request, *args, **kwargs)
+        if len(request) == 1 and "get_device_info" in request:
+            return await dev.protocol._query(request, *args, **kwargs)
+
+        raise TimeoutError("Dummy timeout")
+
+    from kasa.smartprotocol import _ChildProtocolWrapper
+
+    child_protocols = {
+        cast(_ChildProtocolWrapper, child.protocol)._device_id: child.protocol
+        for child in dev.children
+    }
+
+    async def _child_query(self, request, *args, **kwargs):
+        return await child_protocols[self._device_id]._query(request, *args, **kwargs)
+
+    mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
+    # children not created yet so cannot patch.object
+    mocker.patch("kasa.smartprotocol._ChildProtocolWrapper.query", new=_child_query)
+
+    await new_dev.update()
+    msg = f"Error querying {new_dev.host} for modules"
+    assert msg in caplog.text
+    for modname in module_queries:
+        no_disable = modname in not_disabling_modules
+        mod_present = modname in new_dev._modules
+        assert (
+            mod_present is no_disable
+        ), f"{modname} present {mod_present} when no_disable {no_disable}"
+        for mod_query in module_queries[modname]:
+            if not first_update or mod_query not in first_update_queries:
+                msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
+                assert msg in caplog.text
 
 
 async def test_get_modules():

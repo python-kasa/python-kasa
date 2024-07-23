@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-kasa"
-version = "0.7.0.2"
+version = "0.7.0.4"
 description = "Python API for TP-Link Kasa Smarthome devices"
 license = "GPL-3.0-or-later"
 authors = ["python-kasa developers"]
@@ -151,6 +151,7 @@ disable_error_code = "annotation-unchecked"
 module = [
     "devtools.bench.benchmark",
     "devtools.parse_pcap",
+    "devtools.parse_pcap_klap",
     "devtools.perftest",
     "devtools.create_module_fixtures"
 ]

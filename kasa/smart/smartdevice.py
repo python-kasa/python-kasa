@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import time
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from typing import Any, cast
@@ -18,6 +19,7 @@ from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
 from .modules import (
+    ChildDevice,
     Cloud,
     DeviceModule,
     Firmware,
@@ -34,6 +36,9 @@ _LOGGER = logging.getLogger(__name__)
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
+
+# Modules that are called as part of the init procedure on first update
+FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -60,6 +65,7 @@ class SmartDevice(Device):
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
+        self._last_update_time: float | None = None
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -152,19 +158,15 @@ class SmartDevice(Device):
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
 
-        if self._components_raw is None:
+        first_update = self._last_update_time is None
+        now = time.monotonic()
+        self._last_update_time = now
+
+        if first_update:
             await self._negotiate()
             await self._initialize_modules()
 
-        req: dict[str, Any] = {}
-
-        # TODO: this could be optimized by constructing the query only once
-        for module in self._modules.values():
-            req.update(module.query())
-
-        self._last_update = resp = await self.protocol.query(req)
-
-        self._info = self._try_get_response(resp, "get_device_info")
+        resp = await self._modular_update(first_update, now)
 
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
@@ -172,17 +174,11 @@ class SmartDevice(Device):
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 await child._update()
-        if child_info := self._try_get_response(resp, "get_child_device_list", {}):
+        if child_info := self._try_get_response(
+            self._last_update, "get_child_device_list", {}
+        ):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
-
-        # Call handle update for modules that want to update internal data
-        errors = []
-        for module_name, module in self._modules.items():
-            if not self._handle_module_post_update_hook(module):
-                errors.append(module_name)
-        for error in errors:
-            self._modules.pop(error)
 
         for child in self._children.values():
             errors = []
@@ -197,20 +193,116 @@ class SmartDevice(Device):
         if not self._features:
             await self._initialize_features()
 
-        _LOGGER.debug("Got an update: %s", self._last_update)
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            updated = self._last_update if first_update else resp
+            _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
     def _handle_module_post_update_hook(self, module: SmartModule) -> bool:
         try:
             module._post_update_hook()
             return True
         except Exception as ex:
-            _LOGGER.error(
+            _LOGGER.warning(
                 "Error processing %s for device %s, module will be unavailable: %s",
                 module.name,
                 self.host,
                 ex,
             )
             return False
+
+    async def _modular_update(
+        self, first_update: bool, update_time: float
+    ) -> dict[str, Any]:
+        """Update the device with via the module queries."""
+        req: dict[str, Any] = {}
+        # Keep a track of actual module queries so we can track the time for
+        # modules that do not need to be updated frequently
+        module_queries: list[SmartModule] = []
+        mq = {
+            module: query
+            for module in self._modules.values()
+            if (query := module.query())
+        }
+        for module, query in mq.items():
+            if first_update and module.__class__ in FIRST_UPDATE_MODULES:
+                module._last_update_time = update_time
+                continue
+            if (
+                not module.MINIMUM_UPDATE_INTERVAL_SECS
+                or not module._last_update_time
+                or (update_time - module._last_update_time)
+                >= module.MINIMUM_UPDATE_INTERVAL_SECS
+            ):
+                module_queries.append(module)
+                req.update(query)
+
+        _LOGGER.debug(
+            "Querying %s for modules: %s",
+            self.host,
+            ", ".join(mod.name for mod in module_queries),
+        )
+
+        try:
+            resp = await self.protocol.query(req)
+        except Exception as ex:
+            resp = await self._handle_modular_update_error(
+                ex, first_update, ", ".join(mod.name for mod in module_queries), req
+            )
+
+        info_resp = self._last_update if first_update else resp
+        self._last_update.update(**resp)
+        self._info = self._try_get_response(info_resp, "get_device_info")
+
+        # Call handle update for modules that want to update internal data
+        errors = []
+        for module_name, module in self._modules.items():
+            if not self._handle_module_post_update_hook(module):
+                errors.append(module_name)
+        for error in errors:
+            self._modules.pop(error)
+
+        # Set the last update time for modules that had queries made.
+        for module in module_queries:
+            module._last_update_time = update_time
+
+        return resp
+
+    async def _handle_modular_update_error(
+        self,
+        ex: Exception,
+        first_update: bool,
+        module_names: str,
+        requests: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Handle an error on calling module update.
+
+        Will try to call all modules individually
+        and any errors such as timeouts will be set as a SmartErrorCode.
+        """
+        msg_part = "on first update" if first_update else "after first update"
+
+        _LOGGER.error(
+            "Error querying %s for modules '%s' %s: %s",
+            self.host,
+            module_names,
+            msg_part,
+            ex,
+        )
+        responses = {}
+        for meth, params in requests.items():
+            try:
+                resp = await self.protocol.query({meth: params})
+                responses[meth] = resp[meth]
+            except Exception as iex:
+                _LOGGER.error(
+                    "Error querying %s individually for module query '%s' %s: %s",
+                    self.host,
+                    meth,
+                    msg_part,
+                    iex,
+                )
+                responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
+        return responses
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
@@ -229,8 +321,6 @@ class SmartDevice(Device):
             skip_parent_only_modules = True
 
         for mod in SmartModule.REGISTERED_MODULES.values():
-            _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
-
             if (
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
@@ -240,7 +330,8 @@ class SmartDevice(Device):
                 or self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
             ):
                 _LOGGER.debug(
-                    "Found required %s, adding %s to modules.",
+                    "Device %s, found required %s, adding %s to modules.",
+                    self.host,
                     mod.REQUIRED_COMPONENT,
                     mod.__name__,
                 )

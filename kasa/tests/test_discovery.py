@@ -2,6 +2,7 @@
 # ruff: noqa: S106
 
 import asyncio
+import logging
 import re
 import socket
 from unittest.mock import MagicMock
@@ -565,3 +566,38 @@ async def test_do_discover_external_cancel(mocker):
     with pytest.raises(asyncio.TimeoutError):
         async with asyncio_timeout(0):
             await dp.wait_for_discovery_to_complete()
+
+
+async def test_discovery_redaction(discovery_mock, caplog: pytest.LogCaptureFixture):
+    """Test query sensitive info redaction."""
+    mac = "12:34:56:78:9A:BC"
+
+    if discovery_mock.default_port == 9999:
+        sysinfo = discovery_mock.discovery_data["system"]["get_sysinfo"]
+        if "mac" in sysinfo:
+            sysinfo["mac"] = mac
+        elif "mic_mac" in sysinfo:
+            sysinfo["mic_mac"] = mac
+    else:
+        discovery_mock.discovery_data["result"]["mac"] = mac
+
+    # Info no message logging
+    caplog.set_level(logging.INFO)
+    await Discover.discover()
+
+    assert mac not in caplog.text
+
+    caplog.set_level(logging.DEBUG)
+
+    # Debug no redaction
+    caplog.clear()
+    Discover._redact_data = False
+    await Discover.discover()
+    assert mac in caplog.text
+
+    # Debug redaction
+    caplog.clear()
+    Discover._redact_data = True
+    await Discover.discover()
+    assert mac not in caplog.text
+    assert "12:34:56:00:00:00" in caplog.text

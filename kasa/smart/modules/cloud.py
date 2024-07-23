@@ -16,6 +16,7 @@ class Cloud(SmartModule):
 
     QUERY_GETTER_NAME = "get_connect_cloud_state"
     REQUIRED_COMPONENT = "cloud_connect"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60
 
     def _post_update_hook(self):
         """Perform actions after a device update.
