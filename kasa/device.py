@@ -84,6 +84,7 @@ added to the API.
 state
 rssi
 on_since
+reboot
 current_consumption
 consumption_today
 consumption_this_month

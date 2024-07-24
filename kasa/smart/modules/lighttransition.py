@@ -234,7 +234,7 @@ class LightTransition(SmartModule):
         if self._state_in_sysinfo:
             return {}
         else:
-            return {self.QUERY_GETTER_NAME: {}}
+            return {self.QUERY_GETTER_NAME: None}
 
     async def _check_supported(self):
         """Additional check to see if the module is supported by the device."""

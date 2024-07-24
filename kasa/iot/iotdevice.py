@@ -359,6 +359,18 @@ class IotDevice(Device):
                 )
             )
 
+        self._add_feature(
+            Feature(
+                device=self,
+                id="reboot",
+                name="Reboot",
+                attribute_setter="reboot",
+                icon="mdi:restart",
+                category=Feature.Category.Debug,
+                type=Feature.Type.Action,
+            )
+        )
+
         for module in self._supported_modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():

@@ -25,6 +25,7 @@ Signal Level (signal_level): 2
 RSSI (rssi): -52
 SSID (ssid): #MASKED_SSID#
 Overheated (overheated): False
+Reboot (reboot): <Action>
 Brightness (brightness): 100
 Cloud connection (cloud_connection): True
 HSV (hsv): HSV(hue=0, saturation=100, value=100)

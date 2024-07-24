@@ -153,6 +153,9 @@ class LightPreset(SmartModule, LightPresetInterface):
         """Query to execute during the update cycle."""
         if self._state_in_sysinfo:  # Child lights can have states in the child info
             return {}
+        if self.supported_version < 3:
+            return {self.QUERY_GETTER_NAME: None}
+
         return {self.QUERY_GETTER_NAME: {"start_index": 0}}
 
     async def _check_supported(self):
