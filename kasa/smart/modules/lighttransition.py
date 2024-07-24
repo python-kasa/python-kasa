@@ -73,7 +73,7 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_on_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value="_turn_on_transition_max",
+                    range_getter=lambda: (0, self._turn_on_transition_max),
                 )
             )
             self._add_feature(
@@ -86,7 +86,7 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_off_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value_getter="_turn_off_transition_max",
+                    range_getter=lambda: (0, self._turn_off_transition_max),
                 )
             )
 

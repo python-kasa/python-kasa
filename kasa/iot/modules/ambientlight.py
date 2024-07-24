@@ -28,7 +28,7 @@ class AmbientLight(IotModule):
                 attribute_getter="ambientlight_brightness",
                 type=Feature.Type.Sensor,
                 category=Feature.Category.Primary,
-                unit="%",
+                unit_getter=lambda: "%",
             )
         )
 

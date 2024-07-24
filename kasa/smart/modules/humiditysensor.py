@@ -27,7 +27,7 @@ class HumiditySensor(SmartModule):
                 container=self,
                 attribute_getter="humidity",
                 icon="mdi:water-percent",
-                unit="%",
+                unit_getter=lambda: "%",
                 category=Feature.Category.Primary,
                 type=Feature.Type.Sensor,
             )
