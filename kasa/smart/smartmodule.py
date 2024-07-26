@@ -85,11 +85,11 @@ class SmartModule(Module):
             self._error_count = 0
             self._last_update_error = None
         else:
-            self._last_update_error = KasaException("Update error", err)
+            self._last_update_error = KasaException("Module update error", err)
             self._error_count += 1
             if self._error_count == self.DISABLE_AFTER_ERROR_COUNT:
                 _LOGGER.error(
-                    "Error processing %s for device %s, module will be unavailable: %s",
+                    "Error processing %s for device %s, module will be disabled: %s",
                     self.name,
                     self._device.host,
                     err,

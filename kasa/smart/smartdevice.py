@@ -205,13 +205,15 @@ class SmartDevice(Device):
             module._post_update_hook()
             module._set_error(None)
         except Exception as ex:
-            module._set_error(ex)
-            _LOGGER.warning(
-                "Error processing %s for device %s, module will be unavailable: %s",
-                module.name,
-                self.host,
-                ex,
-            )
+            # Only set the error if a query happened.
+            if had_query:
+                module._set_error(ex)
+                _LOGGER.warning(
+                    "Error processing %s for device %s, module will be unavailable: %s",
+                    module.name,
+                    self.host,
+                    ex,
+                )
 
     async def _modular_update(
         self, first_update: bool, update_time: float
