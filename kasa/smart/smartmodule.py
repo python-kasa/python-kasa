@@ -64,7 +64,7 @@ class SmartModule(Module):
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
     MINIMUM_UPDATE_INTERVAL_SECS = 0
-    UPDATE_INTERVAL_AFTER_ERROR_SECS = 60 * 5
+    UPDATE_INTERVAL_AFTER_ERROR_SECS = 30
 
     DISABLE_AFTER_ERROR_COUNT = 5
 
@@ -108,7 +108,8 @@ class SmartModule(Module):
         """Time to wait between updates."""
         if self._last_update_error is None:
             return self.MINIMUM_UPDATE_INTERVAL_SECS
-        return self.UPDATE_INTERVAL_AFTER_ERROR_SECS
+
+        return self.UPDATE_INTERVAL_AFTER_ERROR_SECS * self._error_count
 
     @property
     def disabled(self) -> bool:
