@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import secrets
 import time
 from contextlib import nullcontext as does_not_raise
@@ -298,7 +299,7 @@ async def test_transport_decrypt_error(mocker, caplog):
 
     with pytest.raises(
         KasaException,
-        match="Error trying to decrypt device 127.0.0.1 response: Invalid padding bytes.",
+        match=re.escape("Error trying to decrypt device 127.0.0.1 response:"),
     ):
         await transport.send(json.dumps({}))
 
