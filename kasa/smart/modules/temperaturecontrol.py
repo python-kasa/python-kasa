@@ -51,8 +51,7 @@ class TemperatureControl(SmartModule):
                 container=self,
                 attribute_getter="temperature_offset",
                 attribute_setter="set_temperature_offset",
-                minimum_value=-10,
-                maximum_value=10,
+                range_getter=lambda: (-10, 10),
                 type=Feature.Type.Number,
                 category=Feature.Category.Config,
             )

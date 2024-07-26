@@ -66,7 +66,6 @@ class SmartProtocol(BaseProtocol):
         """Create a protocol object."""
         super().__init__(transport=transport)
         self._terminal_uuid: str = base64.b64encode(md5(uuid.uuid4().bytes)).decode()
-        self._request_id_generator = SnowflakeId(1, 1)
         self._query_lock = asyncio.Lock()
         self._multi_request_batch_size = (
             self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
@@ -77,11 +76,11 @@ class SmartProtocol(BaseProtocol):
         """Get a request message as a string."""
         request = {
             "method": method,
-            "params": params,
-            "requestID": self._request_id_generator.generate_id(),
             "request_time_milis": round(time.time() * 1000),
             "terminal_uuid": self._terminal_uuid,
         }
+        if params:
+            request["params"] = params
         return json_dumps(request)
 
     async def query(self, request: str | dict, retry_count: int = 3) -> dict:
@@ -157,8 +156,10 @@ class SmartProtocol(BaseProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         multi_result: dict[str, Any] = {}
         smart_method = "multipleRequest"
+
         multi_requests = [
-            {"method": method, "params": params} for method, params in requests.items()
+            {"method": method, "params": params} if params else {"method": method}
+            for method, params in requests.items()
         ]
 
         end = len(multi_requests)
@@ -168,7 +169,7 @@ class SmartProtocol(BaseProtocol):
             # If step is 1 do not send request batches
             for request in multi_requests:
                 method = request["method"]
-                req = self.get_smart_request(method, request["params"])
+                req = self.get_smart_request(method, request.get("params"))
                 resp = await self._transport.send(req)
                 self._handle_response_error_code(resp, method, raise_on_error=False)
                 multi_result[method] = resp["result"]
@@ -347,86 +348,6 @@ class SmartProtocol(BaseProtocol):
         await self._transport.close()
 
 
-class SnowflakeId:
-    """Class for generating snowflake ids."""
-
-    EPOCH = 1420041600000  # Custom epoch (in milliseconds)
-    WORKER_ID_BITS = 5
-    DATA_CENTER_ID_BITS = 5
-    SEQUENCE_BITS = 12
-
-    MAX_WORKER_ID = (1 << WORKER_ID_BITS) - 1
-    MAX_DATA_CENTER_ID = (1 << DATA_CENTER_ID_BITS) - 1
-
-    SEQUENCE_MASK = (1 << SEQUENCE_BITS) - 1
-
-    def __init__(self, worker_id, data_center_id):
-        if worker_id > SnowflakeId.MAX_WORKER_ID or worker_id < 0:
-            raise ValueError(
-                "Worker ID can't be greater than "
-                + str(SnowflakeId.MAX_WORKER_ID)
-                + " or less than 0"
-            )
-        if data_center_id > SnowflakeId.MAX_DATA_CENTER_ID or data_center_id < 0:
-            raise ValueError(
-                "Data center ID can't be greater than "
-                + str(SnowflakeId.MAX_DATA_CENTER_ID)
-                + " or less than 0"
-            )
-
-        self.worker_id = worker_id
-        self.data_center_id = data_center_id
-        self.sequence = 0
-        self.last_timestamp = -1
-
-    def generate_id(self):
-        """Generate a snowflake id."""
-        timestamp = self._current_millis()
-
-        if timestamp < self.last_timestamp:
-            raise ValueError("Clock moved backwards. Refusing to generate ID.")
-
-        if timestamp == self.last_timestamp:
-            # Within the same millisecond, increment the sequence number
-            self.sequence = (self.sequence + 1) & SnowflakeId.SEQUENCE_MASK
-            if self.sequence == 0:
-                # Sequence exceeds its bit range, wait until the next millisecond
-                timestamp = self._wait_next_millis(self.last_timestamp)
-        else:
-            # New millisecond, reset the sequence number
-            self.sequence = 0
-
-        # Update the last timestamp
-        self.last_timestamp = timestamp
-
-        # Generate and return the final ID
-        return (
-            (
-                (timestamp - SnowflakeId.EPOCH)
-                << (
-                    SnowflakeId.WORKER_ID_BITS
-                    + SnowflakeId.SEQUENCE_BITS
-                    + SnowflakeId.DATA_CENTER_ID_BITS
-                )
-            )
-            | (
-                self.data_center_id
-                << (SnowflakeId.SEQUENCE_BITS + SnowflakeId.WORKER_ID_BITS)
-            )
-            | (self.worker_id << SnowflakeId.SEQUENCE_BITS)
-            | self.sequence
-        )
-
-    def _current_millis(self):
-        return round(time.monotonic() * 1000)
-
-    def _wait_next_millis(self, last_timestamp):
-        timestamp = self._current_millis()
-        while timestamp <= last_timestamp:
-            timestamp = self._current_millis()
-        return timestamp
-
-
 class _ChildProtocolWrapper(SmartProtocol):
     """Protocol wrapper for controlling child devices.
 
@@ -456,6 +377,8 @@ class _ChildProtocolWrapper(SmartProtocol):
                 smart_method = "multipleRequest"
                 requests = [
                     {"method": method, "params": params}
+                    if params
+                    else {"method": method}
                     for method, params in request.items()
                 ]
                 smart_params = {"requests": requests}

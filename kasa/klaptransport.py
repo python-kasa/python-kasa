@@ -50,7 +50,7 @@ import logging
 import secrets
 import struct
 import time
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -354,9 +354,14 @@ class KlapTransport(BaseTransport):
         else:
             _LOGGER.debug("Device %s query posted %s", self._host, msg)
 
-            # Check for mypy
-            if self._encryption_session is not None:
+            if TYPE_CHECKING:
+                assert self._encryption_session
+            try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
+            except Exception as ex:
+                raise KasaException(
+                    f"Error trying to decrypt device {self._host} response: {ex}"
+                ) from ex
 
             json_payload = json_loads(decrypted_response)
 

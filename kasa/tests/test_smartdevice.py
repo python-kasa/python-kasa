@@ -295,7 +295,9 @@ async def test_update_module_query_errors(
             or "get_child_device_component_list" in request
             or "control_child" in request
         ):
-            return await dev.protocol._query(request, *args, **kwargs)
+            resp = await dev.protocol._query(request, *args, **kwargs)
+            resp["get_connect_cloud_state"] = SmartErrorCode.CLOUD_FAILED_ERROR
+            return resp
         if len(request) == 1 and "get_device_info" in request:
             return await dev.protocol._query(request, *args, **kwargs)
 

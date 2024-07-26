@@ -16,7 +16,7 @@ class Led(SmartModule, LedInterface):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {self.QUERY_GETTER_NAME: {"led_rule": None}}
+        return {self.QUERY_GETTER_NAME: None}
 
     @property
     def mode(self):

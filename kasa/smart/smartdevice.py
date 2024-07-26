@@ -38,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
 # Modules that are called as part of the init procedure on first update
-FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice}
+FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -165,6 +165,9 @@ class SmartDevice(Device):
         if first_update:
             await self._negotiate()
             await self._initialize_modules()
+            # Run post update for the cloud module
+            if cloud_mod := self.modules.get(Module.Cloud):
+                self._handle_module_post_update(cloud_mod, now, had_query=True)
 
         resp = await self._modular_update(first_update, now)
 
@@ -385,7 +388,7 @@ class SmartDevice(Device):
                     name="RSSI",
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
-                    unit="dBm",
+                    unit_getter=lambda: "dBm",
                     category=Feature.Category.Debug,
                     type=Feature.Type.Sensor,
                 )
@@ -431,6 +434,18 @@ class SmartDevice(Device):
                     type=Feature.Type.Sensor,
                 )
             )
+
+        self._add_feature(
+            Feature(
+                device=self,
+                id="reboot",
+                name="Reboot",
+                attribute_setter="reboot",
+                icon="mdi:restart",
+                category=Feature.Category.Debug,
+                type=Feature.Type.Action,
+            )
+        )
 
         for module in self.modules.values():
             module._initialize_features()

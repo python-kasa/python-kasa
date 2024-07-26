@@ -73,7 +73,7 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_on_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value="_turn_on_transition_max",
+                    range_getter=lambda: (0, self._turn_on_transition_max),
                 )
             )
             self._add_feature(
@@ -86,7 +86,7 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_off_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value_getter="_turn_off_transition_max",
+                    range_getter=lambda: (0, self._turn_off_transition_max),
                 )
             )
 
@@ -234,7 +234,7 @@ class LightTransition(SmartModule):
         if self._state_in_sysinfo:
             return {}
         else:
-            return {self.QUERY_GETTER_NAME: {}}
+            return {self.QUERY_GETTER_NAME: None}
 
     async def _check_supported(self):
         """Additional check to see if the module is supported by the device."""

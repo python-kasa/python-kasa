@@ -22,6 +22,7 @@ from .lighteffect import LightEffect
 from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
+from .motionsensor import MotionSensor
 from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
@@ -54,6 +55,7 @@ __all__ = [
     "Color",
     "WaterleakSensor",
     "ContactSensor",
+    "MotionSensor",
     "FrostProtection",
     "SmartLightEffect",
 ]

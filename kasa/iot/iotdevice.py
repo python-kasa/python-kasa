@@ -340,7 +340,7 @@ class IotDevice(Device):
                 name="RSSI",
                 attribute_getter="rssi",
                 icon="mdi:signal",
-                unit="dBm",
+                unit_getter=lambda: "dBm",
                 category=Feature.Category.Debug,
                 type=Feature.Type.Sensor,
             )
@@ -358,6 +358,18 @@ class IotDevice(Device):
                     type=Feature.Type.Sensor,
                 )
             )
+
+        self._add_feature(
+            Feature(
+                device=self,
+                id="reboot",
+                name="Reboot",
+                attribute_setter="reboot",
+                icon="mdi:restart",
+                category=Feature.Category.Debug,
+                type=Feature.Type.Action,
+            )
+        )
 
         for module in self._supported_modules.values():
             module._initialize_features()

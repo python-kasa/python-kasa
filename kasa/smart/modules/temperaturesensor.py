@@ -54,7 +54,7 @@ class TemperatureSensor(SmartModule):
                 attribute_getter="temperature_unit",
                 attribute_setter="set_temperature_unit",
                 type=Feature.Type.Choice,
-                choices=["celsius", "fahrenheit"],
+                choices_getter=lambda: ["celsius", "fahrenheit"],
             )
         )
 

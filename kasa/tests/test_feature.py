@@ -27,7 +27,7 @@ def dummy_feature() -> Feature:
         container=None,
         icon="mdi:dummy",
         type=Feature.Type.Switch,
-        unit="dummyunit",
+        unit_getter=lambda: "dummyunit",
     )
     return feat
 
@@ -127,7 +127,7 @@ async def test_feature_action(mocker):
 async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture):
     """Test the choice feature type."""
     dummy_feature.type = Feature.Type.Choice
-    dummy_feature.choices = ["first", "second"]
+    dummy_feature.choices_getter = lambda: ["first", "second"]
 
     mock_setter = mocker.patch.object(dummy_feature.device, "dummysetter", create=True)
     await dummy_feature.set_value("first")
