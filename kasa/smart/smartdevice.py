@@ -198,7 +198,7 @@ class SmartDevice(Device):
         self, module: SmartModule, update_time: float, had_query: bool
     ):
         if module.disabled:
-            return
+            return  # pragma: no cover
         if had_query:
             module._last_update_time = update_time
         try:

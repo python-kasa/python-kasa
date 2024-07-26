@@ -14,7 +14,9 @@ from pytest_mock import MockerFixture
 from kasa import Device, KasaException, Module
 from kasa.exceptions import DeviceError, SmartErrorCode
 from kasa.smart import SmartDevice
+from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
+from kasa.smartprotocol import _ChildProtocolWrapper
 
 from .conftest import (
     device_smart,
@@ -254,8 +256,6 @@ async def test_update_module_query_errors(
             raise TimeoutError("Dummy timeout")
         raise error_type
 
-    from kasa.smartprotocol import _ChildProtocolWrapper
-
     child_protocols = {
         cast(_ChildProtocolWrapper, child.protocol)._device_id: child.protocol
         for child in dev.children
@@ -296,8 +296,6 @@ async def test_update_module_query_errors(
         mocker.patch.object(
             new_dev.protocol, "query", side_effect=new_dev.protocol._query
         )
-        from kasa.smartprotocol import _ChildProtocolWrapper
-
         mocker.patch(
             "kasa.smartprotocol._ChildProtocolWrapper.query",
             new=_ChildProtocolWrapper._query,
@@ -317,10 +315,19 @@ async def test_update_module_query_errors(
                 if not first_update or mod_query not in first_update_queries:
                     msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
                     assert msg in caplog.text
+            # Test one of the raise_if_update_error
+            if mod.name == "Energy":
+                emod = cast(Energy, mod)
+                with pytest.raises(KasaException, match="Module update error"):
+                    assert emod.current_consumption is not None
         else:
             assert mod.disabled is False
             assert mod._error_count == 0
             assert mod._last_update_error is None
+            # Test one of the raise_if_update_error doesn't raise
+            if mod.name == "Energy":
+                emod = cast(Energy, mod)
+                assert emod.current_consumption is not None
 
 
 async def test_get_modules():

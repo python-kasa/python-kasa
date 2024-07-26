@@ -95,7 +95,7 @@ class SmartModule(Module):
                     err,
                 )
             if self._error_count > self.DISABLE_AFTER_ERROR_COUNT:
-                _LOGGER.error(
+                _LOGGER.error(  # pragma: no cover
                     "Unexpected error processing %s for device %s, "
                     "module should be disabled: %s",
                     self.name,

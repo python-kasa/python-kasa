@@ -194,7 +194,7 @@ class Feature:
             return getattr(self._container, getter)
         if callable(getter):
             return getter()
-        raise ValueError("Invalid getter: %s", getter)
+        raise ValueError("Invalid getter: %s", getter)  # pragma: no cover
 
     @property
     def choices(self) -> list[str] | None:
