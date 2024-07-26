@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# pre-commit by default runs hooks in an isolated environment.
+# For some hooks it's needed to run in the virtual environment so this script will activate it.
+
 OS_KERNEL=$(uname -s)
 OS_VER=$(uname -v)
 if  [[ ( $OS_KERNEL == "Linux" && $OS_VER == *"Microsoft"* ) ]]; then
