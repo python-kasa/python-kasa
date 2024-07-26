@@ -199,11 +199,11 @@ class SmartDevice(Device):
     ):
         if module.disabled:
             return
+        if had_query:
+            module._last_update_time = update_time
         try:
             module._post_update_hook()
             module._set_error(None)
-            if had_query:
-                module._last_update_time = update_time
         except Exception as ex:
             module._set_error(ex)
             _LOGGER.warning(

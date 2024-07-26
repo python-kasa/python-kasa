@@ -87,6 +87,21 @@ class SmartModule(Module):
         else:
             self._last_update_error = KasaException("Update error", err)
             self._error_count += 1
+            if self._error_count == self.DISABLE_AFTER_ERROR_COUNT:
+                _LOGGER.error(
+                    "Error processing %s for device %s, module will be unavailable: %s",
+                    self.name,
+                    self._device.host,
+                    err,
+                )
+            if self._error_count > self.DISABLE_AFTER_ERROR_COUNT:
+                _LOGGER.error(
+                    "Unexpected error processing %s for device %s, "
+                    "module should be disabled: %s",
+                    self.name,
+                    self._device.host,
+                    err,
+                )
 
     @property
     def update_interval(self) -> int:
