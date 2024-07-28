@@ -89,7 +89,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
           poetry-version: ${{ env.POETRY_VERSION }}
           poetry-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
       - name: "Run tests (no coverage)"

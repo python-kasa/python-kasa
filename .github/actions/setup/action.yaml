@@ -19,6 +19,7 @@ runs:
       id: setup-python
       with:
         python-version: "${{ inputs.python-version }}"
+        allow-prereleases: true
 
     - name: Setup pipx environment Variables
       id: pipx-env-setup
