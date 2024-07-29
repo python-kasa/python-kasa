@@ -8,7 +8,7 @@ on:
   workflow_dispatch:  # to allow manual re-runs
 
 env:
-  POETRY_VERSION: 1.8.2
+  POETRY_VERSION: 1.8.3
 
 jobs:
   linting:
@@ -82,6 +82,10 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.10"
             extras: true
+          - os: macos-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.13"
 
     steps:
       - uses: "actions/checkout@v4"
@@ -91,6 +95,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           poetry-version: ${{ env.POETRY_VERSION }}
           poetry-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
+          pipx-poetry-install-args: ${{ matrix.python-version == '3.13' && format('--pip-args=--constraint={0}/poetry_constraints.txt', github.workspace ) || '' }}
       - name: "Run tests (no coverage)"
         if: ${{ startsWith(matrix.python-version, 'pypy') }}
         run: |

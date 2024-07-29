@@ -5,6 +5,8 @@ description: Install requested pipx dependencies, configure the system python, a
 inputs:
   poetry-install-options:
     default: ""
+  pipx-poetry-install-args:
+    default: ""
   poetry-version:
     default: 1.8.2
   python-version:
@@ -42,14 +44,15 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ steps.pipx-env-setup.outputs.pipx-cache-path }}
-        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
+        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}-${{ inputs.pipx-poetry-install-args }}
 
     - name: Install poetry
       if: steps.pipx-cache.outputs.cache-hit != 'true'
       id: install-poetry
       shell: bash
+      working-directory: .
       run: |-
-        pipx install poetry==${{ inputs.poetry-version }} --python "${{ steps.setup-python.outputs.python-path }}"
+        pipx install poetry==${{ inputs.poetry-version }} --python "${{ steps.setup-python.outputs.python-path }}" ${{ inputs.pipx-poetry-install-args }}
 
     - name: Read poetry cache location
       id: poetry-cache-location
