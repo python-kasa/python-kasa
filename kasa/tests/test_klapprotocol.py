@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import secrets
 import time
 from contextlib import nullcontext as does_not_raise
@@ -236,6 +237,71 @@ def test_encrypt_unicode():
     decrypted = encryption_session.decrypt(encrypted)
 
     assert d == decrypted
+
+
+async def test_transport_decrypt(mocker):
+    """Test transport decryption."""
+    d = {"great": "success"}
+
+    seed = secrets.token_bytes(16)
+    auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
+    encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
+
+    transport = KlapTransport(config=DeviceConfig(host="127.0.0.1"))
+    transport._handshake_done = True
+    transport._session_expire_at = time.monotonic() + 60
+    transport._encryption_session = encryption_session
+
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
+        encryption_session = KlapEncryptionSession(
+            transport._encryption_session.local_seed,
+            transport._encryption_session.remote_seed,
+            transport._encryption_session.user_hash,
+        )
+        seq = params.get("seq")
+        encryption_session._seq = seq - 1
+        encrypted, seq = encryption_session.encrypt(json.dumps(d))
+        seq = seq
+        return 200, encrypted
+
+    mocker.patch.object(HttpClient, "post", side_effect=_return_response)
+
+    resp = await transport.send(json.dumps({}))
+    assert d == resp
+
+
+async def test_transport_decrypt_error(mocker, caplog):
+    """Test that a decryption error raises a kasa exception."""
+    d = {"great": "success"}
+
+    seed = secrets.token_bytes(16)
+    auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
+    encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
+
+    transport = KlapTransport(config=DeviceConfig(host="127.0.0.1"))
+    transport._handshake_done = True
+    transport._session_expire_at = time.monotonic() + 60
+    transport._encryption_session = encryption_session
+
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
+        encryption_session = KlapEncryptionSession(
+            secrets.token_bytes(16),
+            transport._encryption_session.remote_seed,
+            transport._encryption_session.user_hash,
+        )
+        seq = params.get("seq")
+        encryption_session._seq = seq - 1
+        encrypted, seq = encryption_session.encrypt(json.dumps(d))
+        seq = seq
+        return 200, encrypted
+
+    mocker.patch.object(HttpClient, "post", side_effect=_return_response)
+
+    with pytest.raises(
+        KasaException,
+        match=re.escape("Error trying to decrypt device 127.0.0.1 response:"),
+    ):
+        await transport.send(json.dumps({}))
 
 
 @pytest.mark.parametrize(

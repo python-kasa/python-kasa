@@ -209,7 +209,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         except OSError as ex:  # WSL does not support SO_REUSEADDR, see #246
             _LOGGER.debug("Unable to set SO_REUSEADDR: %s", ex)
 
-        if self.interface is not None:
+        # windows does not support SO_BINDTODEVICE
+        if self.interface is not None and hasattr(socket, "SO_BINDTODEVICE"):
             sock.setsockopt(
                 socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.interface.encode()
             )
