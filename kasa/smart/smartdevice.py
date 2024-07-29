@@ -8,6 +8,7 @@ import time
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from typing import Any, cast
+from warnings import warn
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -153,8 +154,29 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def update(self, update_children: bool = False):
+    async def update(
+        self,
+        update_children_or_parent: bool = True,
+        *,
+        update_children: bool | None = None,
+    ):
         """Update the device."""
+        if update_children is not None:
+            warn(
+                "update_children is deprecated, use update_children_or_parent",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+            # Previously this was ignored and children were always updated for
+            # smart devices
+            update_children_or_parent = True
+
+        await self._update(update_children_or_parent)
+
+    async def _update(
+        self, update_children: bool = True, called_from_child: SmartDevice | None = None
+    ):
+        """If called from a child device will only update that child."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
 
@@ -169,9 +191,11 @@ class SmartDevice(Device):
         resp = await self._modular_update(first_update, now)
 
         # Call child update which will only update module calls, info is updated
-        # from get_child_device_list. update_children only affects hub devices, other
-        # devices will always update children to prevent errors on module access.
-        if update_children or self.device_type != DeviceType.Hub:
+        # from get_child_device_list. If this method is being called by a child
+        # it will only call update on that child
+        if called_from_child:
+            await called_from_child._update()
+        elif update_children:
             for child in self._children.values():
                 await child._update()
         if child_info := self._try_get_response(

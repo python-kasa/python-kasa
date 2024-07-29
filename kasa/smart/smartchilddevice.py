@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from typing import Any
+from warnings import warn
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -19,6 +20,8 @@ class SmartChildDevice(SmartDevice):
 
     This wraps the protocol communications and sets internal data for the child.
     """
+
+    _parent: SmartDevice
 
     def __init__(
         self,
@@ -35,20 +38,40 @@ class SmartChildDevice(SmartDevice):
         self._id = info["device_id"]
         self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
-    async def update(self, update_children: bool = True):
-        """Update child module info.
+    async def update(
+        self,
+        update_children_or_parent: bool = True,
+        *,
+        update_children: bool | None = None,
+    ):
+        """Update the device.
 
-        The parent updates our internal info so just update modules with
-        their own queries.
+        Calling update directly on a child device will update the parent
+        and only this child.
         """
-        await self._update(update_children)
+        if update_children is not None:
+            warn(
+                "update_children is deprecated, use update_children_or_parent",
+                DeprecationWarning,
+                stacklevel=1,
+            )
+            update_children_or_parent = False
 
-    async def _update(self, update_children: bool = True):
+        if update_children_or_parent:
+            await self._parent._update(called_from_child=self)
+        else:
+            await self._update()
+
+    async def _update(self):
         """Update child module info.
 
         Internal implementation to allow patching of public update in the cli
         or test framework.
         """
+        # Hubs attached devices only update via the parent hub
+        if self._parent.device_type is DeviceType.Hub:
+            return
+
         req: dict[str, Any] = {}
         for module in self.modules.values():
             if mod_query := module.query():

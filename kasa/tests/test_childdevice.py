@@ -2,9 +2,11 @@ import inspect
 import sys
 
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa import Device
 from kasa.device_type import DeviceType
+from kasa.iot import IotDevice
 from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES
 from kasa.smartprotocol import _ChildProtocolWrapper
@@ -109,6 +111,133 @@ async def test_parent_only_modules(dev, dummy_protocol, mocker):
     for child in dev.children:
         for module in NON_HUB_PARENT_ONLY_MODULES:
             assert module not in [type(module) for module in child.modules.values()]
+
+
+@has_children
+async def test_device_updates(dev: Device, mocker: MockerFixture):
+    """Test usage of the update_children_or_parent parameter."""
+    if not dev.children and dev.device_type is Device.Type.Hub:
+        pytest.skip(f"Fixture for hub device {dev} does not have any children")
+    assert dev.children
+    parent_spy = mocker.spy(dev, "_update")
+    child_spies = {child: mocker.spy(child, "_update") for child in dev.children}
+
+    # update children, all devices call update
+    await dev.update(update_children_or_parent=True)
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        child_spy.assert_called_once()
+
+    # do not update children, only parent calls update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    await dev.update(update_children_or_parent=False)
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        child_spy.assert_not_called()
+
+    # update parent, only the parent and one child call update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    child_to_update = dev.children[0]
+    await child_to_update.update(update_children_or_parent=True)
+    parent_spy.assert_called_once()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()
+
+    # do not update parent, only the one child calls update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    await child_to_update.update(update_children_or_parent=False)
+    parent_spy.assert_not_called()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()
+
+
+@pytest.mark.parametrize("update_children_or_parent", [True, False])
+@has_children
+async def test_device_updates_deprecated(
+    dev: Device, mocker: MockerFixture, update_children_or_parent
+):
+    """Test usage of the deprecated update_children parameter."""
+    # update_children_or_parent parameter ensures the value is ignored
+
+    if not dev.children and dev.device_type is Device.Type.Hub:
+        pytest.skip(f"Fixture for hub device {dev} does not have any children")
+    assert dev.children
+    parent_spy = mocker.spy(dev, "_update")
+    child_spies = {child: mocker.spy(child, "_update") for child in dev.children}
+
+    msg = "update_children is deprecated, use update_children_or_parent"
+    # update children, all devices call update
+    with pytest.deprecated_call(match=msg):
+        await dev.update(update_children_or_parent, update_children=True)
+
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        child_spy.assert_called_once()
+
+    # do not update children, only parent calls update for iot but for smart
+    # all children update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    with pytest.deprecated_call(match=msg):
+        await dev.update(update_children_or_parent, update_children=False)
+    parent_spy.assert_called_once()
+    for child_spy in child_spies.values():
+        if isinstance(dev, IotDevice):
+            child_spy.assert_not_called()
+        else:
+            child_spy.assert_called_once()
+
+    # on child update_children true
+    # only the child and no parent update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    child_to_update = dev.children[0]
+    with pytest.deprecated_call(match=msg):
+        await child_to_update.update(update_children_or_parent, update_children=True)
+    parent_spy.assert_not_called()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()
+
+    # on child update_children false
+    # only the child and no parent update
+    parent_spy.reset_mock()
+    for child_spy in child_spies.values():
+        child_spy.reset_mock()
+
+    with pytest.deprecated_call(match=msg):
+        await child_to_update.update(update_children_or_parent, update_children=False)
+    parent_spy.assert_not_called()
+    assert child_to_update
+    for child, child_spy in child_spies.items():
+        if child == child_to_update:
+            child_spy.assert_called_once()
+        else:
+            child_spy.assert_not_called()
 
 
 @has_children
