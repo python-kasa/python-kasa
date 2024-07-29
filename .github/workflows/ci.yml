@@ -3,8 +3,12 @@ name: CI
 on:
   push:
     branches: ["master"]
+    paths:
+      - '**.py'
   pull_request:
     branches: ["master"]
+    paths:
+      - '**.py'
   workflow_dispatch:  # to allow manual re-runs
 
 env:
