@@ -174,7 +174,31 @@ This requires git commit signing to be enabled.
 
 https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
 
-### Create a branch for the release
+### Create release branch
+
+#### For the first patch release since a new release only
+
+```bash
+export NEW_RELEASE=x.x.x.x
+export CURRENT_RELEASE=x.x.x
+```
+
+```bash
+git fetch upstream $CURRENT_RELEASE
+git checkout patch
+git fetch upstream patch
+git rebase upstream/patch
+git fetch upstream $CURRENT_RELEASE
+git merge $CURRENT_RELEASE --ff-only
+git push upstream patch -u
+git checkout -b release/$NEW_RELEASE
+```
+
+#### For subsequent patch releases
+
+```bash
+export NEW_RELEASE=x.x.x.x
+```
 
 ```bash
 git checkout patch
@@ -213,7 +237,7 @@ git commit --all --verbose -m "Prepare $NEW_RELEASE" -S
 git push upstream release/$NEW_RELEASE -u
 ```
 
-### Create a PR for the release, merge it, and re-fetch the master
+### Create a PR for the release, merge it, and re-fetch patch
 
 #### Create the PR
 ```
@@ -249,3 +273,38 @@ git push upstream $NEW_RELEASE
 gh release create "$NEW_RELEASE" --verify-tag --notes-from-tag --title "$NEW_RELEASE" --draft --latest=true
 ```
 Then go into github, review and release
+
+### Merge patch back to master
+
+```bash
+git checkout master
+git fetch upstream master
+git rebase upstream/master
+git checkout -b janitor/merge_patch
+git fetch upstream patch
+git merge upstream/patch --no-commit
+git diff --name-only --diff-filter=U | xargs git checkout upstream/master
+git diff --staged
+# The only diff should be the version in pyproject.toml and CHANGELOG.md
+# unless a change made on patch that was not part of a cherry-pick commit
+# If there are any other unexpected diffs `git checkout upstream/master [thefilename]`
+git commit -m "Merge patch into local master" -S
+git push upstream janitor/merge_patch -u
+gh pr create --title "Merge patch into master" --body '' --label release-prep --base master
+```
+
+#### Temporarily allow merge commits to master
+
+1. Open [repository settings](https://github.com/python-kasa/python-kasa/settings)
+2. From the left select `Rules` > `Rulesets`
+3. Open `master` ruleset, under `Bypass list` select `+ Add bypass`
+4. Check `Repository admin` > `Add selected`, select `Save changes`
+
+#### Merge commit the PR
+```bash
+gh pr merge --merge --body ""
+```
+#### Revert allow merge commits
+
+1. Under `Bypass list` select `...` next to `Repository admins`
+2. `Delete bypass`, select `Save changes`
