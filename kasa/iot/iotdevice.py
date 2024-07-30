@@ -340,7 +340,7 @@ class IotDevice(Device):
                 name="RSSI",
                 attribute_getter="rssi",
                 icon="mdi:signal",
-                unit="dBm",
+                unit_getter=lambda: "dBm",
                 category=Feature.Category.Debug,
                 type=Feature.Type.Sensor,
             )

@@ -69,6 +69,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum, auto
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
@@ -142,11 +143,9 @@ class Feature:
     container: Any = None
     #: Icon suggestion
     icon: str | None = None
-    #: Unit, if applicable
-    unit: str | None = None
     #: Attribute containing the name of the unit getter property.
-    #: If set, this property will be used to set *unit*.
-    unit_getter: str | None = None
+    #: If set, this property will be used to get the *unit*.
+    unit_getter: str | Callable[[], str] | None = None
     #: Category hint for downstreams
     category: Feature.Category = Category.Unset
 
@@ -154,38 +153,18 @@ class Feature:
     #: Hint to help rounding the sensor values to given after-comma digits
     precision_hint: int | None = None
 
-    # Number-specific attributes
-    #: Minimum value
-    minimum_value: int = 0
-    #: Maximum value
-    maximum_value: int = DEFAULT_MAX
     #: Attribute containing the name of the range getter property.
     #: If set, this property will be used to set *minimum_value* and *maximum_value*.
-    range_getter: str | None = None
+    range_getter: str | Callable[[], tuple[int, int]] | None = None
 
-    # Choice-specific attributes
-    #: List of choices as enum
-    choices: list[str] | None = None
     #: Attribute name of the choices getter property.
-    #: If set, this property will be used to set *choices*.
-    choices_getter: str | None = None
+    #: If set, this property will be used to get *choices*.
+    choices_getter: str | Callable[[], list[str]] | None = None
 
     def __post_init__(self):
         """Handle late-binding of members."""
         # Populate minimum & maximum values, if range_getter is given
-        container = self.container if self.container is not None else self.device
-        if self.range_getter is not None:
-            self.minimum_value, self.maximum_value = getattr(
-                container, self.range_getter
-            )
-
-        # Populate choices, if choices_getter is given
-        if self.choices_getter is not None:
-            self.choices = getattr(container, self.choices_getter)
-
-        # Populate unit, if unit_getter is given
-        if self.unit_getter is not None:
-            self.unit = getattr(container, self.unit_getter)
+        self._container = self.container if self.container is not None else self.device
 
         # Set the category, if unset
         if self.category is Feature.Category.Unset:
@@ -207,6 +186,44 @@ class Feature:
                 raise ValueError(
                     f"Read-only feat defines attribute_setter: {self.name} ({self.id}):"
                 )
+
+    def _get_property_value(self, getter):
+        if getter is None:
+            return None
+        if isinstance(getter, str):
+            return getattr(self._container, getter)
+        if callable(getter):
+            return getter()
+        raise ValueError("Invalid getter: %s", getter)  # pragma: no cover
+
+    @property
+    def choices(self) -> list[str] | None:
+        """List of choices."""
+        return self._get_property_value(self.choices_getter)
+
+    @property
+    def unit(self) -> str | None:
+        """Unit if applicable."""
+        return self._get_property_value(self.unit_getter)
+
+    @cached_property
+    def range(self) -> tuple[int, int] | None:
+        """Range of values if applicable."""
+        return self._get_property_value(self.range_getter)
+
+    @cached_property
+    def maximum_value(self) -> int:
+        """Maximum value."""
+        if range := self.range:
+            return range[1]
+        return self.DEFAULT_MAX
+
+    @cached_property
+    def minimum_value(self) -> int:
+        """Minimum value."""
+        if range := self.range:
+            return range[0]
+        return 0
 
     @property
     def value(self):

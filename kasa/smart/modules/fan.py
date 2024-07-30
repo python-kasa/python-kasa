@@ -30,8 +30,7 @@ class Fan(SmartModule, FanInterface):
                 attribute_setter="set_fan_speed_level",
                 icon="mdi:fan",
                 type=Feature.Type.Number,
-                minimum_value=0,
-                maximum_value=4,
+                range_getter=lambda: (0, 4),
                 category=Feature.Category.Primary,
             )
         )
