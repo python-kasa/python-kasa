@@ -1,4 +1,5 @@
 import asyncio
+import sys
 
 import pytest
 import xdoctest
@@ -69,7 +70,10 @@ def test_discovery_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("kasa.discover", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -77,7 +81,10 @@ def test_deviceconfig_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("kasa.deviceconfig", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -85,7 +92,10 @@ def test_device_examples(readmes_mock):
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.device", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -93,7 +103,10 @@ def test_light_examples(readmes_mock):
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.interfaces.light", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -101,7 +114,10 @@ def test_light_preset_examples(readmes_mock):
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.interfaces.lightpreset", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -109,7 +125,10 @@ def test_light_effect_examples(readmes_mock):
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.interfaces.lighteffect", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -117,7 +136,10 @@ def test_child_examples(readmes_mock):
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.smart.modules.childdevice", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -125,7 +147,10 @@ def test_module_examples(readmes_mock):
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.module", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -133,7 +158,10 @@ def test_feature_examples(readmes_mock):
     """Test device examples."""
     res = xdoctest.doctest_module("kasa.feature", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
@@ -141,7 +169,10 @@ def test_tutorial_examples(readmes_mock):
     """Test discovery examples."""
     res = xdoctest.doctest_module("docs/tutorial.py", "all")
     assert res["n_passed"] > 0
-    assert res["n_warned"] == 0
+    if sys.version_info < (3, 13):
+        # xdoctest raises DeprecationWarning: 'count' is passed as positional argument
+        # in checker.py:  new_text = re.sub(blankline_pattern, '\n', text, re.MULTILINE)
+        assert res["n_warned"] == 0
     assert not res["failed"]
 
 
