@@ -18,6 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound="SmartModule")
 _P = ParamSpec("_P")
+_R = TypeVar("_R")
 
 
 def allow_update_after(
@@ -38,6 +39,17 @@ def allow_update_after(
     return _async_wrap
 
 
+def raise_if_update_error(func: Callable[[_T], _R]) -> Callable[[_T], _R]:
+    """Define a wrapper to raise an error if the last module update was an error."""
+
+    def _wrap(self: _T) -> _R:
+        if err := self._last_update_error:
+            raise err
+        return func(self)
+
+    return _wrap
+
+
 class SmartModule(Module):
     """Base class for SMART modules."""
 
@@ -52,16 +64,57 @@ class SmartModule(Module):
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
     MINIMUM_UPDATE_INTERVAL_SECS = 0
+    UPDATE_INTERVAL_AFTER_ERROR_SECS = 30
+
+    DISABLE_AFTER_ERROR_COUNT = 10
 
     def __init__(self, device: SmartDevice, module: str):
         self._device: SmartDevice
         super().__init__(device, module)
         self._last_update_time: float | None = None
+        self._last_update_error: KasaException | None = None
+        self._error_count = 0
 
     def __init_subclass__(cls, **kwargs):
         name = getattr(cls, "NAME", cls.__name__)
         _LOGGER.debug("Registering %s" % cls)
         cls.REGISTERED_MODULES[name] = cls
+
+    def _set_error(self, err: Exception | None):
+        if err is None:
+            self._error_count = 0
+            self._last_update_error = None
+        else:
+            self._last_update_error = KasaException("Module update error", err)
+            self._error_count += 1
+            if self._error_count == self.DISABLE_AFTER_ERROR_COUNT:
+                _LOGGER.error(
+                    "Error processing %s for device %s, module will be disabled: %s",
+                    self.name,
+                    self._device.host,
+                    err,
+                )
+            if self._error_count > self.DISABLE_AFTER_ERROR_COUNT:
+                _LOGGER.error(  # pragma: no cover
+                    "Unexpected error processing %s for device %s, "
+                    "module should be disabled: %s",
+                    self.name,
+                    self._device.host,
+                    err,
+                )
+
+    @property
+    def update_interval(self) -> int:
+        """Time to wait between updates."""
+        if self._last_update_error is None:
+            return self.MINIMUM_UPDATE_INTERVAL_SECS
+
+        return self.UPDATE_INTERVAL_AFTER_ERROR_SECS * self._error_count
+
+    @property
+    def disabled(self) -> bool:
+        """Return true if the module is disabled due to errors."""
+        return self._error_count >= self.DISABLE_AFTER_ERROR_COUNT
 
     @property
     def name(self) -> str:

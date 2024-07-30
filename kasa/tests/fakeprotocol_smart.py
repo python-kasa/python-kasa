@@ -114,6 +114,7 @@ class FakeSmartTransport(BaseTransport):
             },
         ),
         "get_device_usage": ("device", {}),
+        "get_connect_cloud_state": ("cloud_connect", {"status": 0}),
     }
 
     async def send(self, request: str):
