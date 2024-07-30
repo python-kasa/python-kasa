@@ -29,7 +29,7 @@ repos:
   - id: mypy
     name: mypy
     entry: devtools/run-in-env.sh mypy
-    language: script
+    language: system
     types_or: [python, pyi]
     require_serial: true
     exclude: |  # exclude required because --all-files passes py and pyi
@@ -39,7 +39,7 @@ repos:
   - id: generate-supported
     name: Generate supported devices
     description: This hook generates the supported device sections of README.md and SUPPORTED.md
-    entry: devtools/generate_supported.py
+    entry: devtools/run-in-env.sh ./devtools/generate_supported.py
     language: system # Required or pre-commit creates a new venv
     verbose: true # Show output on success
     types: [json]
