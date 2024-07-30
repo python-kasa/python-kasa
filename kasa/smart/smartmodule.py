@@ -66,7 +66,7 @@ class SmartModule(Module):
     MINIMUM_UPDATE_INTERVAL_SECS = 0
     UPDATE_INTERVAL_AFTER_ERROR_SECS = 30
 
-    DISABLE_AFTER_ERROR_COUNT = 5
+    DISABLE_AFTER_ERROR_COUNT = 10
 
     def __init__(self, device: SmartDevice, module: str):
         self._device: SmartDevice
