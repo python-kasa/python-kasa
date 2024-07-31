@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.7.1](https://github.com/python-kasa/python-kasa/tree/0.7.1) (2024-07-31)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.5...0.7.1)
+
+**Release highlights:**
+- This release consists mainly of bugfixes and project improvements.
+- There is also new support for Tapo T100 motion sensors.
+- The CLI now supports child devices on all applicable commands.
+
+**Implemented enhancements:**
+
+- Expose reboot action [\#1073](https://github.com/python-kasa/python-kasa/pull/1073) (@rytilahti)
+- Decrypt KLAP data from PCAP files [\#1041](https://github.com/python-kasa/python-kasa/pull/1041) (@clstrickland)
+- Support child devices in all applicable cli commands [\#1020](https://github.com/python-kasa/python-kasa/pull/1020) (@sdb9696)
+
+**Fixed bugs:**
+
+- Fix iot light effect brightness [\#1092](https://github.com/python-kasa/python-kasa/pull/1092) (@sdb9696)
+- Enable setting brightness with color temp for smart devices [\#1091](https://github.com/python-kasa/python-kasa/pull/1091) (@sdb9696)
+- Do not send light\_on value to iot bulb set\_state [\#1090](https://github.com/python-kasa/python-kasa/pull/1090) (@sdb9696)
+- Allow erroring modules to recover [\#1080](https://github.com/python-kasa/python-kasa/pull/1080) (@sdb9696)
+- Raise KasaException on decryption errors [\#1078](https://github.com/python-kasa/python-kasa/pull/1078) (@sdb9696)
+- Update smart request parameter handling [\#1061](https://github.com/python-kasa/python-kasa/pull/1061) (@sdb9696)
+- Fix light preset module when list contains lighting effects [\#1048](https://github.com/python-kasa/python-kasa/pull/1048) (@sdb9696)
+- Handle module errors more robustly and add query params to light preset and transition [\#1036](https://github.com/python-kasa/python-kasa/pull/1036) (@sdb9696)
+- Fix credential hash to return None on empty credentials [\#1029](https://github.com/python-kasa/python-kasa/pull/1029) (@sdb9696)
+
+**Added support for devices:**
+
+- Add support for T100 motion sensor [\#1079](https://github.com/python-kasa/python-kasa/pull/1079) (@rytilahti)
+
+**Project maintenance:**
+
+- Bump project version to 0.7.0.5 [\#1087](https://github.com/python-kasa/python-kasa/pull/1087) (@sdb9696)
+- Fix generate\_supported pre commit to run in venv [\#1085](https://github.com/python-kasa/python-kasa/pull/1085) (@sdb9696)
+- Fix intermittently failing decryption error test [\#1082](https://github.com/python-kasa/python-kasa/pull/1082) (@sdb9696)
+- Fix mypy pre-commit hook on windows [\#1081](https://github.com/python-kasa/python-kasa/pull/1081) (@sdb9696)
+- Update RELEASING.md for patch releases [\#1076](https://github.com/python-kasa/python-kasa/pull/1076) (@sdb9696)
+- Use monotonic time for query timing [\#1070](https://github.com/python-kasa/python-kasa/pull/1070) (@sdb9696)
+- Fix parse\_pcap\_klap on windows and support default credentials [\#1068](https://github.com/python-kasa/python-kasa/pull/1068) (@sdb9696)
+- Add fixture file for KP405 fw 1.0.6 [\#1063](https://github.com/python-kasa/python-kasa/pull/1063) (@daleye)
+- Bump project version to 0.7.0.3 [\#1053](https://github.com/python-kasa/python-kasa/pull/1053) (@sdb9696)
+- Add KP400\(US\) v1.0.4 fixture [\#1051](https://github.com/python-kasa/python-kasa/pull/1051) (@gimpy88)
+- Add new HS220 kasa aes fixture [\#1050](https://github.com/python-kasa/python-kasa/pull/1050) (@sdb9696)
+- Add KS205\(US\) v1.1.0 fixture [\#1049](https://github.com/python-kasa/python-kasa/pull/1049) (@gimpy88)
+- Add KS200M\(US\) v1.0.11 fixture [\#1047](https://github.com/python-kasa/python-kasa/pull/1047) (@sdb9696)
+- Add KS225\(US\) v1.1.0 fixture [\#1046](https://github.com/python-kasa/python-kasa/pull/1046) (@sdb9696)
+- Split out main cli module into lazily loaded submodules [\#1039](https://github.com/python-kasa/python-kasa/pull/1039) (@sdb9696)
+- Structure cli into a package [\#1038](https://github.com/python-kasa/python-kasa/pull/1038) (@sdb9696)
+- Add KP400 v1.0.3 fixture [\#1037](https://github.com/python-kasa/python-kasa/pull/1037) (@gimpy88)
+- Add L920\(EU\) v1.1.3 fixture [\#1031](https://github.com/python-kasa/python-kasa/pull/1031) (@rytilahti)
+- Update changelog generator config [\#1030](https://github.com/python-kasa/python-kasa/pull/1030) (@sdb9696)
+
 ## [0.7.0.5](https://github.com/python-kasa/python-kasa/tree/0.7.0.5) (2024-07-18)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.4...0.7.0.5)
@@ -8,22 +61,26 @@ A critical bugfix for an issue with some L530 Series devices and a redactor for 
 
 **Fixed bugs:**
 
-- Only refresh smart LightEffect module daily [\#1064](https://github.com/python-kasa/python-kasa/pull/1064)
+- Only refresh smart LightEffect module daily [\#1064](https://github.com/python-kasa/python-kasa/pull/1064) (@sdb9696)
 
 **Project maintenance:**
 
-- Redact sensitive info from debug logs [\#1069](https://github.com/python-kasa/python-kasa/pull/1069)
+- Redact sensitive info from debug logs [\#1069](https://github.com/python-kasa/python-kasa/pull/1069) (@sdb9696)
 
 ## [0.7.0.4](https://github.com/python-kasa/python-kasa/tree/0.7.0.4) (2024-07-11)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.0.3...0.7.0.4)
 
-Critical bugfixes for issues with P100s and thermostats.
+Critical bugfixes for issues with P100s and thermostats
+
 
 **Fixed bugs:**
 
-- Use first known thermostat state as main state (pick #1054) [\#1057](https://github.com/python-kasa/python-kasa/pull/1057)
-- Defer module updates for less volatile modules (pick 1052) [\#1056](https://github.com/python-kasa/python-kasa/pull/1056)
+- Error connecting to L920-5 Smart LED Strip [\#1040](https://github.com/python-kasa/python-kasa/issues/1040)
+- Use first known thermostat state as main state \(pick \#1054\) [\#1057](https://github.com/python-kasa/python-kasa/pull/1057) (@sdb9696)
+- Defer module updates for less volatile modules \(pick 1052\) [\#1056](https://github.com/python-kasa/python-kasa/pull/1056) (@sdb9696)
+- Use first known thermostat state as main state [\#1054](https://github.com/python-kasa/python-kasa/pull/1054) (@rytilahti)
+- Defer module updates for less volatile modules [\#1052](https://github.com/python-kasa/python-kasa/pull/1052) (@sdb9696)
 
 ## [0.7.0.3](https://github.com/python-kasa/python-kasa/tree/0.7.0.3) (2024-07-04)
 
@@ -34,7 +91,15 @@ Partially fixes light preset module errors with L920 and L930.
 
 **Fixed bugs:**
 
-- Handle module errors more robustly and add query params to light preset and transition [\#1043](https://github.com/python-kasa/python-kasa/pull/1043)
+- Handle module errors more robustly and add query params to light preset and transition [\#1043](https://github.com/python-kasa/python-kasa/pull/1043) (@sdb9696)
+
+**Documentation updates:**
+
+- Misleading usage of asyncio.run\(\) in code examples [\#348](https://github.com/python-kasa/python-kasa/issues/348)
+
+**Project maintenance:**
+
+- Enable CI on the patch branch [\#1042](https://github.com/python-kasa/python-kasa/pull/1042) (@sdb9696)
 
 ## [0.7.0.2](https://github.com/python-kasa/python-kasa/tree/0.7.0.2) (2024-07-01)
 
