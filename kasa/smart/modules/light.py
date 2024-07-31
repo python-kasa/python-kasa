@@ -107,7 +107,9 @@ class Light(SmartModule, LightInterface):
         """
         if not self.is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
-        return await self._device.modules[Module.ColorTemperature].set_color_temp(temp)
+        return await self._device.modules[Module.ColorTemperature].set_color_temp(
+            temp, brightness=brightness
+        )
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None

@@ -211,14 +211,14 @@ class Feature:
         """Range of values if applicable."""
         return self._get_property_value(self.range_getter)
 
-    @cached_property
+    @property
     def maximum_value(self) -> int:
         """Maximum value."""
         if range := self.range:
             return range[1]
         return self.DEFAULT_MAX
 
-    @cached_property
+    @property
     def minimum_value(self) -> int:
         """Minimum value."""
         if range := self.range:
