@@ -365,7 +365,7 @@ class IotBulb(IotDevice):
 
         hue = light_state["hue"]
         saturation = light_state["saturation"]
-        value = light_state["brightness"]
+        value = self._brightness
 
         return HSV(hue, saturation, value)
 
@@ -455,6 +455,13 @@ class IotBulb(IotDevice):
         if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
+        # If the device supports effects and one is active, we get the brightness
+        # from the effect. This is not required when setting the brightness as
+        # the device handles it via set_light_state
+        if (
+            light_effect := self.modules.get(Module.IotLightEffect)
+        ) is not None and light_effect.effect != light_effect.LIGHT_EFFECTS_OFF:
+            return light_effect.brightness
         light_state = self.light_state
         return int(light_state["brightness"])
 

@@ -133,6 +133,31 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
         call.assert_not_called()
 
 
+@light_effect
+async def test_light_effect_brightness(dev: Device, mocker: MockerFixture):
+    """Test that light module uses light_effect for brightness when active."""
+    light_module = dev.modules[Module.Light]
+
+    light_effect = dev.modules[Module.LightEffect]
+
+    await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
+    await light_module.set_brightness(50)
+    await dev.update()
+    assert light_effect.effect == light_effect.LIGHT_EFFECTS_OFF
+    assert light_module.brightness == 50
+    await light_effect.set_effect(light_effect.effect_list[1])
+    await dev.update()
+    # assert light_module.brightness == 100
+
+    await light_module.set_brightness(75)
+    await dev.update()
+    assert light_module.brightness == 75
+
+    await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
+    await dev.update()
+    assert light_module.brightness == 50
+
+
 @dimmable
 async def test_light_brightness(dev: Device):
     """Test brightness setter and getter."""
@@ -201,6 +226,9 @@ async def test_light_set_state(dev: Device):
     assert isinstance(dev, Device)
     light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
+    # For fixtures that have a light effect active switch off
+    if light_effect := light._device.modules.get(Module.LightEffect):
+        await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
 
     await light.set_state(LightState(light_on=False))
     await dev.update()

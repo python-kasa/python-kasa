@@ -116,6 +116,7 @@ class Module(ABC):
     SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
         "LightEffect"
     )
+    IotLightEffect: Final[ModuleName[iot.LightEffect]] = ModuleName("LightEffect")
     TemperatureSensor: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
         "TemperatureSensor"
     )

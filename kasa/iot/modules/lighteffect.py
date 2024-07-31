@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from ...interfaces.lighteffect import LightEffect as LightEffectInterface
-from ...module import Module
 from ..effects import EFFECT_MAPPING_V1, EFFECT_NAMES_V1
 from ..iotmodule import IotModule
 
@@ -28,6 +27,11 @@ class LightEffect(IotModule, LightEffectInterface):
             return name
 
         return self.LIGHT_EFFECTS_OFF
+
+    @property
+    def brightness(self) -> int:
+        """Return light effect brightness."""
+        return self.data["lighting_effect_state"]["brightness"]
 
     @property
     def effect_list(self) -> list[str]:
@@ -60,18 +64,21 @@ class LightEffect(IotModule, LightEffectInterface):
         :param int transition: The wanted transition time
         """
         if effect == self.LIGHT_EFFECTS_OFF:
-            light_module = self._device.modules[Module.Light]
-            effect_off_state = light_module.state
-            if brightness is not None:
-                effect_off_state.brightness = brightness
-            if transition is not None:
-                effect_off_state.transition = transition
-            await light_module.set_state(effect_off_state)
+            if self.effect in EFFECT_MAPPING_V1:
+                # TODO: We could query get_lighting_effect here to
+                # get the custom effect although not sure how to find
+                # custom effects
+                effect_dict = EFFECT_MAPPING_V1[self.effect]
+            else:
+                effect_dict = EFFECT_MAPPING_V1["Aurora"]
+            effect_dict = {**effect_dict}
+            effect_dict["enable"] = 0
+            await self.set_custom_effect(effect_dict)
         elif effect not in EFFECT_MAPPING_V1:
             raise ValueError(f"The effect {effect} is not a built in effect.")
         else:
             effect_dict = EFFECT_MAPPING_V1[effect]
-
+            effect_dict = {**effect_dict}
             if brightness is not None:
                 effect_dict["brightness"] = brightness
             if transition is not None:
