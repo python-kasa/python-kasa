@@ -429,7 +429,7 @@ class IotBulb(IotDevice):
         if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
-        valid_temperature_range = self.valid_temperature_range
+        valid_temperature_range = self._valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
                 "Temperature should be between {} and {}, was {}".format(

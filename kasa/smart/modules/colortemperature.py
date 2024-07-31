@@ -3,15 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
 from ...feature import Feature
 from ...interfaces.light import ColorTempRange
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    pass
-
 
 _LOGGER = logging.getLogger(__name__)
 
