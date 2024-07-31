@@ -326,6 +326,7 @@ class IotBulb(IotDevice):
         self, state: dict, *, transition: int | None = None
     ) -> dict:
         """Set the light state."""
+        state = {**state}
         if transition is not None:
             state["transition_period"] = transition
 
