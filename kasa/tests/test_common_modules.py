@@ -178,6 +178,9 @@ async def test_light_set_state(dev: Device):
     assert isinstance(dev, Device)
     light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
+    # For fixtures that have a light effect active switch off
+    if light_effect := light._device.modules.get(Module.LightEffect):
+        await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
 
     await light.set_state(LightState(light_on=False))
     await dev.update()
