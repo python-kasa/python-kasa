@@ -12,6 +12,7 @@ from kasa.tests.device_fixtures import (
     parametrize,
     parametrize_combine,
     plug_iot,
+    variable_temp_iot,
 )
 
 led_smart = parametrize(
@@ -35,6 +36,14 @@ dimmable_smart = parametrize(
     "dimmable smart", component_filter="brightness", protocol_filter={"SMART"}
 )
 dimmable = parametrize_combine([dimmable_smart, dimmer_iot, dimmable_iot])
+
+variable_temp_smart = parametrize(
+    "variable temp smart",
+    component_filter="color_temperature",
+    protocol_filter={"SMART"},
+)
+
+variable_temp = parametrize_combine([variable_temp_iot, variable_temp_smart])
 
 light_preset_smart = parametrize(
     "has light preset smart", component_filter="preset", protocol_filter={"SMART"}
@@ -124,6 +133,31 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
         call.assert_not_called()
 
 
+@light_effect
+async def test_light_effect_brightness(dev: Device, mocker: MockerFixture):
+    """Test that light module uses light_effect for brightness when active."""
+    light_module = dev.modules[Module.Light]
+
+    light_effect = dev.modules[Module.LightEffect]
+
+    await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
+    await light_module.set_brightness(50)
+    await dev.update()
+    assert light_effect.effect == light_effect.LIGHT_EFFECTS_OFF
+    assert light_module.brightness == 50
+    await light_effect.set_effect(light_effect.effect_list[1])
+    await dev.update()
+    # assert light_module.brightness == 100
+
+    await light_module.set_brightness(75)
+    await dev.update()
+    assert light_module.brightness == 75
+
+    await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
+    await dev.update()
+    assert light_module.brightness == 50
+
+
 @dimmable
 async def test_light_brightness(dev: Device):
     """Test brightness setter and getter."""
@@ -147,12 +181,54 @@ async def test_light_brightness(dev: Device):
         await light.set_brightness(feature.maximum_value + 10)
 
 
+@variable_temp
+async def test_light_color_temp(dev: Device):
+    """Test color temp setter and getter."""
+    assert isinstance(dev, Device)
+
+    light = next(get_parent_and_child_modules(dev, Module.Light))
+    assert light
+    if not light.is_variable_color_temp:
+        pytest.skip(
+            "Some smart light strips have color_temperature"
+            " component but min and max are the same"
+        )
+
+    # Test getting the value
+    feature = light._device.features["color_temperature"]
+    assert isinstance(feature.minimum_value, int)
+    assert isinstance(feature.maximum_value, int)
+
+    await light.set_color_temp(feature.minimum_value + 10)
+    await dev.update()
+    assert light.color_temp == feature.minimum_value + 10
+
+    # Test setting brightness with color temp
+    await light.set_brightness(50)
+    await dev.update()
+    assert light.brightness == 50
+
+    await light.set_color_temp(feature.minimum_value + 20, brightness=60)
+    await dev.update()
+    assert light.color_temp == feature.minimum_value + 20
+    assert light.brightness == 60
+
+    with pytest.raises(ValueError):
+        await light.set_color_temp(feature.minimum_value - 10)
+
+    with pytest.raises(ValueError):
+        await light.set_color_temp(feature.maximum_value + 10)
+
+
 @light
 async def test_light_set_state(dev: Device):
     """Test brightness setter and getter."""
     assert isinstance(dev, Device)
     light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
+    # For fixtures that have a light effect active switch off
+    if light_effect := light._device.modules.get(Module.LightEffect):
+        await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
 
     await light.set_state(LightState(light_on=False))
     await dev.update()

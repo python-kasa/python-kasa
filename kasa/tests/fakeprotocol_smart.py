@@ -114,6 +114,7 @@ class FakeSmartTransport(BaseTransport):
             },
         ),
         "get_device_usage": ("device", {}),
+        "get_connect_cloud_state": ("cloud_connect", {"status": 0}),
     }
 
     async def send(self, request: str):
@@ -270,13 +271,14 @@ class FakeSmartTransport(BaseTransport):
 
     def _set_light_strip_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
-        info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
-        info["get_device_info"]["lighting_effect"]["name"] = params["name"]
-        info["get_device_info"]["lighting_effect"]["id"] = params["id"]
         # Brightness is not always available
         if (brightness := params.get("brightness")) is not None:
             info["get_device_info"]["lighting_effect"]["brightness"] = brightness
-        info["get_lighting_effect"] = copy.deepcopy(params)
+        if "enable" in params:
+            info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
+            info["get_device_info"]["lighting_effect"]["name"] = params["name"]
+            info["get_device_info"]["lighting_effect"]["id"] = params["id"]
+            info["get_lighting_effect"] = copy.deepcopy(params)
 
     def _set_led_info(self, info, params):
         """Set or remove values as per the device behaviour."""

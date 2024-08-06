@@ -26,7 +26,7 @@ class ReportMode(SmartModule):
                 name="Report interval",
                 container=self,
                 attribute_getter="report_interval",
-                unit="s",
+                unit_getter=lambda: "s",
                 category=Feature.Category.Debug,
                 type=Feature.Type.Sensor,
             )

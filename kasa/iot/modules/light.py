@@ -41,8 +41,7 @@ class Light(IotModule, LightInterface):
                     container=self,
                     attribute_getter="brightness",
                     attribute_setter="set_brightness",
-                    minimum_value=BRIGHTNESS_MIN,
-                    maximum_value=BRIGHTNESS_MAX,
+                    range_getter=lambda: (BRIGHTNESS_MIN, BRIGHTNESS_MAX),
                     type=Feature.Type.Number,
                     category=Feature.Category.Primary,
                 )
@@ -231,6 +230,8 @@ class Light(IotModule, LightInterface):
                 state_dict["on_off"] = 1
             else:
                 state_dict["on_off"] = int(state.light_on)
+            # Remove the light_on from the dict
+            state_dict.pop("light_on", None)
             return await bulb._set_light_state(state_dict, transition=transition)
 
     @property

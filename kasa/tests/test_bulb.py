@@ -9,7 +9,7 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import Device, DeviceType, IotLightPreset, KasaException, Module
+from kasa import Device, DeviceType, IotLightPreset, KasaException, LightState, Module
 from kasa.iot import IotBulb, IotDimmer
 
 from .conftest import (
@@ -94,6 +94,22 @@ async def test_set_hsv_transition(dev: IotBulb, mocker):
         {"hue": 10, "saturation": 10, "brightness": 100, "color_temp": 0},
         transition=1000,
     )
+
+
+@bulb_iot
+async def test_light_set_state(dev: IotBulb, mocker):
+    """Testing setting LightState on the light module."""
+    light = dev.modules.get(Module.Light)
+    assert light
+    set_light_state = mocker.spy(dev, "_set_light_state")
+    state = LightState(light_on=True)
+    await light.set_state(state)
+
+    set_light_state.assert_called_with({"on_off": 1}, transition=None)
+    state = LightState(light_on=False)
+    await light.set_state(state)
+
+    set_light_state.assert_called_with({"on_off": 0}, transition=None)
 
 
 @color_bulb
