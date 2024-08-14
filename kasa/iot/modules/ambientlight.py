@@ -1,8 +1,7 @@
 """Implementation of the ambient light (LAS) module found in some dimmers."""
 
 from ...feature import Feature
-from ..iotmodule import IotModule
-from ..iotmodule import _merge_dict as merge
+from ..iotmodule import IotModule, merge
 
 # TODO create tests and use the config reply there
 # [{"hw_id":0,"enable":0,"dark_index":1,"min_adc":0,"max_adc":2450,

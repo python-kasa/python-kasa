@@ -18,6 +18,9 @@ def _merge_dict(dest: dict, source: dict) -> dict:
     return dest
 
 
+merge = _merge_dict
+
+
 class IotModule(Module):
     """Base class implemention for all IOT modules."""
 
