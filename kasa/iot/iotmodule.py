@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 def _merge_dict(dest: dict, source: dict) -> dict:
     """Update dict recursively."""
     for k, v in source.items():
-        if k in dest and isinstance(v, dict):
+        if k in dest and type(v) is dict:  # noqa: E721 - only accepts `dict` type
             _merge_dict(dest[k], v)
         else:
             dest[k] = v
