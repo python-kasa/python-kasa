@@ -18,6 +18,7 @@ from voluptuous import (
 
 from kasa import KasaException, Module
 from kasa.iot import IotDevice
+from kasa.iot.iotmodule import _merge_dict
 
 from .conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
 from .device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
@@ -292,3 +293,21 @@ async def test_get_modules():
 
     module = dummy_device.modules.get(Module.Cloud)
     assert module is None
+
+
+def test_merge_dict():
+    """Test the recursive dict merge."""
+    dest = {"a": 1, "b": {"c": 2, "d": 3}}
+    source = {"b": {"c": 4, "e": 5}}
+    assert _merge_dict(dest, source) == {"a": 1, "b": {"c": 4, "d": 3, "e": 5}}
+
+    dest = {"smartlife.iot.common.emeter": {"get_realtime": None}}
+    source = {
+        "smartlife.iot.common.emeter": {"get_daystat": {"month": 8, "year": 2024}}
+    }
+    assert _merge_dict(dest, source) == {
+        "smartlife.iot.common.emeter": {
+            "get_realtime": None,
+            "get_daystat": {"month": 8, "year": 2024},
+        }
+    }
