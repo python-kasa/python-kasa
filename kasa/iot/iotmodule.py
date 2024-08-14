@@ -8,7 +8,7 @@ from ..module import Module
 _LOGGER = logging.getLogger(__name__)
 
 
-def merge(dest: dict, source: dict) -> dict:
+def _merge_dict(dest: dict, source: dict) -> dict:
     """Update dict recursively."""
     for k, v in source.items():
         if k in dest and isinstance(v, dict):
