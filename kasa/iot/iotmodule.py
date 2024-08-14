@@ -1,23 +1,11 @@
 """Base class for IOT module implementations."""
 
-import collections
 import logging
 
 from ..exceptions import KasaException
 from ..module import Module
 
 _LOGGER = logging.getLogger(__name__)
-
-
-# TODO: This is used for query constructing, check for a better place
-def merge(d, u):
-    """Update dict recursively."""
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = merge(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
 
 
 class IotModule(Module):

@@ -3,7 +3,8 @@
 from datetime import datetime
 
 from ...exceptions import KasaException
-from ..iotmodule import IotModule, merge
+from ...utils import merge
+from ..iotmodule import IotModule
 
 
 class Time(IotModule):

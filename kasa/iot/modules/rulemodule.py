@@ -8,7 +8,8 @@ from typing import Dict, List, Optional
 
 from pydantic.v1 import BaseModel
 
-from ..iotmodule import IotModule, merge
+from ...utils import merge
+from ..iotmodule import IotModule
 
 
 class Action(Enum):

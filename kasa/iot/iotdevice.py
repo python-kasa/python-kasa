@@ -14,7 +14,6 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 from __future__ import annotations
 
-import collections.abc
 import functools
 import inspect
 import logging
@@ -29,20 +28,11 @@ from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..protocol import BaseProtocol
+from ..utils import merge
 from .iotmodule import IotModule
 from .modules import Emeter
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def merge(d, u):
-    """Update dict recursively."""
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = merge(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
 
 
 def requires_update(f):
