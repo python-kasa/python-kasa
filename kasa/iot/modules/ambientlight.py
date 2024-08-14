@@ -1,7 +1,7 @@
 """Implementation of the ambient light (LAS) module found in some dimmers."""
 
 from ...feature import Feature
-from ..iotmodule import IotModule, merge
+from ..iotmodule import IotModule, _merge_dict
 
 # TODO create tests and use the config reply there
 # [{"hw_id":0,"enable":0,"dark_index":1,"min_adc":0,"max_adc":2450,
@@ -34,12 +34,10 @@ class AmbientLight(IotModule):
 
     def query(self):
         """Request configuration."""
-        req = merge(
+        return _merge_dict(
             self.query_for_command("get_config"),
             self.query_for_command("get_current_brt"),
         )
-
-        return req
 
     @property
     def presets(self) -> dict:

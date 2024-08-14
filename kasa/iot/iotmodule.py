@@ -12,7 +12,7 @@ def _merge_dict(dest: dict, source: dict) -> dict:
     """Update dict recursively."""
     for k, v in source.items():
         if k in dest and isinstance(v, dict):
-            merge(dest[k], v)
+            _merge_dict(dest[k], v)
         else:
             dest[k] = v
     return dest

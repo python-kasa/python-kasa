@@ -28,7 +28,7 @@ from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..protocol import BaseProtocol
-from .iotmodule import IotModule, merge
+from .iotmodule import IotModule, _merge_dict
 from .modules import Emeter
 
 _LOGGER = logging.getLogger(__name__)
@@ -382,7 +382,7 @@ class IotDevice(Device):
 
             q = module.query()
             _LOGGER.debug("Adding query for %s: %s", module, q)
-            req = merge(req, q)
+            req = _merge_dict(req, q)
         request_list.append(req)
 
         responses = [

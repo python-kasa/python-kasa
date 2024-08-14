@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from ..iotmodule import IotModule, merge
+from ..iotmodule import IotModule, _merge_dict
 
 
 class Usage(IotModule):
@@ -17,12 +17,10 @@ class Usage(IotModule):
         month = now.month
 
         req = self.query_for_command("get_realtime")
-        req = merge(
+        _merge_dict(
             req, self.query_for_command("get_daystat", {"year": year, "month": month})
         )
-        req = merge(req, self.query_for_command("get_monthstat", {"year": year}))
-
-        return req
+        return _merge_dict(req, self.query_for_command("get_monthstat", {"year": year}))
 
     @property
     def estimated_query_response_size(self):

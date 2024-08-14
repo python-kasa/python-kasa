@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 
 from pydantic.v1 import BaseModel
 
-from ..iotmodule import IotModule, merge
+from ..iotmodule import IotModule, _merge_dict
 
 
 class Action(Enum):
@@ -60,7 +60,7 @@ class RuleModule(IotModule):
     def query(self):
         """Prepare the query for rules."""
         q = self.query_for_command("get_rules")
-        return merge(q, self.query_for_command("get_next_action"))
+        return _merge_dict(q, self.query_for_command("get_next_action"))
 
     @property
     def rules(self) -> list[Rule]:

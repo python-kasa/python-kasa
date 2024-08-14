@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from ...exceptions import KasaException
-from ..iotmodule import IotModule, merge
+from ..iotmodule import IotModule, _merge_dict
 
 
 class Time(IotModule):
@@ -12,9 +12,7 @@ class Time(IotModule):
     def query(self):
         """Request time and timezone."""
         q = self.query_for_command("get_time")
-
-        merge(q, self.query_for_command("get_timezone"))
-        return q
+        return _merge_dict(q, self.query_for_command("get_timezone"))
 
     @property
     def time(self) -> datetime:
