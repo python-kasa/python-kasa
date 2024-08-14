@@ -28,9 +28,8 @@ from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..protocol import BaseProtocol
-from .iotmodule import IotModule
+from .iotmodule import IotModule, merge
 from .modules import Emeter
-from .utils import merge
 
 _LOGGER = logging.getLogger(__name__)
 
