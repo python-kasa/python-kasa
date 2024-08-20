@@ -54,7 +54,7 @@ toml = "*"
 tox = "*"
 pytest-mock = "*"
 codecov = "*"
-xdoctest = "*"
+xdoctest = ">=1.2.0"
 coverage = {version = "*", extras = ["toml"]}
 pytest-timeout = "^2"
 pytest-freezer = "^0.4"
