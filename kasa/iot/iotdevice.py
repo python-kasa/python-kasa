@@ -371,7 +371,7 @@ class IotDevice(Device):
         est_response_size = 1024 if "system" in req else 0
         for module in self._modules.values():
             if not module.is_supported:
-                _LOGGER.debug("Module %s not supported, skipping" % module)
+                _LOGGER.debug("Module %s not supported, skipping", module)
                 continue
 
             est_response_size += module.estimated_query_response_size
