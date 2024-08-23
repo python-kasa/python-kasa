@@ -42,6 +42,7 @@ docutils = { version = ">=0.17", optional = true }
 # enhanced cli support
 ptpython = { version = "*", optional = true }
 rich = { version = "*", optional = true }
+typing-extensions = ">=4.12.2,<5.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
