@@ -51,7 +51,7 @@ async def test_set_brightness_invalid(dev):
             await dev.set_brightness(invalid_brightness)
 
     for invalid_type in [0.5, "foo"]:
-        with pytest.raises(TypeError, match="Brightness must be integer"):
+        with pytest.raises(TypeError, match="Brightness must be an integer"):
             await dev.set_brightness(invalid_type)
 
 
