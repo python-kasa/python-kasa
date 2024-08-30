@@ -31,9 +31,10 @@ Cloud connection (cloud_connection): True
 HSV (hsv): HSV(hue=0, saturation=100, value=100)
 Color temperature (color_temperature): 2700
 Auto update enabled (auto_update_enabled): False
-Update available (update_available): False
+Update available (update_available): None
 Current firmware version (current_firmware_version): 1.1.6 Build 240130 Rel.173828
-Available firmware version (available_firmware_version): 1.1.6 Build 240130 Rel.173828
+Available firmware version (available_firmware_version): None
+Check latest firmware (check_latest_firmware): <Action>
 Light effect (light_effect): Off
 Light preset (light_preset): Not set
 Smooth transition on (smooth_transition_on): 2
