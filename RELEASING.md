@@ -17,7 +17,6 @@ export CHANGELOG_GITHUB_TOKEN=token
 
 ```bash
 export NEW_RELEASE=x.x.x.devx
-export PREVIOUS_RELEASE=0.3.5
 ```
 
 ## Normal releases from master
@@ -62,7 +61,7 @@ If not already created
 #### Create new issue linked to the milestone
 
 ```bash
-gh issue create --label "release-summary" --milestone $NEW_RELEASE --title "$NEW_RELEASE Release Summary" --body "## Release Summary"
+gh issue create --label "release-summary" --milestone $NEW_RELEASE --title "$NEW_RELEASE Release Summary" --body "**Release summary:**"
 ```
 
 You can exclude the --body option to get an interactive editor or go into the issue on github and edit there.
