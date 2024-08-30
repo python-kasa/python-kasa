@@ -33,7 +33,7 @@ from .fakeprotocol_iot import FakeIotTransport
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -63,7 +63,7 @@ async def test_protocol_retries(mocker, retry_count, protocol_class, transport_c
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -87,7 +87,7 @@ async def test_protocol_no_retry_on_unreachable(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -111,7 +111,7 @@ async def test_protocol_no_retry_connection_refused(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -135,7 +135,7 @@ async def test_protocol_retry_recoverable_error(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -185,7 +185,7 @@ async def test_protocol_reconnect(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -239,7 +239,7 @@ async def test_protocol_handles_cancellation_during_write(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -291,7 +291,7 @@ async def test_protocol_handles_cancellation_during_connection(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -338,7 +338,7 @@ async def test_protocol_logging(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -494,14 +494,10 @@ def test_protocol_init_signature(class_name_obj):
     params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
 
     assert len(params) == 2
-    assert (
-        params[0].name == "self"
-        and params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
-    )
-    assert (
-        params[1].name == "transport"
-        and params[1].kind == inspect.Parameter.KEYWORD_ONLY
-    )
+    assert params[0].name == "self"
+    assert params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert params[1].name == "transport"
+    assert params[1].kind == inspect.Parameter.KEYWORD_ONLY
 
 
 @pytest.mark.parametrize(
@@ -511,13 +507,10 @@ def test_transport_init_signature(class_name_obj):
     params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
 
     assert len(params) == 2
-    assert (
-        params[0].name == "self"
-        and params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
-    )
-    assert (
-        params[1].name == "config" and params[1].kind == inspect.Parameter.KEYWORD_ONLY
-    )
+    assert params[0].name == "self"
+    assert params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert params[1].name == "config"
+    assert params[1].kind == inspect.Parameter.KEYWORD_ONLY
 
 
 @pytest.mark.parametrize(
@@ -582,7 +575,7 @@ async def test_transport_credentials_hash(
 
 @pytest.mark.parametrize(
     "transport_class",
-    [AesTransport, KlapTransport, KlapTransportV2, XorTransport, XorTransport],
+    [AesTransport, KlapTransport, KlapTransportV2, XorTransport],
 )
 async def test_transport_credentials_hash_from_config(mocker, transport_class):
     """Test that credentials_hash provided via config sets correctly."""
@@ -599,7 +592,7 @@ async def test_transport_credentials_hash_from_config(mocker, transport_class):
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (ConnectionRefusedError("dummy exception"), False),
         (OSError(errno.EHOSTDOWN, os.strerror(errno.EHOSTDOWN)), False),
@@ -609,7 +602,7 @@ async def test_transport_credentials_hash_from_config(mocker, transport_class):
     ids=("ConnectionRefusedError", "OSErrorNoRetry", "OSErrorRetry", "Exception"),
 )
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -631,7 +624,7 @@ async def test_protocol_will_retry_on_connect(
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (ConnectionRefusedError("dummy exception"), True),
         (OSError(errno.EHOSTDOWN, os.strerror(errno.EHOSTDOWN)), True),
@@ -641,7 +634,7 @@ async def test_protocol_will_retry_on_connect(
     ids=("ConnectionRefusedError", "OSErrorNoRetry", "OSErrorRetry", "Exception"),
 )
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),

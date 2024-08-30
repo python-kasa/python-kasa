@@ -128,9 +128,9 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     assert feat.value == second_effect
     call.reset_mock()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="The effect foobar is not a built in effect."):
         await light_effect_module.set_effect("foobar")
-        call.assert_not_called()
+    call.assert_not_called()
 
 
 @light_effect
@@ -174,10 +174,10 @@ async def test_light_brightness(dev: Device):
     await dev.update()
     assert light.brightness == 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid brightness value: "):
         await light.set_brightness(feature.minimum_value - 10)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid brightness value: "):
         await light.set_brightness(feature.maximum_value + 10)
 
 
@@ -213,10 +213,10 @@ async def test_light_color_temp(dev: Device):
     assert light.color_temp == feature.minimum_value + 20
     assert light.brightness == 60
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Temperature should be between \d+ and \d+"):
         await light.set_color_temp(feature.minimum_value - 10)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Temperature should be between \d+ and \d+"):
         await light.set_color_temp(feature.maximum_value + 10)
 
 
@@ -293,9 +293,9 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     assert preset_mod.preset == second_preset
     assert feat.value == second_preset
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="foobar is not a valid preset"):
         await preset_mod.set_preset("foobar")
-        assert call.call_count == 3
+    assert call.call_count == 3
 
 
 @light_preset
@@ -315,9 +315,7 @@ async def test_light_preset_save(dev: Device, mocker: MockerFixture):
     await preset_mod.save_preset(second_preset, new_preset)
     await dev.update()
     new_preset_state = preset_mod.preset_states_list[0]
-    assert (
-        new_preset_state.brightness == new_preset.brightness
-        and new_preset_state.hue == new_preset.hue
-        and new_preset_state.saturation == new_preset.saturation
-        and new_preset_state.color_temp == new_preset.color_temp
-    )
+    assert new_preset_state.brightness == new_preset.brightness
+    assert new_preset_state.hue == new_preset.hue
+    assert new_preset_state.saturation == new_preset.saturation
+    assert new_preset_state.color_temp == new_preset.color_temp

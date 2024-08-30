@@ -49,7 +49,7 @@ class _mock_response:
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (Exception("dummy exception"), False),
         (aiohttp.ServerTimeoutError("dummy exception"), True),
@@ -79,7 +79,7 @@ async def test_protocol_retries_via_client_session(
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (KasaException("dummy exception"), False),
         (_RetryableError("dummy exception"), True),
@@ -305,7 +305,7 @@ async def test_transport_decrypt_error(mocker, caplog):
 
 
 @pytest.mark.parametrize(
-    "device_credentials, expectation",
+    ("device_credentials", "expectation"),
     [
         (Credentials("foo", "bar"), does_not_raise()),
         (Credentials(), does_not_raise()),
@@ -321,7 +321,7 @@ async def test_transport_decrypt_error(mocker, caplog):
     ids=("client", "blank", "kasa_setup", "shouldfail"),
 )
 @pytest.mark.parametrize(
-    "transport_class, seed_auth_hash_calc",
+    ("transport_class", "seed_auth_hash_calc"),
     [
         pytest.param(KlapTransport, lambda c, s, a: c + a, id="KLAP"),
         pytest.param(KlapTransportV2, lambda c, s, a: c + s + a, id="KLAPV2"),
@@ -365,7 +365,7 @@ async def test_handshake1(
 
 
 @pytest.mark.parametrize(
-    "transport_class, seed_auth_hash_calc1, seed_auth_hash_calc2",
+    ("transport_class", "seed_auth_hash_calc1", "seed_auth_hash_calc2"),
     [
         pytest.param(
             KlapTransport, lambda c, s, a: c + a, lambda c, s, a: s + a, id="KLAP"
@@ -466,7 +466,7 @@ async def test_query(mocker):
 
 
 @pytest.mark.parametrize(
-    "response_status, credentials_match, expectation",
+    ("response_status", "credentials_match", "expectation"),
     [
         pytest.param(
             (403, 403, 403),

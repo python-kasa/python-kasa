@@ -103,7 +103,7 @@ async def test_create_thin_wrapper():
 
 
 @pytest.mark.parametrize(
-    "device_class, use_class", kasa.deprecated_smart_devices.items()
+    ("device_class", "use_class"), kasa.deprecated_smart_devices.items()
 )
 def test_deprecated_devices(device_class, use_class):
     package_name = ".".join(use_class.__module__.split(".")[:-1])
@@ -117,7 +117,9 @@ def test_deprecated_devices(device_class, use_class):
     getattr(module, use_class.__name__)
 
 
-@pytest.mark.parametrize("deprecated_class, use_class", kasa.deprecated_classes.items())
+@pytest.mark.parametrize(
+    ("deprecated_class", "use_class"), kasa.deprecated_classes.items()
+)
 def test_deprecated_classes(deprecated_class, use_class):
     msg = f"{deprecated_class} is deprecated, use {use_class.__name__} instead"
     with pytest.deprecated_call(match=msg):

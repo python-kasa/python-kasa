@@ -22,7 +22,9 @@ async def test_lightstrip_effect(dev: IotLightStrip):
 
 @lightstrip_iot
 async def test_effects_lightstrip_set_effect(dev: IotLightStrip):
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="The effect Not real is not a built in effect"
+    ):
         await dev.set_effect("Not real")
 
     await dev.set_effect("Candy Cane")

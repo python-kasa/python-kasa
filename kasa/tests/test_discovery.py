@@ -252,7 +252,7 @@ INVALIDS = [
 ]
 
 
-@pytest.mark.parametrize("msg, data", INVALIDS)
+@pytest.mark.parametrize(("msg", "data"), INVALIDS)
 async def test_discover_invalid_info(msg, data, mocker):
     """Make sure that invalid discovery information raises an exception."""
     host = "127.0.0.1"
@@ -304,7 +304,7 @@ async def test_discover_datagram_received(mocker, discovery_data):
     assert dev.host == addr
 
 
-@pytest.mark.parametrize("msg, data", INVALIDS)
+@pytest.mark.parametrize(("msg", "data"), INVALIDS)
 async def test_discover_invalid_responses(msg, data, mocker):
     """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
     proto = _DiscoverProtocol()
@@ -349,7 +349,7 @@ async def test_discover_single_authentication(discovery_mock, mocker):
         side_effect=AuthenticationError("Failed to authenticate"),
     )
 
-    with pytest.raises(
+    with pytest.raises(  # noqa: PT012
         AuthenticationError,
         match="Failed to authenticate",
     ):
@@ -495,7 +495,7 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
 
 
 @pytest.mark.parametrize(
-    "port, will_timeout",
+    ("port", "will_timeout"),
     [(FakeDatagramTransport.GHOST_PORT, True), (20002, False)],
     ids=["unknownport", "unsupporteddevice"],
 )

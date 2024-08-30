@@ -18,17 +18,18 @@ async def test_brightness_component(dev: SmartDevice):
     # Test getting the value
     feature = brightness._device.features["brightness"]
     assert isinstance(feature.value, int)
-    assert feature.value > 1 and feature.value <= 100
+    assert feature.value > 1
+    assert feature.value <= 100
 
     # Test setting the value
     await feature.set_value(10)
     await dev.update()
     assert feature.value == 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         await feature.set_value(feature.minimum_value - 10)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         await feature.set_value(feature.maximum_value + 10)
 
 
@@ -41,15 +42,16 @@ async def test_brightness_dimmable(dev: IotDevice):
     # Test getting the value
     feature = dev.features["brightness"]
     assert isinstance(feature.value, int)
-    assert feature.value > 0 and feature.value <= 100
+    assert feature.value > 0
+    assert feature.value <= 100
 
     # Test setting the value
     await feature.set_value(10)
     await dev.update()
     assert feature.value == 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         await feature.set_value(feature.minimum_value - 10)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         await feature.set_value(feature.maximum_value + 10)

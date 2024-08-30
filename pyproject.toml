@@ -117,6 +117,7 @@ select = [
   "FA", # flake8-future-annotations
   "I",  # isort
   "S",  # bandit
+  "PT",  # flake8-pytest-style
 ]
 ignore = [
   "D105",  # Missing docstring in magic method

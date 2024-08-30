@@ -20,7 +20,8 @@ def test_usage_convert_stat_data():
     k, v = d.popitem()
     assert isinstance(k, int)
     assert isinstance(v, int)
-    assert k == 4 and v == 30
+    assert k == 4
+    assert v == 30
 
 
 def test_usage_today():

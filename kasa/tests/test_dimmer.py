@@ -46,13 +46,23 @@ async def test_set_brightness_transition(dev, turn_on, mocker):
 
 @dimmer_iot
 async def test_set_brightness_invalid(dev):
-    for invalid_brightness in [-1, 101, 0.5]:
-        with pytest.raises(ValueError):
+    for invalid_brightness in [-1, 101]:
+        with pytest.raises(ValueError, match="Invalid brightness"):
             await dev.set_brightness(invalid_brightness)
 
-    for invalid_transition in [-1, 0.5]:
-        with pytest.raises(ValueError):
+    for invalid_type in [0.5, "foo"]:
+        with pytest.raises(TypeError, match="Brightness must be integer"):
+            await dev.set_brightness(invalid_type)
+
+
+@dimmer_iot
+async def test_set_brightness_invalid_transition(dev):
+    for invalid_transition in [-1]:
+        with pytest.raises(ValueError, match="Transition value .+? is not valid."):
             await dev.set_brightness(1, transition=invalid_transition)
+    for invalid_type in [0.5, "foo"]:
+        with pytest.raises(TypeError, match="Transition must be integer"):
+            await dev.set_brightness(1, transition=invalid_type)
 
 
 @dimmer_iot
@@ -128,14 +138,24 @@ async def test_set_dimmer_transition_to_off(dev, turn_on, mocker):
 
 
 @dimmer_iot
-async def test_set_dimmer_transition_invalid(dev):
-    for invalid_brightness in [-1, 101, 0.5]:
-        with pytest.raises(ValueError):
+async def test_set_dimmer_transition_invalid_brightness(dev):
+    for invalid_brightness in [-1, 101]:
+        with pytest.raises(ValueError, match="Invalid brightness value: "):
             await dev.set_dimmer_transition(invalid_brightness, 1000)
 
-    for invalid_transition in [-1, 0.5]:
-        with pytest.raises(ValueError):
-            await dev.set_dimmer_transition(1, invalid_transition)
+    for invalid_type in [0.5, "foo"]:
+        with pytest.raises(TypeError, match="Transition must be integer"):
+            await dev.set_dimmer_transition(1, invalid_type)
+
+
+@dimmer_iot
+async def test_set_dimmer_transition_invalid_transition(dev):
+    for invalid_transition in [-1]:
+        with pytest.raises(ValueError, match="Transition value .+? is not valid."):
+            await dev.set_dimmer_transition(1, transition=invalid_transition)
+    for invalid_type in [0.5, "foo"]:
+        with pytest.raises(TypeError, match="Transition must be integer"):
+            await dev.set_dimmer_transition(1, transition=invalid_type)
 
 
 @dimmer_iot
