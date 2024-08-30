@@ -77,7 +77,7 @@ class SmartModule(Module):
 
     def __init_subclass__(cls, **kwargs):
         name = getattr(cls, "NAME", cls.__name__)
-        _LOGGER.debug("Registering %s" % cls)
+        _LOGGER.debug("Registering %s", cls)
         cls.REGISTERED_MODULES[name] = cls
 
     def _set_error(self, err: Exception | None):

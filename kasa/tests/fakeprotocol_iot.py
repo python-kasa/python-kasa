@@ -425,7 +425,9 @@ class FakeIotTransport(BaseTransport):
                     return error(msg=f"command {cmd} not found")
 
                 params = request[target][cmd]
-                _LOGGER.debug(f"Going to execute {target}.{cmd} (params: {params}).. ")
+                _LOGGER.debug(
+                    "Going to execute %s.%s (params: %s).. ", target, cmd, params
+                )
 
                 if callable(proto[target][cmd]):
                     res = proto[target][cmd](self, params, child_ids)

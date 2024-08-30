@@ -117,6 +117,8 @@ select = [
   "FA", # flake8-future-annotations
   "I",  # isort
   "S",  # bandit
+  "LOG",  # flake8-logging
+  "G",  # flake8-logging-format
 ]
 ignore = [
   "D105",  # Missing docstring in magic method
