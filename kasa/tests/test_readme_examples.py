@@ -145,7 +145,7 @@ def test_tutorial_examples(readmes_mock):
     assert not res["failed"]
 
 
-@pytest.fixture
+@pytest.fixture()
 async def readmes_mock(mocker):
     fixture_infos = {
         "127.0.0.1": get_fixture_info("KP303(UK)_1.0_1.0.3.json", "IOT"),  # Strip
@@ -154,4 +154,4 @@ async def readmes_mock(mocker):
         "127.0.0.4": get_fixture_info("KL430(US)_1.0_1.0.10.json", "IOT"),  # Lightstrip
         "127.0.0.5": get_fixture_info("HS220(US)_1.0_1.5.7.json", "IOT"),  # Dimmer
     }
-    yield patch_discovery(fixture_infos, mocker)
+    return patch_discovery(fixture_infos, mocker)

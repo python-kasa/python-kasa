@@ -100,7 +100,7 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
 
 
 @pytest.mark.parametrize(
-    "inner_error_codes, expectation, call_count",
+    ("inner_error_codes", "expectation", "call_count"),
     [
         ([SmartErrorCode.LOGIN_ERROR, 0, 0, 0], does_not_raise(), 4),
         (
@@ -298,7 +298,7 @@ async def test_unknown_errors(mocker, error_code):
         "requestID": 1,
         "terminal_uuid": "foobar",
     }
-    with pytest.raises(KasaException):
+    with pytest.raises(KasaException):  # noqa: PT012
         res = await transport.send(json_dumps(request))
         assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
@@ -315,7 +315,7 @@ async def test_port_override():
 
 
 @pytest.mark.parametrize(
-    "device_delay_required, should_error, should_succeed",
+    ("device_delay_required", "should_error", "should_succeed"),
     [
         pytest.param(0, False, True, id="No error"),
         pytest.param(0.125, True, True, id="Error then succeed"),

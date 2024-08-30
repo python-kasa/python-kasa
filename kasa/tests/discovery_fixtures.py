@@ -75,7 +75,7 @@ new_discovery = parametrize_discovery(
 async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
     fixture_info: FixtureInfo = request.param
-    yield patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
+    return patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
 
 
 def create_discovery_mock(ip: str, fixture_data: dict):
@@ -253,4 +253,4 @@ def unsupported_device_info(request, mocker):
 
     mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
 
-    yield discovery_data
+    return discovery_data

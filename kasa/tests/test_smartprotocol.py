@@ -65,7 +65,7 @@ async def test_smart_device_unknown_errors(
         dummy_protocol._transport, "send", return_value=mock_response
     )
 
-    with pytest.raises(KasaException):
+    with pytest.raises(KasaException):  # noqa: PT012
         res = await dummy_protocol.query(DUMMY_QUERY)
         assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 

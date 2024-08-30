@@ -89,7 +89,7 @@ async def test_state_info(dev):
     assert isinstance(dev.state_information, dict)
 
 
-@pytest.mark.requires_dummy
+@pytest.mark.requires_dummy()
 @device_iot
 async def test_invalid_connection(mocker, dev):
     with (

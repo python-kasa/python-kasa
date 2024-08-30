@@ -388,10 +388,14 @@ class IotBulb(IotDevice):
         if not self._is_color:
             raise KasaException("Bulb does not support color.")
 
-        if not isinstance(hue, int) or not (0 <= hue <= 360):
+        if not isinstance(hue, int):
+            raise TypeError("Hue must be an integer.")
+        if not (0 <= hue <= 360):
             raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
 
-        if not isinstance(saturation, int) or not (0 <= saturation <= 100):
+        if not isinstance(saturation, int):
+            raise TypeError("Saturation must be an integer.")
+        if not (0 <= saturation <= 100):
             raise ValueError(
                 f"Invalid saturation value: {saturation} (valid range: 0-100%)"
             )
@@ -445,7 +449,9 @@ class IotBulb(IotDevice):
         return await self._set_light_state(light_state, transition=transition)
 
     def _raise_for_invalid_brightness(self, value):
-        if not isinstance(value, int) or not (0 <= value <= 100):
+        if not isinstance(value, int):
+            raise TypeError("Brightness must be an integer")
+        if not (0 <= value <= 100):
             raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     @property  # type: ignore

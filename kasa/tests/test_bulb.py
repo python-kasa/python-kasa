@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import pytest
 from voluptuous import (
     All,
@@ -51,10 +53,8 @@ async def test_state_attributes(dev: Device):
 
 @bulb_iot
 async def test_light_state_without_update(dev: IotBulb, monkeypatch):
+    monkeypatch.setitem(dev._last_update["system"]["get_sysinfo"], "light_state", None)
     with pytest.raises(KasaException):
-        monkeypatch.setitem(
-            dev._last_update["system"]["get_sysinfo"], "light_state", None
-        )
         print(dev.light_state)
 
 
@@ -114,23 +114,72 @@ async def test_light_set_state(dev: IotBulb, mocker):
 
 @color_bulb
 @turn_on
-async def test_invalid_hsv(dev: Device, turn_on):
+@pytest.mark.parametrize(
+    ("hue", "sat", "brightness", "exception_cls", "error"),
+    [
+        pytest.param(-1, 0, 0, ValueError, "Invalid hue", id="hue out of range"),
+        pytest.param(361, 0, 0, ValueError, "Invalid hue", id="hue out of range"),
+        pytest.param(
+            0.5, 0, 0, TypeError, "Hue must be an integer", id="hue invalid type"
+        ),
+        pytest.param(
+            "foo", 0, 0, TypeError, "Hue must be an integer", id="hue invalid type"
+        ),
+        pytest.param(
+            0, -1, 0, ValueError, "Invalid saturation", id="saturation out of range"
+        ),
+        pytest.param(
+            0, 101, 0, ValueError, "Invalid saturation", id="saturation out of range"
+        ),
+        pytest.param(
+            0,
+            0.5,
+            0,
+            TypeError,
+            "Saturation must be an integer",
+            id="saturation invalid type",
+        ),
+        pytest.param(
+            0,
+            "foo",
+            0,
+            TypeError,
+            "Saturation must be an integer",
+            id="saturation invalid type",
+        ),
+        pytest.param(
+            0, 0, -1, ValueError, "Invalid brightness", id="brightness out of range"
+        ),
+        pytest.param(
+            0, 0, 101, ValueError, "Invalid brightness", id="brightness out of range"
+        ),
+        pytest.param(
+            0,
+            0,
+            0.5,
+            TypeError,
+            "Brightness must be an integer",
+            id="brightness invalid type",
+        ),
+        pytest.param(
+            0,
+            0,
+            "foo",
+            TypeError,
+            "Brightness must be an integer",
+            id="brightness invalid type",
+        ),
+    ],
+)
+async def test_invalid_hsv(
+    dev: Device, turn_on, hue, sat, brightness, exception_cls, error
+):
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
     assert light.is_color
-
-    for invalid_hue in [-1, 361, 0.5]:
-        with pytest.raises(ValueError):
-            await light.set_hsv(invalid_hue, 0, 0)  # type: ignore[arg-type]
-
-    for invalid_saturation in [-1, 101, 0.5]:
-        with pytest.raises(ValueError):
-            await light.set_hsv(0, invalid_saturation, 0)  # type: ignore[arg-type]
-
-    for invalid_brightness in [-1, 101, 0.5]:
-        with pytest.raises(ValueError):
-            await light.set_hsv(0, 0, invalid_brightness)  # type: ignore[arg-type]
+    with pytest.raises(exception_cls, match=error):
+        await light.set_hsv(hue, sat, brightness)
 
 
 @color_bulb
@@ -201,9 +250,13 @@ async def test_smart_temp_range(dev: Device):
 async def test_out_of_range_temperature(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Temperature should be between \d+ and \d+, was 1000"
+    ):
         await light.set_color_temp(1000)
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Temperature should be between \d+ and \d+, was 10000"
+    ):
         await light.set_color_temp(10000)
 
 
@@ -236,7 +289,7 @@ async def test_dimmable_brightness(dev: IotBulb, turn_on):
     await dev.update()
     assert dev.brightness == 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError, match="Brightness must be an integer"):
         await dev.set_brightness("foo")  # type: ignore[arg-type]
 
 
@@ -264,10 +317,16 @@ async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
 async def test_invalid_brightness(dev: IotBulb):
     assert dev._is_dimmable
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Invalid brightness value: 110 (valid range: 0-100%)"),
+    ):
         await dev.set_brightness(110)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Invalid brightness value: -100 (valid range: 0-100%)"),
+    ):
         await dev.set_brightness(-100)
 
 

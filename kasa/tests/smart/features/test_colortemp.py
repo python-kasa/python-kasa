@@ -23,8 +23,8 @@ async def test_colortemp_component(dev: SmartDevice):
     await dev.update()
     assert feature.value == new_value
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         await feature.set_value(feature.minimum_value - 10)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         await feature.set_value(feature.maximum_value + 10)

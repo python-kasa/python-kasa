@@ -10,7 +10,7 @@ motion = parametrize(
 
 @motion
 @pytest.mark.parametrize(
-    "feature, type",
+    ("feature", "type"),
     [
         ("motion_detected", bool),
     ],
