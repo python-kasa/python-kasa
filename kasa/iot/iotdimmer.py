@@ -118,7 +118,9 @@ class IotDimmer(IotPlug):
             )
 
         if not 0 <= brightness <= 100:
-            raise ValueError("Brightness value %s is not valid." % brightness)
+            raise ValueError(
+                f"Invalid brightness value: {brightness} (valid range: 0-100%)"
+            )
 
         # Dimmers do not support a brightness of 0, but bulbs do.
         # Coerce 0 to 1 to maintain the same interface between dimmers and bulbs.

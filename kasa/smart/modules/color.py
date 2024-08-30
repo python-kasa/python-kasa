@@ -73,10 +73,14 @@ class Color(SmartModule):
         :param int value: value in percentage [0, 100]
         :param int transition: transition in milliseconds.
         """
-        if not isinstance(hue, int) or not (0 <= hue <= 360):
+        if not isinstance(hue, int):
+            raise TypeError("Hue must be an integer")
+        if not (0 <= hue <= 360):
             raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
 
-        if not isinstance(saturation, int) or not (0 <= saturation <= 100):
+        if not isinstance(saturation, int):
+            raise TypeError("Saturation must be an integer")
+        if not (0 <= saturation <= 100):
             raise ValueError(
                 f"Invalid saturation value: {saturation} (valid range: 0-100%)"
             )

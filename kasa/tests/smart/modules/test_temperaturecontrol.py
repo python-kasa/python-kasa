@@ -1,4 +1,5 @@
 import logging
+import re
 
 import pytest
 
@@ -74,10 +75,14 @@ async def test_set_temperature_invalid_values(dev):
 async def test_temperature_offset(dev):
     """Test the temperature offset API."""
     temp_module: TemperatureControl = dev.modules["TemperatureControl"]
-    with pytest.raises(ValueError, match="Temperature offset must be [-10, 10]"):
+    with pytest.raises(
+        ValueError, match=re.escape("Temperature offset must be [-10, 10]")
+    ):
         await temp_module.set_temperature_offset(100)
 
-    with pytest.raises(ValueError, match="Temperature offset must be [-10, 10]"):
+    with pytest.raises(
+        ValueError, match=re.escape("Temperature offset must be [-10, 10]")
+    ):
         await temp_module.set_temperature_offset(-100)
 
     await temp_module.set_temperature_offset(5)
