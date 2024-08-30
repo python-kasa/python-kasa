@@ -37,7 +37,7 @@ async def test_light_effect(dev: Device, mocker: MockerFixture):
         assert light_effect.effect == effect
         assert feature.value == effect
 
-    with pytest.raises(ValueError, match="Cannot set light effect"):
+    with pytest.raises(ValueError, match="The effect foobar is not a built in effect"):
         await light_effect.set_effect("foobar")
 
 

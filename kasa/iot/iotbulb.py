@@ -450,7 +450,7 @@ class IotBulb(IotDevice):
 
     def _raise_for_invalid_brightness(self, value):
         if not isinstance(value, int):
-            raise TypeError("Brightness must be integer")
+            raise TypeError("Brightness must be an integer")
         if not (0 <= value <= 100):
             raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 

@@ -51,10 +51,12 @@ class Color(SmartModule):
 
         return HSV(hue=h, saturation=s, value=v)
 
-    def _raise_for_invalid_brightness(self, value: int):
+    def _raise_for_invalid_brightness(self, value):
         """Raise error on invalid brightness value."""
-        if not isinstance(value, int) or not (1 <= value <= 100):
-            raise ValueError(f"Invalid brightness value: {value} (valid range: 1-100%)")
+        if not isinstance(value, int):
+            raise TypeError("Brightness must be an integer")
+        if not (0 <= value <= 100):
+            raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     async def set_hsv(
         self,
