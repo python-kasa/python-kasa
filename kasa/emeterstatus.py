@@ -87,5 +87,5 @@ class EmeterStatus(dict):
                     ):
                         return value / 1000
 
-                _LOGGER.debug(f"Unable to find value for '{item}'")
+                _LOGGER.debug("Unable to find value for '%s'", item)
                 return None
