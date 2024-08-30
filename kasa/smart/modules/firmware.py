@@ -71,7 +71,7 @@ class Firmware(SmartModule):
 
     def __init__(self, device: SmartDevice, module: str):
         super().__init__(device, module)
-        self._firmware_update_info = None
+        self._firmware_update_info: UpdateInfo | None = None
 
     def _initialize_features(self):
         """Initialize features."""
@@ -139,16 +139,16 @@ class Firmware(SmartModule):
             return {"get_auto_update_info": None}
         return {}
 
-    async def check_latest_firmware(self):
+    async def check_latest_firmware(self) -> UpdateInfo | None:
         """Check for the latest firmware for the device."""
         try:
             fw = await self.call("get_latest_fw")
             self._firmware_update_info = UpdateInfo.parse_obj(fw["get_latest_fw"])
-        except Exception as ex:
-            _LOGGER.exception(
-                "Error getting latest firmware for %s: %s", self._device, ex
-            )
+            return self._firmware_update_info
+        except Exception:
+            _LOGGER.exception("Error getting latest firmware for %s:", self._device)
             self._firmware_update_info = None
+            return None
 
     @property
     def current_firmware(self) -> str:
