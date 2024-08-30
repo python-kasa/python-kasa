@@ -237,7 +237,7 @@ class Firmware(SmartModule):
                     _LOGGER.warning("Unhandled state code: %s", state)
 
     @property
-    def auto_update_enabled(self):
+    def auto_update_enabled(self) -> bool:
         """Return True if autoupdate is enabled."""
         return "enable" in self.data and self.data["enable"]
 
