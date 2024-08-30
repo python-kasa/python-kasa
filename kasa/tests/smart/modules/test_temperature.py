@@ -16,7 +16,7 @@ temperature_warning = parametrize(
 
 @temperature
 @pytest.mark.parametrize(
-    "feature, type",
+    ("feature", "type"),
     [
         ("temperature", float),
         ("temperature_unit", str),

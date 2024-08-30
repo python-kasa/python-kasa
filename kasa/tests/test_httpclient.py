@@ -14,7 +14,7 @@ from ..httpclient import HttpClient
 
 
 @pytest.mark.parametrize(
-    "error, error_raises, error_message",
+    ("error", "error_raises", "error_message"),
     [
         (
             aiohttp.ServerDisconnectedError(),
@@ -52,7 +52,7 @@ from ..httpclient import HttpClient
         "ServerFingerprintMismatch",
     ),
 )
-@pytest.mark.parametrize("mock_read", (False, True), ids=("post", "read"))
+@pytest.mark.parametrize("mock_read", [False, True], ids=("post", "read"))
 async def test_httpclient_errors(mocker, error, error_raises, error_message, mock_read):
     class _mock_response:
         def __init__(self, status, error):

@@ -76,8 +76,8 @@ async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     await dev.update()
     assert not device.is_on
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid level"):
         await fan.set_fan_speed_level(-1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid level"):
         await fan.set_fan_speed_level(5)

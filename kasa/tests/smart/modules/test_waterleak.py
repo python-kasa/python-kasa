@@ -12,7 +12,7 @@ waterleak = parametrize(
 
 @waterleak
 @pytest.mark.parametrize(
-    "feature, prop_name, type",
+    ("feature", "prop_name", "type"),
     [
         ("water_alert", "alert", int),
         ("water_leak", "status", Enum),

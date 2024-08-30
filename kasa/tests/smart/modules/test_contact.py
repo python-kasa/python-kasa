@@ -10,7 +10,7 @@ contact = parametrize(
 
 @contact
 @pytest.mark.parametrize(
-    "feature, type",
+    ("feature", "type"),
     [
         ("is_open", bool),
     ],

@@ -90,7 +90,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         """
         if effect != self.LIGHT_EFFECTS_OFF and effect not in self._scenes_names_to_id:
             raise ValueError(
-                f"Cannot set light effect to {effect}, possible values "
+                f"The effect {effect} is not a built in effect. Possible values "
                 f"are: {self.LIGHT_EFFECTS_OFF} "
                 f"{' '.join(self._scenes_names_to_id.keys())}"
             )

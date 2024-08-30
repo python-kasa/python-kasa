@@ -20,10 +20,9 @@ firmware = parametrize(
 
 @firmware
 @pytest.mark.parametrize(
-    "feature, prop_name, type, required_version",
+    ("feature", "prop_name", "type", "required_version"),
     [
         ("auto_update_enabled", "auto_update_enabled", bool, 2),
-        ("update_available", "update_available", bool, 1),
         ("update_available", "update_available", bool, 1),
         ("current_firmware_version", "current_firmware", str, 1),
         ("available_firmware_version", "latest_firmware", str, 1),
