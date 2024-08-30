@@ -118,6 +118,8 @@ select = [
   "I",  # isort
   "S",  # bandit
   "PT",  # flake8-pytest-style
+  "LOG",  # flake8-logging
+  "G",  # flake8-logging-format
 ]
 ignore = [
   "D105",  # Missing docstring in magic method

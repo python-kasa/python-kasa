@@ -309,8 +309,9 @@ class SmartProtocol(BaseProtocol):
             # In case the device returns empty lists avoid infinite looping
             if not next_batch[response_list_name]:
                 _LOGGER.error(
-                    f"Device {self._host} returned empty "
-                    + f"results list for method {method}"
+                    "Device %s returned empty results list for method %s",
+                    self._host,
+                    method,
                 )
                 break
             response_result[response_list_name].extend(next_batch[response_list_name])

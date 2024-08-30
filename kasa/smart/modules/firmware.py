@@ -181,7 +181,7 @@ class Firmware(SmartModule):
                     )
                     continue
 
-                _LOGGER.debug("Update state: %s" % state)
+                _LOGGER.debug("Update state: %s", state)
                 if progress_cb is not None:
                     asyncio.create_task(progress_cb(state))
 

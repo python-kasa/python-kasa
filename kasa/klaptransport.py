@@ -153,8 +153,8 @@ class KlapTransport(BaseTransport):
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
-                "Handshake1 posted at %s. Host is %s, Response"
-                + "status is %s, Request was %s",
+                "Handshake1 posted at %s. Host is %s, "
+                "Response status is %s, Request was %s",
                 datetime.datetime.now(),
                 self._host,
                 response_status,
@@ -179,7 +179,7 @@ class KlapTransport(BaseTransport):
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
                 "Handshake1 success at %s. Host is %s, "
-                + "Server remote_seed is: %s, server hash is: %s",
+                "Server remote_seed is: %s, server hash is: %s",
                 datetime.datetime.now(),
                 self._host,
                 remote_seed.hex(),
@@ -211,9 +211,10 @@ class KlapTransport(BaseTransport):
 
             if default_credentials_seed_auth_hash == server_hash:
                 _LOGGER.debug(
-                    "Server response doesn't match our expected hash on ip %s"
-                    + f" but an authentication with {key} default credentials matched",
+                    "Server response doesn't match our expected hash on ip %s, "
+                    "but an authentication with %s default credentials matched",
                     self._host,
+                    key,
                 )
                 return local_seed, remote_seed, self._default_credentials_auth_hash[key]  # type: ignore
 
@@ -231,8 +232,8 @@ class KlapTransport(BaseTransport):
 
             if blank_seed_auth_hash == server_hash:
                 _LOGGER.debug(
-                    "Server response doesn't match our expected hash on ip %s"
-                    + " but an authentication with blank credentials matched",
+                    "Server response doesn't match our expected hash on ip %s, "
+                    "but an authentication with blank credentials matched",
                     self._host,
                 )
                 return local_seed, remote_seed, self._blank_auth_hash  # type: ignore
@@ -260,8 +261,8 @@ class KlapTransport(BaseTransport):
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
-                "Handshake2 posted %s.  Host is %s, Response status is %s, "
-                + "Request was %s",
+                "Handshake2 posted %s. Host is %s, "
+                "Response status is %s, Request was %s",
                 datetime.datetime.now(),
                 self._host,
                 response_status,
@@ -338,18 +339,17 @@ class KlapTransport(BaseTransport):
             + f"Response status is {response_status}, Request was {request}"
         )
         if response_status != 200:
-            _LOGGER.error("Query failed after successful authentication " + msg)
+            _LOGGER.error("Query failed after successful authentication: %s", msg)
             # If we failed with a security error, force a new handshake next time.
             if response_status == 403:
                 self._handshake_done = False
                 raise _RetryableError(
-                    f"Got a security error from {self._host} after handshake "
-                    + "completed"
+                    "Got a security error from %s after handshake completed", self._host
                 )
             else:
                 raise KasaException(
-                    f"Device {self._host} responded with {response_status} to"
-                    + f"request with seq {seq}"
+                    f"Device {self._host} responded with {response_status} to "
+                    f"request with seq {seq}"
                 )
         else:
             _LOGGER.debug("Device %s query posted %s", self._host, msg)
