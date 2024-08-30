@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from contextlib import nullcontext
 from typing import TypedDict
 
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Module
+from kasa import KasaException, Module
 from kasa.smart import SmartDevice
 from kasa.smart.modules.firmware import DownloadState
 from kasa.tests.device_fixtures import parametrize
@@ -33,10 +34,12 @@ async def test_firmware_features(
     """Test light effect."""
     fw = dev.modules.get(Module.Firmware)
     assert fw
+    assert fw.firmware_update_info is None
 
     if not dev.is_cloud_connected:
         pytest.skip("Device is not cloud connected, skipping test")
 
+    await fw.check_latest_firmware()
     if fw.supported_version < required_version:
         pytest.skip("Feature %s requires newer version" % feature)
 
@@ -53,19 +56,35 @@ async def test_update_available_without_cloud(dev: SmartDevice):
     """Test that update_available returns None when disconnected."""
     fw = dev.modules.get(Module.Firmware)
     assert fw
+    assert fw.firmware_update_info is None
 
     if dev.is_cloud_connected:
+        await fw.check_latest_firmware()
         assert isinstance(fw.update_available, bool)
     else:
         assert fw.update_available is None
 
 
 @firmware
+@pytest.mark.parametrize(
+    ("update_available", "expected_result"),
+    [
+        pytest.param(True, nullcontext(), id="available"),
+        pytest.param(False, pytest.raises(KasaException), id="not-available"),
+    ],
+)
 async def test_firmware_update(
-    dev: SmartDevice, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    update_available,
+    expected_result,
 ):
     """Test updating firmware."""
     caplog.set_level(logging.INFO)
+
+    if not dev.is_cloud_connected:
+        pytest.skip("Device is not cloud connected, skipping test")
 
     fw = dev.modules.get(Module.Firmware)
     assert fw
@@ -101,7 +120,19 @@ async def test_firmware_update(
 
     cb_mock = mocker.AsyncMock()
 
-    await fw.update(progress_cb=cb_mock)
+    assert fw.firmware_update_info is None
+    with pytest.raises(KasaException):
+        await fw.update(progress_cb=cb_mock)
+    await fw.check_latest_firmware()
+    assert fw.firmware_update_info is not None
+
+    fw._firmware_update_info.status = 1 if update_available else 0
+
+    with expected_result:
+        await fw.update(progress_cb=cb_mock)
+
+    if not update_available:
+        return
 
     # This is necessary to allow the eventloop to process the created tasks
     await asyncio_sleep(0)
