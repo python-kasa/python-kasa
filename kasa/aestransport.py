@@ -278,9 +278,8 @@ class AesTransport(BaseTransport):
             + "\n-----END PUBLIC KEY-----\n"
         )
         handshake_params = {"key": pub_key}
-        _LOGGER.debug(f"Handshake params: {handshake_params}")
         request_body = {"method": "handshake", "params": handshake_params}
-        _LOGGER.debug(f"Request {request_body}")
+        _LOGGER.debug("Handshake request: %s", request_body)
         yield json_dumps(request_body).encode()
 
     async def perform_handshake(self) -> None:

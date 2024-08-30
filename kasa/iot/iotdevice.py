@@ -198,7 +198,7 @@ class IotDevice(Device):
     def add_module(self, name: str | ModuleName[Module], module: IotModule):
         """Register a module."""
         if name in self._modules:
-            _LOGGER.debug("Module %s already registered, ignoring..." % name)
+            _LOGGER.debug("Module %s already registered, ignoring...", name)
             return
 
         _LOGGER.debug("Adding module %s", module)

@@ -262,7 +262,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self._handle_discovered_event()
             return
         except KasaException as ex:
-            _LOGGER.debug(f"[DISCOVERY] Unable to find device type for {ip}: {ex}")
+            _LOGGER.debug("[DISCOVERY] Unable to find device type for %s: %s", ip, ex)
             self.invalid_device_exceptions[ip] = ex
             self._handle_discovered_event()
             return
