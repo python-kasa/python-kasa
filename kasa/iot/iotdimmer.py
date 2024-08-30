@@ -163,9 +163,7 @@ class IotDimmer(IotPlug):
         A brightness value of 0 will turn off the dimmer.
         """
         if not isinstance(brightness, int):
-            raise TypeError(
-                "Brightness must be integer, " "not of %s.", type(brightness)
-            )
+            raise TypeError(f"Brightness must be an integer, not {type(brightness)}.")
 
         if not 0 <= brightness <= 100:
             raise ValueError(
