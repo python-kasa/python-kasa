@@ -67,7 +67,7 @@ async def test_update_available_without_cloud(dev: SmartDevice):
 
 @firmware
 @pytest.mark.parametrize(
-    "update_available, expected_result",
+    ("update_available", "expected_result"),
     [
         pytest.param(True, nullcontext(), id="available"),
         pytest.param(False, pytest.raises(KasaException), id="not-available"),
