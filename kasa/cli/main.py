@@ -81,6 +81,7 @@ def _legacy_type_to_class(_type):
         "led": "device",
         "alias": "device",
         "reboot": "device",
+        "factory_reset": "device",
         "update_credentials": "device",
         "sysinfo": "device",
         # light commands runnnable at top level
