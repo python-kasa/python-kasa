@@ -228,8 +228,7 @@ class Firmware(SmartModule, FirmwareInterface):
         | None = None,
     ) -> UpdateResult:
         """Update the firmware."""
-        # TODO: implement, this is part of the common firmware API
-        raise NotImplementedError
+        return await self.update(progress_cb)
 
     async def check_for_updates(self) -> FirmwareUpdateInfoInterface:
         """Return firmware update information."""

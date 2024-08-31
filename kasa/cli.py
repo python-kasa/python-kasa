@@ -1301,7 +1301,7 @@ async def firmware_update(ctx: click.Context, dev: Device):
         echo(f"Progress: {x}")
 
     echo("Going to update %s", dev)
-    await dev.modules.get[Module.Firmware].update_firmware(progress_cb=progress)  # type: ignore
+    await dev.modules[Module.Firmware].update_firmware(progress_cb=progress)  # type: ignore
 
 
 if __name__ == "__main__":
