@@ -94,7 +94,7 @@ class Alarm(SmartModule):
         )
 
     @property
-    def alarm_sound(self):
+    def alarm_sound(self) -> str:
         """Return current alarm sound."""
         return self.data["get_alarm_configure"]["type"]
 
@@ -113,7 +113,7 @@ class Alarm(SmartModule):
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
     @property
-    def alarm_volume(self):
+    def alarm_volume(self) -> str:
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
 
@@ -134,10 +134,10 @@ class Alarm(SmartModule):
         src = self._device.sys_info["in_alarm_source"]
         return src if src else None
 
-    async def play(self):
+    async def play(self) -> dict:
         """Play alarm."""
         return await self.call("play_alarm")
 
-    async def stop(self):
+    async def stop(self) -> dict:
         """Stop alarm."""
         return await self.call("stop_alarm")
