@@ -389,14 +389,14 @@ async def test_handshake(
     async def _return_handshake_response(url: URL, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash
 
-        if str(url) == "http://127.0.0.1:80/app/handshake1":
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
             seed_auth_hash = _sha256(
                 seed_auth_hash_calc1(client_seed, server_seed, device_auth_hash)
             )
 
             return _mock_response(200, server_seed + seed_auth_hash)
-        elif str(url) == "http://127.0.0.1:80/app/handshake2":
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
             seed_auth_hash = _sha256(
                 seed_auth_hash_calc2(client_seed, server_seed, device_auth_hash)
             )
@@ -433,14 +433,14 @@ async def test_query(mocker):
     async def _return_response(url: URL, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash, seq
 
-        if str(url) == "http://127.0.0.1:80/app/handshake1":
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
 
             return _mock_response(200, server_seed + client_seed_auth_hash)
-        elif str(url) == "http://127.0.0.1:80/app/handshake2":
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
             return _mock_response(200, b"")
-        elif str(url) == "http://127.0.0.1:80/app/request":
+        elif url == URL("http://127.0.0.1:80/app/request"):
             encryption_session = KlapEncryptionSession(
                 protocol._transport._encryption_session.local_seed,
                 protocol._transport._encryption_session.remote_seed,
@@ -526,7 +526,7 @@ async def test_authentication_failures(
             response_status, \
             credentials_match
 
-        if str(url) == "http://127.0.0.1:80/app/handshake1":
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
             if credentials_match is not False and credentials_match is not True:
@@ -534,13 +534,13 @@ async def test_authentication_failures(
             return _mock_response(
                 response_status[0], server_seed + client_seed_auth_hash
             )
-        elif str(url) == "http://127.0.0.1:80/app/handshake2":
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
             return _mock_response(
                 response_status[1], server_seed + client_seed_auth_hash
             )
-        elif str(url) == "http://127.0.0.1:80/app/request":
+        elif url == URL("http://127.0.0.1:80/app/request"):
             return _mock_response(response_status[2], b"")
 
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
