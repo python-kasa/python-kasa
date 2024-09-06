@@ -1,16 +1,18 @@
 ---
 name: Setup Environment
-description: Install requested pipx dependencies, configure the system python, and install poetry and the package dependencies
+description: Install requested pipx dependencies, configure the system python, and install uv and the package dependencies
 
 inputs:
-  poetry-install-options:
+  uv-install-options:
     default: ""
-  poetry-version:
-    default: 1.8.2
+  uv-version:
+    default: 0.4.5
   python-version:
     required: true
   cache-pre-commit:
     default: false
+  cache-version:
+    default: "v0.1"
 
 runs:
   using: composite
@@ -25,7 +27,7 @@ runs:
       id: pipx-env-setup
       # pipx default home and bin dir are not writable by the cache action
       # so override them here and add the bin dir to PATH for later steps.
-      # This also ensures the pipx cache only contains poetry
+      # This also ensures the pipx cache only contains uv
       run: |
         SEP="${{ !startsWith(runner.os, 'windows') && '/' || '\\' }}"
         PIPX_CACHE="${{ github.workspace }}${SEP}pipx_cache"
@@ -42,43 +44,43 @@ runs:
       uses: actions/cache@v4
       with:
         path: ${{ steps.pipx-env-setup.outputs.pipx-cache-path }}
-        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-poetry-${{ inputs.poetry-version }}
+        key: cache-${{ inputs.cache-version }}-${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-uv-${{ inputs.uv-version }}
 
-    - name: Install poetry
+    - name: Install uv
       if: steps.pipx-cache.outputs.cache-hit != 'true'
-      id: install-poetry
+      id: install-uv
       shell: bash
       run: |-
-        pipx install poetry==${{ inputs.poetry-version }} --python "${{ steps.setup-python.outputs.python-path }}"
+        pipx install uv==${{ inputs.uv-version }} --python "${{ steps.setup-python.outputs.python-path }}"
 
-    - name: Read poetry cache location
-      id: poetry-cache-location
+    - name: Read uv cache location
+      id: uv-cache-location
       shell: bash
       run: |-
-        echo "poetry-venv-location=$(poetry config virtualenvs.path)" >> $GITHUB_OUTPUT
+        echo "uv-cache-location=$(uv cache dir)" >> $GITHUB_OUTPUT
 
     - uses: actions/cache@v4
-      name: Poetry cache
+      name: uv cache
       with:
         path: |
-          ${{ steps.poetry-cache-location.outputs.poetry-venv-location }}
-        key: ${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-options-${{ inputs.poetry-install-options }}
+          ${{ steps.uv-cache-location.outputs.uv-cache-location }}
+        key: cache-${{ inputs.cache-version }}-${{ runner.os }}-${{ runner.arch }}-python-${{ steps.setup-python.outputs.python-version }}-uv-${{ inputs.uv-version }}-${{ hashFiles('uv.lock') }}-options-${{ inputs.uv-install-options }}
 
-    - name: "Poetry install"
+    - name: "uv install"
       shell: bash
       run: |
-        poetry install ${{ inputs.poetry-install-options }}
+        uv sync --python "${{ steps.setup-python.outputs.python-path }}" ${{ inputs.uv-install-options }}
 
     - name: Read pre-commit version
       if: inputs.cache-pre-commit == 'true'
       id: pre-commit-version
       shell: bash
       run: >-
-        echo "pre-commit-version=$(poetry run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
+        echo "pre-commit-version=$(uv run pre-commit -- -V | awk '{print $2}')" >> $GITHUB_OUTPUT
 
     - uses: actions/cache@v4
       if: inputs.cache-pre-commit == 'true'
       name: Pre-commit cache
       with:
         path: ~/.cache/pre-commit/
-        key: ${{ runner.os }}-${{ runner.arch }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+        key: cache-${{ inputs.cache-version }}-${{ runner.os }}-${{ runner.arch }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}

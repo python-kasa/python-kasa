@@ -8,7 +8,7 @@ on:
   workflow_dispatch:  # to allow manual re-runs
 
 env:
-  POETRY_VERSION: 1.8.2
+  UV_VERSION: 0.4.5
 
 jobs:
   linting:
@@ -26,32 +26,33 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
-          poetry-version: ${{ env.POETRY_VERSION }}
-          poetry-install-options: "--all-extras"
+          uv-version: ${{ env.UV_VERSION }}
+          uv-install-options: "--all-extras"
       - name: "Check supported device md files are up to date"
         run: |
-          poetry run pre-commit run generate-supported --all-files
+          uv run pre-commit run generate-supported --all-files
       - name: "Linting and code formating (ruff)"
         run: |
-          poetry run pre-commit run ruff --all-files
+          uv run pre-commit run ruff --all-files
       - name: "Typing checks (mypy)"
         run: |
-          poetry run pre-commit run mypy --all-files
+          source .venv/bin/activate
+          pre-commit run mypy --all-files
       - name: "Run trailing-whitespace"
         run: |
-          poetry run pre-commit run trailing-whitespace --all-files
+          uv run pre-commit run trailing-whitespace --all-files
       - name: "Run end-of-file-fixer"
         run: |
-          poetry run pre-commit run end-of-file-fixer --all-files
+          uv run pre-commit run end-of-file-fixer --all-files
       - name: "Run check-docstring-first"
         run: |
-          poetry run pre-commit run check-docstring-first --all-files
+          uv run pre-commit run check-docstring-first --all-files
       - name: "Run debug-statements"
         run: |
-          poetry run pre-commit run debug-statements --all-files
+          uv run pre-commit run debug-statements --all-files
       - name: "Run check-ast"
         run: |
-          poetry run pre-commit run check-ast --all-files
+          uv run pre-commit run check-ast --all-files
 
 
   tests:
@@ -89,16 +90,16 @@ jobs:
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
-          poetry-version: ${{ env.POETRY_VERSION }}
-          poetry-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
+          uv-version: ${{ env.UV_VERSION }}
+          uv-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
       - name: "Run tests (no coverage)"
         if: ${{ startsWith(matrix.python-version, 'pypy') }}
         run: |
-          poetry run pytest
+          uv run pytest
       - name: "Run tests (with coverage)"
         if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: |
-          poetry run pytest --cov kasa --cov-report xml
+          uv run pytest --cov kasa --cov-report xml
       - name: "Upload coverage to Codecov"
         if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         uses: "codecov/codecov-action@v4"
