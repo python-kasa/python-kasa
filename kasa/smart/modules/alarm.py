@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -113,11 +115,11 @@ class Alarm(SmartModule):
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
     @property
-    def alarm_volume(self) -> str:
+    def alarm_volume(self) -> Literal["low", "normal", "high"]:
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
 
-    async def set_alarm_volume(self, volume: str):
+    async def set_alarm_volume(self, volume: Literal["low", "normal", "high"]):
         """Set alarm volume."""
         payload = self.data["get_alarm_configure"].copy()
         payload["volume"] = volume
