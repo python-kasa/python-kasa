@@ -142,6 +142,8 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 ### Hubs
 
 - **KH100**
+  - Hardware: 1.0 (EU) / Firmware: 1.2.3<sup>\*</sup>
+  - Hardware: 1.0 (EU) / Firmware: 1.5.12<sup>\*</sup>
   - Hardware: 1.0 (UK) / Firmware: 1.5.6<sup>\*</sup>
 
 ### Hub-Connected Devices
