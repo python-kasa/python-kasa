@@ -135,10 +135,12 @@ select = [
   "PT",  # flake8-pytest-style
   "LOG",  # flake8-logging
   "G",  # flake8-logging-format
+  "ANN",  # annotations
 ]
 ignore = [
   "D105",  # Missing docstring in magic method
   "D107",  # Missing docstring in `__init__`
+  "ANN101",  # Missing type annotation for `self`
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -153,6 +155,7 @@ convention = "pep257"
     "D104",
     "S101", # allow asserts
     "E501", # ignore line-too-longs
+    "ANN", # skip for now
 ]
 "docs/source/conf.py" = [
     "D100",
