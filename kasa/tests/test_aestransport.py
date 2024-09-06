@@ -460,7 +460,7 @@ class MockAesDevice:
         elif json["method"] == "login_device":
             return await self._return_login_response(url, json)
         else:
-            assert str(url) == f"http://{self.host}:80/app?token={self.token}"
+            assert url == URL(f"http://{self.host}:80/app?token={self.token}")
             return await self._return_send_response(url, json)
 
     async def _return_handshake_response(self, url: URL, json: dict[str, Any]):
