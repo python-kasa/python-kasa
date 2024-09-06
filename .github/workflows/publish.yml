@@ -22,7 +22,7 @@ jobs:
 
     - name: Install uv
       run: |-
-        pipx install uv==${{ inputs.uv-version }} --python "${{ steps.setup-python.outputs.python-path }}"
+        pipx install uv==${{ env.UV_VERSION }} --python "${{ steps.setup-python.outputs.python-path }}"
     - name: Build a binary wheel and a source tarball
       run: uv build
     - name: Publish release on pypi
