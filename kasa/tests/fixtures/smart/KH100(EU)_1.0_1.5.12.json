@@ -1,0 +1,429 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "child_device",
+                "ver_code": 1
+            },
+            {
+                "id": "child_quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "child_inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "control_child",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm",
+                "ver_code": 1
+            },
+            {
+                "id": "device_load",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "alarm_logs",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "KH100(EU)",
+        "device_type": "SMART.KASAHUB",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "A8-42-A1-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "KLAP",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "obd_src": "tplink",
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_alarm_configure": {
+        "duration": 300,
+        "type": "Doorbell Ring 1",
+        "volume": "high"
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 900
+    },
+    "get_child_device_component_list": {
+        "child_component_list": [
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "frost_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "child_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_control",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "remove_scale",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "progress_calibration",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "early_start",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temp_record",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "screen_setting",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "night_mode",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "smart_control_schedule",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "temperature_correction",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "window_open_detect",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "shutdown_mode",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1"
+            }
+        ],
+        "start_index": 0,
+        "sum": 1
+    },
+    "get_child_device_list": {
+        "child_device_list": [
+            {
+                "at_low_battery": false,
+                "avatar": "",
+                "battery_percentage": 75,
+                "bind_count": 7,
+                "category": "subg.trv",
+                "child_protection": false,
+                "current_temp": 24.0,
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                "frost_protection_on": false,
+                "fw_ver": "2.4.0 Build 230804 Rel.193040",
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "jamming_rssi": -116,
+                "jamming_signal_level": 1,
+                "location": "",
+                "mac": "A842A1000000",
+                "max_control_temp": 30,
+                "min_control_temp": 5,
+                "model": "KE100",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "region": "Europe/Berlin",
+                "rssi": -13,
+                "signal_level": 3,
+                "specs": "EU",
+                "status": "online",
+                "status_follow_edge": false,
+                "target_temp": 22.0,
+                "temp_offset": 0,
+                "temp_unit": "celsius",
+                "trv_states": [],
+                "type": "SMART.KASAENERGY"
+            }
+        ],
+        "start_index": 0,
+        "sum": 1
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "avatar": "kasa_hub",
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.5.12 Build 240320 Rel.123648",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "in_alarm": false,
+        "in_alarm_source": "",
+        "ip": "127.0.0.123",
+        "lang": "",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "A8-42-A1-00-00-00",
+        "model": "KH100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "Europe/Berlin",
+        "rssi": -60,
+        "signal_level": 2,
+        "specs": "EU",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 60,
+        "type": "SMART.KASAHUB"
+    },
+    "get_device_load_info": {
+        "cur_load_num": 2,
+        "load_level": "light",
+        "max_load_num": 64,
+        "total_memory": 4352,
+        "used_memory": 1439
+    },
+    "get_device_time": {
+        "region": "Europe/Berlin",
+        "time_diff": 60,
+        "timestamp": 1725111902
+    },
+    "get_device_usage": {},
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.5.12 Build 240320 Rel.123648",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "led_rule": "always",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 406,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 1217,
+            "sunrise_offset": 0,
+            "sunset_offset": 0
+        }
+    },
+    "get_support_alarm_type_list": {
+        "alarm_type_list": [
+            "Doorbell Ring 1",
+            "Doorbell Ring 2",
+            "Doorbell Ring 3",
+            "Doorbell Ring 4",
+            "Doorbell Ring 5",
+            "Doorbell Ring 6",
+            "Doorbell Ring 7",
+            "Doorbell Ring 8",
+            "Doorbell Ring 9",
+            "Doorbell Ring 10",
+            "Phone Ring",
+            "Alarm 1",
+            "Alarm 2",
+            "Alarm 3",
+            "Alarm 4",
+            "Dripping Tap",
+            "Alarm 5",
+            "Connection 1",
+            "Connection 2"
+        ]
+    },
+    "get_support_child_device_category": {
+        "device_category_list": [
+            {
+                "category": "subg.trv"
+            },
+            {
+                "category": "subg.trigger"
+            },
+            {
+                "category": "subg.plugswitch"
+            }
+        ]
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 1,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "KH100",
+            "device_type": "SMART.KASAHUB",
+            "is_klap": true
+        }
+    }
+}
