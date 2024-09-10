@@ -97,6 +97,31 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     with expectation:
         await transport.perform_login()
         assert mock_aes_device.token in str(transport._token_url)
+        assert transport._config.aes_keys == transport._key_pair
+
+
+async def test_login_with_keys(mocker):
+    host = "127.0.0.1"
+    mock_aes_device = MockAesDevice(host)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
+
+    test_keys = {"private": "foo", "public": "bar"}
+    transport = AesTransport(
+        config=DeviceConfig(
+            host, credentials=Credentials("foo", "bar"), aes_keys=test_keys
+        )
+    )
+
+    transport._state = TransportState.LOGIN_REQUIRED
+    transport._session_expire_at = time.time() + 86400
+    transport._encryption_session = mock_aes_device.encryption_session
+
+    assert transport._token_url is None
+
+    await transport.perform_login()
+    assert mock_aes_device.token in str(transport._token_url)
+    assert transport._key_pair.get_private_key() == "foo"
+    assert transport._key_pair.get_public_key() == "bar"
 
 
 @pytest.mark.parametrize(

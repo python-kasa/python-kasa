@@ -189,7 +189,7 @@ class DeviceConfig:
     #: The batch size for protoools supporting multiple request batches.
     connection_type: DeviceConnectionParameters = field(
         default_factory=lambda: DeviceConnectionParameters(
-            DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor, 1
+            DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
         )
     )
     #: True if the device uses http.  Consumers should retrieve rather than set this
