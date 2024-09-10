@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.3](https://github.com/python-kasa/python-kasa/tree/0.7.3) (2024-09-10)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.2...0.7.3)
+
+**Release summary:**
+
+- Migrate from `poetry` to `uv` for package/project management.
+- Various minor code improvements
+
+**Project maintenance:**
+
+- Do not regenerate aes key pair [\#1114](https://github.com/python-kasa/python-kasa/pull/1114) (@sdb9696)
+- Fix tests due to yarl URL str output change [\#1112](https://github.com/python-kasa/python-kasa/pull/1112) (@sdb9696)
+- Add missing type hints to alarm module [\#1111](https://github.com/python-kasa/python-kasa/pull/1111) (@rytilahti)
+- Add KH100 EU fixtures [\#1109](https://github.com/python-kasa/python-kasa/pull/1109) (@rytilahti)
+- Migrate from poetry to uv for dependency and package management [\#986](https://github.com/python-kasa/python-kasa/pull/986) (@sdb9696)
+
 ## [0.7.2](https://github.com/python-kasa/python-kasa/tree/0.7.2) (2024-08-30)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.1...0.7.2)
@@ -27,11 +44,11 @@
 
 **Project maintenance:**
 
+- Remove top level await xdoctest fixture [\#1098](https://github.com/python-kasa/python-kasa/pull/1098) (@sdb9696)
+- Enable python 3.13, allow pre-releases for CI [\#1086](https://github.com/python-kasa/python-kasa/pull/1086) (@rytilahti)
 - Add flake8-pytest-style \(PT\) for ruff [\#1105](https://github.com/python-kasa/python-kasa/pull/1105) (@rytilahti)
 - Add flake8-logging \(LOG\) and flake8-logging-format \(G\) for ruff [\#1104](https://github.com/python-kasa/python-kasa/pull/1104) (@rytilahti)
 - Add missing typing\_extensions dependency [\#1101](https://github.com/python-kasa/python-kasa/pull/1101) (@sdb9696)
-- Remove top level await xdoctest fixture [\#1098](https://github.com/python-kasa/python-kasa/pull/1098) (@sdb9696)
-- Enable python 3.13, allow pre-releases for CI [\#1086](https://github.com/python-kasa/python-kasa/pull/1086) (@rytilahti)
 
 ## [0.7.1](https://github.com/python-kasa/python-kasa/tree/0.7.1) (2024-07-31)
 
