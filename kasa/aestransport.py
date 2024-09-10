@@ -105,17 +105,10 @@ class AesTransport(BaseTransport):
 
         self._session_cookie: dict[str, str] | None = None
 
+        self._key_pair: KeyPair | None = None
         if config.aes_keys:
             aes_keys = config.aes_keys
             self._key_pair = KeyPair(aes_keys["private"], aes_keys["public"])
-        else:
-            kp = KeyPair.create_key_pair()
-            config.aes_keys = {
-                "private": kp.get_private_key(),
-                "public": kp.get_public_key(),
-            }
-            self._key_pair = kp
-
         self._app_url = URL(f"http://{self._host}:{self._port}/app")
         self._token_url: URL | None = None
 
@@ -281,6 +274,13 @@ class AesTransport(BaseTransport):
         can be made to the device.
         """
         _LOGGER.debug("Generating keypair")
+        if not self._key_pair:
+            kp = KeyPair.create_key_pair()
+            self._config.aes_keys = {
+                "private": kp.get_private_key(),
+                "public": kp.get_public_key(),
+            }
+            self._key_pair = kp
 
         pub_key = (
             "-----BEGIN PUBLIC KEY-----\n"
