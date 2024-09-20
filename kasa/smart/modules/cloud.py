@@ -18,7 +18,7 @@ class Cloud(SmartModule):
     REQUIRED_COMPONENT = "cloud_connect"
     MINIMUM_UPDATE_INTERVAL_SECS = 60
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
 
         self._add_feature(
@@ -35,7 +35,7 @@ class Cloud(SmartModule):
         )
 
     @property
-    def is_connected(self):
+    def is_connected(self) -> bool:
         """Return True if device is connected to the cloud."""
         if self._has_data_error():
             return False

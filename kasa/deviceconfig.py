@@ -34,7 +34,7 @@ Living Room Bulb
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from .credentials import Credentials
 from .exceptions import KasaException
@@ -67,7 +67,7 @@ class DeviceFamily(Enum):
     SmartKasaHub = "SMART.KASAHUB"
 
 
-def _dataclass_from_dict(klass, in_val):
+def _dataclass_from_dict(klass: Any, in_val: dict) -> Any:
     if is_dataclass(klass):
         fieldtypes = {f.name: f.type for f in fields(klass)}
         val = {}
@@ -88,7 +88,7 @@ def _dataclass_from_dict(klass, in_val):
         return in_val
 
 
-def _dataclass_to_dict(in_val):
+def _dataclass_to_dict(in_val: Any) -> dict:
     fieldtypes = {f.name: f.type for f in fields(in_val) if f.compare}
     out_val = {}
     for field_name in fieldtypes:
@@ -193,7 +193,7 @@ class DeviceConfig:
     #: Set a custom http_client for the device to use.
     http_client: Optional["ClientSession"] = field(default=None, compare=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.connection_type is None:
             self.connection_type = DeviceConnectionParameters(
                 DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor

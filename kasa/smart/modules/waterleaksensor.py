@@ -25,7 +25,7 @@ class WaterleakSensor(SmartModule):
 
     REQUIRED_COMPONENT = "sensor_alarm"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(

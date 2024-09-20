@@ -66,6 +66,6 @@ todo_include_todos = True
 myst_heading_anchors = 3
 
 
-def setup(app):
+def setup(app):  # noqa: ANN201,ANN001
     # add copybutton to hide the >>> prompts, see https://github.com/readthedocs/sphinx_rtd_theme/issues/167
     app.add_js_file("copybutton.js")

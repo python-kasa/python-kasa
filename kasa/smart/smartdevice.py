@@ -67,7 +67,7 @@ class SmartDevice(Device):
         self._last_update = {}
         self._last_update_time: float | None = None
 
-    async def _initialize_children(self):
+    async def _initialize_children(self) -> None:
         """Initialize children for power strips."""
         child_info_query = {
             "get_child_device_component_list": None,
@@ -106,7 +106,9 @@ class SmartDevice(Device):
         """Return the device modules."""
         return cast(ModuleMapping[SmartModule], self._modules)
 
-    def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
+    def _try_get_response(
+        self, responses: dict, request: str, default: None = None
+    ) -> dict:
         response = responses.get(request)
         if isinstance(response, SmartErrorCode):
             _LOGGER.debug(
@@ -124,7 +126,7 @@ class SmartDevice(Device):
             f"{request} not found in {responses} for device {self.host}"
         )
 
-    async def _negotiate(self):
+    async def _negotiate(self) -> None:
         """Perform initialization.
 
         We fetch the device info and the available components as early as possible.
@@ -153,7 +155,7 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def update(self, update_children: bool = False):
+    async def update(self, update_children: bool = False) -> None:
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
@@ -196,7 +198,7 @@ class SmartDevice(Device):
 
     def _handle_module_post_update(
         self, module: SmartModule, update_time: float, had_query: bool
-    ):
+    ) -> None:
         if module.disabled:
             return  # pragma: no cover
         if had_query:
@@ -302,7 +304,7 @@ class SmartDevice(Device):
                 responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
         return responses
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
 
@@ -344,7 +346,7 @@ class SmartDevice(Device):
         ):
             self._modules[Light.__name__] = Light(self, "light")
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize device features."""
         self._add_feature(
             Feature(
@@ -549,11 +551,11 @@ class SmartDevice(Device):
         return str(self._info.get("device_id"))
 
     @property
-    def internal_state(self) -> Any:
+    def internal_state(self) -> dict:
         """Return all the internal state data."""
         return self._last_update
 
-    def _update_internal_state(self, info):
+    def _update_internal_state(self, info: dict[str, Any]) -> None:
         """Update the internal info state.
 
         This is used by the parent to push updates to its children.
@@ -561,8 +563,8 @@ class SmartDevice(Device):
         self._info = info
 
     async def _query_helper(
-        self, method: str, params: dict | None = None, child_ids=None
-    ) -> Any:
+        self, method: str, params: dict | None = None, child_ids: None = None
+    ) -> dict:
         res = await self.protocol.query({method: params})
 
         return res
@@ -584,22 +586,25 @@ class SmartDevice(Device):
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))
 
-    async def set_state(self, on: bool):  # TODO: better name wanted.
+    async def set_state(self, on: bool) -> dict:
         """Set the device state.
 
         See :meth:`is_on`.
         """
         return await self.protocol.query({"set_device_info": {"device_on": on}})
 
-    async def turn_on(self, **kwargs):
+    async def turn_on(self, **kwargs: Any) -> None:
         """Turn on the device."""
         await self.set_state(True)
 
-    async def turn_off(self, **kwargs):
+    async def turn_off(self, **kwargs: Any) -> None:
         """Turn off the device."""
         await self.set_state(False)
 
-    def update_from_discover_info(self, info):
+    def update_from_discover_info(
+        self,
+        info: dict,
+    ) -> None:
         """Update state from info from the discover call."""
         self._discovery_info = info
         self._info = info
@@ -607,7 +612,7 @@ class SmartDevice(Device):
     async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""
 
-        def _net_for_scan_info(res):
+        def _net_for_scan_info(res: dict) -> WifiNetwork:
             return WifiNetwork(
                 ssid=base64.b64decode(res["ssid"]).decode(),
                 cipher_type=res["cipher_type"],
@@ -625,7 +630,9 @@ class SmartDevice(Device):
         ]
         return networks
 
-    async def wifi_join(self, ssid: str, password: str, keytype: str = "wpa2_psk"):
+    async def wifi_join(
+        self, ssid: str, password: str, keytype: str = "wpa2_psk"
+    ) -> dict:
         """Join the given wifi network.
 
         This method returns nothing as the device tries to activate the new
@@ -664,7 +671,7 @@ class SmartDevice(Device):
         except KasaException:
             _LOGGER.debug("Received an expected for wifi join, but this is expected")
 
-    async def update_credentials(self, username: str, password: str):
+    async def update_credentials(self, username: str, password: str) -> dict:
         """Update device credentials.
 
         This will replace the existing authentication credentials on the device.
@@ -679,7 +686,7 @@ class SmartDevice(Device):
         }
         return await self.protocol.query({"set_qs_info": payload})
 
-    async def set_alias(self, alias: str):
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
         return await self.protocol.query(
             {"set_device_info": {"nickname": base64.b64encode(alias.encode()).decode()}}

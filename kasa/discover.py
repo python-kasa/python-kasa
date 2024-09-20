@@ -86,6 +86,7 @@ import binascii
 import ipaddress
 import logging
 import socket
+from asyncio.transports import DatagramTransport
 from collections.abc import Awaitable
 from pprint import pformat as pf
 from typing import Any, Callable, Dict, Optional, Type, cast
@@ -180,11 +181,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target_discovered: bool = False
         self._started_event = asyncio.Event()
 
-    def _run_callback_task(self, coro):
+    def _run_callback_task(self, coro: Awaitable) -> None:
         task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
 
-    async def wait_for_discovery_to_complete(self):
+    async def wait_for_discovery_to_complete(self) -> None:
         """Wait for the discovery task to complete."""
         # Give some time for connection_made event to be received
         async with asyncio_timeout(self.DISCOVERY_START_TIMEOUT):
@@ -198,7 +199,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         # Wait for any pending callbacks to complete
         await asyncio.gather(*self.callback_tasks)
 
-    def connection_made(self, transport) -> None:
+    def connection_made(self, transport: DatagramTransport) -> None:
         """Set socket options for broadcasting."""
         self.transport = transport
 
@@ -231,7 +232,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
             await asyncio.sleep(sleep_between_packets)
 
-    def datagram_received(self, data, addr) -> None:
+    def datagram_received(
+        self,
+        data: bytes,
+        addr: tuple[str, int],
+    ) -> None:
         """Handle discovery responses."""
         ip, port = addr
         # Prevent multiple entries due multiple broadcasts
@@ -274,18 +279,18 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         self._handle_discovered_event()
 
-    def _handle_discovered_event(self):
+    def _handle_discovered_event(self) -> None:
         """If target is in seen_hosts cancel discover_task."""
         if self.target in self.seen_hosts:
             self.target_discovered = True
             if self.discover_task:
                 self.discover_task.cancel()
 
-    def error_received(self, ex):
+    def error_received(self, ex: Exception) -> None:
         """Handle asyncio.Protocol errors."""
         _LOGGER.error("Got error: %s", ex)
 
-    def connection_lost(self, ex):  # pragma: no cover
+    def connection_lost(self, ex: None) -> None:  # pragma: no cover
         """Cancel the discover task if running."""
         if self.discover_task:
             self.discover_task.cancel()
@@ -308,17 +313,17 @@ class Discover:
     @staticmethod
     async def discover(
         *,
-        target="255.255.255.255",
-        on_discovered=None,
-        discovery_timeout=5,
-        discovery_packets=3,
-        interface=None,
-        on_unsupported=None,
-        credentials=None,
+        target: str = "255.255.255.255",
+        on_discovered: Awaitable | None = None,
+        discovery_timeout: int = 5,
+        discovery_packets: int = 3,
+        interface: str = None,
+        on_unsupported: Awaitable | None = None,
+        credentials: Credentials = None,
         username: str | None = None,
         password: str | None = None,
-        port=None,
-        timeout=None,
+        port: int = None,
+        timeout: int = None,
     ) -> DeviceDict:
         """Discover supported devices.
 
@@ -479,7 +484,7 @@ class Discover:
             dev_class = get_device_class_from_family(discovery_result.device_type)
             if not dev_class:
                 raise UnsupportedDeviceError(
-                    "Unknown device type: %s" % discovery_result.device_type,
+                    f"Unknown device type: {discovery_result.device_type}",
                     discovery_result=info,
                 )
             return dev_class

@@ -17,7 +17,7 @@ class AutoOff(SmartModule):
     REQUIRED_COMPONENT = "auto_off"
     QUERY_GETTER_NAME = "get_auto_off_config"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -63,7 +63,7 @@ class AutoOff(SmartModule):
         """Return True if enabled."""
         return self.data["enable"]
 
-    async def set_enabled(self, enable: bool):
+    async def set_enabled(self, enable: bool) -> None:
         """Enable/disable auto off."""
         return await self.call(
             "set_auto_off_config",
@@ -75,7 +75,7 @@ class AutoOff(SmartModule):
         """Return time until auto off."""
         return self.data["delay_min"]
 
-    async def set_delay(self, delay: int):
+    async def set_delay(self, delay: int) -> dict:
         """Set time until auto off."""
         return await self.call(
             "set_auto_off_config", {"delay_min": delay, "enable": self.data["enable"]}
@@ -96,7 +96,7 @@ class AutoOff(SmartModule):
 
         return self._device.time + timedelta(seconds=sysinfo["auto_off_remain_time"])
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device.
 
         Parent devices that report components of children such as P300 will not have

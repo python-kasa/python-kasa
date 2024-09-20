@@ -57,7 +57,7 @@ class IotLightStrip(IotBulb):
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.LightStrip
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
         await super()._initialize_modules()
         self.add_module(

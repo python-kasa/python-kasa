@@ -20,7 +20,7 @@ from .common import (
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-async def time(ctx: click.Context):
+async def time(ctx: click.Context) -> None:
     """Get and set time."""
     if ctx.invoked_subcommand is None:
         await ctx.invoke(time_get)
@@ -37,7 +37,7 @@ async def time_get(dev: Device):
 
 @time.command(name="sync")
 @pass_dev
-async def time_sync(dev: Device):
+async def time_sync(dev: Device) -> None:
     """Set the device time to current time."""
     if not isinstance(dev, SmartDevice):
         raise NotImplementedError("setting time currently only implemented on smart")
@@ -46,10 +46,10 @@ async def time_sync(dev: Device):
         echo("Device does not have time module")
         return
 
-    echo("Old time: %s" % time.time)
+    echo(f"Old time: {time.time}")
 
     local_tz = datetime.now().astimezone().tzinfo
     await time.set_time(datetime.now(tz=local_tz))
 
     await dev.update()
-    echo("New time: %s" % time.time)
+    echo(f"New time: {time.time}")

@@ -16,5 +16,5 @@ class Fan(Module, ABC):
         """Return fan speed level."""
 
     @abstractmethod
-    async def set_fan_speed_level(self, level: int):
+    async def set_fan_speed_level(self, level: int) -> dict:
         """Set fan speed level."""

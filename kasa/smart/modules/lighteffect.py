@@ -139,11 +139,11 @@ class LightEffect(SmartModule, SmartLightEffect):
         *,
         transition: int | None = None,
         effect_id: str | None = None,
-    ):
+    ) -> None:
         """Set effect brightness."""
         new_effect = self._get_effect_data(effect_id=effect_id).copy()
 
-        def _replace_brightness(data, new_brightness):
+        def _replace_brightness(data: list[int], new_brightness: int) -> list[int]:
             """Replace brightness.
 
             The first element is the brightness, the rest are unknown.
