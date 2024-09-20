@@ -29,12 +29,12 @@ class LightPreset(SmartModule, LightPresetInterface):
     _presets: dict[str, LightState]
     _preset_list: list[str]
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._state_in_sysinfo = self.SYS_INFO_STATE_KEY in device.sys_info
         self._brightness_only: bool = False
 
-    def _post_update_hook(self):
+    def _post_update_hook(self) -> None:
         """Update the internal presets."""
         index = 0
         self._presets = {}
@@ -158,7 +158,7 @@ class LightPreset(SmartModule, LightPresetInterface):
 
         return {self.QUERY_GETTER_NAME: {"start_index": 0}}
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device.
 
         Parent devices that report components of children such as ks240 will not have

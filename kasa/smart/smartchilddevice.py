@@ -24,8 +24,8 @@ class SmartChildDevice(SmartDevice):
     def __init__(
         self,
         parent: SmartDevice,
-        info,
-        component_info,
+        info: dict,
+        component_info: dict,
         config: DeviceConfig | None = None,
         protocol: SmartProtocol | None = None,
     ) -> None:
@@ -36,7 +36,7 @@ class SmartChildDevice(SmartDevice):
         self._id = info["device_id"]
         self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True) -> None:
         """Update child module info.
 
         The parent updates our internal info so just update modules with
@@ -44,7 +44,7 @@ class SmartChildDevice(SmartDevice):
         """
         await self._update(update_children)
 
-    async def _update(self, update_children: bool = True):
+    async def _update(self, update_children: bool = True) -> None:
         """Update child module info.
 
         Internal implementation to allow patching of public update in the cli
@@ -67,7 +67,9 @@ class SmartChildDevice(SmartDevice):
         self._last_update_time = now
 
     @classmethod
-    async def create(cls, parent: SmartDevice, child_info, child_components):
+    async def create(
+        cls, parent: SmartDevice, child_info: dict, child_components: dict
+    ) -> SmartChildDevice:
         """Create a child device based on device info and component listing."""
         child: SmartChildDevice = cls(parent, child_info, child_components)
         await child._initialize_modules()
@@ -91,5 +93,5 @@ class SmartChildDevice(SmartDevice):
             dev_type = DeviceType.Unknown
         return dev_type
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.device_type} {self.alias} ({self.model}) of {self._parent}>"

@@ -144,7 +144,7 @@ class AesTransport(BaseTransport):
             pw = base64.b64encode(credentials.password.encode()).decode()
         return un, pw
 
-    def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
+    def _handle_response_error_code(self, resp_dict: dict, msg: str) -> None:
         error_code_raw = resp_dict.get("error_code")
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
@@ -217,7 +217,7 @@ class AesTransport(BaseTransport):
                 ) from ex
         return ret_val  # type: ignore[return-value]
 
-    async def perform_login(self):
+    async def perform_login(self) -> None:
         """Login to the device."""
         try:
             await self.try_login(self._login_params)
@@ -353,7 +353,7 @@ class AesTransport(BaseTransport):
 
         _LOGGER.debug("Handshake with %s complete", self._host)
 
-    def _handshake_session_expired(self):
+    def _handshake_session_expired(self) -> bool:
         """Return true if session has expired."""
         return (
             self._session_expire_at is None
@@ -392,7 +392,9 @@ class AesEncyptionSession:
     """Class for an AES encryption session."""
 
     @staticmethod
-    def create_from_keypair(handshake_key: str, keypair):
+    def create_from_keypair(
+        handshake_key: str, keypair: KeyPair
+    ) -> AesEncyptionSession:
         """Create the encryption session."""
         handshake_key_bytes: bytes = base64.b64decode(handshake_key.encode("UTF-8"))
         private_key_data = base64.b64decode(keypair.get_private_key().encode("UTF-8"))
@@ -409,11 +411,11 @@ class AesEncyptionSession:
 
         return AesEncyptionSession(key_and_iv[:16], key_and_iv[16:])
 
-    def __init__(self, key, iv):
+    def __init__(self, key: bytes, iv: bytes) -> None:
         self.cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
         self.padding_strategy = padding.PKCS7(algorithms.AES.block_size)
 
-    def encrypt(self, data) -> bytes:
+    def encrypt(self, data: bytes) -> bytes:
         """Encrypt the message."""
         encryptor = self.cipher.encryptor()
         padder = self.padding_strategy.padder()
@@ -421,7 +423,7 @@ class AesEncyptionSession:
         encrypted = encryptor.update(padded_data) + encryptor.finalize()
         return base64.b64encode(encrypted)
 
-    def decrypt(self, data) -> str:
+    def decrypt(self, data: bytes) -> str:
         """Decrypt the message."""
         decryptor = self.cipher.decryptor()
         unpadder = self.padding_strategy.unpadder()
@@ -434,7 +436,7 @@ class KeyPair:
     """Class for generating key pairs."""
 
     @staticmethod
-    def create_key_pair(key_size: int = 1024):
+    def create_key_pair(key_size: int = 1024) -> KeyPair:
         """Create a key pair."""
         private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         public_key = private_key.public_key()
@@ -454,7 +456,7 @@ class KeyPair:
             public_key=base64.b64encode(public_key_bytes).decode("UTF-8"),
         )
 
-    def __init__(self, private_key: str, public_key: str):
+    def __init__(self, private_key: str, public_key: str) -> None:
         self.private_key = private_key
         self.public_key = public_key
 

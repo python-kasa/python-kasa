@@ -37,7 +37,7 @@ async def discover(ctx):
     unsupported = []
     auth_failed = []
 
-    async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
+    async def print_unsupported(unsupported_exception: UnsupportedDeviceError) -> None:
         unsupported.append(unsupported_exception)
         async with sem:
             if unsupported_exception.discovery_result:
@@ -53,7 +53,7 @@ async def discover(ctx):
 
     from .device import state
 
-    async def print_discovered(dev: Device):
+    async def print_discovered(dev: Device) -> None:
         async with sem:
             try:
                 await dev.update()
@@ -90,7 +90,7 @@ async def discover(ctx):
     return discovered
 
 
-def _echo_dictionary(discovery_info: dict):
+def _echo_dictionary(discovery_info: dict) -> None:
     echo("\t[bold]== Discovery information ==[/bold]")
     for key, value in discovery_info.items():
         key_name = " ".join(x.capitalize() or "_" for x in key.split("_"))
@@ -98,7 +98,7 @@ def _echo_dictionary(discovery_info: dict):
         echo(f"\t{key_name_and_spaces}{value}")
 
 
-def _echo_discovery_info(discovery_info):
+def _echo_discovery_info(discovery_info) -> None:
     # We don't have discovery info when all connection params are passed manually
     if discovery_info is None:
         return

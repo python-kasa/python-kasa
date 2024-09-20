@@ -22,7 +22,7 @@ from .common import (
 
 @click.group()
 @pass_dev_or_child
-def device(dev):
+def device(dev) -> None:
     """Commands to control basic device settings."""
 
 

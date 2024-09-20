@@ -41,7 +41,7 @@ async def test_firmware_features(
 
     await fw.check_latest_firmware()
     if fw.supported_version < required_version:
-        pytest.skip("Feature %s requires newer version" % feature)
+        pytest.skip(f"Feature {feature} requires newer version")
 
     prop = getattr(fw, prop_name)
     assert isinstance(prop, type)

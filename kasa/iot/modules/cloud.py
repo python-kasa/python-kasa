@@ -1,9 +1,14 @@
 """Cloud module implementation."""
 
+from typing import TYPE_CHECKING
+
 from pydantic.v1 import BaseModel
 
 from ...feature import Feature
 from ..iotmodule import IotModule
+
+if TYPE_CHECKING:
+    from kasa.iot import IotDevice
 
 
 class CloudInfo(BaseModel):
@@ -24,7 +29,7 @@ class CloudInfo(BaseModel):
 class Cloud(IotModule):
     """Module implementing support for cloud services."""
 
-    def __init__(self, device, module):
+    def __init__(self, device: "IotDevice", module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -44,7 +49,7 @@ class Cloud(IotModule):
         """Return true if device is connected to the cloud."""
         return self.info.binded
 
-    def query(self):
+    def query(self) -> dict:
         """Request cloud connectivity info."""
         return self.query_for_command("get_info")
 
@@ -53,20 +58,20 @@ class Cloud(IotModule):
         """Return information about the cloud connectivity."""
         return CloudInfo.parse_obj(self.data["get_info"])
 
-    def get_available_firmwares(self):
+    def get_available_firmwares(self) -> dict:
         """Return list of available firmwares."""
         return self.query_for_command("get_intl_fw_list")
 
-    def set_server(self, url: str):
+    def set_server(self, url: str) -> dict:
         """Set the update server URL."""
         return self.query_for_command("set_server_url", {"server": url})
 
-    def connect(self, username: str, password: str):
+    def connect(self, username: str, password: str) -> dict:
         """Login to the cloud using given information."""
         return self.query_for_command(
             "bind", {"username": username, "password": password}
         )
 
-    def disconnect(self):
+    def disconnect(self) -> dict:
         """Disconnect from the cloud."""
         return self.query_for_command("unbind")

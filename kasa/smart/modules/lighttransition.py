@@ -39,14 +39,14 @@ class LightTransition(SmartModule):
     _off_state: _State
     _enabled: bool
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._state_in_sysinfo = all(
             key in device.sys_info for key in self.SYS_INFO_STATE_KEYS
         )
         self._supports_on_and_off: bool = self.supported_version > 1
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         icon = "mdi:transition"
         if not self._supports_on_and_off:
@@ -138,7 +138,7 @@ class LightTransition(SmartModule):
         }
 
     @allow_update_after
-    async def set_enabled(self, enable: bool):
+    async def set_enabled(self, enable: bool) -> dict:
         """Enable gradual on/off."""
         if not self._supports_on_and_off:
             return await self.call("set_on_off_gradually_info", {"enable": enable})
@@ -171,7 +171,7 @@ class LightTransition(SmartModule):
         return self._on_state["max_duration"]
 
     @allow_update_after
-    async def set_turn_on_transition(self, seconds: int):
+    async def set_turn_on_transition(self, seconds: int) -> dict:
         """Set turn on transition in seconds.
 
         Setting to 0 turns the feature off.
@@ -207,7 +207,7 @@ class LightTransition(SmartModule):
         return self._off_state["max_duration"]
 
     @allow_update_after
-    async def set_turn_off_transition(self, seconds: int):
+    async def set_turn_off_transition(self, seconds: int) -> dict:
         """Set turn on transition in seconds.
 
         Setting to 0 turns the feature off.
@@ -236,7 +236,7 @@ class LightTransition(SmartModule):
         else:
             return {self.QUERY_GETTER_NAME: None}
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
         # For devices that report child components on the parent that are not
         # actually supported by the parent.

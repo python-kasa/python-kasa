@@ -17,7 +17,7 @@ class ContactSensor(SmartModule):
     REQUIRED_COMPONENT = None  # we depend on availability of key
     REQUIRED_KEY_ON_PARENT = "open"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -37,6 +37,6 @@ class ContactSensor(SmartModule):
         return {}
 
     @property
-    def is_open(self):
+    def is_open(self) -> bool:
         """Return True if the contact sensor is open."""
         return self._device.sys_info["open"]

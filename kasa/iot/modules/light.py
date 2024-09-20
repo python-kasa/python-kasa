@@ -27,7 +27,7 @@ class Light(IotModule, LightInterface):
     _device: IotBulb | IotDimmer
     _light_state: LightState
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         super()._initialize_features()
         device = self._device
@@ -185,7 +185,7 @@ class Light(IotModule, LightInterface):
         return bulb._color_temp
 
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
+        self, temp: int, *, brightness: int | None = None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
 

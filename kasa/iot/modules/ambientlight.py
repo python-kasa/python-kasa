@@ -1,7 +1,12 @@
 """Implementation of the ambient light (LAS) module found in some dimmers."""
 
+from typing import TYPE_CHECKING
+
 from ...feature import Feature
 from ..iotmodule import IotModule, merge
+
+if TYPE_CHECKING:
+    from kasa.iot import IotDevice
 
 # TODO create tests and use the config reply there
 # [{"hw_id":0,"enable":0,"dark_index":1,"min_adc":0,"max_adc":2450,
@@ -16,7 +21,7 @@ from ..iotmodule import IotModule, merge
 class AmbientLight(IotModule):
     """Implements ambient light controls for the motion sensor."""
 
-    def __init__(self, device, module):
+    def __init__(self, device: "IotDevice", module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -32,7 +37,7 @@ class AmbientLight(IotModule):
             )
         )
 
-    def query(self):
+    def query(self) -> dict:
         """Request configuration."""
         req = merge(
             self.query_for_command("get_config"),
@@ -56,7 +61,7 @@ class AmbientLight(IotModule):
         """Return True if the module is enabled."""
         return int(self.data["get_current_brt"]["value"])
 
-    async def set_enabled(self, state: bool):
+    async def set_enabled(self, state: bool) -> dict:
         """Enable/disable LAS."""
         return await self.call("set_enable", {"enable": int(state)})
 
@@ -67,7 +72,7 @@ class AmbientLight(IotModule):
         """
         return await self.call("get_current_brt")
 
-    async def set_brightness_limit(self, value: int):
+    async def set_brightness_limit(self, value: int) -> dict:
         """Set the limit when the motion sensor is inactive.
 
         See `presets` for preset values. Custom values are also likely allowed.

@@ -104,7 +104,7 @@ class LightEffect(IotModule, LightEffectInterface):
         """Return True if the device supports setting custom effects."""
         return True
 
-    def query(self):
+    def query(self) -> dict:
         """Return the base query."""
         return {}
 

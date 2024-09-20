@@ -68,19 +68,19 @@ class SmartModule(Module):
 
     DISABLE_AFTER_ERROR_COUNT = 10
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         self._device: SmartDevice
         super().__init__(device, module)
         self._last_update_time: float | None = None
         self._last_update_error: KasaException | None = None
         self._error_count = 0
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs) -> None:
         name = getattr(cls, "NAME", cls.__name__)
         _LOGGER.debug("Registering %s", cls)
         cls.REGISTERED_MODULES[name] = cls
 
-    def _set_error(self, err: Exception | None):
+    def _set_error(self, err: Exception | None) -> None:
         if err is None:
             self._error_count = 0
             self._last_update_error = None
@@ -121,7 +121,7 @@ class SmartModule(Module):
         """Name of the module."""
         return getattr(self, "NAME", self.__class__.__name__)
 
-    def _post_update_hook(self):  # noqa: B027
+    def _post_update_hook(self) -> None:  # noqa: B027
         """Perform actions after a device update.
 
         Any modules overriding this should ensure that self.data is
@@ -136,7 +136,7 @@ class SmartModule(Module):
         """
         return {self.QUERY_GETTER_NAME: None}
 
-    def call(self, method, params=None):
+    def call(self, method: str, params: dict | None = None) -> dict:
         """Call a method.
 
         Just a helper method.
@@ -144,7 +144,7 @@ class SmartModule(Module):
         return self._device._query_helper(method, params)
 
     @property
-    def data(self):
+    def data(self) -> dict[str, Any]:
         """Return response data for the module.
 
         If the module performs only a single query, the resulting response is unwrapped.
