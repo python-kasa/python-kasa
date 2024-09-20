@@ -155,6 +155,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         port: int | None = None,
         credentials: Credentials | None = None,
         timeout: int | None = None,
+        json_only: bool = False,
     ) -> None:
         self.transport = None
         self.discovery_packets = discovery_packets
@@ -179,6 +180,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.callback_tasks: list[asyncio.Task] = []
         self.target_discovered: bool = False
         self._started_event = asyncio.Event()
+        self._json_only = json_only
 
     def _run_callback_task(self, coro):
         task = asyncio.create_task(coro)
@@ -248,6 +250,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             config.timeout = self.timeout
         try:
             if port == self.discovery_port:
+                if self._json_only:
+                    self.json = json_loads(XorEncryption.decrypt(data))
+                    self._handle_discovered_event()
+                    self.discovered_devices[ip] = None
+                    return
                 device = Discover._get_device_instance_legacy(data, config)
             elif port == Discover.DISCOVERY_PORT_2:
                 config.uses_http = True
@@ -395,7 +402,8 @@ class Discover:
         credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,
-    ) -> Device:
+        json_only: bool = False,
+    ) -> Device | dict:
         """Discover a single device by the given IP address.
 
         It is generally preferred to avoid :func:`discover_single()` and
@@ -447,6 +455,7 @@ class Discover:
                 credentials=credentials,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
+                json_only=json_only,
             ),
             local_addr=("0.0.0.0", 0),  # noqa: S104
         )
@@ -461,6 +470,8 @@ class Discover:
             transport.close()
 
         if ip in protocol.discovered_devices:
+            if json_only:
+                return protocol.json
             dev = protocol.discovered_devices[ip]
             dev.host = host
             return dev

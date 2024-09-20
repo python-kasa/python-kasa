@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import json
+from json import dumps as json_dumps, loads as json_loads
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -334,7 +334,10 @@ async def cli(
             credentials=credentials,
             timeout=timeout,
             discovery_timeout=discovery_timeout,
+            json_only=json,
         )
+        if json:
+            return dev
 
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.
@@ -408,5 +411,5 @@ async def cmd_command(dev: Device, module, command, parameters):
         res = await dev._query_helper(command, parameters)
     else:
         raise KasaException("Unexpected device type %s.", dev)
-    echo(json.dumps(res))
+    echo(json_dumps(res))
     return res

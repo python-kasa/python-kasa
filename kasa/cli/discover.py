@@ -29,6 +29,7 @@ async def discover(ctx):
     discovery_timeout = ctx.parent.params["discovery_timeout"]
     timeout = ctx.parent.params["timeout"]
     port = ctx.parent.params["port"]
+    json = ctx.parent.params["json"]
 
     credentials = Credentials(username, password) if username and password else None
 
