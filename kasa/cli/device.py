@@ -168,6 +168,17 @@ async def reboot(plug, delay):
 
 @device.command()
 @pass_dev
+async def factory_reset(plug):
+    """Reset device to factory settings."""
+    click.confirm(
+        "Do you really want to reset the device to factory settings?", abort=True
+    )
+
+    return await plug.factory_reset()
+
+
+@device.command()
+@pass_dev
 @click.option(
     "--username", required=True, prompt=True, help="New username to set on the device"
 )

@@ -19,6 +19,7 @@ from kasa import (
 )
 from kasa.cli.device import (
     alias,
+    factory_reset,
     led,
     reboot,
     state,
@@ -209,6 +210,21 @@ async def test_reboot(dev, mocker, runner):
     res = await runner.invoke(
         reboot,
         obj=dev,
+    )
+
+    query_mock.assert_called()
+    assert res.exit_code == 0
+
+
+@device_smart
+async def test_factory_reset(dev, mocker, runner):
+    """Test that factory reset works on SMART devices."""
+    query_mock = mocker.patch.object(dev.protocol, "query")
+
+    res = await runner.invoke(
+        factory_reset,
+        obj=dev,
+        input="y\n",
     )
 
     query_mock.assert_called()
