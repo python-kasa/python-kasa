@@ -450,6 +450,14 @@ class Device(ABC):
         """Set the device name (alias)."""
 
     @abstractmethod
+    async def reboot(self, delay: int = 1) -> None:
+        """Reboot the device.
+
+        Note that giving a delay of zero causes this to block,
+        as the device reboots immediately without responding to the call.
+        """
+
+    @abstractmethod
     async def factory_reset(self) -> None:
         """Reset device back to factory settings.
 
