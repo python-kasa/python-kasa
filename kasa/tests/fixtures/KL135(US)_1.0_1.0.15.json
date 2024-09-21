@@ -50,7 +50,7 @@
                 "on_off": 0
             },
             "longitude_i": 0,
-            "mic_mac": "<redacted>",
+            "mic_mac": "000000000000",
             "mic_type": "IOT.SMARTBULB",
             "model": "KL135(US)",
             "obd_src": "tplink",
