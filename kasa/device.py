@@ -449,6 +449,14 @@ class Device(ABC):
     async def set_alias(self, alias: str):
         """Set the device name (alias)."""
 
+    @abstractmethod
+    async def reboot(self, delay: int = 1) -> None:
+        """Reboot the device.
+
+        Note that giving a delay of zero causes this to block,
+        as the device reboots immediately without responding to the call.
+        """
+
     def __repr__(self):
         if self._last_update is None:
             return f"<{self.device_type} at {self.host} - update() needed>"
