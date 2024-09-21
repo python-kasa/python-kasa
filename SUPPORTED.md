@@ -116,6 +116,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 1.0 (EU) / Firmware: 1.8.8
   - Hardware: 1.0 (US) / Firmware: 1.8.11
 - **KL135**
+  - Hardware: 1.0 (US) / Firmware: 1.0.15
   - Hardware: 1.0 (US) / Firmware: 1.0.6
 - **KL50**
   - Hardware: 1.0 (US) / Firmware: 1.1.13
