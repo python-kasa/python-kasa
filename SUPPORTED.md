@@ -86,6 +86,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 1.0 (US) / Firmware: 1.0.6
 - **KS200M**
   - Hardware: 1.0 (US) / Firmware: 1.0.11
+  - Hardware: 1.0 (US) / Firmware: 1.0.12
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **KS205**
   - Hardware: 1.0 (US) / Firmware: 1.0.2<sup>\*</sup>
