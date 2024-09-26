@@ -67,6 +67,7 @@ async def test_protocol_retries_via_client_session(
     host = "127.0.0.1"
     conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=error)
     mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
+    mocker.patch("asyncio.sleep")
 
     config = DeviceConfig(host)
     with pytest.raises(KasaException):
@@ -139,6 +140,8 @@ async def test_protocol_retry_recoverable_error(
         "post",
         side_effect=aiohttp.ClientOSError("foo"),
     )
+    mocker.patch("asyncio.sleep")
+
     config = DeviceConfig(host)
     with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
