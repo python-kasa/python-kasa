@@ -95,11 +95,11 @@ jobs:
       - name: "Run tests (no coverage)"
         if: ${{ startsWith(matrix.python-version, 'pypy') }}
         run: |
-          uv run pytest
+          uv run pytest -n auto
       - name: "Run tests (with coverage)"
         if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: |
-          uv run pytest --cov kasa --cov-report xml
+          uv run pytest -n auto --cov kasa --cov-report xml
       - name: "Upload coverage to Codecov"
         if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         uses: "codecov/codecov-action@v4"
