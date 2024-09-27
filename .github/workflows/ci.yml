@@ -29,31 +29,10 @@ jobs:
           cache-pre-commit: true
           uv-version: ${{ env.UV_VERSION }}
           uv-install-options: "--all-extras"
-      - name: "Check supported device md files are up to date"
+
+      - name: "Run pre-commit checks"
         run: |
-          uv run pre-commit run generate-supported --all-files
-      - name: "Linting and code formating (ruff)"
-        run: |
-          uv run pre-commit run ruff --all-files
-      - name: "Typing checks (mypy)"
-        run: |
-          source .venv/bin/activate
-          pre-commit run mypy --all-files
-      - name: "Run trailing-whitespace"
-        run: |
-          uv run pre-commit run trailing-whitespace --all-files
-      - name: "Run end-of-file-fixer"
-        run: |
-          uv run pre-commit run end-of-file-fixer --all-files
-      - name: "Run check-docstring-first"
-        run: |
-          uv run pre-commit run check-docstring-first --all-files
-      - name: "Run debug-statements"
-        run: |
-          uv run pre-commit run debug-statements --all-files
-      - name: "Run check-ast"
-        run: |
-          uv run pre-commit run check-ast --all-files
+          pre-commit run --all-files --verbose
 
 
   tests:
