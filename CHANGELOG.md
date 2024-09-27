@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.7.4](https://github.com/python-kasa/python-kasa/tree/0.7.4) (2024-09-27)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.3...0.7.4)
+
+**Release summary:**
+
+- KL135 color temp range corrected to 9000k max
+- Minor enhancements and project maintenance
+
+**Implemented enhancements:**
+
+- Add factory\_reset\(\) to iotdevice [\#1125](https://github.com/python-kasa/python-kasa/pull/1125) (@rytilahti)
+- Add reboot\(\) to the device interface [\#1124](https://github.com/python-kasa/python-kasa/pull/1124) (@rytilahti)
+- Add factory-reset command to cli [\#1108](https://github.com/python-kasa/python-kasa/pull/1108) (@rytilahti)
+
+**Fixed bugs:**
+
+- Extend KL135 ct range up to 9000K [\#1123](https://github.com/python-kasa/python-kasa/pull/1123) (@rytilahti)
+- Fix cli command for device off [\#1121](https://github.com/python-kasa/python-kasa/pull/1121) (@sdb9696)
+
+**Project maintenance:**
+
+- Use pytest-socket to ensure no tests are performing io [\#1133](https://github.com/python-kasa/python-kasa/pull/1133) (@sdb9696)
+- Enable ruff lint pycodestyle warnings [\#1132](https://github.com/python-kasa/python-kasa/pull/1132) (@sdb9696)
+- Add autouse fixture to patch asyncio.sleep [\#1131](https://github.com/python-kasa/python-kasa/pull/1131) (@sdb9696)
+- Mock asyncio.sleep for klapprotocol tests [\#1130](https://github.com/python-kasa/python-kasa/pull/1130) (@rytilahti)
+- Add fixture for T110 fw 1.9.0 [\#1129](https://github.com/python-kasa/python-kasa/pull/1129) (@rytilahti)
+- Speed up and simplify github workflows [\#1128](https://github.com/python-kasa/python-kasa/pull/1128) (@sdb9696)
+- Add KS200M\(US\) fw 1.0.12 fixture [\#1127](https://github.com/python-kasa/python-kasa/pull/1127) (@GatorEG)
+- Add stale PR/Issue github workflow [\#1126](https://github.com/python-kasa/python-kasa/pull/1126) (@sdb9696)
+- Add fixture for KL135\(US\) fw 1.0.15 [\#1122](https://github.com/python-kasa/python-kasa/pull/1122) (@rytilahti)
+
 ## [0.7.3](https://github.com/python-kasa/python-kasa/tree/0.7.3) (2024-09-10)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.2...0.7.3)

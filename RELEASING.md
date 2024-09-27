@@ -47,7 +47,7 @@ uv lock --upgrade
 
 ```bash
 uv run pre-commit run --all-files
-uv run pytest
+uv run pytest -n auto
 ```
 
 ### Create release summary (skip for dev releases)
