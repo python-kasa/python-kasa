@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 import warnings
 from unittest.mock import MagicMock, patch
 
@@ -87,6 +88,11 @@ def pytest_addoption(parser):
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--ip"):
         print("Testing against fixtures.")
+        # pytest_socket doesn't work properly in windows with asyncio
+        # fine to disable as other platforms will pickup any issues.
+        if sys.platform == "win32":
+            for item in items:
+                item.add_marker(pytest.mark.enable_socket)
     else:
         print("Running against ip %s" % config.getoption("--ip"))
         requires_dummy = pytest.mark.skip(
