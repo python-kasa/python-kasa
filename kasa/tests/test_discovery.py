@@ -170,12 +170,13 @@ async def test_discover_single_hostname(discovery_mock, mocker):
 async def test_discover_credentials(mocker):
     """Make sure that discover gives credentials precedence over un and pw."""
     host = "127.0.0.1"
-    mocker.patch("kasa.discover._DiscoverProtocol.wait_for_discovery_to_complete")
 
-    def mock_discover(self, *_, **__):
+    async def mock_discover(self, *_, **__):
         self.discovered_devices = {host: MagicMock()}
+        self.seen_hosts.add(host)
+        self._handle_discovered_event()
 
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
     # Only credentials passed
@@ -197,12 +198,13 @@ async def test_discover_credentials(mocker):
 async def test_discover_single_credentials(mocker):
     """Make sure that discover_single gives credentials precedence over un and pw."""
     host = "127.0.0.1"
-    mocker.patch("kasa.discover._DiscoverProtocol.wait_for_discovery_to_complete")
 
-    def mock_discover(self, *_, **__):
+    async def mock_discover(self, *_, **__):
         self.discovered_devices = {host: MagicMock()}
+        self.seen_hosts.add(host)
+        self._handle_discovered_event()
 
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
     # Only credentials passed

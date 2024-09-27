@@ -57,6 +57,7 @@ dev-dependencies = [
   "pytest-freezer~=0.4",
   "mypy~=1.0",
   "pytest-xdist>=3.6.1",
+  "pytest-socket>=0.7.0",
 ]
 
 
@@ -108,6 +109,7 @@ markers = [
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 timeout = 10
+addopts = "--disable-socket --allow-unix-socket"
 
 [tool.doc8]
 paths = ["docs"]

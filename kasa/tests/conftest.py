@@ -95,18 +95,45 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "requires_dummy" in item.keywords:
                 item.add_marker(requires_dummy)
+            else:
+                item.add_marker(pytest.mark.enable_socket)
 
 
 @pytest.fixture(autouse=True, scope="session")
-def asyncio_sleep_fixture():  # noqa: PT004
+def asyncio_sleep_fixture(request):  # noqa: PT004
     """Patch sleep to prevent tests actually waiting."""
     orig_asyncio_sleep = asyncio.sleep
 
     async def _asyncio_sleep(*_, **__):
         await orig_asyncio_sleep(0)
 
-    with patch("asyncio.sleep", side_effect=_asyncio_sleep):
+    if request.config.getoption("--ip"):
         yield
+    else:
+        with patch("asyncio.sleep", side_effect=_asyncio_sleep):
+            yield
+
+
+@pytest.fixture(autouse=True, scope="session")
+def mock_datagram_endpoint(request):  # noqa: PT004
+    """Mock create_datagram_endpoint so it doesn't perform io."""
+
+    async def _create_datagram_endpoint(protocol_factory, *_, **__):
+        protocol = protocol_factory()
+        transport = MagicMock()
+        try:
+            return transport, protocol
+        finally:
+            protocol.connection_made(transport)
+
+    if request.config.getoption("--ip"):
+        yield
+    else:
+        with patch(
+            "asyncio.BaseEventLoop.create_datagram_endpoint",
+            side_effect=_create_datagram_endpoint,
+        ):
+            yield
 
 
 # allow mocks to be awaited
