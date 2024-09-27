@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import warnings
 from unittest.mock import MagicMock, patch
 
@@ -94,6 +95,18 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "requires_dummy" in item.keywords:
                 item.add_marker(requires_dummy)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def asyncio_sleep_fixture():  # noqa: PT004
+    """Patch sleep to prevent tests actually waiting."""
+    orig_asyncio_sleep = asyncio.sleep
+
+    async def _asyncio_sleep(*_, **__):
+        await orig_asyncio_sleep(0)
+
+    with patch("asyncio.sleep", side_effect=_asyncio_sleep):
+        yield
 
 
 # allow mocks to be awaited
