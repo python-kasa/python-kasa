@@ -55,7 +55,8 @@ dev-dependencies = [
   "coverage[toml]",
   "pytest-timeout~=2.0",
   "pytest-freezer~=0.4",
-  "mypy~=1.0"
+  "mypy~=1.0",
+  "pytest-xdist>=3.6.1",
 ]
 
 
@@ -105,6 +106,7 @@ markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 timeout = 10
 
 [tool.doc8]

@@ -1,12 +1,12 @@
 ---
 name: Setup Environment
-description: Install requested pipx dependencies, configure the system python, and install uv and the package dependencies
+description: Install uv, configure the system python, and the package dependencies
 
 inputs:
   uv-install-options:
     default: ""
   uv-version:
-    default: 0.4.5
+    default: 0.4.16
   python-version:
     required: true
   cache-pre-commit:
@@ -17,66 +17,29 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: "actions/setup-python@v5"
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: "Setup python"
+      uses: "actions/setup-python@v5"
       id: setup-python
       with:
         python-version: "${{ inputs.python-version }}"
         allow-prereleases: true
 
-    - name: Setup pipx environment Variables
-      id: pipx-env-setup
-      # pipx default home and bin dir are not writable by the cache action
-      # so override them here and add the bin dir to PATH for later steps.
-      # This also ensures the pipx cache only contains uv
-      run: |
-        SEP="${{ !startsWith(runner.os, 'windows') && '/' || '\\' }}"
-        PIPX_CACHE="${{ github.workspace }}${SEP}pipx_cache"
-        echo "pipx-cache-path=${PIPX_CACHE}" >> $GITHUB_OUTPUT
-        echo "pipx-version=$(pipx --version)" >> $GITHUB_OUTPUT
-        echo "PIPX_HOME=${PIPX_CACHE}${SEP}home" >> $GITHUB_ENV
-        echo "PIPX_BIN_DIR=${PIPX_CACHE}${SEP}bin" >> $GITHUB_ENV
-        echo "PIPX_MAN_DIR=${PIPX_CACHE}${SEP}man" >> $GITHUB_ENV
-        echo "${PIPX_CACHE}${SEP}bin" >> $GITHUB_PATH
-      shell: bash
-
-    - name: Pipx cache
-      id: pipx-cache
-      uses: actions/cache@v4
-      with:
-        path: ${{ steps.pipx-env-setup.outputs.pipx-cache-path }}
-        key: cache-${{ inputs.cache-version }}-${{ runner.os }}-${{ runner.arch }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-pipx-${{ steps.pipx-env-setup.outputs.pipx-version }}-uv-${{ inputs.uv-version }}
-
-    - name: Install uv
-      if: steps.pipx-cache.outputs.cache-hit != 'true'
-      id: install-uv
-      shell: bash
-      run: |-
-        pipx install uv==${{ inputs.uv-version }} --python "${{ steps.setup-python.outputs.python-path }}"
-
-    - name: Read uv cache location
-      id: uv-cache-location
-      shell: bash
-      run: |-
-        echo "uv-cache-location=$(uv cache dir)" >> $GITHUB_OUTPUT
-
-    - uses: actions/cache@v4
-      name: uv cache
-      with:
-        path: |
-          ${{ steps.uv-cache-location.outputs.uv-cache-location }}
-        key: cache-${{ inputs.cache-version }}-${{ runner.os }}-${{ runner.arch }}-python-${{ steps.setup-python.outputs.python-version }}-uv-${{ inputs.uv-version }}-${{ hashFiles('uv.lock') }}-options-${{ inputs.uv-install-options }}
-
-    - name: "uv install"
+    - name: "Install project"
       shell: bash
       run: |
-        uv sync --python "${{ steps.setup-python.outputs.python-path }}" ${{ inputs.uv-install-options }}
+        uv sync ${{ inputs.uv-install-options }}
 
     - name: Read pre-commit version
       if: inputs.cache-pre-commit == 'true'
       id: pre-commit-version
       shell: bash
       run: >-
-        echo "pre-commit-version=$(uv run pre-commit -- -V | awk '{print $2}')" >> $GITHUB_OUTPUT
+        echo "pre-commit-version=$(uv run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
 
     - uses: actions/cache@v4
       if: inputs.cache-pre-commit == 'true'

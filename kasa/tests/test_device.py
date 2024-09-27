@@ -32,7 +32,7 @@ def _get_subclasses(of_class):
                 and module.__package__ != "kasa.interfaces"
             ):
                 subclasses.add((module.__package__ + "." + name, obj))
-    return subclasses
+    return sorted(subclasses)
 
 
 device_classes = pytest.mark.parametrize(
