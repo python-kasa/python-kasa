@@ -32,7 +32,7 @@ jobs:
 
       - name: "Run pre-commit checks"
         run: |
-          pre-commit run --all-files --verbose
+          uv run pre-commit run --all-files --verbose
 
 
   tests:
