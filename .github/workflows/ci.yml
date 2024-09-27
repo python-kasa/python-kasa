@@ -8,7 +8,7 @@ on:
   workflow_dispatch:  # to allow manual re-runs
 
 env:
-  UV_VERSION: 0.4.5
+  UV_VERSION: 0.4.16
 
 jobs:
   linting:
@@ -20,7 +20,8 @@ jobs:
         python-version: ["3.12"]
 
     steps:
-      - uses: "actions/checkout@v4"
+      - name: "Checkout source files"
+        uses: "actions/checkout@v4"
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
@@ -83,7 +84,7 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.10"
             extras: true
-          # Exclude pypy-windows due to significant performance issues
+          # Exclude pypy on windows due to significant performance issues
           # running pytest
           - os: windows-latest
             python-version: "pypy-3.9"
