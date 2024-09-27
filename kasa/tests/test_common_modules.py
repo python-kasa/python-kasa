@@ -213,10 +213,10 @@ async def test_light_color_temp(dev: Device):
     assert light.color_temp == feature.minimum_value + 20
     assert light.brightness == 60
 
-    with pytest.raises(ValueError, match="Temperature should be between \d+ and \d+"):
+    with pytest.raises(ValueError, match=r"Temperature should be between \d+ and \d+"):
         await light.set_color_temp(feature.minimum_value - 10)
 
-    with pytest.raises(ValueError, match="Temperature should be between \d+ and \d+"):
+    with pytest.raises(ValueError, match=r"Temperature should be between \d+ and \d+"):
         await light.set_color_temp(feature.maximum_value + 10)
 
 

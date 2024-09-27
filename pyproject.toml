@@ -120,7 +120,8 @@ target-version = "py38"
 
 [tool.ruff.lint]
 select = [
-  "E",  # pycodestyle
+  "E",  # pycodestyle errors
+  "W", # pycodestyle warnings
   "D",  # pydocstyle
   "F",  # pyflakes
   "UP",  # pyupgrade
