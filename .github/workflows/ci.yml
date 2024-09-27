@@ -83,6 +83,13 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.10"
             extras: true
+          # Exclude pypy-windows due to significant performance issues
+          # running pytest
+          - os: windows-latest
+            python-version: "pypy-3.9"
+          - os: windows-latest
+            python-version: "pypy-3.10"
+
 
     steps:
       - uses: "actions/checkout@v4"
