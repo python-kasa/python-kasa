@@ -64,7 +64,7 @@ jobs:
             python-version: "3.10"
             extras: true
           # Exclude pypy on windows due to significant performance issues
-          # running pytest
+          # running pytest requires ~12 min instead of 2 min on other platforms
           - os: windows-latest
             python-version: "pypy-3.9"
           - os: windows-latest
