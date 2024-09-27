@@ -561,6 +561,13 @@ class IotDevice(Device):
         """
         await self._query_helper("system", "reboot", {"delay": delay})
 
+    async def factory_reset(self) -> None:
+        """Reset device back to factory settings.
+
+        Note, this does not downgrade the firmware.
+        """
+        await self._query_helper("system", "reset")
+
     async def turn_off(self, **kwargs) -> dict:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")

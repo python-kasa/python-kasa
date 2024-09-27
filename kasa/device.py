@@ -457,6 +457,13 @@ class Device(ABC):
         as the device reboots immediately without responding to the call.
         """
 
+    @abstractmethod
+    async def factory_reset(self) -> None:
+        """Reset device back to factory settings.
+
+        Note, this does not downgrade the firmware.
+        """
+
     def __repr__(self):
         if self._last_update is None:
             return f"<{self.device_type} at {self.host} - update() needed>"
