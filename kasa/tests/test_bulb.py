@@ -251,11 +251,11 @@ async def test_out_of_range_temperature(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
     with pytest.raises(
-        ValueError, match="Temperature should be between \d+ and \d+, was 1000"
+        ValueError, match=r"Temperature should be between \d+ and \d+, was 1000"
     ):
         await light.set_color_temp(1000)
     with pytest.raises(
-        ValueError, match="Temperature should be between \d+ and \d+, was 10000"
+        ValueError, match=r"Temperature should be between \d+ and \d+, was 10000"
     ):
         await light.set_color_temp(10000)
 
