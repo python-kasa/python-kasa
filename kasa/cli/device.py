@@ -99,7 +99,7 @@ async def on(dev: Device, transition: int):
     return await dev.turn_on(transition=transition)
 
 
-@click.command
+@device.command
 @click.option("--transition", type=int, required=False)
 @pass_dev_or_child
 async def off(dev: Device, transition: int):
