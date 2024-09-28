@@ -24,6 +24,7 @@ from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
 from .motionsensor import MotionSensor
 from .reportmode import ReportMode
+from .screensetting import ScreenSetting
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
 from .time import Time
@@ -58,4 +59,5 @@ __all__ = [
     "MotionSensor",
     "FrostProtection",
     "SmartLightEffect",
+    "ScreenSetting",
 ]
