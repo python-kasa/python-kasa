@@ -29,6 +29,25 @@ from kasa.klaptransport import KlapEncryptionSession, KlapTransportV2
 from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 
 
+def _is_http_response_for_packet(response, packet):
+    """Return True if the *response* contains a response for request in *packet*.
+
+    Different tshark versions use different field for the information.
+    """
+    if not hasattr(response, "http"):
+        return False
+    if (hasattr(response.http, "response_for_uri")
+            and (
+            response.http.response_for_uri
+            == packet.http.request_full_uri
+    )):
+        return True
+    # tshark 4.4.0
+    if response.http.request_uri == packet.http.request_uri:
+        return True
+
+    return False
+
 class MyEncryptionSession(KlapEncryptionSession):
     """A custom KlapEncryptionSession class that allows for decryption."""
 
@@ -267,18 +286,13 @@ def main(
                         message = bytes.fromhex(data)
                         operator.local_seed = message
                         response = None
+                        print(f"got handshake1 in {packet_number}, looking for the response")
                         while (
                             True
                         ):  # we are going to now look for the response to this request
                             response = capture.next()
-                            if (
-                                hasattr(response, "http")
-                                and hasattr(response.http, "response_for_uri")
-                                and (
-                                    response.http.response_for_uri
-                                    == packet.http.request_full_uri
-                                )
-                            ):
+                            if _is_http_response_for_packet(response, packet):
+                                print(f"found response in {packet_number}")
                                 break
                         data = response.http.get_field_value("file_data", raw=True)
                         message = bytes.fromhex(data)
