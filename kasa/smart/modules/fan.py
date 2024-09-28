@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...feature import Feature
 from ...interfaces.fan import Fan as FanInterface
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class Fan(SmartModule, FanInterface):
@@ -17,12 +12,11 @@ class Fan(SmartModule, FanInterface):
 
     REQUIRED_COMPONENT = "fan_control"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
-
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="fan_speed_level",
                 name="Fan speed level",
                 container=self,
@@ -36,7 +30,7 @@ class Fan(SmartModule, FanInterface):
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="fan_sleep_mode",
                 name="Fan sleep mode",
                 container=self,
