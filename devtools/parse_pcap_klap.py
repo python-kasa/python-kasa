@@ -224,71 +224,68 @@ def main(
             packet = capture.next()
             # packet_number = capture._current_packet
             # we only care about http packets
-            if hasattr(
-                packet, "http"
-            ):  # this is redundant, as pyshark is set to only load http packets
-                if hasattr(packet.http, "request_uri_path"):
-                    uri = packet.http.get("request_uri_path")
-                elif hasattr(packet.http, "request_uri"):
-                    uri = packet.http.get("request_uri")
-                else:
-                    uri = None
-                if hasattr(packet.http, "request_uri_query"):
-                    query = packet.http.get("request_uri_query")
-                    # use regex to get: seq=(\d+)
-                    seq = re.search(r"seq=(\d+)", query)
-                    if seq is not None:
-                        operator.seq = int(
-                            seq.group(1)
-                        )  # grab the sequence number from the query
-                data = (
-                    # Windows and linux file_data attribute returns different
-                    # pretty format so get the raw field value.
-                    packet.http.get_field_value("file_data", raw=True)
-                    if hasattr(packet.http, "file_data")
-                    else None
-                )
-                match uri:
-                    case "/app/request":
-                        if packet.ip.dst != device_ip:
-                            continue
-                        message = bytes.fromhex(data)
-                        try:
-                            plaintext = operator.decrypt(message)
-                            payload = json.loads(plaintext)
-                            print(json.dumps(payload, indent=2))
-                            packets.append(payload)
-                        except ValueError:
-                            print("Insufficient data to decrypt thus far")
+            # this is redundant, as pyshark is set to only load http packets
+            if not hasattr(packet, "http"):
+                continue
 
-                    case "/app/handshake1":
-                        if packet.ip.dst != device_ip:
-                            continue
-                        message = bytes.fromhex(data)
-                        operator.local_seed = message
-                        response = None
-                        while (
-                            True
-                        ):  # we are going to now look for the response to this request
-                            response = capture.next()
-                            if (
-                                hasattr(response, "http")
-                                and hasattr(response.http, "response_for_uri")
-                                and (
-                                    response.http.response_for_uri
-                                    == packet.http.request_full_uri
-                                )
-                            ):
-                                break
-                        data = response.http.get_field_value("file_data", raw=True)
-                        message = bytes.fromhex(data)
-                        operator.remote_seed = message[0:16]
-                        operator.remote_auth_hash = message[16:]
+            uri = packet.http.get("request_uri_path", packet.http.get("request_uri"))
+            if uri is None:
+                continue
 
-                    case "/app/handshake2":
-                        continue  # we don't care about this
-                    case _:
+            if hasattr(packet.http, "request_uri_query"):
+                query = packet.http.get("request_uri_query")
+                # use regex to get: seq=(\d+)
+                seq = re.search(r"seq=(\d+)", query)
+                if seq is not None:
+                    operator.seq = int(
+                        seq.group(1)
+                    )  # grab the sequence number from the query
+
+            # Windows and linux file_data attribute returns different
+            # pretty format so get the raw field value.
+            data = packet.http.get_field_value("file_data", raw=True)
+
+            match uri:
+                case "/app/request":
+                    if packet.ip.dst != device_ip:
                         continue
+                    message = bytes.fromhex(data)
+                    try:
+                        plaintext = operator.decrypt(message)
+                        payload = json.loads(plaintext)
+                        print(json.dumps(payload, indent=2))
+                        packets.append(payload)
+                    except ValueError:
+                        print("Insufficient data to decrypt thus far")
+
+                case "/app/handshake1":
+                    if packet.ip.dst != device_ip:
+                        continue
+                    message = bytes.fromhex(data)
+                    operator.local_seed = message
+                    response = None
+                    while (
+                        True
+                    ):  # we are going to now look for the response to this request
+                        response = capture.next()
+                        if (
+                            hasattr(response, "http")
+                            and hasattr(response.http, "response_for_uri")
+                            and (
+                                response.http.response_for_uri
+                                == packet.http.request_full_uri
+                            )
+                        ):
+                            break
+                    data = response.http.get_field_value("file_data", raw=True)
+                    message = bytes.fromhex(data)
+                    operator.remote_seed = message[0:16]
+                    operator.remote_auth_hash = message[16:]
+
+                case "/app/handshake2":
+                    continue  # we don't care about this
+                case _:
+                    continue
         except StopIteration:
             break
 
