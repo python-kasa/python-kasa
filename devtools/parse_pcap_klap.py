@@ -29,6 +29,18 @@ from kasa.klaptransport import KlapEncryptionSession, KlapTransportV2
 from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 
 
+def _get_seq_from_query(packet):
+    """Return sequence number for the query."""
+    query = packet.http.get("request_uri_query")
+    if query is None:
+        raise Exception("No request_uri_query found")
+    # use regex to get: seq=(\d+)
+    seq = re.search(r"seq=(\d+)", query)
+    if seq is not None:
+        return int(seq.group(1))
+    raise Exception("Unable to find sequence number")
+
+
 class MyEncryptionSession(KlapEncryptionSession):
     """A custom KlapEncryptionSession class that allows for decryption."""
 
@@ -232,14 +244,7 @@ def main(
             if uri is None:
                 continue
 
-            if hasattr(packet.http, "request_uri_query"):
-                query = packet.http.get("request_uri_query")
-                # use regex to get: seq=(\d+)
-                seq = re.search(r"seq=(\d+)", query)
-                if seq is not None:
-                    operator.seq = int(
-                        seq.group(1)
-                    )  # grab the sequence number from the query
+            operator.seq = _get_seq_from_query(packet)
 
             # Windows and linux file_data attribute returns different
             # pretty format so get the raw field value.
