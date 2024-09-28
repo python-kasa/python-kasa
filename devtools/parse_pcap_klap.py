@@ -269,7 +269,10 @@ def main(
                         message = bytes.fromhex(data)
                         operator.local_seed = message
                         response = None
-                        print(f"got handshake1 in {packet_number}, looking for the response")
+                        print(
+                            f"got handshake1 in {packet_number}, "
+                            f"looking for the response"
+                        )
 
                         while (
                             True
@@ -316,7 +319,7 @@ def main(
 @click.option(
     "--source-host",
     required=True,
-    help="the IP of the device communicating with the smart device."
+    help="the IP of the device communicating with the smart device.",
 )
 @click.option(
     "--username",
