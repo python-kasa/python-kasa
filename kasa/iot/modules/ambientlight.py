@@ -16,11 +16,11 @@ from ..iotmodule import IotModule, merge
 class AmbientLight(IotModule):
     """Implements ambient light controls for the motion sensor."""
 
-    def __init__(self, device, module):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device=device,
+                device=self._device,
                 container=self,
                 id="ambient_light",
                 name="Ambient Light",
