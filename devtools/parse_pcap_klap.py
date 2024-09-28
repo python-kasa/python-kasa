@@ -36,17 +36,16 @@ def _is_http_response_for_packet(response, packet):
     """
     if not hasattr(response, "http"):
         return False
-    if (hasattr(response.http, "response_for_uri")
-            and (
-            response.http.response_for_uri
-            == packet.http.request_full_uri
-    )):
+    if hasattr(response.http, "response_for_uri") and (
+        response.http.response_for_uri == packet.http.request_full_uri
+    ):
         return True
     # tshark 4.4.0
     if response.http.request_uri == packet.http.request_uri:
         return True
 
     return False
+
 
 class MyEncryptionSession(KlapEncryptionSession):
     """A custom KlapEncryptionSession class that allows for decryption."""
@@ -241,7 +240,7 @@ def main(
     while True:
         try:
             packet = capture.next()
-            # packet_number = capture._current_packet
+            packet_number = capture._current_packet
             # we only care about http packets
             if hasattr(
                 packet, "http"
@@ -286,7 +285,10 @@ def main(
                         message = bytes.fromhex(data)
                         operator.local_seed = message
                         response = None
-                        print(f"got handshake1 in {packet_number}, looking for the response")
+                        print(
+                            f"got handshake1 in {packet_number}, "
+                            f"looking for the response"
+                        )
                         while (
                             True
                         ):  # we are going to now look for the response to this request
