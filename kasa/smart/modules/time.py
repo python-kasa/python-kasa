@@ -19,7 +19,7 @@ class Time(SmartModule):
     REQUIRED_COMPONENT = "time"
     QUERY_GETTER_NAME = "get_device_time"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
 
         self._add_feature(
@@ -49,7 +49,7 @@ class Time(SmartModule):
             tz=tz,
         )
 
-    async def set_time(self, dt: datetime):
+    async def set_time(self, dt: datetime) -> dict:
         """Set device time."""
         unixtime = mktime(dt.timetuple())
         offset = cast(timedelta, dt.utcoffset())

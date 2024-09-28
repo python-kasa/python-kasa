@@ -17,7 +17,7 @@ class Color(SmartModule):
 
     REQUIRED_COMPONENT = "color"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -51,7 +51,7 @@ class Color(SmartModule):
 
         return HSV(hue=h, saturation=s, value=v)
 
-    def _raise_for_invalid_brightness(self, value):
+    def _raise_for_invalid_brightness(self, value: int) -> None:
         """Raise error on invalid brightness value."""
         if not isinstance(value, int):
             raise TypeError("Brightness must be an integer")

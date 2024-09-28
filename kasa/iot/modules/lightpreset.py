@@ -41,7 +41,7 @@ class LightPreset(IotModule, LightPresetInterface):
     _presets: dict[str, IotLightPreset]
     _preset_list: list[str]
 
-    def _post_update_hook(self):
+    def _post_update_hook(self) -> None:
         """Update the internal presets."""
         self._presets = {
             f"Light preset {index+1}": IotLightPreset(**vals)
@@ -129,7 +129,7 @@ class LightPreset(IotModule, LightPresetInterface):
 
         return await self.call("set_preferred_state", state)
 
-    def query(self):
+    def query(self) -> dict:
         """Return the base query."""
         return {}
 
@@ -142,7 +142,7 @@ class LightPreset(IotModule, LightPresetInterface):
             if "id" not in vals
         ]
 
-    async def _deprecated_save_preset(self, preset: IotLightPreset):
+    async def _deprecated_save_preset(self, preset: IotLightPreset) -> dict:
         """Save a setting preset.
 
         You can either construct a preset object manually, or pass an existing one

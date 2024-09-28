@@ -17,7 +17,7 @@ class TemperatureSensor(SmartModule):
     REQUIRED_COMPONENT = "temperature"
     QUERY_GETTER_NAME = "get_comfort_temp_config"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -63,7 +63,7 @@ class TemperatureSensor(SmartModule):
         return {}
 
     @property
-    def temperature(self):
+    def temperature(self) -> float:
         """Return current humidity in percentage."""
         return self._device.sys_info["current_temp"]
 
@@ -77,6 +77,8 @@ class TemperatureSensor(SmartModule):
         """Return current temperature unit."""
         return self._device.sys_info["temp_unit"]
 
-    async def set_temperature_unit(self, unit: Literal["celsius", "fahrenheit"]):
+    async def set_temperature_unit(
+        self, unit: Literal["celsius", "fahrenheit"]
+    ) -> dict:
         """Set the device temperature unit."""
         return await self.call("set_temperature_unit", {"temp_unit": unit})

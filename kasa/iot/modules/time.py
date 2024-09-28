@@ -9,7 +9,7 @@ from ..iotmodule import IotModule, merge
 class Time(IotModule):
     """Implements the timezone settings."""
 
-    def query(self):
+    def query(self) -> dict:
         """Request time and timezone."""
         q = self.query_for_command("get_time")
 
@@ -30,12 +30,12 @@ class Time(IotModule):
         )
 
     @property
-    def timezone(self):
+    def timezone(self) -> str:
         """Return current timezone."""
         res = self.data["get_timezone"]
         return res
 
-    async def get_time(self):
+    async def get_time(self) -> datetime:
         """Return current device time."""
         try:
             res = await self.call("get_time")
@@ -50,6 +50,6 @@ class Time(IotModule):
         except KasaException:
             return None
 
-    async def get_timezone(self):
+    async def get_timezone(self) -> dict:
         """Request timezone information from the device."""
         return await self.call("get_timezone")

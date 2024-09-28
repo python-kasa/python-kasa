@@ -20,7 +20,7 @@ class Alarm(SmartModule):
             "get_support_alarm_type_list": None,  # This should be needed only once
         }
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features.
 
         This is implemented as some features depend on device responses.
@@ -100,7 +100,7 @@ class Alarm(SmartModule):
         """Return current alarm sound."""
         return self.data["get_alarm_configure"]["type"]
 
-    async def set_alarm_sound(self, sound: str):
+    async def set_alarm_sound(self, sound: str) -> dict:
         """Set alarm sound.
 
         See *alarm_sounds* for list of available sounds.
@@ -119,7 +119,7 @@ class Alarm(SmartModule):
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
 
-    async def set_alarm_volume(self, volume: Literal["low", "normal", "high"]):
+    async def set_alarm_volume(self, volume: Literal["low", "normal", "high"]) -> dict:
         """Set alarm volume."""
         payload = self.data["get_alarm_configure"].copy()
         payload["volume"] = volume

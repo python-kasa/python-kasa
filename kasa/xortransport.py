@@ -48,7 +48,7 @@ class XorTransport(BaseTransport):
         self.loop: asyncio.AbstractEventLoop | None = None
 
     @property
-    def default_port(self):
+    def default_port(self) -> int:
         """Default port for the transport."""
         return self.DEFAULT_PORT
 

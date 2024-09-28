@@ -7,7 +7,7 @@ import re
 import sys
 from contextlib import contextmanager
 from functools import singledispatch, update_wrapper, wraps
-from typing import Final
+from typing import Any, Callable, Final
 
 import asyncclick as click
 
@@ -37,7 +37,7 @@ except ImportError:
         """Strip rich formatting from messages."""
 
         @wraps(echo_func)
-        def wrapper(message=None, *args, **kwargs):
+        def wrapper(message=None, *args, **kwargs) -> None:
             if message is not None:
                 message = rich_formatting.sub("", message)
             echo_func(message, *args, **kwargs)
@@ -47,20 +47,20 @@ except ImportError:
     _echo = _strip_rich_formatting(click.echo)
 
 
-def echo(*args, **kwargs):
+def echo(*args, **kwargs) -> None:
     """Print a message."""
     ctx = click.get_current_context().find_root()
     if "json" not in ctx.params or ctx.params["json"] is False:
         _echo(*args, **kwargs)
 
 
-def error(msg: str):
+def error(msg: str) -> None:
     """Print an error and exit."""
     echo(f"[bold red]{msg}[/bold red]")
     sys.exit(1)
 
 
-def json_formatter_cb(result, **kwargs):
+def json_formatter_cb(result: Any, **kwargs) -> None:
     """Format and output the result as JSON, if requested."""
     if not kwargs.get("json"):
         return
@@ -82,7 +82,7 @@ def json_formatter_cb(result, **kwargs):
     print(json_content)
 
 
-def pass_dev_or_child(wrapped_function):
+def pass_dev_or_child(wrapped_function: Callable) -> Callable:
     """Pass the device or child to the click command based on the child options."""
     child_help = (
         "Child ID or alias for controlling sub-devices. "
@@ -133,7 +133,10 @@ def pass_dev_or_child(wrapped_function):
 
 
 async def _get_child_device(
-    device: Device, child_option, child_index_option, info_command
+    device: Device,
+    child_option: str | None,
+    child_index_option: int | None,
+    info_command: str,
 ) -> Device | None:
     def _list_children():
         return "\n".join(
@@ -195,7 +198,7 @@ def CatchAllExceptions(cls):
     https://stackoverflow.com/questions/52213375
     """
 
-    def _handle_exception(debug, exc):
+    def _handle_exception(debug, exc) -> None:
         if isinstance(exc, click.ClickException):
             raise
         # Handle exit request from click.

@@ -17,7 +17,7 @@ class HumiditySensor(SmartModule):
     REQUIRED_COMPONENT = "humidity"
     QUERY_GETTER_NAME = "get_comfort_humidity_config"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -50,7 +50,7 @@ class HumiditySensor(SmartModule):
         return {}
 
     @property
-    def humidity(self):
+    def humidity(self) -> int:
         """Return current humidity in percentage."""
         return self._device.sys_info["current_humidity"]
 
