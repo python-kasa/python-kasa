@@ -212,6 +212,7 @@ def main(
     username,
     password,
     device_ip,
+    source_host,
     pcap_file_path,
     output_json_name=None,
 ):
@@ -232,7 +233,6 @@ def main(
     )
 
     operator = Operator(KlapTransportV2(config=fake_device), creds)
-
     packets = []
 
     # pyshark is a little weird in how it handles iteration,
@@ -241,6 +241,8 @@ def main(
         try:
             packet = capture.next()
             packet_number = capture._current_packet
+            if packet.ip.src != source_host:
+                continue
             # we only care about http packets
             if hasattr(
                 packet, "http"
@@ -326,6 +328,11 @@ def main(
     help="the IP of the smart device as it appears in the pcap file.",
 )
 @click.option(
+    "--source-host",
+    required=True,
+    help="the IP of the device communicating with the smart device.",
+)
+@click.option(
     "--username",
     required=True,
     envvar="KASA_USERNAME",
@@ -348,14 +355,14 @@ def main(
     required=False,
     help="The name of the output file, relative to the current directory.",
 )
-async def cli(username, password, host, pcap_file_path, output):
+async def cli(username, password, host, source_host, pcap_file_path, output):
     """Export KLAP data in JSON format from a PCAP file."""
     # pyshark does not work within a running event loop and we don't want to
     # install click as well as asyncclick so run in a new thread.
     loop = asyncio.new_event_loop()
     thread = Thread(
         target=main,
-        args=[loop, username, password, host, pcap_file_path, output],
+        args=[loop, username, password, host, source_host, pcap_file_path, output],
         daemon=True,
     )
     thread.start()
