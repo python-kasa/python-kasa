@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING
 
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class WaterleakStatus(Enum):
@@ -25,11 +21,11 @@ class WaterleakSensor(SmartModule):
 
     REQUIRED_COMPONENT = "sensor_alarm"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="water_leak",
                 name="Water leak",
                 container=self,
@@ -41,7 +37,7 @@ class WaterleakSensor(SmartModule):
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="water_alert",
                 name="Water alert",
                 container=self,

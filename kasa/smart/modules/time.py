@@ -4,13 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from time import mktime
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class Time(SmartModule):
@@ -19,12 +16,11 @@ class Time(SmartModule):
     REQUIRED_COMPONENT = "time"
     QUERY_GETTER_NAME = "get_device_time"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
-
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device=device,
+                device=self._device,
                 id="device_time",
                 name="Device time",
                 attribute_getter="time",
