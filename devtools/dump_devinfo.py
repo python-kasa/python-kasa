@@ -285,7 +285,7 @@ async def get_legacy_fixture(device):
         try:
             click.echo(f"Testing {test_call}..", nl=False)
             info = await device.protocol.query(
-                {test_call.module: {test_call.method: None}}
+                {test_call.module: {test_call.method: {}}}
             )
             resp = info[test_call.module]
         except Exception as ex:

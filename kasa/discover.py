@@ -296,8 +296,8 @@ class Discover:
 
     DISCOVERY_PORT = 9999
 
-    DISCOVERY_QUERY = {
-        "system": {"get_sysinfo": None},
+    DISCOVERY_QUERY: dict[str, dict[str, dict]] = {
+        "system": {"get_sysinfo": {}},
     }
 
     DISCOVERY_PORT_2 = 20002
