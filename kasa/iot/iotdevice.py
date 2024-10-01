@@ -207,6 +207,8 @@ class IotDevice(Device):
     def _create_request(
         self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ):
+        if arg is None:
+            arg = {}
         request: dict[str, Any] = {target: {cmd: arg}}
         if child_ids is not None:
             request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}

@@ -32,8 +32,8 @@ from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
-GET_SYSINFO_QUERY = {
-    "system": {"get_sysinfo": None},
+GET_SYSINFO_QUERY: dict[str, dict[str, dict]] = {
+    "system": {"get_sysinfo": {}},
 }
 
 
