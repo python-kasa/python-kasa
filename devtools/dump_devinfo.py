@@ -302,7 +302,7 @@ async def get_legacy_fixture(device):
     final_query = defaultdict(defaultdict)
     final = defaultdict(defaultdict)
     for succ, resp in successes:
-        final_query[succ.module][succ.method] = None
+        final_query[succ.module][succ.method] = {}
         final[succ.module][succ.method] = resp
 
     final = default_to_regular(final)
