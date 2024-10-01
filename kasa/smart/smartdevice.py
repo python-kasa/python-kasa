@@ -500,6 +500,7 @@ class SmartDevice(Device):
             not self._info.get("device_on")
             or (on_time := self._info.get("on_time")) is None
         ):
+            self._on_since = None
             return None
 
         on_time = cast(float, on_time)

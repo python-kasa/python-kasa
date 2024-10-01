@@ -435,7 +435,11 @@ class Device(ABC):
     @property
     @abstractmethod
     def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
+        """Return the time that the device was turned on or None if turned off.
+
+        Could be inprecise by up to 5 seconds due to device jitter between
+        the device reporting time and on_time.
+        """
 
     @abstractmethod
     async def wifi_scan(self) -> list[WifiNetwork]:
