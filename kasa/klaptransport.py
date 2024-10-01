@@ -88,7 +88,6 @@ class KlapTransport(BaseTransport):
     """
 
     DEFAULT_PORT: int = 80
-    DISCOVERY_QUERY: dict[str, dict[str, dict]] = {"system": {"get_sysinfo": {}}}
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     TIMEOUT_COOKIE_NAME = "TIMEOUT"
 
