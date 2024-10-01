@@ -504,11 +504,12 @@ class SmartDevice(Device):
 
         on_time = cast(float, on_time)
         on_since = self.time - timedelta(seconds=on_time)
-        # Ensure slight variations between time module and on_time do not cause the
-        # on_since time to change. More likely to happen with child devices.
+        # Ensure slight variations between time module and on_time do not cause
+        # the on_since time to change. More likely to happen with child devices
+        # or P100s that do not do multi-queries.
         if not self._on_since or timedelta(
             seconds=0
-        ) < on_since - self._on_since > timedelta(seconds=2):
+        ) < on_since - self._on_since > timedelta(seconds=5):
             self._on_since = on_since
         return self._on_since
 
