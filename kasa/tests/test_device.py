@@ -7,7 +7,7 @@ import inspect
 import pkgutil
 import sys
 from contextlib import AbstractContextManager
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -85,7 +85,7 @@ async def test_create_device_with_timeout():
 
 async def test_create_thin_wrapper():
     """Make sure thin wrapper is created with the correct device type."""
-    mock = Mock()
+    mock = AsyncMock()
     config = DeviceConfig(
         host="test_host",
         port_override=1234,
@@ -281,7 +281,7 @@ async def test_device_type_aliases():
     """Test that the device type aliases in Device work."""
 
     def _mock_connect(config, *args, **kwargs):
-        mock = Mock()
+        mock = AsyncMock()
         mock.config = config
         return mock
 
