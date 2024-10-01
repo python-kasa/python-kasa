@@ -439,6 +439,7 @@ class IotStripPlug(IotPlug):
     def on_since(self) -> datetime | None:
         """Return on-time, if available."""
         if self.is_off:
+            self._on_since = None
             return None
 
         info = self._get_child_info()
