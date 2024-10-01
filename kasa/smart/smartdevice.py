@@ -495,7 +495,11 @@ class SmartDevice(Device):
 
     @property
     def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
+        """Return the time that the device was turned on or None if turned off.
+
+        Could be inprecise by up to 5 seconds due to device jitter between
+        the device reporting time and on_time.
+        """
         if (
             not self._info.get("device_on")
             or (on_time := self._info.get("on_time")) is None
@@ -505,9 +509,6 @@ class SmartDevice(Device):
 
         on_time = cast(float, on_time)
         on_since = self.time - timedelta(seconds=on_time)
-        # Ensure slight variations between time module and on_time do not cause
-        # the on_since time to change. More likely to happen with child devices
-        # or P100s that do not do multi-queries.
         if not self._on_since or timedelta(
             seconds=0
         ) < on_since - self._on_since > timedelta(seconds=5):
