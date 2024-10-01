@@ -1,9 +1,12 @@
 """Provides the current time and timezone information."""
 
-from datetime import datetime
+from __future__ import annotations
+
+from datetime import datetime, timezone
 
 from ...exceptions import KasaException
 from ..iotmodule import IotModule, merge
+from ..iottimezone import get_timezone
 
 
 class Time(IotModule):
@@ -20,7 +23,7 @@ class Time(IotModule):
     def time(self) -> datetime:
         """Return current device time."""
         res = self.data["get_time"]
-        return datetime(
+        time = datetime(
             res["year"],
             res["month"],
             res["mday"],
@@ -28,12 +31,14 @@ class Time(IotModule):
             res["min"],
             res["sec"],
         )
+        return time.astimezone(self.timezone)
 
     @property
-    def timezone(self):
+    def timezone(self) -> timezone | None:
         """Return current timezone."""
-        res = self.data["get_timezone"]
-        return res
+        if res := self.data.get("get_timezone"):
+            return get_timezone(res.get("index"))
+        return None
 
     async def get_time(self):
         """Return current device time."""
