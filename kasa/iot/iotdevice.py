@@ -18,7 +18,7 @@ import functools
 import inspect
 import logging
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
 
 from ..device import Device, WifiNetwork
@@ -606,9 +606,7 @@ class IotDevice(Device):
 
         on_time = self._sys_info["on_time"]
 
-        time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
-
-        on_since = time - timedelta(seconds=on_time)
+        on_since = self.time - timedelta(seconds=on_time)
         if not self._on_since or timedelta(
             seconds=0
         ) < on_since - self._on_since > timedelta(seconds=5):
