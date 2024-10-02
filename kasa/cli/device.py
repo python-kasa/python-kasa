@@ -40,7 +40,7 @@ async def state(ctx, dev: Device):
     echo(f"Port: {dev.port}")
     echo(f"Device state: {dev.is_on}")
 
-    echo(f"Time:         {dev.time} (tz: {dev.timezone}")
+    echo(f"Time:         {dev.time} (tz: {dev.timezone})")
     echo(f"Hardware:     {dev.hw_info['hw_ver']}")
     echo(f"Software:     {dev.hw_info['sw_ver']}")
     echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")

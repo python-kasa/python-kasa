@@ -18,7 +18,7 @@ import functools
 import inspect
 import logging
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
 from ..device import Device, WifiNetwork
@@ -464,7 +464,7 @@ class IotDevice(Device):
 
     @property
     @requires_update
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the current timezone."""
         return self.modules[Module.IotTime].timezone
 

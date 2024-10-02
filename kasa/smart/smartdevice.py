@@ -6,8 +6,8 @@ import base64
 import logging
 import time
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from datetime import datetime, timedelta, timezone, tzinfo
+from typing import TYPE_CHECKING, Any, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -516,10 +516,11 @@ class SmartDevice(Device):
         return self._on_since
 
     @property
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
-        ti = self.time
-        return {"timezone": ti.tzname()}
+        if TYPE_CHECKING:
+            assert self.time.tzinfo
+        return self.time.tzinfo
 
     @property
     def hw_info(self) -> dict:

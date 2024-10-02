@@ -10,10 +10,17 @@ from contextlib import AbstractContextManager
 from unittest.mock import Mock, patch
 
 import pytest
+import zoneinfo
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import IotDevice
+from kasa.iot.iottimezone import (
+    TIMEZONE_ID,
+    TIMEZONE_INDEX,
+    get_timezone,
+    get_timezone_index,
+)
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
 
@@ -299,3 +306,33 @@ async def test_device_type_aliases():
         )
         assert isinstance(dev.config, DeviceConfig)
         assert DeviceType.Dimmer == Device.Type.Dimmer
+
+
+async def test_device_timezones():
+    """Test the timezone data is good."""
+    # Check all indexes return a zoneinfo
+    for i in range(110):
+        tz = get_timezone(i)
+        assert tz
+        assert tz != zoneinfo.ZoneInfo("Etc/UTC"), f"{i} is default Etc/UTC"
+
+    # Check an unexpected index returns a UTC default.
+    tz = get_timezone(110)
+    assert tz == zoneinfo.ZoneInfo("Etc/UTC")
+
+    # Get an index from a timezone
+    for zone in TIMEZONE_ID:
+        index = get_timezone_index(zone)
+        assert index in range(110)
+
+    # Try a timezone not hardcoded finds another match
+    index = get_timezone_index("Asia/Katmandu")
+    assert index == 77
+
+    # Try a timezone not hardcoded no match
+    with pytest.raises(zoneinfo.ZoneInfoNotFoundError):
+        get_timezone_index("Foo/bar")
+
+    # Check every configured id has an entry in the index lookup
+    for value in TIMEZONE_ID.values():
+        assert value["index"] in TIMEZONE_INDEX

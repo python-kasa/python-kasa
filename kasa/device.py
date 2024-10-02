@@ -109,7 +109,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, tzinfo
 from typing import TYPE_CHECKING, Any
 from warnings import warn
 
@@ -377,7 +377,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
 
     @property

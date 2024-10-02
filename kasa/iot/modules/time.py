@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, tzinfo
 
 from ...exceptions import KasaException
 from ..iotmodule import IotModule, merge
@@ -34,11 +34,11 @@ class Time(IotModule):
         return time.astimezone(self.timezone)
 
     @property
-    def timezone(self) -> timezone | None:
+    def timezone(self) -> tzinfo:
         """Return current timezone."""
         if res := self.data.get("get_timezone"):
             return get_timezone(res.get("index"))
-        return None
+        return timezone.utc
 
     async def get_time(self):
         """Return current device time."""
