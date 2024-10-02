@@ -181,6 +181,7 @@ class IotDevice(Device):
         self._legacy_features: set[str] = set()
         self._children: Mapping[str, IotDevice] = {}
         self._modules: dict[str | ModuleName[Module], IotModule] = {}
+        self._on_since: datetime | None = None
 
     @property
     def children(self) -> Sequence[IotDevice]:
@@ -594,18 +595,25 @@ class IotDevice(Device):
     @property  # type: ignore
     @requires_update
     def on_since(self) -> datetime | None:
-        """Return pretty-printed on-time, or None if not available."""
-        if "on_time" not in self._sys_info:
-            return None
+        """Return the time that the device was turned on or None if turned off.
 
-        if self.is_off:
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
+        """
+        if self.is_off or "on_time" not in self._sys_info:
+            self._on_since = None
             return None
 
         on_time = self._sys_info["on_time"]
 
-        return datetime.now(timezone.utc).astimezone().replace(
-            microsecond=0
-        ) - timedelta(seconds=on_time)
+        time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+
+        on_since = time - timedelta(seconds=on_time)
+        if not self._on_since or timedelta(
+            seconds=0
+        ) < on_since - self._on_since > timedelta(seconds=5):
+            self._on_since = on_since
+        return self._on_since
 
     @property  # type: ignore
     @requires_update
