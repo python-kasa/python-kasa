@@ -597,8 +597,8 @@ class IotDevice(Device):
     def on_since(self) -> datetime | None:
         """Return the time that the device was turned on or None if turned off.
 
-        Could be inprecise by up to 5 seconds due to device jitter between
-        the device reporting time and on_time.
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
         """
         if self.is_off or "on_time" not in self._sys_info:
             self._on_since = None
