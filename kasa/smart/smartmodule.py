@@ -136,12 +136,12 @@ class SmartModule(Module):
         """
         return {self.QUERY_GETTER_NAME: None}
 
-    def call(self, method, params=None):
+    async def call(self, method, params=None):
         """Call a method.
 
         Just a helper method.
         """
-        return self._device._query_helper(method, params)
+        return await self._device._query_helper(method, params)
 
     @property
     def data(self):
