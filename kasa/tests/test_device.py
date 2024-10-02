@@ -16,7 +16,6 @@ import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import IotDevice
 from kasa.iot.iottimezone import (
-    TIMEZONE_ID,
     TIMEZONE_INDEX,
     get_timezone,
     get_timezone_index,
@@ -321,9 +320,9 @@ async def test_device_timezones():
     assert tz == zoneinfo.ZoneInfo("Etc/UTC")
 
     # Get an index from a timezone
-    for zone in TIMEZONE_ID:
-        index = get_timezone_index(zone)
-        assert index in range(110)
+    for index, zone in TIMEZONE_INDEX.items():
+        found_index = get_timezone_index(zone)
+        assert found_index == index
 
     # Try a timezone not hardcoded finds another match
     index = get_timezone_index("Asia/Katmandu")
@@ -332,7 +331,3 @@ async def test_device_timezones():
     # Try a timezone not hardcoded no match
     with pytest.raises(zoneinfo.ZoneInfoNotFoundError):
         get_timezone_index("Foo/bar")
-
-    # Check every configured id has an entry in the index lookup
-    for value in TIMEZONE_ID.values():
-        assert value["index"] in TIMEZONE_INDEX
