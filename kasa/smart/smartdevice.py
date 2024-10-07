@@ -168,7 +168,7 @@ class SmartDevice(Device):
             await self._initialize_modules()
             # Run post update for the cloud module
             if cloud_mod := self.modules.get(Module.Cloud):
-                self._handle_module_post_update(cloud_mod, now, had_query=True)
+                await self._handle_module_post_update(cloud_mod, now, had_query=True)
 
         resp = await self._modular_update(first_update, now)
 
@@ -195,7 +195,7 @@ class SmartDevice(Device):
             updated = self._last_update if first_update else resp
             _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
-    def _handle_module_post_update(
+    async def _handle_module_post_update(
         self, module: SmartModule, update_time: float, had_query: bool
     ):
         if module.disabled:
@@ -203,7 +203,7 @@ class SmartDevice(Device):
         if had_query:
             module._last_update_time = update_time
         try:
-            module._post_update_hook()
+            await module._post_update_hook()
             module._set_error(None)
         except Exception as ex:
             # Only set the error if a query happened.
@@ -260,7 +260,7 @@ class SmartDevice(Device):
 
         # Call handle update for modules that want to update internal data
         for module in self._modules.values():
-            self._handle_module_post_update(
+            await self._handle_module_post_update(
                 module, update_time, had_query=module in module_queries
             )
 

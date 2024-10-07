@@ -373,7 +373,7 @@ class IotStripPlug(IotPlug):
         """
         await self._modular_update({})
         for module in self._modules.values():
-            module._post_update_hook()
+            await module._post_update_hook()
 
         if not self._features:
             await self._initialize_features()

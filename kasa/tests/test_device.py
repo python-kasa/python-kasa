@@ -311,23 +311,23 @@ async def test_device_timezones():
     """Test the timezone data is good."""
     # Check all indexes return a zoneinfo
     for i in range(110):
-        tz = get_timezone(i)
+        tz = await get_timezone(i)
         assert tz
         assert tz != zoneinfo.ZoneInfo("Etc/UTC"), f"{i} is default Etc/UTC"
 
     # Check an unexpected index returns a UTC default.
-    tz = get_timezone(110)
+    tz = await get_timezone(110)
     assert tz == zoneinfo.ZoneInfo("Etc/UTC")
 
     # Get an index from a timezone
     for index, zone in TIMEZONE_INDEX.items():
-        found_index = get_timezone_index(zone)
+        found_index = await get_timezone_index(zone)
         assert found_index == index
 
     # Try a timezone not hardcoded finds another match
-    index = get_timezone_index("Asia/Katmandu")
+    index = await get_timezone_index("Asia/Katmandu")
     assert index == 77
 
     # Try a timezone not hardcoded no match
     with pytest.raises(zoneinfo.ZoneInfoNotFoundError):
-        get_timezone_index("Foo/bar")
+        await get_timezone_index("Foo/bar")

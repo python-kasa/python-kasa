@@ -12,12 +12,19 @@ from ..iottimezone import get_timezone
 class Time(IotModule):
     """Implements the timezone settings."""
 
+    _timezone: tzinfo = timezone.utc
+
     def query(self):
         """Request time and timezone."""
         q = self.query_for_command("get_time")
 
         merge(q, self.query_for_command("get_timezone"))
         return q
+
+    async def _post_update_hook(self):
+        """Perform actions after a device update."""
+        if res := self.data.get("get_timezone"):
+            self._timezone = await get_timezone(res.get("index"))
 
     @property
     def time(self) -> datetime:
@@ -36,9 +43,7 @@ class Time(IotModule):
     @property
     def timezone(self) -> tzinfo:
         """Return current timezone."""
-        if res := self.data.get("get_timezone"):
-            return get_timezone(res.get("index"))
-        return timezone.utc
+        return self._timezone
 
     async def get_time(self):
         """Return current device time."""
