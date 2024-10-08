@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, tzinfo
+from datetime import datetime, timedelta, tzinfo
 
 from zoneinfo import ZoneInfo
 
@@ -23,24 +23,28 @@ async def get_timezone(index: int) -> tzinfo:
     return await _CachedZoneInfo.get_cached_zone_info(name)
 
 
-async def get_timezone_index(name: str) -> int:
+async def get_timezone_index(tzone: tzinfo) -> int:
     """Return the iot firmware index for a valid IANA timezone key."""
-    rev = {val: key for key, val in TIMEZONE_INDEX.items()}
-    if name in rev:
-        return rev[name]
+    if isinstance(tzone, ZoneInfo):
+        name = tzone.key
+        rev = {val: key for key, val in TIMEZONE_INDEX.items()}
+        if name in rev:
+            return rev[name]
 
-    # Try to find a supported timezone matching dst true/false
-    zone = await _CachedZoneInfo.get_cached_zone_info(name)
-    now = datetime.now()
-    winter = datetime(now.year, 1, 1, 12)
-    summer = datetime(now.year, 7, 1, 12)
     for i in range(110):
-        configured_zone = await get_timezone(i)
-        if zone.utcoffset(winter) == configured_zone.utcoffset(
-            winter
-        ) and zone.utcoffset(summer) == configured_zone.utcoffset(summer):
+        if _is_same_timezone(tzone, await get_timezone(i)):
             return i
     raise ValueError("Device does not support timezone %s", name)
+
+
+def _is_same_timezone(tzone1: tzinfo, tzone2: tzinfo) -> bool:
+    now = datetime.now()
+    start_day = datetime(now.year, 1, 1, 12)
+    for i in range(365):
+        the_day = start_day + timedelta(days=i)
+        if tzone1.utcoffset(the_day) != tzone2.utcoffset(the_day):
+            return False
+    return True
 
 
 class _CachedZoneInfo(ZoneInfo):

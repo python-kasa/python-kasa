@@ -20,6 +20,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
+from warnings import warn
 
 from ..device import Device, WifiNetwork
 from ..deviceconfig import DeviceConfig
@@ -460,27 +461,27 @@ class IotDevice(Device):
     @requires_update
     def time(self) -> datetime:
         """Return current time from the device."""
-        return self.modules[Module.IotTime].time
+        return self.modules[Module.Time].time
 
     @property
     @requires_update
     def timezone(self) -> tzinfo:
         """Return the current timezone."""
-        return self.modules[Module.IotTime].timezone
+        return self.modules[Module.Time].timezone
 
-    async def get_time(self) -> datetime | None:
+    async def get_time(self) -> datetime:
         """Return current time from the device, if available."""
-        _LOGGER.warning(
-            "Use `time` property instead, this call will be removed in the future."
-        )
-        return await self.modules[Module.IotTime].get_time()
+        msg = "Use `time` property instead, this call will be removed in the future."
+        warn(msg, DeprecationWarning, stacklevel=1)
+        return self.time
 
-    async def get_timezone(self) -> dict:
+    async def get_timezone(self) -> tzinfo:
         """Return timezone information."""
-        _LOGGER.warning(
+        msg = (
             "Use `timezone` property instead, this call will be removed in the future."
         )
-        return await self.modules[Module.IotTime].get_timezone()
+        warn(msg, DeprecationWarning, stacklevel=1)
+        return self.timezone
 
     @property  # type: ignore
     @requires_update

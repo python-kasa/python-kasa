@@ -8,11 +8,13 @@ from typing import cast
 
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from ...exceptions import KasaException
 from ...feature import Feature
+from ...interfaces import Time as TimeInterface
 from ..smartmodule import SmartModule
 
 
-class Time(SmartModule):
+class Time(SmartModule, TimeInterface):
     """Implementation of device_local_time."""
 
     REQUIRED_COMPONENT = "time"
@@ -56,8 +58,12 @@ class Time(SmartModule):
             tz=self.timezone,
         )
 
-    async def set_time(self, dt: datetime):
+    async def set_time(self, dt: datetime) -> dict:
         """Set device time."""
+        if not dt.tzinfo:
+            raise KasaException(
+                "Time must be set using a timezone aware datetime object"
+            )
         unixtime = mktime(dt.timetuple())
         offset = cast(timedelta, dt.utcoffset())
         diff = offset / timedelta(minutes=1)

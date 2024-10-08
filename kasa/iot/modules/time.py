@@ -5,11 +5,12 @@ from __future__ import annotations
 from datetime import datetime, timezone, tzinfo
 
 from ...exceptions import KasaException
+from ...interfaces import Time as TimeInterface
 from ..iotmodule import IotModule, merge
-from ..iottimezone import get_timezone
+from ..iottimezone import get_timezone, get_timezone_index
 
 
-class Time(IotModule):
+class Time(IotModule, TimeInterface):
     """Implements the timezone settings."""
 
     _timezone: tzinfo = timezone.utc
@@ -37,8 +38,9 @@ class Time(IotModule):
             res["hour"],
             res["min"],
             res["sec"],
+            tzinfo=self.timezone,
         )
-        return time.astimezone(self.timezone)
+        return time
 
     @property
     def timezone(self) -> tzinfo:
@@ -56,9 +58,36 @@ class Time(IotModule):
                 res["hour"],
                 res["min"],
                 res["sec"],
+                tzinfo=self.timezone,
             )
         except KasaException:
             return None
+
+    async def set_time(self, dt: datetime) -> dict:
+        """Set the device time."""
+        if not dt.tzinfo:
+            raise KasaException(
+                "Time must be set using a timezone aware datetime object"
+            )
+        params = {
+            "year": dt.year,
+            "month": dt.month,
+            "mday": dt.day,
+            "hour": dt.hour,
+            "min": dt.minute,
+            "sec": 0,
+        }
+        index = await get_timezone_index(dt.tzinfo)
+        current_index = self.data.get("get_timezone", {}).get("index", -1)
+        if current_index != -1 and current_index != index:
+            params["index"] = index
+            method = "set_timezone"
+        else:
+            method = "set_time"
+        try:
+            return await self.call(method, params)
+        except Exception as ex:
+            raise KasaException(ex) from ex
 
     async def get_timezone(self):
         """Request timezone information from the device."""
