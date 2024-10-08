@@ -37,8 +37,9 @@ class Time(IotModule):
             res["hour"],
             res["min"],
             res["sec"],
+            tzinfo=self.timezone,
         )
-        return time.astimezone(self.timezone)
+        return time
 
     @property
     def timezone(self) -> tzinfo:
