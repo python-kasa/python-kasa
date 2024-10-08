@@ -34,7 +34,7 @@ class LightPreset(SmartModule, LightPresetInterface):
         self._state_in_sysinfo = self.SYS_INFO_STATE_KEY in device.sys_info
         self._brightness_only: bool = False
 
-    def _post_update_hook(self):
+    async def _post_update_hook(self):
         """Update the internal presets."""
         index = 0
         self._presets = {}

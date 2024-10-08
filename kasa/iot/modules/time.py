@@ -1,13 +1,18 @@
 """Provides the current time and timezone information."""
 
-from datetime import datetime
+from __future__ import annotations
+
+from datetime import datetime, timezone, tzinfo
 
 from ...exceptions import KasaException
 from ..iotmodule import IotModule, merge
+from ..iottimezone import get_timezone
 
 
 class Time(IotModule):
     """Implements the timezone settings."""
+
+    _timezone: tzinfo = timezone.utc
 
     def query(self):
         """Request time and timezone."""
@@ -16,11 +21,16 @@ class Time(IotModule):
         merge(q, self.query_for_command("get_timezone"))
         return q
 
+    async def _post_update_hook(self):
+        """Perform actions after a device update."""
+        if res := self.data.get("get_timezone"):
+            self._timezone = await get_timezone(res.get("index"))
+
     @property
     def time(self) -> datetime:
         """Return current device time."""
         res = self.data["get_time"]
-        return datetime(
+        time = datetime(
             res["year"],
             res["month"],
             res["mday"],
@@ -28,12 +38,12 @@ class Time(IotModule):
             res["min"],
             res["sec"],
         )
+        return time.astimezone(self.timezone)
 
     @property
-    def timezone(self):
+    def timezone(self) -> tzinfo:
         """Return current timezone."""
-        res = self.data["get_timezone"]
-        return res
+        return self._timezone
 
     async def get_time(self):
         """Return current device time."""

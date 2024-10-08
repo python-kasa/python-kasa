@@ -18,7 +18,7 @@ import functools
 import inspect
 import logging
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
 from ..device import Device, WifiNetwork
@@ -299,7 +299,7 @@ class IotDevice(Device):
 
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
         for module in self._modules.values():
-            module._post_update_hook()
+            await module._post_update_hook()
 
         if not self._features:
             await self._initialize_features()
@@ -464,7 +464,7 @@ class IotDevice(Device):
 
     @property
     @requires_update
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the current timezone."""
         return self.modules[Module.IotTime].timezone
 
@@ -606,9 +606,7 @@ class IotDevice(Device):
 
         on_time = self._sys_info["on_time"]
 
-        time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
-
-        on_since = time - timedelta(seconds=on_time)
+        on_since = self.time - timedelta(seconds=on_time)
         if not self._on_since or timedelta(
             seconds=0
         ) < on_since - self._on_since > timedelta(seconds=5):

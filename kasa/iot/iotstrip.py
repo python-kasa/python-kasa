@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
 from ..device_type import DeviceType
@@ -373,7 +373,7 @@ class IotStripPlug(IotPlug):
         """
         await self._modular_update({})
         for module in self._modules.values():
-            module._post_update_hook()
+            await module._post_update_hook()
 
         if not self._features:
             await self._initialize_features()
@@ -445,7 +445,7 @@ class IotStripPlug(IotPlug):
         info = self._get_child_info()
         on_time = info["on_time"]
 
-        time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+        time = self._parent.time
 
         on_since = time - timedelta(seconds=on_time)
         if not self._on_since or timedelta(

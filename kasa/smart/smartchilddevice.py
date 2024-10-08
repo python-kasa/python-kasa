@@ -61,7 +61,7 @@ class SmartChildDevice(SmartDevice):
             self._last_update = await self.protocol.query(req)
 
         for module in self.modules.values():
-            self._handle_module_post_update(
+            await self._handle_module_post_update(
                 module, now, had_query=module in module_queries
             )
         self._last_update_time = now

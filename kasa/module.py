@@ -155,7 +155,7 @@ class Module(ABC):
         children's modules.
         """
 
-    def _post_update_hook(self):  # noqa: B027
+    async def _post_update_hook(self):  # noqa: B027
         """Perform actions after a device update.
 
         This can be implemented if a module needs to perform actions each time

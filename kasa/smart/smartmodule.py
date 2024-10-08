@@ -121,7 +121,7 @@ class SmartModule(Module):
         """Name of the module."""
         return getattr(self, "NAME", self.__class__.__name__)
 
-    def _post_update_hook(self):  # noqa: B027
+    async def _post_update_hook(self):  # noqa: B027
         """Perform actions after a device update.
 
         Any modules overriding this should ensure that self.data is

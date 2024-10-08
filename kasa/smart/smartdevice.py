@@ -6,8 +6,8 @@ import base64
 import logging
 import time
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from datetime import datetime, timedelta, timezone, tzinfo
+from typing import TYPE_CHECKING, Any, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -168,7 +168,7 @@ class SmartDevice(Device):
             await self._initialize_modules()
             # Run post update for the cloud module
             if cloud_mod := self.modules.get(Module.Cloud):
-                self._handle_module_post_update(cloud_mod, now, had_query=True)
+                await self._handle_module_post_update(cloud_mod, now, had_query=True)
 
         resp = await self._modular_update(first_update, now)
 
@@ -195,7 +195,7 @@ class SmartDevice(Device):
             updated = self._last_update if first_update else resp
             _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
-    def _handle_module_post_update(
+    async def _handle_module_post_update(
         self, module: SmartModule, update_time: float, had_query: bool
     ):
         if module.disabled:
@@ -203,7 +203,7 @@ class SmartDevice(Device):
         if had_query:
             module._last_update_time = update_time
         try:
-            module._post_update_hook()
+            await module._post_update_hook()
             module._set_error(None)
         except Exception as ex:
             # Only set the error if a query happened.
@@ -260,7 +260,7 @@ class SmartDevice(Device):
 
         # Call handle update for modules that want to update internal data
         for module in self._modules.values():
-            self._handle_module_post_update(
+            await self._handle_module_post_update(
                 module, update_time, had_query=module in module_queries
             )
 
@@ -516,10 +516,11 @@ class SmartDevice(Device):
         return self._on_since
 
     @property
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
-        ti = self.time
-        return {"timezone": ti.tzname()}
+        if TYPE_CHECKING:
+            assert self.time.tzinfo
+        return self.time.tzinfo
 
     @property
     def hw_info(self) -> dict:
