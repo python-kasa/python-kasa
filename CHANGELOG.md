@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.7.5](https://github.com/python-kasa/python-kasa/tree/0.7.5) (2024-10-08)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.4...0.7.5)
+
+**Release summary:**
+
+- Fix for KP303 on Firmware 1.0.6
+- Fix for `on_since` value jitter
+- Various maintenance items
+
+**Breaking changes:**
+
+- Make iot time timezone aware [\#1147](https://github.com/python-kasa/python-kasa/pull/1147) (@sdb9696)
+
+**Fixed bugs:**
+
+- Use tzinfo in time constructor instead of astime for iot devices [\#1158](https://github.com/python-kasa/python-kasa/pull/1158) (@sdb9696)
+- Send empty dictionary instead of null for iot queries [\#1145](https://github.com/python-kasa/python-kasa/pull/1145) (@sdb9696)
+- Stabilise on\_since value for smart devices [\#1144](https://github.com/python-kasa/python-kasa/pull/1144) (@sdb9696)
+- parse\_pcap\_klap: require source host [\#1137](https://github.com/python-kasa/python-kasa/pull/1137) (@rytilahti)
+- parse\_pcap\_klap: use request\_uri for matching the response [\#1136](https://github.com/python-kasa/python-kasa/pull/1136) (@rytilahti)
+
+
+**Project maintenance:**
+
+- Cache zoneinfo for smart devices [\#1156](https://github.com/python-kasa/python-kasa/pull/1156) (@sdb9696)
+- Correctly define SmartModule.call as an async function [\#1148](https://github.com/python-kasa/python-kasa/pull/1148) (@sdb9696)
+- Remove async magic patch from tests [\#1146](https://github.com/python-kasa/python-kasa/pull/1146) (@sdb9696)
+- Move feature initialization from \_\_init\_\_ to \_initialize\_features [\#1140](https://github.com/python-kasa/python-kasa/pull/1140) (@rytilahti)
+
 ## [0.7.4](https://github.com/python-kasa/python-kasa/tree/0.7.4) (2024-09-27)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.3...0.7.4)
@@ -446,6 +476,10 @@ For more information on the changes please checkout our [documentation on the AP
 - Add missing firmware module import [\#774](https://github.com/python-kasa/python-kasa/pull/774) (@rytilahti)
 - Fix dump\_devinfo scrubbing for ks240 [\#765](https://github.com/python-kasa/python-kasa/pull/765) (@rytilahti)
 - Rename and deprecate exception classes [\#739](https://github.com/python-kasa/python-kasa/pull/739) (@sdb9696)
+
+**Closed issues:**
+
+- Improve timezone support [\#980](https://github.com/python-kasa/python-kasa/issues/980)
 
 ## [0.6.2.1](https://github.com/python-kasa/python-kasa/tree/0.6.2.1) (2024-02-02)
 
