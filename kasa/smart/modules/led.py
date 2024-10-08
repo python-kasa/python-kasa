@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...interfaces.led import Led as LedInterface
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, allow_update_after
 
 
 class Led(SmartModule, LedInterface):
@@ -11,10 +11,12 @@ class Led(SmartModule, LedInterface):
 
     REQUIRED_COMPONENT = "led"
     QUERY_GETTER_NAME = "get_led_info"
+    # Led queries can cause device to crash on P100
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {self.QUERY_GETTER_NAME: {"led_rule": None}}
+        return {self.QUERY_GETTER_NAME: None}
 
     @property
     def mode(self):
@@ -29,6 +31,7 @@ class Led(SmartModule, LedInterface):
         """Return current led status."""
         return self.data["led_rule"] != "never"
 
+    @allow_update_after
     async def set_led(self, enable: bool):
         """Set led.
 

@@ -32,8 +32,8 @@ from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
-GET_SYSINFO_QUERY = {
-    "system": {"get_sysinfo": None},
+GET_SYSINFO_QUERY: dict[str, dict[str, dict]] = {
+    "system": {"get_sysinfo": {}},
 }
 
 
@@ -84,8 +84,11 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
         if debug_enabled:
             end_time = time.perf_counter()
             _LOGGER.debug(
-                f"Device {config.host} with connection params {has_params} "
-                + f"took {end_time - start_time:.2f} seconds to {perf_type}",
+                "Device %s with connection params %s took %.2f seconds to %s",
+                config.host,
+                has_params,
+                end_time - start_time,
+                perf_type,
             )
             start_time = time.perf_counter()
 

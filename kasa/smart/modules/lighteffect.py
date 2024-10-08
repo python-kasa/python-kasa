@@ -9,7 +9,7 @@ import copy
 from typing import Any
 
 from ..effects import SmartLightEffect
-from ..smartmodule import Module, SmartModule
+from ..smartmodule import Module, SmartModule, allow_update_after
 
 
 class LightEffect(SmartModule, SmartLightEffect):
@@ -17,6 +17,7 @@ class LightEffect(SmartModule, SmartLightEffect):
 
     REQUIRED_COMPONENT = "light_effect"
     QUERY_GETTER_NAME = "get_dynamic_light_effect_rules"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60 * 24
     AVAILABLE_BULB_EFFECTS = {
         "L1": "Party",
         "L2": "Relax",
@@ -27,7 +28,7 @@ class LightEffect(SmartModule, SmartLightEffect):
     _effect_list: list[str]
     _scenes_names_to_id: dict[str, str]
 
-    def _post_update_hook(self) -> None:
+    async def _post_update_hook(self) -> None:
         """Update internal effect state."""
         # Copy the effects so scene name updates do not update the underlying dict.
         effects = copy.deepcopy(
@@ -73,6 +74,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         """Return effect name."""
         return self._effect
 
+    @allow_update_after
     async def set_effect(
         self,
         effect: str,
@@ -88,7 +90,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         """
         if effect != self.LIGHT_EFFECTS_OFF and effect not in self._scenes_names_to_id:
             raise ValueError(
-                f"Cannot set light effect to {effect}, possible values "
+                f"The effect {effect} is not a built in effect. Possible values "
                 f"are: {self.LIGHT_EFFECTS_OFF} "
                 f"{' '.join(self._scenes_names_to_id.keys())}"
             )
@@ -130,6 +132,7 @@ class LightEffect(SmartModule, SmartLightEffect):
 
         return brightness
 
+    @allow_update_after
     async def set_brightness(
         self,
         brightness: int,
@@ -156,6 +159,7 @@ class LightEffect(SmartModule, SmartLightEffect):
 
         return await self.call("edit_dynamic_light_effect_rule", new_effect)
 
+    @allow_update_after
     async def set_custom_effect(
         self,
         effect_dict: dict,

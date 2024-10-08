@@ -1,7 +1,10 @@
 import logging
+from typing import cast
 
 import pytest
 import pytest_mock
+
+from kasa.smart import SmartDevice
 
 from ..exceptions import (
     SMART_RETRYABLE_ERRORS,
@@ -10,6 +13,7 @@ from ..exceptions import (
     SmartErrorCode,
 )
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
+from .conftest import device_smart
 from .fakeprotocol_smart import FakeSmartTransport
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
@@ -61,12 +65,12 @@ async def test_smart_device_unknown_errors(
         dummy_protocol._transport, "send", return_value=mock_response
     )
 
-    with pytest.raises(KasaException):
+    with pytest.raises(KasaException):  # noqa: PT012
         res = await dummy_protocol.query(DUMMY_QUERY)
         assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
     send_mock.assert_called_once()
-    assert f"Received unknown error code: {error_code}" in caplog.text
+    assert f"received unknown error code: {error_code}" in caplog.text
 
 
 @pytest.mark.parametrize("error_code", ERRORS, ids=lambda e: e.name)
@@ -409,3 +413,34 @@ async def test_incomplete_list(mocker, caplog):
         "Device 127.0.0.123 returned empty results list for method get_preset_rules"
         in caplog.text
     )
+
+
+@device_smart
+async def test_smart_queries_redaction(
+    dev: SmartDevice, caplog: pytest.LogCaptureFixture
+):
+    """Test query sensitive info redaction."""
+    device_id = "123456789ABCDEF"
+    cast(FakeSmartTransport, dev.protocol._transport).info["get_device_info"][
+        "device_id"
+    ] = device_id
+
+    # Info no message logging
+    caplog.set_level(logging.INFO)
+    await dev.update()
+    assert device_id not in caplog.text
+
+    caplog.set_level(logging.DEBUG)
+
+    # Debug no redaction
+    caplog.clear()
+    dev.protocol._redact_data = False
+    await dev.update()
+    assert device_id in caplog.text
+
+    # Debug redaction
+    caplog.clear()
+    dev.protocol._redact_data = True
+    await dev.update()
+    assert device_id not in caplog.text
+    assert "REDACTED_" + device_id[9::] in caplog.text

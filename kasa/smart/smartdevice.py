@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import base64
 import logging
+import time
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from datetime import datetime, timedelta, timezone, tzinfo
+from typing import TYPE_CHECKING, Any, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -18,6 +19,7 @@ from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
 from .modules import (
+    ChildDevice,
     Cloud,
     DeviceModule,
     Firmware,
@@ -34,6 +36,9 @@ _LOGGER = logging.getLogger(__name__)
 # This list should be updated when creating new modules that could have the
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
+
+# Modules that are called as part of the init procedure on first update
+FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
 
 
 # Device must go last as the other interfaces also inherit Device
@@ -60,6 +65,8 @@ class SmartDevice(Device):
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
+        self._last_update_time: float | None = None
+        self._on_since: datetime | None = None
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -152,65 +159,149 @@ class SmartDevice(Device):
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
 
-        if self._components_raw is None:
+        first_update = self._last_update_time is None
+        now = time.monotonic()
+        self._last_update_time = now
+
+        if first_update:
             await self._negotiate()
             await self._initialize_modules()
+            # Run post update for the cloud module
+            if cloud_mod := self.modules.get(Module.Cloud):
+                await self._handle_module_post_update(cloud_mod, now, had_query=True)
 
-        req: dict[str, Any] = {}
+        resp = await self._modular_update(first_update, now)
 
-        # TODO: this could be optimized by constructing the query only once
-        for module in self._modules.values():
-            req.update(module.query())
-
-        self._last_update = resp = await self.protocol.query(req)
-
-        self._info = self._try_get_response(resp, "get_device_info")
-
+        if child_info := self._try_get_response(
+            self._last_update, "get_child_device_list", {}
+        ):
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]]._update_internal_state(info)
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
         # devices will always update children to prevent errors on module access.
+        # This needs to go after updating the internal state of the children so that
+        # child modules have access to their sysinfo.
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 await child._update()
-        if child_info := self._try_get_response(resp, "get_child_device_list", {}):
-            for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
-
-        # Call handle update for modules that want to update internal data
-        errors = []
-        for module_name, module in self._modules.items():
-            if not self._handle_module_post_update_hook(module):
-                errors.append(module_name)
-        for error in errors:
-            self._modules.pop(error)
-
-        for child in self._children.values():
-            errors = []
-            for child_module_name, child_module in child._modules.items():
-                if not self._handle_module_post_update_hook(child_module):
-                    errors.append(child_module_name)
-            for error in errors:
-                child._modules.pop(error)
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
         if not self._features:
             await self._initialize_features()
 
-        _LOGGER.debug("Got an update: %s", self._last_update)
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            updated = self._last_update if first_update else resp
+            _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
-    def _handle_module_post_update_hook(self, module: SmartModule) -> bool:
+    async def _handle_module_post_update(
+        self, module: SmartModule, update_time: float, had_query: bool
+    ):
+        if module.disabled:
+            return  # pragma: no cover
+        if had_query:
+            module._last_update_time = update_time
         try:
-            module._post_update_hook()
-            return True
+            await module._post_update_hook()
+            module._set_error(None)
         except Exception as ex:
-            _LOGGER.error(
-                "Error processing %s for device %s, module will be unavailable: %s",
-                module.name,
-                self.host,
-                ex,
+            # Only set the error if a query happened.
+            if had_query:
+                module._set_error(ex)
+                _LOGGER.warning(
+                    "Error processing %s for device %s, module will be unavailable: %s",
+                    module.name,
+                    self.host,
+                    ex,
+                )
+
+    async def _modular_update(
+        self, first_update: bool, update_time: float
+    ) -> dict[str, Any]:
+        """Update the device with via the module queries."""
+        req: dict[str, Any] = {}
+        # Keep a track of actual module queries so we can track the time for
+        # modules that do not need to be updated frequently
+        module_queries: list[SmartModule] = []
+        mq = {
+            module: query
+            for module in self._modules.values()
+            if module.disabled is False and (query := module.query())
+        }
+        for module, query in mq.items():
+            if first_update and module.__class__ in FIRST_UPDATE_MODULES:
+                module._last_update_time = update_time
+                continue
+            if (
+                not module.update_interval
+                or not module._last_update_time
+                or (update_time - module._last_update_time) >= module.update_interval
+            ):
+                module_queries.append(module)
+                req.update(query)
+
+        _LOGGER.debug(
+            "Querying %s for modules: %s",
+            self.host,
+            ", ".join(mod.name for mod in module_queries),
+        )
+
+        try:
+            resp = await self.protocol.query(req)
+        except Exception as ex:
+            resp = await self._handle_modular_update_error(
+                ex, first_update, ", ".join(mod.name for mod in module_queries), req
             )
-            return False
+
+        info_resp = self._last_update if first_update else resp
+        self._last_update.update(**resp)
+        self._info = self._try_get_response(info_resp, "get_device_info")
+
+        # Call handle update for modules that want to update internal data
+        for module in self._modules.values():
+            await self._handle_module_post_update(
+                module, update_time, had_query=module in module_queries
+            )
+
+        return resp
+
+    async def _handle_modular_update_error(
+        self,
+        ex: Exception,
+        first_update: bool,
+        module_names: str,
+        requests: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Handle an error on calling module update.
+
+        Will try to call all modules individually
+        and any errors such as timeouts will be set as a SmartErrorCode.
+        """
+        msg_part = "on first update" if first_update else "after first update"
+
+        _LOGGER.error(
+            "Error querying %s for modules '%s' %s: %s",
+            self.host,
+            module_names,
+            msg_part,
+            ex,
+        )
+        responses = {}
+        for meth, params in requests.items():
+            try:
+                resp = await self.protocol.query({meth: params})
+                responses[meth] = resp[meth]
+            except Exception as iex:
+                _LOGGER.error(
+                    "Error querying %s individually for module query '%s' %s: %s",
+                    self.host,
+                    meth,
+                    msg_part,
+                    iex,
+                )
+                responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
+        return responses
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
@@ -229,8 +320,6 @@ class SmartDevice(Device):
             skip_parent_only_modules = True
 
         for mod in SmartModule.REGISTERED_MODULES.values():
-            _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
-
             if (
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
@@ -240,7 +329,8 @@ class SmartDevice(Device):
                 or self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
             ):
                 _LOGGER.debug(
-                    "Found required %s, adding %s to modules.",
+                    "Device %s, found required %s, adding %s to modules.",
+                    self.host,
                     mod.REQUIRED_COMPONENT,
                     mod.__name__,
                 )
@@ -301,7 +391,7 @@ class SmartDevice(Device):
                     name="RSSI",
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
-                    unit="dBm",
+                    unit_getter=lambda: "dBm",
                     category=Feature.Category.Debug,
                     type=Feature.Type.Sensor,
                 )
@@ -348,6 +438,18 @@ class SmartDevice(Device):
                 )
             )
 
+        self._add_feature(
+            Feature(
+                device=self,
+                id="reboot",
+                name="Reboot",
+                attribute_setter="reboot",
+                icon="mdi:restart",
+                category=Feature.Category.Debug,
+                type=Feature.Type.Action,
+            )
+        )
+
         for module in self.modules.values():
             module._initialize_features()
             for feat in module._module_features.values():
@@ -393,21 +495,32 @@ class SmartDevice(Device):
 
     @property
     def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
+        """Return the time that the device was turned on or None if turned off.
+
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
+        """
         if (
             not self._info.get("device_on")
             or (on_time := self._info.get("on_time")) is None
         ):
+            self._on_since = None
             return None
 
         on_time = cast(float, on_time)
-        return self.time - timedelta(seconds=on_time)
+        on_since = self.time - timedelta(seconds=on_time)
+        if not self._on_since or timedelta(
+            seconds=0
+        ) < on_since - self._on_since > timedelta(seconds=5):
+            self._on_since = on_since
+        return self._on_since
 
     @property
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
-        ti = self.time
-        return {"timezone": ti.tzname()}
+        if TYPE_CHECKING:
+            assert self.time.tzinfo
+        return self.time.tzinfo
 
     @property
     def hw_info(self) -> dict:

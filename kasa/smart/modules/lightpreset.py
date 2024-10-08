@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from dataclasses import asdict
 from typing import TYPE_CHECKING
 
 from ...interfaces import LightPreset as LightPresetInterface
 from ...interfaces import LightState
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, allow_update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class LightPreset(SmartModule, LightPresetInterface):
@@ -19,6 +22,7 @@ class LightPreset(SmartModule, LightPresetInterface):
 
     REQUIRED_COMPONENT = "preset"
     QUERY_GETTER_NAME = "get_preset_rules"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60
 
     SYS_INFO_STATE_KEY = "preset_state"
 
@@ -30,7 +34,7 @@ class LightPreset(SmartModule, LightPresetInterface):
         self._state_in_sysinfo = self.SYS_INFO_STATE_KEY in device.sys_info
         self._brightness_only: bool = False
 
-    def _post_update_hook(self):
+    async def _post_update_hook(self):
         """Update the internal presets."""
         index = 0
         self._presets = {}
@@ -38,6 +42,14 @@ class LightPreset(SmartModule, LightPresetInterface):
         state_key = "states" if not self._state_in_sysinfo else self.SYS_INFO_STATE_KEY
         if preset_states := self.data.get(state_key):
             for preset_state in preset_states:
+                if "brightness" not in preset_state:
+                    # Some devices can store effects as a preset. These will be ignored
+                    # and handled in the effects module
+                    if "lighting_effect" not in preset_state:
+                        _LOGGER.info(
+                            "Unexpected keys %s in preset", list(preset_state.keys())
+                        )
+                    continue
                 color_temp = preset_state.get("color_temp")
                 hue = preset_state.get("hue")
                 saturation = preset_state.get("saturation")
@@ -113,6 +125,7 @@ class LightPreset(SmartModule, LightPresetInterface):
             raise ValueError(f"{preset_name} is not a valid preset: {self.preset_list}")
         await self._device.modules[SmartModule.Light].set_state(preset)
 
+    @allow_update_after
     async def save_preset(
         self,
         preset_name: str,
@@ -140,6 +153,9 @@ class LightPreset(SmartModule, LightPresetInterface):
         """Query to execute during the update cycle."""
         if self._state_in_sysinfo:  # Child lights can have states in the child info
             return {}
+        if self.supported_version < 3:
+            return {self.QUERY_GETTER_NAME: None}
+
         return {self.QUERY_GETTER_NAME: {"start_index": 0}}
 
     async def _check_supported(self):

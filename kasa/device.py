@@ -84,6 +84,7 @@ added to the API.
 state
 rssi
 on_since
+reboot
 current_consumption
 consumption_today
 consumption_this_month
@@ -108,7 +109,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, tzinfo
 from typing import TYPE_CHECKING, Any
 from warnings import warn
 
@@ -376,7 +377,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
 
     @property
@@ -434,7 +435,11 @@ class Device(ABC):
     @property
     @abstractmethod
     def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
+        """Return the time that the device was turned on or None if turned off.
+
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
+        """
 
     @abstractmethod
     async def wifi_scan(self) -> list[WifiNetwork]:
@@ -447,6 +452,21 @@ class Device(ABC):
     @abstractmethod
     async def set_alias(self, alias: str):
         """Set the device name (alias)."""
+
+    @abstractmethod
+    async def reboot(self, delay: int = 1) -> None:
+        """Reboot the device.
+
+        Note that giving a delay of zero causes this to block,
+        as the device reboots immediately without responding to the call.
+        """
+
+    @abstractmethod
+    async def factory_reset(self) -> None:
+        """Reset device back to factory settings.
+
+        Note, this does not downgrade the firmware.
+        """
 
     def __repr__(self):
         if self._last_update is None:

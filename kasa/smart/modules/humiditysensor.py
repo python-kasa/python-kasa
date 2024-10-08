@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class HumiditySensor(SmartModule):
@@ -17,24 +12,24 @@ class HumiditySensor(SmartModule):
     REQUIRED_COMPONENT = "humidity"
     QUERY_GETTER_NAME = "get_comfort_humidity_config"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="humidity",
                 name="Humidity",
                 container=self,
                 attribute_getter="humidity",
                 icon="mdi:water-percent",
-                unit="%",
+                unit_getter=lambda: "%",
                 category=Feature.Category.Primary,
                 type=Feature.Type.Sensor,
             )
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="humidity_warning",
                 name="Humidity warning",
                 container=self,

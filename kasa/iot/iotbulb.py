@@ -85,7 +85,7 @@ TPLINK_KELVIN = {
     "KB130": ColorTempRange(2500, 9000),
     "KL130": ColorTempRange(2500, 9000),
     "KL125": ColorTempRange(2500, 6500),
-    "KL135": ColorTempRange(2500, 6500),
+    "KL135": ColorTempRange(2500, 9000),
     r"KL120\(EU\)": ColorTempRange(2700, 6500),
     r"KL120\(US\)": ColorTempRange(2700, 5000),
     r"KL430": ColorTempRange(2500, 9000),
@@ -326,6 +326,7 @@ class IotBulb(IotDevice):
         self, state: dict, *, transition: int | None = None
     ) -> dict:
         """Set the light state."""
+        state = {**state}
         if transition is not None:
             state["transition_period"] = transition
 
@@ -364,7 +365,7 @@ class IotBulb(IotDevice):
 
         hue = light_state["hue"]
         saturation = light_state["saturation"]
-        value = light_state["brightness"]
+        value = self._brightness
 
         return HSV(hue, saturation, value)
 
@@ -387,10 +388,14 @@ class IotBulb(IotDevice):
         if not self._is_color:
             raise KasaException("Bulb does not support color.")
 
-        if not isinstance(hue, int) or not (0 <= hue <= 360):
+        if not isinstance(hue, int):
+            raise TypeError("Hue must be an integer.")
+        if not (0 <= hue <= 360):
             raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
 
-        if not isinstance(saturation, int) or not (0 <= saturation <= 100):
+        if not isinstance(saturation, int):
+            raise TypeError("Saturation must be an integer.")
+        if not (0 <= saturation <= 100):
             raise ValueError(
                 f"Invalid saturation value: {saturation} (valid range: 0-100%)"
             )
@@ -429,7 +434,7 @@ class IotBulb(IotDevice):
         if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
-        valid_temperature_range = self.valid_temperature_range
+        valid_temperature_range = self._valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
                 "Temperature should be between {} and {}, was {}".format(
@@ -444,7 +449,9 @@ class IotBulb(IotDevice):
         return await self._set_light_state(light_state, transition=transition)
 
     def _raise_for_invalid_brightness(self, value):
-        if not isinstance(value, int) or not (0 <= value <= 100):
+        if not isinstance(value, int):
+            raise TypeError("Brightness must be an integer")
+        if not (0 <= value <= 100):
             raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     @property  # type: ignore
@@ -454,6 +461,13 @@ class IotBulb(IotDevice):
         if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
+        # If the device supports effects and one is active, we get the brightness
+        # from the effect. This is not required when setting the brightness as
+        # the device handles it via set_light_state
+        if (
+            light_effect := self.modules.get(Module.IotLightEffect)
+        ) is not None and light_effect.effect != light_effect.LIGHT_EFFECTS_OFF:
+            return light_effect.brightness
         light_state = self.light_state
         return int(light_state["brightness"])
 

@@ -285,7 +285,7 @@ async def get_legacy_fixture(device):
         try:
             click.echo(f"Testing {test_call}..", nl=False)
             info = await device.protocol.query(
-                {test_call.module: {test_call.method: None}}
+                {test_call.module: {test_call.method: {}}}
             )
             resp = info[test_call.module]
         except Exception as ex:
@@ -302,7 +302,7 @@ async def get_legacy_fixture(device):
     final_query = defaultdict(defaultdict)
     final = defaultdict(defaultdict)
     for succ, resp in successes:
-        final_query[succ.module][succ.method] = None
+        final_query[succ.module][succ.method] = {}
         final[succ.module][succ.method] = resp
 
     final = default_to_regular(final)

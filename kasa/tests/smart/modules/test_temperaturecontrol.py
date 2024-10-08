@@ -1,4 +1,5 @@
 import logging
+import re
 
 import pytest
 
@@ -15,7 +16,7 @@ temperature = parametrize(
 
 @thermostats_smart
 @pytest.mark.parametrize(
-    "feature, type",
+    ("feature", "type"),
     [
         ("target_temperature", float),
         ("temperature_offset", int),
@@ -59,10 +60,14 @@ async def test_set_temperature_invalid_values(dev):
     """Test that out-of-bounds temperature values raise errors."""
     temp_module: TemperatureControl = dev.modules["TemperatureControl"]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Invalid target temperature -1, must be in range"
+    ):
         await temp_module.set_target_temperature(-1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Invalid target temperature 100, must be in range"
+    ):
         await temp_module.set_target_temperature(100)
 
 
@@ -70,10 +75,14 @@ async def test_set_temperature_invalid_values(dev):
 async def test_temperature_offset(dev):
     """Test the temperature offset API."""
     temp_module: TemperatureControl = dev.modules["TemperatureControl"]
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match=re.escape("Temperature offset must be [-10, 10]")
+    ):
         await temp_module.set_temperature_offset(100)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match=re.escape("Temperature offset must be [-10, 10]")
+    ):
         await temp_module.set_temperature_offset(-100)
 
     await temp_module.set_temperature_offset(5)
@@ -83,7 +92,7 @@ async def test_temperature_offset(dev):
 
 @thermostats_smart
 @pytest.mark.parametrize(
-    "mode, states, frost_protection",
+    ("mode", "states", "frost_protection"),
     [
         pytest.param(ThermostatState.Idle, [], False, id="idle has empty"),
         pytest.param(
@@ -94,7 +103,7 @@ async def test_temperature_offset(dev):
         ),
         pytest.param(
             ThermostatState.Heating,
-            [ThermostatState.Heating],
+            ["heating"],
             False,
             id="heating is heating",
         ),
@@ -114,7 +123,7 @@ async def test_thermostat_mode(dev, mode, states, frost_protection):
 
 @thermostats_smart
 @pytest.mark.parametrize(
-    "mode, states, msg",
+    ("mode", "states", "msg"),
     [
         pytest.param(
             ThermostatState.Heating,
@@ -135,3 +144,11 @@ async def test_thermostat_mode_warnings(dev, mode, states, msg, caplog):
     temp_module.data["trv_states"] = states
     assert temp_module.mode is mode
     assert msg in caplog.text
+
+
+@thermostats_smart
+async def test_thermostat_heating_with_low_battery(dev):
+    """Test that mode is reported correctly with extra states."""
+    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module.data["trv_states"] = ["low_battery", "heating"]
+    assert temp_module.mode is ThermostatState.Heating

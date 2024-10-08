@@ -1,6 +1,6 @@
 import logging
 import sys
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest_mock import MockerFixture
@@ -14,7 +14,7 @@ class DummyDevice:
     pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def dummy_feature() -> Feature:
     # create_autospec for device slows tests way too much, so we use a dummy here
 
@@ -27,7 +27,7 @@ def dummy_feature() -> Feature:
         container=None,
         icon="mdi:dummy",
         type=Feature.Type.Switch,
-        unit="dummyunit",
+        unit_getter=lambda: "dummyunit",
     )
     return feat
 
@@ -49,7 +49,7 @@ def test_feature_api(dummy_feature: Feature):
 )
 def test_feature_setter_on_sensor(read_only_type):
     """Test that creating a sensor feature with a setter causes an error."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid type for configurable feature"):
         Feature(
             device=DummyDevice(),  # type: ignore[arg-type]
             id="dummy_error",
@@ -94,7 +94,9 @@ def test_feature_value_callable(dev, dummy_feature: Feature):
 
 async def test_feature_setter(dev, mocker, dummy_feature: Feature):
     """Verify that *set_value* calls the defined method."""
-    mock_set_dummy = mocker.patch.object(dummy_feature.device, "set_dummy", create=True)
+    mock_set_dummy = mocker.patch.object(
+        dummy_feature.device, "set_dummy", create=True, new_callable=AsyncMock
+    )
     dummy_feature.attribute_setter = "set_dummy"
     await dummy_feature.set_value("dummy value")
     mock_set_dummy.assert_called_with("dummy value")
@@ -103,7 +105,7 @@ async def test_feature_setter(dev, mocker, dummy_feature: Feature):
 async def test_feature_setter_read_only(dummy_feature):
     """Verify that read-only feature raises an exception when trying to change it."""
     dummy_feature.attribute_setter = None
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Tried to set read-only feature"):
         await dummy_feature.set_value("value for read only feature")
 
 
@@ -118,7 +120,9 @@ async def test_feature_action(mocker):
         icon="mdi:dummy",
         type=Feature.Type.Action,
     )
-    mock_call_action = mocker.patch.object(feat.device, "call_action", create=True)
+    mock_call_action = mocker.patch.object(
+        feat.device, "call_action", create=True, new_callable=AsyncMock
+    )
     assert feat.value == "<Action>"
     await feat.set_value(1234)
     mock_call_action.assert_called()
@@ -127,14 +131,16 @@ async def test_feature_action(mocker):
 async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture):
     """Test the choice feature type."""
     dummy_feature.type = Feature.Type.Choice
-    dummy_feature.choices = ["first", "second"]
+    dummy_feature.choices_getter = lambda: ["first", "second"]
 
-    mock_setter = mocker.patch.object(dummy_feature.device, "dummysetter", create=True)
+    mock_setter = mocker.patch.object(
+        dummy_feature.device, "dummysetter", create=True, new_callable=AsyncMock
+    )
     await dummy_feature.set_value("first")
     mock_setter.assert_called_with("first")
     mock_setter.reset_mock()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Unexpected value for dummy_feature: invalid"):  # noqa: PT012
         await dummy_feature.set_value("invalid")
         assert "Unexpected value" in caplog.text
 

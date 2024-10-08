@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, TypedDict
 
 from ...exceptions import KasaException
 from ...feature import Feature
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, allow_update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -23,6 +23,7 @@ class LightTransition(SmartModule):
 
     REQUIRED_COMPONENT = "on_off_gradually"
     QUERY_GETTER_NAME = "get_on_off_gradually_info"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60
     MAXIMUM_DURATION = 60
 
     # Key in sysinfo that indicates state can be retrieved from there.
@@ -72,7 +73,7 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_on_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value=self._turn_on_transition_max,
+                    range_getter=lambda: (0, self._turn_on_transition_max),
                 )
             )
             self._add_feature(
@@ -85,11 +86,11 @@ class LightTransition(SmartModule):
                     attribute_setter="set_turn_off_transition",
                     icon=icon,
                     type=Feature.Type.Number,
-                    maximum_value=self._turn_off_transition_max,
+                    range_getter=lambda: (0, self._turn_off_transition_max),
                 )
             )
 
-    def _post_update_hook(self) -> None:
+    async def _post_update_hook(self) -> None:
         """Update the states."""
         # Assumes any device with state in sysinfo supports on and off and
         # has maximum values for both.
@@ -136,6 +137,7 @@ class LightTransition(SmartModule):
             "max_duration": off_max,
         }
 
+    @allow_update_after
     async def set_enabled(self, enable: bool):
         """Enable gradual on/off."""
         if not self._supports_on_and_off:
@@ -168,6 +170,7 @@ class LightTransition(SmartModule):
         # v3 added max_duration, we default to 60 when it's not available
         return self._on_state["max_duration"]
 
+    @allow_update_after
     async def set_turn_on_transition(self, seconds: int):
         """Set turn on transition in seconds.
 
@@ -203,6 +206,7 @@ class LightTransition(SmartModule):
         # v3 added max_duration, we default to 60 when it's not available
         return self._off_state["max_duration"]
 
+    @allow_update_after
     async def set_turn_off_transition(self, seconds: int):
         """Set turn on transition in seconds.
 
@@ -230,7 +234,7 @@ class LightTransition(SmartModule):
         if self._state_in_sysinfo:
             return {}
         else:
-            return {self.QUERY_GETTER_NAME: {}}
+            return {self.QUERY_GETTER_NAME: None}
 
     async def _check_supported(self):
         """Additional check to see if the module is supported by the device."""

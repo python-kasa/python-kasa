@@ -12,7 +12,7 @@ import logging
 import time
 import uuid
 from pprint import pformat as pf
-from typing import Any
+from typing import Any, Callable
 
 from .exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -26,9 +26,30 @@ from .exceptions import (
     _RetryableError,
 )
 from .json import dumps as json_dumps
-from .protocol import BaseProtocol, BaseTransport, md5
+from .protocol import BaseProtocol, BaseTransport, mask_mac, md5, redact_data
 
 _LOGGER = logging.getLogger(__name__)
+
+REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+    "latitude": lambda x: 0,
+    "longitude": lambda x: 0,
+    "la": lambda x: 0,  # lat on ks240
+    "lo": lambda x: 0,  # lon on ks240
+    "device_id": lambda x: "REDACTED_" + x[9::],
+    "parent_device_id": lambda x: "REDACTED_" + x[9::],  # Hub attached children
+    "original_device_id": lambda x: "REDACTED_" + x[9::],  # Strip children
+    "nickname": lambda x: "I01BU0tFRF9OQU1FIw==" if x else "",
+    "mac": mask_mac,
+    "ssid": lambda x: "I01BU0tFRF9TU0lEIw=" if x else "",
+    "bssid": lambda _: "000000000000",
+    "oem_id": lambda x: "REDACTED_" + x[9::],
+    "setup_code": None,  # matter
+    "setup_payload": None,  # matter
+    "mfi_setup_code": None,  # mfi_ for homekit
+    "mfi_setup_id": None,
+    "mfi_token_token": None,
+    "mfi_token_uuid": None,
+}
 
 
 class SmartProtocol(BaseProtocol):
@@ -45,21 +66,21 @@ class SmartProtocol(BaseProtocol):
         """Create a protocol object."""
         super().__init__(transport=transport)
         self._terminal_uuid: str = base64.b64encode(md5(uuid.uuid4().bytes)).decode()
-        self._request_id_generator = SnowflakeId(1, 1)
         self._query_lock = asyncio.Lock()
         self._multi_request_batch_size = (
             self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
         )
+        self._redact_data = True
 
     def get_smart_request(self, method, params=None) -> str:
         """Get a request message as a string."""
         request = {
             "method": method,
-            "params": params,
-            "requestID": self._request_id_generator.generate_id(),
             "request_time_milis": round(time.time() * 1000),
             "terminal_uuid": self._terminal_uuid,
         }
+        if params:
+            request["params"] = params
         return json_dumps(request)
 
     async def query(self, request: str | dict, retry_count: int = 3) -> dict:
@@ -73,18 +94,32 @@ class SmartProtocol(BaseProtocol):
                 return await self._execute_query(
                     request, retry_count=retry, iterate_list_pages=True
                 )
-            except _ConnectionError as sdex:
+            except _ConnectionError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a connection error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
-                    raise sdex
+                    raise ex
                 continue
-            except AuthenticationError as auex:
+            except AuthenticationError as ex:
                 await self._transport.reset()
                 _LOGGER.debug(
-                    "Unable to authenticate with %s, not retrying", self._host
+                    "Unable to authenticate with %s, not retrying: %s", self._host, ex
                 )
-                raise auex
+                raise ex
             except _RetryableError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a retryable error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
@@ -92,6 +127,13 @@ class SmartProtocol(BaseProtocol):
                 await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_TIMEOUT)
                 continue
             except TimeoutError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a timeout error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
@@ -114,8 +156,10 @@ class SmartProtocol(BaseProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         multi_result: dict[str, Any] = {}
         smart_method = "multipleRequest"
+
         multi_requests = [
-            {"method": method, "params": params} for method, params in requests.items()
+            {"method": method, "params": params} if params else {"method": method}
+            for method, params in requests.items()
         ]
 
         end = len(multi_requests)
@@ -125,31 +169,36 @@ class SmartProtocol(BaseProtocol):
             # If step is 1 do not send request batches
             for request in multi_requests:
                 method = request["method"]
-                req = self.get_smart_request(method, request["params"])
+                req = self.get_smart_request(method, request.get("params"))
                 resp = await self._transport.send(req)
                 self._handle_response_error_code(resp, method, raise_on_error=False)
                 multi_result[method] = resp["result"]
             return multi_result
-        for i in range(0, end, step):
+
+        for batch_num, i in enumerate(range(0, end, step)):
             requests_step = multi_requests[i : i + step]
 
             smart_params = {"requests": requests_step}
             smart_request = self.get_smart_request(smart_method, smart_params)
+            batch_name = f"multi-request-batch-{batch_num+1}-of-{int(end/step)+1}"
             if debug_enabled:
                 _LOGGER.debug(
-                    "%s multi-request-batch-%s >> %s",
+                    "%s %s >> %s",
                     self._host,
-                    i + 1,
+                    batch_name,
                     pf(smart_request),
                 )
             response_step = await self._transport.send(smart_request)
-            batch_name = f"multi-request-batch-{i+1}"
             if debug_enabled:
+                if self._redact_data:
+                    data = redact_data(response_step, REDACTORS)
+                else:
+                    data = response_step
                 _LOGGER.debug(
                     "%s %s << %s",
                     self._host,
                     batch_name,
-                    pf(response_step),
+                    pf(data),
                 )
             try:
                 self._handle_response_error_code(response_step, batch_name)
@@ -260,8 +309,9 @@ class SmartProtocol(BaseProtocol):
             # In case the device returns empty lists avoid infinite looping
             if not next_batch[response_list_name]:
                 _LOGGER.error(
-                    f"Device {self._host} returned empty "
-                    + f"results list for method {method}"
+                    "Device %s returned empty results list for method %s",
+                    self._host,
+                    method,
                 )
                 break
             response_result[response_list_name].extend(next_batch[response_list_name])
@@ -271,7 +321,9 @@ class SmartProtocol(BaseProtocol):
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
         except ValueError:
-            _LOGGER.warning("Received unknown error code: %s", error_code_raw)
+            _LOGGER.warning(
+                "Device %s received unknown error code: %s", self._host, error_code_raw
+            )
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
         if error_code is SmartErrorCode.SUCCESS:
@@ -295,86 +347,6 @@ class SmartProtocol(BaseProtocol):
     async def close(self) -> None:
         """Close the underlying transport."""
         await self._transport.close()
-
-
-class SnowflakeId:
-    """Class for generating snowflake ids."""
-
-    EPOCH = 1420041600000  # Custom epoch (in milliseconds)
-    WORKER_ID_BITS = 5
-    DATA_CENTER_ID_BITS = 5
-    SEQUENCE_BITS = 12
-
-    MAX_WORKER_ID = (1 << WORKER_ID_BITS) - 1
-    MAX_DATA_CENTER_ID = (1 << DATA_CENTER_ID_BITS) - 1
-
-    SEQUENCE_MASK = (1 << SEQUENCE_BITS) - 1
-
-    def __init__(self, worker_id, data_center_id):
-        if worker_id > SnowflakeId.MAX_WORKER_ID or worker_id < 0:
-            raise ValueError(
-                "Worker ID can't be greater than "
-                + str(SnowflakeId.MAX_WORKER_ID)
-                + " or less than 0"
-            )
-        if data_center_id > SnowflakeId.MAX_DATA_CENTER_ID or data_center_id < 0:
-            raise ValueError(
-                "Data center ID can't be greater than "
-                + str(SnowflakeId.MAX_DATA_CENTER_ID)
-                + " or less than 0"
-            )
-
-        self.worker_id = worker_id
-        self.data_center_id = data_center_id
-        self.sequence = 0
-        self.last_timestamp = -1
-
-    def generate_id(self):
-        """Generate a snowflake id."""
-        timestamp = self._current_millis()
-
-        if timestamp < self.last_timestamp:
-            raise ValueError("Clock moved backwards. Refusing to generate ID.")
-
-        if timestamp == self.last_timestamp:
-            # Within the same millisecond, increment the sequence number
-            self.sequence = (self.sequence + 1) & SnowflakeId.SEQUENCE_MASK
-            if self.sequence == 0:
-                # Sequence exceeds its bit range, wait until the next millisecond
-                timestamp = self._wait_next_millis(self.last_timestamp)
-        else:
-            # New millisecond, reset the sequence number
-            self.sequence = 0
-
-        # Update the last timestamp
-        self.last_timestamp = timestamp
-
-        # Generate and return the final ID
-        return (
-            (
-                (timestamp - SnowflakeId.EPOCH)
-                << (
-                    SnowflakeId.WORKER_ID_BITS
-                    + SnowflakeId.SEQUENCE_BITS
-                    + SnowflakeId.DATA_CENTER_ID_BITS
-                )
-            )
-            | (
-                self.data_center_id
-                << (SnowflakeId.SEQUENCE_BITS + SnowflakeId.WORKER_ID_BITS)
-            )
-            | (self.worker_id << SnowflakeId.SEQUENCE_BITS)
-            | self.sequence
-        )
-
-    def _current_millis(self):
-        return round(time.time() * 1000)
-
-    def _wait_next_millis(self, last_timestamp):
-        timestamp = self._current_millis()
-        while timestamp <= last_timestamp:
-            timestamp = self._current_millis()
-        return timestamp
 
 
 class _ChildProtocolWrapper(SmartProtocol):
@@ -406,6 +378,8 @@ class _ChildProtocolWrapper(SmartProtocol):
                 smart_method = "multipleRequest"
                 requests = [
                     {"method": method, "params": params}
+                    if params
+                    else {"method": method}
                     for method, params in request.items()
                 ]
                 smart_params = {"requests": requests}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import sys
 import warnings
 from unittest.mock import MagicMock, patch
 
@@ -25,7 +27,7 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
-@pytest.fixture
+@pytest.fixture()
 def dummy_protocol():
     """Return a smart protocol instance with a mocking-ready dummy transport."""
 
@@ -86,6 +88,11 @@ def pytest_addoption(parser):
 def pytest_collection_modifyitems(config, items):
     if not config.getoption("--ip"):
         print("Testing against fixtures.")
+        # pytest_socket doesn't work properly in windows with asyncio
+        # fine to disable as other platforms will pickup any issues.
+        if sys.platform == "win32":
+            for item in items:
+                item.add_marker(pytest.mark.enable_socket)
     else:
         print("Running against ip %s" % config.getoption("--ip"))
         requires_dummy = pytest.mark.skip(
@@ -94,14 +101,42 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "requires_dummy" in item.keywords:
                 item.add_marker(requires_dummy)
+            else:
+                item.add_marker(pytest.mark.enable_socket)
 
 
-# allow mocks to be awaited
-# https://stackoverflow.com/questions/51394411/python-object-magicmock-cant-be-used-in-await-expression/51399767#51399767
+@pytest.fixture(autouse=True, scope="session")
+def asyncio_sleep_fixture(request):  # noqa: PT004
+    """Patch sleep to prevent tests actually waiting."""
+    orig_asyncio_sleep = asyncio.sleep
+
+    async def _asyncio_sleep(*_, **__):
+        await orig_asyncio_sleep(0)
+
+    if request.config.getoption("--ip"):
+        yield
+    else:
+        with patch("asyncio.sleep", side_effect=_asyncio_sleep):
+            yield
 
 
-async def async_magic():
-    pass
+@pytest.fixture(autouse=True, scope="session")
+def mock_datagram_endpoint(request):  # noqa: PT004
+    """Mock create_datagram_endpoint so it doesn't perform io."""
 
+    async def _create_datagram_endpoint(protocol_factory, *_, **__):
+        protocol = protocol_factory()
+        transport = MagicMock()
+        try:
+            return transport, protocol
+        finally:
+            protocol.connection_made(transport)
 
-MagicMock.__await__ = lambda x: async_magic().__await__()
+    if request.config.getoption("--ip"):
+        yield
+    else:
+        with patch(
+            "asyncio.BaseEventLoop.create_datagram_endpoint",
+            side_effect=_create_datagram_endpoint,
+        ):
+            yield

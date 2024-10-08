@@ -1,69 +1,86 @@
-[tool.poetry]
+[project]
 name = "python-kasa"
-version = "0.7.0.2"
-description = "Python API for TP-Link Kasa Smarthome devices"
-license = "GPL-3.0-or-later"
-authors = ["python-kasa developers"]
-repository = "https://github.com/python-kasa/python-kasa"
+version = "0.7.5"
+description = "Python API for TP-Link Kasa and Tapo devices"
+license = {text = "GPL-3.0-or-later"}
+authors = [ { name = "python-kasa developers" }]
 readme = "README.md"
-packages = [
-  { include = "kasa" }
-]
-include = [
-  { path= "CHANGELOG.md", format = "sdist" }
+requires-python = ">=3.9,<4.0"
+dependencies = [
+  "asyncclick>=8.1.7",
+  "pydantic>=1.10.15",
+  "cryptography>=1.9",
+  "async-timeout>=3.0.0",
+  "aiohttp>=3",
+  "typing-extensions>=4.12.2,<5.0",
+  "tzdata>=2024.2 ; platform_system == 'Windows'",
 ]
 
-[tool.poetry.urls]
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.optional-dependencies]
+speedups = ["orjson>=3.9.1", "kasa-crypt>=0.2.0"]
+docs = ["sphinx~=5.0", "sphinx_rtd_theme~=2.0", "sphinxcontrib-programoutput~=0.0", "myst-parser", "docutils>=0.17"]
+shell = ["ptpython", "rich"]
+
+[project.urls]
+"Homepage" = "https://github.com/python-kasa/python-kasa"
 "Bug Tracker" = "https://github.com/python-kasa/python-kasa/issues"
 "Documentation" = "https://python-kasa.readthedocs.io"
+"Repository" = "https://github.com/python-kasa/python-kasa"
 
-[tool.poetry.scripts]
-kasa = "kasa.cli:cli"
+[project.scripts]
+kasa = "kasa.cli.__main__:cli"
 
-[tool.poetry.dependencies]
-python = "^3.9"
-asyncclick = ">=8.1.7"
-pydantic = ">=1.10.15"
-cryptography = ">=1.9"
-async-timeout = ">=3.0.0"
-aiohttp = ">=3"
+[tool.uv]
+dev-dependencies = [
+  "pytest",
+  "pytest-cov",
+  "pytest-asyncio",
+  "pytest-sugar",
+  "pre-commit",
+  "voluptuous",
+  "toml",
+  "pytest-mock",
+  "codecov",
+  "xdoctest>=1.2.0",
+  "coverage[toml]",
+  "pytest-timeout~=2.0",
+  "pytest-freezer~=0.4",
+  "mypy~=1.0",
+  "pytest-xdist>=3.6.1",
+  "pytest-socket>=0.7.0",
+]
 
-# speed ups
-orjson = { "version" = ">=3.9.1", optional = true }
-kasa-crypt = { "version" = ">=0.2.0", optional = true }
 
-# required only for docs
-sphinx = { version = "^5", optional = true }
-sphinx_rtd_theme = { version = "^2", optional = true }
-sphinxcontrib-programoutput = { version = "^0", optional = true }
-myst-parser = { version = "*", optional = true }
-docutils = { version = ">=0.17", optional = true }
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-# enhanced cli support
-ptpython = { version = "*", optional = true }
-rich = { version = "*", optional = true }
+[tool.hatch.build.targets.sdist]
+include = [
+  "/kasa",
+  "/devtools",
+  "/docs",
+  "/CHANGELOG.md",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pytest-cov = "*"
-pytest-asyncio = "*"
-pytest-sugar = "*"
-pre-commit = "*"
-voluptuous = "*"
-toml = "*"
-tox = "*"
-pytest-mock = "*"
-codecov = "*"
-xdoctest = "*"
-coverage = {version = "*", extras = ["toml"]}
-pytest-timeout = "^2"
-pytest-freezer = "^0.4"
-mypy = "^1"
-
-[tool.poetry.extras]
-docs = ["sphinx", "sphinx_rtd_theme", "sphinxcontrib-programoutput", "myst-parser", "docutils"]
-speedups = ["orjson", "kasa-crypt"]
-shell = ["ptpython", "rich"]
+[tool.hatch.build.targets.wheel]
+include = [
+  "/kasa",
+]
+exclude = [
+  "/kasa/tests",
+]
 
 [tool.coverage.run]
 source = ["kasa"]
@@ -91,23 +108,23 @@ markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 timeout = 10
+addopts = "--disable-socket --allow-unix-socket"
 
 [tool.doc8]
 paths = ["docs"]
 ignore = ["D001"]
 ignore-path-errors = ["docs/source/index.rst;D000"]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 target-version = "py38"
 
 [tool.ruff.lint]
 select = [
-  "E",  # pycodestyle
+  "E",  # pycodestyle errors
+  "W", # pycodestyle warnings
   "D",  # pydocstyle
   "F",  # pyflakes
   "UP",  # pyupgrade
@@ -116,6 +133,9 @@ select = [
   "FA", # flake8-future-annotations
   "I",  # isort
   "S",  # bandit
+  "PT",  # flake8-pytest-style
+  "LOG",  # flake8-logging
+  "G",  # flake8-logging-format
 ]
 ignore = [
   "D105",  # Missing docstring in magic method
@@ -151,6 +171,7 @@ disable_error_code = "annotation-unchecked"
 module = [
     "devtools.bench.benchmark",
     "devtools.parse_pcap",
+    "devtools.parse_pcap_klap",
     "devtools.perftest",
     "devtools.create_module_fixtures"
 ]

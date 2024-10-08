@@ -8,7 +8,7 @@ import click
 import dpkt
 from dpkt.ethernet import ETH_TYPE_IP, Ethernet
 
-from kasa.cli import echo
+from kasa.cli.main import echo
 from kasa.xortransport import XorEncryption
 
 

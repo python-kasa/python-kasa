@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from .smartdevice import SmartDevice
+from .smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,12 +50,21 @@ class SmartChildDevice(SmartDevice):
         Internal implementation to allow patching of public update in the cli
         or test framework.
         """
+        now = time.monotonic()
+        module_queries: list[SmartModule] = []
         req: dict[str, Any] = {}
         for module in self.modules.values():
-            if mod_query := module.query():
+            if module.disabled is False and (mod_query := module.query()):
+                module_queries.append(module)
                 req.update(mod_query)
         if req:
             self._last_update = await self.protocol.query(req)
+
+        for module in self.modules.values():
+            await self._handle_module_post_update(
+                module, now, had_query=module in module_queries
+            )
+        self._last_update_time = now
 
     @classmethod
     async def create(cls, parent: SmartDevice, child_info, child_components):

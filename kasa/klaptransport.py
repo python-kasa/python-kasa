@@ -50,8 +50,7 @@ import logging
 import secrets
 import struct
 import time
-from pprint import pformat as pf
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -89,7 +88,6 @@ class KlapTransport(BaseTransport):
     """
 
     DEFAULT_PORT: int = 80
-    DISCOVERY_QUERY = {"system": {"get_sysinfo": None}}
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     TIMEOUT_COOKIE_NAME = "TIMEOUT"
 
@@ -154,8 +152,8 @@ class KlapTransport(BaseTransport):
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
-                "Handshake1 posted at %s. Host is %s, Response"
-                + "status is %s, Request was %s",
+                "Handshake1 posted at %s. Host is %s, "
+                "Response status is %s, Request was %s",
                 datetime.datetime.now(),
                 self._host,
                 response_status,
@@ -180,7 +178,7 @@ class KlapTransport(BaseTransport):
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
                 "Handshake1 success at %s. Host is %s, "
-                + "Server remote_seed is: %s, server hash is: %s",
+                "Server remote_seed is: %s, server hash is: %s",
                 datetime.datetime.now(),
                 self._host,
                 remote_seed.hex(),
@@ -212,9 +210,10 @@ class KlapTransport(BaseTransport):
 
             if default_credentials_seed_auth_hash == server_hash:
                 _LOGGER.debug(
-                    "Server response doesn't match our expected hash on ip %s"
-                    + f" but an authentication with {key} default credentials matched",
+                    "Server response doesn't match our expected hash on ip %s, "
+                    "but an authentication with %s default credentials matched",
                     self._host,
+                    key,
                 )
                 return local_seed, remote_seed, self._default_credentials_auth_hash[key]  # type: ignore
 
@@ -232,8 +231,8 @@ class KlapTransport(BaseTransport):
 
             if blank_seed_auth_hash == server_hash:
                 _LOGGER.debug(
-                    "Server response doesn't match our expected hash on ip %s"
-                    + " but an authentication with blank credentials matched",
+                    "Server response doesn't match our expected hash on ip %s, "
+                    "but an authentication with blank credentials matched",
                     self._host,
                 )
                 return local_seed, remote_seed, self._blank_auth_hash  # type: ignore
@@ -261,8 +260,8 @@ class KlapTransport(BaseTransport):
 
         if _LOGGER.isEnabledFor(logging.DEBUG):
             _LOGGER.debug(
-                "Handshake2 posted %s.  Host is %s, Response status is %s, "
-                + "Request was %s",
+                "Handshake2 posted %s. Host is %s, "
+                "Response status is %s, Request was %s",
                 datetime.datetime.now(),
                 self._host,
                 response_status,
@@ -300,7 +299,9 @@ class KlapTransport(BaseTransport):
         # There is a 24 hour timeout on the session cookie
         # but the clock on the device is not always accurate
         # so we set the expiry to 24 hours from now minus a buffer
-        self._session_expire_at = time.time() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
+        self._session_expire_at = (
+            time.monotonic() + timeout - SESSION_EXPIRE_BUFFER_SECONDS
+        )
         self._encryption_session = await self.perform_handshake2(
             local_seed, remote_seed, auth_hash
         )
@@ -312,7 +313,7 @@ class KlapTransport(BaseTransport):
         """Return true if session has expired."""
         return (
             self._session_expire_at is None
-            or self._session_expire_at - time.time() <= 0
+            or self._session_expire_at - time.monotonic() <= 0
         )
 
     async def send(self, request: str):
@@ -337,33 +338,33 @@ class KlapTransport(BaseTransport):
             + f"Response status is {response_status}, Request was {request}"
         )
         if response_status != 200:
-            _LOGGER.error("Query failed after successful authentication " + msg)
+            _LOGGER.error("Query failed after successful authentication: %s", msg)
             # If we failed with a security error, force a new handshake next time.
             if response_status == 403:
                 self._handshake_done = False
                 raise _RetryableError(
-                    f"Got a security error from {self._host} after handshake "
-                    + "completed"
+                    "Got a security error from %s after handshake completed", self._host
                 )
             else:
                 raise KasaException(
-                    f"Device {self._host} responded with {response_status} to"
-                    + f"request with seq {seq}"
+                    f"Device {self._host} responded with {response_status} to "
+                    f"request with seq {seq}"
                 )
         else:
-            _LOGGER.debug("Query posted " + msg)
+            _LOGGER.debug("Device %s query posted %s", self._host, msg)
 
-            # Check for mypy
-            if self._encryption_session is not None:
+            if TYPE_CHECKING:
+                assert self._encryption_session
+            try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
+            except Exception as ex:
+                raise KasaException(
+                    f"Error trying to decrypt device {self._host} response: {ex}"
+                ) from ex
 
             json_payload = json_loads(decrypted_response)
 
-            _LOGGER.debug(
-                "%s << %s",
-                self._host,
-                _LOGGER.isEnabledFor(logging.DEBUG) and pf(json_payload),
-            )
+            _LOGGER.debug("Device %s query response received", self._host)
 
             return json_payload
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
 from ..device_type import DeviceType
@@ -318,6 +318,7 @@ class IotStripPlug(IotPlug):
         self._set_sys_info(parent.sys_info)
         self._device_type = DeviceType.StripSocket
         self.protocol = parent.protocol  # Must use the same connection as the parent
+        self._on_since: datetime | None = None
 
     async def _initialize_modules(self):
         """Initialize modules not added in init."""
@@ -372,7 +373,7 @@ class IotStripPlug(IotPlug):
         """
         await self._modular_update({})
         for module in self._modules.values():
-            module._post_update_hook()
+            await module._post_update_hook()
 
         if not self._features:
             await self._initialize_features()
@@ -438,14 +439,20 @@ class IotStripPlug(IotPlug):
     def on_since(self) -> datetime | None:
         """Return on-time, if available."""
         if self.is_off:
+            self._on_since = None
             return None
 
         info = self._get_child_info()
         on_time = info["on_time"]
 
-        return datetime.now(timezone.utc).astimezone().replace(
-            microsecond=0
-        ) - timedelta(seconds=on_time)
+        time = self._parent.time
+
+        on_since = time - timedelta(seconds=on_time)
+        if not self._on_since or timedelta(
+            seconds=0
+        ) < on_since - self._on_since > timedelta(seconds=5):
+            self._on_since = on_since
+        return self._on_since
 
     @property  # type: ignore
     @requires_update

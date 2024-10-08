@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..effects import EFFECT_MAPPING, EFFECT_NAMES, SmartLightEffect
-from ..smartmodule import Module, SmartModule
+from ..smartmodule import Module, SmartModule, allow_update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -84,6 +84,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         """
         return self._effect_list
 
+    @allow_update_after
     async def set_effect(
         self,
         effect: str,
@@ -105,14 +106,23 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         """
         brightness_module = self._device.modules[Module.Brightness]
         if effect == self.LIGHT_EFFECTS_OFF:
-            state = self._device.modules[Module.Light].state
-            await self._device.modules[Module.Light].set_state(state)
+            if self.effect in self._effect_mapping:
+                # TODO: We could query get_lighting_effect here to
+                # get the custom effect although not sure how to find
+                # custom effects
+                effect_dict = self._effect_mapping[self.effect]
+            else:
+                effect_dict = self._effect_mapping["Aurora"]
+            effect_dict = {**effect_dict}
+            effect_dict["enable"] = 0
+            await self.set_custom_effect(effect_dict)
             return
 
         if effect not in self._effect_mapping:
             raise ValueError(f"The effect {effect} is not a built in effect.")
         else:
             effect_dict = self._effect_mapping[effect]
+            effect_dict = {**effect_dict}
 
         # Use explicitly given brightness
         if brightness is not None:
@@ -126,6 +136,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
 
         await self.set_custom_effect(effect_dict)
 
+    @allow_update_after
     async def set_custom_effect(
         self,
         effect_dict: dict,

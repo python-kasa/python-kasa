@@ -11,13 +11,13 @@ This page aims to help you to get started.
 ## Setting up the development environment
 
 To get started, simply clone this repository and initialize the development environment.
-We are using [poetry](https://python-poetry.org) for dependency management, so after cloning the repository simply execute
-`poetry install` which will install all necessary packages and create a virtual environment for you.
+We are using [uv](https://github.com/astral-sh/uv) for dependency management, so after cloning the repository simply execute
+`uv sync` which will install all necessary packages and create a virtual environment for you in `.venv`.
 
 ```
 $ git clone https://github.com/python-kasa/python-kasa.git
 $ cd python-kasa
-$ poetry install
+$ uv sync --all-extras
 ```
 
 ## Code-style checks
@@ -36,7 +36,7 @@ You can also execute the pre-commit hooks on all files by executing `pre-commit 
 You can run tests on the library by executing `pytest` in the source directory:
 
 ```
-$ poetry run pytest kasa
+$ uv run pytest kasa
 ```
 
 This will run the tests against the contributed example responses.
@@ -68,8 +68,8 @@ The easiest way to do that is by doing:
 ```
 $ git clone https://github.com/python-kasa/python-kasa.git
 $ cd python-kasa
-$ poetry install
-$ poetry shell
+$ uv sync --all-extras
+$ source .venv/bin/activate
 $ python -m devtools.dump_devinfo --username <username> --password <password> --host 192.168.1.123
 ```
 
@@ -82,5 +82,5 @@ If you choose to do so, it will save the fixture files directly in their correct
 
 ```{note}
 When adding new fixture files, you should run `pre-commit run -a` to re-generate the list of supported devices.
-You may need to adjust `device_fixtures.py` to add a new model into the correct device categories.  Verify that test pass by executing `poetry run pytest kasa`.
+You may need to adjust `device_fixtures.py` to add a new model into the correct device categories.  Verify that test pass by executing `uv run pytest kasa`.
 ```

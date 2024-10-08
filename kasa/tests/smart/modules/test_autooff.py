@@ -18,7 +18,7 @@ autooff = parametrize(
 
 @autooff
 @pytest.mark.parametrize(
-    "feature, prop_name, type",
+    ("feature", "prop_name", "type"),
     [
         ("auto_off_enabled", "enabled", bool),
         ("auto_off_minutes", "delay", int),

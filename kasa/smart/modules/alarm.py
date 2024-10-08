@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
@@ -69,7 +71,7 @@ class Alarm(SmartModule):
                 attribute_setter="set_alarm_volume",
                 category=Feature.Category.Config,
                 type=Feature.Type.Choice,
-                choices=["low", "normal", "high"],
+                choices_getter=lambda: ["low", "normal", "high"],
             )
         )
         self._add_feature(
@@ -94,7 +96,7 @@ class Alarm(SmartModule):
         )
 
     @property
-    def alarm_sound(self):
+    def alarm_sound(self) -> str:
         """Return current alarm sound."""
         return self.data["get_alarm_configure"]["type"]
 
@@ -113,11 +115,11 @@ class Alarm(SmartModule):
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
     @property
-    def alarm_volume(self):
+    def alarm_volume(self) -> Literal["low", "normal", "high"]:
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
 
-    async def set_alarm_volume(self, volume: str):
+    async def set_alarm_volume(self, volume: Literal["low", "normal", "high"]):
         """Set alarm volume."""
         payload = self.data["get_alarm_configure"].copy()
         payload["volume"] = volume
@@ -134,10 +136,10 @@ class Alarm(SmartModule):
         src = self._device.sys_info["in_alarm_source"]
         return src if src else None
 
-    async def play(self):
+    async def play(self) -> dict:
         """Play alarm."""
         return await self.call("play_alarm")
 
-    async def stop(self):
+    async def stop(self) -> dict:
         """Stop alarm."""
         return await self.call("stop_alarm")

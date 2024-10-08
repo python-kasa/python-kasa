@@ -34,7 +34,7 @@ Living Room Bulb
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Dict, Optional, TypedDict, Union
 
 from .credentials import Credentials
 from .exceptions import KasaException
@@ -43,6 +43,13 @@ if TYPE_CHECKING:
     from aiohttp import ClientSession
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class KeyPairDict(TypedDict):
+    """Class to represent a public/private key pair."""
+
+    private: str
+    public: str
 
 
 class DeviceEncryptionType(Enum):
@@ -182,7 +189,7 @@ class DeviceConfig:
     #: The batch size for protoools supporting multiple request batches.
     connection_type: DeviceConnectionParameters = field(
         default_factory=lambda: DeviceConnectionParameters(
-            DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor, 1
+            DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
         )
     )
     #: True if the device uses http.  Consumers should retrieve rather than set this
@@ -192,6 +199,8 @@ class DeviceConfig:
     # compare=False will be excluded from the serialization and object comparison.
     #: Set a custom http_client for the device to use.
     http_client: Optional["ClientSession"] = field(default=None, compare=False)
+
+    aes_keys: Optional[KeyPairDict] = None
 
     def __post_init__(self):
         if self.connection_type is None:

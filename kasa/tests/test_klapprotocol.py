@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import secrets
 import time
 from contextlib import nullcontext as does_not_raise
@@ -48,7 +49,7 @@ class _mock_response:
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (Exception("dummy exception"), False),
         (aiohttp.ServerTimeoutError("dummy exception"), True),
@@ -65,7 +66,6 @@ async def test_protocol_retries_via_client_session(
 ):
     host = "127.0.0.1"
     conn = mocker.patch.object(aiohttp.ClientSession, "post", side_effect=error)
-    mocker.patch.object(protocol_class, "BACKOFF_SECONDS_AFTER_TIMEOUT", 0)
 
     config = DeviceConfig(host)
     with pytest.raises(KasaException):
@@ -78,7 +78,7 @@ async def test_protocol_retries_via_client_session(
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (KasaException("dummy exception"), False),
         (_RetryableError("dummy exception"), True),
@@ -138,6 +138,7 @@ async def test_protocol_retry_recoverable_error(
         "post",
         side_effect=aiohttp.ClientOSError("foo"),
     )
+
     config = DeviceConfig(host)
     with pytest.raises(KasaException):
         await protocol_class(transport=transport_class(config=config)).query(
@@ -238,8 +239,73 @@ def test_encrypt_unicode():
     assert d == decrypted
 
 
+async def test_transport_decrypt(mocker):
+    """Test transport decryption."""
+    d = {"great": "success"}
+
+    seed = secrets.token_bytes(16)
+    auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
+    encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
+
+    transport = KlapTransport(config=DeviceConfig(host="127.0.0.1"))
+    transport._handshake_done = True
+    transport._session_expire_at = time.monotonic() + 60
+    transport._encryption_session = encryption_session
+
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
+        encryption_session = KlapEncryptionSession(
+            transport._encryption_session.local_seed,
+            transport._encryption_session.remote_seed,
+            transport._encryption_session.user_hash,
+        )
+        seq = params.get("seq")
+        encryption_session._seq = seq - 1
+        encrypted, seq = encryption_session.encrypt(json.dumps(d))
+        seq = seq
+        return 200, encrypted
+
+    mocker.patch.object(HttpClient, "post", side_effect=_return_response)
+
+    resp = await transport.send(json.dumps({}))
+    assert d == resp
+
+
+async def test_transport_decrypt_error(mocker, caplog):
+    """Test that a decryption error raises a kasa exception."""
+    d = {"great": "success"}
+
+    seed = secrets.token_bytes(16)
+    auth_hash = KlapTransport.generate_auth_hash(Credentials("foo", "bar"))
+    encryption_session = KlapEncryptionSession(seed, seed, auth_hash)
+
+    transport = KlapTransport(config=DeviceConfig(host="127.0.0.1"))
+    transport._handshake_done = True
+    transport._session_expire_at = time.monotonic() + 60
+    transport._encryption_session = encryption_session
+
+    async def _return_response(url: URL, params=None, data=None, *_, **__):
+        encryption_session = KlapEncryptionSession(
+            secrets.token_bytes(16),
+            transport._encryption_session.remote_seed,
+            transport._encryption_session.user_hash,
+        )
+        seq = params.get("seq")
+        encryption_session._seq = seq - 1
+        encrypted, seq = encryption_session.encrypt(json.dumps(d))
+        seq = seq
+        return 200, encrypted
+
+    mocker.patch.object(HttpClient, "post", side_effect=_return_response)
+
+    with pytest.raises(
+        KasaException,
+        match=re.escape("Error trying to decrypt device 127.0.0.1 response:"),
+    ):
+        await transport.send(json.dumps({}))
+
+
 @pytest.mark.parametrize(
-    "device_credentials, expectation",
+    ("device_credentials", "expectation"),
     [
         (Credentials("foo", "bar"), does_not_raise()),
         (Credentials(), does_not_raise()),
@@ -255,7 +321,7 @@ def test_encrypt_unicode():
     ids=("client", "blank", "kasa_setup", "shouldfail"),
 )
 @pytest.mark.parametrize(
-    "transport_class, seed_auth_hash_calc",
+    ("transport_class", "seed_auth_hash_calc"),
     [
         pytest.param(KlapTransport, lambda c, s, a: c + a, id="KLAP"),
         pytest.param(KlapTransportV2, lambda c, s, a: c + s + a, id="KLAPV2"),
@@ -299,7 +365,7 @@ async def test_handshake1(
 
 
 @pytest.mark.parametrize(
-    "transport_class, seed_auth_hash_calc1, seed_auth_hash_calc2",
+    ("transport_class", "seed_auth_hash_calc1", "seed_auth_hash_calc2"),
     [
         pytest.param(
             KlapTransport, lambda c, s, a: c + a, lambda c, s, a: s + a, id="KLAP"
@@ -323,14 +389,14 @@ async def test_handshake(
     async def _return_handshake_response(url: URL, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash
 
-        if str(url) == "http://127.0.0.1:80/app/handshake1":
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
             seed_auth_hash = _sha256(
                 seed_auth_hash_calc1(client_seed, server_seed, device_auth_hash)
             )
 
             return _mock_response(200, server_seed + seed_auth_hash)
-        elif str(url) == "http://127.0.0.1:80/app/handshake2":
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
             seed_auth_hash = _sha256(
                 seed_auth_hash_calc2(client_seed, server_seed, device_auth_hash)
             )
@@ -367,14 +433,14 @@ async def test_query(mocker):
     async def _return_response(url: URL, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash, seq
 
-        if str(url) == "http://127.0.0.1:80/app/handshake1":
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
 
             return _mock_response(200, server_seed + client_seed_auth_hash)
-        elif str(url) == "http://127.0.0.1:80/app/handshake2":
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
             return _mock_response(200, b"")
-        elif str(url) == "http://127.0.0.1:80/app/request":
+        elif url == URL("http://127.0.0.1:80/app/request"):
             encryption_session = KlapEncryptionSession(
                 protocol._transport._encryption_session.local_seed,
                 protocol._transport._encryption_session.remote_seed,
@@ -400,7 +466,7 @@ async def test_query(mocker):
 
 
 @pytest.mark.parametrize(
-    "response_status, credentials_match, expectation",
+    ("response_status", "credentials_match", "expectation"),
     [
         pytest.param(
             (403, 403, 403),
@@ -460,7 +526,7 @@ async def test_authentication_failures(
             response_status, \
             credentials_match
 
-        if str(url) == "http://127.0.0.1:80/app/handshake1":
+        if url == URL("http://127.0.0.1:80/app/handshake1"):
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
             if credentials_match is not False and credentials_match is not True:
@@ -468,13 +534,13 @@ async def test_authentication_failures(
             return _mock_response(
                 response_status[0], server_seed + client_seed_auth_hash
             )
-        elif str(url) == "http://127.0.0.1:80/app/handshake2":
+        elif url == URL("http://127.0.0.1:80/app/handshake2"):
             client_seed = data
             client_seed_auth_hash = _sha256(data + device_auth_hash)
             return _mock_response(
                 response_status[1], server_seed + client_seed_auth_hash
             )
-        elif str(url) == "http://127.0.0.1:80/app/request":
+        elif url == URL("http://127.0.0.1:80/app/request"):
             return _mock_response(response_status[2], b"")
 
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)

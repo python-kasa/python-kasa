@@ -1,6 +1,5 @@
 """Base class for IOT module implementations."""
 
-import collections
 import logging
 
 from ..exceptions import KasaException
@@ -9,15 +8,17 @@ from ..module import Module
 _LOGGER = logging.getLogger(__name__)
 
 
-# TODO: This is used for query constructing, check for a better place
-def merge(d, u):
+def _merge_dict(dest: dict, source: dict) -> dict:
     """Update dict recursively."""
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = merge(d.get(k, {}), v)
+    for k, v in source.items():
+        if k in dest and type(v) is dict:  # noqa: E721 - only accepts `dict` type
+            _merge_dict(dest[k], v)
         else:
-            d[k] = v
-    return d
+            dest[k] = v
+    return dest
+
+
+merge = _merge_dict
 
 
 class IotModule(Module):

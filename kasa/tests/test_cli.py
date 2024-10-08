@@ -17,29 +17,29 @@ from kasa import (
     Module,
     UnsupportedDeviceError,
 )
-from kasa.cli import (
-    TYPE_TO_CLASS,
+from kasa.cli.device import (
     alias,
-    brightness,
-    cli,
-    cmd_command,
-    effect,
-    emeter,
-    energy,
-    hsv,
+    factory_reset,
     led,
-    raw_command,
     reboot,
     state,
     sysinfo,
-    temperature,
-    time,
     toggle,
     update_credentials,
-    wifi,
 )
+from kasa.cli.light import (
+    brightness,
+    effect,
+    hsv,
+    temperature,
+)
+from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
+from kasa.cli.time import time
+from kasa.cli.usage import emeter, energy
+from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
+from kasa.smart import SmartDevice
 
 from .conftest import (
     device_smart,
@@ -57,6 +57,12 @@ def runner():
     runner = CliRunner(env=KASA_VARS)
 
     return runner
+
+
+async def test_help(runner):
+    """Test that all the lazy modules are correctly names."""
+    res = await runner.invoke(cli, ["--help"])
+    assert res.exit_code == 0, "--help failed, check lazy module names"
 
 
 @pytest.mark.parametrize(
@@ -204,6 +210,21 @@ async def test_reboot(dev, mocker, runner):
     res = await runner.invoke(
         reboot,
         obj=dev,
+    )
+
+    query_mock.assert_called()
+    assert res.exit_code == 0
+
+
+@device_smart
+async def test_factory_reset(dev, mocker, runner):
+    """Test that factory reset works on SMART devices."""
+    query_mock = mocker.patch.object(dev.protocol, "query")
+
+    res = await runner.invoke(
+        factory_reset,
+        obj=dev,
+        input="y\n",
     )
 
     query_mock.assert_called()
@@ -500,7 +521,7 @@ async def test_credentials(discovery_mock, mocker, runner):
                 f"Username:{dev.credentials.username} Password:{dev.credentials.password}"
             )
 
-    mocker.patch("kasa.cli.state", new=_state)
+    mocker.patch("kasa.cli.device.state", new=_state)
 
     dr = DiscoveryResult(**discovery_mock.discovery_data["result"])
     res = await runner.invoke(
@@ -735,7 +756,7 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
     assert isinstance(res.exception, AuthenticationError)
 
 
-@pytest.mark.parametrize("device_type", list(TYPE_TO_CLASS))
+@pytest.mark.parametrize("device_type", TYPES)
 async def test_type_param(device_type, mocker, runner):
     """Test for handling only one of username or password supplied."""
     result_device = FileNotFoundError
@@ -746,8 +767,11 @@ async def test_type_param(device_type, mocker, runner):
         nonlocal result_device
         result_device = dev
 
-    mocker.patch("kasa.cli.state", new=_state)
-    expected_type = TYPE_TO_CLASS[device_type]
+    mocker.patch("kasa.cli.device.state", new=_state)
+    if device_type == "smart":
+        expected_type = SmartDevice
+    else:
+        expected_type = _legacy_type_to_class(device_type)
     mocker.patch.object(expected_type, "update")
     res = await runner.invoke(
         cli,

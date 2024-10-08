@@ -80,6 +80,29 @@ async def test_handshake(
         assert transport._state is TransportState.LOGIN_REQUIRED
 
 
+async def test_handshake_with_keys(mocker):
+    host = "127.0.0.1"
+    mock_aes_device = MockAesDevice(host)
+    mocker.patch.object(aiohttp.ClientSession, "post", side_effect=mock_aes_device.post)
+
+    test_keys = {
+        "private": "MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAMo/JQpXIbP2M3bLOKyfEVCURFCxHIXv4HDME8J58AL4BwGDXf0oQycgj9nV+T/MzgEd/4iVysYuYfLuIEKXADP7Lby6AfA/dbcinZZ7bLUNMNa7TaylIvVKtSfR0LV8AmG0jdQYkr4cTzLAEd+AEs/wG3nMQNEcoQRVY+svLPDjAgMBAAECgYBCsDOch0KbvrEVmMklUoY5Fcq4+M249HIDf6d8VwznTbWxsAmL8nzCKCCG6eF4QiYjhCrAdPQaCS1PF2oXywbLhngid/9W9gz4CKKDJChs1X8KvLi+TLg1jgJUXvq9yVNh1CB+lS2ho4gdDDCbVmiVOZR5TDfEf0xeJ+Zz3zlUEQJBAPkhuNdc3yRue8huFZbrWwikURQPYBxLOYfVTDsfV9mZGSkGoWS1FPDsxrqSXugTmcTRuw+lrXKDabJ72kqywA8CQQDP0oaGh5r7F12Xzcwb7X9JkTvyr+rO8YgVtKNBaNVOPabAzysNwOlvH/sNCVQcRj8rn5LNXitgLx6T+Q5uqa3tAkA7J0elUzbkhps7ju/vYri9x448zh3K+g2R9BJio2GPmCuCM0HVEK4FOqNBH4oLXsQPGKFq6LLTUuKg74l4XRL/AkBHBO6r8pNn0yhMxCtIL/UbsuIFoVBgv/F9WWmg5K5gOnlN0n4oCRC8xPUKE3IG54qW4cVNIS05hWCxuJ7R+nJRAkByt/+kX1nQxis2wIXj90fztXG3oSmoVaieYxaXPxlWvX3/Q5kslFF5UsGy9gcK0v2PXhqjTbhud3/X0Er6YP4v",
+        "public": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDKPyUKVyGz9jN2yzisnxFQlERQsRyF7+BwzBPCefAC+AcBg139KEMnII/Z1fk/zM4BHf+IlcrGLmHy7iBClwAz+y28ugHwP3W3Ip2We2y1DTDWu02spSL1SrUn0dC1fAJhtI3UGJK+HE8ywBHfgBLP8Bt5zEDRHKEEVWPrLyzw4wIDAQAB",
+    }
+    transport = AesTransport(
+        config=DeviceConfig(
+            host, credentials=Credentials("foo", "bar"), aes_keys=test_keys
+        )
+    )
+
+    assert transport._encryption_session is None
+    assert transport._state is TransportState.HANDSHAKE_REQUIRED
+
+    await transport.perform_handshake()
+    assert transport._key_pair.get_private_key() == test_keys["private"]
+    assert transport._key_pair.get_public_key() == test_keys["public"]
+
+
 @status_parameters
 async def test_login(mocker, status_code, error_code, inner_error_code, expectation):
     host = "127.0.0.1"
@@ -97,10 +120,11 @@ async def test_login(mocker, status_code, error_code, inner_error_code, expectat
     with expectation:
         await transport.perform_login()
         assert mock_aes_device.token in str(transport._token_url)
+        assert transport._config.aes_keys == transport._key_pair
 
 
 @pytest.mark.parametrize(
-    "inner_error_codes, expectation, call_count",
+    ("inner_error_codes", "expectation", "call_count"),
     [
         ([SmartErrorCode.LOGIN_ERROR, 0, 0, 0], does_not_raise(), 4),
         (
@@ -298,7 +322,7 @@ async def test_unknown_errors(mocker, error_code):
         "requestID": 1,
         "terminal_uuid": "foobar",
     }
-    with pytest.raises(KasaException):
+    with pytest.raises(KasaException):  # noqa: PT012
         res = await transport.send(json_dumps(request))
         assert res is SmartErrorCode.INTERNAL_UNKNOWN_ERROR
 
@@ -315,7 +339,7 @@ async def test_port_override():
 
 
 @pytest.mark.parametrize(
-    "device_delay_required, should_error, should_succeed",
+    ("device_delay_required", "should_error", "should_succeed"),
     [
         pytest.param(0, False, True, id="No error"),
         pytest.param(0.125, True, True, id="Error then succeed"),
@@ -460,7 +484,7 @@ class MockAesDevice:
         elif json["method"] == "login_device":
             return await self._return_login_response(url, json)
         else:
-            assert str(url) == f"http://{self.host}:80/app?token={self.token}"
+            assert url == URL(f"http://{self.host}:80/app?token={self.token}")
             return await self._return_send_response(url, json)
 
     async def _return_handshake_response(self, url: URL, json: dict[str, Any]):

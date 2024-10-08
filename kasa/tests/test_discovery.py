@@ -2,6 +2,7 @@
 # ruff: noqa: S106
 
 import asyncio
+import logging
 import re
 import socket
 from unittest.mock import MagicMock
@@ -169,12 +170,13 @@ async def test_discover_single_hostname(discovery_mock, mocker):
 async def test_discover_credentials(mocker):
     """Make sure that discover gives credentials precedence over un and pw."""
     host = "127.0.0.1"
-    mocker.patch("kasa.discover._DiscoverProtocol.wait_for_discovery_to_complete")
 
-    def mock_discover(self, *_, **__):
+    async def mock_discover(self, *_, **__):
         self.discovered_devices = {host: MagicMock()}
+        self.seen_hosts.add(host)
+        self._handle_discovered_event()
 
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
     # Only credentials passed
@@ -196,12 +198,13 @@ async def test_discover_credentials(mocker):
 async def test_discover_single_credentials(mocker):
     """Make sure that discover_single gives credentials precedence over un and pw."""
     host = "127.0.0.1"
-    mocker.patch("kasa.discover._DiscoverProtocol.wait_for_discovery_to_complete")
 
-    def mock_discover(self, *_, **__):
+    async def mock_discover(self, *_, **__):
         self.discovered_devices = {host: MagicMock()}
+        self.seen_hosts.add(host)
+        self._handle_discovered_event()
 
-    mocker.patch.object(_DiscoverProtocol, "do_discover", mock_discover)
+    mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
     # Only credentials passed
@@ -251,7 +254,7 @@ INVALIDS = [
 ]
 
 
-@pytest.mark.parametrize("msg, data", INVALIDS)
+@pytest.mark.parametrize(("msg", "data"), INVALIDS)
 async def test_discover_invalid_info(msg, data, mocker):
     """Make sure that invalid discovery information raises an exception."""
     host = "127.0.0.1"
@@ -303,7 +306,7 @@ async def test_discover_datagram_received(mocker, discovery_data):
     assert dev.host == addr
 
 
-@pytest.mark.parametrize("msg, data", INVALIDS)
+@pytest.mark.parametrize(("msg", "data"), INVALIDS)
 async def test_discover_invalid_responses(msg, data, mocker):
     """Verify that we don't crash whole discovery if some devices in the network are sending unexpected data."""
     proto = _DiscoverProtocol()
@@ -348,7 +351,7 @@ async def test_discover_single_authentication(discovery_mock, mocker):
         side_effect=AuthenticationError("Failed to authenticate"),
     )
 
-    with pytest.raises(
+    with pytest.raises(  # noqa: PT012
         AuthenticationError,
         match="Failed to authenticate",
     ):
@@ -494,7 +497,7 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
 
 
 @pytest.mark.parametrize(
-    "port, will_timeout",
+    ("port", "will_timeout"),
     [(FakeDatagramTransport.GHOST_PORT, True), (20002, False)],
     ids=["unknownport", "unsupporteddevice"],
 )
@@ -565,3 +568,38 @@ async def test_do_discover_external_cancel(mocker):
     with pytest.raises(asyncio.TimeoutError):
         async with asyncio_timeout(0):
             await dp.wait_for_discovery_to_complete()
+
+
+async def test_discovery_redaction(discovery_mock, caplog: pytest.LogCaptureFixture):
+    """Test query sensitive info redaction."""
+    mac = "12:34:56:78:9A:BC"
+
+    if discovery_mock.default_port == 9999:
+        sysinfo = discovery_mock.discovery_data["system"]["get_sysinfo"]
+        if "mac" in sysinfo:
+            sysinfo["mac"] = mac
+        elif "mic_mac" in sysinfo:
+            sysinfo["mic_mac"] = mac
+    else:
+        discovery_mock.discovery_data["result"]["mac"] = mac
+
+    # Info no message logging
+    caplog.set_level(logging.INFO)
+    await Discover.discover()
+
+    assert mac not in caplog.text
+
+    caplog.set_level(logging.DEBUG)
+
+    # Debug no redaction
+    caplog.clear()
+    Discover._redact_data = False
+    await Discover.discover()
+    assert mac in caplog.text
+
+    # Debug redaction
+    caplog.clear()
+    Discover._redact_data = True
+    await Discover.discover()
+    assert mac not in caplog.text
+    assert "12:34:56:00:00:00" in caplog.text

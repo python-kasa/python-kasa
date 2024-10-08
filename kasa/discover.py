@@ -87,7 +87,8 @@ import ipaddress
 import logging
 import socket
 from collections.abc import Awaitable
-from typing import Callable, Dict, Optional, Type, cast
+from pprint import pformat as pf
+from typing import Any, Callable, Dict, Optional, Type, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -112,8 +113,10 @@ from kasa.exceptions import (
     UnsupportedDeviceError,
 )
 from kasa.iot.iotdevice import IotDevice
+from kasa.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
+from kasa.protocol import mask_mac, redact_data
 from kasa.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
@@ -122,6 +125,12 @@ _LOGGER = logging.getLogger(__name__)
 OnDiscoveredCallable = Callable[[Device], Awaitable[None]]
 OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Awaitable[None]]
 DeviceDict = Dict[str, Device]
+
+NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+    "device_id": lambda x: "REDACTED_" + x[9::],
+    "owner": lambda x: "REDACTED_" + x[9::],
+    "mac": mask_mac,
+}
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -200,7 +209,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         except OSError as ex:  # WSL does not support SO_REUSEADDR, see #246
             _LOGGER.debug("Unable to set SO_REUSEADDR: %s", ex)
 
-        if self.interface is not None:
+        # windows does not support SO_BINDTODEVICE
+        if self.interface is not None and hasattr(socket, "SO_BINDTODEVICE"):
             sock.setsockopt(
                 socket.SOL_SOCKET, socket.SO_BINDTODEVICE, self.interface.encode()
             )
@@ -252,7 +262,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             self._handle_discovered_event()
             return
         except KasaException as ex:
-            _LOGGER.debug(f"[DISCOVERY] Unable to find device type for {ip}: {ex}")
+            _LOGGER.debug("[DISCOVERY] Unable to find device type for %s: %s", ip, ex)
             self.invalid_device_exceptions[ip] = ex
             self._handle_discovered_event()
             return
@@ -286,12 +296,14 @@ class Discover:
 
     DISCOVERY_PORT = 9999
 
-    DISCOVERY_QUERY = {
-        "system": {"get_sysinfo": None},
+    DISCOVERY_QUERY: dict[str, dict[str, dict]] = {
+        "system": {"get_sysinfo": {}},
     }
 
     DISCOVERY_PORT_2 = 20002
     DISCOVERY_QUERY_2 = binascii.unhexlify("020000010000000000000000463cb5d3")
+
+    _redact_data = True
 
     @staticmethod
     async def discover(
@@ -484,7 +496,9 @@ class Discover:
                 f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
 
-        _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
+            _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
 
         device_class = cast(Type[IotDevice], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
@@ -504,6 +518,7 @@ class Discover:
         config: DeviceConfig,
     ) -> Device:
         """Get SmartDevice from the new 20002 response."""
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         try:
             info = json_loads(data[16:])
         except Exception as ex:
@@ -514,9 +529,17 @@ class Discover:
         try:
             discovery_result = DiscoveryResult(**info["result"])
         except ValidationError as ex:
-            _LOGGER.debug(
-                "Unable to parse discovery from device %s: %s", config.host, info
-            )
+            if debug_enabled:
+                data = (
+                    redact_data(info, NEW_DISCOVERY_REDACTORS)
+                    if Discover._redact_data
+                    else info
+                )
+                _LOGGER.debug(
+                    "Unable to parse discovery from device %s: %s",
+                    config.host,
+                    pf(data),
+                )
             raise UnsupportedDeviceError(
                 f"Unable to parse discovery from device: {config.host}: {ex}"
             ) from ex
@@ -551,7 +574,13 @@ class Discover:
                 discovery_result=discovery_result.get_dict(),
             )
 
-        _LOGGER.debug("[DISCOVERY] %s << %s", config.host, info)
+        if debug_enabled:
+            data = (
+                redact_data(info, NEW_DISCOVERY_REDACTORS)
+                if Discover._redact_data
+                else info
+            )
+            _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
         device = device_class(config.host, protocol=protocol)
 
         di = discovery_result.get_dict()

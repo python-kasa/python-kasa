@@ -111,10 +111,12 @@ class Module(ABC):
     LightTransition: Final[ModuleName[smart.LightTransition]] = ModuleName(
         "LightTransition"
     )
+    MotionSensor: Final[ModuleName[smart.MotionSensor]] = ModuleName("MotionSensor")
     ReportMode: Final[ModuleName[smart.ReportMode]] = ModuleName("ReportMode")
     SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
         "LightEffect"
     )
+    IotLightEffect: Final[ModuleName[iot.LightEffect]] = ModuleName("LightEffect")
     TemperatureSensor: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
         "TemperatureSensor"
     )
@@ -153,7 +155,7 @@ class Module(ABC):
         children's modules.
         """
 
-    def _post_update_hook(self):  # noqa: B027
+    async def _post_update_hook(self):  # noqa: B027
         """Perform actions after a device update.
 
         This can be implemented if a module needs to perform actions each time

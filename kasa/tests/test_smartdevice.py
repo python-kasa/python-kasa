@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 
 from kasa import Device, KasaException, Module
-from kasa.exceptions import SmartErrorCode
+from kasa.exceptions import DeviceError, SmartErrorCode
 from kasa.smart import SmartDevice
+from kasa.smart.modules.energy import Energy
+from kasa.smart.smartmodule import SmartModule
+from kasa.smartprotocol import _ChildProtocolWrapper
 
 from .conftest import (
     device_smart,
@@ -54,6 +59,8 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     dev._modules = {}
     dev._features = {}
     dev._children = {}
+    dev._last_update = {}
+    dev._last_update_time = None
 
     negotiate = mocker.spy(dev, "_negotiate")
     initialize_modules = mocker.spy(dev, "_initialize_modules")
@@ -109,6 +116,9 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
     """Test that the regular update uses queries from all supported modules."""
     # We need to have some modules initialized by now
     assert dev._modules
+    # Reset last update so all modules will query
+    for mod in dev._modules.values():
+        mod._last_update_time = None
 
     device_queries: dict[SmartDevice, dict[str, Any]] = {}
     for mod in dev._modules.values():
@@ -133,75 +143,191 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
 
 
 @device_smart
-async def test_update_module_errors(dev: SmartDevice, mocker: MockerFixture):
-    """Test that modules that error are disabled / removed."""
+async def test_update_module_update_delays(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    freezer: FrozenDateTimeFactory,
+):
+    """Test that modules with minimum delays delay."""
     # We need to have some modules initialized by now
     assert dev._modules
 
+    new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+    await new_dev.update()
+    first_update_time = time.monotonic()
+    assert new_dev._last_update_time == first_update_time
+    for module in new_dev.modules.values():
+        if module.query():
+            assert module._last_update_time == first_update_time
+
+    seconds = 0
+    tick = 30
+    while seconds <= 180:
+        seconds += tick
+        freezer.tick(tick)
+
+        now = time.monotonic()
+        await new_dev.update()
+        for module in new_dev.modules.values():
+            mod_delay = module.MINIMUM_UPDATE_INTERVAL_SECS
+            if module.query():
+                expected_update_time = (
+                    now if mod_delay == 0 else now - (seconds % mod_delay)
+                )
+
+                assert (
+                    module._last_update_time == expected_update_time
+                ), f"Expected update time {expected_update_time} after {seconds} seconds for {module.name} with delay {mod_delay} got {module._last_update_time}"
+
+
+@pytest.mark.parametrize(
+    ("first_update"),
+    [
+        pytest.param(True, id="First update true"),
+        pytest.param(False, id="First update false"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("error_type"),
+    [
+        pytest.param(SmartErrorCode.PARAMS_ERROR, id="Device error"),
+        pytest.param(TimeoutError("Dummy timeout"), id="Query error"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("recover"),
+    [
+        pytest.param(True, id="recover"),
+        pytest.param(False, id="no recover"),
+    ],
+)
+@device_smart
+async def test_update_module_query_errors(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    freezer: FrozenDateTimeFactory,
+    first_update,
+    error_type,
+    recover,
+):
+    """Test that modules that disabled / removed on query failures.
+
+    i.e. the whole query times out rather than device returns an error.
+    """
+    # We need to have some modules initialized by now
+    assert dev._modules
+
+    SmartModule.DISABLE_AFTER_ERROR_COUNT = 2
+    first_update_queries = {"get_device_info", "get_connect_cloud_state"}
+
     critical_modules = {Module.DeviceModule, Module.ChildDevice}
-    not_disabling_modules = {Module.Firmware, Module.Cloud}
 
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
+    if not first_update:
+        await new_dev.update()
+        freezer.tick(
+            max(module.MINIMUM_UPDATE_INTERVAL_SECS for module in dev._modules.values())
+        )
 
     module_queries = {
         modname: q
         for modname, module in dev._modules.items()
         if (q := module.query()) and modname not in critical_modules
     }
-    child_module_queries = {
-        modname: q
-        for child in dev.children
-        for modname, module in child._modules.items()
-        if (q := module.query()) and modname not in critical_modules
-    }
-    all_queries_names = {
-        key for mod_query in module_queries.values() for key in mod_query
-    }
-    all_child_queries_names = {
-        key for mod_query in child_module_queries.values() for key in mod_query
-    }
 
     async def _query(request, *args, **kwargs):
-        responses = await dev.protocol._query(request, *args, **kwargs)
-        for k in responses:
-            if k in all_queries_names:
-                responses[k] = SmartErrorCode.PARAMS_ERROR
-        return responses
+        if (
+            "component_nego" in request
+            or "get_child_device_component_list" in request
+            or "control_child" in request
+        ):
+            resp = await dev.protocol._query(request, *args, **kwargs)
+            resp["get_connect_cloud_state"] = SmartErrorCode.CLOUD_FAILED_ERROR
+            return resp
+        # Don't test for errors on get_device_info as that is likely terminal
+        if len(request) == 1 and "get_device_info" in request:
+            return await dev.protocol._query(request, *args, **kwargs)
 
-    async def _child_query(self, request, *args, **kwargs):
-        responses = await child_protocols[self._device_id]._query(
-            request, *args, **kwargs
-        )
-        for k in responses:
-            if k in all_child_queries_names:
-                responses[k] = SmartErrorCode.PARAMS_ERROR
-        return responses
-
-    mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
-
-    from kasa.smartprotocol import _ChildProtocolWrapper
+        if isinstance(error_type, SmartErrorCode):
+            if len(request) == 1:
+                raise DeviceError("Dummy device error", error_code=error_type)
+            raise TimeoutError("Dummy timeout")
+        raise error_type
 
     child_protocols = {
         cast(_ChildProtocolWrapper, child.protocol)._device_id: child.protocol
         for child in dev.children
     }
+
+    async def _child_query(self, request, *args, **kwargs):
+        return await child_protocols[self._device_id]._query(request, *args, **kwargs)
+
+    mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
     # children not created yet so cannot patch.object
     mocker.patch("kasa.smartprotocol._ChildProtocolWrapper.query", new=_child_query)
 
     await new_dev.update()
-    for modname in module_queries:
-        no_disable = modname in not_disabling_modules
-        mod_present = modname in new_dev._modules
-        assert (
-            mod_present is no_disable
-        ), f"{modname} present {mod_present} when no_disable {no_disable}"
 
-    for modname in child_module_queries:
-        no_disable = modname in not_disabling_modules
-        mod_present = any(modname in child._modules for child in new_dev.children)
-        assert (
-            mod_present is no_disable
-        ), f"{modname} present {mod_present} when no_disable {no_disable}"
+    msg = f"Error querying {new_dev.host} for modules"
+    assert msg in caplog.text
+    for modname in module_queries:
+        mod = cast(SmartModule, new_dev.modules[modname])
+        assert mod.disabled is False, f"{modname} disabled"
+        assert mod.update_interval == mod.UPDATE_INTERVAL_AFTER_ERROR_SECS
+        for mod_query in module_queries[modname]:
+            if not first_update or mod_query not in first_update_queries:
+                msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
+                assert msg in caplog.text
+
+    # Query again should not run for the modules
+    caplog.clear()
+    await new_dev.update()
+    for modname in module_queries:
+        mod = cast(SmartModule, new_dev.modules[modname])
+        assert mod.disabled is False, f"{modname} disabled"
+
+    freezer.tick(SmartModule.UPDATE_INTERVAL_AFTER_ERROR_SECS)
+
+    caplog.clear()
+
+    if recover:
+        mocker.patch.object(
+            new_dev.protocol, "query", side_effect=new_dev.protocol._query
+        )
+        mocker.patch(
+            "kasa.smartprotocol._ChildProtocolWrapper.query",
+            new=_ChildProtocolWrapper._query,
+        )
+
+    await new_dev.update()
+    msg = f"Error querying {new_dev.host} for modules"
+    if not recover:
+        assert msg in caplog.text
+    for modname in module_queries:
+        mod = cast(SmartModule, new_dev.modules[modname])
+        if not recover:
+            assert mod.disabled is True, f"{modname} not disabled"
+            assert mod._error_count == 2
+            assert mod._last_update_error
+            for mod_query in module_queries[modname]:
+                if not first_update or mod_query not in first_update_queries:
+                    msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
+                    assert msg in caplog.text
+            # Test one of the raise_if_update_error
+            if mod.name == "Energy":
+                emod = cast(Energy, mod)
+                with pytest.raises(KasaException, match="Module update error"):
+                    assert emod.current_consumption is not None
+        else:
+            assert mod.disabled is False
+            assert mod._error_count == 0
+            assert mod._last_update_error is None
+            # Test one of the raise_if_update_error doesn't raise
+            if mod.name == "Energy":
+                emod = cast(Energy, mod)
+                assert emod.current_consumption is not None
 
 
 async def test_get_modules():

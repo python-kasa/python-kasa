@@ -106,6 +106,9 @@ class AesTransport(BaseTransport):
         self._session_cookie: dict[str, str] | None = None
 
         self._key_pair: KeyPair | None = None
+        if config.aes_keys:
+            aes_keys = config.aes_keys
+            self._key_pair = KeyPair(aes_keys["private"], aes_keys["public"])
         self._app_url = URL(f"http://{self._host}:{self._port}/app")
         self._token_url: URL | None = None
 
@@ -146,7 +149,9 @@ class AesTransport(BaseTransport):
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
         except ValueError:
-            _LOGGER.warning("Received unknown error code: %s", error_code_raw)
+            _LOGGER.warning(
+                "Device %s received unknown error code: %s", self._host, error_code_raw
+            )
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
         if error_code is SmartErrorCode.SUCCESS:
             return
@@ -216,10 +221,18 @@ class AesTransport(BaseTransport):
         """Login to the device."""
         try:
             await self.try_login(self._login_params)
+            _LOGGER.debug(
+                "%s: logged in with provided credentials",
+                self._host,
+            )
         except AuthenticationError as aex:
             try:
                 if aex.error_code is not SmartErrorCode.LOGIN_ERROR:
                     raise aex
+                _LOGGER.debug(
+                    "%s: trying login with default TAPO credentials",
+                    self._host,
+                )
                 if self._default_credentials is None:
                     self._default_credentials = get_default_credentials(
                         DEFAULT_CREDENTIALS["TAPO"]
@@ -227,7 +240,7 @@ class AesTransport(BaseTransport):
                 await self.perform_handshake()
                 await self.try_login(self._get_login_params(self._default_credentials))
                 _LOGGER.debug(
-                    "%s: logged in with default credentials",
+                    "%s: logged in with default TAPO credentials",
                     self._host,
                 )
             except (AuthenticationError, _ConnectionError, TimeoutError):
@@ -261,23 +274,28 @@ class AesTransport(BaseTransport):
         can be made to the device.
         """
         _LOGGER.debug("Generating keypair")
-        self._key_pair = KeyPair.create_key_pair()
+        if not self._key_pair:
+            kp = KeyPair.create_key_pair()
+            self._config.aes_keys = {
+                "private": kp.get_private_key(),
+                "public": kp.get_public_key(),
+            }
+            self._key_pair = kp
+
         pub_key = (
             "-----BEGIN PUBLIC KEY-----\n"
             + self._key_pair.get_public_key()  # type: ignore[union-attr]
             + "\n-----END PUBLIC KEY-----\n"
         )
         handshake_params = {"key": pub_key}
-        _LOGGER.debug(f"Handshake params: {handshake_params}")
         request_body = {"method": "handshake", "params": handshake_params}
-        _LOGGER.debug(f"Request {request_body}")
+        _LOGGER.debug("Handshake request: %s", request_body)
         yield json_dumps(request_body).encode()
 
     async def perform_handshake(self) -> None:
         """Perform the handshake."""
         _LOGGER.debug("Will perform handshaking...")
 
-        self._key_pair = None
         self._token_url = None
         self._session_expire_at = None
         self._session_cookie = None

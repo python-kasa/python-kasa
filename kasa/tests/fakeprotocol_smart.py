@@ -114,13 +114,15 @@ class FakeSmartTransport(BaseTransport):
             },
         ),
         "get_device_usage": ("device", {}),
+        "get_connect_cloud_state": ("cloud_connect", {"status": 0}),
     }
 
     async def send(self, request: str):
         request_dict = json_loads(request)
         method = request_dict["method"]
-        params = request_dict["params"]
+
         if method == "multipleRequest":
+            params = request_dict["params"]
             responses = []
             for request in params["requests"]:
                 response = self._send_request(request)  # type: ignore[arg-type]
@@ -269,13 +271,14 @@ class FakeSmartTransport(BaseTransport):
 
     def _set_light_strip_effect(self, info, params):
         """Set or remove values as per the device behaviour."""
-        info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
-        info["get_device_info"]["lighting_effect"]["name"] = params["name"]
-        info["get_device_info"]["lighting_effect"]["id"] = params["id"]
         # Brightness is not always available
         if (brightness := params.get("brightness")) is not None:
             info["get_device_info"]["lighting_effect"]["brightness"] = brightness
-        info["get_lighting_effect"] = copy.deepcopy(params)
+        if "enable" in params:
+            info["get_device_info"]["lighting_effect"]["enable"] = params["enable"]
+            info["get_device_info"]["lighting_effect"]["name"] = params["name"]
+            info["get_device_info"]["lighting_effect"]["id"] = params["id"]
+            info["get_lighting_effect"] = copy.deepcopy(params)
 
     def _set_led_info(self, info, params):
         """Set or remove values as per the device behaviour."""
@@ -308,12 +311,13 @@ class FakeSmartTransport(BaseTransport):
 
     def _send_request(self, request_dict: dict):
         method = request_dict["method"]
-        params = request_dict["params"]
 
         info = self.info
         if method == "control_child":
-            return self._handle_control_child(params)
-        elif method == "component_nego" or method[:4] == "get_":
+            return self._handle_control_child(request_dict["params"])
+
+        params = request_dict.get("params")
+        if method == "component_nego" or method[:4] == "get_":
             if method in info:
                 result = copy.deepcopy(info[method])
                 if "start_index" in result and "sum" in result:

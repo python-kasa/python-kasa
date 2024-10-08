@@ -8,8 +8,12 @@ import os
 import pkgutil
 import struct
 import sys
+from typing import cast
+from unittest.mock import AsyncMock
 
 import pytest
+
+from kasa.iot import IotDevice
 
 from ..aestransport import AesTransport
 from ..credentials import Credentials
@@ -21,12 +25,16 @@ from ..klaptransport import KlapTransport, KlapTransportV2
 from ..protocol import (
     BaseProtocol,
     BaseTransport,
+    mask_mac,
+    redact_data,
 )
 from ..xortransport import XorEncryption, XorTransport
+from .conftest import device_iot
+from .fakeprotocol_iot import FakeIotTransport
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -56,7 +64,7 @@ async def test_protocol_retries(mocker, retry_count, protocol_class, transport_c
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -80,7 +88,7 @@ async def test_protocol_no_retry_on_unreachable(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -104,7 +112,7 @@ async def test_protocol_no_retry_connection_refused(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -128,7 +136,7 @@ async def test_protocol_retry_recoverable_error(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -168,6 +176,7 @@ async def test_protocol_reconnect(
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _fail_one_less_than_retry_count)
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -178,7 +187,7 @@ async def test_protocol_reconnect(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -217,6 +226,7 @@ async def test_protocol_handles_cancellation_during_write(
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _cancel_first_attempt)
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -232,7 +242,7 @@ async def test_protocol_handles_cancellation_during_write(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -268,6 +278,7 @@ async def test_protocol_handles_cancellation_during_connection(
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -284,7 +295,7 @@ async def test_protocol_handles_cancellation_during_connection(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -317,6 +328,7 @@ async def test_protocol_logging(
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -331,7 +343,7 @@ async def test_protocol_logging(
 
 
 @pytest.mark.parametrize(
-    "protocol_class, transport_class, encryption_class",
+    ("protocol_class", "transport_class", "encryption_class"),
     [
         (
             _deprecated_TPLinkSmartHomeProtocol,
@@ -366,6 +378,7 @@ async def test_protocol_custom_port(
         else:
             assert port == custom_port
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1", port_override=custom_port)
@@ -474,7 +487,7 @@ def _get_subclasses(of_class):
                 and name != "_deprecated_TPLinkSmartHomeProtocol"
             ):
                 subclasses.add((name, obj))
-    return subclasses
+    return sorted(subclasses)
 
 
 @pytest.mark.parametrize(
@@ -487,14 +500,10 @@ def test_protocol_init_signature(class_name_obj):
     params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
 
     assert len(params) == 2
-    assert (
-        params[0].name == "self"
-        and params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
-    )
-    assert (
-        params[1].name == "transport"
-        and params[1].kind == inspect.Parameter.KEYWORD_ONLY
-    )
+    assert params[0].name == "self"
+    assert params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert params[1].name == "transport"
+    assert params[1].kind == inspect.Parameter.KEYWORD_ONLY
 
 
 @pytest.mark.parametrize(
@@ -504,13 +513,10 @@ def test_transport_init_signature(class_name_obj):
     params = list(inspect.signature(class_name_obj[1].__init__).parameters.values())
 
     assert len(params) == 2
-    assert (
-        params[0].name == "self"
-        and params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
-    )
-    assert (
-        params[1].name == "config" and params[1].kind == inspect.Parameter.KEYWORD_ONLY
-    )
+    assert params[0].name == "self"
+    assert params[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert params[1].name == "config"
+    assert params[1].kind == inspect.Parameter.KEYWORD_ONLY
 
 
 @pytest.mark.parametrize(
@@ -575,7 +581,7 @@ async def test_transport_credentials_hash(
 
 @pytest.mark.parametrize(
     "transport_class",
-    [AesTransport, KlapTransport, KlapTransportV2, XorTransport, XorTransport],
+    [AesTransport, KlapTransport, KlapTransportV2, XorTransport],
 )
 async def test_transport_credentials_hash_from_config(mocker, transport_class):
     """Test that credentials_hash provided via config sets correctly."""
@@ -592,7 +598,7 @@ async def test_transport_credentials_hash_from_config(mocker, transport_class):
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (ConnectionRefusedError("dummy exception"), False),
         (OSError(errno.EHOSTDOWN, os.strerror(errno.EHOSTDOWN)), False),
@@ -602,7 +608,7 @@ async def test_transport_credentials_hash_from_config(mocker, transport_class):
     ids=("ConnectionRefusedError", "OSErrorNoRetry", "OSErrorRetry", "Exception"),
 )
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -624,7 +630,7 @@ async def test_protocol_will_retry_on_connect(
 
 
 @pytest.mark.parametrize(
-    "error, retry_expectation",
+    ("error", "retry_expectation"),
     [
         (ConnectionRefusedError("dummy exception"), True),
         (OSError(errno.EHOSTDOWN, os.strerror(errno.EHOSTDOWN)), True),
@@ -634,7 +640,7 @@ async def test_protocol_will_retry_on_connect(
     ids=("ConnectionRefusedError", "OSErrorNoRetry", "OSErrorRetry", "Exception"),
 )
 @pytest.mark.parametrize(
-    "protocol_class, transport_class",
+    ("protocol_class", "transport_class"),
     [
         (_deprecated_TPLinkSmartHomeProtocol, XorTransport),
         (IotProtocol, XorTransport),
@@ -676,3 +682,63 @@ def test_deprecated_protocol():
         host = "127.0.0.1"
         proto = TPLinkSmartHomeProtocol(host=host)
         assert proto.config.host == host
+
+
+@device_iot
+async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFixture):
+    """Test query sensitive info redaction."""
+    device_id = "123456789ABCDEF"
+    cast(FakeIotTransport, dev.protocol._transport).proto["system"]["get_sysinfo"][
+        "deviceId"
+    ] = device_id
+
+    # Info no message logging
+    caplog.set_level(logging.INFO)
+    await dev.update()
+    assert device_id not in caplog.text
+
+    caplog.set_level(logging.DEBUG, logger="kasa")
+    # The fake iot protocol also logs so disable it
+    test_logger = logging.getLogger("kasa.tests.fakeprotocol_iot")
+    test_logger.setLevel(logging.INFO)
+
+    # Debug no redaction
+    caplog.clear()
+    cast(IotProtocol, dev.protocol)._redact_data = False
+    await dev.update()
+    assert device_id in caplog.text
+
+    # Debug redaction
+    caplog.clear()
+    cast(IotProtocol, dev.protocol)._redact_data = True
+    await dev.update()
+    assert device_id not in caplog.text
+    assert "REDACTED_" + device_id[9::] in caplog.text
+
+
+async def test_redact_data():
+    """Test redact data function."""
+    data = {
+        "device_id": "123456789ABCDEF",
+        "owner": "0987654",
+        "mac": "12:34:56:78:90:AB",
+        "ip": "192.168.1",
+        "no_val": None,
+    }
+    excpected_data = {
+        "device_id": "REDACTED_ABCDEF",
+        "owner": "**REDACTED**",
+        "mac": "12:34:56:00:00:00",
+        "ip": "**REDACTEX**",
+        "no_val": None,
+    }
+    REDACTORS = {
+        "device_id": lambda x: "REDACTED_" + x[9::],
+        "owner": None,
+        "mac": mask_mac,
+        "ip": lambda x: "127.0.0." + x.split(".")[3],
+    }
+
+    redacted_data = redact_data(data, REDACTORS)
+
+    assert redacted_data == excpected_data

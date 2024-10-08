@@ -292,6 +292,26 @@ class FakeIotTransport(BaseTransport):
         self.proto["system"]["get_sysinfo"]["lighting_effect_state"] = dict(effect)
 
     def transition_light_state(self, state_changes, *args):
+        # Setting the light state on a device will turn off any active lighting effects.
+        # Unless it's just the brightness in which case it will update the brightness for
+        # the lighting effect
+        if lighting_effect_state := self.proto["system"]["get_sysinfo"].get(
+            "lighting_effect_state"
+        ):
+            if (
+                "hue" in state_changes
+                or "saturation" in state_changes
+                or "color_temp" in state_changes
+            ):
+                lighting_effect_state["enable"] = 0
+            elif (
+                lighting_effect_state["enable"] == 1
+                and state_changes.get("on_off") != 0
+                and (brightness := state_changes.get("brightness"))
+            ):
+                lighting_effect_state["brightness"] = brightness
+                return
+
         _LOGGER.debug("Setting light state to %s", state_changes)
         light_state = self.proto["system"]["get_sysinfo"]["light_state"]
 
@@ -316,12 +336,6 @@ class FakeIotTransport(BaseTransport):
 
         _LOGGER.debug("New light state: %s", new_state)
         self.proto["system"]["get_sysinfo"]["light_state"] = new_state
-
-        # Setting the light state on a device will turn off any active lighting effects.
-        if lighting_effect_state := self.proto["system"]["get_sysinfo"].get(
-            "lighting_effect_state"
-        ):
-            lighting_effect_state["enable"] = 0
 
     def set_preferred_state(self, new_state, *args):
         """Implement set_preferred_state."""
@@ -411,7 +425,9 @@ class FakeIotTransport(BaseTransport):
                     return error(msg=f"command {cmd} not found")
 
                 params = request[target][cmd]
-                _LOGGER.debug(f"Going to execute {target}.{cmd} (params: {params}).. ")
+                _LOGGER.debug(
+                    "Going to execute %s.%s (params: %s).. ", target, cmd, params
+                )
 
                 if callable(proto[target][cmd]):
                     res = proto[target][cmd](self, params, child_ids)

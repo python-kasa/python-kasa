@@ -30,26 +30,23 @@ async def test_light_strip_effect(dev: Device, mocker: MockerFixture):
 
     call = mocker.spy(light_effect, "call")
 
-    light = dev.modules[Module.Light]
-    light_call = mocker.spy(light, "call")
-
     assert feature.choices == light_effect.effect_list
     assert feature.choices
     for effect in chain(reversed(feature.choices), feature.choices):
+        if effect == LightEffect.LIGHT_EFFECTS_OFF:
+            off_effect = (
+                light_effect.effect
+                if light_effect.effect in light_effect._effect_mapping
+                else "Aurora"
+            )
         await light_effect.set_effect(effect)
 
-        if effect == LightEffect.LIGHT_EFFECTS_OFF:
-            light_call.assert_called()
-            continue
-
-        # Start with the current effect data
-        params = light_effect.data["lighting_effect"]
-        enable = effect != LightEffect.LIGHT_EFFECTS_OFF
-        params["enable"] = enable
-        if enable:
-            params = light_effect._effect_mapping[effect]
-            params["enable"] = enable
-            params["brightness"] = brightness.brightness  # use the existing brightness
+        if effect != LightEffect.LIGHT_EFFECTS_OFF:
+            params = {**light_effect._effect_mapping[effect]}
+        else:
+            params = {**light_effect._effect_mapping[off_effect]}
+            params["enable"] = 0
+        params["brightness"] = brightness.brightness  # use the existing brightness
 
         call.assert_called_with("set_lighting_effect", params)
 
@@ -57,7 +54,7 @@ async def test_light_strip_effect(dev: Device, mocker: MockerFixture):
         assert light_effect.effect == effect
         assert feature.value == effect
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="The effect foobar is not a built in effect"):
         await light_effect.set_effect("foobar")
 
 

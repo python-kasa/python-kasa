@@ -10,7 +10,7 @@ humidity = parametrize(
 
 @humidity
 @pytest.mark.parametrize(
-    "feature, type",
+    ("feature", "type"),
     [
         ("humidity", int),
         ("humidity_warning", bool),

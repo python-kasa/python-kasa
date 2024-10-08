@@ -20,11 +20,12 @@ You can install the most recent release using pip:
 pip install python-kasa
 ```
 
-Alternatively, you can clone this repository and use poetry to install the development version:
+Alternatively, you can clone this repository and use `uv` to install the development version:
 ```
 git clone https://github.com/python-kasa/python-kasa.git
 cd python-kasa/
-poetry install
+uv sync --all-extras
+uv run kasa
 ```
 
 If you have not yet provisioned your device, [you can do so using the cli tool](https://python-kasa.readthedocs.io/en/latest/cli.html#provisioning).
@@ -180,7 +181,7 @@ The following devices have been tested and confirmed as working. If your device 
 
 - **Plugs**: EP10, EP25<sup>\*</sup>, HS100<sup>\*\*</sup>, HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401
 - **Power Strips**: EP40, HS107, HS300, KP200, KP303, KP400
-- **Wall Switches**: ES20M, HS200, HS210, HS220, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230, KS240<sup>\*</sup>
+- **Wall Switches**: ES20M, HS200, HS210, HS220<sup>\*\*</sup>, KP405, KS200M, KS205<sup>\*</sup>, KS220M, KS225<sup>\*</sup>, KS230, KS240<sup>\*</sup>
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB110
 - **Light Strips**: KL400L5, KL420L5, KL430
 - **Hubs**: KH100<sup>\*</sup>
@@ -194,7 +195,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Bulbs**: L510B, L510E, L530E
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Hubs**: H100
-- **Hub-Connected Devices<sup>\*\*\*</sup>**: T110, T300, T310, T315
+- **Hub-Connected Devices<sup>\*\*\*</sup>**: T100, T110, T300, T310, T315
 
 <!--SUPPORTED_END-->
 <sup>\*</sup>&nbsp;&nbsp; Model requires authentication<br>

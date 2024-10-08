@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 from time import mktime
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
+from zoneinfo import ZoneInfoNotFoundError
+
+from ...cachedzoneinfo import CachedZoneInfo
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class Time(SmartModule):
@@ -19,12 +19,13 @@ class Time(SmartModule):
     REQUIRED_COMPONENT = "time"
     QUERY_GETTER_NAME = "get_device_time"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    _timezone: tzinfo = timezone.utc
 
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device=device,
+                device=self._device,
                 id="device_time",
                 name="Device time",
                 attribute_getter="time",
@@ -34,19 +35,32 @@ class Time(SmartModule):
             )
         )
 
-    @property
-    def time(self) -> datetime:
-        """Return device's current datetime."""
+    async def _post_update_hook(self):
+        """Perform actions after a device update."""
         td = timedelta(minutes=cast(float, self.data.get("time_diff")))
-        if self.data.get("region"):
-            tz = timezone(td, str(self.data.get("region")))
+        if region := self.data.get("region"):
+            try:
+                # Zoneinfo will return a DST aware object
+                tz: tzinfo = await CachedZoneInfo.get_cached_zone_info(region)
+            except ZoneInfoNotFoundError:
+                tz = timezone(td, region)
         else:
             # in case the device returns a blank region this will result in the
             # tzname being a UTC offset
             tz = timezone(td)
+        self._timezone = tz
+
+    @property
+    def timezone(self) -> tzinfo:
+        """Return current timezone."""
+        return self._timezone
+
+    @property
+    def time(self) -> datetime:
+        """Return device's current datetime."""
         return datetime.fromtimestamp(
             cast(float, self.data.get("timestamp")),
-            tz=tz,
+            tz=self.timezone,
         )
 
     async def set_time(self, dt: datetime):

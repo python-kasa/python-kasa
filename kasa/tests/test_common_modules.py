@@ -12,6 +12,7 @@ from kasa.tests.device_fixtures import (
     parametrize,
     parametrize_combine,
     plug_iot,
+    variable_temp_iot,
 )
 
 led_smart = parametrize(
@@ -35,6 +36,14 @@ dimmable_smart = parametrize(
     "dimmable smart", component_filter="brightness", protocol_filter={"SMART"}
 )
 dimmable = parametrize_combine([dimmable_smart, dimmer_iot, dimmable_iot])
+
+variable_temp_smart = parametrize(
+    "variable temp smart",
+    component_filter="color_temperature",
+    protocol_filter={"SMART"},
+)
+
+variable_temp = parametrize_combine([variable_temp_iot, variable_temp_smart])
 
 light_preset_smart = parametrize(
     "has light preset smart", component_filter="preset", protocol_filter={"SMART"}
@@ -119,9 +128,34 @@ async def test_light_effect_module(dev: Device, mocker: MockerFixture):
     assert feat.value == second_effect
     call.reset_mock()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="The effect foobar is not a built in effect."):
         await light_effect_module.set_effect("foobar")
-        call.assert_not_called()
+    call.assert_not_called()
+
+
+@light_effect
+async def test_light_effect_brightness(dev: Device, mocker: MockerFixture):
+    """Test that light module uses light_effect for brightness when active."""
+    light_module = dev.modules[Module.Light]
+
+    light_effect = dev.modules[Module.LightEffect]
+
+    await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
+    await light_module.set_brightness(50)
+    await dev.update()
+    assert light_effect.effect == light_effect.LIGHT_EFFECTS_OFF
+    assert light_module.brightness == 50
+    await light_effect.set_effect(light_effect.effect_list[1])
+    await dev.update()
+    # assert light_module.brightness == 100
+
+    await light_module.set_brightness(75)
+    await dev.update()
+    assert light_module.brightness == 75
+
+    await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
+    await dev.update()
+    assert light_module.brightness == 50
 
 
 @dimmable
@@ -140,11 +174,50 @@ async def test_light_brightness(dev: Device):
     await dev.update()
     assert light.brightness == 10
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid brightness value: "):
         await light.set_brightness(feature.minimum_value - 10)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid brightness value: "):
         await light.set_brightness(feature.maximum_value + 10)
+
+
+@variable_temp
+async def test_light_color_temp(dev: Device):
+    """Test color temp setter and getter."""
+    assert isinstance(dev, Device)
+
+    light = next(get_parent_and_child_modules(dev, Module.Light))
+    assert light
+    if not light.is_variable_color_temp:
+        pytest.skip(
+            "Some smart light strips have color_temperature"
+            " component but min and max are the same"
+        )
+
+    # Test getting the value
+    feature = light._device.features["color_temperature"]
+    assert isinstance(feature.minimum_value, int)
+    assert isinstance(feature.maximum_value, int)
+
+    await light.set_color_temp(feature.minimum_value + 10)
+    await dev.update()
+    assert light.color_temp == feature.minimum_value + 10
+
+    # Test setting brightness with color temp
+    await light.set_brightness(50)
+    await dev.update()
+    assert light.brightness == 50
+
+    await light.set_color_temp(feature.minimum_value + 20, brightness=60)
+    await dev.update()
+    assert light.color_temp == feature.minimum_value + 20
+    assert light.brightness == 60
+
+    with pytest.raises(ValueError, match=r"Temperature should be between \d+ and \d+"):
+        await light.set_color_temp(feature.minimum_value - 10)
+
+    with pytest.raises(ValueError, match=r"Temperature should be between \d+ and \d+"):
+        await light.set_color_temp(feature.maximum_value + 10)
 
 
 @light
@@ -153,6 +226,9 @@ async def test_light_set_state(dev: Device):
     assert isinstance(dev, Device)
     light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
+    # For fixtures that have a light effect active switch off
+    if light_effect := light._device.modules.get(Module.LightEffect):
+        await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
 
     await light.set_state(LightState(light_on=False))
     await dev.update()
@@ -217,9 +293,9 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     assert preset_mod.preset == second_preset
     assert feat.value == second_preset
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="foobar is not a valid preset"):
         await preset_mod.set_preset("foobar")
-        assert call.call_count == 3
+    assert call.call_count == 3
 
 
 @light_preset
@@ -239,9 +315,7 @@ async def test_light_preset_save(dev: Device, mocker: MockerFixture):
     await preset_mod.save_preset(second_preset, new_preset)
     await dev.update()
     new_preset_state = preset_mod.preset_states_list[0]
-    assert (
-        new_preset_state.brightness == new_preset.brightness
-        and new_preset_state.hue == new_preset.hue
-        and new_preset_state.saturation == new_preset.saturation
-        and new_preset_state.color_temp == new_preset.color_temp
-    )
+    assert new_preset_state.brightness == new_preset.brightness
+    assert new_preset_state.hue == new_preset.hue
+    assert new_preset_state.saturation == new_preset.saturation
+    assert new_preset_state.color_temp == new_preset.color_temp

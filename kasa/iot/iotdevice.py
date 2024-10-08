@@ -14,12 +14,11 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 from __future__ import annotations
 
-import collections.abc
 import functools
 import inspect
 import logging
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
 from ..device import Device, WifiNetwork
@@ -29,20 +28,10 @@ from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..protocol import BaseProtocol
-from .iotmodule import IotModule
+from .iotmodule import IotModule, merge
 from .modules import Emeter
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def merge(d, u):
-    """Update dict recursively."""
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = merge(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
 
 
 def requires_update(f):
@@ -192,6 +181,7 @@ class IotDevice(Device):
         self._legacy_features: set[str] = set()
         self._children: Mapping[str, IotDevice] = {}
         self._modules: dict[str | ModuleName[Module], IotModule] = {}
+        self._on_since: datetime | None = None
 
     @property
     def children(self) -> Sequence[IotDevice]:
@@ -209,7 +199,7 @@ class IotDevice(Device):
     def add_module(self, name: str | ModuleName[Module], module: IotModule):
         """Register a module."""
         if name in self._modules:
-            _LOGGER.debug("Module %s already registered, ignoring..." % name)
+            _LOGGER.debug("Module %s already registered, ignoring...", name)
             return
 
         _LOGGER.debug("Adding module %s", module)
@@ -218,6 +208,8 @@ class IotDevice(Device):
     def _create_request(
         self, target: str, cmd: str, arg: dict | None = None, child_ids=None
     ):
+        if arg is None:
+            arg = {}
         request: dict[str, Any] = {target: {cmd: arg}}
         if child_ids is not None:
             request = {"context": {"child_ids": child_ids}, target: {cmd: arg}}
@@ -307,7 +299,7 @@ class IotDevice(Device):
 
         self._set_sys_info(self._last_update["system"]["get_sysinfo"])
         for module in self._modules.values():
-            module._post_update_hook()
+            await module._post_update_hook()
 
         if not self._features:
             await self._initialize_features()
@@ -340,7 +332,7 @@ class IotDevice(Device):
                 name="RSSI",
                 attribute_getter="rssi",
                 icon="mdi:signal",
-                unit="dBm",
+                unit_getter=lambda: "dBm",
                 category=Feature.Category.Debug,
                 type=Feature.Type.Sensor,
             )
@@ -359,6 +351,18 @@ class IotDevice(Device):
                 )
             )
 
+        self._add_feature(
+            Feature(
+                device=self,
+                id="reboot",
+                name="Reboot",
+                attribute_setter="reboot",
+                icon="mdi:restart",
+                category=Feature.Category.Debug,
+                type=Feature.Type.Action,
+            )
+        )
+
         for module in self._supported_modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():
@@ -370,7 +374,7 @@ class IotDevice(Device):
         est_response_size = 1024 if "system" in req else 0
         for module in self._modules.values():
             if not module.is_supported:
-                _LOGGER.debug("Module %s not supported, skipping" % module)
+                _LOGGER.debug("Module %s not supported, skipping", module)
                 continue
 
             est_response_size += module.estimated_query_response_size
@@ -460,7 +464,7 @@ class IotDevice(Device):
 
     @property
     @requires_update
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the current timezone."""
         return self.modules[Module.IotTime].timezone
 
@@ -560,6 +564,13 @@ class IotDevice(Device):
         """
         await self._query_helper("system", "reboot", {"delay": delay})
 
+    async def factory_reset(self) -> None:
+        """Reset device back to factory settings.
+
+        Note, this does not downgrade the firmware.
+        """
+        await self._query_helper("system", "reset")
+
     async def turn_off(self, **kwargs) -> dict:
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
@@ -584,18 +595,23 @@ class IotDevice(Device):
     @property  # type: ignore
     @requires_update
     def on_since(self) -> datetime | None:
-        """Return pretty-printed on-time, or None if not available."""
-        if "on_time" not in self._sys_info:
-            return None
+        """Return the time that the device was turned on or None if turned off.
 
-        if self.is_off:
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
+        """
+        if self.is_off or "on_time" not in self._sys_info:
+            self._on_since = None
             return None
 
         on_time = self._sys_info["on_time"]
 
-        return datetime.now(timezone.utc).astimezone().replace(
-            microsecond=0
-        ) - timedelta(seconds=on_time)
+        on_since = self.time - timedelta(seconds=on_time)
+        if not self._on_since or timedelta(
+            seconds=0
+        ) < on_since - self._on_since > timedelta(seconds=5):
+            self._on_since = on_since
+        return self._on_since
 
     @property  # type: ignore
     @requires_update
