@@ -71,12 +71,24 @@ import logging
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeAlias, get_type_hints
+
+from .exceptions import KasaException
 
 if TYPE_CHECKING:
     from .device import Device
 
 _LOGGER = logging.getLogger(__name__)
+
+FeaturePropertyKind: TypeAlias = Literal["getter", "setter"]
+
+
+@dataclass
+class FeatureProperty:
+    """Class for annotating properties bound to feature."""
+
+    id: str
+    kind: FeaturePropertyKind = "getter"
 
 
 @dataclass
@@ -111,6 +123,7 @@ class Feature:
     Choice = Type.Choice
 
     DEFAULT_MAX = 2**16  # Arbitrary max
+    ANNOTATED_PROPERTY = "annotated_property"
 
     class Category(Enum):
         """Category hint to allow feature grouping."""
@@ -167,6 +180,10 @@ class Feature:
         # Populate minimum & maximum values, if range_getter is given
         self._container = self.container if self.container is not None else self.device
 
+        # get the annotation attribute_getter
+        if self.attribute_getter == self.ANNOTATED_PROPERTY:
+            self.attribute_getter = self._get_annotation_property()
+
         # Set the category, if unset
         if self.category is Feature.Category.Unset:
             if self.attribute_setter:
@@ -196,6 +213,24 @@ class Feature:
         if callable(getter):
             return getter()
         raise ValueError("Invalid getter: %s", getter)  # pragma: no cover
+
+    def _get_annotation_property(self, kind: FeaturePropertyKind = "getter"):
+        props = [
+            prop
+            for p in dir(self.container.__class__)
+            if (prop := getattr(self.container.__class__, p))
+            and isinstance(prop, property)
+        ]
+        for prop in props:
+            hints = get_type_hints(prop.fget, include_extras=True)
+            if (return_hints := hints.get("return")) and hasattr(
+                return_hints, "__metadata__"
+            ):
+                metadata = return_hints.__metadata__
+                for meta in metadata:
+                    if isinstance(meta, FeatureProperty) and meta.id == self.id:
+                        return prop.fget if kind == "getter" else prop.fset
+        raise KasaException(f"Unable to find feature property: {self.id}")
 
     @property
     def choices(self) -> list[str] | None:

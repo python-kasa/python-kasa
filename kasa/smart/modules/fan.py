@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from ...feature import Feature
+from typing import Annotated
+
+from ...feature import Feature, FeatureProperty
 from ...interfaces.fan import Fan as FanInterface
 from ..smartmodule import SmartModule
 
@@ -20,7 +22,7 @@ class Fan(SmartModule, FanInterface):
                 id="fan_speed_level",
                 name="Fan speed level",
                 container=self,
-                attribute_getter="fan_speed_level",
+                attribute_getter=Feature.ANNOTATED_PROPERTY,
                 attribute_setter="set_fan_speed_level",
                 icon="mdi:fan",
                 type=Feature.Type.Number,
@@ -46,12 +48,7 @@ class Fan(SmartModule, FanInterface):
         return {}
 
     @property
-    def fan_speed_level_feature(self) -> Feature:
-        """Return fan speed level feature."""
-        return self._module_features["fan_speed_level"]
-
-    @property
-    def fan_speed_level(self) -> int:
+    def fan_speed_level(self) -> Annotated[int, FeatureProperty("fan_speed_level")]:
         """Return fan speed level."""
         return 0 if self.data["device_on"] is False else self.data["fan_speed_level"]
 

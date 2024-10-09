@@ -4,17 +4,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..feature import Feature
 from ..module import Module
 
 
 class Fan(Module, ABC):
     """Interface for a Fan."""
-
-    @property
-    @abstractmethod
-    def fan_speed_level_feature(self) -> Feature:
-        """Return fan speed level feature."""
 
     @property
     @abstractmethod

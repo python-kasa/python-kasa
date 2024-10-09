@@ -76,8 +76,14 @@ async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     await dev.update()
     assert not device.is_on
 
-    max_level = fan.fan_speed_level_feature.maximum_value
-    min_level = fan.fan_speed_level_feature.minimum_value
+    assert fan.is_bound_feature(fan.module.fan_speed_level)
+    assert fan.has_bound_feature(fan.module.fan_speed_level)
+    fan_speed_level_feature = fan.get_bound_feature(fan.module.fan_speed_level)
+    assert fan_speed_level_feature
+    assert fan_speed_level_feature.value == 0
+
+    max_level = fan_speed_level_feature.maximum_value
+    min_level = fan_speed_level_feature.minimum_value
     with pytest.raises(ValueError, match="Invalid level"):
         await fan.set_fan_speed_level(min_level - 1)
 
