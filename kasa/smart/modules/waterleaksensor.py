@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 
 from ...feature import Feature
-from ..smartmodule import SmartModule
+from ..smartmodule import Module, SmartModule
 
 
 class WaterleakStatus(Enum):
@@ -47,6 +48,18 @@ class WaterleakSensor(SmartModule):
                 type=Feature.Type.BinarySensor,
             )
         )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="water_alert_timestamp",
+                name="Water alert timestamp",
+                container=self,
+                attribute_getter="alert_timestamp",
+                icon="mdi:alert",
+                category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
+            )
+        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -62,3 +75,10 @@ class WaterleakSensor(SmartModule):
     def alert(self) -> bool:
         """Return true if alarm is active."""
         return self._device.sys_info["in_alarm"]
+
+    @property
+    def alert_timestamp(self) -> datetime:
+        """Return timestamp of the last leak trigger."""
+        ts = self._device.sys_info["trigger_timestamp"]
+        tz = self._device.modules[Module.Time].timezone
+        return datetime.fromtimestamp(ts, tz=tz)
