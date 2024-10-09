@@ -339,7 +339,7 @@ async def cli(
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.
     if ctx.invoked_subcommand not in SKIP_UPDATE_COMMANDS and not device_updated:
-        await dev.update()
+        await dev.update(update_children=True)
 
     @asynccontextmanager
     async def async_wrapped_device(device: Device):
