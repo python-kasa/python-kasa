@@ -51,6 +51,7 @@ async def time_get(dev: Device):
     type=str,
     required=False,
     default=False,
+    is_flag=True,
     help="Do not ask to confirm the timezone if an exact match is not found.",
 )
 @pass_dev
@@ -99,6 +100,7 @@ async def time_sync(dev: Device, timezone: str | None, skip_confirm: bool):
     type=bool,
     required=False,
     default=False,
+    is_flag=True,
     help="Do not ask to confirm the timezone if an exact match is not found.",
 )
 @pass_dev
