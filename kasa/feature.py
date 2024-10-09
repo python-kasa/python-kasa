@@ -71,7 +71,9 @@ import logging
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Callable, Literal, TypeAlias, get_type_hints
+from typing import TYPE_CHECKING, Any, Callable, Literal, get_type_hints
+
+from typing_extensions import TypeAlias
 
 from .exceptions import KasaException
 

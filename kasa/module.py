@@ -45,10 +45,11 @@ from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Final,
-    Self,
     TypeVar,
     get_type_hints,
 )
+
+from typing_extensions import Self
 
 from .exceptions import KasaException
 from .feature import Feature, FeatureProperty
