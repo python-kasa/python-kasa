@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime, timedelta, tzinfo
 from typing import cast
 
 from zoneinfo import ZoneInfo
+
+from ..cachedzoneinfo import CachedZoneInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,10 +19,10 @@ async def get_timezone(index: int) -> tzinfo:
         _LOGGER.error(
             "Unexpected index %s not configured as a timezone, defaulting to UTC", index
         )
-        return await _CachedZoneInfo.get_cached_zone_info("Etc/UTC")
+        return await CachedZoneInfo.get_cached_zone_info("Etc/UTC")
 
     name = TIMEZONE_INDEX[index]
-    return await _CachedZoneInfo.get_cached_zone_info(name)
+    return await CachedZoneInfo.get_cached_zone_info(name)
 
 
 async def get_timezone_index(tzone: tzinfo) -> int:
@@ -70,27 +71,6 @@ def _is_same_timezone(tzone1: tzinfo, tzone2: tzinfo) -> bool:
         if tzone1.utcoffset(the_day) != tzone2.utcoffset(the_day):
             return False
     return True
-
-
-class _CachedZoneInfo(ZoneInfo):
-    """Cache zone info objects."""
-
-    _cache: dict[str, ZoneInfo] = {}
-
-    @classmethod
-    async def get_cached_zone_info(cls, time_zone_str: str) -> ZoneInfo:
-        """Get a cached zone info object."""
-        if cached := cls._cache.get(time_zone_str):
-            return cached
-        loop = asyncio.get_running_loop()
-        zinfo = await loop.run_in_executor(None, _get_zone_info, time_zone_str)
-        cls._cache[time_zone_str] = zinfo
-        return zinfo
-
-
-def _get_zone_info(time_zone_str: str) -> ZoneInfo:
-    """Get a time zone object for the given time zone string."""
-    return ZoneInfo(time_zone_str)
 
 
 TIMEZONE_INDEX = {
