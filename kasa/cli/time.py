@@ -44,7 +44,7 @@ async def time_get(dev: Device):
     type=str,
     required=False,
     default=None,
-    help="IANA timezone name, will default to local if not provided.",
+    help="IANA timezone name, will use current device timezone if not provided.",
 )
 @click.option(
     "--skip-confirm",
@@ -93,7 +93,7 @@ async def time_sync(dev: Device, timezone: str | None, skip_confirm: bool):
     type=str,
     required=False,
     default=None,
-    help="IANA timezone name, will default to local if not provided.",
+    help="IANA timezone name, will use current device timezone if not provided.",
 )
 @click.option(
     "--skip-confirm",
@@ -115,7 +115,7 @@ async def time_set(
     timezone: str | None,
     skip_confirm: bool,
 ):
-    """Set the device time to current time."""
+    """Set the device time to the provided time."""
     if (time := dev.modules.get(Module.Time)) is None:
         echo("Device does not have time module")
         return

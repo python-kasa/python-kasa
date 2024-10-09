@@ -65,10 +65,6 @@ class Time(IotModule, TimeInterface):
 
     async def set_time(self, dt: datetime) -> dict:
         """Set the device time."""
-        if not dt.tzinfo:
-            raise KasaException(
-                "Time must be set using a timezone aware datetime object"
-            )
         params = {
             "year": dt.year,
             "month": dt.month,
@@ -77,11 +73,14 @@ class Time(IotModule, TimeInterface):
             "min": dt.minute,
             "sec": 0,
         }
-        index = await get_timezone_index(dt.tzinfo)
-        current_index = self.data.get("get_timezone", {}).get("index", -1)
-        if current_index != -1 and current_index != index:
-            params["index"] = index
-            method = "set_timezone"
+        if dt.tzinfo:
+            index = await get_timezone_index(dt.tzinfo)
+            current_index = self.data.get("get_timezone", {}).get("index", -1)
+            if current_index != -1 and current_index != index:
+                params["index"] = index
+                method = "set_timezone"
+            else:
+                method = "set_time"
         else:
             method = "set_time"
         try:
