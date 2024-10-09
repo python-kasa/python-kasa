@@ -125,7 +125,6 @@ class Feature:
     Choice = Type.Choice
 
     DEFAULT_MAX = 2**16  # Arbitrary max
-    ANNOTATED_PROPERTY = "annotated_property"
 
     class Category(Enum):
         """Category hint to allow feature grouping."""
@@ -183,7 +182,7 @@ class Feature:
         self._container = self.container if self.container is not None else self.device
 
         # get the annotation attribute_getter
-        if self.attribute_getter == self.ANNOTATED_PROPERTY:
+        if self.attribute_getter is None and self.type is not Feature.Type.Action:
             self.attribute_getter = self._get_annotation_property()
 
         # Set the category, if unset

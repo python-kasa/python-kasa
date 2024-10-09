@@ -49,8 +49,6 @@ from typing import (
     get_type_hints,
 )
 
-from typing_extensions import Self
-
 from .exceptions import KasaException
 from .feature import Feature, FeatureProperty
 from .modulemapping import ModuleName
@@ -137,10 +135,15 @@ class Module(ABC):
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}
-        self._bound_feature_ids: dict[property, str] = {}
+        self._bound_feature_ids: dict[str, str] = {}
 
-    def _bound_feature_id(self, attr: property) -> str | None:
+    def _bound_feature_id(self, property_name: str) -> str | None:
         """Get bound feature for module or none if not supported."""
+        if not hasattr(self.__class__, property_name) or (
+            (attr := getattr(self.__class__, property_name))
+            and not isinstance(getattr(self.__class__, property_name), property)
+        ):
+            raise KasaException(f"{property_name} is not a valid property")
         if attr in self._bound_feature_ids:
             return self._bound_feature_ids[attr]
         if isinstance(attr, property):
@@ -151,30 +154,25 @@ class Module(ABC):
                 metadata = hints["return"].__metadata__
                 for meta in metadata:
                     if isinstance(meta, FeatureProperty):
-                        self._bound_feature_ids[attr] = meta.id
+                        self._bound_feature_ids[property_name] = meta.id
                         return meta.id
         return None
 
-    def is_bound_feature(self, attr: property) -> bool:
+    def is_bound_feature(self, property_name: str) -> bool:
         """Return True if property is bound to a feature."""
-        return bool(self._bound_feature_id(attr))
+        return bool(self._bound_feature_id(property_name))
 
-    def has_bound_feature(self, attr: property) -> bool:
+    def has_bound_feature(self, property_name: str) -> bool:
         """Return True if the bound property feature is supported."""
-        if id := self._bound_feature_id(attr):
+        if id := self._bound_feature_id(property_name):
             return id in self._module_features
-        raise KasaException("")
+        raise KasaException(f"{property_name} is not bound to a feature")
 
-    def get_bound_feature(self, attr: property) -> Feature | None:
+    def get_bound_feature(self, property_name: str) -> Feature | None:
         """Get Feature for a bound property or None if not supported."""
-        if id := self._bound_feature_id(attr):
+        if id := self._bound_feature_id(property_name):
             return self._module_features.get(id)
-        raise KasaException("")
-
-    @property
-    def module(self) -> type[Self]:
-        """Get the module type."""
-        return self.__class__
+        raise KasaException(f"{property_name} is not bound to a feature")
 
     @abstractmethod
     def query(self):

@@ -76,9 +76,9 @@ async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     await dev.update()
     assert not device.is_on
 
-    assert fan.is_bound_feature(fan.module.fan_speed_level)
-    assert fan.has_bound_feature(fan.module.fan_speed_level)
-    fan_speed_level_feature = fan.get_bound_feature(fan.module.fan_speed_level)
+    assert fan.is_bound_feature("fan_speed_level")
+    assert fan.has_bound_feature("fan_speed_level")
+    fan_speed_level_feature = fan.get_bound_feature("fan_speed_level")
     assert fan_speed_level_feature
     assert fan_speed_level_feature.value == 0
 

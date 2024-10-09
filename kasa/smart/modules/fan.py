@@ -22,7 +22,6 @@ class Fan(SmartModule, FanInterface):
                 id="fan_speed_level",
                 name="Fan speed level",
                 container=self,
-                attribute_getter=Feature.ANNOTATED_PROPERTY,
                 attribute_setter="set_fan_speed_level",
                 icon="mdi:fan",
                 type=Feature.Type.Number,
