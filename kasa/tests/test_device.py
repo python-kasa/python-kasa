@@ -321,13 +321,14 @@ async def test_device_timezones():
 
     # Get an index from a timezone
     for index, zone in TIMEZONE_INDEX.items():
-        found_index = await get_timezone_index(zone)
+        zone_info = zoneinfo.ZoneInfo(zone)
+        found_index = await get_timezone_index(zone_info)
         assert found_index == index
 
     # Try a timezone not hardcoded finds another match
-    index = await get_timezone_index("Asia/Katmandu")
+    index = await get_timezone_index(zoneinfo.ZoneInfo("Asia/Katmandu"))
     assert index == 77
 
     # Try a timezone not hardcoded no match
     with pytest.raises(zoneinfo.ZoneInfoNotFoundError):
-        await get_timezone_index("Foo/bar")
+        await get_timezone_index(zoneinfo.ZoneInfo("Foo/bar"))

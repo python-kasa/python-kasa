@@ -77,6 +77,7 @@ class Module(ABC):
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
     LightPreset: Final[ModuleName[interfaces.LightPreset]] = ModuleName("LightPreset")
+    Time: Final[ModuleName[interfaces.Time]] = ModuleName("Time")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
@@ -86,7 +87,6 @@ class Module(ABC):
     IotSchedule: Final[ModuleName[iot.Schedule]] = ModuleName("schedule")
     IotUsage: Final[ModuleName[iot.Usage]] = ModuleName("usage")
     IotCloud: Final[ModuleName[iot.Cloud]] = ModuleName("cloud")
-    IotTime: Final[ModuleName[iot.Time]] = ModuleName("time")
 
     # SMART only Modules
     Alarm: Final[ModuleName[smart.Alarm]] = ModuleName("Alarm")
@@ -123,7 +123,6 @@ class Module(ABC):
     TemperatureControl: Final[ModuleName[smart.TemperatureControl]] = ModuleName(
         "TemperatureControl"
     )
-    Time: Final[ModuleName[smart.Time]] = ModuleName("Time")
     WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
         "WaterleakSensor"
     )

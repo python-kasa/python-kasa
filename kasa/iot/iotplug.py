@@ -60,7 +60,7 @@ class IotPlug(IotDevice):
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
         self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
-        self.add_module(Module.IotTime, Time(self, "time"))
+        self.add_module(Module.Time, Time(self, "time"))
         self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
         self.add_module(Module.Led, Led(self, "system"))
 

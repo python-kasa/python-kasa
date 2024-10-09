@@ -51,7 +51,7 @@ Energy
 schedule
 usage
 anti_theft
-time
+Time
 cloud
 Led
 

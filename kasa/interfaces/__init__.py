@@ -6,6 +6,7 @@ from .led import Led
 from .light import Light, LightState
 from .lighteffect import LightEffect
 from .lightpreset import LightPreset
+from .time import Time
 
 __all__ = [
     "Fan",
@@ -15,4 +16,5 @@ __all__ = [
     "LightEffect",
     "LightState",
     "LightPreset",
+    "Time",
 ]
