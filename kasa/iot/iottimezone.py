@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timedelta, tzinfo
+from typing import cast
 
 from zoneinfo import ZoneInfo
 
@@ -37,7 +38,31 @@ async def get_timezone_index(tzone: tzinfo) -> int:
     raise ValueError("Device does not support timezone %s", name)
 
 
+async def get_matching_timezones(tzone: tzinfo) -> list[str]:
+    """Return the iot firmware index for a valid IANA timezone key."""
+    matches = []
+    if isinstance(tzone, ZoneInfo):
+        name = tzone.key
+        vals = {val for val in TIMEZONE_INDEX.values()}
+        if name in vals:
+            matches.append(name)
+
+    for i in range(110):
+        fw_tz = await get_timezone(i)
+        if _is_same_timezone(tzone, fw_tz):
+            match_key = cast(ZoneInfo, fw_tz).key
+            if match_key not in matches:
+                matches.append(match_key)
+    return matches
+
+
 def _is_same_timezone(tzone1: tzinfo, tzone2: tzinfo) -> bool:
+    """Return true if the timezones have the same utcffset and dst offset.
+
+    Iot devices only support 109 IANA timezones so this can be used to find
+    other timezones that match the same dst settings by checking they are
+    the same for the current year.
+    """
     now = datetime.now()
     start_day = datetime(now.year, 1, 1, 12)
     for i in range(365):
