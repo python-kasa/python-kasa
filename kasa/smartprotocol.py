@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
-import time
 import uuid
 from pprint import pformat as pf
 from typing import Any, Callable
@@ -76,8 +75,8 @@ class SmartProtocol(BaseProtocol):
         """Get a request message as a string."""
         request = {
             "method": method,
-            "request_time_milis": round(time.time() * 1000),
-            "terminal_uuid": self._terminal_uuid,
+            # "request_time_milis": round(time.time() * 1000),
+            # "terminal_uuid": self._terminal_uuid,
         }
         if params:
             request["params"] = params
@@ -244,7 +243,7 @@ class SmartProtocol(BaseProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if isinstance(request, dict):
-            if len(request) == 1:
+            if len(request) == 0:
                 smart_method = next(iter(request))
                 smart_params = request[smart_method]
             else:

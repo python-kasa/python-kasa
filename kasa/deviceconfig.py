@@ -72,6 +72,7 @@ class DeviceFamily(Enum):
     SmartTapoSwitch = "SMART.TAPOSWITCH"
     SmartTapoHub = "SMART.TAPOHUB"
     SmartKasaHub = "SMART.KASAHUB"
+    SmartIpCamera = "SMART.IPCAMERA"
 
 
 def _dataclass_from_dict(klass, in_val):
@@ -118,6 +119,7 @@ class DeviceConnectionParameters:
     device_family: DeviceFamily
     encryption_type: DeviceEncryptionType
     login_version: Optional[int] = None
+    is_ssl: bool = False
 
     @staticmethod
     def from_values(

@@ -26,8 +26,9 @@ from .protocol import (
     BaseProtocol,
     BaseTransport,
 )
-from .smart import SmartDevice
+from .smart import SmartCamera, SmartDevice
 from .smartprotocol import SmartProtocol
+from .sslaestransport import SslAesTransport
 from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
@@ -171,6 +172,7 @@ def get_device_class_from_family(device_type: str) -> type[Device] | None:
         "SMART.TAPOHUB": SmartDevice,
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
+        "SMART.IPCAMERA": SmartCamera,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
     }
@@ -188,16 +190,18 @@ def get_protocol(
 ) -> BaseProtocol | None:
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
+    ctype = config.connection_type
     protocol_transport_key = (
-        protocol_name + "." + config.connection_type.encryption_type.value
+        protocol_name + "." + ctype.encryption_type.value + "." + str(ctype.is_ssl)
     )
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
     ] = {
-        "IOT.XOR": (IotProtocol, XorTransport),
-        "IOT.KLAP": (IotProtocol, KlapTransport),
-        "SMART.AES": (SmartProtocol, AesTransport),
-        "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+        "IOT.XOR.False": (IotProtocol, XorTransport),
+        "IOT.KLAP.False": (IotProtocol, KlapTransport),
+        "SMART.AES.False": (SmartProtocol, AesTransport),
+        "SMART.KLAP.False": (SmartProtocol, KlapTransportV2),
+        "SMART.AES.True": (SmartProtocol, SslAesTransport),
     }
     if protocol_transport_key not in supported_device_protocols:
         return None

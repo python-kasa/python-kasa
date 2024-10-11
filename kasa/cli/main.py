@@ -158,6 +158,7 @@ def _legacy_type_to_class(_type):
     type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
 )
 @click.option(
+    "-df",
     "--device-family",
     envvar="KASA_DEVICE_FAMILY",
     default="SMART.TAPOPLUG",
@@ -170,6 +171,14 @@ def _legacy_type_to_class(_type):
     default=2,
     type=int,
     help="The login version for device authentication. Defaults to 2",
+)
+@click.option(
+    "--ssl/--no-ssl",
+    envvar="KASA_SSL",
+    default=False,
+    is_flag=True,
+    type=bool,
+    help="Set flag if the device encryption uses ssl.",
 )
 @click.option(
     "--timeout",
@@ -220,6 +229,7 @@ async def cli(
     debug,
     type,
     encrypt_type,
+    ssl,
     device_family,
     login_version,
     json,
@@ -314,6 +324,7 @@ async def cli(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
             login_version,
+            is_ssl=ssl,
         )
         config = DeviceConfig(
             host=host,
