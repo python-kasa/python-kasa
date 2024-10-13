@@ -30,14 +30,12 @@ from .exceptions import (
     DeviceError,
     KasaException,
     SmartErrorCode,
-    TimeoutError,
-    _ConnectionError,
     _RetryableError,
 )
 from .httpclient import HttpClient
 from .json import dumps as json_dumps
 from .json import loads as json_loads
-from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from .protocol import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,7 +66,6 @@ class TransportState(Enum):
     """Enum for AES state."""
 
     HANDSHAKE_REQUIRED = auto()  # Handshake needed
-    LOGIN_REQUIRED = auto()  # Login needed
     ESTABLISHED = auto()  # Ready to send requests
 
 
@@ -80,8 +77,6 @@ class SslAesTransport(BaseTransport):
     """
 
     DEFAULT_PORT: int = 443
-    SESSION_COOKIE_NAME = "TP_SESSIONID"
-    TIMEOUT_COOKIE_NAME = "TIMEOUT"
     COMMON_HEADERS = {
         "Content-Type": "application/json; charset=UTF-8",
         "requestByApp": "true",
@@ -96,8 +91,7 @@ class SslAesTransport(BaseTransport):
             "AES128-GCM-SHA256",
         ]
     )
-    CONTENT_LENGTH = "Content-Length"
-    KEY_PAIR_CONTENT_LENGTH = 314
+    DEFAULT_TIMEOUT = 10
 
     def __init__(
         self,
@@ -112,14 +106,15 @@ class SslAesTransport(BaseTransport):
         ) and not self._credentials_hash:
             self._credentials = Credentials()
         self._default_credentials: Credentials | None = None
+
+        if not config.timeout:
+            config.timeout = self.DEFAULT_TIMEOUT
         self._http_client: HttpClient = HttpClient(config)
 
         self._state = TransportState.HANDSHAKE_REQUIRED
 
         self._encryption_session: AesEncyptionSession | None = None
         self._session_expire_at: float | None = None
-
-        self._session_cookie: dict[str, str] | None = None
 
         self._host_port = f"{self._host}:{self._port}"
         self._app_url = URL(f"https://{self._host_port}")
@@ -162,24 +157,6 @@ class SslAesTransport(BaseTransport):
             ch = {"un": self._credentials.username, "pwd": self._pwd_hash}
             return base64.b64encode(json_dumps(ch).encode()).decode()
         return None
-
-    def _get_login_params(self, credentials: Credentials) -> dict[str, str]:
-        """Get the login parameters based on the login_version."""
-        un, pw = self.hash_credentials(self._login_version == 2, credentials)
-        password_field_name = "password2" if self._login_version == 2 else "password"
-        return {password_field_name: pw, "username": un}
-
-    @staticmethod
-    def hash_credentials(login_v2: bool, credentials: Credentials) -> tuple[str, str]:
-        """Hash the credentials."""
-        un = base64.b64encode(_sha1(credentials.username.encode()).encode()).decode()
-        if login_v2:
-            pw = base64.b64encode(
-                _sha1(credentials.password.encode()).encode()
-            ).decode()
-        else:
-            pw = base64.b64encode(credentials.password.encode()).decode()
-        return un, pw
 
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
         error_code_raw = resp_dict.get("error_code")
@@ -261,56 +238,6 @@ class SslAesTransport(BaseTransport):
                     ex,
                 ) from ex
         return ret_val  # type: ignore[return-value]
-
-    async def perform_login(self):
-        """Login to the device."""
-        try:
-            await self.try_login(self._login_params)
-            _LOGGER.debug(
-                "%s: logged in with provided credentials",
-                self._host,
-            )
-        except AuthenticationError as aex:
-            try:
-                if aex.error_code is not SmartErrorCode.LOGIN_ERROR:
-                    raise aex
-                _LOGGER.debug(
-                    "%s: trying login with default TAPO credentials",
-                    self._host,
-                )
-                if self._default_credentials is None:
-                    self._default_credentials = get_default_credentials(
-                        DEFAULT_CREDENTIALS["TAPO"]
-                    )
-                await self.perform_handshake()
-                await self.try_login(self._get_login_params(self._default_credentials))
-                _LOGGER.debug(
-                    "%s: logged in with default TAPO credentials",
-                    self._host,
-                )
-            except (AuthenticationError, _ConnectionError, TimeoutError):
-                raise
-            except Exception as ex:
-                raise KasaException(
-                    "Unable to login and trying default "
-                    + f"login raised another exception: {ex}",
-                    ex,
-                ) from ex
-
-    async def try_login(self, login_params: dict[str, Any]) -> None:
-        """Try to login with supplied login_params."""
-        login_request = {
-            "method": "login_device",
-            "params": login_params,
-            "request_time_milis": round(time.time() * 1000),
-        }
-        request = json_dumps(login_request)
-
-        resp_dict = await self.send_secure_passthrough(request)
-        self._handle_response_error_code(resp_dict, "Error logging in")
-        login_token = resp_dict["result"]["token"]
-        self._token_url = self._app_url.with_query(f"token={login_token}")
-        self._state = TransportState.ESTABLISHED
 
     @staticmethod
     def generate_confirm_hash(local_nonce, server_nonce, pwd_hash):
@@ -475,14 +402,6 @@ class SslAesTransport(BaseTransport):
             or self._handshake_session_expired()
         ):
             await self.perform_handshake()
-        if self._state is not TransportState.ESTABLISHED:
-            try:
-                await self.perform_login()
-            # After a login failure handshake needs to
-            # be redone or a 9999 error is received.
-            except AuthenticationError as ex:
-                self._state = TransportState.HANDSHAKE_REQUIRED
-                raise ex
 
         return await self.send_secure_passthrough(request)
 
@@ -492,8 +411,9 @@ class SslAesTransport(BaseTransport):
         await self._http_client.close()
 
     async def reset(self) -> None:
-        """Reset internal handshake and login state."""
+        """Reset internal handshake state."""
         self._state = TransportState.HANDSHAKE_REQUIRED
+        self._encryption_session = None
         self._seq = 0
         self._pwd_hash = None
         self._local_nonce = None

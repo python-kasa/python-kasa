@@ -1,6 +1,6 @@
-"""Modle for smartcamera."""
+"""Module for smartcamera."""
 
-from .smartdevice import SmartDevice
+from ..smart import SmartDevice
 
 
 class SmartCamera(SmartDevice):
