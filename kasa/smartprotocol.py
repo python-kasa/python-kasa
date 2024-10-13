@@ -244,11 +244,7 @@ class SmartProtocol(BaseProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if isinstance(request, dict):
-            if len(request) == 0:
-                smart_method = next(iter(request))
-                smart_params = request[smart_method]
-            else:
-                return await self._execute_multiple_query(request, retry_count)
+            return await self._execute_multiple_query(request, retry_count)
         else:
             smart_method = request
             smart_params = None
