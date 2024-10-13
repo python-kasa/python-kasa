@@ -324,7 +324,7 @@ async def cli(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
             login_version,
-            is_ssl=ssl,
+            ssl,
         )
         config = DeviceConfig(
             host=host,

@@ -14,7 +14,7 @@ from collections.abc import AsyncGenerator
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, cast
 
-from cryptography.hazmat.primitives import padding, serialization
+from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -108,7 +108,9 @@ class AesTransport(BaseTransport):
         self._key_pair: KeyPair | None = None
         if config.aes_keys:
             aes_keys = config.aes_keys
-            self._key_pair = KeyPair(aes_keys["private"], aes_keys["public"])
+            self._key_pair = KeyPair.create_from_der_keys(
+                aes_keys["private"], aes_keys["public"]
+            )
         self._app_url = URL(f"http://{self._host}:{self._port}/app")
         self._token_url: URL | None = None
 
@@ -277,14 +279,14 @@ class AesTransport(BaseTransport):
         if not self._key_pair:
             kp = KeyPair.create_key_pair()
             self._config.aes_keys = {
-                "private": kp.get_private_key(),
-                "public": kp.get_public_key(),
+                "private": kp.private_key_der_b64,
+                "public": kp.public_key_der_b64,
             }
             self._key_pair = kp
 
         pub_key = (
             "-----BEGIN PUBLIC KEY-----\n"
-            + self._key_pair.get_public_key()  # type: ignore[union-attr]
+            + self._key_pair.public_key_der_b64  # type: ignore[union-attr]
             + "\n-----END PUBLIC KEY-----\n"
         )
         handshake_params = {"key": pub_key}
@@ -392,18 +394,11 @@ class AesEncyptionSession:
     """Class for an AES encryption session."""
 
     @staticmethod
-    def create_from_keypair(handshake_key: str, keypair):
+    def create_from_keypair(handshake_key: str, keypair: KeyPair):
         """Create the encryption session."""
-        handshake_key_bytes: bytes = base64.b64decode(handshake_key.encode("UTF-8"))
-        private_key_data = base64.b64decode(keypair.get_private_key().encode("UTF-8"))
+        handshake_key_bytes: bytes = base64.b64decode(handshake_key.encode())
 
-        private_key = cast(
-            rsa.RSAPrivateKey,
-            serialization.load_der_private_key(private_key_data, None, None),
-        )
-        key_and_iv = private_key.decrypt(
-            handshake_key_bytes, asymmetric_padding.PKCS1v15()
-        )
+        key_and_iv = keypair.decrypt_handshake_key(handshake_key_bytes)
         if key_and_iv is None:
             raise ValueError("Decryption failed!")
 
@@ -438,30 +433,59 @@ class KeyPair:
         """Create a key pair."""
         private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
         public_key = private_key.public_key()
+        return KeyPair(private_key, public_key)
 
-        private_key_bytes = private_key.private_bytes(
+    @staticmethod
+    def create_from_der_keys(private_key_der_b64: str, public_key_der_b64: str):
+        """Create a key pair."""
+        key_bytes = base64.b64decode(private_key_der_b64.encode())
+        private_key = cast(
+            rsa.RSAPrivateKey, serialization.load_der_private_key(key_bytes, None)
+        )
+        key_bytes = base64.b64decode(public_key_der_b64.encode())
+        public_key = cast(
+            rsa.RSAPublicKey, serialization.load_der_public_key(key_bytes, None)
+        )
+
+        return KeyPair(private_key, public_key)
+
+    def __init__(self, private_key: rsa.RSAPrivateKey, public_key: rsa.RSAPublicKey):
+        self.private_key = private_key
+        self.public_key = public_key
+        self.private_key_der_bytes = self.private_key.private_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
         )
-        public_key_bytes = public_key.public_bytes(
+        self.public_key_der_bytes = self.public_key.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
+        self.private_key_der_b64 = base64.b64encode(self.private_key_der_bytes).decode()
+        self.public_key_der_b64 = base64.b64encode(self.public_key_der_bytes).decode()
 
-        return KeyPair(
-            private_key=base64.b64encode(private_key_bytes).decode("UTF-8"),
-            public_key=base64.b64encode(public_key_bytes).decode("UTF-8"),
+    def get_public_pem(self) -> bytes:
+        """Get public key in PEM encoding."""
+        return self.public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
 
-    def __init__(self, private_key: str, public_key: str):
-        self.private_key = private_key
-        self.public_key = public_key
+    def decrypt_handshake_key(self, encrypted_key: bytes) -> bytes:
+        """Decrypt an aes handshake key."""
+        decrypted = self.private_key.decrypt(
+            encrypted_key, asymmetric_padding.PKCS1v15()
+        )
+        return decrypted
 
-    def get_private_key(self) -> str:
-        """Get the private key."""
-        return self.private_key
-
-    def get_public_key(self) -> str:
-        """Get the public key."""
-        return self.public_key
+    def decrypt_discovery_key(self, encrypted_key: bytes) -> bytes:
+        """Decrypt an aes discovery key."""
+        decrypted = self.private_key.decrypt(
+            encrypted_key,
+            asymmetric_padding.OAEP(
+                mgf=asymmetric_padding.MGF1(algorithm=hashes.SHA1()),  # noqa: S303
+                algorithm=hashes.SHA1(),  # noqa: S303
+                label=None,
+            ),
+        )
+        return decrypted

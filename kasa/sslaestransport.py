@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from urllib3.util import create_urllib3_context
 from yarl import URL
 
+from .aestransport import AesEncyptionSession
 from .credentials import Credentials
 from .deviceconfig import DeviceConfig
 from .exceptions import (
@@ -115,7 +116,7 @@ class SslAesTransport(BaseTransport):
 
         self._state = TransportState.HANDSHAKE_REQUIRED
 
-        self._encryption_session: SslAesEncyptionSession | None = None
+        self._encryption_session: AesEncyptionSession | None = None
         self._session_expire_at: float | None = None
 
         self._session_cookie: dict[str, str] | None = None
@@ -389,7 +390,7 @@ class SslAesTransport(BaseTransport):
         self._local_nonce = local_nonce
         lsk = self.generate_encryption_token("lsk", local_nonce, server_nonce, pwd_hash)
         ivb = self.generate_encryption_token("ivb", local_nonce, server_nonce, pwd_hash)
-        self._encryption_session = SslAesEncyptionSession(lsk, ivb)
+        self._encryption_session = AesEncyptionSession(lsk, ivb)
         self._state = TransportState.ESTABLISHED
 
     async def perform_handshake1(self) -> tuple[str, str, str]:

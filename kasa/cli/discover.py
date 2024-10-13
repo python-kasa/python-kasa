@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from pprint import pformat as pf
 
 import asyncclick as click
 from pydantic.v1 import ValidationError
@@ -128,6 +129,8 @@ def _echo_discovery_info(discovery_info):
     echo(f"\tSupports HTTPS:     {dr.mgt_encrypt_schm.is_support_https}")
     echo(f"\tHTTP Port:          {dr.mgt_encrypt_schm.http_port}")
     echo(f"\tLV (Login Level):   {dr.mgt_encrypt_schm.lv}")
+    echo(f"\tEncrypt info:\n{pf(dr.encrypt_info)}")
+    echo(f"\tDecrypted:\n{pf(dr.decrypted_data)}")
 
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):

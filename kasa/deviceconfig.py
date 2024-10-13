@@ -119,20 +119,24 @@ class DeviceConnectionParameters:
     device_family: DeviceFamily
     encryption_type: DeviceEncryptionType
     login_version: Optional[int] = None
-    is_ssl: bool = False
+    is_support_https: bool = False
 
     @staticmethod
     def from_values(
         device_family: str,
         encryption_type: str,
         login_version: Optional[int] = None,
+        is_support_https: Optional[bool] = None,
     ) -> "DeviceConnectionParameters":
         """Return connection parameters from string values."""
         try:
+            if is_support_https is None:
+                is_support_https = False
             return DeviceConnectionParameters(
                 DeviceFamily(device_family),
                 DeviceEncryptionType(encryption_type),
                 login_version,
+                is_support_https,
             )
         except (ValueError, TypeError) as ex:
             raise KasaException(

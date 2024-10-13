@@ -82,10 +82,12 @@ Discovering a single device returns a kasa.Device object.
 from __future__ import annotations
 
 import asyncio
+import base64
 import binascii
 import ipaddress
 import logging
 import socket
+import struct
 from collections.abc import Awaitable
 from pprint import pformat as pf
 from typing import Any, Callable, Dict, Optional, Type, cast
@@ -96,6 +98,7 @@ from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, ValidationError
 
 from kasa import Device
+from kasa.aestransport import AesEncyptionSession, KeyPair
 from kasa.credentials import Credentials
 from kasa.device_factory import (
     get_device_class_from_family,
@@ -109,7 +112,6 @@ from kasa.deviceconfig import (
 )
 from kasa.exceptions import (
     KasaException,
-    TimeoutError,
     UnsupportedDeviceError,
 )
 from kasa.iot.iotdevice import IotDevice
@@ -180,6 +182,8 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target_discovered: bool = False
         self._started_event = asyncio.Event()
 
+        self.keypair = KeyPair.create_key_pair(key_size=2048)
+
     def _run_callback_task(self, coro):
         task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
@@ -224,11 +228,27 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = XorEncryption.encrypt(req)
         sleep_between_packets = self.discovery_timeout / self.discovery_packets
+
+        key_payload = {"params": {"rsa_key": self.keypair.get_public_pem().decode()}}
+
+        encoded_payload = json_dumps(key_payload).encode()
+        version = 2
+        nonce = 1337
+        initial_crc = 0x5A6B7C8D  # https://labs.withsecure.com/advisories/tp-link-ac1750-pwn2own-2019
+        disco_header = struct.pack(
+            ">BBHHBBII", version, 0, 1, len(encoded_payload), 17, 0, nonce, initial_crc
+        )
+
+        import binascii
+
+        query_2 = bytearray(disco_header + encoded_payload)
+        query_2[12:16] = binascii.crc32(query_2).to_bytes(length=4, byteorder="big")
         for _ in range(self.discovery_packets):
             if self.target in self.seen_hosts:  # Stop sending for discover_single
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
             self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
+            self.transport.sendto(query_2, self.target_2)  # type: ignore
             await asyncio.sleep(sleep_between_packets)
 
     def datagram_received(self, data, addr) -> None:
@@ -251,7 +271,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 device = Discover._get_device_instance_legacy(data, config)
             elif port == Discover.DISCOVERY_PORT_2:
                 config.uses_http = True
-                device = Discover._get_device_instance(data, config)
+                device = Discover._get_device_instance(data, config, self.keypair)
             else:
                 return
         except UnsupportedDeviceError as udex:
@@ -516,6 +536,7 @@ class Discover:
     def _get_device_instance(
         data: bytes,
         config: DeviceConfig,
+        keypair: KeyPair,
     ) -> Device:
         """Get SmartDevice from the new 20002 response."""
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
@@ -528,6 +549,20 @@ class Discover:
             ) from ex
         try:
             discovery_result = DiscoveryResult(**info["result"])
+            if discovery_result.encrypt_info:
+                encryped_key = discovery_result.encrypt_info.key
+                encrypted_data = discovery_result.encrypt_info.data
+
+                key_and_iv = keypair.decrypt_discovery_key(
+                    base64.b64decode(encryped_key.encode())
+                )
+
+                key, iv = key_and_iv[:16], key_and_iv[16:]
+
+                session = AesEncyptionSession(key, iv)
+                decrypted_data = session.decrypt(encrypted_data)
+
+                discovery_result.decrypted_data = json_loads(decrypted_data)
         except ValidationError as ex:
             if debug_enabled:
                 data = (
@@ -547,10 +582,21 @@ class Discover:
         type_ = discovery_result.device_type
 
         try:
+            if not (
+                encrypt_type := discovery_result.mgt_encrypt_schm.encrypt_type
+            ) and (encrypt_info := discovery_result.encrypt_info):
+                encrypt_type = encrypt_info.sym_schm
+            if not encrypt_type:
+                raise UnsupportedDeviceError(
+                    f"Unsupported device {config.host} of type {type_} "
+                    + "with no encryption type",
+                    discovery_result=discovery_result.get_dict(),
+                )
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
-                discovery_result.mgt_encrypt_schm.encrypt_type,
+                encrypt_type,
                 discovery_result.mgt_encrypt_schm.lv,
+                discovery_result.mgt_encrypt_schm.is_support_https,
             )
         except KasaException as ex:
             raise UnsupportedDeviceError(
@@ -593,9 +639,17 @@ class EncryptionScheme(BaseModel):
     """Base model for encryption scheme of discovery result."""
 
     is_support_https: bool
-    encrypt_type: str
-    http_port: int
+    encrypt_type: Optional[str]  # noqa: UP007
+    http_port: Optional[int] = None  # noqa: UP007
     lv: Optional[int] = None  # noqa: UP007
+
+
+class EncryptionInfo(BaseModel):
+    """Base model for encryption info of discovery result."""
+
+    sym_schm: str
+    key: str
+    data: str
 
 
 class DiscoveryResult(BaseModel):
@@ -606,6 +660,8 @@ class DiscoveryResult(BaseModel):
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme
+    encrypt_info: Optional[EncryptionInfo] = None  # noqa: UP007
+    decrypted_data: Optional[dict] = None  # noqa: UP007
     device_id: str
 
     hw_ver: Optional[str] = None  # noqa: UP007

@@ -192,7 +192,11 @@ def get_protocol(
     protocol_name = config.connection_type.device_family.value.split(".")[0]
     ctype = config.connection_type
     protocol_transport_key = (
-        protocol_name + "." + ctype.encryption_type.value + "." + str(ctype.is_ssl)
+        protocol_name
+        + "."
+        + ctype.encryption_type.value
+        + "."
+        + str(ctype.is_support_https)
     )
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
