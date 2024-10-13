@@ -239,8 +239,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             ">BBHHBBII", version, 0, 1, len(encoded_payload), 17, 0, nonce, initial_crc
         )
 
-        import binascii
-
         query_2 = bytearray(disco_header + encoded_payload)
         query_2[12:16] = binascii.crc32(query_2).to_bytes(length=4, byteorder="big")
         for _ in range(self.discovery_packets):
