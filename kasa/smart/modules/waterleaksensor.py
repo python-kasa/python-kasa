@@ -77,8 +77,12 @@ class WaterleakSensor(SmartModule):
         return self._device.sys_info["in_alarm"]
 
     @property
-    def alert_timestamp(self) -> datetime:
+    def alert_timestamp(self) -> datetime | None:
         """Return timestamp of the last leak trigger."""
+        # The key is not always be there, maybe if it hasn't ever been triggered?
+        if "trigger_timestamp" not in self._device.sys_info:
+            return None
+
         ts = self._device.sys_info["trigger_timestamp"]
         tz = self._device.modules[Module.Time].timezone
         return datetime.fromtimestamp(ts, tz=tz)
