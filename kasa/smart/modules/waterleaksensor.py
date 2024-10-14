@@ -52,7 +52,7 @@ class WaterleakSensor(SmartModule):
             Feature(
                 self._device,
                 id="water_alert_timestamp",
-                name="Water alert timestamp",
+                name="Last alert timestamp",
                 container=self,
                 attribute_getter="alert_timestamp",
                 icon="mdi:alert",
