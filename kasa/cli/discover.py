@@ -29,6 +29,7 @@ async def discover(ctx):
     password = ctx.parent.params["password"]
     discovery_timeout = ctx.parent.params["discovery_timeout"]
     timeout = ctx.parent.params["timeout"]
+    host = ctx.parent.params["host"]
     port = ctx.parent.params["port"]
 
     credentials = Credentials(username, password) if username and password else None
@@ -68,6 +69,16 @@ async def discover(ctx):
                 await ctx.parent.invoke(state)
                 discovered[dev.host] = dev.internal_state
             echo()
+
+    if host:
+        return await Discover.discover_single(
+            host,
+            port=port,
+            credentials=credentials,
+            timeout=timeout,
+            discovery_timeout=discovery_timeout,
+            on_unsupported=print_unsupported,
+        )
 
     discovered_devices = await Discover.discover(
         target=target,

@@ -365,7 +365,7 @@ class Discover:
         discovery_timeout=5,
         discovery_packets=3,
         interface=None,
-        on_unsupported=None,
+        on_unsupported: OnUnsupportedCallable | None = None,
         credentials=None,
         username: str | None = None,
         password: str | None = None,
@@ -447,7 +447,8 @@ class Discover:
         credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,
-    ) -> Device:
+        on_unsupported: OnUnsupportedCallable | None = None,
+    ) -> Device | None:
         """Discover a single device by the given IP address.
 
         It is generally preferred to avoid :func:`discover_single()` and
@@ -517,7 +518,11 @@ class Discover:
             dev.host = host
             return dev
         elif ip in protocol.unsupported_device_exceptions:
-            raise protocol.unsupported_device_exceptions[ip]
+            if on_unsupported:
+                await on_unsupported(protocol.unsupported_device_exceptions[ip])
+                return None
+            else:
+                raise protocol.unsupported_device_exceptions[ip]
         elif ip in protocol.invalid_device_exceptions:
             raise protocol.invalid_device_exceptions[ip]
         else:

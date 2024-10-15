@@ -477,4 +477,6 @@ class SmartCameraProtocol(SmartProtocol):
 
         # TODO need to update handle response lists
 
+        if multi_method[:3] == "set":
+            return {}
         return {multi_method: {module: response_data[module]}}

@@ -217,6 +217,15 @@ def _legacy_type_to_class(_type):
     envvar="KASA_CREDENTIALS_HASH",
     help="Hashed credentials used to authenticate to the device.",
 )
+@click.option(
+    "-ex",
+    "--experimental",
+    default=False,
+    is_flag=True,
+    type=bool,
+    envvar="KASA_EXPERIMENTAL",
+    help="Enable experimental mode for devices not yet fully supported.",
+)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(
@@ -238,6 +247,7 @@ async def cli(
     username,
     password,
     credentials_hash,
+    experimental,
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
@@ -245,6 +255,11 @@ async def cli(
         # Context object is required to avoid crashing on sub-groups
         ctx.obj = object()
         return
+
+    if experimental:
+        from kasa.experimental import _Experimental
+
+        _Experimental.set(True)
 
     logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -337,15 +352,11 @@ async def cli(
         dev = await Device.connect(config=config)
         device_updated = True
     else:
-        from kasa.discover import Discover
+        from .discover import discover
 
-        dev = await Discover.discover_single(
-            host,
-            port=port,
-            credentials=credentials,
-            timeout=timeout,
-            discovery_timeout=discovery_timeout,
-        )
+        dev = await ctx.invoke(discover)
+        if not dev:
+            error(f"Unable to create device for {host}")
 
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.

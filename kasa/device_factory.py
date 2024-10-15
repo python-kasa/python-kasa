@@ -205,12 +205,12 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
-        "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),
     }
-    if protocol_transport_key not in supported_device_protocols:
-        return None
+    if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
+        from .experimental import _Experimental
 
-    protocol_class, transport_class = supported_device_protocols.get(
-        protocol_transport_key
-    )  # type: ignore
-    return protocol_class(transport=transport_class(config=config))
+        if _Experimental.enabled and protocol_transport_key == "SMART.AES.HTTPS":
+            prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
+        else:
+            return None
+    return prot_tran_cls[0](transport=prot_tran_cls[1](config=config))
