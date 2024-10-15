@@ -1,5 +1,9 @@
+from datetime import datetime
+
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
+from zoneinfo import ZoneInfo
 
 from kasa import Device, LightState, Module
 from kasa.tests.device_fixtures import (
@@ -319,3 +323,24 @@ async def test_light_preset_save(dev: Device, mocker: MockerFixture):
     assert new_preset_state.hue == new_preset.hue
     assert new_preset_state.saturation == new_preset.saturation
     assert new_preset_state.color_temp == new_preset.color_temp
+
+
+async def test_set_time(dev: Device, freezer: FrozenDateTimeFactory):
+    """Test setting the device time."""
+    freezer.move_to("2021-01-09 12:00:00+00:00")
+    time_mod = dev.modules[Module.Time]
+    tz_info = time_mod.timezone
+    now = datetime.now(tz=tz_info)
+    now = now.replace(microsecond=0)
+    assert time_mod.time != now
+
+    await time_mod.set_time(now)
+    await dev.update()
+    assert time_mod.time == now
+
+    zone = ZoneInfo("Europe/Berlin")
+    now = datetime.now(tz=zone)
+    now = now.replace(microsecond=0)
+    await time_mod.set_time(now)
+    await dev.update()
+    assert time_mod.time == now
