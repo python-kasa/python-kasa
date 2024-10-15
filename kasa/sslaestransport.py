@@ -44,12 +44,6 @@ ONE_DAY_SECONDS = 86400
 SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
 
 
-def _sha1(payload: bytes) -> str:
-    sha1_algo = hashlib.sha1()  # noqa: S324
-    sha1_algo.update(payload)
-    return sha1_algo.hexdigest()
-
-
 def _sha256(payload: bytes) -> bytes:
     return hashlib.sha256(payload).digest()  # noqa: S324
 
@@ -356,7 +350,8 @@ class SslAesTransport(BaseTransport):
             )
 
         resp_dict = cast(dict, resp_dict)
-        if resp_dict["error_code"] != -40413:
+        error_code = SmartErrorCode.from_int(resp_dict["error_code"])
+        if error_code != SmartErrorCode.INVALID_NONCE:
             self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 
         if TYPE_CHECKING:

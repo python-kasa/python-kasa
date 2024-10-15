@@ -86,11 +86,12 @@ import base64
 import binascii
 import ipaddress
 import logging
+import secrets
 import socket
 import struct
 from collections.abc import Awaitable
 from pprint import pformat as pf
-from typing import Any, Callable, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -133,6 +134,46 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
 }
+
+
+class _AesDiscoveryQuery:
+    keypair = None
+
+    @classmethod
+    def generate_query(cls):
+        if not cls.keypair:
+            cls.keypair = KeyPair.create_key_pair(key_size=2048)
+        secret = secrets.token_bytes(4)
+
+        key_payload = {"params": {"rsa_key": cls.keypair.get_public_pem().decode()}}
+
+        key_payload_bytes = json_dumps(key_payload).encode()
+        # https://labs.withsecure.com/advisories/tp-link-ac1750-pwn2own-2019
+        version = 2  # version of tdp
+        msg_type = 0
+        op_code = 1  # probe
+        msg_size = len(key_payload_bytes)
+        flags = 17
+        padding_byte = 0  # blank byte
+        device_serial = int.from_bytes(secret, "big")
+        initial_crc = 0x5A6B7C8D
+
+        disco_header = struct.pack(
+            ">BBHHBBII",
+            version,
+            msg_type,
+            op_code,
+            msg_size,
+            flags,
+            padding_byte,
+            device_serial,
+            initial_crc,
+        )
+
+        query = bytearray(disco_header + key_payload_bytes)
+        crc = binascii.crc32(query).to_bytes(length=4, byteorder="big")
+        query[12:16] = crc
+        return query
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -182,8 +223,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target_discovered: bool = False
         self._started_event = asyncio.Event()
 
-        self.keypair = KeyPair.create_key_pair(key_size=2048)
-
     def _run_callback_task(self, coro):
         task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
@@ -229,28 +268,20 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         encrypted_req = XorEncryption.encrypt(req)
         sleep_between_packets = self.discovery_timeout / self.discovery_packets
 
-        key_payload = {"params": {"rsa_key": self.keypair.get_public_pem().decode()}}
-
-        encoded_payload = json_dumps(key_payload).encode()
-        version = 2
-        nonce = 1337
-        initial_crc = 0x5A6B7C8D  # https://labs.withsecure.com/advisories/tp-link-ac1750-pwn2own-2019
-        disco_header = struct.pack(
-            ">BBHHBBII", version, 0, 1, len(encoded_payload), 17, 0, nonce, initial_crc
-        )
-
-        query_2 = bytearray(disco_header + encoded_payload)
-        query_2[12:16] = binascii.crc32(query_2).to_bytes(length=4, byteorder="big")
+        aes_discovery_query = _AesDiscoveryQuery.generate_query()
         for _ in range(self.discovery_packets):
             if self.target in self.seen_hosts:  # Stop sending for discover_single
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
             self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
-            self.transport.sendto(query_2, self.target_2)  # type: ignore
+            self.transport.sendto(aes_discovery_query, self.target_2)  # type: ignore
             await asyncio.sleep(sleep_between_packets)
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
+        if TYPE_CHECKING:
+            assert _AesDiscoveryQuery.keypair
+
         ip, port = addr
         # Prevent multiple entries due multiple broadcasts
         if ip in self.seen_hosts:
@@ -269,7 +300,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 device = Discover._get_device_instance_legacy(data, config)
             elif port == Discover.DISCOVERY_PORT_2:
                 config.uses_http = True
-                device = Discover._get_device_instance(data, config, self.keypair)
+                device = Discover._get_device_instance(
+                    data, config, _AesDiscoveryQuery.keypair
+                )
             else:
                 return
         except UnsupportedDeviceError as udex:

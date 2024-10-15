@@ -173,12 +173,12 @@ def _legacy_type_to_class(_type):
     help="The login version for device authentication. Defaults to 2",
 )
 @click.option(
-    "--ssl/--no-ssl",
-    envvar="KASA_SSL",
+    "--https/--no-https",
+    envvar="KASA_HTTPS",
     default=False,
     is_flag=True,
     type=bool,
-    help="Set flag if the device encryption uses ssl.",
+    help="Set flag if the device encryption uses https.",
 )
 @click.option(
     "--timeout",
@@ -229,7 +229,7 @@ async def cli(
     debug,
     type,
     encrypt_type,
-    ssl,
+    https,
     device_family,
     login_version,
     json,
@@ -324,7 +324,7 @@ async def cli(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
             login_version,
-            ssl,
+            https,
         )
         config = DeviceConfig(
             host=host,

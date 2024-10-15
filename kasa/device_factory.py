@@ -196,17 +196,16 @@ def get_protocol(
         protocol_name
         + "."
         + ctype.encryption_type.value
-        + "."
-        + str(ctype.is_support_https)
+        + (".HTTPS" if ctype.https else "")
     )
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
     ] = {
-        "IOT.XOR.False": (IotProtocol, XorTransport),
-        "IOT.KLAP.False": (IotProtocol, KlapTransport),
-        "SMART.AES.False": (SmartProtocol, AesTransport),
-        "SMART.KLAP.False": (SmartProtocol, KlapTransportV2),
-        "SMART.AES.True": (SmartCameraProtocol, SslAesTransport),
+        "IOT.XOR": (IotProtocol, XorTransport),
+        "IOT.KLAP": (IotProtocol, KlapTransport),
+        "SMART.AES": (SmartProtocol, AesTransport),
+        "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+        "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),
     }
     if protocol_transport_key not in supported_device_protocols:
         return None
