@@ -60,9 +60,8 @@ async def get_matching_timezones(tzone: tzinfo) -> list[str]:
 def _is_same_timezone(tzone1: tzinfo, tzone2: tzinfo) -> bool:
     """Return true if the timezones have the same utcffset and dst offset.
 
-    Iot devices only support 109 IANA timezones so this can be used to find
-    other timezones that match the same dst settings by checking they are
-    the same for the current year.
+    Iot devices only support a limited static list of IANA timezones; this is used to
+    check if a static timezone matches the same utc offset and dst settings.
     """
     now = datetime.now()
     start_day = datetime(now.year, 1, 1, 12)
