@@ -113,6 +113,7 @@ from kasa.deviceconfig import (
 )
 from kasa.exceptions import (
     KasaException,
+    TimeoutError,
     UnsupportedDeviceError,
 )
 from kasa.iot.iotdevice import IotDevice
