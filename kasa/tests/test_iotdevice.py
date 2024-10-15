@@ -184,7 +184,7 @@ async def test_time(dev):
 
 @device_iot
 async def test_timezone(dev):
-    TZ_SCHEMA(await dev.get_timezone())
+    TZ_SCHEMA(await dev.modules[Module.Time].get_timezone())
 
 
 @device_iot

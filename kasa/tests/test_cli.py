@@ -1,11 +1,13 @@
 import json
 import os
 import re
+from datetime import datetime
 
 import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
 from pytest_mock import MockerFixture
+from zoneinfo import ZoneInfo
 
 from kasa import (
     AuthenticationError,
@@ -308,12 +310,8 @@ async def test_time_get(dev, runner):
     assert "Current time: " in res.output
 
 
-@device_smart
 async def test_time_sync(dev, mocker, runner):
-    """Test time sync command.
-
-    Currently implemented only for SMART.
-    """
+    """Test time sync command."""
     update = mocker.patch.object(dev, "update")
     set_time_mock = mocker.spy(dev.modules[Module.Time], "set_time")
     res = await runner.invoke(
@@ -323,6 +321,48 @@ async def test_time_sync(dev, mocker, runner):
     )
     set_time_mock.assert_called()
     update.assert_called()
+
+    assert res.exit_code == 0
+    assert "Old time: " in res.output
+    assert "New time: " in res.output
+
+
+async def test_time_set(dev: Device, mocker, runner):
+    """Test time set command."""
+    time_mod = dev.modules[Module.Time]
+    set_time_mock = mocker.spy(time_mod, "set_time")
+    dt = datetime(2024, 10, 15, 8, 15)
+    res = await runner.invoke(
+        time,
+        ["set", str(dt.year), str(dt.month), str(dt.day), str(dt.hour), str(dt.minute)],
+        obj=dev,
+    )
+    set_time_mock.assert_called()
+    assert time_mod.time == dt.replace(tzinfo=time_mod.timezone)
+
+    assert res.exit_code == 0
+    assert "Old time: " in res.output
+    assert "New time: " in res.output
+
+    zone = ZoneInfo("Europe/Berlin")
+    dt = dt.replace(tzinfo=zone)
+    res = await runner.invoke(
+        time,
+        [
+            "set",
+            str(dt.year),
+            str(dt.month),
+            str(dt.day),
+            str(dt.hour),
+            str(dt.minute),
+            "--timezone",
+            zone.key,
+        ],
+        input="y\n",
+        obj=dev,
+    )
+
+    assert time_mod.time == dt
 
     assert res.exit_code == 0
     assert "Old time: " in res.output

@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone, tzinfo
-from time import mktime
 from typing import cast
 
-from zoneinfo import ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ...cachedzoneinfo import CachedZoneInfo
 from ...feature import Feature
+from ...interfaces import Time as TimeInterface
 from ..smartmodule import SmartModule
 
 
-class Time(SmartModule):
+class Time(SmartModule, TimeInterface):
     """Implementation of device_local_time."""
 
     REQUIRED_COMPONENT = "time"
@@ -63,16 +63,23 @@ class Time(SmartModule):
             tz=self.timezone,
         )
 
-    async def set_time(self, dt: datetime):
+    async def set_time(self, dt: datetime) -> dict:
         """Set device time."""
-        unixtime = mktime(dt.timetuple())
-        offset = cast(timedelta, dt.utcoffset())
-        diff = offset / timedelta(minutes=1)
-        return await self.call(
-            "set_device_time",
-            {
-                "timestamp": int(unixtime),
-                "time_diff": int(diff),
-                "region": dt.tzname(),
-            },
-        )
+        if not dt.tzinfo:
+            timestamp = dt.replace(tzinfo=self.timezone).timestamp()
+            utc_offset = cast(timedelta, self.timezone.utcoffset(dt))
+        else:
+            timestamp = dt.timestamp()
+            utc_offset = cast(timedelta, dt.utcoffset())
+        time_diff = utc_offset / timedelta(minutes=1)
+
+        params: dict[str, int | str] = {
+            "timestamp": int(timestamp),
+            "time_diff": int(time_diff),
+        }
+        if tz := dt.tzinfo:
+            region = tz.key if isinstance(tz, ZoneInfo) else dt.tzname()
+            # tzname can return null if a simple timezone object is provided.
+            if region:
+                params["region"] = region
+        return await self.call("set_device_time", params)

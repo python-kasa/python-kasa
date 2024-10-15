@@ -118,7 +118,6 @@ TIME_MODULE = {
         "index": 12,
         "tz_str": "test2",
     },
-    "set_timezone": None,
 }
 
 CLOUD_MODULE = {
@@ -353,6 +352,19 @@ class FakeIotTransport(BaseTransport):
         else:
             return light_state
 
+    def set_time(self, new_state: dict, *args):
+        """Implement set_time."""
+        mods = [
+            v
+            for k, v in self.proto.items()
+            if k in {"time", "smartlife.iot.common.timesetting"}
+        ]
+        index = new_state.pop("index", None)
+        for mod in mods:
+            mod["get_time"] = new_state
+            if index is not None:
+                mod["get_timezone"]["index"] = index
+
     baseproto = {
         "system": {
             "set_relay_state": set_relay_state,
@@ -391,8 +403,12 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.common.system": {
             "set_dev_alias": set_alias,
         },
-        "time": TIME_MODULE,
-        "smartlife.iot.common.timesetting": TIME_MODULE,
+        "time": {**TIME_MODULE, "set_time": set_time, "set_timezone": set_time},
+        "smartlife.iot.common.timesetting": {
+            **TIME_MODULE,
+            "set_time": set_time,
+            "set_timezone": set_time,
+        },
         # HS220 brightness, different setter and getter
         "smartlife.iot.dimmer": {
             "set_brightness": set_hs220_brightness,
