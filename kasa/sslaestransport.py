@@ -124,10 +124,11 @@ class SslAesTransport(BaseTransport):
             cert_reqs=ssl.CERT_NONE,
             options=0,
         )
+        ref = str(self._token_url) if self._token_url else str(self._app_url)
         self._headers = {
             **self.COMMON_HEADERS,
             "Host": self._host_port,
-            "Referer": str(self._app_url),
+            "Referer": ref,
         }
         self._seq: int | None = None
         self._pwd_hash: str | None = None
@@ -219,7 +220,11 @@ class SslAesTransport(BaseTransport):
             resp_dict = cast(Dict[str, Any], resp_dict)
             assert self._encryption_session is not None
 
-        raw_response: str = resp_dict["result"]["response"]
+        if "result" in resp_dict and "response" in resp_dict["result"]:
+            raw_response: str = resp_dict["result"]["response"]
+        else:
+            # Tapo Cameras respond unencrypted to single requests.
+            return resp_dict
 
         try:
             response = self._encryption_session.decrypt(raw_response.encode())

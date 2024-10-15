@@ -28,7 +28,7 @@ from .protocol import (
     BaseTransport,
 )
 from .smart import SmartDevice
-from .smartprotocol import SmartProtocol
+from .smartprotocol import SmartCameraProtocol, SmartProtocol
 from .sslaestransport import SslAesTransport
 from .xortransport import XorTransport
 
@@ -206,7 +206,7 @@ def get_protocol(
         "IOT.KLAP.False": (IotProtocol, KlapTransport),
         "SMART.AES.False": (SmartProtocol, AesTransport),
         "SMART.KLAP.False": (SmartProtocol, KlapTransportV2),
-        "SMART.AES.True": (SmartProtocol, SslAesTransport),
+        "SMART.AES.True": (SmartCameraProtocol, SslAesTransport),
     }
     if protocol_transport_key not in supported_device_protocols:
         return None
