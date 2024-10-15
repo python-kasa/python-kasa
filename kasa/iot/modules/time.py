@@ -71,7 +71,7 @@ class Time(IotModule, TimeInterface):
             "mday": dt.day,
             "hour": dt.hour,
             "min": dt.minute,
-            "sec": 0,
+            "sec": dt.second,
         }
         if dt.tzinfo:
             index = await get_timezone_index(dt.tzinfo)
