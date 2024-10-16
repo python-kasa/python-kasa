@@ -12,8 +12,9 @@ class SmartCamera(SmartDevice):
     async def update(self, update_children: bool = False):
         """Update the device."""
         initial_query = {
-            "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
-            "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
+            # "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
+            "getDeviceInfo": {"device_info": {"name": ["basic_info"]}},
+            # "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
@@ -37,6 +38,7 @@ class SmartCamera(SmartDevice):
     @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
+        return True
         return (
             self._last_update["getLensMaskConfig"]["lens_mask"]["lens_mask_info"][
                 "enabled"
