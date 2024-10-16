@@ -1,6 +1,7 @@
 """Package for experimental."""
 
 from .smartcamera import SmartCamera
+from .smartcameraprotocol import SmartCameraProtocol
 
 
 class _Experimental:
@@ -13,4 +14,5 @@ class _Experimental:
 
 __all__ = [
     "SmartCamera",
+    "SmartCameraProtocol",
 ]

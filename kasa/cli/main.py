@@ -35,6 +35,7 @@ TYPES = [
     "strip",
     "lightstrip",
     "smart",
+    "camera",
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
@@ -191,7 +192,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--discovery-timeout",
     envvar="KASA_DISCOVERY_TIMEOUT",
-    default=5,
+    default=10,
     required=False,
     show_default=True,
     help="Timeout for discovery.",
@@ -218,7 +219,6 @@ def _legacy_type_to_class(_type):
     help="Hashed credentials used to authenticate to the device.",
 )
 @click.option(
-    "-ex",
     "--experimental",
     default=False,
     is_flag=True,
@@ -319,12 +319,21 @@ async def cli(
         return await ctx.invoke(discover)
 
     device_updated = False
-    if type is not None and type != "smart":
+    if type is not None and type not in {"smart", "camera"}:
         from kasa.deviceconfig import DeviceConfig
 
         config = DeviceConfig(host=host, port_override=port, timeout=timeout)
         dev = _legacy_type_to_class(type)(host, config=config)
-    elif type == "smart" or (device_family and encrypt_type):
+    elif type in {"smart", "camera"} or (device_family and encrypt_type):
+        if type == "camera":
+            if not experimental:
+                error(
+                    "Camera is an experimental type, please enable with --experimental"
+                )
+            encrypt_type = "AES"
+            https = True
+            device_family = "SMART.IPCAMERA"
+
         from kasa.device import Device
         from kasa.deviceconfig import (
             DeviceConfig,
@@ -335,6 +344,7 @@ async def cli(
 
         if not encrypt_type:
             encrypt_type = "KLAP"
+
         ctype = DeviceConnectionParameters(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),

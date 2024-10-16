@@ -11,7 +11,7 @@ from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
-from .experimental import SmartCamera
+from .experimental import SmartCamera, SmartCameraProtocol
 from .iot import (
     IotBulb,
     IotDevice,
@@ -28,7 +28,7 @@ from .protocol import (
     BaseTransport,
 )
 from .smart import SmartDevice
-from .smartprotocol import SmartCameraProtocol, SmartProtocol
+from .smartprotocol import SmartProtocol
 from .sslaestransport import SslAesTransport
 from .xortransport import XorTransport
 

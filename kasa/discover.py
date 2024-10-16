@@ -301,9 +301,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 device = Discover._get_device_instance_legacy(data, config)
             elif port == Discover.DISCOVERY_PORT_2:
                 config.uses_http = True
-                device = Discover._get_device_instance(
-                    data, config, _AesDiscoveryQuery.keypair
-                )
+                device = Discover._get_device_instance(data, config)
             else:
                 return
         except UnsupportedDeviceError as udex:
@@ -365,7 +363,7 @@ class Discover:
         discovery_timeout=5,
         discovery_packets=3,
         interface=None,
-        on_unsupported: OnUnsupportedCallable | None = None,
+        on_unsupported=None,
         credentials=None,
         username: str | None = None,
         password: str | None = None,
@@ -570,10 +568,28 @@ class Discover:
         return device
 
     @staticmethod
+    def _decrypt_discovery_data(discovery_result: DiscoveryResult) -> None:
+        if TYPE_CHECKING:
+            assert discovery_result.encrypt_info
+            assert _AesDiscoveryQuery.keypair
+        encryped_key = discovery_result.encrypt_info.key
+        encrypted_data = discovery_result.encrypt_info.data
+
+        key_and_iv = _AesDiscoveryQuery.keypair.decrypt_discovery_key(
+            base64.b64decode(encryped_key.encode())
+        )
+
+        key, iv = key_and_iv[:16], key_and_iv[16:]
+
+        session = AesEncyptionSession(key, iv)
+        decrypted_data = session.decrypt(encrypted_data)
+
+        discovery_result.decrypted_data = json_loads(decrypted_data)
+
+    @staticmethod
     def _get_device_instance(
         data: bytes,
         config: DeviceConfig,
-        keypair: KeyPair,
     ) -> Device:
         """Get SmartDevice from the new 20002 response."""
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
@@ -587,19 +603,7 @@ class Discover:
         try:
             discovery_result = DiscoveryResult(**info["result"])
             if discovery_result.encrypt_info:
-                encryped_key = discovery_result.encrypt_info.key
-                encrypted_data = discovery_result.encrypt_info.data
-
-                key_and_iv = keypair.decrypt_discovery_key(
-                    base64.b64decode(encryped_key.encode())
-                )
-
-                key, iv = key_and_iv[:16], key_and_iv[16:]
-
-                session = AesEncyptionSession(key, iv)
-                decrypted_data = session.decrypt(encrypted_data)
-
-                discovery_result.decrypted_data = json_loads(decrypted_data)
+                Discover._decrypt_discovery_data(discovery_result)
         except ValidationError as ex:
             if debug_enabled:
                 data = (

@@ -51,8 +51,6 @@ async def discover(ctx):
                 echo(f"\t{unsupported_exception}")
                 echo()
 
-    echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
-
     from .device import state
 
     async def print_discovered(dev: Device):
@@ -71,6 +69,7 @@ async def discover(ctx):
             echo()
 
     if host:
+        echo(f"Discovering device {host} for {discovery_timeout} seconds")
         return await Discover.discover_single(
             host,
             port=port,
@@ -80,6 +79,7 @@ async def discover(ctx):
             on_unsupported=print_unsupported,
         )
 
+    echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
     discovered_devices = await Discover.discover(
         target=target,
         discovery_timeout=discovery_timeout,
