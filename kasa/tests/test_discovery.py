@@ -2,6 +2,8 @@
 # ruff: noqa: S106
 
 import asyncio
+import base64
+import json
 import logging
 import re
 import socket
@@ -10,6 +12,8 @@ from unittest.mock import MagicMock
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 from async_timeout import timeout as asyncio_timeout
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 
 from kasa import (
     Credentials,
@@ -18,11 +22,17 @@ from kasa import (
     Discover,
     KasaException,
 )
+from kasa.aestransport import AesEncyptionSession
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
 )
-from kasa.discover import DiscoveryResult, _DiscoverProtocol, json_dumps
+from kasa.discover import (
+    DiscoveryResult,
+    _AesDiscoveryQuery,
+    _DiscoverProtocol,
+    json_dumps,
+)
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice
 from kasa.xortransport import XorEncryption
@@ -604,3 +614,36 @@ async def test_discovery_redaction(discovery_mock, caplog: pytest.LogCaptureFixt
     await Discover.discover()
     assert mac not in caplog.text
     assert "12:34:56:00:00:00" in caplog.text
+
+
+async def test_discovery_decryption():
+    """Test discovery decryption."""
+    key = b"8\x89\x02\xfa\xf5Xs\x1c\xa1 H\x9a\x82\xc7\xd9\t"
+    iv = b"9=\xf8\x1bS\xcd0\xb5\x89i\xba\xfd^9\x9f\xfa"
+    key_iv = key + iv
+
+    _AesDiscoveryQuery.generate_query()
+    keypair = _AesDiscoveryQuery.keypair
+
+    padding = asymmetric_padding.OAEP(
+        mgf=asymmetric_padding.MGF1(algorithm=hashes.SHA1()),  # noqa: S303
+        algorithm=hashes.SHA1(),  # noqa: S303
+        label=None,
+    )
+    encrypted_key_iv = keypair.public_key.encrypt(key_iv, padding)
+    encrypted_key_iv_b4 = base64.b64encode(encrypted_key_iv)
+    encryption_session = AesEncyptionSession(key_iv[:16], key_iv[16:])
+
+    data_dict = {"foo": 1, "bar": 2}
+    data = json.dumps(data_dict)
+    encypted_data = encryption_session.encrypt(data.encode())
+
+    encrypt_info = {
+        "data": encypted_data.decode(),
+        "key": encrypted_key_iv_b4.decode(),
+        "sym_schm": "AES",
+    }
+    info = {**UNSUPPORTED["result"], "encrypt_info": encrypt_info}
+    dr = DiscoveryResult(**info)
+    Discover._decrypt_discovery_data(dr)
+    assert dr.decrypted_data == data_dict
