@@ -138,7 +138,7 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
 
 
 class _AesDiscoveryQuery:
-    keypair = None
+    keypair: KeyPair | None = None
 
     @classmethod
     def generate_query(cls):
