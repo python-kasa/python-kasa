@@ -54,7 +54,9 @@ class SmartCameraProtocol(SmartProtocol):
                 pf(response_data),
             )
 
-        self._handle_response_error_code(response_data, multi_method)
+        if "error_code" in response_data:
+            # H200 does not return an error code
+            self._handle_response_error_code(response_data, multi_method)
 
         # TODO need to update handle response lists
 
