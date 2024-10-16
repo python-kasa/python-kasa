@@ -800,6 +800,9 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
 @pytest.mark.parametrize("device_type", TYPES)
 async def test_type_param(device_type, mocker, runner):
     """Test for handling only one of username or password supplied."""
+    if device_type == "camera":
+        pytest.skip(reason="camera is experimental")
+
     result_device = FileNotFoundError
     pass_dev = click.make_pass_decorator(Device)
 
