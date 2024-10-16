@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from pprint import pformat as pf
 
 import asyncclick as click
 from pydantic.v1 import ValidationError
@@ -28,6 +29,7 @@ async def discover(ctx):
     password = ctx.parent.params["password"]
     discovery_timeout = ctx.parent.params["discovery_timeout"]
     timeout = ctx.parent.params["timeout"]
+    host = ctx.parent.params["host"]
     port = ctx.parent.params["port"]
 
     credentials = Credentials(username, password) if username and password else None
@@ -49,8 +51,6 @@ async def discover(ctx):
                 echo(f"\t{unsupported_exception}")
                 echo()
 
-    echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
-
     from .device import state
 
     async def print_discovered(dev: Device):
@@ -68,6 +68,18 @@ async def discover(ctx):
                 discovered[dev.host] = dev.internal_state
             echo()
 
+    if host:
+        echo(f"Discovering device {host} for {discovery_timeout} seconds")
+        return await Discover.discover_single(
+            host,
+            port=port,
+            credentials=credentials,
+            timeout=timeout,
+            discovery_timeout=discovery_timeout,
+            on_unsupported=print_unsupported,
+        )
+
+    echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
     discovered_devices = await Discover.discover(
         target=target,
         discovery_timeout=discovery_timeout,
@@ -113,21 +125,31 @@ def _echo_discovery_info(discovery_info):
         _echo_dictionary(discovery_info)
         return
 
+    def _conditional_echo(label, value):
+        if value:
+            ws = " " * (19 - len(label))
+            echo(f"\t{label}:{ws}{value}")
+
     echo("\t[bold]== Discovery Result ==[/bold]")
-    echo(f"\tDevice Type:        {dr.device_type}")
-    echo(f"\tDevice Model:       {dr.device_model}")
-    echo(f"\tIP:                 {dr.ip}")
-    echo(f"\tMAC:                {dr.mac}")
-    echo(f"\tDevice Id (hash):   {dr.device_id}")
-    echo(f"\tOwner (hash):       {dr.owner}")
-    echo(f"\tHW Ver:             {dr.hw_ver}")
-    echo(f"\tSupports IOT Cloud: {dr.is_support_iot_cloud}")
-    echo(f"\tOBD Src:            {dr.obd_src}")
-    echo(f"\tFactory Default:    {dr.factory_default}")
-    echo(f"\tEncrypt Type:       {dr.mgt_encrypt_schm.encrypt_type}")
-    echo(f"\tSupports HTTPS:     {dr.mgt_encrypt_schm.is_support_https}")
-    echo(f"\tHTTP Port:          {dr.mgt_encrypt_schm.http_port}")
-    echo(f"\tLV (Login Level):   {dr.mgt_encrypt_schm.lv}")
+    _conditional_echo("Device Type", dr.device_type)
+    _conditional_echo("Device Model", dr.device_model)
+    _conditional_echo("Device Name", dr.device_name)
+    _conditional_echo("IP", dr.ip)
+    _conditional_echo("MAC", dr.mac)
+    _conditional_echo("Device Id (hash)", dr.device_id)
+    _conditional_echo("Owner (hash)", dr.owner)
+    _conditional_echo("FW Ver", dr.firmware_version)
+    _conditional_echo("HW Ver", dr.hw_ver)
+    _conditional_echo("HW Ver", dr.hardware_version)
+    _conditional_echo("Supports IOT Cloud", dr.is_support_iot_cloud)
+    _conditional_echo("OBD Src", dr.owner)
+    _conditional_echo("Factory Default", dr.factory_default)
+    _conditional_echo("Encrypt Type", dr.mgt_encrypt_schm.encrypt_type)
+    _conditional_echo("Encrypt Type", dr.encrypt_type)
+    _conditional_echo("Supports HTTPS", dr.mgt_encrypt_schm.is_support_https)
+    _conditional_echo("HTTP Port", dr.mgt_encrypt_schm.http_port)
+    _conditional_echo("Encrypt info", pf(dr.encrypt_info) if dr.encrypt_info else None)
+    _conditional_echo("Decrypted", pf(dr.decrypted_data) if dr.decrypted_data else None)
 
 
 async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
