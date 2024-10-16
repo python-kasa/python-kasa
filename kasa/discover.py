@@ -637,6 +637,7 @@ class Discover:
                 type_,
                 encrypt_type,
                 discovery_result.mgt_encrypt_schm.lv,
+                discovery_result.mgt_encrypt_schm.is_support_https,
             )
         except KasaException as ex:
             raise UnsupportedDeviceError(

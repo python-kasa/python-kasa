@@ -85,7 +85,10 @@ exclude = [
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
-omit = ["kasa/tests/*"]
+omit = [
+  "kasa/tests/*",
+  "kasa/experimental/*"
+]
 
 [tool.coverage.report]
 exclude_lines = [

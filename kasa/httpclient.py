@@ -64,6 +64,7 @@ class HttpClient:
         json: dict | Any | None = None,
         headers: dict[str, str] | None = None,
         cookies_dict: dict[str, str] | None = None,
+        ssl=False,
     ) -> tuple[int, dict | bytes | None]:
         """Send an http post request to the device.
 
@@ -106,7 +107,7 @@ class HttpClient:
                 timeout=client_timeout,
                 cookies=cookies_dict,
                 headers=headers,
-                ssl=False,
+                ssl=ssl,
             )
             async with resp:
                 if resp.status == 200:

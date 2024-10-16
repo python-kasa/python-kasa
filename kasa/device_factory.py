@@ -11,6 +11,9 @@ from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
+from .experimental.smartcamera import SmartCamera
+from .experimental.smartcameraprotocol import SmartCameraProtocol
+from .experimental.sslaestransport import SslAesTransport
 from .iot import (
     IotBulb,
     IotDevice,
@@ -171,6 +174,7 @@ def get_device_class_from_family(device_type: str) -> type[Device] | None:
         "SMART.TAPOHUB": SmartDevice,
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
+        "SMART.IPCAMERA": SmartCamera,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
     }
@@ -188,8 +192,12 @@ def get_protocol(
 ) -> BaseProtocol | None:
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
+    ctype = config.connection_type
     protocol_transport_key = (
-        protocol_name + "." + config.connection_type.encryption_type.value
+        protocol_name
+        + "."
+        + ctype.encryption_type.value
+        + (".HTTPS" if ctype.https else "")
     )
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
@@ -199,10 +207,11 @@ def get_protocol(
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
     }
-    if protocol_transport_key not in supported_device_protocols:
-        return None
+    if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
+        from .experimental.enabled import Enabled
 
-    protocol_class, transport_class = supported_device_protocols.get(
-        protocol_transport_key
-    )  # type: ignore
-    return protocol_class(transport=transport_class(config=config))
+        if Enabled.value and protocol_transport_key == "SMART.AES.HTTPS":
+            prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
+        else:
+            return None
+    return prot_tran_cls[0](transport=prot_tran_cls[1](config=config))
