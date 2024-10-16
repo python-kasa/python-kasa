@@ -698,13 +698,17 @@ class DiscoveryResult(BaseModel):
 
     device_type: str
     device_model: str
+    device_name: Optional[str]  # noqa: UP007
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme
     encrypt_info: Optional[EncryptionInfo] = None  # noqa: UP007
+    encrypt_type: Optional[list[str]] = None  # noqa: UP007
     decrypted_data: Optional[dict] = None  # noqa: UP007
     device_id: str
 
+    firmware_version: Optional[str] = None  # noqa: UP007
+    hardware_version: Optional[str] = None  # noqa: UP007
     hw_ver: Optional[str] = None  # noqa: UP007
     owner: Optional[str] = None  # noqa: UP007
     is_support_iot_cloud: Optional[bool] = None  # noqa: UP007
