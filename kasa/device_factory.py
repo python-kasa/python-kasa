@@ -11,7 +11,8 @@ from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
-from .experimental import SmartCamera, SmartCameraProtocol
+from .experimental.smartcamera import SmartCamera
+from .experimental.smartcameraprotocol import SmartCameraProtocol
 from .experimental.sslaestransport import SslAesTransport
 from .iot import (
     IotBulb,
@@ -207,9 +208,9 @@ def get_protocol(
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
-        from .experimental import _Experimental
+        from .experimental.enabled import Enabled
 
-        if _Experimental.enabled and protocol_transport_key == "SMART.AES.HTTPS":
+        if Enabled.value and protocol_transport_key == "SMART.AES.HTTPS":
             prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
         else:
             return None

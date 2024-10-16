@@ -257,9 +257,9 @@ async def cli(
         return
 
     if experimental:
-        from kasa.experimental import _Experimental
+        from kasa.experimental.enabled import Enabled
 
-        _Experimental.set(True)
+        Enabled.set(True)
 
     logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
