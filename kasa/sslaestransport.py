@@ -286,11 +286,8 @@ class SslAesTransport(BaseTransport):
 
     async def perform_handshake(self) -> None:
         """Perform the handshake."""
-        if await self.perform_handshake1a():
-            local_nonce, server_nonce, pwd_hash = await self.perform_handshake1()
-            await self.perform_handshake2(local_nonce, server_nonce, pwd_hash)
-        else:
-            await self.perform_handshake1b()
+        local_nonce, server_nonce, pwd_hash = await self.perform_handshake1()
+        await self.perform_handshake2(local_nonce, server_nonce, pwd_hash)
 
     async def perform_handshake2(self, local_nonce, server_nonce, pwd_hash) -> None:
         """Perform the handshake."""
@@ -330,7 +327,7 @@ class SslAesTransport(BaseTransport):
 
     async def perform_handshake1(self) -> tuple[str, str, str]:
         """Perform the handshake."""
-        _LOGGER.debug("Performing handshake1 ...")
+        _LOGGER.debug("Will perform handshaking...")
 
         if not self._username:
             raise KasaException("Cannot connect to device with no credentials")
@@ -350,7 +347,7 @@ class SslAesTransport(BaseTransport):
             self._app_url, json=body, headers=self._headers, ssl=self._ssl_context
         )
 
-        _LOGGER.debug("Device responded to handshake 1 with: %s", resp_dict)
+        _LOGGER.debug("Device responded with: %s", resp_dict)
 
         if status_code != 200:
             raise KasaException(
@@ -361,7 +358,7 @@ class SslAesTransport(BaseTransport):
         resp_dict = cast(dict, resp_dict)
         error_code = SmartErrorCode.from_int(resp_dict["error_code"])
         if error_code != SmartErrorCode.INVALID_NONCE:
-            self._handle_response_error_code(resp_dict, "Unable to complete handshake1")
+            self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 
         if TYPE_CHECKING:
             resp_dict = cast(Dict[str, Any], resp_dict)
@@ -396,82 +393,6 @@ class SslAesTransport(BaseTransport):
         msg = f"Server response doesn't match our challenge on ip {self._host}"
         _LOGGER.debug(msg)
         raise AuthenticationError(msg)
-
-    async def perform_handshake1a(self) -> bool:
-        """Perform the handshake."""
-        _LOGGER.debug("Perform handshake1a ...")
-
-        if not self._username:
-            raise KasaException("Cannot connect to device with no credentials")
-
-        # Device needs the content length or it will response with 500
-        body = {
-            "method": "login",
-            "params": {
-                "encrypt_type": "3",
-                "username": self._username,
-            },
-        }
-        http_client = self._http_client
-
-        status_code, resp_dict = await http_client.post(
-            self._app_url, json=body, headers=self._headers, ssl=self._ssl_context
-        )
-
-        _LOGGER.debug("Device responded to handshake 1a with: %s", resp_dict)
-
-        if status_code != 200:
-            raise KasaException(
-                f"{self._host} responded with an unexpected "
-                + f"status code {status_code} to handshake1"
-            )
-
-        resp_dict = cast(dict, resp_dict)
-        error_code = SmartErrorCode.from_int(resp_dict["error_code"])
-        _LOGGER.debug(
-            "Device responded to handshake 1a with error code: %s", error_code
-        )
-        return error_code == SmartErrorCode.INVALID_NONCE
-
-    async def perform_handshake1b(self) -> None:
-        """Perform the handshake."""
-        _LOGGER.debug("Perform handshake1b ...")
-
-        if not self._username:
-            raise KasaException("Cannot connect to device with no credentials")
-
-        if TYPE_CHECKING:
-            assert self._credentials
-        pwd_hash = _md5_hash(self._credentials.password.encode())
-        body = {
-            "method": "login",
-            "params": {
-                "hashed": True,
-                "password": pwd_hash,
-                "username": self._username,
-            },
-        }
-        http_client = self._http_client
-
-        status_code, resp_dict = await http_client.post(
-            self._app_url, json=body, headers=self._headers, ssl=self._ssl_context
-        )
-
-        _LOGGER.debug("Device responded to handshake 1b with: %s", resp_dict)
-
-        if status_code != 200:
-            raise KasaException(
-                f"{self._host} responded with an unexpected "
-                + f"status code {status_code} to handshake1b"
-            )
-
-        resp_dict = cast(dict, resp_dict)
-        error_code = SmartErrorCode.from_int(resp_dict["error_code"])
-        _LOGGER.debug(
-            "Device responded to handshake 1b with error code: %s", error_code
-        )
-        self._handle_response_error_code(resp_dict, "Unable to complete handshake1b")
-        self._pwd_hash = pwd_hash
 
     def _handshake_session_expired(self):
         """Return true if session has expired."""
