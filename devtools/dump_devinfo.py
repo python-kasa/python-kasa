@@ -32,10 +32,12 @@ from kasa import (
     KasaException,
     TimeoutError,
 )
+from kasa.device_factory import get_protocol
+from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
-from kasa.smart import SmartDevice
-from kasa.smartprotocol import _ChildProtocolWrapper
+from kasa.experimental.smartcameraprotocol import SmartCameraProtocol
+from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
 SmartCall = namedtuple("SmartCall", "module request should_succeed child_device_id")
@@ -44,6 +46,8 @@ FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 SMART_FOLDER = "kasa/tests/fixtures/smart/"
 SMART_CHILD_FOLDER = "kasa/tests/fixtures/smart/child/"
 IOT_FOLDER = "kasa/tests/fixtures/"
+
+ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -82,11 +86,22 @@ def scrub(res):
         "mfi_setup_id",
         "mfi_token_token",
         "mfi_token_uuid",
+        "dev_id",
+        "device_name",
+        "device_alias",
+        "connect_ssid",
+        "encrypt_info",
     ]
 
     for k, v in res.items():
         if isinstance(v, collections.abc.Mapping):
-            res[k] = scrub(res.get(k))
+            if k == "encrypt_info":
+                if "data" in v:
+                    v["data"] = ""
+                if "key" in v:
+                    v["key"] = ""
+            else:
+                res[k] = scrub(res.get(k))
         elif (
             isinstance(v, list)
             and len(v) > 0
@@ -114,13 +129,13 @@ def scrub(res):
                     v = base64.b64encode(b"#MASKED_SSID#").decode()
                 elif k in ["nickname"]:
                     v = base64.b64encode(b"#MASKED_NAME#").decode()
-                elif k in ["alias"]:
+                elif k in ["alias", "device_alias"]:
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
-                elif k == "device_id" and "SCRUBBED" in v:
+                elif k in ["device_id", "dev_id"] and "SCRUBBED" in v:
                     pass  # already scrubbed
-                elif k == "device_id" and len(v) > 40:
+                elif k == ["device_id", "dev_id"] and len(v) > 40:
                     # retain the last two chars when scrubbing child ids
                     end = v[-2:]
                     v = re.sub(r"\w", "0", v)
@@ -142,14 +157,18 @@ def default_to_regular(d):
     return d
 
 
-async def handle_device(basedir, autosave, device: Device, batch_size: int):
+async def handle_device(
+    basedir, autosave, protocol, *, discovery_info=None, batch_size: int
+):
     """Create a fixture for a single device instance."""
-    if isinstance(device, SmartDevice):
+    if isinstance(protocol, SmartProtocol):
         fixture_results: list[FixtureResult] = await get_smart_fixtures(
-            device, batch_size
+            protocol, discovery_info=discovery_info, batch_size=batch_size
         )
     else:
-        fixture_results = [await get_legacy_fixture(device)]
+        fixture_results = [
+            await get_legacy_fixture(protocol, discovery_info=discovery_info)
+        ]
 
     for fixture_result in fixture_results:
         save_filename = Path(basedir) / fixture_result.folder / fixture_result.filename
@@ -207,6 +226,52 @@ async def handle_device(basedir, autosave, device: Device, batch_size: int):
         + " Do not use this flag unless you are sure you know what it means."
     ),
 )
+@click.option(
+    "--discovery-timeout",
+    envvar="KASA_DISCOVERY_TIMEOUT",
+    default=10,
+    required=False,
+    show_default=True,
+    help="Timeout for discovery.",
+)
+@click.option(
+    "-e",
+    "--encrypt-type",
+    envvar="KASA_ENCRYPT_TYPE",
+    default=None,
+    type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
+)
+@click.option(
+    "-df",
+    "--device-family",
+    envvar="KASA_DEVICE_FAMILY",
+    default="SMART.TAPOPLUG",
+    help="Device family type, e.g. `SMART.KASASWITCH`. Deprecated use `--type smart`",
+)
+@click.option(
+    "-lv",
+    "--login-version",
+    envvar="KASA_LOGIN_VERSION",
+    default=2,
+    type=int,
+    help="The login version for device authentication. Defaults to 2",
+)
+@click.option(
+    "--https/--no-https",
+    envvar="KASA_HTTPS",
+    default=False,
+    is_flag=True,
+    type=bool,
+    help="Set flag if the device encryption uses https.",
+)
+@click.option(
+    "--experimental",
+    default=False,
+    is_flag=True,
+    type=bool,
+    envvar="KASA_EXPERIMENTAL",
+    help="Enable experimental mode for devices not yet fully supported.",
+)
 @click.option("--port", help="Port override", type=int)
 async def cli(
     host,
@@ -215,10 +280,16 @@ async def cli(
     autosave,
     debug,
     username,
+    discovery_timeout,
     password,
     batch_size,
     discovery_info,
+    encrypt_type,
+    https,
+    device_family,
+    login_version,
     port,
+    experimental,
 ):
     """Generate devinfo files for devices.
 
@@ -226,6 +297,11 @@ async def cli(
     """
     if debug:
         logging.basicConfig(level=logging.DEBUG)
+
+    if experimental:
+        from kasa.experimental.enabled import Enabled
+
+        Enabled.set(True)
 
     credentials = Credentials(username=username, password=password)
     if host is not None:
@@ -247,25 +323,63 @@ async def cli(
                 credentials=credentials,
             )
             device = await Device.connect(config=dc)
-            device.update_from_discover_info(dr.get_dict())
+            await handle_device(
+                basedir,
+                autosave,
+                device.protocol,
+                discovery_info=dr.get_dict(),
+                batch_size=batch_size,
+            )
+        elif device_family and encrypt_type:
+            ctype = DeviceConnectionParameters(
+                DeviceFamily(device_family),
+                DeviceEncryptionType(encrypt_type),
+                login_version,
+                https,
+            )
+            config = DeviceConfig(
+                host=host,
+                port_override=port,
+                credentials=credentials,
+                connection_type=ctype,
+            )
+            protocol = get_protocol(config)
+            await handle_device(basedir, autosave, protocol, batch_size=batch_size)
         else:
             click.echo("Host given, performing discovery on %s." % host)
             device = await Discover.discover_single(
-                host, credentials=credentials, port=port
+                host,
+                credentials=credentials,
+                port=port,
+                discovery_timeout=discovery_timeout,
             )
-        await handle_device(basedir, autosave, device, batch_size)
+        await handle_device(
+            basedir,
+            autosave,
+            device.protocol,
+            discovery_info=device._discovery_info,
+            batch_size=batch_size,
+        )
     else:
         click.echo(
             "No --host given, performing discovery on %s. Use --target to override."
             % target
         )
-        devices = await Discover.discover(target=target, credentials=credentials)
+        devices = await Discover.discover(
+            target=target, credentials=credentials, discovery_timeout=discovery_timeout
+        )
         click.echo("Detected %s devices" % len(devices))
         for dev in devices.values():
-            await handle_device(basedir, autosave, dev, batch_size)
+            await handle_device(
+                basedir,
+                autosave,
+                dev.protocol,
+                discovery_info=dev._discovery_info,
+                batch_size=batch_size,
+            )
 
 
-async def get_legacy_fixture(device):
+async def get_legacy_fixture(protocol, *, discovery_info):
     """Get fixture for legacy IOT style protocol."""
     items = [
         Call(module="system", method="get_sysinfo"),
@@ -284,9 +398,7 @@ async def get_legacy_fixture(device):
     for test_call in items:
         try:
             click.echo(f"Testing {test_call}..", nl=False)
-            info = await device.protocol.query(
-                {test_call.module: {test_call.method: {}}}
-            )
+            info = await protocol.query({test_call.module: {test_call.method: {}}})
             resp = info[test_call.module]
         except Exception as ex:
             click.echo(click.style(f"FAIL {ex}", fg="red"))
@@ -297,7 +409,7 @@ async def get_legacy_fixture(device):
                 click.echo(click.style("OK", fg="green"))
                 successes.append((test_call, info))
         finally:
-            await device.protocol.close()
+            await protocol.close()
 
     final_query = defaultdict(defaultdict)
     final = defaultdict(defaultdict)
@@ -308,15 +420,15 @@ async def get_legacy_fixture(device):
     final = default_to_regular(final)
 
     try:
-        final = await device.protocol.query(final_query)
+        final = await protocol.query(final_query)
     except Exception as ex:
         _echo_error(f"Unable to query all successes at once: {ex}", bold=True, fg="red")
     finally:
-        await device.protocol.close()
-    if device._discovery_info and not device._discovery_info.get("system"):
+        await protocol.close()
+    if discovery_info and not discovery_info.get("system"):
         # Need to recreate a DiscoverResult here because we don't want the aliases
         # in the fixture, we want the actual field names as returned by the device.
-        dr = DiscoveryResult(**device._discovery_info)
+        dr = DiscoveryResult(**protocol._discovery_info)
         final["discovery_result"] = dr.dict(
             by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
         )
@@ -365,29 +477,24 @@ def format_exception(e):
 
 
 async def _make_requests_or_exit(
-    device: SmartDevice,
-    requests: list[SmartRequest],
+    protocol: SmartProtocol,
+    requests: dict,
     name: str,
     batch_size: int,
     *,
     child_device_id: str,
 ) -> dict[str, dict]:
     final = {}
-    protocol = (
-        device.protocol
-        if child_device_id == ""
-        else _ChildProtocolWrapper(child_device_id, device.protocol)
-    )
+    if child_device_id:
+        protocol = _ChildProtocolWrapper(child_device_id, protocol)
     try:
         end = len(requests)
         step = batch_size  # Break the requests down as there seems to be a size limit
+        keys = [key for key in requests]
         for i in range(0, end, step):
             x = i
-            requests_step = requests[x : x + step]
-            request: list[SmartRequest] | SmartRequest = (
-                requests_step[0] if len(requests_step) == 1 else requests_step
-            )
-            responses = await protocol.query(SmartRequest._create_request_dict(request))
+            requests_step = {key: requests[key] for key in keys[x : x + step]}
+            responses = await protocol.query(requests_step)
             for method, result in responses.items():
                 final[method] = result
         return final
@@ -413,10 +520,195 @@ async def _make_requests_or_exit(
             _echo_error(format_exception(ex))
         exit(1)
     finally:
-        await device.protocol.close()
+        await protocol.close()
 
 
-async def get_smart_test_calls(device: SmartDevice):
+async def get_smart_camera_test_calls(protocol: SmartProtocol):
+    """Get the list of test calls to make."""
+    test_calls: list[SmartCall] = []
+    successes: list[SmartCall] = []
+
+    requests = [
+        {
+            "method": "getAlertTypeList",
+            "params": {"msg_alarm": {"name": "alert_type"}},
+        },
+        {
+            "method": "getNightVisionCapability",
+            "params": {"image_capability": {"name": ["supplement_lamp"]}},
+        },
+        {
+            "method": "getDeviceInfo",
+            "params": {"device_info": {"name": ["basic_info"]}},
+        },
+        {
+            "method": "getDetectionConfig",
+            "params": {"motion_detection": {"name": ["motion_det"]}},
+        },
+        {
+            "method": "getPersonDetectionConfig",
+            "params": {"people_detection": {"name": ["detection"]}},
+        },
+        {
+            "method": "getVehicleDetectionConfig",
+            "params": {"vehicle_detection": {"name": ["detection"]}},
+        },
+        {
+            "method": "getBCDConfig",
+            "params": {"sound_detection": {"name": ["bcd"]}},
+        },
+        {
+            "method": "getPetDetectionConfig",
+            "params": {"pet_detection": {"name": ["detection"]}},
+        },
+        {
+            "method": "getBarkDetectionConfig",
+            "params": {"bark_detection": {"name": ["detection"]}},
+        },
+        {
+            "method": "getMeowDetectionConfig",
+            "params": {"meow_detection": {"name": ["detection"]}},
+        },
+        {
+            "method": "getGlassDetectionConfig",
+            "params": {"glass_detection": {"name": ["detection"]}},
+        },
+        {
+            "method": "getTamperDetectionConfig",
+            "params": {"tamper_detection": {"name": "tamper_det"}},
+        },
+        {
+            "method": "getLensMaskConfig",
+            "params": {"lens_mask": {"name": ["lens_mask_info"]}},
+        },
+        {
+            "method": "getLdc",
+            "params": {"image": {"name": ["switch", "common"]}},
+        },
+        {
+            "method": "getLastAlarmInfo",
+            "params": {"msg_alarm": {"name": ["chn1_msg_alarm_info"]}},
+        },
+        {
+            "method": "getLedStatus",
+            "params": {"led": {"name": ["config"]}},
+        },
+        {
+            "method": "getTargetTrackConfig",
+            "params": {"target_track": {"name": ["target_track_info"]}},
+        },
+        {
+            "method": "getPresetConfig",
+            "params": {"preset": {"name": ["preset"]}},
+        },
+        {
+            "method": "getFirmwareUpdateStatus",
+            "params": {"cloud_config": {"name": "upgrade_status"}},
+        },
+        {
+            "method": "getMediaEncrypt",
+            "params": {"cet": {"name": ["media_encrypt"]}},
+        },
+        {
+            "method": "getConnectionType",
+            "params": {"network": {"get_connection_type": []}},
+        },
+        {"method": "getAlarmConfig", "params": {"msg_alarm": {}}},
+        {"method": "getAlarmPlan", "params": {"msg_alarm_plan": {}}},
+        {"method": "getSirenTypeList", "params": {"msg_alarm": {}}},
+        {"method": "getSirenTypeList", "params": {"siren": {}}},
+        {"method": "getSirenConfig", "params": {"siren": {}}},
+        {
+            "method": "getAlertConfig",
+            "params": {
+                "msg_alarm": {
+                    "name": ["chn1_msg_alarm_info", "capability"],
+                    "table": ["usr_def_audio"],
+                }
+            },
+        },
+        {"method": "getLightTypeList", "params": {"msg_alarm": {}}},
+        {"method": "getSirenStatus", "params": {"msg_alarm": {}}},
+        {"method": "getSirenStatus", "params": {"siren": {}}},
+        {
+            "method": "getLightFrequencyInfo",
+            "params": {"image": {"name": "common"}},
+        },
+        {
+            "method": "getLightFrequencyCapability",
+            "params": {"image": {"name": "common"}},
+        },
+        {
+            "method": "getChildDeviceList",
+            "params": {"childControl": {"start_index": 0}},
+        },
+        {
+            "method": "getRotationStatus",
+            "params": {"image": {"name": ["switch"]}},
+        },
+        {
+            "method": "getNightVisionModeConfig",
+            "params": {"image": {"name": "switch"}},
+        },
+        {
+            "method": "getWhitelampStatus",
+            "params": {"image": {"get_wtl_status": ["null"]}},
+        },
+        {
+            "method": "getWhitelampConfig",
+            "params": {"image": {"name": "switch"}},
+        },
+        {
+            "method": "getMsgPushConfig",
+            "params": {"msg_push": {"name": ["chn1_msg_push_info"]}},
+        },
+        {
+            "method": "getSdCardStatus",
+            "params": {"harddisk_manage": {"table": ["hd_info"]}},
+        },
+        {
+            "method": "getCircularRecordingConfig",
+            "params": {"harddisk_manage": {"name": "harddisk"}},
+        },
+        {
+            "method": "getRecordPlan",
+            "params": {"record_plan": {"name": ["chn1_channel"]}},
+        },
+        {
+            "method": "getAudioConfig",
+            "params": {
+                "audio_config": {"name": ["speaker", "microphone"]},
+            },
+        },
+        {
+            "method": "getFirmwareAutoUpgradeConfig",
+            "params": {
+                "auto_upgrade": {"name": ["common"]},
+            },
+        },
+        {
+            "method": "getVideoQualities",
+            "params": {"video": {"name": ["main"]}},
+        },
+        {
+            "method": "getVideoCapability",
+            "params": {"video_capability": {"name": "main"}},
+        },
+    ]
+    test_calls = []
+    for request in requests:
+        test_calls.append(
+            SmartCall(
+                module=request["method"],
+                request={request["method"]: request["params"]},
+                should_succeed=True,
+                child_device_id="",
+            )
+        )
+    return test_calls, successes
+
+
+async def get_smart_test_calls(protocol: SmartProtocol):
     """Get the list of test calls to make."""
     test_calls = []
     successes = []
@@ -425,7 +717,7 @@ async def get_smart_test_calls(device: SmartDevice):
     extra_test_calls = [
         SmartCall(
             module="temp_humidity_records",
-            request=SmartRequest.get_raw_request("get_temp_humidity_records"),
+            request=SmartRequest.get_raw_request("get_temp_humidity_records").to_dict(),
             should_succeed=False,
             child_device_id="",
         ),
@@ -433,7 +725,7 @@ async def get_smart_test_calls(device: SmartDevice):
             module="trigger_logs",
             request=SmartRequest.get_raw_request(
                 "get_trigger_logs", SmartRequest.GetTriggerLogsParams()
-            ),
+            ).to_dict(),
             should_succeed=False,
             child_device_id="",
         ),
@@ -441,8 +733,8 @@ async def get_smart_test_calls(device: SmartDevice):
 
     click.echo("Testing component_nego call ..", nl=False)
     responses = await _make_requests_or_exit(
-        device,
-        [SmartRequest.component_nego()],
+        protocol,
+        SmartRequest.component_nego().to_dict(),
         "component_nego call",
         batch_size=1,
         child_device_id="",
@@ -452,7 +744,7 @@ async def get_smart_test_calls(device: SmartDevice):
     successes.append(
         SmartCall(
             module="component_nego",
-            request=SmartRequest("component_nego"),
+            request=SmartRequest("component_nego").to_dict(),
             should_succeed=True,
             child_device_id="",
         )
@@ -464,8 +756,8 @@ async def get_smart_test_calls(device: SmartDevice):
 
     if "child_device" in components:
         child_components = await _make_requests_or_exit(
-            device,
-            [SmartRequest.get_child_device_component_list()],
+            protocol,
+            SmartRequest.get_child_device_component_list().to_dict(),
             "child device component list",
             batch_size=1,
             child_device_id="",
@@ -473,7 +765,7 @@ async def get_smart_test_calls(device: SmartDevice):
         successes.append(
             SmartCall(
                 module="child_component_list",
-                request=SmartRequest.get_child_device_component_list(),
+                request=SmartRequest.get_child_device_component_list().to_dict(),
                 should_succeed=True,
                 child_device_id="",
             )
@@ -481,7 +773,7 @@ async def get_smart_test_calls(device: SmartDevice):
         test_calls.append(
             SmartCall(
                 module="child_device_list",
-                request=SmartRequest.get_child_device_list(),
+                request=SmartRequest.get_child_device_list().to_dict(),
                 should_succeed=True,
                 child_device_id="",
             )
@@ -506,11 +798,11 @@ async def get_smart_test_calls(device: SmartDevice):
             component_test_calls = [
                 SmartCall(
                     module=component_id,
-                    request=request,
+                    request={key: val},
                     should_succeed=True,
                     child_device_id="",
                 )
-                for request in requests
+                for key, val in requests.items()
             ]
             test_calls.extend(component_test_calls)
         else:
@@ -534,11 +826,11 @@ async def get_smart_test_calls(device: SmartDevice):
                 component_test_calls = [
                     SmartCall(
                         module=component_id,
-                        request=request,
+                        request={key: val},
                         should_succeed=True,
                         child_device_id=child_device_id,
                     )
-                    for request in requests
+                    for key, val in requests.items()
                 ]
                 test_calls.extend(component_test_calls)
             else:
@@ -568,23 +860,24 @@ def get_smart_child_fixture(response):
     )
 
 
-async def get_smart_fixtures(device: SmartDevice, batch_size: int):
+async def get_smart_fixtures(
+    protocol: SmartProtocol, *, discovery_info=None, batch_size: int
+):
     """Get fixture for new TAPO style protocol."""
-    test_calls, successes = await get_smart_test_calls(device)
+    if isinstance(protocol, SmartCameraProtocol):
+        test_calls, successes = await get_smart_camera_test_calls(protocol)
+    else:
+        test_calls, successes = await get_smart_test_calls(protocol)
 
     for test_call in test_calls:
         click.echo(f"Testing  {test_call.module}..", nl=False)
         try:
             click.echo(f"Testing {test_call}..", nl=False)
             if test_call.child_device_id == "":
-                response = await device.protocol.query(
-                    SmartRequest._create_request_dict(test_call.request)
-                )
+                response = await protocol.query(test_call.request)
             else:
-                cp = _ChildProtocolWrapper(test_call.child_device_id, device.protocol)
-                response = await cp.query(
-                    SmartRequest._create_request_dict(test_call.request)
-                )
+                cp = _ChildProtocolWrapper(test_call.child_device_id, protocol)
+                response = await cp.query(test_call.request)
         except AuthenticationError as ex:
             _echo_error(
                 f"Unable to query the device due to an authentication error: {ex}",
@@ -614,12 +907,12 @@ async def get_smart_fixtures(device: SmartDevice, batch_size: int):
                     click.echo(click.style("OK", fg="green"))
                 successes.append(test_call)
         finally:
-            await device.protocol.close()
+            await protocol.close()
 
-    device_requests: dict[str, list[SmartRequest]] = {}
+    device_requests: dict[str, dict] = {}
     for success in successes:
-        device_request = device_requests.setdefault(success.child_device_id, [])
-        device_request.append(success.request)
+        device_request = device_requests.setdefault(success.child_device_id, {})
+        device_request.update(success.request)
 
     scrubbed_device_ids = {
         device_id: f"SCRUBBED_CHILD_DEVICE_ID_{index}"
@@ -628,7 +921,7 @@ async def get_smart_fixtures(device: SmartDevice, batch_size: int):
     }
 
     final = await _make_requests_or_exit(
-        device,
+        protocol,
         device_requests[""],
         "all successes at once",
         batch_size,
@@ -639,7 +932,7 @@ async def get_smart_fixtures(device: SmartDevice, batch_size: int):
         if child_device_id == "":
             continue
         response = await _make_requests_or_exit(
-            device,
+            protocol,
             requests,
             "all child successes at once",
             batch_size,
@@ -671,18 +964,27 @@ async def get_smart_fixtures(device: SmartDevice, batch_size: int):
 
     # Need to recreate a DiscoverResult here because we don't want the aliases
     # in the fixture, we want the actual field names as returned by the device.
-    dr = DiscoveryResult(**device._discovery_info)  # type: ignore
-    final["discovery_result"] = dr.dict(
-        by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
-    )
+    if discovery_info:
+        dr = DiscoveryResult(**discovery_info)  # type: ignore
+        final["discovery_result"] = dr.dict(
+            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
+        )
 
     click.echo("Got %s successes" % len(successes))
     click.echo(click.style("## device info file ##", bold=True))
 
-    hw_version = final["get_device_info"]["hw_ver"]
-    sw_version = final["get_device_info"]["fw_ver"]
-    model = final["discovery_result"]["device_model"]
-    sw_version = sw_version.split(" ", maxsplit=1)[0]
+    if "get_device_info" in final:
+        hw_version = final["get_device_info"]["hw_ver"]
+        sw_version = final["get_device_info"]["fw_ver"]
+        model = final["discovery_result"]["device_model"]
+        sw_version = sw_version.split(" ", maxsplit=1)[0]
+    else:
+        hw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["hw_version"]
+        sw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["sw_version"]
+        model = final["getDeviceInfo"]["device_info"]["basic_info"]["device_model"]
+        region = final["getDeviceInfo"]["device_info"]["basic_info"]["region"]
+        sw_version = sw_version.split(" ", maxsplit=1)[0]
+        model = f"{model}({region})"
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
     copy_folder = SMART_FOLDER
