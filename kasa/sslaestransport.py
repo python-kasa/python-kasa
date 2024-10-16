@@ -81,8 +81,11 @@ class SslAesTransport(BaseTransport):
     }
     CIPHERS = ":".join(
         [
-            "AES256-SHA",
+            "AES256-GCM-SHA384",
+            "AES256-SHA256",
             "AES128-GCM-SHA256",
+            "AES128-SHA256",
+            "AES256-SHA",
         ]
     )
     DEFAULT_TIMEOUT = 10
@@ -198,6 +201,7 @@ class SslAesTransport(BaseTransport):
             url,
             json=passthrough_request_str,
             headers=headers,
+            ssl=self._ssl_context,
         )
 
         if status_code != 200:
@@ -290,6 +294,7 @@ class SslAesTransport(BaseTransport):
 
     async def perform_handshake2(self, local_nonce, server_nonce, pwd_hash) -> None:
         """Perform the handshake."""
+        _LOGGER.debug("Performing handshake2 ...")
         digest_password = self.generate_digest_password(
             local_nonce, server_nonce, pwd_hash
         )
@@ -321,6 +326,7 @@ class SslAesTransport(BaseTransport):
         ivb = self.generate_encryption_token("ivb", local_nonce, server_nonce, pwd_hash)
         self._encryption_session = AesEncyptionSession(lsk, ivb)
         self._state = TransportState.ESTABLISHED
+        _LOGGER.debug("Handshake2 complete ...")
 
     async def perform_handshake1(self) -> tuple[str, str, str]:
         """Perform the handshake."""
