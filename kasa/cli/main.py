@@ -158,6 +158,7 @@ def _legacy_type_to_class(_type):
     type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
 )
 @click.option(
+    "-df",
     "--device-family",
     envvar="KASA_DEVICE_FAMILY",
     default="SMART.TAPOPLUG",
@@ -182,7 +183,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--discovery-timeout",
     envvar="KASA_DISCOVERY_TIMEOUT",
-    default=5,
+    default=10,
     required=False,
     show_default=True,
     help="Timeout for discovery.",
@@ -326,15 +327,11 @@ async def cli(
         dev = await Device.connect(config=config)
         device_updated = True
     else:
-        from kasa.discover import Discover
+        from .discover import discover
 
-        dev = await Discover.discover_single(
-            host,
-            port=port,
-            credentials=credentials,
-            timeout=timeout,
-            discovery_timeout=discovery_timeout,
-        )
+        dev = await ctx.invoke(discover)
+        if not dev:
+            error(f"Unable to create device for {host}")
 
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.

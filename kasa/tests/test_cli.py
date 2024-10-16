@@ -2,6 +2,7 @@ import json
 import os
 import re
 from datetime import datetime
+from unittest.mock import ANY
 
 import asyncclick as click
 import pytest
@@ -17,7 +18,6 @@ from kasa import (
     EmeterStatus,
     KasaException,
     Module,
-    UnsupportedDeviceError,
 )
 from kasa.cli.device import (
     alias,
@@ -613,6 +613,7 @@ async def test_without_device_type(dev, mocker, runner):
         credentials=Credentials("foo", "bar"),
         timeout=5,
         discovery_timeout=7,
+        on_unsupported=ANY,
     )
 
 
@@ -735,7 +736,7 @@ async def test_host_unsupported(unsupported_device_info, runner):
     )
 
     assert res.exit_code != 0
-    assert isinstance(res.exception, UnsupportedDeviceError)
+    assert "== Unsupported device ==" in res.output
 
 
 @new_discovery
