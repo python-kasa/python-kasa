@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal, TypeAlias
 
 from ...feature import Feature
 from ..smartmodule import SmartModule
@@ -16,10 +17,15 @@ class WaterleakStatus(Enum):
     Drying = "water_dry"
 
 
+Volume: TypeAlias = Literal["low", "normal", "high", "mute"]
+ALLOWED_VOLUMES = ["low", "normal", "high", "mute"]
+
+
 class WaterleakSensor(SmartModule):
     """Implementation of waterleak module."""
 
     REQUIRED_COMPONENT = "sensor_alarm"
+    QUERY_GETTER_NAME = "get_alarm_config"
 
     def _initialize_features(self):
         """Initialize features after the initial update."""
@@ -47,11 +53,18 @@ class WaterleakSensor(SmartModule):
                 type=Feature.Type.BinarySensor,
             )
         )
-
-    def query(self) -> dict:
-        """Query to execute during the update cycle."""
-        # Water leak information is contained in the main device info response.
-        return {}
+        self._add_feature(
+            Feature(
+                self._device,
+                id="water_alert_volume",
+                name="Water alert volume",
+                container=self,
+                attribute_getter="alert_volume",
+                attribute_setter="set_alert_volume",
+                type=Feature.Type.Choice,
+                choices_getter=lambda: ALLOWED_VOLUMES,
+            )
+        )
 
     @property
     def status(self) -> WaterleakStatus:
@@ -62,3 +75,12 @@ class WaterleakSensor(SmartModule):
     def alert(self) -> bool:
         """Return true if alarm is active."""
         return self._device.sys_info["in_alarm"]
+
+    @property
+    def alert_volume(self) -> Volume:
+        """Get water leak alert volume."""
+        return self.data["volume"]
+
+    async def set_alert_volume(self, volume: Volume):
+        """Set water leak alert volume."""
+        await self.call("set_alarm_config", {"volume": volume})
