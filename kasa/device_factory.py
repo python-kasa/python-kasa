@@ -12,6 +12,7 @@ from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
 from .experimental import SmartCamera, SmartCameraProtocol
+from .experimental.sslaestransport import SslAesTransport
 from .iot import (
     IotBulb,
     IotDevice,
@@ -29,7 +30,6 @@ from .protocol import (
 )
 from .smart import SmartDevice
 from .smartprotocol import SmartProtocol
-from .sslaestransport import SslAesTransport
 from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)

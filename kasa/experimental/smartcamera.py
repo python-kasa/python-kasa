@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ..device_type import DeviceType
 from ..smart import SmartDevice
+from .sslaestransport import SmartErrorCode
 
 
 class SmartCamera(SmartDevice):
@@ -12,9 +13,8 @@ class SmartCamera(SmartDevice):
     async def update(self, update_children: bool = False):
         """Update the device."""
         initial_query = {
-            # "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
-            "getDeviceInfo": {"device_info": {"name": ["basic_info"]}},
-            # "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
+            "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
+            "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
@@ -38,7 +38,8 @@ class SmartCamera(SmartDevice):
     @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
-        return True
+        if isinstance(self._last_update["getLensMaskConfig"], SmartErrorCode):
+            return True
         return (
             self._last_update["getLensMaskConfig"]["lens_mask"]["lens_mask_info"][
                 "enabled"
@@ -46,8 +47,10 @@ class SmartCamera(SmartDevice):
             == "on"
         )
 
-    async def set_state(self, on: bool):  # TODO: better name wanted.
+    async def set_state(self, on: bool):
         """Set the device state."""
+        if isinstance(self._last_update["getLensMaskConfig"], SmartErrorCode):
+            return
         query = {
             "setLensMaskConfig": {
                 "lens_mask": {"lens_mask_info": {"enabled": "on" if on else "off"}}
