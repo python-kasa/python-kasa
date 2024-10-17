@@ -42,6 +42,7 @@ from kasa.experimental.smartcameraprotocol import (
     SmartCameraProtocol,
     _ChildCameraProtocolWrapper,
 )
+from kasa.smart import SmartChildDevice
 from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
@@ -652,10 +653,6 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
             "params": {"image": {"name": "common"}},
         },
         {
-            "method": "getChildDeviceList",
-            "params": {"childControl": {"start_index": 0}},
-        },
-        {
             "method": "getRotationStatus",
             "params": {"image": {"name": ["switch"]}},
         },
@@ -709,10 +706,7 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         },
     ]
     test_calls = []
-    child_request = None
     for request in requests:
-        if request["method"] == "getChildDeviceList":
-            child_request = {request["method"]: request["params"]}
         test_calls.append(
             SmartCall(
                 module=request["method"],
@@ -721,11 +715,13 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 child_device_id="",
             )
         )
-    assert child_request  # noqa: S101
+
+    # Now get the child device requests
     try:
+        child_request = {"getChildDeviceList": {"childControl": {"start_index": 0}}}
         child_response = await protocol.query(child_request)
-    except Exception:  # noqa: S110
-        pass
+    except Exception:
+        _LOGGER.debug("Device does not have any children.")
     else:
         successes.append(
             SmartCall(
@@ -737,21 +733,64 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         )
         child_list = child_response["getChildDeviceList"]["child_device_list"]
         for child in child_list:
-            child_id = child["device_id"]
-            info = SmartCall(
-                module="get_device_info",
-                request={"get_device_info": None},
-                should_succeed=True,
-                child_device_id=child_id,
-            )
-            nego = SmartCall(
-                module="component_nego",
-                request={"component_nego": None},
-                should_succeed=True,
-                child_device_id=child_id,
-            )
-            test_calls.append(info)
-            test_calls.append(nego)
+            child_id = child.get("device_id") or child.get("dev_id")
+            if not child_id:
+                _LOGGER.error("Could not find child device id in %s", child)
+            # If category is in the child device map the protocol is smart.
+            if (
+                category := child.get("category")
+            ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
+                child_protocol = _ChildProtocolWrapper(child_id, protocol)
+                try:
+                    nego_response = await child_protocol.query({"component_nego": None})
+                except Exception as ex:
+                    _LOGGER.error("Error calling component_nego: %s", ex)
+                    continue
+                if "component_nego" not in nego_response:
+                    _LOGGER.error(
+                        "Could not find component_nego in device response: %s",
+                        nego_response,
+                    )
+                    continue
+                successes.append(
+                    SmartCall(
+                        module="component_nego",
+                        request={"component_nego": None},
+                        should_succeed=True,
+                        child_device_id=child_id,
+                    )
+                )
+                child_components = {
+                    item["id"]: item["ver_code"]
+                    for item in nego_response["component_nego"]["component_list"]
+                }
+                for component_id, ver_code in child_components.items():
+                    if (
+                        requests := get_component_requests(component_id, ver_code)
+                    ) is not None:
+                        component_test_calls = [
+                            SmartCall(
+                                module=component_id,
+                                request={key: val},
+                                should_succeed=True,
+                                child_device_id=child_id,
+                            )
+                            for key, val in requests.items()
+                        ]
+                        test_calls.extend(component_test_calls)
+                    else:
+                        click.echo(f"Skipping {component_id}..", nl=False)
+                        click.echo(click.style("UNSUPPORTED", fg="yellow"))
+            else:  # Not a smart protocol device so assume camera protocl
+                for request in requests:
+                    test_calls.append(
+                        SmartCall(
+                            module=request["method"],
+                            request={request["method"]: request["params"]},
+                            should_succeed=True,
+                            child_device_id=child_id,
+                        )
+                    )
     return test_calls, successes
 
 
@@ -1012,7 +1051,7 @@ async def get_smart_fixtures(
             cd = final.setdefault("child_devices", {})
             cd[scrubbed] = response
 
-    # Scrub the device ids in the parent
+    # Scrub the device ids in the parent for smart protocol
     if gc := final.get("get_child_device_component_list"):
         for child in gc["child_component_list"]:
             device_id = child["device_id"]
@@ -1021,10 +1060,16 @@ async def get_smart_fixtures(
             device_id = child["device_id"]
             child["device_id"] = scrubbed_device_ids[device_id]
 
+    # Scrub the device ids in the parent for the smart camera protocol
     if gc := final.get("getChildDeviceList"):
         for child in gc["child_device_list"]:
-            device_id = child["device_id"]
-            child["device_id"] = scrubbed_device_ids[device_id]
+            if device_id := child.get("device_id"):
+                child["device_id"] = scrubbed_device_ids[device_id]
+                continue
+            if device_id := child.get("dev_id"):
+                child["dev_id"] = scrubbed_device_ids[device_id]
+                continue
+            _LOGGER.error("Could not find a device for the child device: %s", child)
 
     # Need to recreate a DiscoverResult here because we don't want the aliases
     # in the fixture, we want the actual field names as returned by the device.
@@ -1040,7 +1085,10 @@ async def get_smart_fixtures(
     if "get_device_info" in final:
         hw_version = final["get_device_info"]["hw_ver"]
         sw_version = final["get_device_info"]["fw_ver"]
-        model = final["discovery_result"]["device_model"]
+        if discovery_info:
+            model = discovery_info["device_model"]
+        else:
+            model = final["get_device_info"]["model"] + "(XX)"
         sw_version = sw_version.split(" ", maxsplit=1)[0]
     else:
         hw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["hw_version"]
