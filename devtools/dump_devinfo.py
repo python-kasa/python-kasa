@@ -28,6 +28,8 @@ from kasa import (
     AuthenticationError,
     Credentials,
     Device,
+    DeviceConfig,
+    DeviceConnectionParameters,
     Discover,
     KasaException,
     TimeoutError,
@@ -307,7 +309,6 @@ async def cli(
     if host is not None:
         if discovery_info:
             click.echo("Host and discovery info given, trying connect on %s." % host)
-            from kasa import DeviceConfig, DeviceConnectionParameters
 
             di = json.loads(discovery_info)
             dr = DiscoveryResult(**di)
@@ -343,8 +344,13 @@ async def cli(
                 credentials=credentials,
                 connection_type=ctype,
             )
-            protocol = get_protocol(config)
-            await handle_device(basedir, autosave, protocol, batch_size=batch_size)
+            if protocol := get_protocol(config):
+                await handle_device(basedir, autosave, protocol, batch_size=batch_size)
+            else:
+                raise KasaException(
+                    "Could not find a protocol for the given parameters. "
+                    + "Maybe you need to enable --experimental."
+                )
         else:
             click.echo("Host given, performing discovery on %s." % host)
             device = await Discover.discover_single(
