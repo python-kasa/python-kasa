@@ -863,7 +863,7 @@ async def get_smart_test_calls(protocol: SmartProtocol):
         test_calls.append(
             SmartCall(
                 module="component_nego",
-                request=SmartRequest("component_nego"),
+                request=SmartRequest("component_nego").to_dict(),
                 should_succeed=True,
                 child_device_id=child_device_id,
             )
