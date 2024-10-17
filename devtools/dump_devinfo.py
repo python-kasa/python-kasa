@@ -93,6 +93,7 @@ def scrub(res):
         "device_alias",
         "connect_ssid",
         "encrypt_info",
+        "local_ip",
     ]
 
     for k, v in res.items():
@@ -124,7 +125,7 @@ def scrub(res):
                         v = f"{v[:8]}{delim}{rest}"
                 elif k in ["latitude", "latitude_i", "longitude", "longitude_i"]:
                     v = 0
-                elif k in ["ip"]:
+                elif k in ["ip", "local_ip"]:
                     v = "127.0.0.123"
                 elif k in ["ssid"]:
                     # Need a valid base64 value here
