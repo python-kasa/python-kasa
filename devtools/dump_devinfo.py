@@ -359,13 +359,13 @@ async def cli(
                 port=port,
                 discovery_timeout=discovery_timeout,
             )
-        await handle_device(
-            basedir,
-            autosave,
-            device.protocol,
-            discovery_info=device._discovery_info,
-            batch_size=batch_size,
-        )
+            await handle_device(
+                basedir,
+                autosave,
+                device.protocol,
+                discovery_info=device._discovery_info,
+                batch_size=batch_size,
+            )
     else:
         click.echo(
             "No --host given, performing discovery on %s. Use --target to override."
