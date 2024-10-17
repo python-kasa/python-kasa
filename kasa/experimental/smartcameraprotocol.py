@@ -171,7 +171,7 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
                 "params": {
                     "childControl": {
                         "device_id": self._device_id,
-                        "request_data": {key: val},
+                        "request_data": {"method": key, "params": val},
                     }
                 },
             }

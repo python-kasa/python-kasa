@@ -739,8 +739,8 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         for child in child_list:
             child_id = child["device_id"]
             info = SmartCall(
-                module="getDeviceInfo",
-                request={"get_device_info": {}},
+                module="get_device_info",
+                request={"get_device_info": None},
                 should_succeed=True,
                 child_device_id=child_id,
             )
