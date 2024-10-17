@@ -121,6 +121,14 @@ class DeviceConnectionParameters:
     login_version: Optional[int] = None
     https: bool = False
 
+    def __hash__(self):
+        return (
+            self.device_family.__hash__()
+            + self.encryption_type.__hash__()
+            + self.https.__hash__()
+            + self.login_version.__hash__()
+        )
+
     @staticmethod
     def from_values(
         device_family: str,
