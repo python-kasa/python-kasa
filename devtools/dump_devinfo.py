@@ -542,175 +542,61 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
     test_calls: list[SmartCall] = []
     successes: list[SmartCall] = []
 
-    requests = [
-        {
-            "method": "getAlertTypeList",
-            "params": {"msg_alarm": {"name": "alert_type"}},
+    requests = {
+        "getAlertTypeList": {"msg_alarm": {"name": "alert_type"}},
+        "getNightVisionCapability": {"image_capability": {"name": ["supplement_lamp"]}},
+        "getDeviceInfo": {"device_info": {"name": ["basic_info"]}},
+        "getDetectionConfig": {"motion_detection": {"name": ["motion_det"]}},
+        "getPersonDetectionConfig": {"people_detection": {"name": ["detection"]}},
+        "getVehicleDetectionConfig": {"vehicle_detection": {"name": ["detection"]}},
+        "getBCDConfig": {"sound_detection": {"name": ["bcd"]}},
+        "getPetDetectionConfig": {"pet_detection": {"name": ["detection"]}},
+        "getBarkDetectionConfig": {"bark_detection": {"name": ["detection"]}},
+        "getMeowDetectionConfig": {"meow_detection": {"name": ["detection"]}},
+        "getGlassDetectionConfig": {"glass_detection": {"name": ["detection"]}},
+        "getTamperDetectionConfig": {"tamper_detection": {"name": "tamper_det"}},
+        "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
+        "getLdc": {"image": {"name": ["switch", "common"]}},
+        "getLastAlarmInfo": {"msg_alarm": {"name": ["chn1_msg_alarm_info"]}},
+        "getLedStatus": {"led": {"name": ["config"]}},
+        "getTargetTrackConfig": {"target_track": {"name": ["target_track_info"]}},
+        "getPresetConfig": {"preset": {"name": ["preset"]}},
+        "getFirmwareUpdateStatus": {"cloud_config": {"name": "upgrade_status"}},
+        "getMediaEncrypt": {"cet": {"name": ["media_encrypt"]}},
+        "getConnectionType": {"network": {"get_connection_type": []}},
+        "getAlarmConfig": {"msg_alarm": {}},
+        "getAlarmPlan": {"msg_alarm_plan": {}},
+        "getSirenTypeList": {"siren": {}},
+        "getSirenConfig": {"siren": {}},
+        "getAlertConfig": {
+            "msg_alarm": {
+                "name": ["chn1_msg_alarm_info", "capability"],
+                "table": ["usr_def_audio"],
+            }
         },
-        {
-            "method": "getNightVisionCapability",
-            "params": {"image_capability": {"name": ["supplement_lamp"]}},
-        },
-        {
-            "method": "getDeviceInfo",
-            "params": {"device_info": {"name": ["basic_info"]}},
-        },
-        {
-            "method": "getDetectionConfig",
-            "params": {"motion_detection": {"name": ["motion_det"]}},
-        },
-        {
-            "method": "getPersonDetectionConfig",
-            "params": {"people_detection": {"name": ["detection"]}},
-        },
-        {
-            "method": "getVehicleDetectionConfig",
-            "params": {"vehicle_detection": {"name": ["detection"]}},
-        },
-        {
-            "method": "getBCDConfig",
-            "params": {"sound_detection": {"name": ["bcd"]}},
-        },
-        {
-            "method": "getPetDetectionConfig",
-            "params": {"pet_detection": {"name": ["detection"]}},
-        },
-        {
-            "method": "getBarkDetectionConfig",
-            "params": {"bark_detection": {"name": ["detection"]}},
-        },
-        {
-            "method": "getMeowDetectionConfig",
-            "params": {"meow_detection": {"name": ["detection"]}},
-        },
-        {
-            "method": "getGlassDetectionConfig",
-            "params": {"glass_detection": {"name": ["detection"]}},
-        },
-        {
-            "method": "getTamperDetectionConfig",
-            "params": {"tamper_detection": {"name": "tamper_det"}},
-        },
-        {
-            "method": "getLensMaskConfig",
-            "params": {"lens_mask": {"name": ["lens_mask_info"]}},
-        },
-        {
-            "method": "getLdc",
-            "params": {"image": {"name": ["switch", "common"]}},
-        },
-        {
-            "method": "getLastAlarmInfo",
-            "params": {"msg_alarm": {"name": ["chn1_msg_alarm_info"]}},
-        },
-        {
-            "method": "getLedStatus",
-            "params": {"led": {"name": ["config"]}},
-        },
-        {
-            "method": "getTargetTrackConfig",
-            "params": {"target_track": {"name": ["target_track_info"]}},
-        },
-        {
-            "method": "getPresetConfig",
-            "params": {"preset": {"name": ["preset"]}},
-        },
-        {
-            "method": "getFirmwareUpdateStatus",
-            "params": {"cloud_config": {"name": "upgrade_status"}},
-        },
-        {
-            "method": "getMediaEncrypt",
-            "params": {"cet": {"name": ["media_encrypt"]}},
-        },
-        {
-            "method": "getConnectionType",
-            "params": {"network": {"get_connection_type": []}},
-        },
-        {"method": "getAlarmConfig", "params": {"msg_alarm": {}}},
-        {"method": "getAlarmPlan", "params": {"msg_alarm_plan": {}}},
-        {"method": "getSirenTypeList", "params": {"msg_alarm": {}}},
-        {"method": "getSirenTypeList", "params": {"siren": {}}},
-        {"method": "getSirenConfig", "params": {"siren": {}}},
-        {
-            "method": "getAlertConfig",
-            "params": {
-                "msg_alarm": {
-                    "name": ["chn1_msg_alarm_info", "capability"],
-                    "table": ["usr_def_audio"],
-                }
-            },
-        },
-        {"method": "getLightTypeList", "params": {"msg_alarm": {}}},
-        {"method": "getSirenStatus", "params": {"msg_alarm": {}}},
-        {"method": "getSirenStatus", "params": {"siren": {}}},
-        {
-            "method": "getLightFrequencyInfo",
-            "params": {"image": {"name": "common"}},
-        },
-        {
-            "method": "getLightFrequencyCapability",
-            "params": {"image": {"name": "common"}},
-        },
-        {
-            "method": "getRotationStatus",
-            "params": {"image": {"name": ["switch"]}},
-        },
-        {
-            "method": "getNightVisionModeConfig",
-            "params": {"image": {"name": "switch"}},
-        },
-        {
-            "method": "getWhitelampStatus",
-            "params": {"image": {"get_wtl_status": ["null"]}},
-        },
-        {
-            "method": "getWhitelampConfig",
-            "params": {"image": {"name": "switch"}},
-        },
-        {
-            "method": "getMsgPushConfig",
-            "params": {"msg_push": {"name": ["chn1_msg_push_info"]}},
-        },
-        {
-            "method": "getSdCardStatus",
-            "params": {"harddisk_manage": {"table": ["hd_info"]}},
-        },
-        {
-            "method": "getCircularRecordingConfig",
-            "params": {"harddisk_manage": {"name": "harddisk"}},
-        },
-        {
-            "method": "getRecordPlan",
-            "params": {"record_plan": {"name": ["chn1_channel"]}},
-        },
-        {
-            "method": "getAudioConfig",
-            "params": {
-                "audio_config": {"name": ["speaker", "microphone"]},
-            },
-        },
-        {
-            "method": "getFirmwareAutoUpgradeConfig",
-            "params": {
-                "auto_upgrade": {"name": ["common"]},
-            },
-        },
-        {
-            "method": "getVideoQualities",
-            "params": {"video": {"name": ["main"]}},
-        },
-        {
-            "method": "getVideoCapability",
-            "params": {"video_capability": {"name": "main"}},
-        },
-    ]
+        "getLightTypeList": {"msg_alarm": {}},
+        "getSirenStatus": {"siren": {}},
+        "getLightFrequencyInfo": {"image": {"name": "common"}},
+        "getLightFrequencyCapability": {"image": {"name": "common"}},
+        "getRotationStatus": {"image": {"name": ["switch"]}},
+        "getNightVisionModeConfig": {"image": {"name": "switch"}},
+        "getWhitelampStatus": {"image": {"get_wtl_status": ["null"]}},
+        "getWhitelampConfig": {"image": {"name": "switch"}},
+        "getMsgPushConfig": {"msg_push": {"name": ["chn1_msg_push_info"]}},
+        "getSdCardStatus": {"harddisk_manage": {"table": ["hd_info"]}},
+        "getCircularRecordingConfig": {"harddisk_manage": {"name": "harddisk"}},
+        "getRecordPlan": {"record_plan": {"name": ["chn1_channel"]}},
+        "getAudioConfig": {"audio_config": {"name": ["speaker", "microphone"]}},
+        "getFirmwareAutoUpgradeConfig": {"auto_upgrade": {"name": ["common"]}},
+        "getVideoQualities": {"video": {"name": ["main"]}},
+        "getVideoCapability": {"video_capability": {"name": "main"}},
+    }
     test_calls = []
-    for request in requests:
+    for method, params in requests.items():
         test_calls.append(
             SmartCall(
-                module=request["method"],
-                request={request["method"]: request["params"]},
+                module=method,
+                request={method: params},
                 should_succeed=True,
                 child_device_id="",
             )
@@ -781,12 +667,12 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                     else:
                         click.echo(f"Skipping {component_id}..", nl=False)
                         click.echo(click.style("UNSUPPORTED", fg="yellow"))
-            else:  # Not a smart protocol device so assume camera protocl
-                for request in requests:
+            else:  # Not a smart protocol device so assume camera protocol
+                for method, params in requests.items():
                     test_calls.append(
                         SmartCall(
-                            module=request["method"],
-                            request={request["method"]: request["params"]},
+                            module=method,
+                            request={method: params},
                             should_succeed=True,
                             child_device_id=child_id,
                         )
