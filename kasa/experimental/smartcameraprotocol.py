@@ -123,7 +123,7 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
     and should not be used directly.
 
     This class overrides query() method of the protocol to modify all
-    outgoing queries to use ``control_child`` command, and unwraps the
+    outgoing queries to use ``childControl`` command, and unwraps the
     device responses before returning to the caller.
     """
 
@@ -131,30 +131,6 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
         self._device_id = device_id
         self._protocol = base_protocol
         self._transport = base_protocol._transport
-
-    def _get_method_and_params_for_request(self, request):
-        """Return payload for wrapping.
-
-        TODO: this does not support batches and requires refactoring in the future.
-        """
-        if isinstance(request, dict):
-            if len(request) == 1:
-                smart_method = next(iter(request))
-                smart_params = request[smart_method]
-            else:
-                smart_method = "multipleRequest"
-                requests = [
-                    {"method": method, "params": params}
-                    if params
-                    else {"method": method}
-                    for method, params in request.items()
-                ]
-                smart_params = {"requests": requests}
-        else:
-            smart_method = request
-            smart_params = None
-
-        return smart_method, smart_params
 
     async def query(self, request: str | dict, retry_count: int = 3) -> dict:
         """Wrap request inside control_child envelope."""
@@ -178,10 +154,11 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
             }
             methods.append(key)
             requests.append(request)
+
         multipleRequest = {"multipleRequest": {"requests": requests}}
-        _LOGGER.info("Multi child request response is %s", multipleRequest)
+
         response = await self._protocol.query(multipleRequest, retry_count)
-        _LOGGER.info("Multi child request response is %s", response)
+
         responses = response["multipleRequest"]["responses"]
         response_dict = {}
         for index_id, response in enumerate(responses):
