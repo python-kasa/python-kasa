@@ -914,11 +914,11 @@ async def get_smart_fixtures(
     if isinstance(protocol, SmartCameraProtocol):
         test_calls, successes = await get_smart_camera_test_calls(protocol)
         child_wrapper: type[_ChildProtocolWrapper | _ChildCameraProtocolWrapper] = (
-            _ChildProtocolWrapper
+            _ChildCameraProtocolWrapper
         )
     else:
         test_calls, successes = await get_smart_test_calls(protocol)
-        child_wrapper = _ChildCameraProtocolWrapper
+        child_wrapper = _ChildProtocolWrapper
 
     for test_call in test_calls:
         click.echo(f"Testing  {test_call.module}..", nl=False)
