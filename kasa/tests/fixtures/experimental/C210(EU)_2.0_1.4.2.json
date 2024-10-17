@@ -32,8 +32,6 @@
             "is_support_https": true
         }
     },
-    "getAlarmConfig": -40210,
-    "getAlarmPlan": -40210,
     "getAlertConfig": {
         "msg_alarm": {
             "capability": {
@@ -107,6 +105,12 @@
                 "loop": "on"
             }
         }
+    },
+    "getConnectionType": {
+        "link_type": "wifi",
+        "rssi": "2",
+        "rssiValue": -64,
+        "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
         "motion_detection": {
@@ -280,7 +284,6 @@
             }
         }
     },
-    "getLightFrequencyCapability": -40210,
     "getLightFrequencyInfo": {
         "image": {
             "common": {
@@ -341,7 +344,6 @@
             }
         }
     },
-    "getLightTypeList": -40210,
     "getMediaEncrypt": {
         "cet": {
             "media_encrypt": {
@@ -498,9 +500,6 @@
             ]
         }
     },
-    "getSirenConfig": -40210,
-    "getSirenStatus": -40210,
-    "getSirenTypeList": -40210,
     "getTamperDetectionConfig": {
         "tamper_detection": {
             "tamper_det": {
@@ -599,5 +598,9 @@
                 "wtl_manual_start_flag": "off"
             }
         }
+    },
+    "getWhitelampStatus": {
+        "rest_time": 0,
+        "status": 0
     }
 }
