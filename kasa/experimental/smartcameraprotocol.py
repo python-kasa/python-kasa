@@ -6,7 +6,7 @@ import logging
 from pprint import pformat as pf
 from typing import Any
 
-from ..exceptions import DeviceError, _RetryableError
+from ..exceptions import DeviceError, KasaException, _RetryableError
 from ..json import dumps as json_dumps
 from ..smartprotocol import SmartProtocol
 from .sslaestransport import (
@@ -63,23 +63,29 @@ class SmartCameraProtocol(SmartProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if isinstance(request, dict):
-            if len(request) == 0:
-                multi_method = next(iter(request))
-                module = next(iter(request[multi_method]))
-                req = {
-                    "method": multi_method[:3],
-                    module: request[multi_method][module],
-                }
+            if len(request) == 1:
+                method = next(iter(request))
+                if method == "multipleRequest":
+                    params = request["multipleRequest"]
+                    req = {"method": "multipleRequest", "params": params}
+                elif method[:3] == "set":
+                    params = next(iter(request[method]))
+                    req = {
+                        "method": method[:3],
+                        params: request[method][params],
+                    }
+                else:
+                    return await self._execute_multiple_query(request, retry_count)
             else:
                 return await self._execute_multiple_query(request, retry_count)
         else:
             # If method like getSomeThing then module will be some_thing
-            multi_method = request
+            method = request
             snake_name = "".join(
-                ["_" + i.lower() if i.isupper() else i for i in multi_method]
+                ["_" + i.lower() if i.isupper() else i for i in method]
             ).lstrip("_")
-            module = snake_name[4:]
-            req = {"method": snake_name[:3], module: {}}
+            params = snake_name[4:]
+            req = {"method": snake_name[:3], params: {}}
 
         smart_request = json_dumps(req)
         if debug_enabled:
@@ -99,10 +105,90 @@ class SmartCameraProtocol(SmartProtocol):
 
         if "error_code" in response_data:
             # H200 does not return an error code
-            self._handle_response_error_code(response_data, multi_method)
+            self._handle_response_error_code(response_data, method)
 
         # TODO need to update handle response lists
 
-        if multi_method[:3] == "set":
+        if method[:3] == "set":
             return {}
-        return {multi_method: {module: response_data[module]}}
+        if method == "multipleRequest":
+            return {method: response_data["result"]}
+        return {method: {params: response_data[params]}}
+
+
+class _ChildCameraProtocolWrapper(SmartProtocol):
+    """Protocol wrapper for controlling child devices.
+
+    This is an internal class used to communicate with child devices,
+    and should not be used directly.
+
+    This class overrides query() method of the protocol to modify all
+    outgoing queries to use ``control_child`` command, and unwraps the
+    device responses before returning to the caller.
+    """
+
+    def __init__(self, device_id: str, base_protocol: SmartProtocol):
+        self._device_id = device_id
+        self._protocol = base_protocol
+        self._transport = base_protocol._transport
+
+    def _get_method_and_params_for_request(self, request):
+        """Return payload for wrapping.
+
+        TODO: this does not support batches and requires refactoring in the future.
+        """
+        if isinstance(request, dict):
+            if len(request) == 1:
+                smart_method = next(iter(request))
+                smart_params = request[smart_method]
+            else:
+                smart_method = "multipleRequest"
+                requests = [
+                    {"method": method, "params": params}
+                    if params
+                    else {"method": method}
+                    for method, params in request.items()
+                ]
+                smart_params = {"requests": requests}
+        else:
+            smart_method = request
+            smart_params = None
+
+        return smart_method, smart_params
+
+    async def query(self, request: str | dict, retry_count: int = 3) -> dict:
+        """Wrap request inside control_child envelope."""
+        return await self._query(request, retry_count)
+
+    async def _query(self, request: str | dict, retry_count: int = 3) -> dict:
+        """Wrap request inside control_child envelope."""
+        if not isinstance(request, dict):
+            raise KasaException("Child requests must be dictionaries.")
+        requests = []
+        for key, val in request.items():
+            request = {
+                "method": "controlChild",
+                "params": {
+                    "childControl": {
+                        "device_id": self._device_id,
+                        "request_data": {key: val},
+                    }
+                },
+            }
+            requests.append(request)
+        multipleRequest = {"multipleRequest": {"requests": requests}}
+
+        response = await self._protocol.query(multipleRequest, retry_count)
+        _LOGGER.info("Multi child request response is %s", response)
+        responses = response["multipleRequest"]["responses"]
+        response_dict = {}
+        for response in responses:
+            response_data = response["result"]["response_data"]
+            method = response_data["method"]
+            self._handle_response_error_code(response, method, raise_on_error=False)
+            response_dict[method] = response_data[method]
+
+        return response_dict
+
+    async def close(self) -> None:
+        """Do nothing as the parent owns the protocol."""

@@ -38,7 +38,10 @@ from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
-from kasa.experimental.smartcameraprotocol import SmartCameraProtocol
+from kasa.experimental.smartcameraprotocol import (
+    SmartCameraProtocol,
+    _ChildCameraProtocolWrapper,
+)
 from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
@@ -493,7 +496,10 @@ async def _make_requests_or_exit(
 ) -> dict[str, dict]:
     final = {}
     if child_device_id:
-        protocol = _ChildProtocolWrapper(child_device_id, protocol)
+        if isinstance(protocol, SmartCameraProtocol):
+            protocol = _ChildCameraProtocolWrapper(child_device_id, protocol)
+        else:
+            protocol = _ChildProtocolWrapper(child_device_id, protocol)
     try:
         end = len(requests)
         step = batch_size  # Break the requests down as there seems to be a size limit
@@ -703,7 +709,10 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         },
     ]
     test_calls = []
+    child_request = None
     for request in requests:
+        if request["method"] == "getChildDeviceList":
+            child_request = {request["method"]: request["params"]}
         test_calls.append(
             SmartCall(
                 module=request["method"],
@@ -712,6 +721,37 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 child_device_id="",
             )
         )
+    assert child_request  # noqa: S101
+    try:
+        child_response = await protocol.query(child_request)
+    except Exception:  # noqa: S110
+        pass
+    else:
+        successes.append(
+            SmartCall(
+                module="getChildDeviceList",
+                request=child_request,
+                should_succeed=True,
+                child_device_id="",
+            )
+        )
+        child_list = child_response["getChildDeviceList"]["child_device_list"]
+        for child in child_list:
+            child_id = child["device_id"]
+            info = SmartCall(
+                module="get_device_info",
+                request={"get_device_info", None},
+                should_succeed=True,
+                child_device_id=child_id,
+            )
+            nego = SmartCall(
+                module="component_nego",
+                request={"component_nego", None},
+                should_succeed=True,
+                child_device_id=child_id,
+            )
+            test_calls.append(info)
+            test_calls.append(nego)
     return test_calls, successes
 
 
@@ -873,8 +913,12 @@ async def get_smart_fixtures(
     """Get fixture for new TAPO style protocol."""
     if isinstance(protocol, SmartCameraProtocol):
         test_calls, successes = await get_smart_camera_test_calls(protocol)
+        child_wrapper: type[_ChildProtocolWrapper | _ChildCameraProtocolWrapper] = (
+            _ChildProtocolWrapper
+        )
     else:
         test_calls, successes = await get_smart_test_calls(protocol)
+        child_wrapper = _ChildCameraProtocolWrapper
 
     for test_call in test_calls:
         click.echo(f"Testing  {test_call.module}..", nl=False)
@@ -883,7 +927,7 @@ async def get_smart_fixtures(
             if test_call.child_device_id == "":
                 response = await protocol.query(test_call.request)
             else:
-                cp = _ChildProtocolWrapper(test_call.child_device_id, protocol)
+                cp = child_wrapper(test_call.child_device_id, protocol)
                 response = await cp.query(test_call.request)
         except AuthenticationError as ex:
             _echo_error(
