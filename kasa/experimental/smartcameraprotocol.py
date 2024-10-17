@@ -177,7 +177,7 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
             }
             requests.append(request)
         multipleRequest = {"multipleRequest": {"requests": requests}}
-
+        _LOGGER.info("Multi child request response is %s", multipleRequest)
         response = await self._protocol.query(multipleRequest, retry_count)
         _LOGGER.info("Multi child request response is %s", response)
         responses = response["multipleRequest"]["responses"]
