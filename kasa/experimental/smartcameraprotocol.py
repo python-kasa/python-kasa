@@ -64,7 +64,7 @@ class SmartCameraProtocol(SmartProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         if isinstance(request, dict):
-            if len(request) == 1:
+            if len(request) == 0:
                 multi_method = next(iter(request))
                 module = next(iter(request[multi_method]))
                 req = {

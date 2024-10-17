@@ -163,6 +163,7 @@ class SmartProtocol(BaseProtocol):
         ]
 
         end = len(multi_requests)
+
         # Break the requests down as there can be a size limit
         step = self._multi_request_batch_size
         if step == 1:
@@ -175,6 +176,7 @@ class SmartProtocol(BaseProtocol):
                 multi_result[method] = resp["result"]
             return multi_result
 
+        raise_on_error = end == 1
         for batch_num, i in enumerate(range(0, end, step)):
             requests_step = multi_requests[i : i + step]
 
@@ -222,7 +224,9 @@ class SmartProtocol(BaseProtocol):
             responses = response_step["result"]["responses"]
             for response in responses:
                 method = response["method"]
-                self._handle_response_error_code(response, method, raise_on_error=False)
+                self._handle_response_error_code(
+                    response, method, raise_on_error=raise_on_error
+                )
                 result = response.get("result", None)
                 await self._handle_response_lists(
                     result, method, retry_count=retry_count
