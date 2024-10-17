@@ -744,21 +744,14 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 should_succeed=True,
                 child_device_id=child_id,
             )
-            info2 = SmartCall(
-                module="getDeviceInfo",
-                request={"getDeviceInfo": {"device_info": {"name": ["basic_info"]}}},
-                should_succeed=True,
-                child_device_id=child_id,
-            )
-            info3 = SmartCall(
-                module="getDeviceInfo2",
-                request={"getDeviceInfo": None},
+            nego = SmartCall(
+                module="component_nego",
+                request={"component_nego": None},
                 should_succeed=True,
                 child_device_id=child_id,
             )
             test_calls.append(info)
-            test_calls.append(info2)
-            test_calls.append(info3)
+            test_calls.append(nego)
     return test_calls, successes
 
 

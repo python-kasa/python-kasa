@@ -165,6 +165,7 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
         if not isinstance(request, dict):
             raise KasaException("Child requests must be dictionaries.")
         requests = []
+        methods = []
         for key, val in request.items():
             request = {
                 "method": "controlChild",
@@ -175,6 +176,7 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
                     }
                 },
             }
+            methods.append(key)
             requests.append(request)
         multipleRequest = {"multipleRequest": {"requests": requests}}
         _LOGGER.info("Multi child request response is %s", multipleRequest)
@@ -182,11 +184,13 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
         _LOGGER.info("Multi child request response is %s", response)
         responses = response["multipleRequest"]["responses"]
         response_dict = {}
-        for response in responses:
+        for index_id, response in enumerate(responses):
             response_data = response["result"]["response_data"]
-            method = response_data["method"]
-            self._handle_response_error_code(response, method, raise_on_error=False)
-            response_dict[method] = response_data[method]
+            method = methods[index_id]
+            self._handle_response_error_code(
+                response_data, method, raise_on_error=False
+            )
+            response_dict[method] = response_data.get("result")
 
         return response_dict
 
