@@ -993,11 +993,19 @@ async def get_smart_fixtures(
         if "get_device_info" in response and "device_id" in response["get_device_info"]:
             response["get_device_info"]["device_id"] = scrubbed
         # If the child is a different model to the parent create a seperate fixture
+        if "get_device_info" in final:
+            parent_model = final["get_device_info"]["model"]
+        elif "getDeviceInfo" in final:
+            parent_model = final["getDeviceInfo"]["device_info"]["basic_info"][
+                "device_model"
+            ]
+        else:
+            raise KasaException("Cannot determine parent device model.")
         if (
             "component_nego" in response
             and "get_device_info" in response
             and (child_model := response["get_device_info"].get("model"))
-            and child_model != final["get_device_info"]["model"]
+            and child_model != parent_model
         ):
             fixture_results.append(get_smart_child_fixture(response))
         else:
@@ -1010,6 +1018,11 @@ async def get_smart_fixtures(
             device_id = child["device_id"]
             child["device_id"] = scrubbed_device_ids[device_id]
         for child in final["get_child_device_list"]["child_device_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_device_ids[device_id]
+
+    if gc := final.get("getChildDeviceList"):
+        for child in gc["child_device_list"]:
             device_id = child["device_id"]
             child["device_id"] = scrubbed_device_ids[device_id]
 
