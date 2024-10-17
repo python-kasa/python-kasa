@@ -6,10 +6,16 @@ import logging
 from pprint import pformat as pf
 from typing import Any
 
-from ..exceptions import DeviceError, KasaException, _RetryableError
+from ..exceptions import (
+    AuthenticationError,
+    DeviceError,
+    KasaException,
+    _RetryableError,
+)
 from ..json import dumps as json_dumps
 from ..smartprotocol import SmartProtocol
 from .sslaestransport import (
+    SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
     SmartErrorCode,
 )
@@ -49,8 +55,8 @@ class SmartCameraProtocol(SmartProtocol):
         )
         if error_code in SMART_RETRYABLE_ERRORS:
             raise _RetryableError(msg, error_code=error_code)
-        # if error_code in SMART_AUTHENTICATION_ERRORS:
-        #    raise AuthenticationError(msg, error_code=error_code)
+        if error_code in SMART_AUTHENTICATION_ERRORS:
+            raise AuthenticationError(msg, error_code=error_code)
         raise DeviceError(msg, error_code=error_code)
 
     async def close(self) -> None:
