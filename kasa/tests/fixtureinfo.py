@@ -4,10 +4,11 @@ import glob
 import json
 import os
 from pathlib import Path
-from typing import NamedTuple
+from typing import Iterable, NamedTuple
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
+from kasa.experimental.smartcamera import SmartCamera
 from kasa.smart.smartdevice import SmartDevice
 
 
@@ -48,9 +49,18 @@ SUPPORTED_SMART_CHILD_DEVICES = [
     )
 ]
 
+SUPPORTED_SMARTCAMERA_DEVICES = [
+    (device, "SMARTCAMERA")
+    for device in glob.glob(
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/experimental/*.json"
+    )
+]
 
 SUPPORTED_DEVICES = (
-    SUPPORTED_IOT_DEVICES + SUPPORTED_SMART_DEVICES + SUPPORTED_SMART_CHILD_DEVICES
+    SUPPORTED_IOT_DEVICES
+    + SUPPORTED_SMART_DEVICES
+    + SUPPORTED_SMART_CHILD_DEVICES
+    + SUPPORTED_SMARTCAMERA_DEVICES
 )
 
 
@@ -95,7 +105,7 @@ def filter_fixtures(
     protocol_filter: set[str] | None = None,
     model_filter: set[str] | None = None,
     component_filter: str | ComponentFilter | None = None,
-    device_type_filter: list[DeviceType] | None = None,
+    device_type_filter: Iterable[DeviceType] | None = None,
 ):
     """Filter the fixtures based on supplied parameters.
 
@@ -134,16 +144,21 @@ def filter_fixtures(
             )
 
     def _device_type_match(fixture_data: FixtureInfo, device_type):
-        if (component_nego := fixture_data.data.get("component_nego")) is None:
-            return _get_device_type_from_sys_info(fixture_data.data) in device_type
-        components = [component["id"] for component in component_nego["component_list"]]
-        if (info := fixture_data.data.get("get_device_info")) and (
-            type_ := info.get("type")
-        ):
+        if fixture_data.protocol in {"SMART", "SMART.CHILD"}:
+            info = fixture_data.data["get_device_info"]
+            component_nego = fixture_data.data["component_nego"]
+            components = [
+                component["id"] for component in component_nego["component_list"]
+            ]
             return (
-                SmartDevice._get_device_type_from_components(components, type_)
+                SmartDevice._get_device_type_from_components(components, info["type"])
                 in device_type
             )
+        elif fixture_data.protocol == "IOT":
+            return _get_device_type_from_sys_info(fixture_data.data) in device_type
+        elif fixture_data.protocol == "SMARTCAMERA":
+            info = fixture_data.data["getDeviceInfo"]["device_info"]["basic_info"]
+            return SmartCamera._get_device_type_from_sysinfo(info) in device_type
         return False
 
     filtered = []
