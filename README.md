@@ -195,7 +195,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Bulbs**: L510B, L510E, L530E
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Hubs**: H100
-- **Hub-Connected Devices<sup>\*\*\*</sup>**: T100, T110, T300, T310, T315
+- **Hub-Connected Devices<sup>\*\*\*</sup>**: S200B, T100, T110, T300, T310, T315
 
 <!--SUPPORTED_END-->
 <sup>\*</sup>&nbsp;&nbsp; Model requires authentication<br>
