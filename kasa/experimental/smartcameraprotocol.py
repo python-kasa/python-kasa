@@ -50,11 +50,13 @@ class SmartCameraProtocol(SmartProtocol):
     """Class for SmartCamera Protocol."""
 
     async def _handle_response_lists(
-        self, response_result: dict[str, Any], method, retry_count
-    ):
+        self, response_result: dict[str, Any], method: str, retry_count: int
+    ) -> None:
         pass
 
-    def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
+    def _handle_response_error_code(
+        self, resp_dict: dict, method: str, raise_on_error: bool = True
+    ) -> None:
         error_code_raw = resp_dict.get("error_code")
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
@@ -203,7 +205,7 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
     device responses before returning to the caller.
     """
 
-    def __init__(self, device_id: str, base_protocol: SmartProtocol):
+    def __init__(self, device_id: str, base_protocol: SmartProtocol) -> None:
         self._device_id = device_id
         self._protocol = base_protocol
         self._transport = base_protocol._transport
