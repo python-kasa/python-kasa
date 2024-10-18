@@ -527,6 +527,74 @@ class Discover:
             raise TimeoutError(f"Timed out getting discovery response for {host}")
 
     @staticmethod
+    async def discover_connect(
+        host: str,
+        *,
+        discovery_timeout: int = 5,
+        port: int | None = None,
+        timeout: int | None = None,
+        credentials: Credentials | None = None,
+        username: str | None = None,
+        password: str | None = None,
+    ) -> Device | None:
+        """Discover a single device by the given IP address.
+
+        It is generally preferred to avoid :func:`discover_single()` and
+        use :meth:`Device.connect()` instead as it should perform better when
+        the WiFi network is congested or the device is not responding
+        to discovery requests.
+
+        :param host: Hostname of device to query
+        :param port: Optionally set a different port for legacy devices using port 9999
+        :param timeout: Timeout in seconds device for devices queries
+        :param credentials: Credentials for devices that require authentication.
+            username and password are ignored if provided.
+        :param username: Username for devices that require authentication
+        :param password: Password for devices that require authentication
+        :rtype: SmartDevice
+        :return: Object for querying/controlling found device.
+        """
+        from .device_factory import _connect
+
+        possibles = {
+            (type(protocol), type(protocol._transport), device_class): (
+                protocol,
+                config,
+            )
+            for encrypt in Device.EncryptionType
+            for device_family in Device.Family
+            for https in (True, False)
+            if (
+                conn_params := DeviceConnectionParameters(
+                    device_family=device_family,
+                    encryption_type=encrypt,
+                    https=https,
+                )
+            )
+            and (
+                config := DeviceConfig(
+                    host=host,
+                    connection_type=conn_params,
+                    timeout=timeout,
+                    port_override=port,
+                    credentials=credentials,
+                )
+            )
+            and (protocol := get_protocol(config))
+            and (device_class := get_device_class_from_family(device_family.value))
+        }
+        for protocol, config in possibles.values():
+            try:
+                dev = await _connect(config, protocol)
+            except Exception:
+                _LOGGER.debug("Unable to connect with %s", protocol)
+            else:
+                return dev
+            finally:
+                await protocol.close()
+        return None
+
+    @staticmethod
     def _get_device_class(info: dict) -> type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
