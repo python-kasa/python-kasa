@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import NoReturn
+
 from ...emeterstatus import EmeterStatus
 from ...exceptions import KasaException
 from ...interfaces.energy import Energy as EnergyInterface
@@ -38,13 +40,13 @@ class Energy(SmartModule, EnergyInterface):
 
     @property
     @raise_if_update_error
-    def energy(self):
+    def energy(self) -> dict:
         """Return get_energy_usage results."""
         if en := self.data.get("get_energy_usage"):
             return en
         return self.data
 
-    def _get_status_from_energy(self, energy) -> EmeterStatus:
+    def _get_status_from_energy(self, energy: dict) -> EmeterStatus:
         return EmeterStatus(
             {
                 "power_mw": energy.get("current_power"),
@@ -54,11 +56,11 @@ class Energy(SmartModule, EnergyInterface):
 
     @property
     @raise_if_update_error
-    def status(self):
+    def status(self) -> EmeterStatus:
         """Get the emeter status."""
         return self._get_status_from_energy(self.energy)
 
-    async def get_status(self):
+    async def get_status(self) -> EmeterStatus:
         """Return real-time statistics."""
         res = await self.call("get_energy_usage")
         return self._get_status_from_energy(res["get_energy_usage"])
@@ -97,18 +99,20 @@ class Energy(SmartModule, EnergyInterface):
         """Retrieve current energy readings."""
         return self.status
 
-    async def erase_stats(self):
+    async def erase_stats(self) -> NoReturn:
         """Erase all stats."""
         raise KasaException("Device does not support periodic statistics")
 
-    async def get_daily_stats(self, *, year=None, month=None, kwh=True) -> dict:
+    async def get_daily_stats(
+        self, *, year: int = None, month: int = None, kwh: bool = True
+    ) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: energy, ...}.
         """
         raise KasaException("Device does not support periodic statistics")
 
-    async def get_monthly_stats(self, *, year=None, kwh=True) -> dict:
+    async def get_monthly_stats(self, *, year: int = None, kwh: bool = True) -> dict:
         """Return monthly stats for the given year."""
         raise KasaException("Device does not support periodic statistics")
 

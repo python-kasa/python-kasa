@@ -53,7 +53,7 @@ class LightEffect(Module, ABC):
 
     LIGHT_EFFECTS_OFF = "Off"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         device = self._device
         self._add_feature(

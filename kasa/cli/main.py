@@ -43,7 +43,7 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 DEFAULT_TARGET = "255.255.255.255"
 
 
-def _legacy_type_to_class(_type):
+def _legacy_type_to_class(_type: str) -> Any:
     from kasa.iot import (
         IotBulb,
         IotDimmer,
@@ -396,9 +396,9 @@ async def cli(
 
 @cli.command()
 @pass_dev_or_child
-async def shell(dev: Device):
+async def shell(dev: Device) -> None:
     """Open interactive shell."""
-    echo("Opening shell for %s" % dev)
+    echo(f"Opening shell for {dev}")
     from ptpython.repl import embed
 
     logging.getLogger("parso").setLevel(logging.WARNING)  # prompt parsing

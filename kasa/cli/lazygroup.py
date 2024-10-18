@@ -11,7 +11,7 @@ import asyncclick as click
 class LazyGroup(click.Group):
     """Lazy group class."""
 
-    def __init__(self, *args, lazy_subcommands=None, **kwargs):
+    def __init__(self, *args, lazy_subcommands=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # lazy_subcommands is a map of the form:
         #
@@ -31,7 +31,7 @@ class LazyGroup(click.Group):
             return self._lazy_load(cmd_name)
         return super().get_command(ctx, cmd_name)
 
-    def format_commands(self, ctx, formatter):
+    def format_commands(self, ctx, formatter) -> None:
         """Format the top level help output."""
         sections = {}
         for cmd, parent in self.lazy_subcommands.items():

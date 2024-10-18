@@ -18,7 +18,7 @@ class ColorTemperature(SmartModule):
 
     REQUIRED_COMPONENT = "color_temperature"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         self._add_feature(
             Feature(
@@ -52,11 +52,11 @@ class ColorTemperature(SmartModule):
         return ColorTempRange(*ct_range)
 
     @property
-    def color_temp(self):
+    def color_temp(self) -> int:
         """Return current color temperature."""
         return self.data["color_temp"]
 
-    async def set_color_temp(self, temp: int, *, brightness=None):
+    async def set_color_temp(self, temp: int, *, brightness: int = None) -> dict:
         """Set the color temperature."""
         valid_temperature_range = self.valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:

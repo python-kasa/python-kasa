@@ -24,7 +24,7 @@ class CloudInfo(BaseModel):
 class Cloud(IotModule):
     """Module implementing support for cloud services."""
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -44,7 +44,7 @@ class Cloud(IotModule):
         """Return true if device is connected to the cloud."""
         return self.info.binded
 
-    def query(self):
+    def query(self) -> dict:
         """Request cloud connectivity info."""
         return self.query_for_command("get_info")
 
@@ -53,20 +53,20 @@ class Cloud(IotModule):
         """Return information about the cloud connectivity."""
         return CloudInfo.parse_obj(self.data["get_info"])
 
-    def get_available_firmwares(self):
+    def get_available_firmwares(self) -> dict:
         """Return list of available firmwares."""
         return self.query_for_command("get_intl_fw_list")
 
-    def set_server(self, url: str):
+    def set_server(self, url: str) -> dict:
         """Set the update server URL."""
         return self.query_for_command("set_server_url", {"server": url})
 
-    def connect(self, username: str, password: str):
+    def connect(self, username: str, password: str) -> dict:
         """Login to the cloud using given information."""
         return self.query_for_command(
             "bind", {"username": username, "password": password}
         )
 
-    def disconnect(self):
+    def disconnect(self) -> dict:
         """Disconnect from the cloud."""
         return self.query_for_command("unbind")

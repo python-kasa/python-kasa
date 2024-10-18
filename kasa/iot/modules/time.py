@@ -15,14 +15,14 @@ class Time(IotModule, TimeInterface):
 
     _timezone: tzinfo = timezone.utc
 
-    def query(self):
+    def query(self) -> dict:
         """Request time and timezone."""
         q = self.query_for_command("get_time")
 
         merge(q, self.query_for_command("get_timezone"))
         return q
 
-    async def _post_update_hook(self):
+    async def _post_update_hook(self) -> None:
         """Perform actions after a device update."""
         if res := self.data.get("get_timezone"):
             self._timezone = await get_timezone(res.get("index"))
@@ -47,7 +47,7 @@ class Time(IotModule, TimeInterface):
         """Return current timezone."""
         return self._timezone
 
-    async def get_time(self):
+    async def get_time(self) -> datetime:
         """Return current device time."""
         try:
             res = await self.call("get_time")
@@ -88,6 +88,6 @@ class Time(IotModule, TimeInterface):
         except Exception as ex:
             raise KasaException(ex) from ex
 
-    async def get_timezone(self):
+    async def get_timezone(self) -> dict:
         """Request timezone information from the device."""
         return await self.call("get_timezone")

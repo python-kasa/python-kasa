@@ -26,7 +26,7 @@ class TemperatureControl(SmartModule):
 
     REQUIRED_COMPONENT = "temp_control"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -92,7 +92,7 @@ class TemperatureControl(SmartModule):
         """Return thermostat state."""
         return self._device.sys_info["frost_protection_on"] is False
 
-    async def set_state(self, enabled: bool):
+    async def set_state(self, enabled: bool) -> dict:
         """Set thermostat state."""
         return await self.call("set_device_info", {"frost_protection_on": not enabled})
 
@@ -147,7 +147,7 @@ class TemperatureControl(SmartModule):
         """Return thermostat states."""
         return set(self._device.sys_info["trv_states"])
 
-    async def set_target_temperature(self, target: float):
+    async def set_target_temperature(self, target: float) -> dict:
         """Set target temperature."""
         if (
             target < self.minimum_target_temperature
@@ -170,7 +170,7 @@ class TemperatureControl(SmartModule):
         """Return temperature offset."""
         return self._device.sys_info["temp_offset"]
 
-    async def set_temperature_offset(self, offset: int):
+    async def set_temperature_offset(self, offset: int) -> dict:
         """Set temperature offset."""
         if offset < -10 or offset > 10:
             raise ValueError("Temperature offset must be [-10, 10]")

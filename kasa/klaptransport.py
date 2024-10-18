@@ -50,8 +50,9 @@ import logging
 import secrets
 import struct
 import time
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Generator, cast
 
+from _asyncio import Future
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
@@ -125,7 +126,7 @@ class KlapTransport(BaseTransport):
         self._request_url = self._app_url / "request"
 
     @property
-    def default_port(self):
+    def default_port(self) -> int:
         """Default port for the transport."""
         return self.DEFAULT_PORT
 
@@ -242,7 +243,7 @@ class KlapTransport(BaseTransport):
         raise AuthenticationError(msg)
 
     async def perform_handshake2(
-        self, local_seed, remote_seed, auth_hash
+        self, local_seed: bytes, remote_seed: bytes, auth_hash: bytes
     ) -> KlapEncryptionSession:
         """Perform handshake2."""
         # Handshake 2 has the following payload:
@@ -277,7 +278,7 @@ class KlapTransport(BaseTransport):
 
         return KlapEncryptionSession(local_seed, remote_seed, auth_hash)
 
-    async def perform_handshake(self) -> Any:
+    async def perform_handshake(self) -> None:
         """Perform handshake1 and handshake2.
 
         Sets the encryption_session if successful.
@@ -309,14 +310,14 @@ class KlapTransport(BaseTransport):
 
         _LOGGER.debug("Handshake with %s complete", self._host)
 
-    def _handshake_session_expired(self):
+    def _handshake_session_expired(self) -> bool:
         """Return true if session has expired."""
         return (
             self._session_expire_at is None
             or self._session_expire_at - time.monotonic() <= 0
         )
 
-    async def send(self, request: str):
+    async def send(self, request: str) -> Generator[Future, None, dict[str, str]]:
         """Send the request."""
         if not self._handshake_done or self._handshake_session_expired():
             await self.perform_handshake()
@@ -378,7 +379,7 @@ class KlapTransport(BaseTransport):
         self._handshake_done = False
 
     @staticmethod
-    def generate_auth_hash(creds: Credentials):
+    def generate_auth_hash(creds: Credentials) -> bytes:
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
         un = creds.username
         pw = creds.password
@@ -388,19 +389,19 @@ class KlapTransport(BaseTransport):
     @staticmethod
     def handshake1_seed_auth_hash(
         local_seed: bytes, remote_seed: bytes, auth_hash: bytes
-    ):
+    ) -> bytes:
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
         return _sha256(local_seed + auth_hash)
 
     @staticmethod
     def handshake2_seed_auth_hash(
         local_seed: bytes, remote_seed: bytes, auth_hash: bytes
-    ):
+    ) -> bytes:
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
         return _sha256(remote_seed + auth_hash)
 
     @staticmethod
-    def generate_owner_hash(creds: Credentials):
+    def generate_owner_hash(creds: Credentials) -> bytes:
         """Return the MD5 hash of the username in this object."""
         un = creds.username
         return md5(un.encode())
@@ -410,7 +411,7 @@ class KlapTransportV2(KlapTransport):
     """Implementation of the KLAP encryption protocol with v2 hanshake hashes."""
 
     @staticmethod
-    def generate_auth_hash(creds: Credentials):
+    def generate_auth_hash(creds: Credentials) -> bytes:
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
         un = creds.username
         pw = creds.password
@@ -420,14 +421,14 @@ class KlapTransportV2(KlapTransport):
     @staticmethod
     def handshake1_seed_auth_hash(
         local_seed: bytes, remote_seed: bytes, auth_hash: bytes
-    ):
+    ) -> bytes:
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
         return _sha256(local_seed + remote_seed + auth_hash)
 
     @staticmethod
     def handshake2_seed_auth_hash(
         local_seed: bytes, remote_seed: bytes, auth_hash: bytes
-    ):
+    ) -> bytes:
         """Generate an md5 auth hash for the protocol on the supplied credentials."""
         return _sha256(remote_seed + local_seed + auth_hash)
 
@@ -440,7 +441,7 @@ class KlapEncryptionSession:
 
     _cipher: Cipher
 
-    def __init__(self, local_seed, remote_seed, user_hash):
+    def __init__(self, local_seed: bytes, remote_seed: bytes, user_hash: bytes) -> None:
         self.local_seed = local_seed
         self.remote_seed = remote_seed
         self.user_hash = user_hash
@@ -449,11 +450,15 @@ class KlapEncryptionSession:
         self._aes = algorithms.AES(self._key)
         self._sig = self._sig_derive(local_seed, remote_seed, user_hash)
 
-    def _key_derive(self, local_seed, remote_seed, user_hash):
+    def _key_derive(
+        self, local_seed: bytes, remote_seed: bytes, user_hash: bytes
+    ) -> bytes:
         payload = b"lsk" + local_seed + remote_seed + user_hash
         return hashlib.sha256(payload).digest()[:16]
 
-    def _iv_derive(self, local_seed, remote_seed, user_hash):
+    def _iv_derive(
+        self, local_seed: bytes, remote_seed: bytes, user_hash: bytes
+    ) -> tuple[bytes, int]:
         # iv is first 16 bytes of sha256, where the last 4 bytes forms the
         # sequence number used in requests and is incremented on each request
         payload = b"iv" + local_seed + remote_seed + user_hash
@@ -461,17 +466,19 @@ class KlapEncryptionSession:
         seq = int.from_bytes(fulliv[-4:], "big", signed=True)
         return (fulliv[:12], seq)
 
-    def _sig_derive(self, local_seed, remote_seed, user_hash):
+    def _sig_derive(
+        self, local_seed: bytes, remote_seed: bytes, user_hash: bytes
+    ) -> bytes:
         # used to create a hash with which to prefix each request
         payload = b"ldk" + local_seed + remote_seed + user_hash
         return hashlib.sha256(payload).digest()[:28]
 
-    def _generate_cipher(self):
+    def _generate_cipher(self) -> None:
         iv_seq = self._iv + PACK_SIGNED_LONG(self._seq)
         cbc = modes.CBC(iv_seq)
         self._cipher = Cipher(self._aes, cbc)
 
-    def encrypt(self, msg):
+    def encrypt(self, msg: bytes | str) -> tuple[bytes, int]:
         """Encrypt the data and increment the sequence number."""
         self._seq += 1
         self._generate_cipher()
@@ -488,7 +495,7 @@ class KlapEncryptionSession:
         ).digest()
         return (signature + ciphertext, self._seq)
 
-    def decrypt(self, msg):
+    def decrypt(self, msg: bytes) -> str:
         """Decrypt the data."""
         decryptor = self._cipher.decryptor()
         dp = decryptor.update(msg[32:]) + decryptor.finalize()

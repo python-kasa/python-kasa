@@ -72,7 +72,7 @@ class SmartProtocol(BaseProtocol):
         )
         self._redact_data = True
 
-    def get_smart_request(self, method, params=None) -> str:
+    def get_smart_request(self, method: str, params: dict | None = None) -> str:
         """Get a request message as a string."""
         request = {
             "method": method,
@@ -289,8 +289,8 @@ class SmartProtocol(BaseProtocol):
         return {smart_method: result}
 
     async def _handle_response_lists(
-        self, response_result: dict[str, Any], method, retry_count
-    ):
+        self, response_result: dict[str, Any], method: str, retry_count: int
+    ) -> None:
         if (
             response_result is None
             or isinstance(response_result, SmartErrorCode)
@@ -325,7 +325,9 @@ class SmartProtocol(BaseProtocol):
                 break
             response_result[response_list_name].extend(next_batch[response_list_name])
 
-    def _handle_response_error_code(self, resp_dict: dict, method, raise_on_error=True):
+    def _handle_response_error_code(
+        self, resp_dict: dict, method: str, raise_on_error: bool = True
+    ) -> None:
         error_code_raw = resp_dict.get("error_code")
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
@@ -369,12 +371,12 @@ class _ChildProtocolWrapper(SmartProtocol):
     device responses before returning to the caller.
     """
 
-    def __init__(self, device_id: str, base_protocol: SmartProtocol):
+    def __init__(self, device_id: str, base_protocol: SmartProtocol) -> None:
         self._device_id = device_id
         self._protocol = base_protocol
         self._transport = base_protocol._transport
 
-    def _get_method_and_params_for_request(self, request):
+    def _get_method_and_params_for_request(self, request: dict[str, Any]) -> Any:
         """Return payload for wrapping.
 
         TODO: this does not support batches and requires refactoring in the future.

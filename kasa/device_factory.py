@@ -83,7 +83,7 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     if debug_enabled:
         start_time = time.perf_counter()
 
-    def _perf_log(has_params, perf_type):
+    def _perf_log(has_params: bool, perf_type: str) -> None:
         nonlocal start_time
         if debug_enabled:
             end_time = time.perf_counter()
@@ -150,7 +150,7 @@ def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
             return DeviceType.LightStrip
 
         return DeviceType.Bulb
-    raise UnsupportedDeviceError("Unknown device type: %s" % type_)
+    raise UnsupportedDeviceError(f"Unknown device type: {type_}")
 
 
 def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:

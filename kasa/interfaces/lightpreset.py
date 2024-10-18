@@ -83,7 +83,7 @@ class LightPreset(Module):
 
     PRESET_NOT_SET = "Not set"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         device = self._device
         self._add_feature(

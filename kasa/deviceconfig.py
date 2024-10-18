@@ -75,7 +75,7 @@ class DeviceFamily(Enum):
     SmartIpCamera = "SMART.IPCAMERA"
 
 
-def _dataclass_from_dict(klass, in_val):
+def _dataclass_from_dict(klass: Any, in_val: dict) -> Any:
     if is_dataclass(klass):
         fieldtypes = {f.name: f.type for f in fields(klass)}
         val = {}
@@ -96,7 +96,7 @@ def _dataclass_from_dict(klass, in_val):
         return in_val
 
 
-def _dataclass_to_dict(in_val):
+def _dataclass_to_dict(in_val: Any) -> dict:
     fieldtypes = {f.name: f.type for f in fields(in_val) if f.compare}
     out_val = {}
     for field_name in fieldtypes:
@@ -210,7 +210,7 @@ class DeviceConfig:
 
     aes_keys: Optional[KeyPairDict] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.connection_type is None:
             self.connection_type = DeviceConnectionParameters(
                 DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor

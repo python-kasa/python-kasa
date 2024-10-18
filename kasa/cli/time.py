@@ -23,7 +23,7 @@ from .common import (
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-async def time(ctx: click.Context):
+async def time(ctx: click.Context) -> None:
     """Get and set time."""
     if ctx.invoked_subcommand is None:
         await ctx.invoke(time_get)
