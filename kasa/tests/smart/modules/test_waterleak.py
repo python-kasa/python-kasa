@@ -16,7 +16,7 @@ waterleak = parametrize(
     ("feature", "prop_name", "type"),
     [
         ("water_alert", "alert", int),
-        ("water_alert_timestamp", "alert_timestamp", datetime),
+        ("water_alert_timestamp", "alert_timestamp", datetime | None),
         ("water_leak", "status", Enum),
     ],
 )
