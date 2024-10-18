@@ -626,7 +626,7 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
             if (
                 category := child.get("category")
             ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
-                child_protocol = _ChildProtocolWrapper(child_id, protocol)
+                child_protocol = _ChildCameraProtocolWrapper(child_id, protocol)
                 try:
                     nego_response = await child_protocol.query({"component_nego": None})
                 except Exception as ex:
