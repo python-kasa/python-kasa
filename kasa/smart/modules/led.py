@@ -19,7 +19,7 @@ class Led(SmartModule, LedInterface):
         return {self.QUERY_GETTER_NAME: None}
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         """LED mode setting.
 
         "always", "never", "night_mode"
@@ -27,12 +27,12 @@ class Led(SmartModule, LedInterface):
         return self.data["led_rule"]
 
     @property
-    def led(self):
+    def led(self) -> bool:
         """Return current led status."""
         return self.data["led_rule"] != "never"
 
     @allow_update_after
-    async def set_led(self, enable: bool):
+    async def set_led(self, enable: bool) -> dict:
         """Set led.
 
         This should probably be a select with always/never/nightmode.
@@ -41,7 +41,7 @@ class Led(SmartModule, LedInterface):
         return await self.call("set_led_info", dict(self.data, **{"led_rule": rule}))
 
     @property
-    def night_mode_settings(self):
+    def night_mode_settings(self) -> dict:
         """Night mode settings."""
         return {
             "start": self.data["start_time"],

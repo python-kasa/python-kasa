@@ -23,7 +23,7 @@ class FrostProtection(SmartModule):
         """Return True if frost protection is on."""
         return self._device.sys_info["frost_protection_on"]
 
-    async def set_enabled(self, enable: bool):
+    async def set_enabled(self, enable: bool) -> dict:
         """Enable/disable frost protection."""
         return await self.call(
             "set_device_info",
