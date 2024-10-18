@@ -126,6 +126,7 @@ class Module(ABC):
     WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
         "WaterleakSensor"
     )
+    TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
     def __init__(self, device: Device, module: str):
         self._device = device
