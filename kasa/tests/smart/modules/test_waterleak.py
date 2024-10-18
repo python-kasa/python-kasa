@@ -1,4 +1,4 @@
-from datetime import datetime
+import sys
 from enum import Enum
 
 import pytest
@@ -16,7 +16,8 @@ waterleak = parametrize(
     ("feature", "prop_name", "type"),
     [
         ("water_alert", "alert", int),
-        ("water_alert_timestamp", "alert_timestamp", datetime | None),
+        # Can be enabled after py3.9 support is dropped
+        # ("water_alert_timestamp", "alert_timestamp", datetime | None),
         ("water_leak", "status", Enum),
     ],
 )
@@ -30,6 +31,26 @@ async def test_waterleak_properties(dev, feature, prop_name, type):
     feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
+
+
+# Testing this separately as py3.9 does not support union types.
+# This can be removed when we drop python3.9 support.
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="union type requires python3.10+",
+)
+@waterleak
+async def test_waterleak_alert_timestamp(dev):
+    """Test that waterleak alert timestamp works."""
+    waterleak: WaterleakSensor = dev.modules["WaterleakSensor"]
+    feature = "water_alert_timestamp"
+    prop_name = "alert_timestamp"
+    prop = getattr(waterleak, prop_name)
+    assert isinstance(prop, type) or prop is None
+
+    feat = dev.features[feature]
+    assert feat.value == prop
+    assert isinstance(feat.value, type) or feat.value is None
 
 
 @waterleak
