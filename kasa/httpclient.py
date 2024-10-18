@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import ssl
 import time
 from typing import Any, Dict
 
@@ -64,7 +65,7 @@ class HttpClient:
         json: dict | Any | None = None,
         headers: dict[str, str] | None = None,
         cookies_dict: dict[str, str] | None = None,
-        ssl=False,
+        ssl: ssl.SSLContext | bool = False,
     ) -> tuple[int, dict | bytes | None]:
         """Send an http post request to the device.
 

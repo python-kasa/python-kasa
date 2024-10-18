@@ -7,6 +7,6 @@ class Enabled:
     value = False
 
     @classmethod
-    def set(cls, value):
+    def set(cls, value: bool) -> None:
         """Set the enabled value."""
         cls.value = value
