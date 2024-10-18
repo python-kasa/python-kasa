@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import Enum
 
 from ...exceptions import KasaException
+from ...feature import Feature
 from ..iotmodule import IotModule
 
 
@@ -24,6 +25,26 @@ class Range(Enum):
 
 class Motion(IotModule):
     """Implements the motion detection (PIR) module."""
+
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
+        # Only add features if the device supports the module
+        if "enable" not in self.data:
+            return
+
+        self._add_feature(
+            Feature(
+                device=self._device,
+                container=self,
+                id="pir_enabled",
+                name="PIR enabled",
+                icon="mdi:motion-sensor",
+                attribute_getter="enabled",
+                attribute_setter="set_enabled",
+                type=Feature.Type.Switch,
+                category=Feature.Category.Config,
+            )
+        )
 
     def query(self):
         """Request PIR configuration."""
