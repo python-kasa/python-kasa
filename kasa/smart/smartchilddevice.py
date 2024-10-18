@@ -26,6 +26,7 @@ class SmartChildDevice(SmartDevice):
         "subg.trigger.contact-sensor": DeviceType.Sensor,
         "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
         "subg.trigger.water-leak-sensor": DeviceType.Sensor,
+        "subg.trigger.motion-sensor": DeviceType.Sensor,
         "kasa.switch.outlet.sub-fan": DeviceType.Fan,
         "kasa.switch.outlet.sub-dimmer": DeviceType.Dimmer,
         "subg.trv": DeviceType.Thermostat,
@@ -87,9 +88,14 @@ class SmartChildDevice(SmartDevice):
     @property
     def device_type(self) -> DeviceType:
         """Return child device type."""
-        dev_type = self.CHILD_DEVICE_TYPE_MAP.get(self.sys_info["category"])
+        category = self.sys_info["category"]
+        dev_type = self.CHILD_DEVICE_TYPE_MAP.get(category)
         if dev_type is None:
-            _LOGGER.warning("Unknown child device type, please open issue ")
+            _LOGGER.warning(
+                "Unknown child device type %s for model %s, please open issue",
+                category,
+                self.model,
+            )
             dev_type = DeviceType.Unknown
         return dev_type
 
