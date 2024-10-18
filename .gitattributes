@@ -1,2 +1,4 @@
 *.sh        text eol=lf
 *.json      text eol=lf
+*.md        text eol=lf
+*.rst       text eol=lf
