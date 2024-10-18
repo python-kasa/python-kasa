@@ -12,7 +12,7 @@ class ReportMode(SmartModule):
     REQUIRED_COMPONENT = "report_mode"
     QUERY_GETTER_NAME = "get_report_mode"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -32,6 +32,6 @@ class ReportMode(SmartModule):
         return {}
 
     @property
-    def report_interval(self):
+    def report_interval(self) -> int:
         """Reporting interval of a sensor device."""
         return self._device.sys_info["report_interval"]

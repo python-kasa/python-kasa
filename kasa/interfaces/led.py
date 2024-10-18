@@ -11,7 +11,7 @@ from ..module import Module
 class Led(Module, ABC):
     """Base interface to represent a LED module."""
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         device = self._device
         self._add_feature(

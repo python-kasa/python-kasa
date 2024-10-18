@@ -78,13 +78,13 @@ async def energy(dev: Device, year, month, erase):
         else:
             emeter_status = dev.emeter_realtime
 
-        echo("Current: %s A" % emeter_status["current"])
-        echo("Voltage: %s V" % emeter_status["voltage"])
-        echo("Power: %s W" % emeter_status["power"])
-        echo("Total consumption: %s kWh" % emeter_status["total"])
+        echo("Current: {} A".format(emeter_status["current"]))
+        echo("Voltage: {} V".format(emeter_status["voltage"]))
+        echo("Power: {} W".format(emeter_status["power"]))
+        echo("Total consumption: {} kWh".format(emeter_status["total"]))
 
-        echo("Today: %s kWh" % dev.emeter_today)
-        echo("This month: %s kWh" % dev.emeter_this_month)
+        echo(f"Today: {dev.emeter_today} kWh")
+        echo(f"This month: {dev.emeter_this_month} kWh")
 
         return emeter_status
 
@@ -122,8 +122,8 @@ async def usage(dev: Device, year, month, erase):
         usage_data = await usage.get_daystat(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        echo("Today: %s minutes" % usage.usage_today)
-        echo("This month: %s minutes" % usage.usage_this_month)
+        echo(f"Today: {usage.usage_today} minutes")
+        echo(f"This month: {usage.usage_this_month} minutes")
 
         return usage
 

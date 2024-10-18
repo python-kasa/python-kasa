@@ -15,7 +15,7 @@ from .common import echo, error, pass_dev_or_child
 
 @click.group()
 @pass_dev_or_child
-def light(dev):
+def light(dev) -> None:
     """Commands to control light settings."""
 
 

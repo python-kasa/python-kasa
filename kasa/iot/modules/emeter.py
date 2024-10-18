@@ -70,7 +70,7 @@ class Emeter(Usage, EnergyInterface):
         """Get the current voltage in V."""
         return self.status.voltage
 
-    async def erase_stats(self):
+    async def erase_stats(self) -> dict:
         """Erase all stats.
 
         Uses different query than usage meter.
@@ -81,7 +81,9 @@ class Emeter(Usage, EnergyInterface):
         """Return real-time statistics."""
         return EmeterStatus(await self.call("get_realtime"))
 
-    async def get_daily_stats(self, *, year=None, month=None, kwh=True) -> dict:
+    async def get_daily_stats(
+        self, *, year: int | None = None, month: int | None = None, kwh: bool = True
+    ) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: energy, ...}.
@@ -90,7 +92,9 @@ class Emeter(Usage, EnergyInterface):
         data = self._convert_stat_data(data["day_list"], entry_key="day", kwh=kwh)
         return data
 
-    async def get_monthly_stats(self, *, year=None, kwh=True) -> dict:
+    async def get_monthly_stats(
+        self, *, year: int | None = None, kwh: bool = True
+    ) -> dict:
         """Return monthly stats for the given year.
 
         The return value is a dictionary of {month: energy, ...}.

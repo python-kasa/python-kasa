@@ -16,7 +16,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
 
     REQUIRED_COMPONENT = "light_strip_lighting_effect"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         effect_list = [self.LIGHT_EFFECTS_OFF]
         effect_list.extend(EFFECT_NAMES)
@@ -66,7 +66,9 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         eff = self.data["lighting_effect"]
         return eff["brightness"]
 
-    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+    async def set_brightness(
+        self, brightness: int, *, transition: int | None = None
+    ) -> None:
         """Set effect brightness."""
         if brightness <= 0:
             return await self.set_effect(self.LIGHT_EFFECTS_OFF)
@@ -155,7 +157,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         """Return True if the device supports setting custom effects."""
         return True
 
-    def query(self):
+    def query(self) -> dict:
         """Return the base query."""
         return {}
 

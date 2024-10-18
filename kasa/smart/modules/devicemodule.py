@@ -10,7 +10,7 @@ class DeviceModule(SmartModule):
 
     REQUIRED_COMPONENT = "device"
 
-    async def _post_update_hook(self):
+    async def _post_update_hook(self) -> None:
         """Perform actions after a device update.
 
         Overrides the default behaviour to disable a module if the query returns

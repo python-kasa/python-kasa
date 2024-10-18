@@ -12,7 +12,7 @@ class BatterySensor(SmartModule):
     REQUIRED_COMPONENT = "battery_detect"
     QUERY_GETTER_NAME = "get_battery_detect_info"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         self._add_feature(
             Feature(
@@ -48,11 +48,11 @@ class BatterySensor(SmartModule):
         return {}
 
     @property
-    def battery(self):
+    def battery(self) -> int:
         """Return battery level."""
         return self._device.sys_info["battery_percentage"]
 
     @property
-    def battery_low(self):
+    def battery_low(self) -> bool:
         """Return True if battery is low."""
         return self._device.sys_info["at_low_battery"]
