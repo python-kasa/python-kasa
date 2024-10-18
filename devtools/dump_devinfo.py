@@ -486,6 +486,8 @@ async def _make_requests_or_exit(
     child_device_id: str,
 ) -> dict[str, dict]:
     final = {}
+    # Calling close on child protocol wrappers is a noop
+    protocol_to_close = protocol
     if child_device_id:
         if isinstance(protocol, SmartCameraProtocol):
             protocol = _ChildCameraProtocolWrapper(child_device_id, protocol)
@@ -524,7 +526,7 @@ async def _make_requests_or_exit(
             _echo_error(format_exception(ex))
         exit(1)
     finally:
-        await protocol.close()
+        await protocol_to_close.close()
 
 
 async def get_smart_camera_test_calls(protocol: SmartProtocol):
@@ -667,6 +669,8 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                             child_device_id=child_id,
                         )
                     )
+    finally:
+        await protocol.close()
     return test_calls, successes
 
 
