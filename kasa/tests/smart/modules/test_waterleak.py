@@ -16,6 +16,7 @@ waterleak = parametrize(
     [
         ("water_alert", "alert", int),
         ("water_leak", "status", Enum),
+        ("water_alert_volume", "alert_volume", str),
     ],
 )
 async def test_waterleak_properties(dev, feature, prop_name, type):
