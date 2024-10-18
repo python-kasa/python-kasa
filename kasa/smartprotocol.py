@@ -176,6 +176,9 @@ class SmartProtocol(BaseProtocol):
                 multi_result[method] = resp["result"]
             return multi_result
 
+        # The SmartCameraProtocol sends requests with a length 1 as a
+        # multipleRequest. The SmartProtocol doesn't so will never
+        # raise_on_error
         raise_on_error = end == 1
         for batch_num, i in enumerate(range(0, end, step)):
             requests_step = multi_requests[i : i + step]

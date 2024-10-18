@@ -253,7 +253,7 @@ async def handle_device(
     "--device-family",
     envvar="KASA_DEVICE_FAMILY",
     default="SMART.TAPOPLUG",
-    help="Device family type, e.g. `SMART.KASASWITCH`. Deprecated use `--type smart`",
+    help="Device family type, e.g. `SMART.KASASWITCH`.",
 )
 @click.option(
     "-lv",
@@ -270,14 +270,6 @@ async def handle_device(
     is_flag=True,
     type=bool,
     help="Set flag if the device encryption uses https.",
-)
-@click.option(
-    "--experimental",
-    default=False,
-    is_flag=True,
-    type=bool,
-    envvar="KASA_EXPERIMENTAL",
-    help="Enable experimental mode for devices not yet fully supported.",
 )
 @click.option("--port", help="Port override", type=int)
 async def cli(
@@ -296,7 +288,6 @@ async def cli(
     device_family,
     login_version,
     port,
-    experimental,
 ):
     """Generate devinfo files for devices.
 
@@ -305,10 +296,9 @@ async def cli(
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    if experimental:
-        from kasa.experimental.enabled import Enabled
+    from kasa.experimental.enabled import Enabled
 
-        Enabled.set(True)
+    Enabled.set(True)
 
     credentials = Credentials(username=username, password=password)
     if host is not None:

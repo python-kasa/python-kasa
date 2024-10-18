@@ -129,7 +129,7 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
     and should not be used directly.
 
     This class overrides query() method of the protocol to modify all
-    outgoing queries to use ``childControl`` command, and unwraps the
+    outgoing queries to use ``controlChild`` command, and unwraps the
     device responses before returning to the caller.
     """
 
@@ -139,11 +139,11 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
         self._transport = base_protocol._transport
 
     async def query(self, request: str | dict, retry_count: int = 3) -> dict:
-        """Wrap request inside control_child envelope."""
+        """Wrap request inside controlChild envelope."""
         return await self._query(request, retry_count)
 
     async def _query(self, request: str | dict, retry_count: int = 3) -> dict:
-        """Wrap request inside control_child envelope."""
+        """Wrap request inside controlChild envelope."""
         if not isinstance(request, dict):
             raise KasaException("Child requests must be dictionaries.")
         requests = []
