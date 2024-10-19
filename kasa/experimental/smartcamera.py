@@ -89,7 +89,7 @@ class SmartCamera(SmartDevice):
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
-        self._last_update = resp
+        await self._initialize_children()
 
     def _map_info(self, device_info: dict) -> dict:
         basic_info = device_info["basic_info"]
