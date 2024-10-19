@@ -14,7 +14,7 @@ class Brightness(SmartModule):
 
     REQUIRED_COMPONENT = "brightness"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         super()._initialize_features()
 
@@ -39,7 +39,7 @@ class Brightness(SmartModule):
         return {}
 
     @property
-    def brightness(self):
+    def brightness(self) -> int:
         """Return current brightness."""
         # If the device supports effects and one is active, use its brightness
         if (
@@ -49,7 +49,9 @@ class Brightness(SmartModule):
 
         return self.data["brightness"]
 
-    async def set_brightness(self, brightness: int, *, transition: int | None = None):
+    async def set_brightness(
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
         """Set the brightness. A brightness value of 0 will turn off the light.
 
         Note, transition is not supported and will be ignored.
@@ -73,6 +75,6 @@ class Brightness(SmartModule):
 
         return await self.call("set_device_info", {"brightness": brightness})
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
         return "brightness" in self.data

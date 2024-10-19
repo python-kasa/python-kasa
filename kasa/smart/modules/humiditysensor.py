@@ -12,7 +12,7 @@ class HumiditySensor(SmartModule):
     REQUIRED_COMPONENT = "humidity"
     QUERY_GETTER_NAME = "get_comfort_humidity_config"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -45,7 +45,7 @@ class HumiditySensor(SmartModule):
         return {}
 
     @property
-    def humidity(self):
+    def humidity(self) -> int:
         """Return current humidity in percentage."""
         return self._device.sys_info["current_humidity"]
 

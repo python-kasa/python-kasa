@@ -10,7 +10,7 @@ from ..iotmodule import IotModule, merge
 class Usage(IotModule):
     """Baseclass for emeter/usage interfaces."""
 
-    def query(self):
+    def query(self) -> dict:
         """Return the base query."""
         now = datetime.now()
         year = now.year
@@ -25,22 +25,22 @@ class Usage(IotModule):
         return req
 
     @property
-    def estimated_query_response_size(self):
+    def estimated_query_response_size(self) -> int:
         """Estimated maximum query response size."""
         return 2048
 
     @property
-    def daily_data(self):
+    def daily_data(self) -> dict:
         """Return statistics on daily basis."""
         return self.data["get_daystat"]["day_list"]
 
     @property
-    def monthly_data(self):
+    def monthly_data(self) -> dict:
         """Return statistics on monthly basis."""
         return self.data["get_monthstat"]["month_list"]
 
     @property
-    def usage_today(self):
+    def usage_today(self) -> int | None:
         """Return today's usage in minutes."""
         today = datetime.now().day
         # Traverse the list in reverse order to find the latest entry.
@@ -50,7 +50,7 @@ class Usage(IotModule):
         return None
 
     @property
-    def usage_this_month(self):
+    def usage_this_month(self) -> int | None:
         """Return usage in this month in minutes."""
         this_month = datetime.now().month
         # Traverse the list in reverse order to find the latest entry.
@@ -59,7 +59,9 @@ class Usage(IotModule):
                 return entry["time"]
         return None
 
-    async def get_raw_daystat(self, *, year=None, month=None) -> dict:
+    async def get_raw_daystat(
+        self, *, year: int | None = None, month: int | None = None
+    ) -> dict:
         """Return raw daily stats for the given year & month."""
         if year is None:
             year = datetime.now().year
@@ -68,14 +70,16 @@ class Usage(IotModule):
 
         return await self.call("get_daystat", {"year": year, "month": month})
 
-    async def get_raw_monthstat(self, *, year=None) -> dict:
+    async def get_raw_monthstat(self, *, year: int | None = None) -> dict:
         """Return raw monthly stats for the given year."""
         if year is None:
             year = datetime.now().year
 
         return await self.call("get_monthstat", {"year": year})
 
-    async def get_daystat(self, *, year=None, month=None) -> dict:
+    async def get_daystat(
+        self, *, year: int | None = None, month: int | None = None
+    ) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: time, ...}.
@@ -84,7 +88,7 @@ class Usage(IotModule):
         data = self._convert_stat_data(data["day_list"], entry_key="day")
         return data
 
-    async def get_monthstat(self, *, year=None) -> dict:
+    async def get_monthstat(self, *, year: int = None) -> dict:
         """Return monthly stats for the given year.
 
         The return value is a dictionary of {month: time, ...}.
@@ -93,11 +97,11 @@ class Usage(IotModule):
         data = self._convert_stat_data(data["month_list"], entry_key="month")
         return data
 
-    async def erase_stats(self):
+    async def erase_stats(self) -> dict:
         """Erase all stats."""
         return await self.call("erase_runtime_stat")
 
-    def _convert_stat_data(self, data, entry_key) -> dict:
+    def _convert_stat_data(self, data: list[dict], entry_key: str) -> dict:
         """Return usage information keyed with the day/month.
 
         The incoming data is a list of dictionaries::

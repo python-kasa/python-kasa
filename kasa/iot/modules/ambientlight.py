@@ -16,7 +16,7 @@ from ..iotmodule import IotModule, merge
 class AmbientLight(IotModule):
     """Implements ambient light controls for the motion sensor."""
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -32,7 +32,7 @@ class AmbientLight(IotModule):
             )
         )
 
-    def query(self):
+    def query(self) -> dict:
         """Request configuration."""
         req = merge(
             self.query_for_command("get_config"),
@@ -56,7 +56,7 @@ class AmbientLight(IotModule):
         """Return True if the module is enabled."""
         return int(self.data["get_current_brt"]["value"])
 
-    async def set_enabled(self, state: bool):
+    async def set_enabled(self, state: bool) -> dict:
         """Enable/disable LAS."""
         return await self.call("set_enable", {"enable": int(state)})
 
@@ -67,7 +67,7 @@ class AmbientLight(IotModule):
         """
         return await self.call("get_current_brt")
 
-    async def set_brightness_limit(self, value: int):
+    async def set_brightness_limit(self, value: int) -> dict:
         """Set the limit when the motion sensor is inactive.
 
         See `presets` for preset values. Custom values are also likely allowed.

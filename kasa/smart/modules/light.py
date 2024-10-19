@@ -96,7 +96,7 @@ class Light(SmartModule, LightInterface):
         return await self._device.modules[Module.Color].set_hsv(hue, saturation, value)
 
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
+        self, temp: int, *, brightness: int | None = None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
 

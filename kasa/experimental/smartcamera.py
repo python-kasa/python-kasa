@@ -10,7 +10,7 @@ from .sslaestransport import SmartErrorCode
 class SmartCamera(SmartDevice):
     """Class for smart cameras."""
 
-    async def update(self, update_children: bool = False):
+    async def update(self, update_children: bool = False) -> None:
         """Update the device."""
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
@@ -47,10 +47,10 @@ class SmartCamera(SmartDevice):
             == "on"
         )
 
-    async def set_state(self, on: bool):
+    async def set_state(self, on: bool) -> dict:
         """Set the device state."""
         if isinstance(self._last_update["getLensMaskConfig"], SmartErrorCode):
-            return
+            return {}
         query = {
             "setLensMaskConfig": {
                 "lens_mask": {"lens_mask_info": {"enabled": "on" if on else "off"}}

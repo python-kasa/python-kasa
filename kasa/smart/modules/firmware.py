@@ -49,14 +49,14 @@ class UpdateInfo(BaseModel):
     needs_upgrade: bool = Field(alias="need_to_upgrade")
 
     @validator("release_date", pre=True)
-    def _release_date_optional(cls, v):
+    def _release_date_optional(cls, v: str) -> str | None:
         if not v:
             return None
 
         return v
 
     @property
-    def update_available(self):
+    def update_available(self) -> bool:
         """Return True if update available."""
         if self.status != 0:
             return True
@@ -69,11 +69,11 @@ class Firmware(SmartModule):
     REQUIRED_COMPONENT = "firmware"
     MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60 * 24
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._firmware_update_info: UpdateInfo | None = None
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         device = self._device
         if self.supported_version > 1:
@@ -183,7 +183,7 @@ class Firmware(SmartModule):
     @allow_update_after
     async def update(
         self, progress_cb: Callable[[DownloadState], Coroutine] | None = None
-    ):
+    ) -> None:
         """Update the device firmware."""
         if not self._firmware_update_info:
             raise KasaException(
@@ -242,7 +242,7 @@ class Firmware(SmartModule):
         return "enable" in self.data and self.data["enable"]
 
     @allow_update_after
-    async def set_auto_update_enabled(self, enabled: bool):
+    async def set_auto_update_enabled(self, enabled: bool) -> None:
         """Change autoupdate setting."""
         data = {**self.data, "enable": enabled}
         await self.call("set_auto_update_info", data)
