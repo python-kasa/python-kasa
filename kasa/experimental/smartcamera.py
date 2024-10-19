@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from ..device_type import DeviceType
-from ..smart import SmartDevice
+from ..smart import SmartChildDevice, SmartDevice
+from .smartcameraprotocol import _ChildCameraProtocolWrapper
 from .sslaestransport import SmartErrorCode
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class SmartCamera(SmartDevice):
@@ -20,16 +24,71 @@ class SmartCamera(SmartDevice):
             return DeviceType.Hub
         return DeviceType.Camera
 
-    async def update(self, update_children: bool = False):
-        """Update the device."""
+    def _update_internal_info(self, info_resp):
+        """Update the internal device info."""
+        info = self._try_get_response(info_resp, "getDeviceInfo")
+        self._info = self._map_info(info["device_info"])
+
+    def _update_children_info(self):
+        """Update the internal child device info from the parent info."""
+        if child_info := self._try_get_response(
+            self._last_update, "getChildDeviceList", {}
+        ):
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]]._update_internal_state(info)
+
+    async def _initialize_children(self):
+        """Initialize children for hubs."""
+        if child_info := self._try_get_response(
+            self._last_update, "getChildDeviceList", {}
+        ):
+            for info in child_info["child_device_list"]:
+                if (
+                    category := info.get("category")
+                ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
+                    child_id = info["device_id"]
+                    child_protocol = _ChildCameraProtocolWrapper(
+                        child_id, self.protocol
+                    )
+                    try:
+                        nego_response = await child_protocol.query(
+                            {"component_nego": None}
+                        )
+                        child_components = {
+                            item["id"]: item["ver_code"]
+                            for item in nego_response["component_nego"][
+                                "component_list"
+                            ]
+                        }
+                        self._children[child_id] = await SmartChildDevice.create(
+                            parent=self,
+                            child_info=info,
+                            child_components=child_components,
+                            protocol=child_protocol,
+                        )
+                    except Exception as ex:
+                        _LOGGER.error("Error initialising child %s: %s", child_id, ex)
+                        continue
+                    self._children[child_id]._update_internal_state(info)
+                else:
+                    _LOGGER.debug("Child device type not supported: %s", info)
+
+    async def _initialize_modules(self):
+        """Initialize modules based on component negotiation response."""
+
+    async def _negotiate(self):
+        """Perform initialization.
+
+        We fetch the device info and the available components as early as possible.
+        If the device reports supporting child devices, they are also initialized.
+        """
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
             "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
+            "getChildDeviceList": {"childControl": {"start_index": 0}},
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
-        info = self._try_get_response(resp, "getDeviceInfo")
-        self._info = self._map_info(info["device_info"])
         self._last_update = resp
 
     def _map_info(self, device_info: dict) -> dict:

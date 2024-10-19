@@ -109,7 +109,9 @@ class SmartDevice(Device):
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
-        if isinstance(response, SmartErrorCode):
+        from ..experimental.sslaestransport import SmartErrorCode as ExSmartErrorCode
+
+        if isinstance(response, (SmartErrorCode, ExSmartErrorCode)):
             _LOGGER.debug(
                 "Error %s getting request %s for device %s",
                 response,
@@ -154,6 +156,18 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
+    def _update_children_info(self):
+        """Update the internal child device info from the parent info."""
+        if child_info := self._try_get_response(
+            self._last_update, "get_child_device_list", {}
+        ):
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]]._update_internal_state(info)
+
+    def _update_internal_info(self, info_resp):
+        """Update the internal device info."""
+        self._info = self._try_get_response(info_resp, "get_device_info")
+
     async def update(self, update_children: bool = False):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
@@ -172,11 +186,7 @@ class SmartDevice(Device):
 
         resp = await self._modular_update(first_update, now)
 
-        if child_info := self._try_get_response(
-            self._last_update, "get_child_device_list", {}
-        ):
-            for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+        self._update_children_info()
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
         # devices will always update children to prevent errors on module access.
@@ -256,7 +266,7 @@ class SmartDevice(Device):
 
         info_resp = self._last_update if first_update else resp
         self._last_update.update(**resp)
-        self._info = self._try_get_response(info_resp, "get_device_info")
+        self._update_internal_info(info_resp)
 
         # Call handle update for modules that want to update internal data
         for module in self._modules.values():
