@@ -42,14 +42,15 @@ class SmartChildDevice(SmartDevice):
         config: DeviceConfig | None = None,
         protocol: SmartProtocol | None = None,
     ) -> None:
-        if not protocol:
-            protocol = parent.protocol
         super().__init__(parent.host, config=parent.config, protocol=protocol)
         self._parent = parent
         self._update_internal_state(info)
         self._components = component_info
         self._id = info["device_id"]
-        self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
+        if protocol:
+            self.protocol = protocol
+        else:
+            self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
     async def update(self, update_children: bool = True):
         """Update child module info.

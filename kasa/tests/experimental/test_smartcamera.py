@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..conftest import device_smartcamera
+from ..conftest import device_smartcamera, hub_smartcamera
 
 
 @device_smartcamera
@@ -18,3 +18,11 @@ async def test_alias(dev):
     await dev.set_alias(original)
     await dev.update()
     assert dev.alias == original
+
+
+@hub_smartcamera
+async def test_hub(dev):
+    assert dev.children
+    for child in dev.children:
+        assert child.alias
+        await child.update()
