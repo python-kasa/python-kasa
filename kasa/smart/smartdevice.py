@@ -67,6 +67,7 @@ class SmartDevice(Device):
         self._last_update = {}
         self._last_update_time: float | None = None
         self._on_since: datetime | None = None
+        self._info: dict[str, Any] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""

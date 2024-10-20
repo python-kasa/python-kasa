@@ -117,7 +117,11 @@ def filter_fixtures(
     component in component_nego details.
     """
 
-    def _model_match(fixture_data: FixtureInfo, model_filter):
+    def _model_match(fixture_data: FixtureInfo, model_filter: set[str]):
+        model_filter_list = [mf for mf in model_filter]
+        if len(model_filter_list) == 1 and model_filter_list[0].split("_") == 3:
+            # return exact match
+            return fixture_data.name == model_filter_list[0]
         file_model_region = fixture_data.name.split("_")[0]
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter

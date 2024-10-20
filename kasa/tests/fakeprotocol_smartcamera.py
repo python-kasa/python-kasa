@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import copy
 from json import loads as json_loads
+from warnings import warn
 
-from kasa import Credentials, DeviceConfig
+from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.experimental.smartcameraprotocol import SmartCameraProtocol
 from kasa.protocol import BaseTransport
+from kasa.smart import SmartChildDevice
 
 
 class FakeSmartCameraProtocol(SmartCameraProtocol):
@@ -39,6 +41,7 @@ class FakeSmartCameraTransport(BaseTransport):
         )
         self.fixture_name = fixture_name
         self.info = copy.deepcopy(info)
+        self.child_protocols = self._get_child_protocols()
         self.list_return_size = list_return_size
 
     @property
@@ -59,7 +62,7 @@ class FakeSmartCameraTransport(BaseTransport):
             params = request_dict["params"]
             responses = []
             for request in params["requests"]:
-                response = self._send_request(request)  # type: ignore[arg-type]
+                response = await self._send_request(request)  # type: ignore[arg-type]
                 # Devices do not continue after error
                 if response["error_code"] != 0:
                     break
@@ -67,33 +70,74 @@ class FakeSmartCameraTransport(BaseTransport):
                 responses.append(response)
             return {"result": {"responses": responses}, "error_code": 0}
         else:
-            return self._send_request(request_dict)
+            return await self._send_request(request_dict)
 
-    def _handle_control_child(self, params: dict):
+    def _get_child_protocols(self):
+        child_infos = self.info.get("getChildDeviceList", {}).get(
+            "child_device_list", []
+        )
+        found_child_fixture_infos = []
+        child_protocols = {}
+        for child_info in child_infos:
+            if (
+                (device_id := child_info.get("device_id"))
+                and (category := child_info.get("category"))
+                and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
+            ):
+                from .conftest import filter_fixtures
+                from .fakeprotocol_smart import FakeSmartProtocol
+
+                hw_version = child_info["hw_ver"]
+                sw_version = child_info["fw_ver"]
+                sw_version = sw_version.split(" ")[0]
+                model = child_info["model"]
+                region = child_info["specs"]
+                child_fixture_name = f"{model}({region})_{hw_version}_{sw_version}"
+                child_fixtures = filter_fixtures(
+                    "Child fixture",
+                    protocol_filter={"SMART.CHILD"},
+                    model_filter=child_fixture_name,
+                )
+                if child_fixtures:
+                    fixture_info = next(iter(child_fixtures))
+                    found_child_fixture_infos.append(child_info)
+                    child_protocols[device_id] = FakeSmartProtocol(
+                        fixture_info.data, fixture_info.name
+                    )
+                else:
+                    warn(
+                        f"Could not find child fixture {child_fixture_name}",
+                        stacklevel=1,
+                    )
+            else:
+                pass
+                # TODO: load camera protocol
+        # Replace child infos with the infos that found child fixtures
+        if child_infos:
+            self.info["getChildDeviceList"]["child_device_list"] = (
+                found_child_fixture_infos
+            )
+        return child_protocols
+
+    async def _handle_control_child(self, params: dict):
         """Handle control_child command."""
         device_id = params.get("device_id")
-        request_data = params.get("requestData", {})
+        assert device_id in self.child_protocols, "Fixture does not have child info"
+
+        child_protocol: SmartProtocol = self.child_protocols[device_id]
+
+        request_data = params.get("request_data", {})
 
         child_method = request_data.get("method")
         child_params = request_data.get("params")  # noqa: F841
 
-        info = self.info
-        children = info["get_child_device_list"]["child_device_list"]
-
-        for child in children:
-            if child["device_id"] == device_id:
-                info = child
-                break
-        # Create the child_devices fixture section for fixtures generated before it was added
-        if "child_devices" not in self.info:
-            self.info["child_devices"] = {}
-        # Get the method calls made directly on the child devices
-        child_device_calls = self.info["child_devices"].setdefault(device_id, {})  # noqa: F841
-
-        # We only support get & set device info for now.
-        if child_method == "get_device_info":
-            result = copy.deepcopy(info)
-            return {"result": result, "error_code": 0}
+        resp = await child_protocol.query({child_method: child_params})
+        resp["error_code"] = 0
+        for val in resp.values():
+            return {
+                "result": {"response_data": {"result": val, "error_code": 0}},
+                "error_code": 0,
+            }
 
     @staticmethod
     def _get_param_set_value(info: dict, set_keys: list[str], value):
@@ -110,12 +154,14 @@ class FakeSmartCameraTransport(BaseTransport):
         ]
     }
 
-    def _send_request(self, request_dict: dict):
+    async def _send_request(self, request_dict: dict):
         method = request_dict["method"]
 
         info = self.info
         if method == "controlChild":
-            return self._handle_control_child(request_dict["params"])
+            return await self._handle_control_child(
+                request_dict["params"]["childControl"]
+            )
 
         if method == "set":
             for key, val in request_dict.items():

@@ -22,7 +22,7 @@ class SmartCamera(SmartDevice):
     def _get_device_type_from_sysinfo(sysinfo: dict[str, Any]) -> DeviceType:
         """Find type to be displayed as a supported device category."""
         device_type = sysinfo["device_type"]
-        if device_type[3:] == "HUB":
+        if device_type[-3:] == "HUB":
             return DeviceType.Hub
         return DeviceType.Camera
 
@@ -95,6 +95,7 @@ class SmartCamera(SmartDevice):
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
+        self._update_internal_info(resp)
         await self._initialize_children()
 
     def _map_info(self, device_info: dict) -> dict:
