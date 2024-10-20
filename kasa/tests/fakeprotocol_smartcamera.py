@@ -114,7 +114,7 @@ class FakeSmartCameraTransport(BaseTransport):
         method = request_dict["method"]
 
         info = self.info
-        if method == "control_child":
+        if method == "controlChild":
             return self._handle_control_child(request_dict["params"])
 
         if method == "set":

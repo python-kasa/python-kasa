@@ -6,7 +6,9 @@ import logging
 from typing import Any
 
 from ..device_type import DeviceType
+from ..module import Module
 from ..smart import SmartChildDevice, SmartDevice
+from .modules.device import DeviceModule
 from .smartcameraprotocol import _ChildCameraProtocolWrapper
 from .sslaestransport import SmartErrorCode
 
@@ -42,6 +44,7 @@ class SmartCamera(SmartDevice):
         if child_info := self._try_get_response(
             self._last_update, "getChildDeviceList", {}
         ):
+            self._modules[Module.ChildDevice] = DeviceModule(self, Module.ChildDevice)
             for info in child_info["child_device_list"]:
                 if (
                     category := info.get("category")
@@ -67,7 +70,9 @@ class SmartCamera(SmartDevice):
                             protocol=child_protocol,
                         )
                     except Exception as ex:
-                        _LOGGER.error("Error initialising child %s: %s", child_id, ex)
+                        _LOGGER.exception(
+                            "Error initialising child %s: %s", child_id, ex
+                        )
                         continue
                     self._children[child_id]._update_internal_state(info)
                 else:
@@ -75,6 +80,7 @@ class SmartCamera(SmartDevice):
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
+        self._modules[Module.DeviceModule] = DeviceModule(self, Module.DeviceModule)
 
     async def _negotiate(self):
         """Perform initialization.
