@@ -78,7 +78,7 @@ class AmbientLight(IotModule):
         """Enable/disable LAS."""
         return await self.call("set_enable", {"enable": int(state)})
 
-    async def current_brightness(self) -> int:
+    async def current_brightness(self) -> dict:
         """Return current brightness.
 
         Return value units.

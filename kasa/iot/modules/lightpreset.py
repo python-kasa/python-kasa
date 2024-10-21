@@ -115,7 +115,7 @@ class LightPreset(IotModule, LightPresetInterface):
         self,
         preset_name: str,
         preset_state: LightState,
-    ) -> None:
+    ) -> dict:
         """Update the preset with preset_name with the new preset_info."""
         if len(self._presets) == 0:
             raise KasaException("Device does not supported saving presets")

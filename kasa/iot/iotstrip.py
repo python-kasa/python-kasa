@@ -157,13 +157,13 @@ class IotStrip(IotDevice):
             return
         await super()._initialize_features()
 
-    async def turn_on(self, **kwargs) -> None:
+    async def turn_on(self, **kwargs) -> dict:
         """Turn the strip on."""
-        await self._query_helper("system", "set_relay_state", {"state": 1})
+        return await self._query_helper("system", "set_relay_state", {"state": 1})
 
-    async def turn_off(self, **kwargs) -> None:
+    async def turn_off(self, **kwargs) -> dict:
         """Turn the strip off."""
-        await self._query_helper("system", "set_relay_state", {"state": 0})
+        return await self._query_helper("system", "set_relay_state", {"state": 0})
 
     @property  # type: ignore
     @requires_update
@@ -379,7 +379,11 @@ class IotStripPlug(IotPlug):
             await self._initialize_features()
 
     def _create_request(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids: list = None
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
     ) -> dict:
         request: dict[str, Any] = {
             "context": {"child_ids": [self.child_id]},
@@ -388,7 +392,11 @@ class IotStripPlug(IotPlug):
         return request
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids: list = None
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
     ) -> dict:
         """Override query helper to include the child_ids."""
         return await self._parent._query_helper(

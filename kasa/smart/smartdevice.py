@@ -109,7 +109,7 @@ class SmartDevice(Device):
         return cast(ModuleMapping[SmartModule], self._modules)
 
     def _try_get_response(
-        self, responses: dict, request: str, default: None = None
+        self, responses: dict, request: str, default: Any | None = None
     ) -> dict:
         response = responses.get(request)
         if isinstance(response, SmartErrorCode):
@@ -326,7 +326,7 @@ class SmartDevice(Device):
         # It also ensures that devices like power strips do not add modules such as
         # firmware to the child devices.
         skip_parent_only_modules = False
-        child_modules_to_skip = {}
+        child_modules_to_skip: dict = {}  # TODO: this is never non-empty
         if self._parent and self._parent.device_type != DeviceType.Hub:
             skip_parent_only_modules = True
 
@@ -335,9 +335,9 @@ class SmartDevice(Device):
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
                 continue
-            if (
-                mod.REQUIRED_COMPONENT in self._components
-                or self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
+            if mod.REQUIRED_COMPONENT in self._components or (
+                mod.REQUIRED_KEY_ON_PARENT
+                and self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
             ):
                 _LOGGER.debug(
                     "Device %s, found required %s, adding %s to modules.",
@@ -619,13 +619,13 @@ class SmartDevice(Device):
         """
         return await self.protocol.query({"set_device_info": {"device_on": on}})
 
-    async def turn_on(self, **kwargs: Any) -> None:
+    async def turn_on(self, **kwargs: Any) -> dict:
         """Turn on the device."""
-        await self.set_state(True)
+        return await self.set_state(True)
 
-    async def turn_off(self, **kwargs: Any) -> None:
+    async def turn_off(self, **kwargs: Any) -> dict:
         """Turn off the device."""
-        await self.set_state(False)
+        return await self.set_state(False)
 
     def update_from_discover_info(
         self,
@@ -695,7 +695,10 @@ class SmartDevice(Device):
         except DeviceError:
             raise  # Re-raise on device-reported errors
         except KasaException:
-            _LOGGER.debug("Received an expected for wifi join, but this is expected")
+            _LOGGER.debug(
+                "Received a kasa exception for wifi join, but this is expected"
+            )
+            return {}
 
     async def update_credentials(self, username: str, password: str) -> dict:
         """Update device credentials.

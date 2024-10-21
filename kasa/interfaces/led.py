@@ -34,5 +34,5 @@ class Led(Module, ABC):
         """Return current led status."""
 
     @abstractmethod
-    async def set_led(self, enable: bool) -> None:
+    async def set_led(self, enable: bool) -> dict:
         """Set led."""

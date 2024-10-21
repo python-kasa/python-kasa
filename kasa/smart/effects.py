@@ -17,7 +17,7 @@ class SmartLightEffect(LightEffectInterface, ABC):
     @abstractmethod
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set effect brightness."""
 
     @property

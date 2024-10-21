@@ -63,7 +63,7 @@ class AutoOff(SmartModule):
         """Return True if enabled."""
         return self.data["enable"]
 
-    async def set_enabled(self, enable: bool) -> None:
+    async def set_enabled(self, enable: bool) -> dict:
         """Enable/disable auto off."""
         return await self.call(
             "set_auto_off_config",

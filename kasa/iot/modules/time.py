@@ -47,7 +47,7 @@ class Time(IotModule, TimeInterface):
         """Return current timezone."""
         return self._timezone
 
-    async def get_time(self) -> datetime:
+    async def get_time(self) -> datetime | None:
         """Return current device time."""
         try:
             res = await self.call("get_time")

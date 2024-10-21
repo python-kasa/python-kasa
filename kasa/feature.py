@@ -188,7 +188,7 @@ class Feature:
                     f"Read-only feat defines attribute_setter: {self.name} ({self.id}):"
                 )
 
-    def _get_property_value(self, getter: str | Callable) -> Any:
+    def _get_property_value(self, getter: str | Callable | None) -> Any:
         if getter is None:
             return None
         if isinstance(getter, str):
@@ -286,8 +286,8 @@ class Feature:
             value = " ".join(
                 [f"*{choice}*" if choice == value else choice for choice in choices]
             )
-        if self.precision_hint is not None and value is not None:
-            value = round(self.value, self.precision_hint)
+        if self.precision_hint is not None and isinstance(value, float):
+            value = round(value, self.precision_hint)
 
         s = f"{self.name} ({self.id}): {value}"
         if self.unit is not None:

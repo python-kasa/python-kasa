@@ -257,11 +257,11 @@ class Device(ABC):
         return not self.is_on
 
     @abstractmethod
-    async def turn_on(self, **kwargs) -> dict | None:
+    async def turn_on(self, **kwargs) -> dict:
         """Turn on the device."""
 
     @abstractmethod
-    async def turn_off(self, **kwargs) -> dict | None:
+    async def turn_off(self, **kwargs) -> dict:
         """Turn off the device."""
 
     @abstractmethod
@@ -553,7 +553,8 @@ class Device(ABC):
             return self.device_type == dep_device_type_attr[1]
         # Other deprecated attributes
         if (dep_attr := self._deprecated_other_attributes.get(name)) and (
-            (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
+            dep_attr[0] is not None
+            and (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
             is not None
         ):
             mod = dep_attr[0]

@@ -207,7 +207,11 @@ class IotDevice(Device):
         self._modules[name] = module
 
     def _create_request(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids: list = None
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
     ) -> dict:
         if arg is None:
             arg = {}
@@ -453,7 +457,7 @@ class IotDevice(Device):
         sys_info = self._sys_info
         return sys_info.get("alias") if sys_info else None
 
-    async def set_alias(self, alias: str) -> None:
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
         return await self._query_helper("system", "set_dev_alias", {"alias": alias})
 

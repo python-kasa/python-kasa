@@ -142,7 +142,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
     async def set_custom_effect(
         self,
         effect_dict: dict,
-    ) -> None:
+    ) -> dict:
         """Set a custom effect on the device.
 
         :param str effect_dict: The custom effect dict to set

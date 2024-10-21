@@ -88,7 +88,7 @@ class Usage(IotModule):
         data = self._convert_stat_data(data["day_list"], entry_key="day")
         return data
 
-    async def get_monthstat(self, *, year: int = None) -> dict:
+    async def get_monthstat(self, *, year: int | None = None) -> dict:
         """Return monthly stats for the given year.
 
         The return value is a dictionary of {month: time, ...}.

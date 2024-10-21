@@ -517,7 +517,7 @@ class IotBulb(IotDevice):
         """Return that the bulb has an emeter."""
         return True
 
-    async def set_alias(self, alias: str) -> None:
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias).
 
         Overridden to use a different module name.

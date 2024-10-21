@@ -110,10 +110,11 @@ class LightEffect(Module, ABC):
         :param int transition: The wanted transition time
         """
 
+    @abstractmethod
     async def set_custom_effect(
         self,
         effect_dict: dict,
-    ) -> None:
+    ) -> dict:
         """Set a custom effect on the device.
 
         :param str effect_dict: The custom effect dict to set

@@ -56,7 +56,7 @@ class ColorTemperature(SmartModule):
         """Return current color temperature."""
         return self.data["color_temp"]
 
-    async def set_color_temp(self, temp: int, *, brightness: int = None) -> dict:
+    async def set_color_temp(self, temp: int, *, brightness: int | None = None) -> dict:
         """Set the color temperature."""
         valid_temperature_range = self.valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:

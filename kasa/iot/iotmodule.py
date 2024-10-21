@@ -27,9 +27,9 @@ merge = _merge_dict
 class IotModule(Module):
     """Base class implemention for all IOT modules."""
 
-    def call(self, method: str, params: dict | None = None) -> dict:
+    async def call(self, method: str, params: dict | None = None) -> dict:
         """Call the given method with the given parameters."""
-        return self._device._query_helper(self._module, method, params)
+        return await self._device._query_helper(self._module, method, params)
 
     def query_for_command(self, query: str, params: dict | None = None) -> dict:
         """Create a request object for the given parameters."""

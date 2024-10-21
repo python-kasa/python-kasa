@@ -111,10 +111,10 @@ class KlapTransport(BaseTransport):
         else:
             self._local_auth_hash = base64.b64decode(self._credentials_hash.encode())  # type: ignore[union-attr]
         self._default_credentials_auth_hash: dict[str, bytes] = {}
-        self._blank_auth_hash = None
+        self._blank_auth_hash: bytes | None = None
         self._handshake_lock = asyncio.Lock()
         self._query_lock = asyncio.Lock()
-        self._handshake_done = False
+        self._handshake_done: bool = False
 
         self._encryption_session: KlapEncryptionSession | None = None
         self._session_expire_at: float | None = None

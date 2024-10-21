@@ -139,7 +139,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         *,
         transition: int | None = None,
         effect_id: str | None = None,
-    ) -> None:
+    ) -> dict:
         """Set effect brightness."""
         new_effect = self._get_effect_data(effect_id=effect_id).copy()
 
@@ -163,7 +163,7 @@ class LightEffect(SmartModule, SmartLightEffect):
     async def set_custom_effect(
         self,
         effect_dict: dict,
-    ) -> None:
+    ) -> dict:
         """Set a custom effect on the device.
 
         :param str effect_dict: The custom effect dict to set

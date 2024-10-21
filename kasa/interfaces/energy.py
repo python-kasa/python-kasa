@@ -156,7 +156,7 @@ class Energy(Module, ABC):
         """Return real-time statistics."""
 
     @abstractmethod
-    async def erase_stats(self) -> None:
+    async def erase_stats(self) -> dict:
         """Erase all stats."""
 
     @abstractmethod

@@ -354,7 +354,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         """Handle asyncio.Protocol errors."""
         _LOGGER.error("Got error: %s", ex)
 
-    def connection_lost(self, ex: None) -> None:  # pragma: no cover
+    def connection_lost(self, ex: Exception | None) -> None:  # pragma: no cover
         """Cancel the discover task if running."""
         if self.discover_task:
             self.discover_task.cancel()
@@ -381,13 +381,13 @@ class Discover:
         on_discovered: Awaitable | None = None,
         discovery_timeout: int = 5,
         discovery_packets: int = 3,
-        interface: str = None,
+        interface: str | None = None,
         on_unsupported: Awaitable | None = None,
-        credentials: Credentials = None,
+        credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,
-        port: int = None,
-        timeout: int = None,
+        port: int | None = None,
+        timeout: int | None = None,
     ) -> DeviceDict:
         """Discover supported devices.
 

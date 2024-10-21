@@ -376,7 +376,7 @@ class _ChildProtocolWrapper(SmartProtocol):
         self._protocol = base_protocol
         self._transport = base_protocol._transport
 
-    def _get_method_and_params_for_request(self, request: dict[str, Any]) -> Any:
+    def _get_method_and_params_for_request(self, request: dict[str, Any] | str) -> Any:
         """Return payload for wrapping.
 
         TODO: this does not support batches and requires refactoring in the future.

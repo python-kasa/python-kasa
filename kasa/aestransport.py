@@ -418,7 +418,7 @@ class AesEncyptionSession:
         encrypted = encryptor.update(padded_data) + encryptor.finalize()
         return base64.b64encode(encrypted)
 
-    def decrypt(self, data: bytes) -> str:
+    def decrypt(self, data: str) -> str:
         """Decrypt the message."""
         decryptor = self.cipher.decryptor()
         unpadder = self.padding_strategy.unpadder()
