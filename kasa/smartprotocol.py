@@ -79,7 +79,7 @@ class SmartProtocol(BaseProtocol):
             "request_time_milis": round(time.time() * 1000),
             "terminal_uuid": self._terminal_uuid,
         }
-        if params is not None:
+        if params:
             request["params"] = params
         return json_dumps(request)
 
@@ -276,7 +276,9 @@ class SmartProtocol(BaseProtocol):
                 pf(response_data),
             )
 
-        self._handle_response_error_code(response_data, smart_method)
+        self._handle_response_error_code(
+            response_data, smart_method, raise_on_error=False
+        )
 
         # Single set_ requests do not return a result
         result = response_data.get("result")

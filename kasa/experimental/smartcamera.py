@@ -48,7 +48,6 @@ class SmartCamera(SmartDevice):
         if child_info := self._try_get_response(
             self._last_update, "getChildDeviceList", {}
         ):
-            self._modules[Module.ChildDevice] = DeviceModule(self, Module.ChildDevice)
             for info in child_info["child_device_list"]:
                 if (
                     category := info.get("category")

@@ -30,9 +30,13 @@ class SmartCameraModule(SmartModule):
     _device: SmartCamera
 
     def __init_subclass__(cls, **kwargs):
-        name = getattr(cls, "NAME", cls.__name__)
-        _LOGGER.debug("Registering %s", cls)
-        cls.REGISTERED_MODULES[name] = cls
+        parent_name = ".".join(cls.__module__.split(".")[:-1])
+        expected_name = ".".join(__name__.split(".")[:-1]) + ".modules"
+        # only register subclasses in the relative .modules package
+        if parent_name == expected_name:
+            name = getattr(cls, "NAME", cls.__name__)
+            _LOGGER.debug("Registering %s", cls)
+            cls.REGISTERED_MODULES[name] = cls
 
     def query(self) -> dict:
         """Query to execute during the update cycle.

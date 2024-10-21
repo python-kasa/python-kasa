@@ -26,3 +26,5 @@ async def test_hub(dev):
     for child in dev.children:
         assert child.alias
         await child.update()
+        assert "Time" not in child.modules
+        assert child.time
