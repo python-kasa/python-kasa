@@ -38,15 +38,19 @@ class SmartChildDevice(SmartDevice):
         parent: SmartDevice,
         info,
         component_info,
+        *,
         config: DeviceConfig | None = None,
         protocol: SmartProtocol | None = None,
     ) -> None:
-        super().__init__(parent.host, config=parent.config, protocol=parent.protocol)
+        super().__init__(parent.host, config=parent.config, protocol=protocol)
         self._parent = parent
         self._update_internal_state(info)
         self._components = component_info
         self._id = info["device_id"]
-        self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
+        if protocol:
+            self.protocol = protocol
+        else:
+            self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
 
     async def update(self, update_children: bool = True):
         """Update child module info.
@@ -79,9 +83,17 @@ class SmartChildDevice(SmartDevice):
         self._last_update_time = now
 
     @classmethod
-    async def create(cls, parent: SmartDevice, child_info, child_components):
+    async def create(
+        cls,
+        parent: SmartDevice,
+        child_info,
+        child_components,
+        protocol: SmartProtocol | None = None,
+    ):
         """Create a child device based on device info and component listing."""
-        child: SmartChildDevice = cls(parent, child_info, child_components)
+        child: SmartChildDevice = cls(
+            parent, child_info, child_components, protocol=protocol
+        )
         await child._initialize_modules()
         return child
 
