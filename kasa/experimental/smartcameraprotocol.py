@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from pprint import pformat as pf
 from typing import Any
 
@@ -154,7 +155,12 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
                 "params": {
                     "childControl": {
                         "device_id": self._device_id,
-                        "request_data": {"method": key, "params": val},
+                        "request_data": {
+                            "method": key,
+                            "params": val,
+                            "request_time_milis": round(time.time() * 1000),
+                            "terminal_uuid": self._protocol._terminal_uuid,
+                        },
                     }
                 },
             }
