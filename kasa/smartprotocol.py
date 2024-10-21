@@ -79,7 +79,7 @@ class SmartProtocol(BaseProtocol):
             "request_time_milis": round(time.time() * 1000),
             "terminal_uuid": self._terminal_uuid,
         }
-        if params:
+        if params is not None:
             request["params"] = params
         return json_dumps(request)
 

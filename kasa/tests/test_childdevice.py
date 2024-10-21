@@ -120,3 +120,5 @@ async def test_parent_property(dev: Device):
     assert dev.parent is None
     for child in dev.children:
         assert child.parent == dev
+        assert child.features["device_time"].value
+        assert child.time
