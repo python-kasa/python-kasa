@@ -276,9 +276,7 @@ class SmartProtocol(BaseProtocol):
                 pf(response_data),
             )
 
-        self._handle_response_error_code(
-            response_data, smart_method, raise_on_error=False
-        )
+        self._handle_response_error_code(response_data, smart_method)
 
         # Single set_ requests do not return a result
         result = response_data.get("result")
