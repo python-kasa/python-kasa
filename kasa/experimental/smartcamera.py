@@ -8,15 +8,19 @@ from typing import Any
 from ..device_type import DeviceType
 from ..module import Module
 from ..smart import SmartChildDevice, SmartDevice
+from .modules.childdevice import ChildDevice
 from .modules.device import DeviceModule
+from .smartcameramodule import SmartCameraModule
 from .smartcameraprotocol import _ChildCameraProtocolWrapper
-from .sslaestransport import SmartErrorCode
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class SmartCamera(SmartDevice):
     """Class for smart cameras."""
+
+    # Modules that are called as part of the init procedure on first update
+    FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice}
 
     @staticmethod
     def _get_device_type_from_sysinfo(sysinfo: dict[str, Any]) -> DeviceType:
@@ -80,7 +84,32 @@ class SmartCamera(SmartDevice):
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
-        self._modules[Module.DeviceModule] = DeviceModule(self, Module.DeviceModule)
+        for mod in SmartCameraModule.REGISTERED_MODULES.values():
+            module = mod(self, mod.NAME)
+            self._modules[module.name] = module
+
+    async def _initialize_features(self):
+        """Initialize device features."""
+        for module in self.modules.values():
+            module._initialize_features()
+            for feat in module._module_features.values():
+                self._add_feature(feat)
+        for child in self._children.values():
+            await child._initialize_features()
+
+    async def _query_setter_helper(
+        self, method: str, module: str, section: str, params: dict | None = None
+    ) -> Any:
+        res = await self.protocol.query({method: {module: {section: params}}})
+
+        return res
+
+    async def _query_getter_helper(
+        self, method: str, module: str, sections: str | list[str]
+    ) -> Any:
+        res = await self.protocol.query({method: {module: {"name": sections}}})
+
+        return res
 
     async def _negotiate(self):
         """Perform initialization.
@@ -90,7 +119,7 @@ class SmartCamera(SmartDevice):
         """
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
-            "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
+            # "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
             "getChildDeviceList": {"childControl": {"start_index": 0}},
         }
         resp = await self.protocol.query(initial_query)
@@ -114,25 +143,14 @@ class SmartCamera(SmartDevice):
     @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
-        if isinstance(self._last_update["getLensMaskConfig"], SmartErrorCode):
-            return True
-        return (
-            self._last_update["getLensMaskConfig"]["lens_mask"]["lens_mask_info"][
-                "enabled"
-            ]
-            == "on"
-        )
+        if camera := self.modules.get(Module.Camera):
+            return camera.is_on
+        return True
 
     async def set_state(self, on: bool):
         """Set the device state."""
-        if isinstance(self._last_update["getLensMaskConfig"], SmartErrorCode):
-            return
-        query = {
-            "setLensMaskConfig": {
-                "lens_mask": {"lens_mask_info": {"enabled": "on" if on else "off"}}
-            },
-        }
-        return await self.protocol.query(query)
+        if camera := self.modules.get(Module.Camera):
+            await camera.set_state(on)
 
     @property
     def device_type(self) -> DeviceType:

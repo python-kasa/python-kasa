@@ -37,14 +37,14 @@ _LOGGER = logging.getLogger(__name__)
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
-# Modules that are called as part of the init procedure on first update
-FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
-
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
 class SmartDevice(Device):
     """Base class to represent a SMART protocol based device."""
+
+    # Modules that are called as part of the init procedure on first update
+    FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
 
     def __init__(
         self,
@@ -238,10 +238,10 @@ class SmartDevice(Device):
         mq = {
             module: query
             for module in self._modules.values()
-            if module.disabled is False and (query := module.query())
+            if (first_update or module.disabled is False) and (query := module.query())
         }
         for module, query in mq.items():
-            if first_update and module.__class__ in FIRST_UPDATE_MODULES:
+            if first_update and module.__class__ in self.FIRST_UPDATE_MODULES:
                 module._last_update_time = update_time
                 continue
             if (

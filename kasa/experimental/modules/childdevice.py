@@ -1,4 +1,4 @@
-"""Child device module."""
+"""Module for child devices."""
 
 from ..smartcameramodule import SmartCameraModule
 
@@ -6,16 +6,18 @@ from ..smartcameramodule import SmartCameraModule
 class ChildDevice(SmartCameraModule):
     """Implementation for child devices."""
 
-    async def _post_update_hook(self):
-        """Perform actions after a device update.
-
-        Overrides the default behaviour to disable a module if the query returns
-        an error because this module is critical.
-        """
+    NAME = "childdevice"
+    QUERY_GETTER_NAME = "getChildDeviceList"
+    QUERY_MODULE_NAME = "childControl"
 
     def query(self) -> dict:
-        """Query to execute during the update cycle."""
-        query = {
-            "getChildDeviceList": {"childControl": {"start_index": 0}},
-        }
-        return query
+        """Query to execute during the update cycle.
+
+        Default implementation uses the raw query getter w/o parameters.
+        """
+        return {self.QUERY_GETTER_NAME: {self.QUERY_MODULE_NAME: {"start_index": 0}}}
+
+    @property
+    def disabled(self) -> bool:
+        """Return true if the module received the required data."""
+        return not self.data
