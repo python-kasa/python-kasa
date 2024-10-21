@@ -527,36 +527,30 @@ class Discover:
             raise TimeoutError(f"Timed out getting discovery response for {host}")
 
     @staticmethod
-    async def discover_connect(
+    async def try_connect_all(
         host: str,
         *,
-        discovery_timeout: int = 5,
         port: int | None = None,
         timeout: int | None = None,
         credentials: Credentials | None = None,
-        username: str | None = None,
-        password: str | None = None,
     ) -> Device | None:
-        """Discover a single device by the given IP address.
+        """Try to connect directly to a device with all possible parameters.
 
-        It is generally preferred to avoid :func:`discover_single()` and
-        use :meth:`Device.connect()` instead as it should perform better when
-        the WiFi network is congested or the device is not responding
-        to discovery requests.
+        This method can be used when udp is not working due to network issues.
+        After succesfully connecting use the device config and
+        :meth:`Device.connect()` for future connections.
 
         :param host: Hostname of device to query
         :param port: Optionally set a different port for legacy devices using port 9999
         :param timeout: Timeout in seconds device for devices queries
         :param credentials: Credentials for devices that require authentication.
             username and password are ignored if provided.
-        :param username: Username for devices that require authentication
-        :param password: Password for devices that require authentication
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
         from .device_factory import _connect
 
-        possibles = {
+        candidates = {
             (type(protocol), type(protocol._transport), device_class): (
                 protocol,
                 config,
@@ -583,7 +577,7 @@ class Discover:
             and (protocol := get_protocol(config))
             and (device_class := get_device_class_from_family(device_family.value))
         }
-        for protocol, config in possibles.values():
+        for protocol, config in candidates.values():
             try:
                 dev = await _connect(config, protocol)
             except Exception:

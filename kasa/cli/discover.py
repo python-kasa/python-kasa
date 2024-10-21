@@ -80,8 +80,9 @@ async def detail(ctx):
 @discover.command()
 @click.pass_context
 async def list(ctx):
-    """Discover devices in the network using udp broadcasts."""
+    """List devices in the network in a table using udp broadcasts."""
     sem = asyncio.Semaphore()
+    discovered = dict()
 
     async def print_discovered(dev: Device):
         cparams = dev.config.connection_type
@@ -95,6 +96,7 @@ async def list(ctx):
             except AuthenticationError:
                 echo(f"{infostr} - Authentication failed")
             else:
+                discovered[dev.host] = dev.internal_state
                 echo(f"{infostr} {dev.alias}")
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
@@ -103,6 +105,7 @@ async def list(ctx):
 
     echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}")
     await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
+    return discovered
 
 
 async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
@@ -160,7 +163,7 @@ async def config(ctx):
 
     credentials = Credentials(username, password) if username and password else None
 
-    dev = await Discover.discover_connect(
+    dev = await Discover.try_connect_all(
         host, credentials=credentials, timeout=timeout, port=port
     )
     if dev:
