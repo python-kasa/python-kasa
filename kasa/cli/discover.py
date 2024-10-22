@@ -17,7 +17,7 @@ from kasa import (
 )
 from kasa.discover import DiscoveryResult
 
-from .common import echo, error
+from .common import echo
 
 
 @click.group(invoke_without_command=True)
@@ -99,7 +99,7 @@ async def list(ctx):
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
         if res := unsupported_exception.discovery_result:
-            echo(f"{res.get('ip'):<15} Unsupported device")
+            echo(f"{res.get('ip'):<15} UNSUPPORTED DEVICE")
 
     echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}")
     return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
@@ -143,38 +143,6 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
         await device.protocol.close()
 
     return discovered_devices
-
-
-@discover.command()
-@click.pass_context
-async def config(ctx):
-    """Bypass udp discovery and try to show connection config for a device.
-
-    Bypasses udp discovery and shows the parameters required to connect
-    directly to the device.
-    """
-    params = ctx.parent.parent.params
-    username = params["username"]
-    password = params["password"]
-    timeout = params["timeout"]
-    host = params["host"]
-    port = params["port"]
-
-    credentials = Credentials(username, password) if username and password else None
-
-    dev = await Discover.try_connect_all(
-        host, credentials=credentials, timeout=timeout, port=port
-    )
-    if dev:
-        cparams = dev.config.connection_type
-        echo("Managed to connect, cli options to connect are:")
-        echo(
-            f"--device-family {cparams.device_family.value} "
-            f"--encrypt-type {cparams.encryption_type.value} "
-            f"{'--https' if cparams.https else '--no-https'}"
-        )
-    else:
-        error(f"Unable to connect to {host}")
 
 
 def _echo_dictionary(discovery_info: dict):
