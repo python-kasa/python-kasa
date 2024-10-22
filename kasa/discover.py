@@ -573,7 +573,11 @@ class Discover:
                 )
             )
             and (protocol := get_protocol(config))
-            and (device_class := get_device_class_from_family(device_family.value))
+            and (
+                device_class := get_device_class_from_family(
+                    device_family.value, https=https
+                )
+            )
         }
         for protocol, config in candidates.values():
             try:
@@ -665,7 +669,9 @@ class Discover:
             ) from ex
         try:
             discovery_result = DiscoveryResult(**info["result"])
-            if discovery_result.encrypt_info:
+            if (
+                encrypt_info := discovery_result.encrypt_info
+            ) and encrypt_info.sym_schm == "AES":
                 Discover._decrypt_discovery_data(discovery_result)
         except ValidationError as ex:
             if debug_enabled:
@@ -680,7 +686,8 @@ class Discover:
                     pf(data),
                 )
             raise UnsupportedDeviceError(
-                f"Unable to parse discovery from device: {config.host}: {ex}"
+                f"Unable to parse discovery from device: {config.host}: {ex}",
+                host=config.host,
             ) from ex
 
         type_ = discovery_result.device_type
@@ -695,6 +702,7 @@ class Discover:
                     f"Unsupported device {config.host} of type {type_} "
                     + "with no encryption type",
                     discovery_result=discovery_result.get_dict(),
+                    host=config.host,
                 )
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
@@ -707,6 +715,7 @@ class Discover:
                 f"Unsupported device {config.host} of type {type_} "
                 + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             ) from ex
         if (
             device_class := get_device_class_from_family(
@@ -717,6 +726,7 @@ class Discover:
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             )
         if (protocol := get_protocol(config)) is None:
             _LOGGER.warning(
@@ -726,6 +736,7 @@ class Discover:
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             )
 
         if debug_enabled:
