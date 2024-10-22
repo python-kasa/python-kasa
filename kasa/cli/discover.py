@@ -17,27 +17,24 @@ from kasa import (
 )
 from kasa.discover import DiscoveryResult
 
-from .common import echo
+from .common import echo, error
 
 
-@click.command()
+@click.group(invoke_without_command=True)
 @click.pass_context
 async def discover(ctx):
     """Discover devices in the network."""
-    target = ctx.parent.params["target"]
-    username = ctx.parent.params["username"]
-    password = ctx.parent.params["password"]
-    discovery_timeout = ctx.parent.params["discovery_timeout"]
-    timeout = ctx.parent.params["timeout"]
-    host = ctx.parent.params["host"]
-    port = ctx.parent.params["port"]
+    if ctx.invoked_subcommand is None:
+        return await ctx.invoke(detail)
 
-    credentials = Credentials(username, password) if username and password else None
 
-    sem = asyncio.Semaphore()
-    discovered = dict()
+@discover.command()
+@click.pass_context
+async def detail(ctx):
+    """Discover devices in the network using udp broadcasts."""
     unsupported = []
     auth_failed = []
+    sem = asyncio.Semaphore()
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
         unsupported.append(unsupported_exception)
@@ -65,8 +62,60 @@ async def discover(ctx):
             else:
                 ctx.parent.obj = dev
                 await ctx.parent.invoke(state)
-                discovered[dev.host] = dev.internal_state
             echo()
+
+    discovered = await _discover(ctx, print_discovered, print_unsupported)
+    if ctx.parent.parent.params["host"]:
+        return discovered
+
+    echo(f"Found {len(discovered)} devices")
+    if unsupported:
+        echo(f"Found {len(unsupported)} unsupported devices")
+    if auth_failed:
+        echo(f"Found {len(auth_failed)} devices that failed to authenticate")
+
+    return discovered
+
+
+@discover.command()
+@click.pass_context
+async def list(ctx):
+    """List devices in the network in a table using udp broadcasts."""
+    sem = asyncio.Semaphore()
+
+    async def print_discovered(dev: Device):
+        cparams = dev.config.connection_type
+        infostr = (
+            f"{dev.host:<15} {cparams.device_family.value:<20} "
+            f"{cparams.encryption_type.value:<4}"
+        )
+        async with sem:
+            try:
+                await dev.update()
+            except AuthenticationError:
+                echo(f"{infostr} - Authentication failed")
+            else:
+                echo(f"{infostr} {dev.alias}")
+
+    async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
+        if res := unsupported_exception.discovery_result:
+            echo(f"{res.get('ip'):<15} Unsupported device")
+
+    echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}")
+    return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
+
+
+async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
+    params = ctx.parent.parent.params
+    target = params["target"]
+    username = params["username"]
+    password = params["password"]
+    discovery_timeout = params["discovery_timeout"]
+    timeout = params["timeout"]
+    host = params["host"]
+    port = params["port"]
+
+    credentials = Credentials(username, password) if username and password else None
 
     if host:
         echo(f"Discovering device {host} for {discovery_timeout} seconds")
@@ -78,8 +127,8 @@ async def discover(ctx):
             discovery_timeout=discovery_timeout,
             on_unsupported=print_unsupported,
         )
-
-    echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
+    if do_echo:
+        echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
     discovered_devices = await Discover.discover(
         target=target,
         discovery_timeout=discovery_timeout,
@@ -93,13 +142,39 @@ async def discover(ctx):
     for device in discovered_devices.values():
         await device.protocol.close()
 
-    echo(f"Found {len(discovered)} devices")
-    if unsupported:
-        echo(f"Found {len(unsupported)} unsupported devices")
-    if auth_failed:
-        echo(f"Found {len(auth_failed)} devices that failed to authenticate")
+    return discovered_devices
 
-    return discovered
+
+@discover.command()
+@click.pass_context
+async def config(ctx):
+    """Bypass udp discovery and try to show connection config for a device.
+
+    Bypasses udp discovery and shows the parameters required to connect
+    directly to the device.
+    """
+    params = ctx.parent.parent.params
+    username = params["username"]
+    password = params["password"]
+    timeout = params["timeout"]
+    host = params["host"]
+    port = params["port"]
+
+    credentials = Credentials(username, password) if username and password else None
+
+    dev = await Discover.try_connect_all(
+        host, credentials=credentials, timeout=timeout, port=port
+    )
+    if dev:
+        cparams = dev.config.connection_type
+        echo("Managed to connect, cli options to connect are:")
+        echo(
+            f"--device-family {cparams.device_family.value} "
+            f"--encrypt-type {cparams.encryption_type.value} "
+            f"{'--https' if cparams.https else '--no-https'}"
+        )
+    else:
+        error(f"Unable to connect to {host}")
 
 
 def _echo_dictionary(discovery_info: dict):
