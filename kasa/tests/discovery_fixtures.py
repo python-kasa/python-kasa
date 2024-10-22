@@ -90,6 +90,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         query_data: dict
         device_type: str
         encrypt_type: str
+        https: bool
         login_version: int | None = None
         port_override: int | None = None
 
@@ -110,6 +111,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             "encrypt_type"
         ]
         login_version = fixture_data["discovery_result"]["mgt_encrypt_schm"].get("lv")
+        https = fixture_data["discovery_result"]["mgt_encrypt_schm"]["is_support_https"]
         dm = _DiscoveryMock(
             ip,
             80,
@@ -118,6 +120,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             fixture_data,
             device_type,
             encrypt_type,
+            https,
             login_version,
         )
     else:
@@ -134,6 +137,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             fixture_data,
             device_type,
             encrypt_type,
+            False,
             login_version,
         )
 

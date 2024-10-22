@@ -573,7 +573,11 @@ class Discover:
                 )
             )
             and (protocol := get_protocol(config))
-            and (device_class := get_device_class_from_family(device_family.value))
+            and (
+                device_class := get_device_class_from_family(
+                    device_family.value, https=https
+                )
+            )
         }
         for protocol, config in candidates.values():
             try:
@@ -591,7 +595,10 @@ class Discover:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult(**info["result"])
-            dev_class = get_device_class_from_family(discovery_result.device_type)
+            https = discovery_result.mgt_encrypt_schm.is_support_https
+            dev_class = get_device_class_from_family(
+                discovery_result.device_type, https=https
+            )
             if not dev_class:
                 raise UnsupportedDeviceError(
                     "Unknown device type: %s" % discovery_result.device_type,
@@ -681,11 +688,11 @@ class Discover:
             ) from ex
 
         type_ = discovery_result.device_type
-
+        encrypt_schm = discovery_result.mgt_encrypt_schm
         try:
-            if not (
-                encrypt_type := discovery_result.mgt_encrypt_schm.encrypt_type
-            ) and (encrypt_info := discovery_result.encrypt_info):
+            if not (encrypt_type := encrypt_schm.encrypt_type) and (
+                encrypt_info := discovery_result.encrypt_info
+            ):
                 encrypt_type = encrypt_info.sym_schm
             if not encrypt_type:
                 raise UnsupportedDeviceError(
@@ -705,7 +712,11 @@ class Discover:
                 + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.get_dict(),
             ) from ex
-        if (device_class := get_device_class_from_family(type_)) is None:
+        if (
+            device_class := get_device_class_from_family(
+                type_, https=encrypt_schm.is_support_https
+            )
+        ) is None:
             _LOGGER.warning("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
