@@ -142,13 +142,13 @@ class SmartCamera(SmartDevice):
     @property
     def is_on(self) -> bool:
         """Return true if the device is on."""
-        if camera := self.modules.get(Module.Camera):
+        if (camera := self.modules.get(Module.Camera)) and not camera.disabled:
             return camera.is_on
         return True
 
     async def set_state(self, on: bool):
         """Set the device state."""
-        if camera := self.modules.get(Module.Camera):
+        if (camera := self.modules.get(Module.Camera)) and not camera.disabled:
             await camera.set_state(on)
 
     @property
