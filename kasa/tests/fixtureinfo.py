@@ -52,7 +52,7 @@ SUPPORTED_SMART_CHILD_DEVICES = [
 SUPPORTED_SMARTCAMERA_DEVICES = [
     (device, "SMARTCAMERA")
     for device in glob.glob(
-        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/experimental/*.json"
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/smartcamera/*.json"
     )
 ]
 

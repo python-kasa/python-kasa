@@ -26,7 +26,7 @@ class SmartCamera(SmartDevice):
     def _get_device_type_from_sysinfo(sysinfo: dict[str, Any]) -> DeviceType:
         """Find type to be displayed as a supported device category."""
         device_type = sysinfo["device_type"]
-        if device_type[-3:] == "HUB":
+        if device_type.endswith("HUB"):
             return DeviceType.Hub
         return DeviceType.Camera
 
@@ -43,44 +43,44 @@ class SmartCamera(SmartDevice):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
+    async def _initialize_smart_child(self, info):
+        """Initialize a smart child device attached to a smartcamera."""
+        child_id = info["device_id"]
+        child_protocol = _ChildCameraProtocolWrapper(child_id, self.protocol)
+        try:
+            initial_response = await child_protocol.query(
+                {"component_nego": None, "get_connect_cloud_state": None}
+            )
+            child_components = {
+                item["id"]: item["ver_code"]
+                for item in initial_response["component_nego"]["component_list"]
+            }
+        except Exception as ex:
+            _LOGGER.exception("Error initialising child %s: %s", child_id, ex)
+        self._children[child_id] = await SmartChildDevice.create(
+            parent=self,
+            child_info=info,
+            child_components=child_components,
+            protocol=child_protocol,
+            last_update=initial_response,
+        )
+
     async def _initialize_children(self):
         """Initialize children for hubs."""
-        if child_info := self._try_get_response(
-            self._last_update, "getChildDeviceList", {}
+        if not (
+            child_info := self._try_get_response(
+                self._last_update, "getChildDeviceList", {}
+            )
         ):
-            for info in child_info["child_device_list"]:
-                if (
-                    category := info.get("category")
-                ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
-                    child_id = info["device_id"]
-                    child_protocol = _ChildCameraProtocolWrapper(
-                        child_id, self.protocol
-                    )
-                    try:
-                        initial_response = await child_protocol.query(
-                            {"component_nego": None, "get_connect_cloud_state": None}
-                        )
-                        child_components = {
-                            item["id"]: item["ver_code"]
-                            for item in initial_response["component_nego"][
-                                "component_list"
-                            ]
-                        }
-                        self._children[child_id] = await SmartChildDevice.create(
-                            parent=self,
-                            child_info=info,
-                            child_components=child_components,
-                            protocol=child_protocol,
-                            last_update=initial_response,
-                        )
-                    except Exception as ex:
-                        _LOGGER.exception(
-                            "Error initialising child %s: %s", child_id, ex
-                        )
-                        continue
-                    self._children[child_id]._update_internal_state(info)
-                else:
-                    _LOGGER.debug("Child device type not supported: %s", info)
+            return
+        for info in child_info["child_device_list"]:
+            if (
+                category := info.get("category")
+            ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
+                # Is a smart child device
+                await self._initialize_smart_child(info)
+            else:
+                _LOGGER.debug("Child device type not supported: %s", info)
 
     async def _initialize_modules(self):
         """Initialize modules based on component negotiation response."""
