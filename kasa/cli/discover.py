@@ -160,6 +160,9 @@ async def config(ctx):
     host = params["host"]
     port = params["port"]
 
+    if not host:
+        error("--host option must be supplied to discover config")
+
     credentials = Credentials(username, password) if username and password else None
 
     dev = await Discover.try_connect_all(
