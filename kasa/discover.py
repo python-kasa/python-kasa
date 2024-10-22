@@ -669,7 +669,9 @@ class Discover:
             ) from ex
         try:
             discovery_result = DiscoveryResult(**info["result"])
-            if discovery_result.encrypt_info:
+            if (
+                encrypt_info := discovery_result.encrypt_info
+            ) and encrypt_info.sym_schm == "AES":
                 Discover._decrypt_discovery_data(discovery_result)
         except ValidationError as ex:
             if debug_enabled:
