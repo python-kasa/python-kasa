@@ -104,6 +104,55 @@ async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_
     update.assert_called()
 
 
+async def test_list_devices(discovery_mock, runner):
+    """Test that device update is called on main."""
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "list"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}"
+    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<4}"
+    assert header in res.output
+    assert row in res.output
+
+
+@new_discovery
+async def test_list_auth_failed(discovery_mock, mocker, runner):
+    """Test that device update is called on main."""
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    mocker.patch.object(
+        device_class,
+        "update",
+        side_effect=AuthenticationError("Failed to authenticate"),
+    )
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "list"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}"
+    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<4} - Authentication failed"
+    assert header in res.output
+    assert row in res.output
+
+
+async def test_list_unsupported(unsupported_device_info, runner):
+    """Test that device update is called on main."""
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "list"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}"
+    row = f"{'127.0.0.1':<15} UNSUPPORTED DEVICE"
+    assert header in res.output
+    assert row in res.output
+
+
 async def test_sysinfo(dev: Device, runner):
     res = await runner.invoke(sysinfo, obj=dev)
     assert "System info" in res.output

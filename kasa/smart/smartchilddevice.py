@@ -21,6 +21,18 @@ class SmartChildDevice(SmartDevice):
     This wraps the protocol communications and sets internal data for the child.
     """
 
+    CHILD_DEVICE_TYPE_MAP = {
+        "plug.powerstrip.sub-plug": DeviceType.Plug,
+        "subg.trigger.contact-sensor": DeviceType.Sensor,
+        "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
+        "subg.trigger.water-leak-sensor": DeviceType.Sensor,
+        "subg.trigger.motion-sensor": DeviceType.Sensor,
+        "kasa.switch.outlet.sub-fan": DeviceType.Fan,
+        "kasa.switch.outlet.sub-dimmer": DeviceType.Dimmer,
+        "subg.trv": DeviceType.Thermostat,
+        "subg.trigger.button": DeviceType.Sensor,
+    }
+
     def __init__(
         self,
         parent: SmartDevice,
@@ -76,18 +88,14 @@ class SmartChildDevice(SmartDevice):
     @property
     def device_type(self) -> DeviceType:
         """Return child device type."""
-        child_device_map = {
-            "plug.powerstrip.sub-plug": DeviceType.Plug,
-            "subg.trigger.contact-sensor": DeviceType.Sensor,
-            "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
-            "subg.trigger.water-leak-sensor": DeviceType.Sensor,
-            "kasa.switch.outlet.sub-fan": DeviceType.Fan,
-            "kasa.switch.outlet.sub-dimmer": DeviceType.Dimmer,
-            "subg.trv": DeviceType.Thermostat,
-        }
-        dev_type = child_device_map.get(self.sys_info["category"])
+        category = self.sys_info["category"]
+        dev_type = self.CHILD_DEVICE_TYPE_MAP.get(category)
         if dev_type is None:
-            _LOGGER.warning("Unknown child device type, please open issue ")
+            _LOGGER.warning(
+                "Unknown child device type %s for model %s, please open issue",
+                category,
+                self.model,
+            )
             dev_type = DeviceType.Unknown
         return dev_type
 

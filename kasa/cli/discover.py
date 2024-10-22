@@ -32,7 +32,6 @@ async def discover(ctx):
 @click.pass_context
 async def detail(ctx):
     """Discover devices in the network using udp broadcasts."""
-    discovered = dict()
     unsupported = []
     auth_failed = []
     sem = asyncio.Semaphore()
@@ -63,10 +62,11 @@ async def detail(ctx):
             else:
                 ctx.parent.obj = dev
                 await ctx.parent.invoke(state)
-                discovered[dev.host] = dev.internal_state
             echo()
 
-    await _discover(ctx, print_discovered, print_unsupported)
+    discovered = await _discover(ctx, print_discovered, print_unsupported)
+    if ctx.parent.parent.params["host"]:
+        return discovered
 
     echo(f"Found {len(discovered)} devices")
     if unsupported:
@@ -82,7 +82,6 @@ async def detail(ctx):
 async def list(ctx):
     """List devices in the network in a table using udp broadcasts."""
     sem = asyncio.Semaphore()
-    discovered = dict()
 
     async def print_discovered(dev: Device):
         cparams = dev.config.connection_type
@@ -96,16 +95,14 @@ async def list(ctx):
             except AuthenticationError:
                 echo(f"{infostr} - Authentication failed")
             else:
-                discovered[dev.host] = dev.internal_state
                 echo(f"{infostr} {dev.alias}")
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
         if res := unsupported_exception.discovery_result:
-            echo(f"{res.get('ip'):<15} Unsupported device")
+            echo(f"{res.get('ip'):<15} UNSUPPORTED DEVICE")
 
     echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}")
-    await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
-    return discovered
+    return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
 
 
 async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
