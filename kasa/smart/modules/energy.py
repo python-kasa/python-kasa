@@ -28,6 +28,10 @@ class Energy(SmartModule, EnergyInterface):
         """Current power in watts."""
         if (power := self.energy.get("current_power")) is not None:
             return power / 1_000
+        elif (
+            power := self.data.get("get_current_power").get("current_power")
+        ) is not None:
+            return power
         return None
 
     @property
@@ -105,3 +109,11 @@ class Energy(SmartModule, EnergyInterface):
     async def get_monthly_stats(self, *, year=None, kwh=True) -> dict:
         """Return monthly stats for the given year."""
         raise KasaException("Device does not support periodic statistics")
+
+    async def _check_supported(self):
+        """Additional check to see if the module is supported by the device."""
+        # Energy module is not supported on P304M parent device
+        return not (
+            self._device.model == "P304M"
+            and "original_device_id" not in self._device.sys_info
+        )
