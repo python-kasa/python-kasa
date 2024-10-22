@@ -142,6 +142,8 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
     for device in discovered_devices.values():
         await device.protocol.close()
 
+    return discovered_devices
+
 
 @discover.command()
 @click.pass_context
