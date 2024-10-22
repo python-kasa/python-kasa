@@ -545,8 +545,6 @@ class Discover:
         :param timeout: Timeout in seconds device for devices queries
         :param credentials: Credentials for devices that require authentication.
             username and password are ignored if provided.
-        :rtype: SmartDevice
-        :return: Object for querying/controlling found device.
         """
         from .device_factory import _connect
 
