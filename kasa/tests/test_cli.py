@@ -112,8 +112,8 @@ async def test_list_devices(discovery_mock, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}"
-    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<4}"
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
+    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7}"
     assert header in res.output
     assert row in res.output
 
@@ -133,8 +133,8 @@ async def test_list_auth_failed(discovery_mock, mocker, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}"
-    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<4} - Authentication failed"
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
+    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7} - Authentication failed"
     assert header in res.output
     assert row in res.output
 
@@ -147,7 +147,7 @@ async def test_list_unsupported(unsupported_device_info, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}"
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
     row = f"{'127.0.0.1':<15} UNSUPPORTED DEVICE"
     assert header in res.output
     assert row in res.output

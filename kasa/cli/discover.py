@@ -87,7 +87,7 @@ async def list(ctx):
         cparams = dev.config.connection_type
         infostr = (
             f"{dev.host:<15} {cparams.device_family.value:<20} "
-            f"{cparams.encryption_type.value:<4}"
+            f"{cparams.encryption_type.value:<7}"
         )
         async with sem:
             try:
@@ -101,7 +101,7 @@ async def list(ctx):
         if res := unsupported_exception.discovery_result:
             echo(f"{res.get('ip'):<15} UNSUPPORTED DEVICE")
 
-    echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPTION TYPE':<4} {'ALIAS'}")
+    echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}")
     return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
 
 
