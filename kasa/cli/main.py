@@ -256,6 +256,9 @@ async def cli(
         ctx.obj = object()
         return
 
+    if target and host:
+        error("--target is not a valid option for single host discovery")
+
     if experimental:
         from kasa.experimental.enabled import Enabled
 
