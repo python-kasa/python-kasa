@@ -70,10 +70,18 @@ class SmartCameraModule(SmartModule):
         if not q:
             return dev.sys_info
 
-        query_resp = dev._last_update.get(self.QUERY_GETTER_NAME, {})
-        if isinstance(query_resp, (SmartErrorCode, ExpSmartErrorCode)):
-            return None
-        return query_resp.get(self.QUERY_MODULE_NAME)
+        if len(q) == 1:
+            query_resp = dev._last_update.get(self.QUERY_GETTER_NAME, {})
+            if isinstance(query_resp, (SmartErrorCode, ExpSmartErrorCode)):
+                return None
+
+            return query_resp.get(self.QUERY_MODULE_NAME)
+        else:
+            return {
+                key: val
+                for key, val in dev._last_update.items()
+                if key in q and not isinstance(val, (SmartErrorCode, ExpSmartErrorCode))
+            }
 
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device.

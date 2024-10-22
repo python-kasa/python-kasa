@@ -215,10 +215,6 @@
             "basic": {
                 "zone_id": "Australia/Canberra",
                 "timezone": "UTC+10:00"
-            },
-            "clock_status": {
-                "seconds_from_1970": 1729509322,
-                "local_time": "2024-10-21 22:15:22"
             }
         }
     },

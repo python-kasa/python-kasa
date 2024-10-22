@@ -19,7 +19,7 @@ class Time(SmartCameraModule, TimeInterface):
     NAME = "Time"
     QUERY_GETTER_NAME = "getTimezone"
     QUERY_MODULE_NAME = "system"
-    QUERY_SECTION_NAMES = ["clock_status", "basic"]
+    QUERY_SECTION_NAMES = "basic"
 
     _timezone: tzinfo = timezone.utc
     _time: datetime
@@ -38,10 +38,17 @@ class Time(SmartCameraModule, TimeInterface):
             )
         )
 
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        q = super().query()
+        q["getClockStatus"] = {self.QUERY_MODULE_NAME: {"name": "clock_status"}}
+
+        return q
+
     async def _post_update_hook(self):
         """Perform actions after a device update."""
-        time_data = self.data["clock_status"]
-        timezone_data = self.data["basic"]
+        time_data = self.data["getClockStatus"]["system"]["clock_status"]
+        timezone_data = self.data["getTimezone"]["system"]["basic"]
         zone_id = timezone_data["zone_id"]
         timestamp = time_data["seconds_from_1970"]
         try:
