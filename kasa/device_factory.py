@@ -67,7 +67,8 @@ async def connect(*, host: str | None = None, config: DeviceConfig) -> Device:
     if (protocol := get_protocol(config=config)) is None:
         raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
-            + f"{config.connection_type.device_family.value}"
+            + f"{config.connection_type.device_family.value}",
+            host=config.host,
         )
 
     try:
@@ -119,7 +120,8 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     else:
         raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
-            + f"{config.connection_type.device_family.value}"
+            + f"{config.connection_type.device_family.value}",
+            host=config.host,
         )
 
 

@@ -31,6 +31,7 @@ class UnsupportedDeviceError(KasaException):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.discovery_result = kwargs.get("discovery_result")
+        self.host = kwargs.get("host")
         super().__init__(*args)
 
 
