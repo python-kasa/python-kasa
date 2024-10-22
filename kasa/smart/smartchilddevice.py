@@ -89,11 +89,15 @@ class SmartChildDevice(SmartDevice):
         child_info,
         child_components,
         protocol: SmartProtocol | None = None,
+        *,
+        last_update: dict | None = None,
     ):
         """Create a child device based on device info and component listing."""
         child: SmartChildDevice = cls(
             parent, child_info, child_components, protocol=protocol
         )
+        if last_update:
+            child._last_update = last_update
         await child._initialize_modules()
         return child
 

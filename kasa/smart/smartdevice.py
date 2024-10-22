@@ -137,7 +137,7 @@ class SmartDevice(Device):
         initial_query = {
             "component_nego": None,
             "get_device_info": None,
-            "get_connect_cloud_state": None,
+            # "get_connect_cloud_state": None,
         }
         resp = await self.protocol.query(initial_query)
 

@@ -57,12 +57,12 @@ class SmartCamera(SmartDevice):
                         child_id, self.protocol
                     )
                     try:
-                        nego_response = await child_protocol.query(
-                            {"component_nego": None}
+                        initial_response = await child_protocol.query(
+                            {"component_nego": None, "get_connect_cloud_state": None}
                         )
                         child_components = {
                             item["id"]: item["ver_code"]
-                            for item in nego_response["component_nego"][
+                            for item in initial_response["component_nego"][
                                 "component_list"
                             ]
                         }
@@ -71,6 +71,7 @@ class SmartCamera(SmartDevice):
                             child_info=info,
                             child_components=child_components,
                             protocol=child_protocol,
+                            last_update=initial_response,
                         )
                     except Exception as ex:
                         _LOGGER.exception(
