@@ -527,6 +527,66 @@ class Discover:
             raise TimeoutError(f"Timed out getting discovery response for {host}")
 
     @staticmethod
+    async def try_connect_all(
+        host: str,
+        *,
+        port: int | None = None,
+        timeout: int | None = None,
+        credentials: Credentials | None = None,
+    ) -> Device | None:
+        """Try to connect directly to a device with all possible parameters.
+
+        This method can be used when udp is not working due to network issues.
+        After succesfully connecting use the device config and
+        :meth:`Device.connect()` for future connections.
+
+        :param host: Hostname of device to query
+        :param port: Optionally set a different port for legacy devices using port 9999
+        :param timeout: Timeout in seconds device for devices queries
+        :param credentials: Credentials for devices that require authentication.
+            username and password are ignored if provided.
+        """
+        from .device_factory import _connect
+
+        candidates = {
+            (type(protocol), type(protocol._transport), device_class): (
+                protocol,
+                config,
+            )
+            for encrypt in Device.EncryptionType
+            for device_family in Device.Family
+            for https in (True, False)
+            if (
+                conn_params := DeviceConnectionParameters(
+                    device_family=device_family,
+                    encryption_type=encrypt,
+                    https=https,
+                )
+            )
+            and (
+                config := DeviceConfig(
+                    host=host,
+                    connection_type=conn_params,
+                    timeout=timeout,
+                    port_override=port,
+                    credentials=credentials,
+                )
+            )
+            and (protocol := get_protocol(config))
+            and (device_class := get_device_class_from_family(device_family.value))
+        }
+        for protocol, config in candidates.values():
+            try:
+                dev = await _connect(config, protocol)
+            except Exception:
+                _LOGGER.debug("Unable to connect with %s", protocol)
+            else:
+                return dev
+            finally:
+                await protocol.close()
+        return None
+
+    @staticmethod
     def _get_device_class(info: dict) -> type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:

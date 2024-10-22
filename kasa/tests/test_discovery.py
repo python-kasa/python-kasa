@@ -20,9 +20,15 @@ from kasa import (
     Device,
     DeviceType,
     Discover,
+    IotProtocol,
     KasaException,
 )
 from kasa.aestransport import AesEncyptionSession
+from kasa.device_factory import (
+    get_device_class_from_family,
+    get_device_class_from_sys_info,
+    get_protocol,
+)
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
@@ -35,7 +41,7 @@ from kasa.discover import (
 )
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice
-from kasa.xortransport import XorEncryption
+from kasa.xortransport import XorEncryption, XorTransport
 
 from .conftest import (
     bulb_iot,
@@ -647,3 +653,51 @@ async def test_discovery_decryption():
     dr = DiscoveryResult(**info)
     Discover._decrypt_discovery_data(dr)
     assert dr.decrypted_data == data_dict
+
+
+async def test_discover_try_connect_all(discovery_mock, mocker):
+    """Test that device update is called on main."""
+    if "result" in discovery_mock.discovery_data:
+        dev_class = get_device_class_from_family(discovery_mock.device_type)
+        cparams = DeviceConnectionParameters.from_values(
+            discovery_mock.device_type,
+            discovery_mock.encrypt_type,
+            discovery_mock.login_version,
+            False,
+        )
+        protocol = get_protocol(
+            DeviceConfig(discovery_mock.ip, connection_type=cparams)
+        )
+        protocol_class = protocol.__class__
+        transport_class = protocol._transport.__class__
+    else:
+        dev_class = get_device_class_from_sys_info(discovery_mock.discovery_data)
+        protocol_class = IotProtocol
+        transport_class = XorTransport
+
+    async def _query(self, *args, **kwargs):
+        if (
+            self.__class__ is protocol_class
+            and self._transport.__class__ is transport_class
+        ):
+            return discovery_mock.query_data
+        raise KasaException()
+
+    async def _update(self, *args, **kwargs):
+        if (
+            self.protocol.__class__ is protocol_class
+            and self.protocol._transport.__class__ is transport_class
+        ):
+            return
+        raise KasaException()
+
+    mocker.patch("kasa.IotProtocol.query", new=_query)
+    mocker.patch("kasa.SmartProtocol.query", new=_query)
+    mocker.patch.object(dev_class, "update", new=_update)
+
+    dev = await Discover.try_connect_all(discovery_mock.ip)
+
+    assert dev
+    assert isinstance(dev, dev_class)
+    assert isinstance(dev.protocol, protocol_class)
+    assert isinstance(dev.protocol._transport, transport_class)

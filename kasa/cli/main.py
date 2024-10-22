@@ -39,6 +39,7 @@ TYPES = [
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
+DEFAULT_TARGET = "255.255.255.255"
 
 
 def _legacy_type_to_class(_type):
@@ -115,7 +116,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--target",
     envvar="KASA_TARGET",
-    default="255.255.255.255",
+    default=DEFAULT_TARGET,
     required=False,
     show_default=True,
     help="The broadcast address to be used for discovery.",
@@ -255,6 +256,9 @@ async def cli(
         # Context object is required to avoid crashing on sub-groups
         ctx.obj = object()
         return
+
+    if target != DEFAULT_TARGET and host:
+        error("--target is not a valid option for single host discovery")
 
     if experimental:
         from kasa.experimental.enabled import Enabled

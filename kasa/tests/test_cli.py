@@ -1158,3 +1158,78 @@ async def test_cli_child_commands(
         assert res.exit_code == 0
         parent_update_spy.assert_called_once()
         assert dev.children[0].update == child_update_method
+
+
+async def test_discover_config(dev: Device, mocker, runner):
+    """Test that device config is returned."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=dev)
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--host",
+            host,
+            "discover",
+            "config",
+        ],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    cparam = dev.config.connection_type
+    expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
+    assert expected in res.output
+
+
+async def test_discover_config_invalid(mocker, runner):
+    """Test the device config command with invalids."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--host",
+            host,
+            "discover",
+            "config",
+        ],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 1
+    assert f"Unable to connect to {host}" in res.output
+
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "config"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 1
+    assert "--host option must be supplied to discover config" in res.output
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--host",
+            host,
+            "--target",
+            "127.0.0.2",
+            "discover",
+            "config",
+        ],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 1
+    assert "--target is not a valid option for single host discovery" in res.output
