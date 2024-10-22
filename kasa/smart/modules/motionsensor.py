@@ -11,7 +11,7 @@ class MotionSensor(SmartModule):
 
     REQUIRED_COMPONENT = "sensitivity"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         self._add_feature(
             Feature(
@@ -31,6 +31,6 @@ class MotionSensor(SmartModule):
         return {}
 
     @property
-    def motion_detected(self):
+    def motion_detected(self) -> bool:
         """Return True if the motion has been detected."""
         return self._device.sys_info["detected"]

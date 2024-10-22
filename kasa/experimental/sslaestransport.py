@@ -247,7 +247,9 @@ class SslAesTransport(BaseTransport):
         return ret_val  # type: ignore[return-value]
 
     @staticmethod
-    def generate_confirm_hash(local_nonce, server_nonce, pwd_hash):
+    def generate_confirm_hash(
+        local_nonce: str, server_nonce: str, pwd_hash: str
+    ) -> str:
         """Generate an auth hash for the protocol on the supplied credentials."""
         expected_confirm_bytes = _sha256_hash(
             local_nonce.encode() + pwd_hash.encode() + server_nonce.encode()
@@ -255,7 +257,9 @@ class SslAesTransport(BaseTransport):
         return expected_confirm_bytes + server_nonce + local_nonce
 
     @staticmethod
-    def generate_digest_password(local_nonce, server_nonce, pwd_hash):
+    def generate_digest_password(
+        local_nonce: str, server_nonce: str, pwd_hash: str
+    ) -> str:
         """Generate an auth hash for the protocol on the supplied credentials."""
         digest_password_hash = _sha256_hash(
             pwd_hash.encode() + local_nonce.encode() + server_nonce.encode()
@@ -266,7 +270,7 @@ class SslAesTransport(BaseTransport):
 
     @staticmethod
     def generate_encryption_token(
-        token_type, local_nonce, server_nonce, pwd_hash
+        token_type: str, local_nonce: str, server_nonce: str, pwd_hash: str
     ) -> bytes:
         """Generate encryption token."""
         hashedKey = _sha256_hash(
@@ -293,7 +297,9 @@ class SslAesTransport(BaseTransport):
         local_nonce, server_nonce, pwd_hash = await self.perform_handshake1()
         await self.perform_handshake2(local_nonce, server_nonce, pwd_hash)
 
-    async def perform_handshake2(self, local_nonce, server_nonce, pwd_hash) -> None:
+    async def perform_handshake2(
+        self, local_nonce: str, server_nonce: str, pwd_hash: str
+    ) -> None:
         """Perform the handshake."""
         _LOGGER.debug("Performing handshake2 ...")
         digest_password = self.generate_digest_password(
@@ -404,7 +410,7 @@ class SslAesTransport(BaseTransport):
         _LOGGER.debug(msg)
         raise AuthenticationError(msg)
 
-    def _handshake_session_expired(self):
+    def _handshake_session_expired(self) -> bool:
         """Return true if session has expired."""
         return (
             self._session_expire_at is None
@@ -438,7 +444,7 @@ class SslAesTransport(BaseTransport):
 class SmartErrorCode(IntEnum):
     """Smart error codes for this transport."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.value})"
 
     @staticmethod

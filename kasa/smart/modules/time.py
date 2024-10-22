@@ -21,7 +21,7 @@ class Time(SmartModule, TimeInterface):
 
     _timezone: tzinfo = timezone.utc
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -35,7 +35,7 @@ class Time(SmartModule, TimeInterface):
             )
         )
 
-    async def _post_update_hook(self):
+    async def _post_update_hook(self) -> None:
         """Perform actions after a device update."""
         td = timedelta(minutes=cast(float, self.data.get("time_diff")))
         if region := self.data.get("region"):

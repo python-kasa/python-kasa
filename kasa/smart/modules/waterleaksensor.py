@@ -22,7 +22,7 @@ class WaterleakSensor(SmartModule):
 
     REQUIRED_COMPONENT = "sensor_alarm"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(

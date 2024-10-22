@@ -54,7 +54,7 @@ class TurnOnBehavior(BaseModel):
     mode: BehaviorMode
 
     @root_validator
-    def _mode_based_on_preset(cls, values):
+    def _mode_based_on_preset(cls, values: dict) -> dict:
         """Set the mode based on the preset value."""
         if values["preset"] is not None:
             values["mode"] = BehaviorMode.Preset
@@ -209,7 +209,7 @@ class IotBulb(IotDevice):
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
         await super()._initialize_modules()
         self.add_module(
@@ -307,7 +307,7 @@ class IotBulb(IotDevice):
             await self._query_helper(self.LIGHT_SERVICE, "get_default_behavior")
         )
 
-    async def set_turn_on_behavior(self, behavior: TurnOnBehaviors):
+    async def set_turn_on_behavior(self, behavior: TurnOnBehaviors) -> dict:
         """Set the behavior for turning the bulb on.
 
         If you do not want to manually construct the behavior object,
@@ -424,7 +424,7 @@ class IotBulb(IotDevice):
 
     @requires_update
     async def _set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
+        self, temp: int, *, brightness: int | None = None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
 
@@ -448,7 +448,7 @@ class IotBulb(IotDevice):
 
         return await self._set_light_state(light_state, transition=transition)
 
-    def _raise_for_invalid_brightness(self, value):
+    def _raise_for_invalid_brightness(self, value: int) -> None:
         if not isinstance(value, int):
             raise TypeError("Brightness must be an integer")
         if not (0 <= value <= 100):
