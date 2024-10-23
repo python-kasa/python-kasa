@@ -75,45 +75,63 @@ class SmartCameraProtocol(SmartProtocol):
         """Close the underlying transport."""
         await self._transport.close()
 
+    @staticmethod
+    def _get_smart_camera_single_request(
+        request: dict[str, dict[str, Any]],
+    ) -> tuple[str, str, str, dict]:
+        method = next(iter(request))
+        if method == "multipleRequest":
+            method_type = "multi"
+            params = request["multipleRequest"]
+            req = {"method": "multipleRequest", "params": params}
+            return "multi", "multipleRequest", "", req
+
+        if (short_method := method[:3]) and short_method in {"get", "set"}:
+            method_type = short_method
+            param = next(iter(request[method]))
+            if method in GET_METHODS_AS_DO:
+                method_type = "do"
+            req = {
+                "method": method_type,
+                param: request[method][param],
+            }
+        else:
+            method_type = "do"
+            param = next(iter(request[method]))
+            req = {
+                "method": method_type,
+                param: request[method][param],
+            }
+        return method_type, method, param, req
+
     async def _execute_query(
         self, request: str | dict, *, retry_count: int, iterate_list_pages: bool = True
     ) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
-        is_do_method = False
         if isinstance(request, dict):
             if len(request) == 1:
-                method = next(iter(request))
-                if method == "multipleRequest":
-                    params = request["multipleRequest"]
-                    req = {"method": "multipleRequest", "params": params}
-                elif (short_method := method[:3]) and short_method in {"get", "set"}:
-                    params = next(iter(request[method]))
-                    if method in GET_METHODS_AS_DO:
-                        is_do_method = True
-                        short_method = "do"
-                    req = {
-                        "method": short_method,
-                        params: request[method][params],
-                    }
-                else:
-                    is_do_method = True
-                    params = next(iter(request[method]))
-                    req = {
-                        "method": "do",
-                        params: request[method][params],
-                    }
+                method_type, method, param, single_request = (
+                    self._get_smart_camera_single_request(request)
+                )
             else:
                 return await self._execute_multiple_query(request, retry_count)
         else:
             # If method like getSomeThing then module will be some_thing
             method = request
+            method_type = request[:3]
             snake_name = "".join(
-                ["_" + i.lower() if i.isupper() else i for i in method]
+                ["_" + i.lower() if i.isupper() else i for i in request]
             ).lstrip("_")
-            params = snake_name[4:]
-            req = {"method": snake_name[:3], params: {}}
+            param = snake_name[4:]
+            if (short_method := method[:3]) and short_method in {"get", "set"}:
+                method_type = short_method
+                param = snake_name[4:]
+            else:
+                method_type = "do"
+                param = snake_name
+            single_request = {"method": method_type, param: {}}
 
-        smart_request = json_dumps(req)
+        smart_request = json_dumps(single_request)
         if debug_enabled:
             _LOGGER.debug(
                 "%s >> %s",
@@ -134,20 +152,20 @@ class SmartCameraProtocol(SmartProtocol):
             self._handle_response_error_code(response_data, method)
         # Requests that are invalid and raise PROTOCOL_FORMAT_ERROR when sent
         # as a multipleRequest will return {} when sent as a single request.
-        if method.startswith("get") and (
+        if method_type == "get" and (
             not (section := next(iter(response_data))) or response_data[section] == {}
         ):
-            raise DeviceError(f"No results for get request {method}")
+            raise DeviceError(f"No results for get request {single_request}")
 
         # TODO need to update handle response lists
 
-        if is_do_method:
+        if method_type == "do":
             return {method: response_data}
-        if method.startswith("set"):
+        if method_type == "set":
             return {}
-        if method == "multipleRequest":
+        if method_type == "multi":
             return {method: response_data["result"]}
-        return {method: {params: response_data[params]}}
+        return {method: {param: response_data[param]}}
 
 
 class _ChildCameraProtocolWrapper(SmartProtocol):
