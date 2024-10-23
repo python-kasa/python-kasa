@@ -458,6 +458,11 @@ class SmartDevice(Device):
             await child._initialize_features()
 
     @property
+    def _is_hub_child(self) -> bool:
+        """Returns true if the device is a child of a hub."""
+        return self.parent is not None and self.parent.device_type is DeviceType.Hub
+
+    @property
     def is_cloud_connected(self) -> bool:
         """Returns if the device is connected to the cloud."""
         if Module.Cloud not in self.modules:
