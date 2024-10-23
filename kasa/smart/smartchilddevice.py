@@ -47,10 +47,8 @@ class SmartChildDevice(SmartDevice):
         self._update_internal_state(info)
         self._components = component_info
         self._id = info["device_id"]
-        if protocol:
-            self.protocol = protocol
-        else:
-            self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
+        # wrap device protocol if no protocol is given
+        self.protocol = protocol or _ChildProtocolWrapper(self._id, parent.protocol)
 
     async def update(self, update_children: bool = True):
         """Update child module info.

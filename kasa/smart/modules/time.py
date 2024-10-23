@@ -88,7 +88,7 @@ class Time(SmartModule, TimeInterface):
     async def _check_supported(self):
         """Additional check to see if the module is supported by the device.
 
-        Hub attached sensors report the time module but do retun device time.
+        Hub attached sensors report the time module but do not implement it.
         """
         if (parent := self._device.parent) and parent.device_type == DeviceType.Hub:
             return False
