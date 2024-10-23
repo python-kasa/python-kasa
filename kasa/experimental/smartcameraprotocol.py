@@ -22,6 +22,18 @@ from .sslaestransport import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# List of getMethodNames that should be sent as {"method":"do"}
+# https://md.depau.eu/s/r1Ys_oWoP#Modules
+GET_METHODS_AS_DO = {
+    "getSdCardFormatStatus",
+    "getConnectionType",
+    "getUserID",
+    "getP2PSharePassword",
+    "getAESEncryptKey",
+    "getFirmwareAFResult",
+    "getWhitelampStatus",
+}
+
 
 class SmartCameraProtocol(SmartProtocol):
     """Class for SmartCamera Protocol."""
@@ -67,21 +79,29 @@ class SmartCameraProtocol(SmartProtocol):
         self, request: str | dict, *, retry_count: int, iterate_list_pages: bool = True
     ) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
-
+        is_do_method = False
         if isinstance(request, dict):
             if len(request) == 1:
                 method = next(iter(request))
                 if method == "multipleRequest":
                     params = request["multipleRequest"]
                     req = {"method": "multipleRequest", "params": params}
-                elif method.startswith("set") or method == "get":
+                elif (short_method := method[:3]) and short_method in {"get", "set"}:
                     params = next(iter(request[method]))
+                    if method in GET_METHODS_AS_DO:
+                        is_do_method = True
+                        short_method = "do"
                     req = {
-                        "method": method[:3],
+                        "method": short_method,
                         params: request[method][params],
                     }
                 else:
-                    return await self._execute_multiple_query(request, retry_count)
+                    is_do_method = True
+                    params = next(iter(request[method]))
+                    req = {
+                        "method": "do",
+                        params: request[method][params],
+                    }
             else:
                 return await self._execute_multiple_query(request, retry_count)
         else:
@@ -112,10 +132,18 @@ class SmartCameraProtocol(SmartProtocol):
         if "error_code" in response_data:
             # H200 does not return an error code
             self._handle_response_error_code(response_data, method)
+        # Requests that are invalid and raise PROTOCOL_FORMAT_ERROR when sent
+        # as a multipleRequest will return {} when sent as a single request.
+        if method.startswith("get") and (
+            not (section := next(iter(response_data))) or response_data[section] == {}
+        ):
+            raise DeviceError(f"No results for get request {method}")
 
         # TODO need to update handle response lists
 
-        if method[:3] == "set":
+        if is_do_method:
+            return {method: response_data}
+        if method.startswith("set"):
             return {}
         if method == "multipleRequest":
             return {method: response_data["result"]}

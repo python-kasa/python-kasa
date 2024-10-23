@@ -176,10 +176,6 @@ class SmartProtocol(BaseProtocol):
                 multi_result[method] = resp["result"]
             return multi_result
 
-        # The SmartCameraProtocol sends requests with a length 1 as a
-        # multipleRequest. The SmartProtocol doesn't so will never
-        # raise_on_error
-        raise_on_error = end == 1
         for batch_num, i in enumerate(range(0, end, step)):
             requests_step = multi_requests[i : i + step]
 
@@ -227,9 +223,7 @@ class SmartProtocol(BaseProtocol):
             responses = response_step["result"]["responses"]
             for response in responses:
                 method = response["method"]
-                self._handle_response_error_code(
-                    response, method, raise_on_error=raise_on_error
-                )
+                self._handle_response_error_code(response, method, raise_on_error=False)
                 result = response.get("result", None)
                 await self._handle_response_lists(
                     result, method, retry_count=retry_count

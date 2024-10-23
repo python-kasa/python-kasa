@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import collections.abc
+import dataclasses
 import json
 import logging
 import re
@@ -46,7 +47,6 @@ from kasa.smart import SmartChildDevice
 from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
-SmartCall = namedtuple("SmartCall", "module request should_succeed child_device_id")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 
 SMART_FOLDER = "kasa/tests/fixtures/smart/"
@@ -57,6 +57,17 @@ IOT_FOLDER = "kasa/tests/fixtures/"
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class SmartCall:
+    """Class for smart and smartcamera calls."""
+
+    module: str
+    request: dict
+    should_succeed: bool
+    child_device_id: str
+    supports_multiple: bool = True
 
 
 def scrub(res):
@@ -478,6 +489,38 @@ def format_exception(e):
     return exception_str
 
 
+async def _make_final_calls(
+    protocol: SmartProtocol,
+    calls: list[SmartCall],
+    name: str,
+    batch_size: int,
+    *,
+    child_device_id: str,
+) -> dict[str, dict]:
+    multiple_requests = {
+        key: smartcall.request[key]
+        for smartcall in calls
+        if smartcall.supports_multiple and (key := next(iter(smartcall.request)))
+    }
+    final = await _make_requests_or_exit(
+        protocol,
+        multiple_requests,
+        name + " - multiple",
+        batch_size,
+        child_device_id=child_device_id,
+    )
+    single_calls = [smartcall for smartcall in calls if not smartcall.supports_multiple]
+    for smartcall in single_calls:
+        final[smartcall.module] = await _make_requests_or_exit(
+            protocol,
+            smartcall.request,
+            f"{name} + {smartcall.module}",
+            batch_size,
+            child_device_id=child_device_id,
+        )
+    return final
+
+
 async def _make_requests_or_exit(
     protocol: SmartProtocol,
     requests: dict,
@@ -554,17 +597,13 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         {"getTamperDetectionConfig": {"tamper_detection": {"name": "tamper_det"}}},
         {"getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}}},
         {"getLdc": {"image": {"name": ["switch", "common"]}}},
-        {"getLastAlarmInfo": {"msg_alarm": {"name": ["chn1_msg_alarm_info"]}}},
+        {"getLastAlarmInfo": {"system": {"name": ["last_alarm_info"]}}},
         {"getLedStatus": {"led": {"name": ["config"]}}},
         {"getTargetTrackConfig": {"target_track": {"name": ["target_track_info"]}}},
         {"getPresetConfig": {"preset": {"name": ["preset"]}}},
         {"getFirmwareUpdateStatus": {"cloud_config": {"name": "upgrade_status"}}},
         {"getMediaEncrypt": {"cet": {"name": ["media_encrypt"]}}},
         {"getConnectionType": {"network": {"get_connection_type": []}}},
-        {"getAlarmConfig": {"msg_alarm": {}}},
-        {"getAlarmPlan": {"msg_alarm_plan": {}}},
-        {"getSirenTypeList": {"siren": {}}},
-        {"getSirenConfig": {"siren": {}}},
         {
             "getAlertConfig": {
                 "msg_alarm": {
@@ -573,10 +612,12 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 }
             }
         },
+        {"getAlertPlan": {"msg_alarm_plan": {"name": "chn1_msg_alarm_plan"}}},
+        {"getSirenTypeList": {"siren": {}}},
+        {"getSirenConfig": {"siren": {}}},
         {"getLightTypeList": {"msg_alarm": {}}},
         {"getSirenStatus": {"siren": {}}},
         {"getLightFrequencyInfo": {"image": {"name": "common"}}},
-        {"getLightFrequencyCapability": {"image": {"name": "common"}}},
         {"getRotationStatus": {"image": {"name": ["switch"]}}},
         {"getNightVisionModeConfig": {"image": {"name": "switch"}}},
         {"getWhitelampStatus": {"image": {"get_wtl_status": ["null"]}}},
@@ -589,20 +630,31 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         {"getFirmwareAutoUpgradeConfig": {"auto_upgrade": {"name": ["common"]}}},
         {"getVideoQualities": {"video": {"name": ["main"]}}},
         {"getVideoCapability": {"video_capability": {"name": "main"}}},
-        # get only methods
-        # {"get": {"function": {"name": ["module_spec"]}}},
+        # single request only methods
+        {"get": {"function": {"name": ["module_spec"]}}},
+        {"get": {"cet": {"name": ["vhttpd"]}}},
+        {"get": {"motor": {"name": ["capability"]}}},
+        {
+            "get": {
+                "audio_capability": {"name": ["device_speaker", "device_microphone"]}
+            }
+        },
+        {"get": {"audio_config": {"name": ["speaker", "microphone"]}}},
     ]
     test_calls = []
     for request in requests:
         method = next(iter(request))
         if method == "get":
-            method = method + "_" + next(iter(request[method]))
+            module = method + "_" + next(iter(request[method]))
+        else:
+            module = method
         test_calls.append(
             SmartCall(
-                module=method,
+                module=module,
                 request=request,
                 should_succeed=True,
                 child_device_id="",
+                supports_multiple=(method != "get"),
             )
         )
 
@@ -819,7 +871,9 @@ async def get_smart_test_calls(protocol: SmartProtocol):
                 click.echo(click.style("UNSUPPORTED", fg="yellow"))
         # Add the extra calls for each child
         for extra_call in extra_test_calls:
-            extra_child_call = extra_call._replace(child_device_id=child_device_id)
+            extra_child_call = dataclasses.replace(
+                extra_call, child_device_id=child_device_id
+            )
             test_calls.append(extra_child_call)
 
     return test_calls, successes
@@ -894,10 +948,10 @@ async def get_smart_fixtures(
         finally:
             await protocol.close()
 
-    device_requests: dict[str, dict] = {}
+    device_requests: dict[str, list[SmartCall]] = {}
     for success in successes:
-        device_request = device_requests.setdefault(success.child_device_id, {})
-        device_request.update(success.request)
+        device_request = device_requests.setdefault(success.child_device_id, [])
+        device_request.append(success)
 
     scrubbed_device_ids = {
         device_id: f"SCRUBBED_CHILD_DEVICE_ID_{index}"
@@ -905,24 +959,21 @@ async def get_smart_fixtures(
         if device_id != ""
     }
 
-    final = await _make_requests_or_exit(
-        protocol,
-        device_requests[""],
-        "all successes at once",
-        batch_size,
-        child_device_id="",
+    final = await _make_final_calls(
+        protocol, device_requests[""], "All successes", batch_size, child_device_id=""
     )
     fixture_results = []
     for child_device_id, requests in device_requests.items():
         if child_device_id == "":
             continue
-        response = await _make_requests_or_exit(
+        response = await _make_final_calls(
             protocol,
             requests,
-            "all child successes at once",
+            "All child successes",
             batch_size,
             child_device_id=child_device_id,
         )
+
         scrubbed = scrubbed_device_ids[child_device_id]
         if "get_device_info" in response and "device_id" in response["get_device_info"]:
             response["get_device_info"]["device_id"] = scrubbed
