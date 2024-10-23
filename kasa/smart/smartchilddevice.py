@@ -90,7 +90,13 @@ class SmartChildDevice(SmartDevice):
         *,
         last_update: dict | None = None,
     ):
-        """Create a child device based on device info and component listing."""
+        """Create a child device based on device info and component listing.
+
+        If creating a smart child from a different protocol, i.e. a camera hub,
+        protocol: SmartProtocol and last_update should be provided as per the
+        FIRST_UPDATE_MODULES expected by the update cycle as these cannot be
+        derived from the parent.
+        """
         child: SmartChildDevice = cls(
             parent, child_info, child_components, protocol=protocol
         )
