@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..device_type import DeviceType
 from ..smart import SmartDevice
 from .sslaestransport import SmartErrorCode
@@ -9,6 +11,14 @@ from .sslaestransport import SmartErrorCode
 
 class SmartCamera(SmartDevice):
     """Class for smart cameras."""
+
+    @staticmethod
+    def _get_device_type_from_sysinfo(sysinfo: dict[str, Any]) -> DeviceType:
+        """Find type to be displayed as a supported device category."""
+        device_type = sysinfo["device_type"]
+        if device_type.endswith("HUB"):
+            return DeviceType.Hub
+        return DeviceType.Camera
 
     async def update(self, update_children: bool = False):
         """Update the device."""
@@ -26,7 +36,7 @@ class SmartCamera(SmartDevice):
         basic_info = device_info["basic_info"]
         return {
             "model": basic_info["device_model"],
-            "type": basic_info["device_type"],
+            "device_type": basic_info["device_type"],
             "alias": basic_info["device_alias"],
             "fw_ver": basic_info["sw_version"],
             "hw_ver": basic_info["hw_version"],
@@ -61,7 +71,9 @@ class SmartCamera(SmartDevice):
     @property
     def device_type(self) -> DeviceType:
         """Return the device type."""
-        return DeviceType.Camera
+        if self._device_type == DeviceType.Unknown:
+            self._device_type = self._get_device_type_from_sysinfo(self._info)
+        return self._device_type
 
     @property
     def alias(self) -> str | None:
