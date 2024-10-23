@@ -485,8 +485,8 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        if (self._parent and (time_mod := self._parent.modules.get(Module.Time))) or (
-            time_mod := self.modules.get(Module.Time)
+        if (time_mod := self.modules.get(Module.Time)) or (
+            self._parent and (time_mod := self._parent.modules.get(Module.Time))
         ):
             return time_mod.time
 
