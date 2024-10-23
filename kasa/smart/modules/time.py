@@ -83,3 +83,12 @@ class Time(SmartModule, TimeInterface):
             if region:
                 params["region"] = region
         return await self.call("set_device_time", params)
+
+    async def _check_supported(self):
+        """Additional check to see if the module is supported by the device.
+
+        Hub attached sensors report the time module but do return device time.
+        """
+        if self._device._is_hub_child:
+            return False
+        return await super()._check_supported()
