@@ -8,7 +8,6 @@ from typing import cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ...cachedzoneinfo import CachedZoneInfo
-from ...device_type import DeviceType
 from ...feature import Feature
 from ...interfaces import Time as TimeInterface
 from ..smartmodule import SmartModule
@@ -88,8 +87,8 @@ class Time(SmartModule, TimeInterface):
     async def _check_supported(self):
         """Additional check to see if the module is supported by the device.
 
-        Hub attached sensors report the time module but do not implement it.
+        Hub attached sensors report the time module but do return device time.
         """
-        if (parent := self._device.parent) and parent.device_type == DeviceType.Hub:
+        if self._device._is_hub_child:
             return False
         return await super()._check_supported()

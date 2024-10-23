@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from ...device_type import DeviceType
 from ..smartmodule import SmartModule
 
 
@@ -25,10 +24,7 @@ class DeviceModule(SmartModule):
         }
         # Device usage is not available on older firmware versions
         # or child devices of hubs
-        if self.supported_version >= 2 and (
-            self._device.parent is None
-            or self._device.parent.device_type is not DeviceType.Hub
-        ):
+        if self.supported_version >= 2 and not self._device._is_hub_child:
             query["get_device_usage"] = None
 
         return query
