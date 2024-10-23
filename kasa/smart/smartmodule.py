@@ -76,9 +76,11 @@ class SmartModule(Module):
         self._error_count = 0
 
     def __init_subclass__(cls, **kwargs):
-        name = getattr(cls, "NAME", cls.__name__)
-        _LOGGER.debug("Registering %s", cls)
-        cls.REGISTERED_MODULES[name] = cls
+        # We only want to register submodules in a modules package so that
+        # other classes can inherit from smartmodule and not be registered
+        if cls.__module__.split(".")[-2] == "modules":
+            _LOGGER.debug("Registering %s", cls)
+            cls.REGISTERED_MODULES[cls.__name__] = cls
 
     def _set_error(self, err: Exception | None):
         if err is None:
