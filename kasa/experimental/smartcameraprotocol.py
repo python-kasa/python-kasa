@@ -74,7 +74,7 @@ class SmartCameraProtocol(SmartProtocol):
                 if method == "multipleRequest":
                     params = request["multipleRequest"]
                     req = {"method": "multipleRequest", "params": params}
-                elif method[:3] == "set":
+                elif method.startswith("set") or method == "get":
                     params = next(iter(request[method]))
                     req = {
                         "method": method[:3],

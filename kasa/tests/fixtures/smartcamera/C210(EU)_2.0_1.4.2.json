@@ -5,14 +5,14 @@
             "connect_type": "wireless",
             "device_id": "0000000000000000000000000000000000000000",
             "http_port": 443,
-            "last_alarm_time": "0",
-            "last_alarm_type": "",
+            "last_alarm_time": "1729264456",
+            "last_alarm_type": "motion",
             "owner": "00000000000000000000000000000000",
             "sd_status": "offline"
         },
         "device_id": "00000000000000000000000000000000",
         "device_model": "C210",
-        "device_name": "00000 000",
+        "device_name": "#MASKED_NAME#",
         "device_type": "SMART.IPCAMERA",
         "encrypt_info": {
             "data": "",
@@ -108,8 +108,8 @@
     },
     "getConnectionType": {
         "link_type": "wifi",
-        "rssi": "2",
-        "rssiValue": -64,
+        "rssi": "3",
+        "rssiValue": -62,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -133,7 +133,7 @@
                 "device_alias": "#MASKED_NAME#",
                 "device_info": "C210 2.0 IPC",
                 "device_model": "C210",
-                "device_name": "0000 0.0",
+                "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.IPCAMERA",
                 "features": 3,
                 "ffs": false,

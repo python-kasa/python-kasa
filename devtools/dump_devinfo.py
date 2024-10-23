@@ -50,6 +50,7 @@ SmartCall = namedtuple("SmartCall", "module request should_succeed child_device_
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 
 SMART_FOLDER = "kasa/tests/fixtures/smart/"
+SMARTCAMERA_FOLDER = "kasa/tests/fixtures/smartcamera/"
 SMART_CHILD_FOLDER = "kasa/tests/fixtures/smart/child/"
 IOT_FOLDER = "kasa/tests/fixtures/"
 
@@ -136,7 +137,7 @@ def scrub(res):
                     v = base64.b64encode(b"#MASKED_SSID#").decode()
                 elif k in ["nickname"]:
                     v = base64.b64encode(b"#MASKED_NAME#").decode()
-                elif k in ["alias", "device_alias"]:
+                elif k in ["alias", "device_alias", "device_name"]:
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
@@ -534,61 +535,72 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
     test_calls: list[SmartCall] = []
     successes: list[SmartCall] = []
 
-    requests = {
-        "getAlertTypeList": {"msg_alarm": {"name": "alert_type"}},
-        "getNightVisionCapability": {"image_capability": {"name": ["supplement_lamp"]}},
-        "getDeviceInfo": {"device_info": {"name": ["basic_info"]}},
-        "getDetectionConfig": {"motion_detection": {"name": ["motion_det"]}},
-        "getPersonDetectionConfig": {"people_detection": {"name": ["detection"]}},
-        "getVehicleDetectionConfig": {"vehicle_detection": {"name": ["detection"]}},
-        "getBCDConfig": {"sound_detection": {"name": ["bcd"]}},
-        "getPetDetectionConfig": {"pet_detection": {"name": ["detection"]}},
-        "getBarkDetectionConfig": {"bark_detection": {"name": ["detection"]}},
-        "getMeowDetectionConfig": {"meow_detection": {"name": ["detection"]}},
-        "getGlassDetectionConfig": {"glass_detection": {"name": ["detection"]}},
-        "getTamperDetectionConfig": {"tamper_detection": {"name": "tamper_det"}},
-        "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
-        "getLdc": {"image": {"name": ["switch", "common"]}},
-        "getLastAlarmInfo": {"msg_alarm": {"name": ["chn1_msg_alarm_info"]}},
-        "getLedStatus": {"led": {"name": ["config"]}},
-        "getTargetTrackConfig": {"target_track": {"name": ["target_track_info"]}},
-        "getPresetConfig": {"preset": {"name": ["preset"]}},
-        "getFirmwareUpdateStatus": {"cloud_config": {"name": "upgrade_status"}},
-        "getMediaEncrypt": {"cet": {"name": ["media_encrypt"]}},
-        "getConnectionType": {"network": {"get_connection_type": []}},
-        "getAlarmConfig": {"msg_alarm": {}},
-        "getAlarmPlan": {"msg_alarm_plan": {}},
-        "getSirenTypeList": {"siren": {}},
-        "getSirenConfig": {"siren": {}},
-        "getAlertConfig": {
-            "msg_alarm": {
-                "name": ["chn1_msg_alarm_info", "capability"],
-                "table": ["usr_def_audio"],
+    requests: list[dict] = [
+        {"getAlertTypeList": {"msg_alarm": {"name": "alert_type"}}},
+        {
+            "getNightVisionCapability": {
+                "image_capability": {"name": ["supplement_lamp"]}
             }
         },
-        "getLightTypeList": {"msg_alarm": {}},
-        "getSirenStatus": {"siren": {}},
-        "getLightFrequencyInfo": {"image": {"name": "common"}},
-        "getLightFrequencyCapability": {"image": {"name": "common"}},
-        "getRotationStatus": {"image": {"name": ["switch"]}},
-        "getNightVisionModeConfig": {"image": {"name": "switch"}},
-        "getWhitelampStatus": {"image": {"get_wtl_status": ["null"]}},
-        "getWhitelampConfig": {"image": {"name": "switch"}},
-        "getMsgPushConfig": {"msg_push": {"name": ["chn1_msg_push_info"]}},
-        "getSdCardStatus": {"harddisk_manage": {"table": ["hd_info"]}},
-        "getCircularRecordingConfig": {"harddisk_manage": {"name": "harddisk"}},
-        "getRecordPlan": {"record_plan": {"name": ["chn1_channel"]}},
-        "getAudioConfig": {"audio_config": {"name": ["speaker", "microphone"]}},
-        "getFirmwareAutoUpgradeConfig": {"auto_upgrade": {"name": ["common"]}},
-        "getVideoQualities": {"video": {"name": ["main"]}},
-        "getVideoCapability": {"video_capability": {"name": "main"}},
-    }
+        {"getDeviceInfo": {"device_info": {"name": ["basic_info"]}}},
+        {"getDetectionConfig": {"motion_detection": {"name": ["motion_det"]}}},
+        {"getPersonDetectionConfig": {"people_detection": {"name": ["detection"]}}},
+        {"getVehicleDetectionConfig": {"vehicle_detection": {"name": ["detection"]}}},
+        {"getBCDConfig": {"sound_detection": {"name": ["bcd"]}}},
+        {"getPetDetectionConfig": {"pet_detection": {"name": ["detection"]}}},
+        {"getBarkDetectionConfig": {"bark_detection": {"name": ["detection"]}}},
+        {"getMeowDetectionConfig": {"meow_detection": {"name": ["detection"]}}},
+        {"getGlassDetectionConfig": {"glass_detection": {"name": ["detection"]}}},
+        {"getTamperDetectionConfig": {"tamper_detection": {"name": "tamper_det"}}},
+        {"getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}}},
+        {"getLdc": {"image": {"name": ["switch", "common"]}}},
+        {"getLastAlarmInfo": {"msg_alarm": {"name": ["chn1_msg_alarm_info"]}}},
+        {"getLedStatus": {"led": {"name": ["config"]}}},
+        {"getTargetTrackConfig": {"target_track": {"name": ["target_track_info"]}}},
+        {"getPresetConfig": {"preset": {"name": ["preset"]}}},
+        {"getFirmwareUpdateStatus": {"cloud_config": {"name": "upgrade_status"}}},
+        {"getMediaEncrypt": {"cet": {"name": ["media_encrypt"]}}},
+        {"getConnectionType": {"network": {"get_connection_type": []}}},
+        {"getAlarmConfig": {"msg_alarm": {}}},
+        {"getAlarmPlan": {"msg_alarm_plan": {}}},
+        {"getSirenTypeList": {"siren": {}}},
+        {"getSirenConfig": {"siren": {}}},
+        {
+            "getAlertConfig": {
+                "msg_alarm": {
+                    "name": ["chn1_msg_alarm_info", "capability"],
+                    "table": ["usr_def_audio"],
+                }
+            }
+        },
+        {"getLightTypeList": {"msg_alarm": {}}},
+        {"getSirenStatus": {"siren": {}}},
+        {"getLightFrequencyInfo": {"image": {"name": "common"}}},
+        {"getLightFrequencyCapability": {"image": {"name": "common"}}},
+        {"getRotationStatus": {"image": {"name": ["switch"]}}},
+        {"getNightVisionModeConfig": {"image": {"name": "switch"}}},
+        {"getWhitelampStatus": {"image": {"get_wtl_status": ["null"]}}},
+        {"getWhitelampConfig": {"image": {"name": "switch"}}},
+        {"getMsgPushConfig": {"msg_push": {"name": ["chn1_msg_push_info"]}}},
+        {"getSdCardStatus": {"harddisk_manage": {"table": ["hd_info"]}}},
+        {"getCircularRecordingConfig": {"harddisk_manage": {"name": "harddisk"}}},
+        {"getRecordPlan": {"record_plan": {"name": ["chn1_channel"]}}},
+        {"getAudioConfig": {"audio_config": {"name": ["speaker", "microphone"]}}},
+        {"getFirmwareAutoUpgradeConfig": {"auto_upgrade": {"name": ["common"]}}},
+        {"getVideoQualities": {"video": {"name": ["main"]}}},
+        {"getVideoCapability": {"video_capability": {"name": "main"}}},
+        # get only methods
+        # {"get": {"function": {"name": ["module_spec"]}}},
+    ]
     test_calls = []
-    for method, params in requests.items():
+    for request in requests:
+        method = next(iter(request))
+        if method == "get":
+            method = method + "_" + next(iter(request[method]))
         test_calls.append(
             SmartCall(
                 module=method,
-                request={method: params},
+                request=request,
                 should_succeed=True,
                 child_device_id="",
             )
@@ -660,11 +672,14 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                         click.echo(f"Skipping {component_id}..", nl=False)
                         click.echo(click.style("UNSUPPORTED", fg="yellow"))
             else:  # Not a smart protocol device so assume camera protocol
-                for method, params in requests.items():
+                for request in requests:
+                    method = next(iter(request))
+                    if method == "get":
+                        method = method + "_" + next(iter(request[method]))
                     test_calls.append(
                         SmartCall(
                             module=method,
-                            request={method: params},
+                            request=request,
                             should_succeed=True,
                             child_device_id=child_id,
                         )
@@ -963,6 +978,7 @@ async def get_smart_fixtures(
     click.echo(click.style("## device info file ##", bold=True))
 
     if "get_device_info" in final:
+        # smart protocol
         hw_version = final["get_device_info"]["hw_ver"]
         sw_version = final["get_device_info"]["fw_ver"]
         if discovery_info:
@@ -970,16 +986,19 @@ async def get_smart_fixtures(
         else:
             model = final["get_device_info"]["model"] + "(XX)"
         sw_version = sw_version.split(" ", maxsplit=1)[0]
+        copy_folder = SMART_FOLDER
     else:
+        # smart camera protocol
         hw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["hw_version"]
         sw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["sw_version"]
         model = final["getDeviceInfo"]["device_info"]["basic_info"]["device_model"]
         region = final["getDeviceInfo"]["device_info"]["basic_info"]["region"]
         sw_version = sw_version.split(" ", maxsplit=1)[0]
         model = f"{model}({region})"
+        copy_folder = SMARTCAMERA_FOLDER
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
-    copy_folder = SMART_FOLDER
+
     fixture_results.insert(
         0, FixtureResult(filename=save_filename, folder=copy_folder, data=final)
     )
