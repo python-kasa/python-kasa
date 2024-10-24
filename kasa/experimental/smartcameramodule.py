@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from ..exceptions import SmartErrorCode
+from ..exceptions import DeviceError, KasaException, SmartErrorCode
 from ..smart.smartmodule import SmartModule
 
 if TYPE_CHECKING:
@@ -63,26 +63,27 @@ class SmartCameraModule(SmartModule):
         if len(q) == 1:
             query_resp = dev._last_update.get(self.QUERY_GETTER_NAME, {})
             if isinstance(query_resp, SmartErrorCode):
-                return None
-
+                raise DeviceError(
+                    f"Error accessing module data in {self._module}",
+                    error_code=SmartErrorCode,
+                )
+            if not query_resp:
+                raise KasaException(
+                    f"You need to call update() prior accessing module data"
+                    f" for '{self._module}'"
+                )
             return query_resp.get(self.QUERY_MODULE_NAME)
         else:
-            return {
-                key: val
-                for key, val in dev._last_update.items()
-                if key in q and not isinstance(val, SmartErrorCode)
-            }
-
-    async def _check_supported(self) -> bool:
-        """Additional check to see if the module is supported by the device.
-
-        Used for parents who report components on the parent that are only available
-        on the child or for modules where the device has a pointless component like
-        color_temp_range but only supports one value.
-        """
-        return True
-
-    @property
-    def disabled(self) -> bool:
-        """Return true if the module received the required data."""
-        return not self.data
+            found = {key: val for key, val in dev._last_update.items() if key in q}
+            for key in q:
+                if key not in found:
+                    raise KasaException(
+                        f"{key} not found, you need to call update() prior accessing"
+                        f" module data for '{self._module}'"
+                    )
+                if isinstance(found[key], SmartErrorCode):
+                    raise DeviceError(
+                        f"Error accessing module data {key} in {self._module}",
+                        error_code=SmartErrorCode,
+                    )
+            return found

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ...device_type import DeviceType
 from ...feature import Feature
 from ..smartcameramodule import SmartCameraModule
 
@@ -40,3 +41,7 @@ class Camera(SmartCameraModule):
         await self._device._query_setter_helper(
             "setLensMaskConfig", self.QUERY_MODULE_NAME, "lens_mask_info", params
         )
+
+    async def _check_supported(self):
+        """Additional check to see if the module is supported by the device."""
+        return self._device.device_type is DeviceType.Camera

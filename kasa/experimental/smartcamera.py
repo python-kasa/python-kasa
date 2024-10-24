@@ -86,7 +86,8 @@ class SmartCamera(SmartDevice):
         """Initialize modules based on component negotiation response."""
         for mod in SmartCameraModule.REGISTERED_MODULES.values():
             module = mod(self, mod.NAME)
-            self._modules[module.name] = module
+            if await module._check_supported():
+                self._modules[module.name] = module
 
     async def _initialize_features(self):
         """Initialize device features."""

@@ -1,5 +1,6 @@
 """Module for child devices."""
 
+from ...device_type import DeviceType
 from ..smartcameramodule import SmartCameraModule
 
 
@@ -17,7 +18,6 @@ class ChildDevice(SmartCameraModule):
         """
         return {self.QUERY_GETTER_NAME: {self.QUERY_MODULE_NAME: {"start_index": 0}}}
 
-    @property
-    def disabled(self) -> bool:
-        """Return true if the module received the required data."""
-        return not self.data
+    async def _check_supported(self):
+        """Additional check to see if the module is supported by the device."""
+        return self._device.device_type is DeviceType.Hub
