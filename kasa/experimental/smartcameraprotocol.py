@@ -116,6 +116,12 @@ class SmartCameraProtocol(SmartProtocol):
         return SingleRequest(method_type, method, param, req)
 
     @staticmethod
+    def _make_snake_name(name: str) -> str:
+        """Convert camel or pascal case to snake name."""
+        sn = "".join(["_" + i.lower() if i.isupper() else i for i in name]).lstrip("_")
+        return sn
+
+    @staticmethod
     def _make_smart_camera_single_request(
         request: str,
     ) -> SingleRequest:
@@ -125,9 +131,7 @@ class SmartCameraProtocol(SmartProtocol):
         """
         method = request
         method_type = request[:3]
-        snake_name = "".join(
-            ["_" + i.lower() if i.isupper() else i for i in request]
-        ).lstrip("_")
+        snake_name = SmartCameraProtocol._make_snake_name(request)
         param = snake_name[4:]
         if (short_method := method[:3]) and short_method in {"get", "set"}:
             method_type = short_method
