@@ -37,14 +37,14 @@ _LOGGER = logging.getLogger(__name__)
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
-# Modules that are called as part of the init procedure on first update
-FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
-
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
 class SmartDevice(Device):
     """Base class to represent a SMART protocol based device."""
+
+    # Modules that are called as part of the init procedure on first update
+    FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
 
     def __init__(
         self,
@@ -67,6 +67,7 @@ class SmartDevice(Device):
         self._last_update = {}
         self._last_update_time: float | None = None
         self._on_since: datetime | None = None
+        self._info: dict[str, Any] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -154,6 +155,18 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
+    def _update_children_info(self) -> None:
+        """Update the internal child device info from the parent info."""
+        if child_info := self._try_get_response(
+            self._last_update, "get_child_device_list", {}
+        ):
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]]._update_internal_state(info)
+
+    def _update_internal_info(self, info_resp: dict) -> None:
+        """Update the internal device info."""
+        self._info = self._try_get_response(info_resp, "get_device_info")
+
     async def update(self, update_children: bool = False):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
@@ -172,11 +185,7 @@ class SmartDevice(Device):
 
         resp = await self._modular_update(first_update, now)
 
-        if child_info := self._try_get_response(
-            self._last_update, "get_child_device_list", {}
-        ):
-            for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+        self._update_children_info()
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
         # devices will always update children to prevent errors on module access.
@@ -227,10 +236,10 @@ class SmartDevice(Device):
         mq = {
             module: query
             for module in self._modules.values()
-            if module.disabled is False and (query := module.query())
+            if (first_update or module.disabled is False) and (query := module.query())
         }
         for module, query in mq.items():
-            if first_update and module.__class__ in FIRST_UPDATE_MODULES:
+            if first_update and module.__class__ in self.FIRST_UPDATE_MODULES:
                 module._last_update_time = update_time
                 continue
             if (
@@ -256,7 +265,7 @@ class SmartDevice(Device):
 
         info_resp = self._last_update if first_update else resp
         self._last_update.update(**resp)
-        self._info = self._try_get_response(info_resp, "get_device_info")
+        self._update_internal_info(info_resp)
 
         # Call handle update for modules that want to update internal data
         for module in self._modules.values():
@@ -570,7 +579,7 @@ class SmartDevice(Device):
         """Return all the internal state data."""
         return self._last_update
 
-    def _update_internal_state(self, info):
+    def _update_internal_state(self, info: dict) -> None:
         """Update the internal info state.
 
         This is used by the parent to push updates to its children.
