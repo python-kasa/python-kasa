@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
 from ..smart.smartmodule import SmartModule
@@ -54,7 +54,11 @@ class SmartCameraModule(SmartModule):
         if method[:3] == "get":
             return await self._device._query_getter_helper(method, module, section)
 
-        return await self._device._query_setter_helper(method, module, section, params)
+        if TYPE_CHECKING:
+            params = cast(dict[str, dict[str, Any]], params)
+        return await self._device._query_setter_helper(
+            method, module, section, params[module][section]
+        )
 
     @property
     def data(self) -> dict:

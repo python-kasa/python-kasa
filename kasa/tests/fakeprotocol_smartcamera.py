@@ -162,6 +162,24 @@ class FakeSmartCameraTransport(BaseTransport):
             "lens_mask_info",
             "enabled",
         ],
+        ("system", "clock_status", "seconds_from_1970"): [
+            "getClockStatus",
+            "system",
+            "clock_status",
+            "seconds_from_1970",
+        ],
+        ("system", "clock_status", "local_time"): [
+            "getClockStatus",
+            "system",
+            "clock_status",
+            "local_time",
+        ],
+        ("system", "basic", "zone_id"): [
+            "getTimezone",
+            "system",
+            "basic",
+            "zone_id",
+        ],
     }
 
     async def _send_request(self, request_dict: dict):
@@ -188,12 +206,14 @@ class FakeSmartCameraTransport(BaseTransport):
                     for skey, sval in skey_val.items():
                         section_key = skey
                         section_value = sval
+                        if setter_keys := self.SETTERS.get(
+                            (module, section, section_key)
+                        ):
+                            self._get_param_set_value(info, setter_keys, section_value)
+                        else:
+                            return {"error_code": -1}
                     break
-            if setter_keys := self.SETTERS.get((module, section, section_key)):
-                self._get_param_set_value(info, setter_keys, section_value)
-                return {"error_code": 0}
-            else:
-                return {"error_code": -1}
+            return {"error_code": 0}
         elif method[:3] == "get":
             params = request_dict.get("params")
             if method in info:

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-import pytest
+from datetime import datetime, timezone
 
-from kasa import Device, DeviceType
+import pytest
+from freezegun.api import FrozenDateTimeFactory
+
+from kasa import Device, DeviceType, Module
 
 from ..conftest import device_smartcamera, hub_smartcamera
 
@@ -45,3 +48,14 @@ async def test_hub(dev):
         await child.update()
         assert "Time" not in child.modules
         assert child.time
+
+
+@device_smartcamera
+async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
+    """Test a child device gets the time from it's parent module."""
+    fallback_time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+    assert dev.time != fallback_time
+    module = dev.modules[Module.Time]
+    await module.set_time(fallback_time)
+    await dev.update()
+    assert dev.time == fallback_time
