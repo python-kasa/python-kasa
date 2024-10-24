@@ -614,8 +614,11 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         _LOGGER.debug("Device does not have any children.")
     else:
         # H200 hubs do not support a lot of single requests
-        for testcall in test_calls:
-            testcall.supports_single = False
+        for test_call in test_calls:
+            test_call.supports_single = False
+        test_calls = [
+            testcall for testcall in test_calls if test_call.supports_multiple
+        ]
         successes.append(
             SmartCall(
                 module="getChildDeviceList",
