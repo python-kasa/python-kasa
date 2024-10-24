@@ -36,8 +36,8 @@ class SmartChildDevice(SmartDevice):
     def __init__(
         self,
         parent: SmartDevice,
-        info,
-        component_info,
+        info: dict,
+        component_info: dict,
         *,
         config: DeviceConfig | None = None,
         protocol: SmartProtocol | None = None,
@@ -84,12 +84,12 @@ class SmartChildDevice(SmartDevice):
     async def create(
         cls,
         parent: SmartDevice,
-        child_info,
-        child_components,
+        child_info: dict,
+        child_components: dict,
         protocol: SmartProtocol | None = None,
         *,
         last_update: dict | None = None,
-    ):
+    ) -> SmartDevice:
         """Create a child device based on device info and component listing.
 
         If creating a smart child from a different protocol, i.e. a camera hub,

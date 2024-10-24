@@ -155,7 +155,7 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    def _update_children_info(self):
+    def _update_children_info(self) -> None:
         """Update the internal child device info from the parent info."""
         if child_info := self._try_get_response(
             self._last_update, "get_child_device_list", {}
@@ -163,7 +163,7 @@ class SmartDevice(Device):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
-    def _update_internal_info(self, info_resp):
+    def _update_internal_info(self, info_resp: dict) -> None:
         """Update the internal device info."""
         self._info = self._try_get_response(info_resp, "get_device_info")
 
@@ -579,7 +579,7 @@ class SmartDevice(Device):
         """Return all the internal state data."""
         return self._last_update
 
-    def _update_internal_state(self, info):
+    def _update_internal_state(self, info: dict) -> None:
         """Update the internal info state.
 
         This is used by the parent to push updates to its children.

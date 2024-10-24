@@ -14,11 +14,11 @@ class DeviceModule(SmartCameraModule):
     QUERY_MODULE_NAME = "device_info"
     QUERY_SECTION_NAMES = ["basic_info", "info"]
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                self,
+                self._device,
                 id="device_id",
                 name="Device ID",
                 attribute_getter="device_id",
@@ -27,8 +27,8 @@ class DeviceModule(SmartCameraModule):
             )
         )
 
-    async def _post_update_hook(self):
-        """Perform actions after a device update.
+    async def _post_update_hook(self) -> None:
+        """Overriden to prevent module disabling.
 
         Overrides the default behaviour to disable a module if the query returns
         an error because this module is critical.

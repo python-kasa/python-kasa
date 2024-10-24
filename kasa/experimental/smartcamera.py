@@ -30,12 +30,12 @@ class SmartCamera(SmartDevice):
             return DeviceType.Hub
         return DeviceType.Camera
 
-    def _update_internal_info(self, info_resp):
+    def _update_internal_info(self, info_resp: dict) -> None:
         """Update the internal device info."""
         info = self._try_get_response(info_resp, "getDeviceInfo")
         self._info = self._map_info(info["device_info"])
 
-    def _update_children_info(self):
+    def _update_children_info(self) -> None:
         """Update the internal child device info from the parent info."""
         if child_info := self._try_get_response(
             self._last_update, "getChildDeviceList", {}
@@ -43,7 +43,7 @@ class SmartCamera(SmartDevice):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
-    async def _initialize_smart_child(self, info):
+    async def _initialize_smart_child(self, info: dict) -> SmartDevice:
         """Initialize a smart child device attached to a smartcamera."""
         child_id = info["device_id"]
         child_protocol = _ChildCameraProtocolWrapper(child_id, self.protocol)
@@ -57,7 +57,8 @@ class SmartCamera(SmartDevice):
             }
         except Exception as ex:
             _LOGGER.exception("Error initialising child %s: %s", child_id, ex)
-        self._children[child_id] = await SmartChildDevice.create(
+
+        return await SmartChildDevice.create(
             parent=self,
             child_info=info,
             child_components=child_components,
@@ -65,7 +66,7 @@ class SmartCamera(SmartDevice):
             last_update=initial_response,
         )
 
-    async def _initialize_children(self):
+    async def _initialize_children(self) -> None:
         """Initialize children for hubs."""
         if not (
             child_info := self._try_get_response(
@@ -73,23 +74,27 @@ class SmartCamera(SmartDevice):
             )
         ):
             return
+
+        children = {}
         for info in child_info["child_device_list"]:
             if (
                 category := info.get("category")
             ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
-                # Is a smart child device
-                await self._initialize_smart_child(info)
+                child_id = info["device_id"]
+                children[child_id] = await self._initialize_smart_child(info)
             else:
                 _LOGGER.debug("Child device type not supported: %s", info)
 
-    async def _initialize_modules(self):
+        self._children = children
+
+    async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""
         for mod in SmartCameraModule.REGISTERED_MODULES.values():
-            module = mod(self, mod.NAME)
+            module = mod(self, mod._module_name())
             if await module._check_supported():
                 self._modules[module.name] = module
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize device features."""
         for module in self.modules.values():
             module._initialize_features()
@@ -100,7 +105,7 @@ class SmartCamera(SmartDevice):
 
     async def _query_setter_helper(
         self, method: str, module: str, section: str, params: dict | None = None
-    ) -> Any:
+    ) -> dict:
         res = await self.protocol.query({method: {module: {section: params}}})
 
         return res
@@ -112,7 +117,7 @@ class SmartCamera(SmartDevice):
 
         return res
 
-    async def _negotiate(self):
+    async def _negotiate(self) -> None:
         """Perform initialization.
 
         We fetch the device info and the available components as early as possible.
@@ -120,7 +125,6 @@ class SmartCamera(SmartDevice):
         """
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
-            # "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
             "getChildDeviceList": {"childControl": {"start_index": 0}},
         }
         resp = await self.protocol.query(initial_query)
@@ -146,12 +150,15 @@ class SmartCamera(SmartDevice):
         """Return true if the device is on."""
         if (camera := self.modules.get(Module.Camera)) and not camera.disabled:
             return camera.is_on
+
         return True
 
-    async def set_state(self, on: bool):
+    async def set_state(self, on: bool) -> dict:
         """Set the device state."""
         if (camera := self.modules.get(Module.Camera)) and not camera.disabled:
-            await camera.set_state(on)
+            return await camera.set_state(on)
+
+        return {}
 
     @property
     def device_type(self) -> DeviceType:
@@ -167,9 +174,7 @@ class SmartCamera(SmartDevice):
             return self._info.get("alias")
         return None
 
-    # setDeviceInfo sets the device_name
-    # "setDeviceInfo": {"device_info": {"basic_info": {"device_name": alias}}},
-    async def set_alias(self, alias: str):
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
         return await self.protocol.query(
             {

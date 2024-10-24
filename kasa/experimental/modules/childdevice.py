@@ -18,6 +18,6 @@ class ChildDevice(SmartCameraModule):
         """
         return {self.QUERY_GETTER_NAME: {self.QUERY_MODULE_NAME: {"start_index": 0}}}
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
         return self._device.device_type is DeviceType.Hub
