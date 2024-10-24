@@ -150,7 +150,7 @@ class SmartCameraProtocol(SmartProtocol):
     ) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         if isinstance(request, dict):
-            if len(request) == 1:
+            if len(request) == 0:
                 single_request = self._get_smart_camera_single_request(request)
             else:
                 # H200 hubs do not handle single requests very well so an extra
