@@ -163,7 +163,11 @@ class SmartProtocol(BaseProtocol):
         ]
 
         end = len(multi_requests)
+        # The SmartCameraProtocol sends requests with a length 1 as a
+        # multipleRequest. The SmartProtocol doesn't so will never
+        # raise_on_error
         raise_on_error = end == 1
+
         # Break the requests down as there can be a size limit
         step = self._multi_request_batch_size
         if step == 1:
