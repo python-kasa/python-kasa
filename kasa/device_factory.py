@@ -7,6 +7,7 @@ import time
 from typing import Any
 
 from .aestransport import AesTransport
+from .cleartexttransport import CleartextTransport
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
@@ -205,6 +206,7 @@ def get_protocol(
         + ctype.encryption_type.value
         + (".HTTPS" if ctype.https else "")
     )
+    _LOGGER.info("Finding transport for %s", protocol_transport_key)
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
     ] = {
@@ -212,6 +214,7 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+        "SMART.CLEAR": (SmartProtocol, CleartextTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         from .experimental.enabled import Enabled
