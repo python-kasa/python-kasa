@@ -117,7 +117,7 @@
     "getConnectionType": {
         "link_type": "wifi",
         "rssi": "3",
-        "rssiValue": -62,
+        "rssiValue": -61,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
