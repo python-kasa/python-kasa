@@ -16,7 +16,6 @@ from ..smartcameramodule import SmartCameraModule
 class Time(SmartCameraModule, TimeInterface):
     """Implementation of device_local_time."""
 
-    NAME = "Time"
     QUERY_GETTER_NAME = "getTimezone"
     QUERY_MODULE_NAME = "system"
     QUERY_SECTION_NAMES = "basic"
