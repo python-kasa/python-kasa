@@ -98,7 +98,7 @@ class SmartCameraProtocol(SmartProtocol):
             method_type = "multi"
             params = request["multipleRequest"]
             req = {"method": "multipleRequest", "params": params}
-            SingleRequest("multi", "multipleRequest", "", req)
+            return SingleRequest("multi", "multipleRequest", "", req)
 
         if (short_method := method[:3]) and short_method in {"get", "set"}:
             method_type = short_method
