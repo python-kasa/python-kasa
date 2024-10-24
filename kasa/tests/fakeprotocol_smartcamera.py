@@ -9,6 +9,8 @@ from kasa.experimental.smartcameraprotocol import SmartCameraProtocol
 from kasa.protocol import BaseTransport
 from kasa.smart import SmartChildDevice
 
+from .fakeprotocol_smart import FakeSmartProtocol
+
 
 class FakeSmartCameraProtocol(SmartCameraProtocol):
     def __init__(self, info, fixture_name):
@@ -78,15 +80,15 @@ class FakeSmartCameraTransport(BaseTransport):
         )
         found_child_fixture_infos = []
         child_protocols = {}
+        # imported here to avoid circular import
+        from .conftest import filter_fixtures
+
         for child_info in child_infos:
             if (
                 (device_id := child_info.get("device_id"))
                 and (category := child_info.get("category"))
                 and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
             ):
-                from .conftest import filter_fixtures
-                from .fakeprotocol_smart import FakeSmartProtocol
-
                 hw_version = child_info["hw_ver"]
                 sw_version = child_info["fw_ver"]
                 sw_version = sw_version.split(" ")[0]
@@ -110,8 +112,10 @@ class FakeSmartCameraTransport(BaseTransport):
                         stacklevel=1,
                     )
             else:
-                pass
-                # TODO: load camera protocol
+                warn(
+                    f"Child is a cameraprotocol which needs to be implemented {child_info}",
+                    stacklevel=1,
+                )
         # Replace child infos with the infos that found child fixtures
         if child_infos:
             self.info["getChildDeviceList"]["child_device_list"] = (
@@ -151,7 +155,13 @@ class FakeSmartCameraTransport(BaseTransport):
             "device_info",
             "basic_info",
             "device_alias",
-        ]
+        ],
+        ("lens_mask", "lens_mask_info", "enabled"): [
+            "getLensMaskConfig",
+            "lens_mask",
+            "lens_mask_info",
+            "enabled",
+        ],
     }
 
     async def _send_request(self, request_dict: dict):
