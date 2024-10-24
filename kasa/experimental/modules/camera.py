@@ -16,18 +16,17 @@ class Camera(SmartCameraModule):
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
-        if self.data:
-            self._add_feature(
-                Feature(
-                    self._device,
-                    id="state",
-                    name="State",
-                    attribute_getter="is_on",
-                    attribute_setter="set_state",
-                    type=Feature.Type.Switch,
-                    category=Feature.Category.Primary,
-                )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="state",
+                name="State",
+                attribute_getter="is_on",
+                attribute_setter="set_state",
+                type=Feature.Type.Switch,
+                category=Feature.Category.Primary,
             )
+        )
 
     @property
     def is_on(self) -> bool:
