@@ -110,9 +110,7 @@ class SmartDevice(Device):
 
     def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
         response = responses.get(request)
-        from ..experimental.sslaestransport import SmartErrorCode as ExSmartErrorCode
-
-        if isinstance(response, (SmartErrorCode, ExSmartErrorCode)):
+        if isinstance(response, SmartErrorCode):
             _LOGGER.debug(
                 "Error %s getting request %s for device %s",
                 response,

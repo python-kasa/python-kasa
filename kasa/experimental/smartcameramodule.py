@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from ..exceptions import SmartErrorCode
 from ..smart.smartmodule import SmartModule
-from .sslaestransport import SmartErrorCode as ExpSmartErrorCode
 
 if TYPE_CHECKING:
     from .smartcamera import SmartCamera
@@ -63,7 +62,7 @@ class SmartCameraModule(SmartModule):
 
         if len(q) == 1:
             query_resp = dev._last_update.get(self.QUERY_GETTER_NAME, {})
-            if isinstance(query_resp, (SmartErrorCode, ExpSmartErrorCode)):
+            if isinstance(query_resp, SmartErrorCode):
                 return None
 
             return query_resp.get(self.QUERY_MODULE_NAME)
@@ -71,7 +70,7 @@ class SmartCameraModule(SmartModule):
             return {
                 key: val
                 for key, val in dev._last_update.items()
-                if key in q and not isinstance(val, (SmartErrorCode, ExpSmartErrorCode))
+                if key in q and not isinstance(val, SmartErrorCode)
             }
 
     async def _check_supported(self) -> bool:
