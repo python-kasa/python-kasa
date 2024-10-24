@@ -28,7 +28,7 @@ class DeviceModule(SmartCameraModule):
         )
 
     async def _post_update_hook(self):
-        """Perform actions after a device update.
+        """Overriden to prevent module disabling.
 
         Overrides the default behaviour to disable a module if the query returns
         an error because this module is critical.
