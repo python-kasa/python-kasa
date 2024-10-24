@@ -498,6 +498,12 @@ async def _make_final_calls(
     *,
     child_device_id: str,
 ) -> dict[str, dict]:
+    """Call all successes again.
+
+    After trying each call individually make the calls again either as a
+    multiple request or as single requests for those that don't support
+    multiple queries.
+    """
     multiple_requests = {
         key: smartcall.request[key]
         for smartcall in calls

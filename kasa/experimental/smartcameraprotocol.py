@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pprint import pformat as pf
 from typing import Any
 
@@ -33,6 +34,16 @@ GET_METHODS_AS_DO = {
     "getFirmwareAFResult",
     "getWhitelampStatus",
 }
+
+
+@dataclass
+class SingleRequest:
+    """Class for returning single request details from helper functions."""
+
+    method_type: str
+    method_name: str
+    param_name: str
+    request: dict[str, Any]
 
 
 class SmartCameraProtocol(SmartProtocol):
@@ -78,13 +89,13 @@ class SmartCameraProtocol(SmartProtocol):
     @staticmethod
     def _get_smart_camera_single_request(
         request: dict[str, dict[str, Any]],
-    ) -> tuple[str, str, str, dict]:
+    ) -> SingleRequest:
         method = next(iter(request))
         if method == "multipleRequest":
             method_type = "multi"
             params = request["multipleRequest"]
             req = {"method": "multipleRequest", "params": params}
-            return "multi", "multipleRequest", "", req
+            SingleRequest("multi", "multipleRequest", "", req)
 
         if (short_method := method[:3]) and short_method in {"get", "set"}:
             method_type = short_method
@@ -102,7 +113,30 @@ class SmartCameraProtocol(SmartProtocol):
                 "method": method_type,
                 param: request[method][param],
             }
-        return method_type, method, param, req
+        return SingleRequest(method_type, method, param, req)
+
+    @staticmethod
+    def _make_smart_camera_single_request(
+        request: str,
+    ) -> SingleRequest:
+        """Make a single request given a method name and no params.
+
+        If method like getSomeThing then module will be some_thing.
+        """
+        method = request
+        method_type = request[:3]
+        snake_name = "".join(
+            ["_" + i.lower() if i.isupper() else i for i in request]
+        ).lstrip("_")
+        param = snake_name[4:]
+        if (short_method := method[:3]) and short_method in {"get", "set"}:
+            method_type = short_method
+            param = snake_name[4:]
+        else:
+            method_type = "do"
+            param = snake_name
+        req = {"method": method_type, param: {}}
+        return SingleRequest(method_type, method, param, req)
 
     async def _execute_query(
         self, request: str | dict, *, retry_count: int, iterate_list_pages: bool = True
@@ -110,28 +144,13 @@ class SmartCameraProtocol(SmartProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         if isinstance(request, dict):
             if len(request) == 1:
-                method_type, method, param, single_request = (
-                    self._get_smart_camera_single_request(request)
-                )
+                single_request = self._get_smart_camera_single_request(request)
             else:
                 return await self._execute_multiple_query(request, retry_count)
         else:
-            # If method like getSomeThing then module will be some_thing
-            method = request
-            method_type = request[:3]
-            snake_name = "".join(
-                ["_" + i.lower() if i.isupper() else i for i in request]
-            ).lstrip("_")
-            param = snake_name[4:]
-            if (short_method := method[:3]) and short_method in {"get", "set"}:
-                method_type = short_method
-                param = snake_name[4:]
-            else:
-                method_type = "do"
-                param = snake_name
-            single_request = {"method": method_type, param: {}}
+            single_request = self._make_smart_camera_single_request(request)
 
-        smart_request = json_dumps(single_request)
+        smart_request = json_dumps(single_request.request)
         if debug_enabled:
             _LOGGER.debug(
                 "%s >> %s",
@@ -149,23 +168,29 @@ class SmartCameraProtocol(SmartProtocol):
 
         if "error_code" in response_data:
             # H200 does not return an error code
-            self._handle_response_error_code(response_data, method)
+            self._handle_response_error_code(response_data, single_request.method_name)
         # Requests that are invalid and raise PROTOCOL_FORMAT_ERROR when sent
         # as a multipleRequest will return {} when sent as a single request.
-        if method_type == "get" and (
+        if single_request.method_type == "get" and (
             not (section := next(iter(response_data))) or response_data[section] == {}
         ):
-            raise DeviceError(f"No results for get request {single_request}")
+            raise DeviceError(
+                f"No results for get request {single_request.method_name}"
+            )
 
         # TODO need to update handle response lists
 
-        if method_type == "do":
-            return {method: response_data}
-        if method_type == "set":
+        if single_request.method_type == "do":
+            return {single_request.method_name: response_data}
+        if single_request.method_type == "set":
             return {}
-        if method_type == "multi":
-            return {method: response_data["result"]}
-        return {method: {param: response_data[param]}}
+        if single_request.method_type == "multi":
+            return {single_request.method_name: response_data["result"]}
+        return {
+            single_request.method_name: {
+                single_request.param_name: response_data[single_request.param_name]
+            }
+        }
 
 
 class _ChildCameraProtocolWrapper(SmartProtocol):
