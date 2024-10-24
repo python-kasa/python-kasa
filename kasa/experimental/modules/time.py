@@ -24,7 +24,7 @@ class Time(SmartCameraModule, TimeInterface):
     _timezone: tzinfo = timezone.utc
     _time: datetime
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -45,7 +45,7 @@ class Time(SmartCameraModule, TimeInterface):
 
         return q
 
-    async def _post_update_hook(self):
+    async def _post_update_hook(self) -> None:
         """Perform actions after a device update."""
         time_data = self.data["getClockStatus"]["system"]["clock_status"]
         timezone_data = self.data["getTimezone"]["system"]["basic"]
@@ -57,7 +57,7 @@ class Time(SmartCameraModule, TimeInterface):
         except ZoneInfoNotFoundError:
             # timezone string like: UTC+10:00
             timezone_str = timezone_data["timezone"]
-            tz = datetime.strptime(timezone_str[-6:], "%z").tzinfo
+            tz = cast(tzinfo, datetime.strptime(timezone_str[-6:], "%z").tzinfo)
 
         self._timezone = tz
         self._time = datetime.fromtimestamp(
@@ -84,8 +84,8 @@ class Time(SmartCameraModule, TimeInterface):
 
         params = {"seconds_from_1970": int(timestamp)}
         # Doesn't seem to update the time, perhaps because timing_mode is ntp
-        res = await self.call("setTimezone", "system", "clock_status", params)
+        res = await self.call("setTimezone", {"system": {"clock_status": params}})
         if (zinfo := dt.tzinfo) and isinstance(zinfo, ZoneInfo):
             tz_params = {"zone_id": zinfo.key}
-            res = await self.call("setTimezone", "system", "basic", tz_params)
+            res = await self.call("setTimezone", {"system": {"basic": tz_params}})
         return res

@@ -162,6 +162,18 @@ class FakeSmartCameraTransport(BaseTransport):
             "lens_mask_info",
             "enabled",
         ],
+        ("system", "clock_status", "seconds_from_1970"): [
+            "getClockStatus",
+            "system",
+            "clock_status",
+            "seconds_from_1970",
+        ],
+        ("system", "basic", "zone_id"): [
+            "getTimezone",
+            "system",
+            "basic",
+            "zone_id",
+        ],
     }
 
     async def _send_request(self, request_dict: dict):
