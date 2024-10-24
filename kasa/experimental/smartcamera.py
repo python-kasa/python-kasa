@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from ..device_type import DeviceType
+from ..exceptions import SmartErrorCode
 from ..smart import SmartDevice
-from .sslaestransport import SmartErrorCode
 
 
 class SmartCamera(SmartDevice):
