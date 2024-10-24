@@ -1,0 +1,2262 @@
+{
+    "child_devices": {
+        "SCRUBBED_CHILD_DEVICE_ID_1": {
+            "component_nego": {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ]
+            },
+            "get_antitheft_rules": {
+                "antitheft_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_auto_off_config": {
+                "delay_min": 120,
+                "enable": false
+            },
+            "get_connect_cloud_state": {
+                "status": 0
+            },
+            "get_countdown_rules": {
+                "countdown_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_current_power": {
+                "current_power": 0
+            },
+            "get_device_info": {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 1,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            },
+            "get_device_usage": {
+                "power_usage": {
+                    "past30": 14,
+                    "past7": 14,
+                    "today": 0
+                },
+                "saved_power": {
+                    "past30": 206,
+                    "past7": 206,
+                    "today": 0
+                },
+                "time_usage": {
+                    "past30": 220,
+                    "past7": 220,
+                    "today": 0
+                }
+            },
+            "get_electricity_price_config": {
+                "constant_price": 0,
+                "time_of_use_config": {
+                    "summer": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    "winter": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    }
+                },
+                "type": "constant"
+            },
+            "get_energy_usage": {
+                "electricity_charge": [
+                    0,
+                    0,
+                    0
+                ],
+                "local_time": "2024-10-22 13:30:15",
+                "month_energy": 14,
+                "month_runtime": 220,
+                "today_energy": 0,
+                "today_runtime": 0
+            },
+            "get_max_power": {
+                "max_power": 3252
+            },
+            "get_next_event": {},
+            "get_protection_power": {
+                "enabled": false,
+                "protection_power": 0
+            },
+            "get_schedule_rules": {
+                "enable": false,
+                "rule_list": [],
+                "schedule_rule_max_count": 32,
+                "start_index": 0,
+                "sum": 0
+            }
+        },
+        "SCRUBBED_CHILD_DEVICE_ID_2": {
+            "component_nego": {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ]
+            },
+            "get_antitheft_rules": {
+                "antitheft_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_auto_off_config": {
+                "delay_min": 120,
+                "enable": false
+            },
+            "get_connect_cloud_state": {
+                "status": 0
+            },
+            "get_countdown_rules": {
+                "countdown_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_current_power": {
+                "current_power": 0
+            },
+            "get_device_info": {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 2,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            },
+            "get_device_usage": {
+                "power_usage": {
+                    "past30": 0,
+                    "past7": 0,
+                    "today": 0
+                },
+                "saved_power": {
+                    "past30": 20,
+                    "past7": 20,
+                    "today": 0
+                },
+                "time_usage": {
+                    "past30": 20,
+                    "past7": 20,
+                    "today": 0
+                }
+            },
+            "get_electricity_price_config": {
+                "constant_price": 0,
+                "time_of_use_config": {
+                    "summer": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    "winter": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    }
+                },
+                "type": "constant"
+            },
+            "get_energy_usage": {
+                "electricity_charge": [
+                    0,
+                    0,
+                    0
+                ],
+                "local_time": "2024-10-22 13:30:15",
+                "month_energy": 0,
+                "month_runtime": 20,
+                "today_energy": 0,
+                "today_runtime": 0
+            },
+            "get_max_power": {
+                "max_power": 3244
+            },
+            "get_next_event": {},
+            "get_protection_power": {
+                "enabled": false,
+                "protection_power": 0
+            },
+            "get_schedule_rules": {
+                "enable": false,
+                "rule_list": [],
+                "schedule_rule_max_count": 32,
+                "start_index": 0,
+                "sum": 0
+            }
+        },
+        "SCRUBBED_CHILD_DEVICE_ID_3": {
+            "component_nego": {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ]
+            },
+            "get_antitheft_rules": {
+                "antitheft_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_auto_off_config": {
+                "delay_min": 120,
+                "enable": false
+            },
+            "get_connect_cloud_state": {
+                "status": 0
+            },
+            "get_countdown_rules": {
+                "countdown_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_current_power": {
+                "current_power": 0
+            },
+            "get_device_info": {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_3",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 3,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            },
+            "get_device_usage": {
+                "power_usage": {
+                    "past30": 0,
+                    "past7": 0,
+                    "today": 0
+                },
+                "saved_power": {
+                    "past30": 18,
+                    "past7": 18,
+                    "today": 0
+                },
+                "time_usage": {
+                    "past30": 18,
+                    "past7": 18,
+                    "today": 0
+                }
+            },
+            "get_electricity_price_config": {
+                "constant_price": 0,
+                "time_of_use_config": {
+                    "summer": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    "winter": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    }
+                },
+                "type": "constant"
+            },
+            "get_energy_usage": {
+                "electricity_charge": [
+                    0,
+                    0,
+                    0
+                ],
+                "local_time": "2024-10-22 13:30:15",
+                "month_energy": 0,
+                "month_runtime": 18,
+                "today_energy": 0,
+                "today_runtime": 0
+            },
+            "get_max_power": {
+                "max_power": 3262
+            },
+            "get_next_event": {},
+            "get_protection_power": {
+                "enabled": false,
+                "protection_power": 0
+            },
+            "get_schedule_rules": {
+                "enable": false,
+                "rule_list": [],
+                "schedule_rule_max_count": 32,
+                "start_index": 0,
+                "sum": 0
+            }
+        },
+        "SCRUBBED_CHILD_DEVICE_ID_4": {
+            "component_nego": {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ]
+            },
+            "get_antitheft_rules": {
+                "antitheft_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_auto_off_config": {
+                "delay_min": 120,
+                "enable": false
+            },
+            "get_connect_cloud_state": {
+                "status": 0
+            },
+            "get_countdown_rules": {
+                "countdown_rule_max_count": 1,
+                "enable": false,
+                "rule_list": []
+            },
+            "get_current_power": {
+                "current_power": 0
+            },
+            "get_device_info": {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_4",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 4,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            },
+            "get_electricity_price_config": {
+                "constant_price": 0,
+                "time_of_use_config": {
+                    "summer": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    },
+                    "winter": {
+                        "midpeak": 0,
+                        "offpeak": 0,
+                        "onpeak": 0,
+                        "period": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ],
+                        "weekday_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ],
+                        "weekend_config": [
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1
+                        ]
+                    }
+                },
+                "type": "constant"
+            },
+            "get_energy_usage": {
+                "electricity_charge": [
+                    0,
+                    0,
+                    0
+                ],
+                "local_time": "2024-10-22 13:30:15",
+                "month_energy": 24,
+                "month_runtime": 432,
+                "today_energy": 0,
+                "today_runtime": 0
+            },
+            "get_max_power": {
+                "max_power": 3262
+            },
+            "get_next_event": {},
+            "get_protection_power": {
+                "enabled": false,
+                "protection_power": 0
+            },
+            "get_schedule_rules": {
+                "enable": false,
+                "rule_list": [],
+                "schedule_rule_max_count": 32,
+                "start_index": 0,
+                "sum": 0
+            }
+        }
+    },
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "control_child",
+                "ver_code": 2
+            },
+            {
+                "id": "child_device",
+                "ver_code": 2
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "auto_off",
+                "ver_code": 2
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            },
+            {
+                "id": "overheat_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "energy_monitoring",
+                "ver_code": 2
+            },
+            {
+                "id": "current_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "power_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "charging_protection",
+                "ver_code": 2
+            }
+        ]
+    },
+    "discovery_result": {
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "P304M(UK)",
+        "device_type": "SMART.TAPOPLUG",
+        "factory_default": false,
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "A8-6E-84-00-00-00",
+        "mgt_encrypt_schm": {
+            "encrypt_type": "KLAP",
+            "http_port": 80,
+            "is_support_https": false,
+            "lv": 2
+        },
+        "obd_src": "tplink",
+        "owner": "00000000000000000000000000000000"
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_child_device_component_list": {
+        "child_component_list": [
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_3"
+            },
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "schedule",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "countdown",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "antitheft",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "sunrise_sunset",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "default_states",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "overheat_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "auto_off",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "energy_monitoring",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "current_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "power_protection",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "charging_protection",
+                        "ver_code": 2
+                    }
+                ],
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_4"
+            }
+        ],
+        "start_index": 0,
+        "sum": 4
+    },
+    "get_child_device_list": {
+        "child_device_list": [
+            {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 1,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            },
+            {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 2,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            },
+            {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_3",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 3,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            },
+            {
+                "auto_off_remain_time": 0,
+                "auto_off_status": "off",
+                "avatar": "plug",
+                "bind_count": 1,
+                "category": "plug.powerstrip.sub-plug",
+                "charging_status": "normal",
+                "default_states": {
+                    "type": "last_states"
+                },
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_4",
+                "device_on": false,
+                "fw_id": "00000000000000000000000000000000",
+                "fw_ver": "1.0.3 Build 240605 Rel.091502",
+                "has_set_location_info": true,
+                "hw_id": "00000000000000000000000000000000",
+                "hw_ver": "1.0",
+                "is_usb": false,
+                "latitude": 0,
+                "longitude": 0,
+                "mac": "A86E84000000",
+                "model": "P304M",
+                "nickname": "I01BU0tFRF9OQU1FIw==",
+                "oem_id": "00000000000000000000000000000000",
+                "on_time": 0,
+                "original_device_id": "0000000000000000000000000000000000000000",
+                "overcurrent_status": "normal",
+                "overheat_status": "normal",
+                "position": 4,
+                "power_protection_status": "normal",
+                "protection_enabled": false,
+                "protection_power": 0,
+                "region": "Europe/London",
+                "slot_number": 4,
+                "status_follow_edge": true,
+                "type": "SMART.TAPOPLUG"
+            }
+        ],
+        "start_index": 0,
+        "sum": 4
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "avatar": "",
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.0.3 Build 240605 Rel.091502",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "A8-6E-84-00-00-00",
+        "model": "P304M",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "region": "Europe/London",
+        "rssi": -44,
+        "signal_level": 3,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": 0,
+        "type": "SMART.TAPOPLUG"
+    },
+    "get_device_time": {
+        "region": "Europe/London",
+        "time_diff": 0,
+        "timestamp": 1729600212
+    },
+    "get_device_usage": {
+        "power_usage": {
+            "past30": 14,
+            "past7": 14,
+            "today": 0
+        },
+        "saved_power": {
+            "past30": 206,
+            "past7": 206,
+            "today": 0
+        },
+        "time_usage": {
+            "past30": 220,
+            "past7": 220,
+            "today": 0
+        }
+    },
+    "get_electricity_price_config": {
+        "constant_price": 0,
+        "time_of_use_config": {
+            "summer": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "winter": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        "type": "constant"
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.0.3 Build 240605 Rel.091502",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "bri_config": {
+            "bri_type": "overall",
+            "overall_bri": 50
+        },
+        "led_rule": "night_mode",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 461,
+            "night_mode_type": "sunrise_sunset",
+            "start_time": 1077,
+            "sunrise_offset": 0,
+            "sunset_offset": 0
+        }
+    },
+    "get_matter_setup_info": {
+        "setup_code": "00000000000",
+        "setup_payload": "00:0-00000000000000000"
+    },
+    "get_protection_power": {
+        "enabled": false,
+        "protection_power": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 0,
+                "key_type": "none",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 8,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "control_child",
+                "ver_code": 2
+            },
+            {
+                "id": "child_device",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "P304M",
+            "device_type": "SMART.TAPOPLUG",
+            "is_klap": true
+        }
+    }
+}
