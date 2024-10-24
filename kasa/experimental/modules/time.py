@@ -82,7 +82,8 @@ class Time(SmartCameraModule, TimeInterface):
         else:
             timestamp = dt.timestamp()
 
-        params = {"seconds_from_1970": int(timestamp)}
+        lt = datetime.fromtimestamp(timestamp).isoformat().replace("T", " ")
+        params = {"seconds": int(timestamp), "local_time": lt}
         # Doesn't seem to update the time, perhaps because timing_mode is ntp
         res = await self.call("setTimezone", {"system": {"clock_status": params}})
         if (zinfo := dt.tzinfo) and isinstance(zinfo, ZoneInfo):
