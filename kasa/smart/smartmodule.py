@@ -138,7 +138,7 @@ class SmartModule(Module):
         """
         return {self.QUERY_GETTER_NAME: None}
 
-    async def call(self, method, params: dict | None = None) -> dict:
+    async def call(self, method, params=None):
         """Call a method.
 
         Just a helper method.

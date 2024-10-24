@@ -145,7 +145,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
 
         :param str effect_dict: The custom effect dict to set
         """
-        await self.call(
+        return await self.call(
             "set_lighting_effect",
             effect_dict,
         )
