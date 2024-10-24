@@ -4,7 +4,7 @@
 class Enabled:
     """Class for enabling experimental functionality."""
 
-    value = True
+    value = False
 
     @classmethod
     def set(cls, value):
