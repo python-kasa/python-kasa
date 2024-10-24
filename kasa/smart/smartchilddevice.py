@@ -36,17 +36,19 @@ class SmartChildDevice(SmartDevice):
     def __init__(
         self,
         parent: SmartDevice,
-        info,
-        component_info,
+        info: dict,
+        component_info: dict,
+        *,
         config: DeviceConfig | None = None,
         protocol: SmartProtocol | None = None,
     ) -> None:
-        super().__init__(parent.host, config=parent.config, protocol=parent.protocol)
+        super().__init__(parent.host, config=parent.config, protocol=protocol)
         self._parent = parent
         self._update_internal_state(info)
         self._components = component_info
         self._id = info["device_id"]
-        self.protocol = _ChildProtocolWrapper(self._id, parent.protocol)
+        # wrap device protocol if no protocol is given
+        self.protocol = protocol or _ChildProtocolWrapper(self._id, parent.protocol)
 
     async def update(self, update_children: bool = True):
         """Update child module info.
@@ -79,9 +81,27 @@ class SmartChildDevice(SmartDevice):
         self._last_update_time = now
 
     @classmethod
-    async def create(cls, parent: SmartDevice, child_info, child_components):
-        """Create a child device based on device info and component listing."""
-        child: SmartChildDevice = cls(parent, child_info, child_components)
+    async def create(
+        cls,
+        parent: SmartDevice,
+        child_info: dict,
+        child_components: dict,
+        protocol: SmartProtocol | None = None,
+        *,
+        last_update: dict | None = None,
+    ) -> SmartDevice:
+        """Create a child device based on device info and component listing.
+
+        If creating a smart child from a different protocol, i.e. a camera hub,
+        protocol: SmartProtocol and last_update should be provided as per the
+        FIRST_UPDATE_MODULES expected by the update cycle as these cannot be
+        derived from the parent.
+        """
+        child: SmartChildDevice = cls(
+            parent, child_info, child_components, protocol=protocol
+        )
+        if last_update:
+            child._last_update = last_update
         await child._initialize_modules()
         return child
 

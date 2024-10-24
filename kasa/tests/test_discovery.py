@@ -658,12 +658,14 @@ async def test_discovery_decryption():
 async def test_discover_try_connect_all(discovery_mock, mocker):
     """Test that device update is called on main."""
     if "result" in discovery_mock.discovery_data:
-        dev_class = get_device_class_from_family(discovery_mock.device_type)
+        dev_class = get_device_class_from_family(
+            discovery_mock.device_type, https=discovery_mock.https
+        )
         cparams = DeviceConnectionParameters.from_values(
             discovery_mock.device_type,
             discovery_mock.encrypt_type,
             discovery_mock.login_version,
-            False,
+            discovery_mock.https,
         )
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)

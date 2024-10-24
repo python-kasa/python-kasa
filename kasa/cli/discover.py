@@ -98,8 +98,8 @@ async def list(ctx):
                 echo(f"{infostr} {dev.alias}")
 
     async def print_unsupported(unsupported_exception: UnsupportedDeviceError):
-        if res := unsupported_exception.discovery_result:
-            echo(f"{res.get('ip'):<15} UNSUPPORTED DEVICE")
+        if host := unsupported_exception.host:
+            echo(f"{host:<15} UNSUPPORTED DEVICE")
 
     echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}")
     return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)

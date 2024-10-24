@@ -15,8 +15,10 @@ from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 DISCOVERY_MOCK_IP = "127.0.0.123"
 
 
-def _make_unsupported(device_family, encrypt_type):
-    return {
+def _make_unsupported(device_family, encrypt_type, *, omit_keys=None):
+    if omit_keys is None:
+        omit_keys = {"encrypt_info": None}
+    result = {
         "result": {
             "device_id": "xx",
             "owner": "xx",
@@ -33,9 +35,17 @@ def _make_unsupported(device_family, encrypt_type):
                 "http_port": 80,
                 "lv": 2,
             },
+            "encrypt_info": {"data": "", "key": "", "sym_schm": encrypt_type},
         },
         "error_code": 0,
     }
+    for key, val in omit_keys.items():
+        if val is None:
+            result["result"].pop(key)
+        else:
+            result["result"][key].pop(val)
+
+    return result
 
 
 UNSUPPORTED_DEVICES = {
@@ -43,6 +53,16 @@ UNSUPPORTED_DEVICES = {
     "wrong_encryption_iot": _make_unsupported("IOT.SMARTPLUGSWITCH", "AES"),
     "wrong_encryption_smart": _make_unsupported("SMART.TAPOBULB", "IOT"),
     "unknown_encryption": _make_unsupported("IOT.SMARTPLUGSWITCH", "FOO"),
+    "missing_encrypt_type": _make_unsupported(
+        "SMART.TAPOBULB",
+        "FOO",
+        omit_keys={"mgt_encrypt_schm": "encrypt_type", "encrypt_info": None},
+    ),
+    "unable_to_parse": _make_unsupported(
+        "SMART.TAPOBULB",
+        "FOO",
+        omit_keys={"mgt_encrypt_schm": None},
+    ),
 }
 
 
@@ -90,6 +110,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         query_data: dict
         device_type: str
         encrypt_type: str
+        https: bool
         login_version: int | None = None
         port_override: int | None = None
 
@@ -110,6 +131,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             "encrypt_type"
         ]
         login_version = fixture_data["discovery_result"]["mgt_encrypt_schm"].get("lv")
+        https = fixture_data["discovery_result"]["mgt_encrypt_schm"]["is_support_https"]
         dm = _DiscoveryMock(
             ip,
             80,
@@ -118,6 +140,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             fixture_data,
             device_type,
             encrypt_type,
+            https,
             login_version,
         )
     else:
@@ -134,6 +157,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             fixture_data,
             device_type,
             encrypt_type,
+            False,
             login_version,
         )
 
