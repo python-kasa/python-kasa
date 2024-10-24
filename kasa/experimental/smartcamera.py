@@ -120,7 +120,6 @@ class SmartCamera(SmartDevice):
         """
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
-            "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
             "getChildDeviceList": {"childControl": {"start_index": 0}},
         }
         resp = await self.protocol.query(initial_query)
