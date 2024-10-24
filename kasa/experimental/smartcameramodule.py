@@ -39,11 +39,17 @@ class SmartCameraModule(SmartModule):
             }
         }
 
-    async def call(self, method, module, section, params=None):
+    async def call(self, method: str, params: dict | None = None) -> dict:
         """Call a method.
 
         Just a helper method.
         """
+        if params:
+            module = next(iter(params))
+            section = next(iter(params[module]))
+        else:
+            module = "system"
+            section = "null"
         if method[:3] == "get":
             return await self._device._query_getter_helper(method, module, section)
         else:
@@ -52,7 +58,7 @@ class SmartCameraModule(SmartModule):
             )
 
     @property
-    def data(self):
+    def data(self) -> dict:
         """Return response data for the module."""
         dev = self._device
         q = self.query()
