@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import collections.abc
+import dataclasses
 import json
 import logging
 import re
@@ -23,6 +24,7 @@ from pprint import pprint
 
 import asyncclick as click
 
+from devtools.helpers.smartcamerarequests import SMARTCAMERA_REQUESTS
 from devtools.helpers.smartrequests import SmartRequest, get_component_requests
 from kasa import (
     AuthenticationError,
@@ -46,16 +48,27 @@ from kasa.smart import SmartChildDevice
 from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
-SmartCall = namedtuple("SmartCall", "module request should_succeed child_device_id")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 
 SMART_FOLDER = "kasa/tests/fixtures/smart/"
+SMARTCAMERA_FOLDER = "kasa/tests/fixtures/smartcamera/"
 SMART_CHILD_FOLDER = "kasa/tests/fixtures/smart/child/"
 IOT_FOLDER = "kasa/tests/fixtures/"
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class SmartCall:
+    """Class for smart and smartcamera calls."""
+
+    module: str
+    request: dict
+    should_succeed: bool
+    child_device_id: str
+    supports_multiple: bool = True
 
 
 def scrub(res):
@@ -136,7 +149,7 @@ def scrub(res):
                     v = base64.b64encode(b"#MASKED_SSID#").decode()
                 elif k in ["nickname"]:
                     v = base64.b64encode(b"#MASKED_NAME#").decode()
-                elif k in ["alias", "device_alias"]:
+                elif k in ["alias", "device_alias", "device_name"]:
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
@@ -477,6 +490,44 @@ def format_exception(e):
     return exception_str
 
 
+async def _make_final_calls(
+    protocol: SmartProtocol,
+    calls: list[SmartCall],
+    name: str,
+    batch_size: int,
+    *,
+    child_device_id: str,
+) -> dict[str, dict]:
+    """Call all successes again.
+
+    After trying each call individually make the calls again either as a
+    multiple request or as single requests for those that don't support
+    multiple queries.
+    """
+    multiple_requests = {
+        key: smartcall.request[key]
+        for smartcall in calls
+        if smartcall.supports_multiple and (key := next(iter(smartcall.request)))
+    }
+    final = await _make_requests_or_exit(
+        protocol,
+        multiple_requests,
+        name + " - multiple",
+        batch_size,
+        child_device_id=child_device_id,
+    )
+    single_calls = [smartcall for smartcall in calls if not smartcall.supports_multiple]
+    for smartcall in single_calls:
+        final[smartcall.module] = await _make_requests_or_exit(
+            protocol,
+            smartcall.request,
+            f"{name} + {smartcall.module}",
+            batch_size,
+            child_device_id=child_device_id,
+        )
+    return final
+
+
 async def _make_requests_or_exit(
     protocol: SmartProtocol,
     requests: dict,
@@ -534,69 +585,28 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
     test_calls: list[SmartCall] = []
     successes: list[SmartCall] = []
 
-    requests = {
-        "getAlertTypeList": {"msg_alarm": {"name": "alert_type"}},
-        "getNightVisionCapability": {"image_capability": {"name": ["supplement_lamp"]}},
-        "getDeviceInfo": {"device_info": {"name": ["basic_info"]}},
-        "getDetectionConfig": {"motion_detection": {"name": ["motion_det"]}},
-        "getPersonDetectionConfig": {"people_detection": {"name": ["detection"]}},
-        "getVehicleDetectionConfig": {"vehicle_detection": {"name": ["detection"]}},
-        "getBCDConfig": {"sound_detection": {"name": ["bcd"]}},
-        "getPetDetectionConfig": {"pet_detection": {"name": ["detection"]}},
-        "getBarkDetectionConfig": {"bark_detection": {"name": ["detection"]}},
-        "getMeowDetectionConfig": {"meow_detection": {"name": ["detection"]}},
-        "getGlassDetectionConfig": {"glass_detection": {"name": ["detection"]}},
-        "getTamperDetectionConfig": {"tamper_detection": {"name": "tamper_det"}},
-        "getLensMaskConfig": {"lens_mask": {"name": ["lens_mask_info"]}},
-        "getLdc": {"image": {"name": ["switch", "common"]}},
-        "getLastAlarmInfo": {"msg_alarm": {"name": ["chn1_msg_alarm_info"]}},
-        "getLedStatus": {"led": {"name": ["config"]}},
-        "getTargetTrackConfig": {"target_track": {"name": ["target_track_info"]}},
-        "getPresetConfig": {"preset": {"name": ["preset"]}},
-        "getFirmwareUpdateStatus": {"cloud_config": {"name": "upgrade_status"}},
-        "getMediaEncrypt": {"cet": {"name": ["media_encrypt"]}},
-        "getConnectionType": {"network": {"get_connection_type": []}},
-        "getAlarmConfig": {"msg_alarm": {}},
-        "getAlarmPlan": {"msg_alarm_plan": {}},
-        "getSirenTypeList": {"siren": {}},
-        "getSirenConfig": {"siren": {}},
-        "getAlertConfig": {
-            "msg_alarm": {
-                "name": ["chn1_msg_alarm_info", "capability"],
-                "table": ["usr_def_audio"],
-            }
-        },
-        "getLightTypeList": {"msg_alarm": {}},
-        "getSirenStatus": {"siren": {}},
-        "getLightFrequencyInfo": {"image": {"name": "common"}},
-        "getLightFrequencyCapability": {"image": {"name": "common"}},
-        "getRotationStatus": {"image": {"name": ["switch"]}},
-        "getNightVisionModeConfig": {"image": {"name": "switch"}},
-        "getWhitelampStatus": {"image": {"get_wtl_status": ["null"]}},
-        "getWhitelampConfig": {"image": {"name": "switch"}},
-        "getMsgPushConfig": {"msg_push": {"name": ["chn1_msg_push_info"]}},
-        "getSdCardStatus": {"harddisk_manage": {"table": ["hd_info"]}},
-        "getCircularRecordingConfig": {"harddisk_manage": {"name": "harddisk"}},
-        "getRecordPlan": {"record_plan": {"name": ["chn1_channel"]}},
-        "getAudioConfig": {"audio_config": {"name": ["speaker", "microphone"]}},
-        "getFirmwareAutoUpgradeConfig": {"auto_upgrade": {"name": ["common"]}},
-        "getVideoQualities": {"video": {"name": ["main"]}},
-        "getVideoCapability": {"video_capability": {"name": "main"}},
-    }
     test_calls = []
-    for method, params in requests.items():
+    for request in SMARTCAMERA_REQUESTS:
+        method = next(iter(request))
+        if method == "get":
+            module = method + "_" + next(iter(request[method]))
+        else:
+            module = method
         test_calls.append(
             SmartCall(
-                module=method,
-                request={method: params},
+                module=module,
+                request=request,
                 should_succeed=True,
                 child_device_id="",
+                supports_multiple=(method != "get"),
             )
         )
 
     # Now get the child device requests
+    child_request = {
+        "getChildDeviceList": {"childControl": {"start_index": 0}},
+    }
     try:
-        child_request = {"getChildDeviceList": {"childControl": {"start_index": 0}}}
         child_response = await protocol.query(child_request)
     except Exception:
         _LOGGER.debug("Device does not have any children.")
@@ -607,6 +617,7 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 request=child_request,
                 should_succeed=True,
                 child_device_id="",
+                supports_multiple=True,
             )
         )
         child_list = child_response["getChildDeviceList"]["child_device_list"]
@@ -660,11 +671,14 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                         click.echo(f"Skipping {component_id}..", nl=False)
                         click.echo(click.style("UNSUPPORTED", fg="yellow"))
             else:  # Not a smart protocol device so assume camera protocol
-                for method, params in requests.items():
+                for request in SMARTCAMERA_REQUESTS:
+                    method = next(iter(request))
+                    if method == "get":
+                        method = method + "_" + next(iter(request[method]))
                     test_calls.append(
                         SmartCall(
                             module=method,
-                            request={method: params},
+                            request=request,
                             should_succeed=True,
                             child_device_id=child_id,
                         )
@@ -804,7 +818,9 @@ async def get_smart_test_calls(protocol: SmartProtocol):
                 click.echo(click.style("UNSUPPORTED", fg="yellow"))
         # Add the extra calls for each child
         for extra_call in extra_test_calls:
-            extra_child_call = extra_call._replace(child_device_id=child_device_id)
+            extra_child_call = dataclasses.replace(
+                extra_call, child_device_id=child_device_id
+            )
             test_calls.append(extra_child_call)
 
     return test_calls, successes
@@ -879,10 +895,10 @@ async def get_smart_fixtures(
         finally:
             await protocol.close()
 
-    device_requests: dict[str, dict] = {}
+    device_requests: dict[str, list[SmartCall]] = {}
     for success in successes:
-        device_request = device_requests.setdefault(success.child_device_id, {})
-        device_request.update(success.request)
+        device_request = device_requests.setdefault(success.child_device_id, [])
+        device_request.append(success)
 
     scrubbed_device_ids = {
         device_id: f"SCRUBBED_CHILD_DEVICE_ID_{index}"
@@ -890,24 +906,21 @@ async def get_smart_fixtures(
         if device_id != ""
     }
 
-    final = await _make_requests_or_exit(
-        protocol,
-        device_requests[""],
-        "all successes at once",
-        batch_size,
-        child_device_id="",
+    final = await _make_final_calls(
+        protocol, device_requests[""], "All successes", batch_size, child_device_id=""
     )
     fixture_results = []
     for child_device_id, requests in device_requests.items():
         if child_device_id == "":
             continue
-        response = await _make_requests_or_exit(
+        response = await _make_final_calls(
             protocol,
             requests,
-            "all child successes at once",
+            "All child successes",
             batch_size,
             child_device_id=child_device_id,
         )
+
         scrubbed = scrubbed_device_ids[child_device_id]
         if "get_device_info" in response and "device_id" in response["get_device_info"]:
             response["get_device_info"]["device_id"] = scrubbed
@@ -963,6 +976,7 @@ async def get_smart_fixtures(
     click.echo(click.style("## device info file ##", bold=True))
 
     if "get_device_info" in final:
+        # smart protocol
         hw_version = final["get_device_info"]["hw_ver"]
         sw_version = final["get_device_info"]["fw_ver"]
         if discovery_info:
@@ -970,16 +984,19 @@ async def get_smart_fixtures(
         else:
             model = final["get_device_info"]["model"] + "(XX)"
         sw_version = sw_version.split(" ", maxsplit=1)[0]
+        copy_folder = SMART_FOLDER
     else:
+        # smart camera protocol
         hw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["hw_version"]
         sw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["sw_version"]
         model = final["getDeviceInfo"]["device_info"]["basic_info"]["device_model"]
         region = final["getDeviceInfo"]["device_info"]["basic_info"]["region"]
         sw_version = sw_version.split(" ", maxsplit=1)[0]
         model = f"{model}({region})"
+        copy_folder = SMARTCAMERA_FOLDER
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
-    copy_folder = SMART_FOLDER
+
     fixture_results.insert(
         0, FixtureResult(filename=save_filename, folder=copy_folder, data=final)
     )
