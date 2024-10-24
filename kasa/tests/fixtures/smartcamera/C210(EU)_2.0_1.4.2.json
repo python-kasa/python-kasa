@@ -114,6 +114,14 @@
             }
         }
     },
+    "getClockStatus": {
+        "system": {
+            "clock_status": {
+                "local_time": "2024-10-24 12:49:09",
+                "seconds_from_1970": 1729770549
+            }
+        }
+    },
     "getConnectionType": {
         "link_type": "wifi",
         "rssi": "3",
@@ -515,6 +523,15 @@
                 "enabled": "off",
                 "track_mode": "pantilt",
                 "track_time": "0"
+            }
+        }
+    },
+    "getTimezone": {
+        "system": {
+            "basic": {
+                "timezone": "UTC-00:00",
+                "timing_mode": "ntp",
+                "zone_id": "Europe/Berlin"
             }
         }
     },

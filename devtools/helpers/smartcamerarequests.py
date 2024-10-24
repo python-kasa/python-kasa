@@ -50,6 +50,8 @@ SMARTCAMERA_REQUESTS: list[dict] = [
     {"getFirmwareAutoUpgradeConfig": {"auto_upgrade": {"name": ["common"]}}},
     {"getVideoQualities": {"video": {"name": ["main"]}}},
     {"getVideoCapability": {"video_capability": {"name": "main"}}},
+    {"getTimezone": {"system": {"name": "basic"}}},
+    {"getClockStatus": {"system": {"name": "clock_status"}}},
     # single request only methods
     {"get": {"function": {"name": ["module_spec"]}}},
     {"get": {"cet": {"name": ["vhttpd"]}}},
