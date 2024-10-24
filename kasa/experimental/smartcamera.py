@@ -57,6 +57,7 @@ class SmartCamera(SmartDevice):
             }
         except Exception as ex:
             _LOGGER.exception("Error initialising child %s: %s", child_id, ex)
+
         return await SmartChildDevice.create(
             parent=self,
             child_info=info,
@@ -73,16 +74,17 @@ class SmartCamera(SmartDevice):
             )
         ):
             return
+
         children = {}
         for info in child_info["child_device_list"]:
             if (
                 category := info.get("category")
             ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
                 child_id = info["device_id"]
-                # Is a smart child device
                 children[child_id] = await self._initialize_smart_child(info)
             else:
                 _LOGGER.debug("Child device type not supported: %s", info)
+
         self._children = children
 
     async def _initialize_modules(self) -> None:
@@ -98,6 +100,7 @@ class SmartCamera(SmartDevice):
             module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
+
         for child in self._children.values():
             await child._initialize_features()
 
@@ -148,12 +151,14 @@ class SmartCamera(SmartDevice):
         """Return true if the device is on."""
         if (camera := self.modules.get(Module.Camera)) and not camera.disabled:
             return camera.is_on
+
         return True
 
     async def set_state(self, on: bool) -> dict:
         """Set the device state."""
         if (camera := self.modules.get(Module.Camera)) and not camera.disabled:
             return await camera.set_state(on)
+
         return {}
 
     @property
@@ -170,8 +175,6 @@ class SmartCamera(SmartDevice):
             return self._info.get("alias")
         return None
 
-    # setDeviceInfo sets the device_name
-    # "setDeviceInfo": {"device_info": {"basic_info": {"device_name": alias}}},
     async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
         return await self.protocol.query(

@@ -50,6 +50,7 @@ class SmartCameraModule(SmartModule):
         else:
             module = "system"
             section = "null"
+
         if method[:3] == "get":
             return await self._device._query_getter_helper(method, module, section)
         else:
@@ -73,11 +74,13 @@ class SmartCameraModule(SmartModule):
                     f"Error accessing module data in {self._module}",
                     error_code=SmartErrorCode,
                 )
+
             if not query_resp:
                 raise KasaException(
                     f"You need to call update() prior accessing module data"
                     f" for '{self._module}'"
                 )
+
             return query_resp.get(self.QUERY_MODULE_NAME)
         else:
             found = {key: val for key, val in dev._last_update.items() if key in q}
