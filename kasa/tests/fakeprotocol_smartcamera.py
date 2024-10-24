@@ -173,10 +173,16 @@ class FakeSmartCameraTransport(BaseTransport):
                 request_dict["params"]["childControl"]
             )
 
-        if method == "set":
+        if method[:3] == "set":
             for key, val in request_dict.items():
                 if key != "method":
-                    module = key
+                    # key is params for multi request and the actual params
+                    # for single requests
+                    if key == "params":
+                        module = next(iter(val))
+                        val = val[module]
+                    else:
+                        module = key
                     section = next(iter(val))
                     skey_val = val[section]
                     for skey, sval in skey_val.items():
