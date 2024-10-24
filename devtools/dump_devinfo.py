@@ -606,10 +606,9 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
     # Now get the child device requests
     child_request = {
         "getChildDeviceList": {"childControl": {"start_index": 0}},
-        "multi": None,
     }
     try:
-        child_response = await protocol.query(child_request)
+        child_response = await protocol.query({**child_request, "multi": None})
     except Exception:
         _LOGGER.debug("Device does not have any children.")
     else:
@@ -868,9 +867,10 @@ async def get_smart_fixtures(
         try:
             click.echo(f"Testing {test_call}..", nl=False)
             if test_call.child_device_id == "":
+                req = {**test_call.request}
                 if not test_call.supports_single:
-                    test_call.request["multi"] = None
-                response = await protocol.query(test_call.request)
+                    req["multi"] = None
+                response = await protocol.query(req)
             else:
                 cp = child_wrapper(test_call.child_device_id, protocol)
                 response = await cp.query(test_call.request)
