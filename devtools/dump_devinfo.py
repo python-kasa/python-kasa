@@ -69,6 +69,7 @@ class SmartCall:
     should_succeed: bool
     child_device_id: str
     supports_multiple: bool = True
+    supports_single: bool = True
 
 
 def scrub(res):
@@ -603,18 +604,25 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
         )
 
     # Now get the child device requests
+    child_request = {
+        "getChildDeviceList": {"childControl": {"start_index": 0}},
+        "multi": None,
+    }
     try:
-        child_request = {"getChildDeviceList": {"childControl": {"start_index": 0}}}
         child_response = await protocol.query(child_request)
     except Exception:
         _LOGGER.debug("Device does not have any children.")
     else:
+        # H200 hubs do not support a lot of single requests
+        for testcall in test_calls:
+            testcall.supports_single = False
         successes.append(
             SmartCall(
                 module="getChildDeviceList",
                 request=child_request,
                 should_succeed=True,
                 child_device_id="",
+                supports_multiple=True,
             )
         )
         child_list = child_response["getChildDeviceList"]["child_device_list"]
@@ -857,6 +865,8 @@ async def get_smart_fixtures(
         try:
             click.echo(f"Testing {test_call}..", nl=False)
             if test_call.child_device_id == "":
+                if not test_call.supports_single:
+                    test_call.request["multi"] = None
                 response = await protocol.query(test_call.request)
             else:
                 cp = child_wrapper(test_call.child_device_id, protocol)

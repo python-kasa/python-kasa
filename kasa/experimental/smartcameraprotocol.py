@@ -150,6 +150,8 @@ class SmartCameraProtocol(SmartProtocol):
             if len(request) == 1:
                 single_request = self._get_smart_camera_single_request(request)
             else:
+                # H200 hubs do not handle single requests very well
+                request.pop("multi", None)
                 return await self._execute_multiple_query(request, retry_count)
         else:
             single_request = self._make_smart_camera_single_request(request)
