@@ -127,6 +127,7 @@ class Module(ABC):
     WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
         "WaterleakSensor"
     )
+    TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
     # SMARTCAMERA only modules
     Camera: Final[ModuleName[experimental.Camera]] = ModuleName("Camera")
