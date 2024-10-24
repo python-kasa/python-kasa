@@ -17,11 +17,11 @@ _LOGGER = logging.getLogger(__name__)
 class SmartCameraModule(SmartModule):
     """Base class for SMARTCAMERA modules."""
 
-    NAME: str
-
     #: Query to execute during the main update cycle
     QUERY_GETTER_NAME: str
+    #: Module name to be queried
     QUERY_MODULE_NAME: str
+    #: Section name or names to be queried
     QUERY_SECTION_NAMES: str | list[str]
 
     REGISTERED_MODULES = {}
@@ -53,10 +53,8 @@ class SmartCameraModule(SmartModule):
 
         if method[:3] == "get":
             return await self._device._query_getter_helper(method, module, section)
-        else:
-            return await self._device._query_setter_helper(
-                method, module, section, params
-            )
+
+        return await self._device._query_setter_helper(method, module, section, params)
 
     @property
     def data(self) -> dict:

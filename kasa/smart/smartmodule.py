@@ -80,7 +80,7 @@ class SmartModule(Module):
         # other classes can inherit from smartmodule and not be registered
         if cls.__module__.split(".")[-2] == "modules":
             _LOGGER.debug("Registering %s", cls)
-            cls.REGISTERED_MODULES[cls.__name__] = cls
+            cls.REGISTERED_MODULES[cls._module_name()] = cls
 
     def _set_error(self, err: Exception | None):
         if err is None:
@@ -118,10 +118,14 @@ class SmartModule(Module):
         """Return true if the module is disabled due to errors."""
         return self._error_count >= self.DISABLE_AFTER_ERROR_COUNT
 
+    @classmethod
+    def _module_name(cls):
+        return getattr(cls, "NAME", cls.__name__)
+
     @property
     def name(self) -> str:
         """Name of the module."""
-        return getattr(self, "NAME", self.__class__.__name__)
+        return self._module_name()
 
     async def _post_update_hook(self):  # noqa: B027
         """Perform actions after a device update.

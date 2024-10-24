@@ -10,7 +10,6 @@ from ..smartcameramodule import SmartCameraModule
 class Camera(SmartCameraModule):
     """Implementation of device module."""
 
-    NAME = "Camera"
     QUERY_GETTER_NAME = "getLensMaskConfig"
     QUERY_MODULE_NAME = "lens_mask"
     QUERY_SECTION_NAMES = "lens_mask_info"
