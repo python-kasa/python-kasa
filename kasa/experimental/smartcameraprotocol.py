@@ -34,9 +34,6 @@ GET_METHODS_AS_DO = {
     "getFirmwareAFResult",
     "getWhitelampStatus",
 }
-# If this key is in a single request it will be removed and a multi request will be
-# forced
-FORCE_MULTI_KEY = "multi"
 
 
 @dataclass
@@ -100,22 +97,12 @@ class SmartCameraProtocol(SmartProtocol):
             req = {"method": "multipleRequest", "params": params}
             return SingleRequest("multi", "multipleRequest", "", req)
 
-        if (short_method := method[:3]) and short_method in {"get", "set"}:
-            method_type = short_method
-            param = next(iter(request[method]))
-            if method in GET_METHODS_AS_DO:
-                method_type = "do"
-            req = {
-                "method": method_type,
-                param: request[method][param],
-            }
-        else:
-            method_type = "do"
-            param = next(iter(request[method]))
-            req = {
-                "method": method_type,
-                param: request[method][param],
-            }
+        param = next(iter(request[method]))
+        method_type = method
+        req = {
+            "method": method,
+            param: request[method][param],
+        }
         return SingleRequest(method_type, method, param, req)
 
     @staticmethod
@@ -136,7 +123,11 @@ class SmartCameraProtocol(SmartProtocol):
         method_type = request[:3]
         snake_name = SmartCameraProtocol._make_snake_name(request)
         param = snake_name[4:]
-        if (short_method := method[:3]) and short_method in {"get", "set"}:
+        if (
+            (short_method := method[:3])
+            and short_method in {"get", "set"}
+            and method not in GET_METHODS_AS_DO
+        ):
             method_type = short_method
             param = snake_name[4:]
         else:
@@ -151,15 +142,10 @@ class SmartCameraProtocol(SmartProtocol):
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         if isinstance(request, dict):
             method = next(iter(request))
-            if len(request) == 0 or method == "multipleRequest":
+            if len(request) == 1 and method in {"get", "set", "do", "multipleRequest"}:
                 single_request = self._get_smart_camera_single_request(request)
             else:
-                # H200 hubs do not handle single requests very well so an extra
-                # key is provided to force multi
-                multi_request = {
-                    key: val for key, val in request.items() if key != FORCE_MULTI_KEY
-                }
-                return await self._execute_multiple_query(multi_request, retry_count)
+                return await self._execute_multiple_query(request, retry_count)
         else:
             single_request = self._make_smart_camera_single_request(request)
 
