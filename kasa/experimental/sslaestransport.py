@@ -120,11 +120,13 @@ class SslAesTransport(BaseTransport):
         self._seq: int | None = None
         self._pwd_hash: str | None = None
         self._username: str | None = None
+        self._password: str | None = None
         if self._credentials != Credentials() and self._credentials:
             self._username = self._credentials.username
+            self._password = self._credentials.password
         elif self._credentials_hash:
             ch = json_loads(base64.b64decode(self._credentials_hash.encode()))
-            self._pwd_hash = ch["pwd"]
+            self._password = ch["pwd"]
             self._username = ch["un"]
         self._local_nonce: str | None = None
 
@@ -140,10 +142,10 @@ class SslAesTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         if self._credentials == Credentials():
             return None
-        if self._credentials_hash:
+        if not self._credentials and self._credentials_hash:
             return self._credentials_hash
-        if self._pwd_hash and self._credentials:
-            ch = {"un": self._credentials.username, "pwd": self._pwd_hash}
+        if (cred := self._credentials) and cred.password and cred.username:
+            ch = {"un": cred.username, "pwd": cred.password}
             return base64.b64encode(json_dumps(ch).encode()).decode()
         return None
 
