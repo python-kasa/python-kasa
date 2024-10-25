@@ -346,7 +346,6 @@ class SslAesTransport(BaseTransport):
         if self._username:
             local_nonce = secrets.token_bytes(8).hex().upper()
             resp_dict = await self.try_send_handshake1(self._username, local_nonce)
-            resp_dict["error_code"] = SmartErrorCode.SESSION_EXPIRED.value
 
         # Try the default username. If it fails raise the original error_code
         if (
@@ -410,7 +409,6 @@ class SslAesTransport(BaseTransport):
         """Perform the handshake."""
         _LOGGER.debug("Will to send handshake1...")
 
-        # Device needs the content length or it will response with 500
         body = {
             "method": "login",
             "params": {
