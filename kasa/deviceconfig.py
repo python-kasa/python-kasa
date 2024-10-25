@@ -18,8 +18,8 @@ None
 >>> # DeviceConfig.to_dict() can be used to store for later
 >>> print(config_dict)
 {'host': '127.0.0.3', 'timeout': 5, 'credentials': Credentials(), 'connection_type'\
-: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2},\
- 'uses_http': True}
+: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'https': False, \
+'login_version': 2}, 'uses_http': True}
 
 >>> later_device = await Device.connect(config=Device.Config.from_dict(config_dict))
 >>> print(later_device.alias)  # Alias is available as connect() calls update()
