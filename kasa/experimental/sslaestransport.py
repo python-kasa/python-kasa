@@ -9,8 +9,7 @@ import logging
 import secrets
 import ssl
 import time
-from enum import Enum, IntEnum, auto
-from functools import cache
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, cast
 
 from yarl import URL
@@ -19,9 +18,12 @@ from ..aestransport import AesEncyptionSession
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
+    SMART_RETRYABLE_ERRORS,
     AuthenticationError,
     DeviceError,
     KasaException,
+    SmartErrorCode,
     _RetryableError,
 )
 from ..httpclient import HttpClient
@@ -118,11 +120,13 @@ class SslAesTransport(BaseTransport):
         self._seq: int | None = None
         self._pwd_hash: str | None = None
         self._username: str | None = None
+        self._password: str | None = None
         if self._credentials != Credentials() and self._credentials:
             self._username = self._credentials.username
+            self._password = self._credentials.password
         elif self._credentials_hash:
             ch = json_loads(base64.b64decode(self._credentials_hash.encode()))
-            self._pwd_hash = ch["pwd"]
+            self._password = ch["pwd"]
             self._username = ch["un"]
         self._local_nonce: str | None = None
 
@@ -138,10 +142,10 @@ class SslAesTransport(BaseTransport):
         """The hashed credentials used by the transport."""
         if self._credentials == Credentials():
             return None
-        if self._credentials_hash:
+        if not self._credentials and self._credentials_hash:
             return self._credentials_hash
-        if self._pwd_hash and self._credentials:
-            ch = {"un": self._credentials.username, "pwd": self._pwd_hash}
+        if (cred := self._credentials) and cred.password and cred.username:
+            ch = {"un": cred.username, "pwd": cred.password}
             return base64.b64encode(json_dumps(ch).encode()).decode()
         return None
 
@@ -433,79 +437,3 @@ class SslAesTransport(BaseTransport):
         self._seq = 0
         self._pwd_hash = None
         self._local_nonce = None
-
-
-class SmartErrorCode(IntEnum):
-    """Smart error codes for this transport."""
-
-    def __str__(self):
-        return f"{self.name}({self.value})"
-
-    @staticmethod
-    @cache
-    def from_int(value: int) -> SmartErrorCode:
-        """Convert an integer to a SmartErrorCode."""
-        return SmartErrorCode(value)
-
-    SUCCESS = 0
-
-    SYSTEM_ERROR = -40101
-    INVALID_ARGUMENTS = -40209
-
-    # Camera error codes
-    SESSION_EXPIRED = -40401
-    HOMEKIT_LOGIN_FAIL = -40412
-    DEVICE_BLOCKED = -40404
-    DEVICE_FACTORY = -40405
-    OUT_OF_LIMIT = -40406
-    OTHER_ERROR = -40407
-    SYSTEM_BLOCKED = -40408
-    NONCE_EXPIRED = -40409
-    FFS_NONE_PWD = -90000
-    TIMEOUT_ERROR = 40108
-    UNSUPPORTED_METHOD = -40106
-    ONE_SECOND_REPEAT_REQUEST = -40109
-    INVALID_NONCE = -40413
-    PROTOCOL_FORMAT_ERROR = -40210
-    IP_CONFLICT = -40321
-    DIAGNOSE_TYPE_NOT_SUPPORT = -69051
-    DIAGNOSE_TASK_FULL = -69052
-    DIAGNOSE_TASK_BUSY = -69053
-    DIAGNOSE_INTERNAL_ERROR = -69055
-    DIAGNOSE_ID_NOT_FOUND = -69056
-    DIAGNOSE_TASK_NULL = -69057
-    CLOUD_LINK_DOWN = -69060
-    ONVIF_SET_WRONG_TIME = -69061
-    CLOUD_NTP_NO_RESPONSE = -69062
-    CLOUD_GET_WRONG_TIME = -69063
-    SNTP_SRV_NO_RESPONSE = -69064
-    SNTP_GET_WRONG_TIME = -69065
-    LINK_UNCONNECTED = -69076
-    WIFI_SIGNAL_WEAK = -69077
-    LOCAL_NETWORK_POOR = -69078
-    CLOUD_NETWORK_POOR = -69079
-    INTER_NETWORK_POOR = -69080
-    DNS_TIMEOUT = -69081
-    DNS_ERROR = -69082
-    PING_NO_RESPONSE = -69083
-    DHCP_MULTI_SERVER = -69084
-    DHCP_ERROR = -69085
-    STREAM_SESSION_CLOSE = -69094
-    STREAM_BITRATE_EXCEPTION = -69095
-    STREAM_FULL = -69096
-    STREAM_NO_INTERNET = -69097
-    HARDWIRED_NOT_FOUND = -72101
-
-    # Library internal for unknown error codes
-    INTERNAL_UNKNOWN_ERROR = -100_000
-    # Library internal for query errors
-    INTERNAL_QUERY_ERROR = -100_001
-
-
-SMART_RETRYABLE_ERRORS = [
-    SmartErrorCode.SESSION_EXPIRED,
-]
-
-SMART_AUTHENTICATION_ERRORS = [
-    SmartErrorCode.HOMEKIT_LOGIN_FAIL,
-]

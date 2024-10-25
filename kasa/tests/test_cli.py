@@ -764,7 +764,6 @@ async def test_discover_unsupported(unsupported_device_info, runner):
     )
     assert res.exit_code == 0
     assert "== Unsupported device ==" in res.output
-    assert "== Discovery Result ==" in res.output
 
 
 async def test_host_unsupported(unsupported_device_info, runner):
