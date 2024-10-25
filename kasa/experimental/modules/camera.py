@@ -44,8 +44,11 @@ class Camera(SmartCameraModule):
         :param credentials: Credentials for camera account.
             These could be different credentials to tplink cloud credentials.
             If not provided will use tplink credentials if available
-        :return: rtsp url with escaped credentials.
+        :return: rtsp url with escaped credentials or None if no credentials or
+            camera is off.
         """
+        if not self.is_on:
+            return None
         dev = self._device
         if not credentials:
             credentials = dev.credentials
