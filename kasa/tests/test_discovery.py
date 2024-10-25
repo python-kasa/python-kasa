@@ -697,9 +697,13 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
     mocker.patch("kasa.SmartProtocol.query", new=_query)
     mocker.patch.object(dev_class, "update", new=_update)
 
-    dev = await Discover.try_connect_all(discovery_mock.ip)
+    session = aiohttp.ClientSession()
+    dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
 
     assert dev
     assert isinstance(dev, dev_class)
     assert isinstance(dev.protocol, protocol_class)
     assert isinstance(dev.protocol._transport, transport_class)
+    assert dev.config.uses_http is (transport_class != XorTransport)
+    if transport_class != XorTransport:
+        assert dev.protocol._transport._http_client.client == session
