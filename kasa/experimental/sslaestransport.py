@@ -354,24 +354,30 @@ class SslAesTransport(BaseTransport):
             not resp_dict
             or (error_code := self._get_response_error(resp_dict))
             is not SmartErrorCode.INVALID_NONCE
+            or "nonce" not in resp_dict["result"].get("data", {})
         ):
             local_nonce = secrets.token_bytes(8).hex().upper()
-            resp_dict = await self.try_send_handshake1(
+            default_resp_dict = await self.try_send_handshake1(
                 self._default_credentials.username, local_nonce
             )
             if (
-                default_error_code := self._get_response_error(resp_dict)
-            ) is SmartErrorCode.INVALID_NONCE:
+                default_error_code := self._get_response_error(default_resp_dict)
+            ) is SmartErrorCode.INVALID_NONCE and "nonce" in default_resp_dict[
+                "result"
+            ].get("data", {}):
                 _LOGGER.debug("Connected to {self._host} with default username")
                 self._username = self._default_credentials.username
                 error_code = default_error_code
+                resp_dict = default_resp_dict
 
         if not self._username:
             raise AuthenticationError(
                 "Credentials must be supplied to connect to {self._host}"
             )
-        if error_code is not SmartErrorCode.INVALID_NONCE:
-            raise AuthenticationError("Error trying handshake1: {error_code}")
+        if error_code is not SmartErrorCode.INVALID_NONCE or (
+            resp_dict and "nonce" not in resp_dict["result"].get("data", {})
+        ):
+            raise AuthenticationError("Error trying handshake1: {resp_dict}")
 
         if TYPE_CHECKING:
             resp_dict = cast(Dict[str, Any], resp_dict)
@@ -380,10 +386,10 @@ class SslAesTransport(BaseTransport):
         device_confirm = resp_dict["result"]["data"]["device_confirm"]
         if self._credentials and self._credentials != Credentials():
             pwd_hash = _sha256_hash(self._credentials.password.encode())
+        elif self._username and self._password:
+            pwd_hash = _sha256_hash(self._password.encode())
         else:
-            if TYPE_CHECKING:
-                assert self._pwd_hash
-            pwd_hash = self._pwd_hash
+            pwd_hash = _sha256_hash(self._default_credentials.password.encode())
 
         expected_confirm_sha256 = self.generate_confirm_hash(
             local_nonce, server_nonce, pwd_hash
