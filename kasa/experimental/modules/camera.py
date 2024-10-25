@@ -57,7 +57,8 @@ class Camera(SmartCameraModule):
 
     async def set_state(self, on: bool) -> dict:
         """Set the device state."""
-        params = {"enabled": "on" if on else "off"}
+        # Turning off enables the privacy mask which is why value is reversed.
+        params = {"enabled": "off" if on else "on"}
         return await self._device._query_setter_helper(
             "setLensMaskConfig", self.QUERY_MODULE_NAME, "lens_mask_info", params
         )
