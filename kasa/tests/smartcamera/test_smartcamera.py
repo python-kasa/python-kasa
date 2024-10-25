@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 
-from kasa import Device, DeviceType, Module
+from kasa import Credentials, Device, DeviceType, Module
 
-from ..conftest import device_smartcamera, hub_smartcamera
+from ..conftest import camera_smartcamera, device_smartcamera, hub_smartcamera
 
 
 @device_smartcamera
@@ -21,6 +22,43 @@ async def test_state(dev: Device):
     await dev.set_state(not state)
     await dev.update()
     assert dev.is_on is not state
+
+
+@camera_smartcamera
+async def test_stream_rtsp_url(dev: Device):
+    camera_module = dev.modules.get(Module.Camera)
+    assert camera_module
+
+    await camera_module.set_state(True)
+    await dev.update()
+    assert camera_module.is_on
+    url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
+    assert url == "rtsp://foo:bar@127.0.0.123:554/stream1"
+
+    with patch.object(
+        dev.protocol._transport, "_credentials", Credentials("bar", "foo")
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url == "rtsp://bar:foo@127.0.0.123:554/stream1"
+
+    with patch.object(dev.protocol._transport, "_credentials", Credentials("bar", "")):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
+    with patch.object(dev.protocol._transport, "_credentials", Credentials("", "Foo")):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
+    # Test with camera off
+    await camera_module.set_state(False)
+    await dev.update()
+    url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
+    assert url is None
+    with patch.object(
+        dev.protocol._transport, "_credentials", Credentials("bar", "foo")
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
 
 
 @device_smartcamera
