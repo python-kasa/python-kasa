@@ -93,6 +93,8 @@ from collections.abc import Awaitable
 from pprint import pformat as pf
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, cast
 
+from aiohttp import ClientSession
+
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
@@ -533,6 +535,7 @@ class Discover:
         port: int | None = None,
         timeout: int | None = None,
         credentials: Credentials | None = None,
+        http_client: ClientSession | None = None,
     ) -> Device | None:
         """Try to connect directly to a device with all possible parameters.
 
@@ -544,6 +547,7 @@ class Discover:
         :param port: Optionally set a different port for legacy devices using port 9999
         :param timeout: Timeout in seconds device for devices queries
         :param credentials: Credentials for devices that require authentication.
+        :param http_client: Optional client session for devices that use http.
             username and password are ignored if provided.
         """
         from .device_factory import _connect
@@ -570,6 +574,8 @@ class Discover:
                     timeout=timeout,
                     port_override=port,
                     credentials=credentials,
+                    http_client=http_client,
+                    uses_http=encrypt is not Device.EncryptionType.Xor,
                 )
             )
             and (protocol := get_protocol(config))
