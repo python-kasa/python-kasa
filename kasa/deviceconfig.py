@@ -18,8 +18,8 @@ None
 >>> # DeviceConfig.to_dict() can be used to store for later
 >>> print(config_dict)
 {'host': '127.0.0.3', 'timeout': 5, 'credentials': Credentials(), 'connection_type'\
-: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2},\
- 'uses_http': True}
+: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'https': False, \
+'login_version': 2}, 'uses_http': True}
 
 >>> later_device = await Device.connect(config=Device.Config.from_dict(config_dict))
 >>> print(later_device.alias)  # Alias is available as connect() calls update()
@@ -34,7 +34,7 @@ Living Room Bulb
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, TypedDict, Union
 
 from .credentials import Credentials
 from .exceptions import KasaException
@@ -145,7 +145,7 @@ class DeviceConnectionParameters:
             ) from ex
 
     @staticmethod
-    def from_dict(connection_type_dict: Dict[str, str]) -> "DeviceConnectionParameters":
+    def from_dict(connection_type_dict: Dict[str, Any]) -> "DeviceConnectionParameters":
         """Return connection parameters from dict."""
         if (
             isinstance(connection_type_dict, dict)
@@ -158,15 +158,17 @@ class DeviceConnectionParameters:
                 device_family,
                 encryption_type,
                 login_version,  # type: ignore[arg-type]
+                connection_type_dict.get("https", False),
             )
 
         raise KasaException(f"Invalid connection type data for {connection_type_dict}")
 
-    def to_dict(self) -> Dict[str, Union[str, int]]:
+    def to_dict(self) -> Dict[str, Union[str, int, bool]]:
         """Convert connection params to dict."""
         result: Dict[str, Union[str, int]] = {
             "device_family": self.device_family.value,
             "encryption_type": self.encryption_type.value,
+            "https": self.https,
         }
         if self.login_version:
             result["login_version"] = self.login_version
