@@ -118,10 +118,17 @@ def filter_fixtures(
     """
 
     def _model_match(fixture_data: FixtureInfo, model_filter: set[str]):
+        if isinstance(model_filter, str):
+            model_filter = {model_filter}
+        assert isinstance(model_filter, set), "model filter must be a set"
         model_filter_list = [mf for mf in model_filter]
-        if len(model_filter_list) == 1 and model_filter_list[0].split("_") == 3:
+        if (
+            len(model_filter_list) == 1
+            and (model := model_filter_list[0])
+            and len(model.split("_")) == 3
+        ):
             # return exact match
-            return fixture_data.name == model_filter_list[0]
+            return fixture_data.name == f"{model}.json"
         file_model_region = fixture_data.name.split("_")[0]
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter
