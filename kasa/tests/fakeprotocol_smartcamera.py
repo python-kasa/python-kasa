@@ -2,20 +2,18 @@ from __future__ import annotations
 
 import copy
 from json import loads as json_loads
-from warnings import warn
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.experimental.smartcameraprotocol import SmartCameraProtocol
 from kasa.protocol import BaseTransport
-from kasa.smart import SmartChildDevice
 
-from .fakeprotocol_smart import FakeSmartProtocol
+from .fakeprotocol_smart import FakeSmartTransport
 
 
 class FakeSmartCameraProtocol(SmartCameraProtocol):
-    def __init__(self, info, fixture_name):
+    def __init__(self, info, fixture_name, *, is_child=False):
         super().__init__(
-            transport=FakeSmartCameraTransport(info, fixture_name),
+            transport=FakeSmartCameraTransport(info, fixture_name, is_child=is_child),
         )
 
     async def query(self, request, retry_count: int = 3):
@@ -31,6 +29,7 @@ class FakeSmartCameraTransport(BaseTransport):
         fixture_name,
         *,
         list_return_size=10,
+        is_child=False,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -42,8 +41,14 @@ class FakeSmartCameraTransport(BaseTransport):
             ),
         )
         self.fixture_name = fixture_name
-        self.info = copy.deepcopy(info)
-        self.child_protocols = self._get_child_protocols()
+        if not is_child:
+            self.info = copy.deepcopy(info)
+            self.child_protocols = FakeSmartTransport._get_child_protocols(
+                self.info, self.fixture_name, "getChildDeviceList"
+            )
+        else:
+            self.info = info
+        # self.child_protocols = self._get_child_protocols()
         self.list_return_size = list_return_size
 
     @property
@@ -73,55 +78,6 @@ class FakeSmartCameraTransport(BaseTransport):
             return {"result": {"responses": responses}, "error_code": 0}
         else:
             return await self._send_request(request_dict)
-
-    def _get_child_protocols(self):
-        child_infos = self.info.get("getChildDeviceList", {}).get(
-            "child_device_list", []
-        )
-        found_child_fixture_infos = []
-        child_protocols = {}
-        # imported here to avoid circular import
-        from .conftest import filter_fixtures
-
-        for child_info in child_infos:
-            if (
-                (device_id := child_info.get("device_id"))
-                and (category := child_info.get("category"))
-                and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
-            ):
-                hw_version = child_info["hw_ver"]
-                sw_version = child_info["fw_ver"]
-                sw_version = sw_version.split(" ")[0]
-                model = child_info["model"]
-                region = child_info["specs"]
-                child_fixture_name = f"{model}({region})_{hw_version}_{sw_version}"
-                child_fixtures = filter_fixtures(
-                    "Child fixture",
-                    protocol_filter={"SMART.CHILD"},
-                    model_filter=child_fixture_name,
-                )
-                if child_fixtures:
-                    fixture_info = next(iter(child_fixtures))
-                    found_child_fixture_infos.append(child_info)
-                    child_protocols[device_id] = FakeSmartProtocol(
-                        fixture_info.data, fixture_info.name
-                    )
-                else:
-                    warn(
-                        f"Could not find child fixture {child_fixture_name}",
-                        stacklevel=1,
-                    )
-            else:
-                warn(
-                    f"Child is a cameraprotocol which needs to be implemented {child_info}",
-                    stacklevel=1,
-                )
-        # Replace child infos with the infos that found child fixtures
-        if child_infos:
-            self.info["getChildDeviceList"]["child_device_list"] = (
-                found_child_fixture_infos
-            )
-        return child_protocols
 
     async def _handle_control_child(self, params: dict):
         """Handle control_child command."""
