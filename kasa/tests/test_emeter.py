@@ -14,6 +14,8 @@ from kasa import Device, EmeterStatus, Module
 from kasa.interfaces.energy import Energy
 from kasa.iot import IotDevice, IotStrip
 from kasa.iot.modules.emeter import Emeter
+from kasa.smart import SmartDevice
+from kasa.smart.modules import Energy as SmartEnergyModule
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
 
@@ -54,6 +56,11 @@ async def test_no_emeter(dev):
 
 @has_emeter
 async def test_get_emeter_realtime(dev):
+    if isinstance(dev, SmartDevice):
+        mod = SmartEnergyModule(dev, str(Module.Energy))
+        if not await mod._check_supported():
+            pytest.skip(f"Energy module not supported for {dev}.")
+
     assert dev.has_emeter
 
     current_emeter = await dev.get_emeter_realtime()
@@ -178,6 +185,10 @@ async def test_emeter_daily():
 
 @has_emeter
 async def test_supported(dev: Device):
+    if isinstance(dev, SmartDevice):
+        mod = SmartEnergyModule(dev, str(Module.Energy))
+        if not await mod._check_supported():
+            pytest.skip(f"Energy module not supported for {dev}.")
     energy_module = dev.modules.get(Module.Energy)
     assert energy_module
     if isinstance(dev, IotDevice):
