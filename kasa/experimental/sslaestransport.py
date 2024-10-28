@@ -339,6 +339,7 @@ class SslAesTransport(BaseTransport):
             raise AuthenticationError(
                 f"Invalid password hash in handshake2 for {self._host}"
             )
+
         self._handle_response_error_code(resp_dict, "Error in handshake2")
 
         self._seq = resp_dict["result"]["start_seq"]

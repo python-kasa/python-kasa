@@ -283,6 +283,7 @@ class MockSslAesDevice:
 
         if method == "login" and not self.handshake1_complete:
             return await self._return_handshake1_response(url, json)
+
         if method == "login" and self.handshake1_complete:
             return await self._return_handshake2_response(url, json)
         elif method == "securePassthrough":
@@ -300,6 +301,7 @@ class MockSslAesDevice:
             not self.want_default_username and request_username != MOCK_USER
         ):
             return self._mock_response(self.status_code, self.BAD_USER_RESP)
+
         device_confirm = SslAesTransport.generate_confirm_hash(
             request_nonce, self.server_nonce, _sha256_hash(MOCK_PWD.encode())
         )
@@ -325,12 +327,14 @@ class MockSslAesDevice:
             not self.want_default_username and request_username != MOCK_USER
         ):
             return self._mock_response(self.status_code, self.BAD_USER_RESP)
+
         request_password = request["params"].get("digest_passwd")
         expected_pwd = SslAesTransport.generate_digest_password(
             request_nonce, self.server_nonce, _sha256_hash(MOCK_PWD.encode())
         )
         if request_password != expected_pwd or self.digest_password_fail:
             return self._mock_response(self.status_code, self.BAD_PWD_RESP)
+
         lsk = SslAesTransport.generate_encryption_token(
             "lsk", request_nonce, self.server_nonce, _sha256_hash(MOCK_PWD.encode())
         )
@@ -352,6 +356,7 @@ class MockSslAesDevice:
         decrypted_response = await self._post(url, decrypted_request_dict)
         async with decrypted_response:
             decrypted_response_data = await decrypted_response.read()
+
         encrypted_response = self.encryption_session.encrypt(decrypted_response_data)
         response = (
             decrypted_response_data
