@@ -86,7 +86,6 @@ import base64
 import binascii
 import ipaddress
 import logging
-import secrets
 import socket
 import struct
 from collections.abc import Awaitable
@@ -146,7 +145,6 @@ class _AesDiscoveryQuery:
     def generate_query(cls):
         if not cls.keypair:
             cls.keypair = KeyPair.create_key_pair(key_size=2048)
-        secret = secrets.token_bytes(4)
 
         key_payload = {"params": {"rsa_key": cls.keypair.get_public_pem().decode()}}
 
@@ -158,7 +156,7 @@ class _AesDiscoveryQuery:
         msg_size = len(key_payload_bytes)
         flags = 17
         padding_byte = 0  # blank byte
-        device_serial = int.from_bytes(secret, "big")
+        device_serial = 1337
         initial_crc = 0x5A6B7C8D
 
         disco_header = struct.pack(
