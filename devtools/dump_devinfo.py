@@ -987,12 +987,14 @@ async def get_smart_fixtures(
         copy_folder = SMART_FOLDER
     else:
         # smart camera protocol
-        hw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["hw_version"]
-        sw_version = final["getDeviceInfo"]["device_info"]["basic_info"]["sw_version"]
-        model = final["getDeviceInfo"]["device_info"]["basic_info"]["device_model"]
-        region = final["getDeviceInfo"]["device_info"]["basic_info"]["region"]
+        basic_info = final["getDeviceInfo"]["device_info"]["basic_info"]
+        hw_version = basic_info["hw_version"]
+        sw_version = basic_info["sw_version"]
+        model = basic_info["device_model"]
+        region = basic_info.get("region")
         sw_version = sw_version.split(" ", maxsplit=1)[0]
-        model = f"{model}({region})"
+        if region is not None:
+            model = f"{model}({region})"
         copy_folder = SMARTCAMERA_FOLDER
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"

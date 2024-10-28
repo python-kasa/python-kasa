@@ -142,7 +142,7 @@ class SmartCamera(SmartDevice):
             "fw_ver": basic_info["sw_version"],
             "hw_ver": basic_info["hw_version"],
             "mac": basic_info["mac"],
-            "hwId": basic_info["hw_id"],
+            "hwId": basic_info.get("hw_id"),
             "oem_id": basic_info["oem_id"],
         }
 
