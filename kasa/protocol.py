@@ -91,7 +91,9 @@ class BaseTransport(ABC):
         self._port = config.port_override or self.default_port
         self._credentials = config.credentials
         self._credentials_hash = config.credentials_hash
-        self._timeout = config.timeout or self.DEFAULT_TIMEOUT
+        if not config.timeout:
+            config.timeout = self.DEFAULT_TIMEOUT
+        self._timeout = config.timeout
 
     @property
     @abstractmethod
