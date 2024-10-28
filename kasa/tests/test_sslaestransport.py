@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 import logging
-import random
 import secrets
-import string
-import time
 from contextlib import nullcontext as does_not_raise
 from json import dumps as json_dumps
 from json import loads as json_loads
@@ -138,7 +135,7 @@ async def test_credentials_hash(mocker, wants_default_user):
         aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
     )
     creds = Credentials(MOCK_USER, MOCK_PWD)
-    creds_hash = SslAesTransport._hash_credentials(creds)
+    creds_hash = SslAesTransport._create_b64_credentials(creds)
 
     # Test with credentials input
     transport = SslAesTransport(config=DeviceConfig(host, credentials=creds))
@@ -164,10 +161,6 @@ async def test_send(mocker):
     transport = SslAesTransport(
         config=DeviceConfig(host, credentials=Credentials(MOCK_USER, MOCK_PWD))
     )
-    transport._token_url = transport._app_url.with_query(
-        f"stok={mock_ssl_aes_device.token}"
-    )
-
     request = {
         "method": "getDeviceInfo",
         "params": None,
@@ -266,42 +259,23 @@ class MockSslAesDevice:
         digest_password_fail=False,
     ):
         self.host = host
+        self.http_client = HttpClient(DeviceConfig(self.host))
+        self.encryption_session: AesEncyptionSession | None = None
+        self.server_nonce = secrets.token_bytes(8).hex().upper()
+        self.handshake1_complete = False
+
+        # test behaviour attributes
         self.status_code = status_code
         self.send_error_code = send_error_code
         self.secure_passthrough_error_code = secure_passthrough_error_code
         self.do_not_encrypt_response = do_not_encrypt_response
-        self.send_response = send_response
-        self.http_client = HttpClient(DeviceConfig(self.host))
-        self.inner_call_count = 0
-        self.token = "".join(random.choices(string.ascii_uppercase, k=32))  # noqa: S311
-        self.sequential_request_delay = sequential_request_delay
-        self.last_request_time: float | None = None
-        self.sequential_error_raised = False
-        self.handshake1_complete = False
-        self.server_nonce = secrets.token_bytes(8).hex().upper()
         self.want_default_username = want_default_username
-        self.encryption_session: AesEncyptionSession | None = None
         self.digest_password_fail = digest_password_fail
 
-    @property
-    def inner_error_code(self):
-        if isinstance(self._inner_error_code, list):
-            return self._inner_error_code[self.inner_call_count]
-        else:
-            return self._inner_error_code
-
     async def post(self, url: URL, params=None, json=None, data=None, *_, **__):
-        if self.sequential_request_delay and self.last_request_time:
-            now = time.time()
-            print(now - self.last_request_time)
-            if (now - self.last_request_time) < self.sequential_request_delay:
-                self.sequential_error_raised = True
-                raise aiohttp.ClientOSError("Test connection closed")
         if data:
             json = json_loads(data)
         res = await self._post(url, json)
-        if self.sequential_request_delay:
-            self.last_request_time = time.time()
         return res
 
     async def _post(self, url: URL, json: dict[str, Any]):
@@ -392,6 +366,4 @@ class MockSslAesDevice:
 
     async def _return_send_response(self, url: URL, json: dict[str, Any]):
         result = {"result": {"method": None}, "error_code": self.send_error_code}
-        response = self.send_response if self.send_response else result
-        self.inner_call_count += 1
-        return self._mock_response(self.status_code, response)
+        return self._mock_response(self.status_code, result)

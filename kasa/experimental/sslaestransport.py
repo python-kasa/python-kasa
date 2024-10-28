@@ -138,7 +138,7 @@ class SslAesTransport(BaseTransport):
         return self.DEFAULT_PORT
 
     @staticmethod
-    def _hash_credentials(credentials: Credentials) -> str:
+    def _create_b64_credentials(credentials: Credentials) -> str:
         ch = {"un": credentials.username, "pwd": credentials.password}
         return base64.b64encode(json_dumps(ch).encode()).decode()
 
@@ -150,7 +150,7 @@ class SslAesTransport(BaseTransport):
         if not self._credentials and self._credentials_hash:
             return self._credentials_hash
         if (cred := self._credentials) and cred.password and cred.username:
-            return self._hash_credentials(cred)
+            return self._create_b64_credentials(cred)
         return None
 
     def _get_response_error(self, resp_dict: Any) -> SmartErrorCode:
