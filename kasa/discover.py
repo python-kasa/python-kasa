@@ -159,6 +159,7 @@ class _AesDiscoveryQuery:
         flags = 17
         padding_byte = 0  # blank byte
         device_serial = int.from_bytes(secret, "big")
+        device_serial = 1337
         initial_crc = 0x5A6B7C8D
 
         disco_header = struct.pack(

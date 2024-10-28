@@ -129,6 +129,7 @@ class SslAesTransport(BaseTransport):
             self._password = ch["pwd"]
             self._username = ch["un"]
         self._local_nonce: str | None = None
+        self._tmp_key = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
@@ -136,6 +137,11 @@ class SslAesTransport(BaseTransport):
     def default_port(self) -> int:
         """Default port for the transport."""
         return self.DEFAULT_PORT
+
+    @staticmethod
+    def _hash_credentials(credentials: Credentials) -> str:
+        ch = {"un": credentials.username, "pwd": credentials.password}
+        return base64.b64encode(json_dumps(ch).encode()).decode()
 
     @property
     def credentials_hash(self) -> str | None:
@@ -145,8 +151,7 @@ class SslAesTransport(BaseTransport):
         if not self._credentials and self._credentials_hash:
             return self._credentials_hash
         if (cred := self._credentials) and cred.password and cred.username:
-            ch = {"un": cred.username, "pwd": cred.password}
-            return base64.b64encode(json_dumps(ch).encode()).decode()
+            return self._hash_credentials(cred)
         return None
 
     def _get_response_error(self, resp_dict: Any) -> SmartErrorCode:
@@ -329,6 +334,12 @@ class SslAesTransport(BaseTransport):
                 + f"status code {status_code} to handshake2"
             )
         resp_dict = cast(dict, resp_dict)
+        if (
+            error_code := self._get_response_error(resp_dict)
+        ) and error_code is SmartErrorCode.INVALID_NONCE:
+            raise AuthenticationError(
+                f"Invalid password hash in handshake2 for {self._host}"
+            )
         self._handle_response_error_code(resp_dict, "Error in handshake2")
 
         self._seq = resp_dict["result"]["start_seq"]
@@ -372,12 +383,12 @@ class SslAesTransport(BaseTransport):
 
         if not self._username:
             raise AuthenticationError(
-                "Credentials must be supplied to connect to {self._host}"
+                f"Credentials must be supplied to connect to {self._host}"
             )
         if error_code is not SmartErrorCode.INVALID_NONCE or (
             resp_dict and "nonce" not in resp_dict["result"].get("data", {})
         ):
-            raise AuthenticationError("Error trying handshake1: {resp_dict}")
+            raise AuthenticationError(f"Error trying handshake1: {resp_dict}")
 
         if TYPE_CHECKING:
             resp_dict = cast(Dict[str, Any], resp_dict)
@@ -396,6 +407,7 @@ class SslAesTransport(BaseTransport):
         )
         if device_confirm == expected_confirm_sha256:
             _LOGGER.debug("Credentials match")
+            self._tmp_key = resp_dict["result"]["data"]["key"]
             return local_nonce, server_nonce, pwd_hash
 
         if TYPE_CHECKING:
@@ -422,7 +434,7 @@ class SslAesTransport(BaseTransport):
             "params": {
                 "cnonce": local_nonce,
                 "encrypt_type": "3",
-                "username": self._username,
+                "username": username,
             },
         }
         http_client = self._http_client
