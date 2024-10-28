@@ -129,7 +129,6 @@ class SslAesTransport(BaseTransport):
             self._password = ch["pwd"]
             self._username = ch["un"]
         self._local_nonce: str | None = None
-        self._tmp_key = None
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
@@ -407,7 +406,6 @@ class SslAesTransport(BaseTransport):
         )
         if device_confirm == expected_confirm_sha256:
             _LOGGER.debug("Credentials match")
-            self._tmp_key = resp_dict["result"]["data"]["key"]
             return local_nonce, server_nonce, pwd_hash
 
         if TYPE_CHECKING:

@@ -27,10 +27,6 @@ from ..exceptions import (
 from ..experimental.sslaestransport import SslAesTransport, TransportState, _sha256_hash
 from ..httpclient import HttpClient
 
-DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
-key = b"8\x89\x02\xfa\xf5Xs\x1c\xa1 H\x9a\x82\xc7\xd9\t"
-iv = b"9=\xf8\x1bS\xcd0\xb5\x89i\xba\xfd^9\x9f\xfa"
-KEY_IV = key + iv
 MOCK_ADMIN_USER = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"]).username
 MOCK_PWD = "correct_pwd"  # noqa: S105
 MOCK_USER = "mock@example.com"
