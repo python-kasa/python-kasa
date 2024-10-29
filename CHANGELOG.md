@@ -45,6 +45,7 @@
 
 **Project maintenance:**
 
+- Fix mypy errors in parse_pcap_klap [\#1214](https://github.com/python-kasa/python-kasa/pull/1214) (@sdb9696)
 - Make HSV NamedTuple creation more efficient [\#1211](https://github.com/python-kasa/python-kasa/pull/1211) (@sdb9696)
 - dump\_devinfo: query get\_current\_brt for iot dimmers [\#1209](https://github.com/python-kasa/python-kasa/pull/1209) (@rytilahti)
 - Add trigger\_logs and double\_click to dump\_devinfo helper [\#1208](https://github.com/python-kasa/python-kasa/pull/1208) (@sdb9696)
