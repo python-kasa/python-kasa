@@ -212,6 +212,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target = target
         self.target_1 = (target, self.discovery_port)
         self.target_2 = (target, Discover.DISCOVERY_PORT_2)
+        broadcast_target = ".".join(target.split(".")[:3]) + ".255"
+        self.single_host = broadcast_target != target
+        self.target_3 = (broadcast_target, Discover.DISCOVERY_PORT_2)
 
         self.discovered_devices = {}
         self.unsupported_device_exceptions: dict = {}
@@ -277,7 +280,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
             self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
-            self.transport.sendto(aes_discovery_query, self.target_2)  # type: ignore
+            self.transport.sendto(aes_discovery_query, self.target_3)  # type: ignore
             await asyncio.sleep(sleep_between_packets)
 
     def datagram_received(self, data, addr) -> None:
@@ -287,7 +290,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
 
         ip, port = addr
         # Prevent multiple entries due multiple broadcasts
-        if ip in self.seen_hosts:
+        if ip in self.seen_hosts or (self.single_host and ip != self.target):
             return
         self.seen_hosts.add(ip)
 
