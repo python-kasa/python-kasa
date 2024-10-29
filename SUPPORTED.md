@@ -242,8 +242,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 ### Hub-Connected Devices
 
 - **S200B**
-  - Hardware: 1.0 (US) / Firmware: 1.12.0
   - Hardware: 1.0 (EU) / Firmware: 1.11.0
+  - Hardware: 1.0 (US) / Firmware: 1.12.0
 - **S200D**
   - Hardware: 1.0 (EU) / Firmware: 1.11.0
   - Hardware: 1.0 (EU) / Firmware: 1.12.0
