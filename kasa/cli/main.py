@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from kasa import Device
 
 from kasa.deviceconfig import DeviceEncryptionType
-from kasa.experimental.enabled import Enabled
+from kasa.experimental import Experimental
 
 from .common import (
     SKIP_UPDATE_COMMANDS,
@@ -225,7 +225,7 @@ def _legacy_type_to_class(_type):
     default=None,
     is_flag=True,
     type=bool,
-    envvar=Enabled.ENV_VAR,
+    envvar=Experimental.ENV_VAR,
     help="Enable experimental mode for devices not yet fully supported.",
 )
 @click.version_option(package_name="python-kasa")
@@ -262,9 +262,9 @@ async def cli(
         error("--target is not a valid option for single host discovery")
 
     if experimental is not None:
-        Enabled.set(experimental)
+        Experimental.set_enabled(experimental)
 
-    if Enabled.get():
+    if Experimental.enabled():
         echo("Experimental support is enabled")
 
     logging_config: dict[str, Any] = {

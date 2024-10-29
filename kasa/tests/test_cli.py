@@ -1250,9 +1250,9 @@ async def test_experimental_flags(mocker, option, env_var_value, expectation):
     mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)
 
     # reset the class internal variable
-    from kasa.experimental.enabled import Enabled
+    from kasa.experimental import Experimental
 
-    Enabled._value = None
+    Experimental._enabled = None
 
     KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
     if env_var_value:

@@ -214,9 +214,9 @@ def get_protocol(
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
-        from .experimental.enabled import Enabled
+        from .experimental import Experimental
 
-        if Enabled.get() and protocol_transport_key == "SMART.AES.HTTPS":
+        if Experimental.enabled() and protocol_transport_key == "SMART.AES.HTTPS":
             prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
         else:
             return None
