@@ -175,6 +175,9 @@ Please refer to [our contributing guidelines](https://python-kasa.readthedocs.io
 
 The following devices have been tested and confirmed as working. If your device is unlisted but working, please consider [contributing a fixture file](https://python-kasa.readthedocs.io/en/latest/contribute.html#contributing-fixture-files).
 
+> [!NOTE]
+> The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
+
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
 ### Supported Kasa devices
