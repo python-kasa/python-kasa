@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from enum import Enum
 
 from ...exceptions import KasaException
 from ...feature import Feature
 from ..iotmodule import IotModule
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Range(Enum):
@@ -29,7 +32,11 @@ class Motion(IotModule):
     def _initialize_features(self):
         """Initialize features after the initial update."""
         # Only add features if the device supports the module
-        if "enable" not in self.data:
+        if "get_config" not in self.data:
+            return
+
+        if "enable" not in self.data["get_config"]:
+            _LOGGER.warning("%r initialized, but no get_config in response")
             return
 
         self._add_feature(
@@ -53,12 +60,12 @@ class Motion(IotModule):
     @property
     def range(self) -> Range:
         """Return motion detection range."""
-        return Range(self.data["trigger_index"])
+        return Range(self.data["get_config"]["trigger_index"])
 
     @property
     def enabled(self) -> bool:
         """Return True if module is enabled."""
-        return bool(self.data["enable"])
+        return bool(self.data["get_config"]["enable"])
 
     async def set_enabled(self, state: bool):
         """Enable/disable PIR."""
@@ -84,7 +91,7 @@ class Motion(IotModule):
     @property
     def inactivity_timeout(self) -> int:
         """Return inactivity timeout in milliseconds."""
-        return self.data["cold_time"]
+        return self.data["get_config"]["cold_time"]
 
     async def set_inactivity_timeout(self, timeout: int):
         """Set inactivity timeout in milliseconds.
