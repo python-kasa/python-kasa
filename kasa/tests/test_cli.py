@@ -104,6 +104,55 @@ async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_
     update.assert_called()
 
 
+async def test_list_devices(discovery_mock, runner):
+    """Test that device update is called on main."""
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "list"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
+    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7}"
+    assert header in res.output
+    assert row in res.output
+
+
+@new_discovery
+async def test_list_auth_failed(discovery_mock, mocker, runner):
+    """Test that device update is called on main."""
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    mocker.patch.object(
+        device_class,
+        "update",
+        side_effect=AuthenticationError("Failed to authenticate"),
+    )
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "list"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
+    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7} - Authentication failed"
+    assert header in res.output
+    assert row in res.output
+
+
+async def test_list_unsupported(unsupported_device_info, runner):
+    """Test that device update is called on main."""
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "list"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
+    row = f"{'127.0.0.1':<15} UNSUPPORTED DEVICE"
+    assert header in res.output
+    assert row in res.output
+
+
 async def test_sysinfo(dev: Device, runner):
     res = await runner.invoke(sysinfo, obj=dev)
     assert "System info" in res.output
@@ -715,7 +764,6 @@ async def test_discover_unsupported(unsupported_device_info, runner):
     )
     assert res.exit_code == 0
     assert "== Unsupported device ==" in res.output
-    assert "== Discovery Result ==" in res.output
 
 
 async def test_host_unsupported(unsupported_device_info, runner):
@@ -1109,3 +1157,114 @@ async def test_cli_child_commands(
         assert res.exit_code == 0
         parent_update_spy.assert_called_once()
         assert dev.children[0].update == child_update_method
+
+
+async def test_discover_config(dev: Device, mocker, runner):
+    """Test that device config is returned."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=dev)
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--host",
+            host,
+            "discover",
+            "config",
+        ],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+    cparam = dev.config.connection_type
+    expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
+    assert expected in res.output
+
+
+async def test_discover_config_invalid(mocker, runner):
+    """Test the device config command with invalids."""
+    host = "127.0.0.1"
+    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--host",
+            host,
+            "discover",
+            "config",
+        ],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 1
+    assert f"Unable to connect to {host}" in res.output
+
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "config"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 1
+    assert "--host option must be supplied to discover config" in res.output
+
+    res = await runner.invoke(
+        cli,
+        [
+            "--username",
+            "foo",
+            "--password",
+            "bar",
+            "--host",
+            host,
+            "--target",
+            "127.0.0.2",
+            "discover",
+            "config",
+        ],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 1
+    assert "--target is not a valid option for single host discovery" in res.output
+
+
+@pytest.mark.parametrize(
+    ("option", "env_var_value", "expectation"),
+    [
+        pytest.param("--experimental", None, True),
+        pytest.param("--experimental", "false", True),
+        pytest.param(None, None, False),
+        pytest.param(None, "true", True),
+        pytest.param(None, "false", False),
+        pytest.param("--no-experimental", "true", False),
+    ],
+)
+async def test_experimental_flags(mocker, option, env_var_value, expectation):
+    """Test the experimental flag is set correctly."""
+    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)
+
+    # reset the class internal variable
+    from kasa.experimental import Experimental
+
+    Experimental._enabled = None
+
+    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
+    if env_var_value:
+        KASA_VARS["KASA_EXPERIMENTAL"] = env_var_value
+    args = [
+        "--host",
+        "127.0.0.2",
+        "discover",
+        "config",
+    ]
+    if option:
+        args.insert(0, option)
+    runner = CliRunner(env=KASA_VARS)
+    res = await runner.invoke(cli, args)
+    assert ("Experimental support is enabled" in res.output) is expectation

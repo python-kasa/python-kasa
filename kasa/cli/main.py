@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from kasa import Device
 
 from kasa.deviceconfig import DeviceEncryptionType
+from kasa.experimental import Experimental
 
 from .common import (
     SKIP_UPDATE_COMMANDS,
@@ -39,6 +40,7 @@ TYPES = [
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
+DEFAULT_TARGET = "255.255.255.255"
 
 
 def _legacy_type_to_class(_type):
@@ -115,7 +117,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--target",
     envvar="KASA_TARGET",
-    default="255.255.255.255",
+    default=DEFAULT_TARGET,
     required=False,
     show_default=True,
     help="The broadcast address to be used for discovery.",
@@ -219,11 +221,11 @@ def _legacy_type_to_class(_type):
     help="Hashed credentials used to authenticate to the device.",
 )
 @click.option(
-    "--experimental",
-    default=False,
+    "--experimental/--no-experimental",
+    default=None,
     is_flag=True,
     type=bool,
-    envvar="KASA_EXPERIMENTAL",
+    envvar=Experimental.ENV_VAR,
     help="Enable experimental mode for devices not yet fully supported.",
 )
 @click.version_option(package_name="python-kasa")
@@ -256,10 +258,14 @@ async def cli(
         ctx.obj = object()
         return
 
-    if experimental:
-        from kasa.experimental.enabled import Enabled
+    if target != DEFAULT_TARGET and host:
+        error("--target is not a valid option for single host discovery")
 
-        Enabled.set(True)
+    if experimental is not None:
+        Experimental.set_enabled(experimental)
+
+    if Experimental.enabled():
+        echo("Experimental support is enabled")
 
     logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
