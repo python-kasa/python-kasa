@@ -21,11 +21,6 @@ class Range(Enum):
     Custom = 3
 
 
-# TODO: use the config reply in tests
-# {"enable":0,"version":"1.0","trigger_index":2,"cold_time":60000,
-# "min_adc":0,"max_adc":4095,"array":[80,50,20,0],"err_code":0}}}
-
-
 class Motion(IotModule):
     """Implements the motion detection (PIR) module."""
 
