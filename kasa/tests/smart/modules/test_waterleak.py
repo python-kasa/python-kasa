@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 
 import pytest
@@ -15,6 +16,8 @@ waterleak = parametrize(
     ("feature", "prop_name", "type"),
     [
         ("water_alert", "alert", int),
+        # Can be converted to 'datetime | None' after py3.9 support is dropped
+        ("water_alert_timestamp", "alert_timestamp", (datetime, type(None))),
         ("water_leak", "status", Enum),
     ],
 )

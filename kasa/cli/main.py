@@ -35,9 +35,11 @@ TYPES = [
     "strip",
     "lightstrip",
     "smart",
+    "camera",
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
+DEFAULT_TARGET = "255.255.255.255"
 
 
 def _legacy_type_to_class(_type):
@@ -114,7 +116,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--target",
     envvar="KASA_TARGET",
-    default="255.255.255.255",
+    default=DEFAULT_TARGET,
     required=False,
     show_default=True,
     help="The broadcast address to be used for discovery.",
@@ -158,6 +160,7 @@ def _legacy_type_to_class(_type):
     type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
 )
 @click.option(
+    "-df",
     "--device-family",
     envvar="KASA_DEVICE_FAMILY",
     default="SMART.TAPOPLUG",
@@ -172,6 +175,14 @@ def _legacy_type_to_class(_type):
     help="The login version for device authentication. Defaults to 2",
 )
 @click.option(
+    "--https/--no-https",
+    envvar="KASA_HTTPS",
+    default=False,
+    is_flag=True,
+    type=bool,
+    help="Set flag if the device encryption uses https.",
+)
+@click.option(
     "--timeout",
     envvar="KASA_TIMEOUT",
     default=5,
@@ -182,7 +193,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--discovery-timeout",
     envvar="KASA_DISCOVERY_TIMEOUT",
-    default=5,
+    default=10,
     required=False,
     show_default=True,
     help="Timeout for discovery.",
@@ -208,6 +219,14 @@ def _legacy_type_to_class(_type):
     envvar="KASA_CREDENTIALS_HASH",
     help="Hashed credentials used to authenticate to the device.",
 )
+@click.option(
+    "--experimental",
+    default=False,
+    is_flag=True,
+    type=bool,
+    envvar="KASA_EXPERIMENTAL",
+    help="Enable experimental mode for devices not yet fully supported.",
+)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(
@@ -220,6 +239,7 @@ async def cli(
     debug,
     type,
     encrypt_type,
+    https,
     device_family,
     login_version,
     json,
@@ -228,6 +248,7 @@ async def cli(
     username,
     password,
     credentials_hash,
+    experimental,
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
@@ -235,6 +256,14 @@ async def cli(
         # Context object is required to avoid crashing on sub-groups
         ctx.obj = object()
         return
+
+    if target != DEFAULT_TARGET and host:
+        error("--target is not a valid option for single host discovery")
+
+    if experimental:
+        from kasa.experimental.enabled import Enabled
+
+        Enabled.set(True)
 
     logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -294,12 +323,21 @@ async def cli(
         return await ctx.invoke(discover)
 
     device_updated = False
-    if type is not None and type != "smart":
+    if type is not None and type not in {"smart", "camera"}:
         from kasa.deviceconfig import DeviceConfig
 
         config = DeviceConfig(host=host, port_override=port, timeout=timeout)
         dev = _legacy_type_to_class(type)(host, config=config)
-    elif type == "smart" or (device_family and encrypt_type):
+    elif type in {"smart", "camera"} or (device_family and encrypt_type):
+        if type == "camera":
+            if not experimental:
+                error(
+                    "Camera is an experimental type, please enable with --experimental"
+                )
+            encrypt_type = "AES"
+            https = True
+            device_family = "SMART.IPCAMERA"
+
         from kasa.device import Device
         from kasa.deviceconfig import (
             DeviceConfig,
@@ -310,10 +348,12 @@ async def cli(
 
         if not encrypt_type:
             encrypt_type = "KLAP"
+
         ctype = DeviceConnectionParameters(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
             login_version,
+            https,
         )
         config = DeviceConfig(
             host=host,
@@ -326,15 +366,11 @@ async def cli(
         dev = await Device.connect(config=config)
         device_updated = True
     else:
-        from kasa.discover import Discover
+        from .discover import discover
 
-        dev = await Discover.discover_single(
-            host,
-            port=port,
-            credentials=credentials,
-            timeout=timeout,
-            discovery_timeout=discovery_timeout,
-        )
+        dev = await ctx.invoke(discover)
+        if not dev:
+            error(f"Unable to create device for {host}")
 
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.

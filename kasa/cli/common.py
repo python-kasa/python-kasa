@@ -201,6 +201,8 @@ def CatchAllExceptions(cls):
         # Handle exit request from click.
         if isinstance(exc, click.exceptions.Exit):
             sys.exit(exc.exit_code)
+        if isinstance(exc, click.exceptions.Abort):
+            sys.exit(0)
 
         echo(f"Raised error: {exc}")
         if debug:

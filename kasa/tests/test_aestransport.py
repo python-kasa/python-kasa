@@ -99,8 +99,8 @@ async def test_handshake_with_keys(mocker):
     assert transport._state is TransportState.HANDSHAKE_REQUIRED
 
     await transport.perform_handshake()
-    assert transport._key_pair.get_private_key() == test_keys["private"]
-    assert transport._key_pair.get_public_key() == test_keys["public"]
+    assert transport._key_pair.private_key_der_b64 == test_keys["private"]
+    assert transport._key_pair.public_key_der_b64 == test_keys["public"]
 
 
 @status_parameters

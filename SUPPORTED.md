@@ -2,6 +2,10 @@
 
 The following devices have been tested and confirmed as working. If your device is unlisted but working, please open a pull request to update the list and add a fixture file (use `python -m devtools.dump_devinfo` to generate one).
 
+> [!NOTE]
+> The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
+
+
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
 ## Kasa devices
@@ -185,6 +189,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.0.13
   - Hardware: 1.0 (EU) / Firmware: 1.0.15
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
+- **P304M**
+  - Hardware: 1.0 (UK) / Firmware: 1.0.3
 - **TP25**
   - Hardware: 1.0 (US) / Firmware: 1.0.2
 
@@ -236,19 +242,23 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 ### Hub-Connected Devices
 
 - **S200D**
-  - Hardware: 1.0 (EU) / Firmware: 1.11.0
   - Hardware: 1.0 (EU) / Firmware: 1.12.0
+- **S200B**
+  - Hardware: 1.0 (EU) / Firmware: 1.11.0
 - **T100**
   - Hardware: 1.0 (EU) / Firmware: 1.12.0
 - **T110**
   - Hardware: 1.0 (EU) / Firmware: 1.8.0
   - Hardware: 1.0 (EU) / Firmware: 1.9.0
+  - Hardware: 1.0 (US) / Firmware: 1.9.0
 - **T300**
   - Hardware: 1.0 (EU) / Firmware: 1.7.0
 - **T310**
   - Hardware: 1.0 (EU) / Firmware: 1.5.0
+  - Hardware: 1.0 (US) / Firmware: 1.5.0
 - **T315**
   - Hardware: 1.0 (EU) / Firmware: 1.7.0
+  - Hardware: 1.0 (US) / Firmware: 1.8.0
 
 
 <!--SUPPORTED_END-->
