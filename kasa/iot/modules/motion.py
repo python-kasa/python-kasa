@@ -30,8 +30,8 @@ class Motion(IotModule):
         if "get_config" not in self.data:
             return
 
-        if "enable" not in self.data["get_config"]:
-            _LOGGER.warning("%r initialized, but no get_config in response")
+        if "enable" not in self.config:
+            _LOGGER.warning("%r initialized, but no enable in response")
             return
 
         self._add_feature(
@@ -53,14 +53,19 @@ class Motion(IotModule):
         return self.query_for_command("get_config")
 
     @property
+    def config(self) -> dict:
+        """Return current configuration."""
+        return self.data["get_config"]
+
+    @property
     def range(self) -> Range:
         """Return motion detection range."""
-        return Range(self.data["get_config"]["trigger_index"])
+        return Range(self.config["trigger_index"])
 
     @property
     def enabled(self) -> bool:
         """Return True if module is enabled."""
-        return bool(self.data["get_config"]["enable"])
+        return bool(self.config["enable"])
 
     async def set_enabled(self, state: bool):
         """Enable/disable PIR."""
@@ -86,7 +91,7 @@ class Motion(IotModule):
     @property
     def inactivity_timeout(self) -> int:
         """Return inactivity timeout in milliseconds."""
-        return self.data["get_config"]["cold_time"]
+        return self.config["cold_time"]
 
     async def set_inactivity_timeout(self, timeout: int):
         """Set inactivity timeout in milliseconds.
