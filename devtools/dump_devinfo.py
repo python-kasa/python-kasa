@@ -702,14 +702,6 @@ async def get_smart_test_calls(protocol: SmartProtocol):
             should_succeed=False,
             child_device_id="",
         ),
-        SmartCall(
-            module="trigger_logs",
-            request=SmartRequest.get_raw_request(
-                "get_trigger_logs", SmartRequest.GetTriggerLogsParams()
-            ).to_dict(),
-            should_succeed=False,
-            child_device_id="",
-        ),
     ]
 
     click.echo("Testing component_nego call ..", nl=False)
