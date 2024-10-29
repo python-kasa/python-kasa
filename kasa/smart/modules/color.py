@@ -44,7 +44,9 @@ class Color(SmartModule):
             self.data.get("brightness", 0),
         )
 
-        return HSV(hue=h, saturation=s, value=v)
+        # Simple HSV(h, s, v) is less efficent than below
+        # due to the cpython implementation.
+        return tuple.__new__(HSV, (h, s, v))
 
     def _raise_for_invalid_brightness(self, value):
         """Raise error on invalid brightness value."""
