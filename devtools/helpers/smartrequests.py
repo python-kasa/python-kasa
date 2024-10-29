@@ -356,8 +356,8 @@ def get_component_requests(component_id, ver_code):
     if (cr := COMPONENT_REQUESTS.get(component_id)) is None:
         return None
     if callable(cr):
-        return cr(ver_code)
-    return cr
+        return SmartRequest._create_request_dict(cr(ver_code))
+    return SmartRequest._create_request_dict(cr)
 
 
 COMPONENT_REQUESTS = {

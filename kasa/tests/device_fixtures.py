@@ -10,11 +10,13 @@ from kasa import (
     DeviceType,
     Discover,
 )
+from kasa.experimental.smartcamera import SmartCamera
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
 from kasa.smart import SmartDevice
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
+from .fakeprotocol_smartcamera import FakeSmartCameraProtocol
 from .fixtureinfo import (
     FIXTURE_DATA,
     ComponentFilter,
@@ -106,7 +108,7 @@ SWITCHES_SMART = {
 }
 SWITCHES = {*SWITCHES_IOT, *SWITCHES_SMART}
 STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
-STRIPS_SMART = {"P300", "TP25"}
+STRIPS_SMART = {"P300", "P304M", "TP25"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220M", "KS230", "KP405"}
@@ -117,11 +119,11 @@ DIMMERS = {
 }
 
 HUBS_SMART = {"H100", "KH100"}
-SENSORS_SMART = {"T310", "T315", "T300", "T100", "T110"}
+SENSORS_SMART = {"T310", "T315", "T300", "T100", "T110", "S200B"}
 THERMOSTATS_SMART = {"KE100"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
-WITH_EMETER_SMART = {"P110", "P115", "KP125M", "EP25"}
+WITH_EMETER_SMART = {"P110", "P115", "KP125M", "EP25", "P304M"}
 WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
 
 DIMMABLE = {*BULBS, *DIMMERS}
@@ -313,6 +315,17 @@ device_smart = parametrize(
 device_iot = parametrize(
     "devices iot", model_filter=ALL_DEVICES_IOT, protocol_filter={"IOT"}
 )
+device_smartcamera = parametrize("devices smartcamera", protocol_filter={"SMARTCAMERA"})
+camera_smartcamera = parametrize(
+    "camera smartcamera",
+    device_type_filter=[DeviceType.Camera],
+    protocol_filter={"SMARTCAMERA"},
+)
+hub_smartcamera = parametrize(
+    "hub smartcamera",
+    device_type_filter=[DeviceType.Hub],
+    protocol_filter={"SMARTCAMERA"},
+)
 
 
 def check_categories():
@@ -329,6 +342,8 @@ def check_categories():
         + hubs_smart.args[1]
         + sensors_smart.args[1]
         + thermostats_smart.args[1]
+        + camera_smartcamera.args[1]
+        + hub_smartcamera.args[1]
     )
     diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -344,8 +359,10 @@ check_categories()
 
 
 def device_for_fixture_name(model, protocol):
-    if "SMART" in protocol:
+    if protocol in {"SMART", "SMART.CHILD"}:
         return SmartDevice
+    elif protocol == "SMARTCAMERA":
+        return SmartCamera
     else:
         for d in STRIPS_IOT:
             if d in model:
@@ -395,8 +412,10 @@ async def get_device_for_fixture(fixture_data: FixtureInfo) -> Device:
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
         host="127.0.0.123"
     )
-    if "SMART" in fixture_data.protocol:
+    if fixture_data.protocol in {"SMART", "SMART.CHILD"}:
         d.protocol = FakeSmartProtocol(fixture_data.data, fixture_data.name)
+    elif fixture_data.protocol == "SMARTCAMERA":
+        d.protocol = FakeSmartCameraProtocol(fixture_data.data, fixture_data.name)
     else:
         d.protocol = FakeIotProtocol(fixture_data.data)
 

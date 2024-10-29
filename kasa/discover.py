@@ -93,6 +93,8 @@ from collections.abc import Awaitable
 from pprint import pformat as pf
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, cast
 
+from aiohttp import ClientSession
+
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
@@ -527,11 +529,82 @@ class Discover:
             raise TimeoutError(f"Timed out getting discovery response for {host}")
 
     @staticmethod
+    async def try_connect_all(
+        host: str,
+        *,
+        port: int | None = None,
+        timeout: int | None = None,
+        credentials: Credentials | None = None,
+        http_client: ClientSession | None = None,
+    ) -> Device | None:
+        """Try to connect directly to a device with all possible parameters.
+
+        This method can be used when udp is not working due to network issues.
+        After succesfully connecting use the device config and
+        :meth:`Device.connect()` for future connections.
+
+        :param host: Hostname of device to query
+        :param port: Optionally set a different port for legacy devices using port 9999
+        :param timeout: Timeout in seconds device for devices queries
+        :param credentials: Credentials for devices that require authentication.
+        :param http_client: Optional client session for devices that use http.
+            username and password are ignored if provided.
+        """
+        from .device_factory import _connect
+
+        candidates = {
+            (type(protocol), type(protocol._transport), device_class): (
+                protocol,
+                config,
+            )
+            for encrypt in Device.EncryptionType
+            for device_family in Device.Family
+            for https in (True, False)
+            if (
+                conn_params := DeviceConnectionParameters(
+                    device_family=device_family,
+                    encryption_type=encrypt,
+                    https=https,
+                )
+            )
+            and (
+                config := DeviceConfig(
+                    host=host,
+                    connection_type=conn_params,
+                    timeout=timeout,
+                    port_override=port,
+                    credentials=credentials,
+                    http_client=http_client,
+                    uses_http=encrypt is not Device.EncryptionType.Xor,
+                )
+            )
+            and (protocol := get_protocol(config))
+            and (
+                device_class := get_device_class_from_family(
+                    device_family.value, https=https
+                )
+            )
+        }
+        for protocol, config in candidates.values():
+            try:
+                dev = await _connect(config, protocol)
+            except Exception:
+                _LOGGER.debug("Unable to connect with %s", protocol)
+            else:
+                return dev
+            finally:
+                await protocol.close()
+        return None
+
+    @staticmethod
     def _get_device_class(info: dict) -> type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult(**info["result"])
-            dev_class = get_device_class_from_family(discovery_result.device_type)
+            https = discovery_result.mgt_encrypt_schm.is_support_https
+            dev_class = get_device_class_from_family(
+                discovery_result.device_type, https=https
+            )
             if not dev_class:
                 raise UnsupportedDeviceError(
                     "Unknown device type: %s" % discovery_result.device_type,
@@ -602,7 +675,9 @@ class Discover:
             ) from ex
         try:
             discovery_result = DiscoveryResult(**info["result"])
-            if discovery_result.encrypt_info:
+            if (
+                encrypt_info := discovery_result.encrypt_info
+            ) and encrypt_info.sym_schm == "AES":
                 Discover._decrypt_discovery_data(discovery_result)
         except ValidationError as ex:
             if debug_enabled:
@@ -617,21 +692,23 @@ class Discover:
                     pf(data),
                 )
             raise UnsupportedDeviceError(
-                f"Unable to parse discovery from device: {config.host}: {ex}"
+                f"Unable to parse discovery from device: {config.host}: {ex}",
+                host=config.host,
             ) from ex
 
         type_ = discovery_result.device_type
-
+        encrypt_schm = discovery_result.mgt_encrypt_schm
         try:
-            if not (
-                encrypt_type := discovery_result.mgt_encrypt_schm.encrypt_type
-            ) and (encrypt_info := discovery_result.encrypt_info):
+            if not (encrypt_type := encrypt_schm.encrypt_type) and (
+                encrypt_info := discovery_result.encrypt_info
+            ):
                 encrypt_type = encrypt_info.sym_schm
             if not encrypt_type:
                 raise UnsupportedDeviceError(
                     f"Unsupported device {config.host} of type {type_} "
                     + "with no encryption type",
                     discovery_result=discovery_result.get_dict(),
+                    host=config.host,
                 )
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
@@ -644,12 +721,18 @@ class Discover:
                 f"Unsupported device {config.host} of type {type_} "
                 + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             ) from ex
-        if (device_class := get_device_class_from_family(type_)) is None:
+        if (
+            device_class := get_device_class_from_family(
+                type_, https=encrypt_schm.is_support_https
+            )
+        ) is None:
             _LOGGER.warning("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             )
         if (protocol := get_protocol(config)) is None:
             _LOGGER.warning(
@@ -659,6 +742,7 @@ class Discover:
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             )
 
         if debug_enabled:
