@@ -97,9 +97,6 @@ class SslAesTransport(BaseTransport):
         self._default_credentials: Credentials = get_default_credentials(
             DEFAULT_CREDENTIALS["TAPOCAMERA"]
         )
-
-        if not config.timeout:
-            config.timeout = self.DEFAULT_TIMEOUT
         self._http_client: HttpClient = HttpClient(config)
 
         self._state = TransportState.HANDSHAKE_REQUIRED

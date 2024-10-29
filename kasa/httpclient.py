@@ -89,6 +89,8 @@ class HttpClient:
         self._last_url = url
         self.client.cookie_jar.clear()
         return_json = bool(json)
+        if self._config.timeout is None:
+            _LOGGER.warning("Request timeout is set to None.")
         client_timeout = aiohttp.ClientTimeout(total=self._config.timeout)
 
         # If json is not a dict send as data.
