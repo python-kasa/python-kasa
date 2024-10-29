@@ -1232,3 +1232,39 @@ async def test_discover_config_invalid(mocker, runner):
     )
     assert res.exit_code == 1
     assert "--target is not a valid option for single host discovery" in res.output
+
+
+@pytest.mark.parametrize(
+    ("option", "env_var_value", "expectation"),
+    [
+        pytest.param("--experimental", None, True),
+        pytest.param("--experimental", "false", True),
+        pytest.param(None, None, False),
+        pytest.param(None, "true", True),
+        pytest.param(None, "false", False),
+        pytest.param("--no-experimental", "true", False),
+    ],
+)
+async def test_experimental_flags(mocker, option, env_var_value, expectation):
+    """Test the experimental flag is set correctly."""
+    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)
+
+    # reset the class internal variable
+    from kasa.experimental.enabled import Enabled
+
+    Enabled._value = None
+
+    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
+    if env_var_value:
+        KASA_VARS["KASA_EXPERIMENTAL"] = env_var_value
+    args = [
+        "--host",
+        "127.0.0.2",
+        "discover",
+        "config",
+    ]
+    if option:
+        args.insert(0, option)
+    runner = CliRunner(env=KASA_VARS)
+    res = await runner.invoke(cli, args)
+    assert ("Experimental support is enabled" in res.output) is expectation

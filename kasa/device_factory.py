@@ -216,7 +216,7 @@ def get_protocol(
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         from .experimental.enabled import Enabled
 
-        if Enabled.value and protocol_transport_key == "SMART.AES.HTTPS":
+        if Enabled.get() and protocol_transport_key == "SMART.AES.HTTPS":
             prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
         else:
             return None
