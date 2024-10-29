@@ -294,7 +294,7 @@ async def test_discover_send(mocker):
     assert proto.target_1 == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
     await proto.do_discover()
-    assert transport.sendto.call_count == proto.discovery_packets * 3
+    assert transport.sendto.call_count == proto.discovery_packets * 2
 
 
 async def test_discover_datagram_received(mocker, discovery_data):
@@ -501,14 +501,13 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
         discovery_timeout=discovery_timeout,
         discovery_packets=5,
     )
-    expected_send = 1 if port == 9999 else 2
-    ft = FakeDatagramTransport(dp, port, do_not_reply_count * expected_send)
+    ft = FakeDatagramTransport(dp, port, do_not_reply_count)
     dp.connection_made(ft)
 
     await dp.wait_for_discovery_to_complete()
 
     await asyncio.sleep(0)
-    assert ft.send_count == do_not_reply_count * expected_send + expected_send
+    assert ft.send_count == do_not_reply_count + 1
     assert dp.discover_task.done()
     assert dp.discover_task.cancelled()
 

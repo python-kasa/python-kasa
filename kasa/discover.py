@@ -276,7 +276,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             if self.target in self.seen_hosts:  # Stop sending for discover_single
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
-            self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
             self.transport.sendto(aes_discovery_query, self.target_2)  # type: ignore
             await asyncio.sleep(sleep_between_packets)
 
