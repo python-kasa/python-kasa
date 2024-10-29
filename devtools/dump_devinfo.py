@@ -309,9 +309,9 @@ async def cli(
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    from kasa.experimental.enabled import Enabled
+    from kasa.experimental import Experimental
 
-    Enabled.set(True)
+    Experimental.set_enabled(True)
 
     credentials = Credentials(username=username, password=password)
     if host is not None:
