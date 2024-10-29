@@ -367,7 +367,9 @@ class IotBulb(IotDevice):
         saturation = light_state["saturation"]
         value = self._brightness
 
-        return HSV(hue, saturation, value)
+        # Simple HSV(hue, saturation, value) is less efficent than below
+        # due to the cpython implementation.
+        return tuple.__new__(HSV, (hue, saturation, value))
 
     @requires_update
     async def _set_hsv(
