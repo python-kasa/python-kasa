@@ -408,6 +408,12 @@ COMPONENT_REQUESTS = {
         SmartRequest.get_raw_request("get_alarm_configure"),
     ],
     "alarm_logs": [SmartRequest.get_raw_request("get_alarm_triggers")],
+    "trigger_log": [
+        SmartRequest.get_raw_request(
+            "get_trigger_logs", SmartRequest.GetTriggerLogsParams()
+        )
+    ],
+    "double_click": [SmartRequest.get_raw_request("get_double_click_info")],
     "child_device": [
         SmartRequest.get_raw_request("get_child_device_list"),
         SmartRequest.get_raw_request("get_child_device_component_list"),

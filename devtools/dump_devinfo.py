@@ -309,9 +309,9 @@ async def cli(
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    from kasa.experimental.enabled import Enabled
+    from kasa.experimental import Experimental
 
-    Enabled.set(True)
+    Experimental.set_enabled(True)
 
     credentials = Credentials(username=username, password=password)
     if host is not None:
@@ -404,6 +404,7 @@ async def get_legacy_fixture(protocol, *, discovery_info):
             module="smartlife.iot.smartbulb.lightingservice", method="get_light_state"
         ),
         Call(module="smartlife.iot.LAS", method="get_config"),
+        Call(module="smartlife.iot.LAS", method="get_current_brt"),
         Call(module="smartlife.iot.PIR", method="get_config"),
     ]
 
@@ -698,14 +699,6 @@ async def get_smart_test_calls(protocol: SmartProtocol):
         SmartCall(
             module="temp_humidity_records",
             request=SmartRequest.get_raw_request("get_temp_humidity_records").to_dict(),
-            should_succeed=False,
-            child_device_id="",
-        ),
-        SmartCall(
-            module="trigger_logs",
-            request=SmartRequest.get_raw_request(
-                "get_trigger_logs", SmartRequest.GetTriggerLogsParams()
-            ).to_dict(),
             should_succeed=False,
             child_device_id="",
         ),

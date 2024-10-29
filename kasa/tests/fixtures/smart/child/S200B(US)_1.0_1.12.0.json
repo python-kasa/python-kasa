@@ -1,0 +1,108 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "trigger_log",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "battery_detect",
+                "ver_code": 1
+            },
+            {
+                "id": "double_click",
+                "ver_code": 1
+            }
+        ]
+    },
+    "get_auto_update_info": -1001,
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "at_low_battery": false,
+        "avatar": "button",
+        "bind_count": 1,
+        "category": "subg.trigger.button",
+        "device_id": "SCRUBBED_CHILD_DEVICE_ID_5",
+        "fw_ver": "1.12.0 Build 231121 Rel.092508",
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "jamming_rssi": -104,
+        "jamming_signal_level": 2,
+        "lastOnboardingTimestamp": 1724636886,
+        "mac": "98254A000000",
+        "model": "S200B",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "parent_device_id": "0000000000000000000000000000000000000000",
+        "region": "Australia/Canberra",
+        "report_interval": 16,
+        "rssi": -36,
+        "signal_level": 3,
+        "specs": "US",
+        "status": "online",
+        "status_follow_edge": false,
+        "type": "SMART.TAPOSENSOR"
+    },
+    "get_device_time": -1001,
+    "get_device_usage": -1001,
+    "get_fw_download_state": {
+        "cloud_cache_seconds": 1,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.12.0 Build 231121 Rel.092508",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "qs_component_nego": -1001
+}
