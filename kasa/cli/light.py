@@ -131,7 +131,11 @@ def presets_list(dev: Device):
         return
 
     for preset in light_preset.preset_states_list:
-        echo(preset)
+        echo(
+            f"[{preset.index}] Hue: {preset.hue:3}  Saturation: {preset.saturation:3}  "
+            f"Brightness/Value: {preset.brightness:3}  Temp: {preset.color_temp:4}  "
+            f"Custom: {preset.custom}  Mode: {preset.mode}  Id: {preset.id}"
+        )
 
     return light_preset.preset_states_list
 
