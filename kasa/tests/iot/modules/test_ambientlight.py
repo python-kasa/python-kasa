@@ -12,6 +12,8 @@ def test_ambientlight_getters(dev: IotDimmer):
     ambientlight: AmbientLight = dev.modules[Module.IotAmbientLight]
 
     assert ambientlight.enabled == ambientlight.config["enable"]
+    assert ambientlight.presets == ambientlight.config["level_array"]
+
     assert (
         ambientlight.ambientlight_brightness
         == ambientlight.data["get_current_brt"]["value"]
