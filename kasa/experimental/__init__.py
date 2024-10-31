@@ -25,4 +25,4 @@ class Experimental:
         if env_var := os.getenv(cls.ENV_VAR):
             return env_var.lower() in {"true", "1", "t", "on"}
 
-        return False
+        return True
