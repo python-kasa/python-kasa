@@ -119,7 +119,7 @@ class SmartModule(Module):
         return self._error_count >= self.DISABLE_AFTER_ERROR_COUNT
 
     @classmethod
-    def _module_name(cls):
+    def _module_name(cls) -> str:
         return getattr(cls, "NAME", cls.__name__)
 
     @property

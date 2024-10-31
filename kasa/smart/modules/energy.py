@@ -118,7 +118,7 @@ class Energy(SmartModule, EnergyInterface):
         """Return monthly stats for the given year."""
         raise KasaException("Device does not support periodic statistics")
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
         # Energy module is not supported on P304M parent device
         return "device_on" in self._device.sys_info

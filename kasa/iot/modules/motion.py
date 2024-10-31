@@ -48,6 +48,7 @@ class Motion(IotModule):
             )
         )
 
+    def query(self) -> dict:
         """Request PIR configuration."""
         return self.query_for_command("get_config")
 

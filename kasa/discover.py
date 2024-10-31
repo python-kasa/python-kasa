@@ -216,7 +216,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         credentials: Credentials | None = None,
         timeout: int | None = None,
     ) -> None:
-        self.transport = None
+        self.transport: DatagramTransport | None = None
         self.discovery_packets = discovery_packets
         self.interface = interface
         self.on_discovered = on_discovered
@@ -241,7 +241,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self._started_event = asyncio.Event()
 
     def _run_callback_task(self, coro: Awaitable) -> None:
-        task = asyncio.create_task(coro)
+        task: asyncio.Task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
 
     async def wait_for_discovery_to_complete(self) -> None:
@@ -250,6 +250,9 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         async with asyncio_timeout(self.DISCOVERY_START_TIMEOUT):
             await self._started_event.wait()
         try:
+            if TYPE_CHECKING:
+                assert isinstance(self.discover_task, asyncio.Task)
+
             await self.discover_task
         except asyncio.CancelledError:
             # if target_discovered then cancel was called internally

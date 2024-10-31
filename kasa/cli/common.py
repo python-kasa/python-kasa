@@ -7,7 +7,7 @@ import re
 import sys
 from contextlib import contextmanager
 from functools import singledispatch, update_wrapper, wraps
-from typing import Any, Callable, Final
+from typing import TYPE_CHECKING, Any, Callable, Final
 
 import asyncclick as click
 
@@ -136,7 +136,7 @@ async def _get_child_device(
     device: Device,
     child_option: str | None,
     child_index_option: int | None,
-    info_command: str,
+    info_command: str | None,
 ) -> Device | None:
     def _list_children():
         return "\n".join(
@@ -181,11 +181,15 @@ async def _get_child_device(
                 f"{child_option} children are:\n{_list_children()}"
             )
 
+    if TYPE_CHECKING:
+        assert isinstance(child_index_option, int)
+
     if child_index_option + 1 > len(device.children) or child_index_option < 0:
         error(
             f"Invalid index {child_index_option}, "
             f"device has {len(device.children)} children"
         )
+
     child_by_index = device.children[child_index_option]
     echo(f"Targeting child device {child_by_index.alias}")
     return child_by_index

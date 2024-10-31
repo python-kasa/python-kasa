@@ -229,7 +229,11 @@ class IotDevice(Device):
             raise KasaException("update() required prior accessing emeter")
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids: list = None
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
     ) -> dict:
         """Query device, return results or raise an exception.
 
@@ -367,6 +371,8 @@ class IotDevice(Device):
                 type=Feature.Type.Action,
             )
         )
+        if TYPE_CHECKING:
+            assert isinstance(self._supported_modules, ModuleMapping)
 
         for module in self._supported_modules.values():
             module._initialize_features()
@@ -580,7 +586,7 @@ class IotDevice(Device):
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def turn_on(self, **kwargs) -> dict | None:
+    async def turn_on(self, **kwargs) -> dict:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
