@@ -202,12 +202,12 @@ class FakeSmartTransport(BaseTransport):
                 else:
                     warn(
                         f"Could not find child SMART fixture for {child_info}",
-                        stacklevel=1,
+                        stacklevel=2,
                     )
             else:
                 warn(
                     f"Child is a cameraprotocol which needs to be implemented {child_info}",
-                    stacklevel=1,
+                    stacklevel=2,
                 )
         # Replace parent child infos with the infos from the child fixtures so
         # that updates update both
@@ -223,7 +223,7 @@ class FakeSmartTransport(BaseTransport):
         if device_id not in self.child_protocols:
             warn(
                 f"Could not find child fixture {device_id} in {self.fixture_name}",
-                stacklevel=1,
+                stacklevel=2,
             )
             return self._handle_control_child_missing(params)
 
