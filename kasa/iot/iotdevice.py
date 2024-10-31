@@ -472,7 +472,7 @@ class IotDevice(Device):
     async def get_time(self) -> datetime:
         """Return current time from the device, if available."""
         msg = "Use `time` property instead, this call will be removed in the future."
-        warn(msg, DeprecationWarning, stacklevel=1)
+        warn(msg, DeprecationWarning, stacklevel=2)
         return self.time
 
     async def get_timezone(self) -> tzinfo:
@@ -480,7 +480,7 @@ class IotDevice(Device):
         msg = (
             "Use `timezone` property instead, this call will be removed in the future."
         )
-        warn(msg, DeprecationWarning, stacklevel=1)
+        warn(msg, DeprecationWarning, stacklevel=2)
         return self.timezone
 
     @property  # type: ignore

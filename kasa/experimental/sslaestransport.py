@@ -8,9 +8,7 @@ import hashlib
 import logging
 import secrets
 import ssl
-import time
-from enum import Enum, IntEnum, auto
-from functools import cache
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, cast
 
 from yarl import URL
@@ -19,15 +17,18 @@ from ..aestransport import AesEncyptionSession
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
+    SMART_AUTHENTICATION_ERRORS,
+    SMART_RETRYABLE_ERRORS,
     AuthenticationError,
     DeviceError,
     KasaException,
+    SmartErrorCode,
     _RetryableError,
 )
 from ..httpclient import HttpClient
 from ..json import dumps as json_dumps
 from ..json import loads as json_loads
-from ..protocol import BaseTransport
+from ..protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,7 +70,6 @@ class SslAesTransport(BaseTransport):
         "Accept": "application/json",
         "Accept-Encoding": "gzip, deflate",
         "User-Agent": "Tapo CameraClient Android",
-        "Connection": "close",
     }
     CIPHERS = ":".join(
         [
@@ -94,10 +94,9 @@ class SslAesTransport(BaseTransport):
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
             self._credentials = Credentials()
-        self._default_credentials: Credentials | None = None
-
-        if not config.timeout:
-            config.timeout = self.DEFAULT_TIMEOUT
+        self._default_credentials: Credentials = get_default_credentials(
+            DEFAULT_CREDENTIALS["TAPOCAMERA"]
+        )
         self._http_client: HttpClient = HttpClient(config)
 
         self._state = TransportState.HANDSHAKE_REQUIRED
@@ -118,11 +117,13 @@ class SslAesTransport(BaseTransport):
         self._seq: int | None = None
         self._pwd_hash: str | None = None
         self._username: str | None = None
+        self._password: str | None = None
         if self._credentials != Credentials() and self._credentials:
             self._username = self._credentials.username
+            self._password = self._credentials.password
         elif self._credentials_hash:
             ch = json_loads(base64.b64decode(self._credentials_hash.encode()))
-            self._pwd_hash = ch["pwd"]
+            self._password = ch["pwd"]
             self._username = ch["un"]
         self._local_nonce: str | None = None
 
@@ -133,19 +134,23 @@ class SslAesTransport(BaseTransport):
         """Default port for the transport."""
         return self.DEFAULT_PORT
 
+    @staticmethod
+    def _create_b64_credentials(credentials: Credentials) -> str:
+        ch = {"un": credentials.username, "pwd": credentials.password}
+        return base64.b64encode(json_dumps(ch).encode()).decode()
+
     @property
     def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
         if self._credentials == Credentials():
             return None
-        if self._credentials_hash:
+        if not self._credentials and self._credentials_hash:
             return self._credentials_hash
-        if self._pwd_hash and self._credentials:
-            ch = {"un": self._credentials.username, "pwd": self._pwd_hash}
-            return base64.b64encode(json_dumps(ch).encode()).decode()
+        if (cred := self._credentials) and cred.password and cred.username:
+            return self._create_b64_credentials(cred)
         return None
 
-    def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
+    def _get_response_error(self, resp_dict: Any) -> SmartErrorCode:
         error_code_raw = resp_dict.get("error_code")
         try:
             error_code = SmartErrorCode.from_int(error_code_raw)
@@ -154,6 +159,10 @@ class SslAesTransport(BaseTransport):
                 "Device %s received unknown error code: %s", self._host, error_code_raw
             )
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+        return error_code
+
+    def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
+        error_code = self._get_response_error(resp_dict)
         if error_code is SmartErrorCode.SUCCESS:
             return
         msg = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
@@ -321,6 +330,15 @@ class SslAesTransport(BaseTransport):
                 + f"status code {status_code} to handshake2"
             )
         resp_dict = cast(dict, resp_dict)
+        if (
+            error_code := self._get_response_error(resp_dict)
+        ) and error_code is SmartErrorCode.INVALID_NONCE:
+            raise AuthenticationError(
+                f"Invalid password hash in handshake2 for {self._host}"
+            )
+
+        self._handle_response_error_code(resp_dict, "Error in handshake2")
+
         self._seq = resp_dict["result"]["start_seq"]
         stok = resp_dict["result"]["stok"]
         self._token_url = URL(f"{str(self._app_url)}/stok={stok}/ds")
@@ -333,42 +351,41 @@ class SslAesTransport(BaseTransport):
         _LOGGER.debug("Handshake2 complete ...")
 
     async def perform_handshake1(self) -> tuple[str, str, str]:
-        """Perform the handshake."""
-        _LOGGER.debug("Will perform handshaking...")
+        """Perform the handshake1."""
+        resp_dict = None
+        if self._username:
+            local_nonce = secrets.token_bytes(8).hex().upper()
+            resp_dict = await self.try_send_handshake1(self._username, local_nonce)
+
+        # Try the default username. If it fails raise the original error_code
+        if (
+            not resp_dict
+            or (error_code := self._get_response_error(resp_dict))
+            is not SmartErrorCode.INVALID_NONCE
+            or "nonce" not in resp_dict["result"].get("data", {})
+        ):
+            local_nonce = secrets.token_bytes(8).hex().upper()
+            default_resp_dict = await self.try_send_handshake1(
+                self._default_credentials.username, local_nonce
+            )
+            if (
+                default_error_code := self._get_response_error(default_resp_dict)
+            ) is SmartErrorCode.INVALID_NONCE and "nonce" in default_resp_dict[
+                "result"
+            ].get("data", {}):
+                _LOGGER.debug("Connected to {self._host} with default username")
+                self._username = self._default_credentials.username
+                error_code = default_error_code
+                resp_dict = default_resp_dict
 
         if not self._username:
-            raise KasaException("Cannot connect to device with no credentials")
-        local_nonce = secrets.token_bytes(8).hex().upper()
-        # Device needs the content length or it will response with 500
-        body = {
-            "method": "login",
-            "params": {
-                "cnonce": local_nonce,
-                "encrypt_type": "3",
-                "username": self._username,
-            },
-        }
-        http_client = self._http_client
-
-        status_code, resp_dict = await http_client.post(
-            self._app_url,
-            json=body,
-            headers=self._headers,
-            ssl=await self._get_ssl_context(),
-        )
-
-        _LOGGER.debug("Device responded with: %s", resp_dict)
-
-        if status_code != 200:
-            raise KasaException(
-                f"{self._host} responded with an unexpected "
-                + f"status code {status_code} to handshake1"
+            raise AuthenticationError(
+                f"Credentials must be supplied to connect to {self._host}"
             )
-
-        resp_dict = cast(dict, resp_dict)
-        error_code = SmartErrorCode.from_int(resp_dict["error_code"])
-        if error_code != SmartErrorCode.INVALID_NONCE:
-            self._handle_response_error_code(resp_dict, "Unable to complete handshake")
+        if error_code is not SmartErrorCode.INVALID_NONCE or (
+            resp_dict and "nonce" not in resp_dict["result"].get("data", {})
+        ):
+            raise AuthenticationError(f"Error trying handshake1: {resp_dict}")
 
         if TYPE_CHECKING:
             resp_dict = cast(Dict[str, Any], resp_dict)
@@ -377,10 +394,10 @@ class SslAesTransport(BaseTransport):
         device_confirm = resp_dict["result"]["data"]["device_confirm"]
         if self._credentials and self._credentials != Credentials():
             pwd_hash = _sha256_hash(self._credentials.password.encode())
+        elif self._username and self._password:
+            pwd_hash = _sha256_hash(self._password.encode())
         else:
-            if TYPE_CHECKING:
-                assert self._pwd_hash
-            pwd_hash = self._pwd_hash
+            pwd_hash = _sha256_hash(self._default_credentials.password.encode())
 
         expected_confirm_sha256 = self.generate_confirm_hash(
             local_nonce, server_nonce, pwd_hash
@@ -404,19 +421,40 @@ class SslAesTransport(BaseTransport):
         _LOGGER.debug(msg)
         raise AuthenticationError(msg)
 
-    def _handshake_session_expired(self):
-        """Return true if session has expired."""
-        return (
-            self._session_expire_at is None
-            or self._session_expire_at - time.time() <= 0
+    async def try_send_handshake1(self, username: str, local_nonce: str) -> dict:
+        """Perform the handshake."""
+        _LOGGER.debug("Will to send handshake1...")
+
+        body = {
+            "method": "login",
+            "params": {
+                "cnonce": local_nonce,
+                "encrypt_type": "3",
+                "username": username,
+            },
+        }
+        http_client = self._http_client
+
+        status_code, resp_dict = await http_client.post(
+            self._app_url,
+            json=body,
+            headers=self._headers,
+            ssl=await self._get_ssl_context(),
         )
+
+        _LOGGER.debug("Device responded with: %s", resp_dict)
+
+        if status_code != 200:
+            raise KasaException(
+                f"{self._host} responded with an unexpected "
+                + f"status code {status_code} to handshake1"
+            )
+
+        return cast(dict, resp_dict)
 
     async def send(self, request: str) -> dict[str, Any]:
         """Send the request."""
-        if (
-            self._state is TransportState.HANDSHAKE_REQUIRED
-            or self._handshake_session_expired()
-        ):
+        if self._state is TransportState.HANDSHAKE_REQUIRED:
             await self.perform_handshake()
 
         return await self.send_secure_passthrough(request)
@@ -433,79 +471,3 @@ class SslAesTransport(BaseTransport):
         self._seq = 0
         self._pwd_hash = None
         self._local_nonce = None
-
-
-class SmartErrorCode(IntEnum):
-    """Smart error codes for this transport."""
-
-    def __str__(self):
-        return f"{self.name}({self.value})"
-
-    @staticmethod
-    @cache
-    def from_int(value: int) -> SmartErrorCode:
-        """Convert an integer to a SmartErrorCode."""
-        return SmartErrorCode(value)
-
-    SUCCESS = 0
-
-    SYSTEM_ERROR = -40101
-    INVALID_ARGUMENTS = -40209
-
-    # Camera error codes
-    SESSION_EXPIRED = -40401
-    HOMEKIT_LOGIN_FAIL = -40412
-    DEVICE_BLOCKED = -40404
-    DEVICE_FACTORY = -40405
-    OUT_OF_LIMIT = -40406
-    OTHER_ERROR = -40407
-    SYSTEM_BLOCKED = -40408
-    NONCE_EXPIRED = -40409
-    FFS_NONE_PWD = -90000
-    TIMEOUT_ERROR = 40108
-    UNSUPPORTED_METHOD = -40106
-    ONE_SECOND_REPEAT_REQUEST = -40109
-    INVALID_NONCE = -40413
-    PROTOCOL_FORMAT_ERROR = -40210
-    IP_CONFLICT = -40321
-    DIAGNOSE_TYPE_NOT_SUPPORT = -69051
-    DIAGNOSE_TASK_FULL = -69052
-    DIAGNOSE_TASK_BUSY = -69053
-    DIAGNOSE_INTERNAL_ERROR = -69055
-    DIAGNOSE_ID_NOT_FOUND = -69056
-    DIAGNOSE_TASK_NULL = -69057
-    CLOUD_LINK_DOWN = -69060
-    ONVIF_SET_WRONG_TIME = -69061
-    CLOUD_NTP_NO_RESPONSE = -69062
-    CLOUD_GET_WRONG_TIME = -69063
-    SNTP_SRV_NO_RESPONSE = -69064
-    SNTP_GET_WRONG_TIME = -69065
-    LINK_UNCONNECTED = -69076
-    WIFI_SIGNAL_WEAK = -69077
-    LOCAL_NETWORK_POOR = -69078
-    CLOUD_NETWORK_POOR = -69079
-    INTER_NETWORK_POOR = -69080
-    DNS_TIMEOUT = -69081
-    DNS_ERROR = -69082
-    PING_NO_RESPONSE = -69083
-    DHCP_MULTI_SERVER = -69084
-    DHCP_ERROR = -69085
-    STREAM_SESSION_CLOSE = -69094
-    STREAM_BITRATE_EXCEPTION = -69095
-    STREAM_FULL = -69096
-    STREAM_NO_INTERNET = -69097
-    HARDWIRED_NOT_FOUND = -72101
-
-    # Library internal for unknown error codes
-    INTERNAL_UNKNOWN_ERROR = -100_000
-    # Library internal for query errors
-    INTERNAL_QUERY_ERROR = -100_001
-
-
-SMART_RETRYABLE_ERRORS = [
-    SmartErrorCode.SESSION_EXPIRED,
-]
-
-SMART_AUTHENTICATION_ERRORS = [
-    SmartErrorCode.HOMEKIT_LOGIN_FAIL,
-]

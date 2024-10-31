@@ -272,6 +272,7 @@ def main(
                     case "/app/request":
                         if packet.ip.dst != device_ip:
                             continue
+                        assert isinstance(data, str)  # noqa: S101
                         message = bytes.fromhex(data)
                         try:
                             plaintext = operator.decrypt(message)
@@ -284,6 +285,7 @@ def main(
                     case "/app/handshake1":
                         if packet.ip.dst != device_ip:
                             continue
+                        assert isinstance(data, str)  # noqa: S101
                         message = bytes.fromhex(data)
                         operator.local_seed = message
                         response = None

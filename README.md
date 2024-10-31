@@ -175,6 +175,9 @@ Please refer to [our contributing guidelines](https://python-kasa.readthedocs.io
 
 The following devices have been tested and confirmed as working. If your device is unlisted but working, please consider [contributing a fixture file](https://python-kasa.readthedocs.io/en/latest/contribute.html#contributing-fixture-files).
 
+> [!NOTE]
+> The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
+
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
 ### Supported Kasa devices
@@ -190,12 +193,12 @@ The following devices have been tested and confirmed as working. If your device 
 ### Supported Tapo<sup>\*</sup> devices
 
 - **Plugs**: P100, P110, P115, P125M, P135, TP15
-- **Power Strips**: P300, TP25
+- **Power Strips**: P300, P304M, TP25
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Hubs**: H100
-- **Hub-Connected Devices<sup>\*\*\*</sup>**: T100, T110, T300, T310, T315
+- **Hub-Connected Devices<sup>\*\*\*</sup>**: S200B, S200D, T100, T110, T300, T310, T315
 
 <!--SUPPORTED_END-->
 <sup>\*</sup>&nbsp;&nbsp; Model requires authentication<br>

@@ -55,6 +55,7 @@ from .modulemapping import ModuleName
 if TYPE_CHECKING:
     from . import interfaces
     from .device import Device
+    from .experimental import modules as experimental
     from .iot import modules as iot
     from .smart import modules as smart
 
@@ -127,6 +128,9 @@ class Module(ABC):
         "WaterleakSensor"
     )
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+
+    # SMARTCAMERA only modules
+    Camera: Final[ModuleName[experimental.Camera]] = ModuleName("Camera")
 
     def __init__(self, device: Device, module: str):
         self._device = device

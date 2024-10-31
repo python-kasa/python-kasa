@@ -20,9 +20,15 @@ from kasa import (
     Device,
     DeviceType,
     Discover,
+    IotProtocol,
     KasaException,
 )
 from kasa.aestransport import AesEncyptionSession
+from kasa.device_factory import (
+    get_device_class_from_family,
+    get_device_class_from_sys_info,
+    get_protocol,
+)
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
@@ -35,7 +41,7 @@ from kasa.discover import (
 )
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice
-from kasa.xortransport import XorEncryption
+from kasa.xortransport import XorEncryption, XorTransport
 
 from .conftest import (
     bulb_iot,
@@ -288,7 +294,7 @@ async def test_discover_send(mocker):
     assert proto.target_1 == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
     await proto.do_discover()
-    assert transport.sendto.call_count == proto.discovery_packets * 3
+    assert transport.sendto.call_count == proto.discovery_packets * 2
 
 
 async def test_discover_datagram_received(mocker, discovery_data):
@@ -495,14 +501,13 @@ async def test_do_discover_drop_packets(mocker, port, do_not_reply_count):
         discovery_timeout=discovery_timeout,
         discovery_packets=5,
     )
-    expected_send = 1 if port == 9999 else 2
-    ft = FakeDatagramTransport(dp, port, do_not_reply_count * expected_send)
+    ft = FakeDatagramTransport(dp, port, do_not_reply_count)
     dp.connection_made(ft)
 
     await dp.wait_for_discovery_to_complete()
 
     await asyncio.sleep(0)
-    assert ft.send_count == do_not_reply_count * expected_send + expected_send
+    assert ft.send_count == do_not_reply_count + 1
     assert dp.discover_task.done()
     assert dp.discover_task.cancelled()
 
@@ -647,3 +652,57 @@ async def test_discovery_decryption():
     dr = DiscoveryResult(**info)
     Discover._decrypt_discovery_data(dr)
     assert dr.decrypted_data == data_dict
+
+
+async def test_discover_try_connect_all(discovery_mock, mocker):
+    """Test that device update is called on main."""
+    if "result" in discovery_mock.discovery_data:
+        dev_class = get_device_class_from_family(
+            discovery_mock.device_type, https=discovery_mock.https
+        )
+        cparams = DeviceConnectionParameters.from_values(
+            discovery_mock.device_type,
+            discovery_mock.encrypt_type,
+            discovery_mock.login_version,
+            discovery_mock.https,
+        )
+        protocol = get_protocol(
+            DeviceConfig(discovery_mock.ip, connection_type=cparams)
+        )
+        protocol_class = protocol.__class__
+        transport_class = protocol._transport.__class__
+    else:
+        dev_class = get_device_class_from_sys_info(discovery_mock.discovery_data)
+        protocol_class = IotProtocol
+        transport_class = XorTransport
+
+    async def _query(self, *args, **kwargs):
+        if (
+            self.__class__ is protocol_class
+            and self._transport.__class__ is transport_class
+        ):
+            return discovery_mock.query_data
+        raise KasaException()
+
+    async def _update(self, *args, **kwargs):
+        if (
+            self.protocol.__class__ is protocol_class
+            and self.protocol._transport.__class__ is transport_class
+        ):
+            return
+        raise KasaException()
+
+    mocker.patch("kasa.IotProtocol.query", new=_query)
+    mocker.patch("kasa.SmartProtocol.query", new=_query)
+    mocker.patch.object(dev_class, "update", new=_update)
+
+    session = aiohttp.ClientSession()
+    dev = await Discover.try_connect_all(discovery_mock.ip, http_client=session)
+
+    assert dev
+    assert isinstance(dev, dev_class)
+    assert isinstance(dev.protocol, protocol_class)
+    assert isinstance(dev.protocol._transport, transport_class)
+    assert dev.config.uses_http is (transport_class != XorTransport)
+    if transport_class != XorTransport:
+        assert dev.protocol._transport._http_client.client == session
