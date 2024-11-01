@@ -84,15 +84,15 @@
         "avatar": "sensor_t310",
         "bind_count": 1,
         "category": "subg.trigger.temp-hmdt-sensor",
-        "current_humidity": 51,
+        "current_humidity": 49,
         "current_humidity_exception": 0,
-        "current_temp": 19.4,
-        "current_temp_exception": -0.6,
+        "current_temp": 21.7,
+        "current_temp_exception": 0,
         "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
         "fw_ver": "1.5.0 Build 230105 Rel.180832",
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "1.0",
-        "jamming_rssi": -113,
+        "jamming_rssi": -111,
         "jamming_signal_level": 1,
         "lastOnboardingTimestamp": 1724637745,
         "mac": "F0A731000000",
@@ -102,7 +102,7 @@
         "parent_device_id": "0000000000000000000000000000000000000000",
         "region": "Australia/Canberra",
         "report_interval": 16,
-        "rssi": -36,
+        "rssi": -46,
         "signal_level": 3,
         "specs": "US",
         "status": "online",
@@ -128,6 +128,11 @@
         "release_date": "",
         "release_note": "",
         "type": 0
+    },
+    "get_trigger_logs": {
+        "logs": [],
+        "start_id": 0,
+        "sum": 0
     },
     "qs_component_nego": -1001
 }
