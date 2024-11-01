@@ -118,6 +118,7 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
+from kasa.experimental import Experimental
 from kasa.iot.iotdevice import IotDevice
 from kasa.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.json import dumps as json_dumps
@@ -127,6 +128,8 @@ from kasa.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from kasa import BaseProtocol, BaseTransport
 
 OnDiscoveredCallable = Callable[[Device], Awaitable[None]]
 OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Awaitable[None]]
@@ -535,6 +538,7 @@ class Discover:
         timeout: int | None = None,
         credentials: Credentials | None = None,
         http_client: ClientSession | None = None,
+        on_attempt: Callable[[tuple[type, type, type], bool], None] | None = None,
     ) -> Device | None:
         """Try to connect directly to a device with all possible parameters.
 
@@ -551,13 +555,22 @@ class Discover:
         """
         from .device_factory import _connect
 
-        candidates = {
+        main_device_families = {
+            Device.Family.SmartTapoPlug,
+            Device.Family.IotSmartPlugSwitch,
+        }
+        if Experimental.enabled():
+            main_device_families.add(Device.Family.SmartIpCamera)
+        candidates: dict[
+            tuple[type[BaseProtocol], type[BaseTransport], type[Device]],
+            tuple[BaseProtocol, DeviceConfig],
+        ] = {
             (type(protocol), type(protocol._transport), device_class): (
                 protocol,
                 config,
             )
             for encrypt in Device.EncryptionType
-            for device_family in Device.Family
+            for device_family in main_device_families
             for https in (True, False)
             if (
                 conn_params := DeviceConnectionParameters(
@@ -580,19 +593,24 @@ class Discover:
             and (protocol := get_protocol(config))
             and (
                 device_class := get_device_class_from_family(
-                    device_family.value, https=https
+                    device_family.value, https=https, no_warn=True
                 )
             )
         }
-        for protocol, config in candidates.values():
+        for key, val in candidates.items():
             try:
-                dev = await _connect(config, protocol)
+                prot, config = val
+                dev = await _connect(config, prot)
             except Exception:
-                _LOGGER.debug("Unable to connect with %s", protocol)
+                _LOGGER.debug("Unable to connect with %s", prot)
+                if on_attempt:
+                    on_attempt(key, False)
             else:
+                if on_attempt:
+                    on_attempt(key, True)
                 return dev
             finally:
-                await protocol.close()
+                await prot.close()
         return None
 
     @staticmethod
