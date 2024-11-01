@@ -85,15 +85,15 @@
         "battery_percentage": 100,
         "bind_count": 1,
         "category": "subg.trigger.temp-hmdt-sensor",
-        "current_humidity": 53,
+        "current_humidity": 51,
         "current_humidity_exception": 0,
-        "current_temp": 18.3,
-        "current_temp_exception": -0.7,
+        "current_temp": 21.5,
+        "current_temp_exception": 0,
         "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
         "fw_ver": "1.8.0 Build 230921 Rel.091519",
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "1.0",
-        "jamming_rssi": -114,
+        "jamming_rssi": -113,
         "jamming_signal_level": 1,
         "lastOnboardingTimestamp": 1724637369,
         "mac": "202351000000",
@@ -103,7 +103,7 @@
         "parent_device_id": "0000000000000000000000000000000000000000",
         "region": "Australia/Canberra",
         "report_interval": 16,
-        "rssi": -50,
+        "rssi": -44,
         "signal_level": 3,
         "specs": "US",
         "status": "online",
@@ -129,6 +129,11 @@
         "release_date": "",
         "release_note": "",
         "type": 0
+    },
+    "get_trigger_logs": {
+        "logs": [],
+        "start_id": 0,
+        "sum": 0
     },
     "qs_component_nego": -1001
 }

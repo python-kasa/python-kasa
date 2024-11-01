@@ -64,7 +64,7 @@
         "fw_ver": "1.9.0 Build 230704 Rel.154559",
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "1.0",
-        "jamming_rssi": -116,
+        "jamming_rssi": -113,
         "jamming_signal_level": 1,
         "lastOnboardingTimestamp": 1724635267,
         "mac": "A86E84000000",
@@ -75,7 +75,7 @@
         "parent_device_id": "0000000000000000000000000000000000000000",
         "region": "Australia/Canberra",
         "report_interval": 16,
-        "rssi": -55,
+        "rssi": -56,
         "signal_level": 3,
         "specs": "US",
         "status": "online",
@@ -100,6 +100,11 @@
         "release_date": "",
         "release_note": "",
         "type": 0
+    },
+    "get_trigger_logs": {
+        "logs": [],
+        "start_id": 0,
+        "sum": 0
     },
     "qs_component_nego": -1001
 }

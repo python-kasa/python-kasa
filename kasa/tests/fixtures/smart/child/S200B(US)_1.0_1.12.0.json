@@ -68,8 +68,8 @@
         "fw_ver": "1.12.0 Build 231121 Rel.092508",
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "1.0",
-        "jamming_rssi": -104,
-        "jamming_signal_level": 2,
+        "jamming_rssi": -113,
+        "jamming_signal_level": 1,
         "lastOnboardingTimestamp": 1724636886,
         "mac": "98254A000000",
         "model": "S200B",
@@ -78,7 +78,7 @@
         "parent_device_id": "0000000000000000000000000000000000000000",
         "region": "Australia/Canberra",
         "report_interval": 16,
-        "rssi": -36,
+        "rssi": -56,
         "signal_level": 3,
         "specs": "US",
         "status": "online",
@@ -87,6 +87,9 @@
     },
     "get_device_time": -1001,
     "get_device_usage": -1001,
+    "get_double_click_info": {
+        "enable": false
+    },
     "get_fw_download_state": {
         "cloud_cache_seconds": 1,
         "download_progress": 0,
@@ -103,6 +106,11 @@
         "release_date": "",
         "release_note": "",
         "type": 0
+    },
+    "get_trigger_logs": {
+        "logs": [],
+        "start_id": 0,
+        "sum": 0
     },
     "qs_component_nego": -1001
 }
