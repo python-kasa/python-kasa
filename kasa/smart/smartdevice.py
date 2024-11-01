@@ -6,8 +6,8 @@ import base64
 import logging
 import time
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from datetime import datetime, timedelta, timezone, tzinfo
+from typing import TYPE_CHECKING, Any, cast
 
 from ..aestransport import AesTransport
 from ..device import Device, WifiNetwork
@@ -37,14 +37,14 @@ _LOGGER = logging.getLogger(__name__)
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
-# Modules that are called as part of the init procedure on first update
-FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
-
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
 class SmartDevice(Device):
     """Base class to represent a SMART protocol based device."""
+
+    # Modules that are called as part of the init procedure on first update
+    FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
 
     def __init__(
         self,
@@ -66,6 +66,8 @@ class SmartDevice(Device):
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
         self._last_update_time: float | None = None
+        self._on_since: datetime | None = None
+        self._info: dict[str, Any] = {}
 
     async def _initialize_children(self):
         """Initialize children for power strips."""
@@ -153,6 +155,18 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
+    def _update_children_info(self) -> None:
+        """Update the internal child device info from the parent info."""
+        if child_info := self._try_get_response(
+            self._last_update, "get_child_device_list", {}
+        ):
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]]._update_internal_state(info)
+
+    def _update_internal_info(self, info_resp: dict) -> None:
+        """Update the internal device info."""
+        self._info = self._try_get_response(info_resp, "get_device_info")
+
     async def update(self, update_children: bool = False):
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
@@ -167,15 +181,11 @@ class SmartDevice(Device):
             await self._initialize_modules()
             # Run post update for the cloud module
             if cloud_mod := self.modules.get(Module.Cloud):
-                self._handle_module_post_update(cloud_mod, now, had_query=True)
+                await self._handle_module_post_update(cloud_mod, now, had_query=True)
 
         resp = await self._modular_update(first_update, now)
 
-        if child_info := self._try_get_response(
-            self._last_update, "get_child_device_list", {}
-        ):
-            for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+        self._update_children_info()
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
         # devices will always update children to prevent errors on module access.
@@ -194,7 +204,7 @@ class SmartDevice(Device):
             updated = self._last_update if first_update else resp
             _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
-    def _handle_module_post_update(
+    async def _handle_module_post_update(
         self, module: SmartModule, update_time: float, had_query: bool
     ):
         if module.disabled:
@@ -202,7 +212,7 @@ class SmartDevice(Device):
         if had_query:
             module._last_update_time = update_time
         try:
-            module._post_update_hook()
+            await module._post_update_hook()
             module._set_error(None)
         except Exception as ex:
             # Only set the error if a query happened.
@@ -226,10 +236,10 @@ class SmartDevice(Device):
         mq = {
             module: query
             for module in self._modules.values()
-            if module.disabled is False and (query := module.query())
+            if (first_update or module.disabled is False) and (query := module.query())
         }
         for module, query in mq.items():
-            if first_update and module.__class__ in FIRST_UPDATE_MODULES:
+            if first_update and module.__class__ in self.FIRST_UPDATE_MODULES:
                 module._last_update_time = update_time
                 continue
             if (
@@ -255,11 +265,11 @@ class SmartDevice(Device):
 
         info_resp = self._last_update if first_update else resp
         self._last_update.update(**resp)
-        self._info = self._try_get_response(info_resp, "get_device_info")
+        self._update_internal_info(info_resp)
 
         # Call handle update for modules that want to update internal data
         for module in self._modules.values():
-            self._handle_module_post_update(
+            await self._handle_module_post_update(
                 module, update_time, had_query=module in module_queries
             )
 
@@ -457,6 +467,11 @@ class SmartDevice(Device):
             await child._initialize_features()
 
     @property
+    def _is_hub_child(self) -> bool:
+        """Returns true if the device is a child of a hub."""
+        return self.parent is not None and self.parent.device_type is DeviceType.Hub
+
+    @property
     def is_cloud_connected(self) -> bool:
         """Returns if the device is connected to the cloud."""
         if Module.Cloud not in self.modules:
@@ -484,8 +499,8 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        if (self._parent and (time_mod := self._parent.modules.get(Module.Time))) or (
-            time_mod := self.modules.get(Module.Time)
+        if (time_mod := self.modules.get(Module.Time)) or (
+            self._parent and (time_mod := self._parent.modules.get(Module.Time))
         ):
             return time_mod.time
 
@@ -494,21 +509,32 @@ class SmartDevice(Device):
 
     @property
     def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
+        """Return the time that the device was turned on or None if turned off.
+
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
+        """
         if (
             not self._info.get("device_on")
             or (on_time := self._info.get("on_time")) is None
         ):
+            self._on_since = None
             return None
 
         on_time = cast(float, on_time)
-        return self.time - timedelta(seconds=on_time)
+        on_since = self.time - timedelta(seconds=on_time)
+        if not self._on_since or timedelta(
+            seconds=0
+        ) < on_since - self._on_since > timedelta(seconds=5):
+            self._on_since = on_since
+        return self._on_since
 
     @property
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
-        ti = self.time
-        return {"timezone": ti.tzname()}
+        if TYPE_CHECKING:
+            assert self.time.tzinfo
+        return self.time.tzinfo
 
     @property
     def hw_info(self) -> dict:
@@ -553,7 +579,7 @@ class SmartDevice(Device):
         """Return all the internal state data."""
         return self._last_update
 
-    def _update_internal_state(self, info):
+    def _update_internal_state(self, info: dict) -> None:
         """Update the internal info state.
 
         This is used by the parent to push updates to its children.

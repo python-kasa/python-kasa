@@ -7,13 +7,19 @@ import inspect
 import pkgutil
 import sys
 from contextlib import AbstractContextManager
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
+import zoneinfo
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import IotDevice
+from kasa.iot.iottimezone import (
+    TIMEZONE_INDEX,
+    get_timezone,
+    get_timezone_index,
+)
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
 
@@ -85,7 +91,7 @@ async def test_create_device_with_timeout():
 
 async def test_create_thin_wrapper():
     """Make sure thin wrapper is created with the correct device type."""
-    mock = Mock()
+    mock = AsyncMock()
     config = DeviceConfig(
         host="test_host",
         port_override=1234,
@@ -281,7 +287,7 @@ async def test_device_type_aliases():
     """Test that the device type aliases in Device work."""
 
     def _mock_connect(config, *args, **kwargs):
-        mock = Mock()
+        mock = AsyncMock()
         mock.config = config
         return mock
 
@@ -299,3 +305,30 @@ async def test_device_type_aliases():
         )
         assert isinstance(dev.config, DeviceConfig)
         assert DeviceType.Dimmer == Device.Type.Dimmer
+
+
+async def test_device_timezones():
+    """Test the timezone data is good."""
+    # Check all indexes return a zoneinfo
+    for i in range(110):
+        tz = await get_timezone(i)
+        assert tz
+        assert tz != zoneinfo.ZoneInfo("Etc/UTC"), f"{i} is default Etc/UTC"
+
+    # Check an unexpected index returns a UTC default.
+    tz = await get_timezone(110)
+    assert tz == zoneinfo.ZoneInfo("Etc/UTC")
+
+    # Get an index from a timezone
+    for index, zone in TIMEZONE_INDEX.items():
+        zone_info = zoneinfo.ZoneInfo(zone)
+        found_index = await get_timezone_index(zone_info)
+        assert found_index == index
+
+    # Try a timezone not hardcoded finds another match
+    index = await get_timezone_index(zoneinfo.ZoneInfo("Asia/Katmandu"))
+    assert index == 77
+
+    # Try a timezone not hardcoded no match
+    with pytest.raises(zoneinfo.ZoneInfoNotFoundError):
+        await get_timezone_index(zoneinfo.ZoneInfo("Foo/bar"))

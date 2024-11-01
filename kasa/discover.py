@@ -82,13 +82,18 @@ Discovering a single device returns a kasa.Device object.
 from __future__ import annotations
 
 import asyncio
+import base64
 import binascii
 import ipaddress
 import logging
+import secrets
 import socket
+import struct
 from collections.abc import Awaitable
 from pprint import pformat as pf
-from typing import Any, Callable, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, cast
+
+from aiohttp import ClientSession
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
@@ -96,6 +101,7 @@ from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, ValidationError
 
 from kasa import Device
+from kasa.aestransport import AesEncyptionSession, KeyPair
 from kasa.credentials import Credentials
 from kasa.device_factory import (
     get_device_class_from_family,
@@ -131,6 +137,46 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
 }
+
+
+class _AesDiscoveryQuery:
+    keypair: KeyPair | None = None
+
+    @classmethod
+    def generate_query(cls):
+        if not cls.keypair:
+            cls.keypair = KeyPair.create_key_pair(key_size=2048)
+        secret = secrets.token_bytes(4)
+
+        key_payload = {"params": {"rsa_key": cls.keypair.get_public_pem().decode()}}
+
+        key_payload_bytes = json_dumps(key_payload).encode()
+        # https://labs.withsecure.com/advisories/tp-link-ac1750-pwn2own-2019
+        version = 2  # version of tdp
+        msg_type = 0
+        op_code = 1  # probe
+        msg_size = len(key_payload_bytes)
+        flags = 17
+        padding_byte = 0  # blank byte
+        device_serial = int.from_bytes(secret, "big")
+        initial_crc = 0x5A6B7C8D
+
+        disco_header = struct.pack(
+            ">BBHHBBII",
+            version,
+            msg_type,
+            op_code,
+            msg_size,
+            flags,
+            padding_byte,
+            device_serial,
+            initial_crc,
+        )
+
+        query = bytearray(disco_header + key_payload_bytes)
+        crc = binascii.crc32(query).to_bytes(length=4, byteorder="big")
+        query[12:16] = crc
+        return query
 
 
 class _DiscoverProtocol(asyncio.DatagramProtocol):
@@ -224,15 +270,20 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         _LOGGER.debug("[DISCOVERY] %s >> %s", self.target, Discover.DISCOVERY_QUERY)
         encrypted_req = XorEncryption.encrypt(req)
         sleep_between_packets = self.discovery_timeout / self.discovery_packets
+
+        aes_discovery_query = _AesDiscoveryQuery.generate_query()
         for _ in range(self.discovery_packets):
             if self.target in self.seen_hosts:  # Stop sending for discover_single
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
-            self.transport.sendto(Discover.DISCOVERY_QUERY_2, self.target_2)  # type: ignore
+            self.transport.sendto(aes_discovery_query, self.target_2)  # type: ignore
             await asyncio.sleep(sleep_between_packets)
 
     def datagram_received(self, data, addr) -> None:
         """Handle discovery responses."""
+        if TYPE_CHECKING:
+            assert _AesDiscoveryQuery.keypair
+
         ip, port = addr
         # Prevent multiple entries due multiple broadcasts
         if ip in self.seen_hosts:
@@ -296,8 +347,8 @@ class Discover:
 
     DISCOVERY_PORT = 9999
 
-    DISCOVERY_QUERY = {
-        "system": {"get_sysinfo": None},
+    DISCOVERY_QUERY: dict[str, dict[str, dict]] = {
+        "system": {"get_sysinfo": {}},
     }
 
     DISCOVERY_PORT_2 = 20002
@@ -395,7 +446,8 @@ class Discover:
         credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,
-    ) -> Device:
+        on_unsupported: OnUnsupportedCallable | None = None,
+    ) -> Device | None:
         """Discover a single device by the given IP address.
 
         It is generally preferred to avoid :func:`discover_single()` and
@@ -465,18 +517,93 @@ class Discover:
             dev.host = host
             return dev
         elif ip in protocol.unsupported_device_exceptions:
-            raise protocol.unsupported_device_exceptions[ip]
+            if on_unsupported:
+                await on_unsupported(protocol.unsupported_device_exceptions[ip])
+                return None
+            else:
+                raise protocol.unsupported_device_exceptions[ip]
         elif ip in protocol.invalid_device_exceptions:
             raise protocol.invalid_device_exceptions[ip]
         else:
             raise TimeoutError(f"Timed out getting discovery response for {host}")
 
     @staticmethod
+    async def try_connect_all(
+        host: str,
+        *,
+        port: int | None = None,
+        timeout: int | None = None,
+        credentials: Credentials | None = None,
+        http_client: ClientSession | None = None,
+    ) -> Device | None:
+        """Try to connect directly to a device with all possible parameters.
+
+        This method can be used when udp is not working due to network issues.
+        After succesfully connecting use the device config and
+        :meth:`Device.connect()` for future connections.
+
+        :param host: Hostname of device to query
+        :param port: Optionally set a different port for legacy devices using port 9999
+        :param timeout: Timeout in seconds device for devices queries
+        :param credentials: Credentials for devices that require authentication.
+        :param http_client: Optional client session for devices that use http.
+            username and password are ignored if provided.
+        """
+        from .device_factory import _connect
+
+        candidates = {
+            (type(protocol), type(protocol._transport), device_class): (
+                protocol,
+                config,
+            )
+            for encrypt in Device.EncryptionType
+            for device_family in Device.Family
+            for https in (True, False)
+            if (
+                conn_params := DeviceConnectionParameters(
+                    device_family=device_family,
+                    encryption_type=encrypt,
+                    https=https,
+                )
+            )
+            and (
+                config := DeviceConfig(
+                    host=host,
+                    connection_type=conn_params,
+                    timeout=timeout,
+                    port_override=port,
+                    credentials=credentials,
+                    http_client=http_client,
+                    uses_http=encrypt is not Device.EncryptionType.Xor,
+                )
+            )
+            and (protocol := get_protocol(config))
+            and (
+                device_class := get_device_class_from_family(
+                    device_family.value, https=https
+                )
+            )
+        }
+        for protocol, config in candidates.values():
+            try:
+                dev = await _connect(config, protocol)
+            except Exception:
+                _LOGGER.debug("Unable to connect with %s", protocol)
+            else:
+                return dev
+            finally:
+                await protocol.close()
+        return None
+
+    @staticmethod
     def _get_device_class(info: dict) -> type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult(**info["result"])
-            dev_class = get_device_class_from_family(discovery_result.device_type)
+            https = discovery_result.mgt_encrypt_schm.is_support_https
+            dev_class = get_device_class_from_family(
+                discovery_result.device_type, https=https
+            )
             if not dev_class:
                 raise UnsupportedDeviceError(
                     "Unknown device type: %s" % discovery_result.device_type,
@@ -513,6 +640,25 @@ class Discover:
         return device
 
     @staticmethod
+    def _decrypt_discovery_data(discovery_result: DiscoveryResult) -> None:
+        if TYPE_CHECKING:
+            assert discovery_result.encrypt_info
+            assert _AesDiscoveryQuery.keypair
+        encryped_key = discovery_result.encrypt_info.key
+        encrypted_data = discovery_result.encrypt_info.data
+
+        key_and_iv = _AesDiscoveryQuery.keypair.decrypt_discovery_key(
+            base64.b64decode(encryped_key.encode())
+        )
+
+        key, iv = key_and_iv[:16], key_and_iv[16:]
+
+        session = AesEncyptionSession(key, iv)
+        decrypted_data = session.decrypt(encrypted_data)
+
+        discovery_result.decrypted_data = json_loads(decrypted_data)
+
+    @staticmethod
     def _get_device_instance(
         data: bytes,
         config: DeviceConfig,
@@ -528,6 +674,10 @@ class Discover:
             ) from ex
         try:
             discovery_result = DiscoveryResult(**info["result"])
+            if (
+                encrypt_info := discovery_result.encrypt_info
+            ) and encrypt_info.sym_schm == "AES":
+                Discover._decrypt_discovery_data(discovery_result)
         except ValidationError as ex:
             if debug_enabled:
                 data = (
@@ -541,28 +691,47 @@ class Discover:
                     pf(data),
                 )
             raise UnsupportedDeviceError(
-                f"Unable to parse discovery from device: {config.host}: {ex}"
+                f"Unable to parse discovery from device: {config.host}: {ex}",
+                host=config.host,
             ) from ex
 
         type_ = discovery_result.device_type
-
+        encrypt_schm = discovery_result.mgt_encrypt_schm
         try:
+            if not (encrypt_type := encrypt_schm.encrypt_type) and (
+                encrypt_info := discovery_result.encrypt_info
+            ):
+                encrypt_type = encrypt_info.sym_schm
+            if not encrypt_type:
+                raise UnsupportedDeviceError(
+                    f"Unsupported device {config.host} of type {type_} "
+                    + "with no encryption type",
+                    discovery_result=discovery_result.get_dict(),
+                    host=config.host,
+                )
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
-                discovery_result.mgt_encrypt_schm.encrypt_type,
+                encrypt_type,
                 discovery_result.mgt_encrypt_schm.lv,
+                discovery_result.mgt_encrypt_schm.is_support_https,
             )
         except KasaException as ex:
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
                 + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             ) from ex
-        if (device_class := get_device_class_from_family(type_)) is None:
+        if (
+            device_class := get_device_class_from_family(
+                type_, https=encrypt_schm.is_support_https
+            )
+        ) is None:
             _LOGGER.warning("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             )
         if (protocol := get_protocol(config)) is None:
             _LOGGER.warning(
@@ -572,6 +741,7 @@ class Discover:
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
                 discovery_result=discovery_result.get_dict(),
+                host=config.host,
             )
 
         if debug_enabled:
@@ -593,9 +763,17 @@ class EncryptionScheme(BaseModel):
     """Base model for encryption scheme of discovery result."""
 
     is_support_https: bool
-    encrypt_type: str
-    http_port: int
+    encrypt_type: Optional[str]  # noqa: UP007
+    http_port: Optional[int] = None  # noqa: UP007
     lv: Optional[int] = None  # noqa: UP007
+
+
+class EncryptionInfo(BaseModel):
+    """Base model for encryption info of discovery result."""
+
+    sym_schm: str
+    key: str
+    data: str
 
 
 class DiscoveryResult(BaseModel):
@@ -603,11 +781,17 @@ class DiscoveryResult(BaseModel):
 
     device_type: str
     device_model: str
+    device_name: Optional[str]  # noqa: UP007
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme
+    encrypt_info: Optional[EncryptionInfo] = None  # noqa: UP007
+    encrypt_type: Optional[list[str]] = None  # noqa: UP007
+    decrypted_data: Optional[dict] = None  # noqa: UP007
     device_id: str
 
+    firmware_version: Optional[str] = None  # noqa: UP007
+    hardware_version: Optional[str] = None  # noqa: UP007
     hw_ver: Optional[str] = None  # noqa: UP007
     owner: Optional[str] = None  # noqa: UP007
     is_support_iot_cloud: Optional[bool] = None  # noqa: UP007

@@ -90,7 +90,7 @@ class LightTransition(SmartModule):
                 )
             )
 
-    def _post_update_hook(self) -> None:
+    async def _post_update_hook(self) -> None:
         """Update the states."""
         # Assumes any device with state in sysinfo supports on and off and
         # has maximum values for both.

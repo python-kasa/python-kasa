@@ -51,7 +51,7 @@ Energy
 schedule
 usage
 anti_theft
-time
+Time
 cloud
 Led
 
@@ -109,7 +109,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, tzinfo
 from typing import TYPE_CHECKING, Any
 from warnings import warn
 
@@ -377,7 +377,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def timezone(self) -> dict:
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
 
     @property
@@ -435,7 +435,11 @@ class Device(ABC):
     @property
     @abstractmethod
     def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
+        """Return the time that the device was turned on or None if turned off.
+
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
+        """
 
     @abstractmethod
     async def wifi_scan(self) -> list[WifiNetwork]:
@@ -541,7 +545,7 @@ class Device(ABC):
             msg = f"{name} is deprecated"
             if module:
                 msg += f", use: {module} in device.modules instead"
-            warn(msg, DeprecationWarning, stacklevel=1)
+            warn(msg, DeprecationWarning, stacklevel=2)
             return self.device_type == dep_device_type_attr[1]
         # Other deprecated attributes
         if (dep_attr := self._deprecated_other_attributes.get(name)) and (
@@ -552,6 +556,6 @@ class Device(ABC):
             dev_or_mod = self.modules[mod] if mod else self
             replacing = f"Module.{mod} in device.modules" if mod else replacing_attr
             msg = f"{name} is deprecated, use: {replacing} instead"
-            warn(msg, DeprecationWarning, stacklevel=1)
+            warn(msg, DeprecationWarning, stacklevel=2)
             return getattr(dev_or_mod, replacing_attr)
         raise AttributeError(f"Device has no attribute {name!r}")

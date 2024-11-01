@@ -9,6 +9,7 @@ import pkgutil
 import struct
 import sys
 from typing import cast
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -175,6 +176,7 @@ async def test_protocol_reconnect(
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _fail_one_less_than_retry_count)
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -224,6 +226,7 @@ async def test_protocol_handles_cancellation_during_write(
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(writer, "write", _cancel_first_attempt)
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -275,6 +278,7 @@ async def test_protocol_handles_cancellation_during_connection(
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -324,6 +328,7 @@ async def test_protocol_logging(
         reader = mocker.patch("asyncio.StreamReader")
         writer = mocker.patch("asyncio.StreamWriter")
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1")
@@ -373,6 +378,7 @@ async def test_protocol_custom_port(
         else:
             assert port == custom_port
         mocker.patch.object(reader, "readexactly", _mock_read)
+        mocker.patch.object(writer, "drain", new_callable=AsyncMock)
         return reader, writer
 
     config = DeviceConfig("127.0.0.1", port_override=custom_port)

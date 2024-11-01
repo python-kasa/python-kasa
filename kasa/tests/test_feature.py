@@ -1,6 +1,6 @@
 import logging
 import sys
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest_mock import MockerFixture
@@ -94,7 +94,9 @@ def test_feature_value_callable(dev, dummy_feature: Feature):
 
 async def test_feature_setter(dev, mocker, dummy_feature: Feature):
     """Verify that *set_value* calls the defined method."""
-    mock_set_dummy = mocker.patch.object(dummy_feature.device, "set_dummy", create=True)
+    mock_set_dummy = mocker.patch.object(
+        dummy_feature.device, "set_dummy", create=True, new_callable=AsyncMock
+    )
     dummy_feature.attribute_setter = "set_dummy"
     await dummy_feature.set_value("dummy value")
     mock_set_dummy.assert_called_with("dummy value")
@@ -118,7 +120,9 @@ async def test_feature_action(mocker):
         icon="mdi:dummy",
         type=Feature.Type.Action,
     )
-    mock_call_action = mocker.patch.object(feat.device, "call_action", create=True)
+    mock_call_action = mocker.patch.object(
+        feat.device, "call_action", create=True, new_callable=AsyncMock
+    )
     assert feat.value == "<Action>"
     await feat.set_value(1234)
     mock_call_action.assert_called()
@@ -129,7 +133,9 @@ async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture)
     dummy_feature.type = Feature.Type.Choice
     dummy_feature.choices_getter = lambda: ["first", "second"]
 
-    mock_setter = mocker.patch.object(dummy_feature.device, "dummysetter", create=True)
+    mock_setter = mocker.patch.object(
+        dummy_feature.device, "dummysetter", create=True, new_callable=AsyncMock
+    )
     await dummy_feature.set_value("first")
     mock_setter.assert_called_with("first")
     mock_setter.reset_mock()

@@ -91,7 +91,9 @@ class BaseTransport(ABC):
         self._port = config.port_override or self.default_port
         self._credentials = config.credentials
         self._credentials_hash = config.credentials_hash
-        self._timeout = config.timeout or self.DEFAULT_TIMEOUT
+        if not config.timeout:
+            config.timeout = self.DEFAULT_TIMEOUT
+        self._timeout = config.timeout
 
     @property
     @abstractmethod
@@ -155,4 +157,5 @@ def get_default_credentials(tuple: tuple[str, str]) -> Credentials:
 DEFAULT_CREDENTIALS = {
     "KASA": ("a2FzYUB0cC1saW5rLm5ldA==", "a2FzYVNldHVw"),
     "TAPO": ("dGVzdEB0cC1saW5rLm5ldA==", "dGVzdA=="),
+    "TAPOCAMERA": ("YWRtaW4=", "YWRtaW4="),
 }

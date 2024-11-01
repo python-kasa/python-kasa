@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...feature import Feature
 from ...interfaces.light import HSV
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class Color(SmartModule):
@@ -17,11 +12,11 @@ class Color(SmartModule):
 
     REQUIRED_COMPONENT = "color"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 "hsv",
                 "HSV",
                 container=self,
@@ -49,7 +44,9 @@ class Color(SmartModule):
             self.data.get("brightness", 0),
         )
 
-        return HSV(hue=h, saturation=s, value=v)
+        # Simple HSV(h, s, v) is less efficent than below
+        # due to the cpython implementation.
+        return tuple.__new__(HSV, (h, s, v))
 
     def _raise_for_invalid_brightness(self, value):
         """Raise error on invalid brightness value."""

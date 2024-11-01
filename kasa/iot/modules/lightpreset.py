@@ -41,7 +41,7 @@ class LightPreset(IotModule, LightPresetInterface):
     _presets: dict[str, IotLightPreset]
     _preset_list: list[str]
 
-    def _post_update_hook(self):
+    async def _post_update_hook(self):
         """Update the internal presets."""
         self._presets = {
             f"Light preset {index+1}": IotLightPreset(**vals)

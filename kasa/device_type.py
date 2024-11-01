@@ -12,6 +12,7 @@ class DeviceType(Enum):
     Plug = "plug"
     Bulb = "bulb"
     Strip = "strip"
+    Camera = "camera"
     WallSwitch = "wallswitch"
     StripSocket = "stripsocket"
     Dimmer = "dimmer"

@@ -182,6 +182,6 @@ class Energy(Module, ABC):
     def __getattr__(self, name):
         if attr := self._deprecated_attributes.get(name):
             msg = f"{name} is deprecated, use {attr} instead"
-            warn(msg, DeprecationWarning, stacklevel=1)
+            warn(msg, DeprecationWarning, stacklevel=2)
             return getattr(self, attr)
         raise AttributeError(f"Energy module has no attribute {name!r}")

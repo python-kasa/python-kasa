@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from ...feature import Feature
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
 
 
 class Cloud(SmartModule):
@@ -18,12 +13,11 @@ class Cloud(SmartModule):
     REQUIRED_COMPONENT = "cloud_connect"
     MINIMUM_UPDATE_INTERVAL_SECS = 60
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
-
+    def _initialize_features(self):
+        """Initialize features after the initial update."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="cloud_connection",
                 name="Cloud connection",
                 container=self,

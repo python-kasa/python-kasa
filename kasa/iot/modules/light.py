@@ -239,7 +239,7 @@ class Light(IotModule, LightInterface):
         """Return the current light state."""
         return self._light_state
 
-    def _post_update_hook(self) -> None:
+    async def _post_update_hook(self) -> None:
         if self._device.is_on is False:
             state = LightState(light_on=False)
         else:

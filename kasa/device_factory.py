@@ -11,6 +11,9 @@ from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
+from .experimental.smartcamera import SmartCamera
+from .experimental.smartcameraprotocol import SmartCameraProtocol
+from .experimental.sslaestransport import SslAesTransport
 from .iot import (
     IotBulb,
     IotDevice,
@@ -32,8 +35,8 @@ from .xortransport import XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
-GET_SYSINFO_QUERY = {
-    "system": {"get_sysinfo": None},
+GET_SYSINFO_QUERY: dict[str, dict[str, dict]] = {
+    "system": {"get_sysinfo": {}},
 }
 
 
@@ -64,7 +67,8 @@ async def connect(*, host: str | None = None, config: DeviceConfig) -> Device:
     if (protocol := get_protocol(config=config)) is None:
         raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
-            + f"{config.connection_type.device_family.value}"
+            + f"{config.connection_type.device_family.value}",
+            host=config.host,
         )
 
     try:
@@ -107,7 +111,7 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
         _perf_log(True, "update")
         return device
     elif device_class := get_device_class_from_family(
-        config.connection_type.device_family.value
+        config.connection_type.device_family.value, https=config.connection_type.https
     ):
         device = device_class(host=config.host, protocol=protocol)
         await device.update()
@@ -116,7 +120,8 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     else:
         raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
-            + f"{config.connection_type.device_family.value}"
+            + f"{config.connection_type.device_family.value}",
+            host=config.host,
         )
 
 
@@ -161,7 +166,9 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
     return TYPE_TO_CLASS[_get_device_type_from_sys_info(sysinfo)]
 
 
-def get_device_class_from_family(device_type: str) -> type[Device] | None:
+def get_device_class_from_family(
+    device_type: str, *, https: bool
+) -> type[Device] | None:
     """Return the device class from the type name."""
     supported_device_types: dict[str, type[Device]] = {
         "SMART.TAPOPLUG": SmartDevice,
@@ -169,13 +176,16 @@ def get_device_class_from_family(device_type: str) -> type[Device] | None:
         "SMART.TAPOSWITCH": SmartDevice,
         "SMART.KASAPLUG": SmartDevice,
         "SMART.TAPOHUB": SmartDevice,
+        "SMART.TAPOHUB.HTTPS": SmartCamera,
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
+        "SMART.IPCAMERA.HTTPS": SmartCamera,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
     }
+    lookup_key = f"{device_type}{'.HTTPS' if https else ''}"
     if (
-        cls := supported_device_types.get(device_type)
+        cls := supported_device_types.get(lookup_key)
     ) is None and device_type.startswith("SMART."):
         _LOGGER.warning("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
@@ -188,8 +198,12 @@ def get_protocol(
 ) -> BaseProtocol | None:
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
+    ctype = config.connection_type
     protocol_transport_key = (
-        protocol_name + "." + config.connection_type.encryption_type.value
+        protocol_name
+        + "."
+        + ctype.encryption_type.value
+        + (".HTTPS" if ctype.https else "")
     )
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
@@ -199,10 +213,11 @@ def get_protocol(
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
     }
-    if protocol_transport_key not in supported_device_protocols:
-        return None
+    if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
+        from .experimental import Experimental
 
-    protocol_class, transport_class = supported_device_protocols.get(
-        protocol_transport_key
-    )  # type: ignore
-    return protocol_class(transport=transport_class(config=config))
+        if Experimental.enabled() and protocol_transport_key == "SMART.AES.HTTPS":
+            prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
+        else:
+            return None
+    return prot_tran_cls[0](transport=prot_tran_cls[1](config=config))
