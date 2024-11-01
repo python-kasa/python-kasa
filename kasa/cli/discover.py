@@ -165,7 +165,7 @@ async def config(ctx):
 
     credentials = Credentials(username, password) if username and password else None
 
-    host_port = host + f":{port}" if port else None
+    host_port = host + (f":{port}" if port else "")
 
     def on_attempt(key: tuple[type, type, type], success: bool) -> None:
         prot, tran, dev = key
