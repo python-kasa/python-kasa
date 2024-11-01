@@ -91,7 +91,7 @@ import socket
 import struct
 from collections.abc import Awaitable
 from pprint import pformat as pf
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, NamedTuple, Optional, Type, cast
 
 from aiohttp import ClientSession
 
@@ -131,8 +131,18 @@ _LOGGER = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from kasa import BaseProtocol, BaseTransport
 
+
+class ConnectAttempt(NamedTuple):
+    """Try to connect attempt."""
+
+    protocol: type
+    transport: type
+    device: type
+
+
 OnDiscoveredCallable = Callable[[Device], Awaitable[None]]
 OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Awaitable[None]]
+OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
 DeviceDict = Dict[str, Device]
 
 NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
@@ -538,7 +548,7 @@ class Discover:
         timeout: int | None = None,
         credentials: Credentials | None = None,
         http_client: ClientSession | None = None,
-        on_attempt: Callable[[tuple[type, type, type], bool], None] | None = None,
+        on_attempt: OnConnectAttemptCallable | None = None,
     ) -> Device | None:
         """Try to connect directly to a device with all possible parameters.
 
@@ -604,10 +614,12 @@ class Discover:
             except Exception:
                 _LOGGER.debug("Unable to connect with %s", prot)
                 if on_attempt:
-                    on_attempt(key, False)
+                    ca = tuple.__new__(ConnectAttempt, key)
+                    on_attempt(ca, False)
             else:
                 if on_attempt:
-                    on_attempt(key, True)
+                    ca = tuple.__new__(ConnectAttempt, key)
+                    on_attempt(ca, True)
                 return dev
             finally:
                 await prot.close()
