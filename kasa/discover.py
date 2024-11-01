@@ -603,7 +603,7 @@ class Discover:
             and (protocol := get_protocol(config))
             and (
                 device_class := get_device_class_from_family(
-                    device_family.value, https=https, no_warn=True
+                    device_family.value, https=https, require_exact=True
                 )
             )
         }

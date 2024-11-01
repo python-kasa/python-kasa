@@ -167,7 +167,7 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
 
 
 def get_device_class_from_family(
-    device_type: str, *, https: bool, no_warn: bool = False
+    device_type: str, *, https: bool, require_exact: bool = False
 ) -> type[Device] | None:
     """Return the device class from the type name."""
     supported_device_types: dict[str, type[Device]] = {
@@ -187,7 +187,7 @@ def get_device_class_from_family(
     if (
         (cls := supported_device_types.get(lookup_key)) is None
         and device_type.startswith("SMART.")
-        and not no_warn
+        and not require_exact
     ):
         _LOGGER.warning("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
