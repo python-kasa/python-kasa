@@ -34,7 +34,7 @@ class ChildProtection(SmartModule):
     @property
     def enabled(self) -> bool:
         """Return True if child protection is enabled."""
-        return self._device.sys_info["child_protection"]
+        return self.data["child_protection"]
 
     async def set_enabled(self, enabled: bool) -> dict:
         """Set child protection."""
