@@ -23,6 +23,7 @@ class ChildProtection(SmartModule):
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",
                 type=Feature.Type.Switch,
+                category=Feature.Category.Config,
             )
         )
 
