@@ -1,4 +1,35 @@
 {
+    "discovery_result": {
+        "decrypted_data": {
+            "connect_ssid": "",
+            "connect_type": "wired",
+            "device_id": "0000000000000000000000000000000000000000",
+            "http_port": 443,
+            "owner": "00000000000000000000000000000000",
+            "sd_status": "offline"
+        },
+        "device_id": "00000000000000000000000000000000",
+        "device_model": "H200",
+        "device_name": "#MASKED_NAME#",
+        "device_type": "SMART.TAPOHUB",
+        "encrypt_info": {
+            "data": "",
+            "key": "",
+            "sym_schm": "AES"
+        },
+        "encrypt_type": [
+            "3"
+        ],
+        "factory_default": false,
+        "firmware_version": "1.3.6 Build 20240829 rel.71119",
+        "hardware_version": "1.0",
+        "ip": "127.0.0.123",
+        "is_support_iot_cloud": true,
+        "mac": "24-2F-D0-00-00-00",
+        "mgt_encrypt_schm": {
+            "is_support_https": true
+        }
+    },
     "getAlertConfig": {},
     "getChildDeviceList": {
         "child_device_list": [
@@ -7,15 +38,15 @@
                 "avatar": "sensor_t310",
                 "bind_count": 1,
                 "category": "subg.trigger.temp-hmdt-sensor",
-                "current_humidity": 51,
+                "current_humidity": 49,
                 "current_humidity_exception": 0,
-                "current_temp": 19.4,
-                "current_temp_exception": -0.6,
+                "current_temp": 21.7,
+                "current_temp_exception": 0,
                 "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "fw_ver": "1.5.0 Build 230105 Rel.180832",
                 "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
-                "jamming_rssi": -113,
+                "jamming_rssi": -111,
                 "jamming_signal_level": 1,
                 "lastOnboardingTimestamp": 1724637745,
                 "mac": "F0A731000000",
@@ -25,7 +56,7 @@
                 "parent_device_id": "0000000000000000000000000000000000000000",
                 "region": "Australia/Canberra",
                 "report_interval": 16,
-                "rssi": -36,
+                "rssi": -46,
                 "signal_level": 3,
                 "specs": "US",
                 "status": "online",
@@ -39,15 +70,15 @@
                 "battery_percentage": 100,
                 "bind_count": 1,
                 "category": "subg.trigger.temp-hmdt-sensor",
-                "current_humidity": 53,
+                "current_humidity": 51,
                 "current_humidity_exception": 0,
-                "current_temp": 18.3,
-                "current_temp_exception": -0.7,
+                "current_temp": 21.5,
+                "current_temp_exception": 0,
                 "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
                 "fw_ver": "1.8.0 Build 230921 Rel.091519",
                 "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
-                "jamming_rssi": -114,
+                "jamming_rssi": -113,
                 "jamming_signal_level": 1,
                 "lastOnboardingTimestamp": 1724637369,
                 "mac": "202351000000",
@@ -57,7 +88,7 @@
                 "parent_device_id": "0000000000000000000000000000000000000000",
                 "region": "Australia/Canberra",
                 "report_interval": 16,
-                "rssi": -50,
+                "rssi": -44,
                 "signal_level": 3,
                 "specs": "US",
                 "status": "online",
@@ -74,7 +105,7 @@
                 "fw_ver": "1.9.0 Build 230704 Rel.154559",
                 "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
-                "jamming_rssi": -116,
+                "jamming_rssi": -113,
                 "jamming_signal_level": 1,
                 "lastOnboardingTimestamp": 1724635267,
                 "mac": "A86E84000000",
@@ -85,7 +116,7 @@
                 "parent_device_id": "0000000000000000000000000000000000000000",
                 "region": "Australia/Canberra",
                 "report_interval": 16,
-                "rssi": -55,
+                "rssi": -56,
                 "signal_level": 3,
                 "specs": "US",
                 "status": "online",
@@ -101,7 +132,7 @@
                 "fw_ver": "1.12.0 Build 231121 Rel.092508",
                 "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
-                "jamming_rssi": -114,
+                "jamming_rssi": -112,
                 "jamming_signal_level": 1,
                 "lastOnboardingTimestamp": 1724636047,
                 "mac": "3C52A1000000",
@@ -111,7 +142,7 @@
                 "parent_device_id": "0000000000000000000000000000000000000000",
                 "region": "Australia/Canberra",
                 "report_interval": 16,
-                "rssi": -38,
+                "rssi": -36,
                 "signal_level": 3,
                 "specs": "US",
                 "status": "online",
@@ -127,8 +158,8 @@
                 "fw_ver": "1.12.0 Build 231121 Rel.092508",
                 "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
-                "jamming_rssi": -104,
-                "jamming_signal_level": 2,
+                "jamming_rssi": -113,
+                "jamming_signal_level": 1,
                 "lastOnboardingTimestamp": 1724636886,
                 "mac": "98254A000000",
                 "model": "S200B",
@@ -137,7 +168,7 @@
                 "parent_device_id": "0000000000000000000000000000000000000000",
                 "region": "Australia/Canberra",
                 "report_interval": 16,
-                "rssi": -36,
+                "rssi": -56,
                 "signal_level": 3,
                 "specs": "US",
                 "status": "online",
@@ -155,6 +186,14 @@
             }
         }
     },
+    "getClockStatus": {
+        "system": {
+            "clock_status": {
+                "local_time": "2024-11-01 22:16:12",
+                "seconds_from_1970": 1730459772
+            }
+        }
+    },
     "getConnectionType": {
         "link_type": "ethernet"
     },
@@ -168,7 +207,7 @@
                 "device_alias": "#MASKED_NAME#",
                 "device_info": "H200 1.0",
                 "device_model": "H200",
-                "device_name": "0000 0.0",
+                "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.TAPOHUB",
                 "has_set_location_info": 1,
                 "hw_id": "00000000000000000000000000000000",
@@ -192,7 +231,7 @@
                 "device_alias": "#MASKED_NAME#",
                 "device_info": "H200 1.0",
                 "device_model": "H200",
-                "device_name": "0000 0.0",
+                "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.TAPOHUB",
                 "has_set_location_info": 1,
                 "hw_id": "00000000000000000000000000000000",
@@ -207,22 +246,6 @@
                 "region": "US",
                 "status": "configured",
                 "sw_version": "1.3.6 Build 20240829 rel.71119"
-            }
-        }
-    },
-    "getTimezone": {
-        "system": {
-            "basic": {
-                "zone_id": "Australia/Canberra",
-                "timezone": "UTC+10:00"
-            }
-        }
-    },
-    "getClockStatus": {
-        "system": {
-            "clock_status": {
-                "seconds_from_1970": 1729509322,
-                "local_time": "2024-10-21 22:15:22"
             }
         }
     },
@@ -304,5 +327,13 @@
             "Connection 1",
             "Connection 2"
         ]
+    },
+    "getTimezone": {
+        "system": {
+            "basic": {
+                "timezone": "UTC+10:00",
+                "zone_id": "Australia/Canberra"
+            }
+        }
     }
 }
