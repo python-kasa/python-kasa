@@ -31,20 +31,189 @@
         }
     },
     "getAlertConfig": {},
+    "getAppComponentList": {
+        "app_component": {
+            "app_component_list": [
+                {
+                    "name": "sdCard",
+                    "version": 2
+                },
+                {
+                    "name": "dateTime",
+                    "version": 1
+                },
+                {
+                    "name": "system",
+                    "version": 4
+                },
+                {
+                    "name": "led",
+                    "version": 1
+                },
+                {
+                    "name": "firmware",
+                    "version": 2
+                },
+                {
+                    "name": "account",
+                    "version": 1
+                },
+                {
+                    "name": "quickSetup",
+                    "version": 1
+                },
+                {
+                    "name": "hubRecord",
+                    "version": 1
+                },
+                {
+                    "name": "deviceShare",
+                    "version": 1
+                },
+                {
+                    "name": "siren",
+                    "version": 2
+                },
+                {
+                    "name": "childControl",
+                    "version": 1
+                },
+                {
+                    "name": "childQuickSetup",
+                    "version": 1
+                },
+                {
+                    "name": "childInherit",
+                    "version": 1
+                },
+                {
+                    "name": "deviceLoad",
+                    "version": 1
+                },
+                {
+                    "name": "subg",
+                    "version": 2
+                },
+                {
+                    "name": "iotCloud",
+                    "version": 1
+                },
+                {
+                    "name": "diagnose",
+                    "version": 1
+                },
+                {
+                    "name": "preWakeUp",
+                    "version": 1
+                },
+                {
+                    "name": "supportRE",
+                    "version": 1
+                },
+                {
+                    "name": "testSignal",
+                    "version": 1
+                },
+                {
+                    "name": "dataDownload",
+                    "version": 1
+                },
+                {
+                    "name": "testChildSignal",
+                    "version": 1
+                },
+                {
+                    "name": "ringLog",
+                    "version": 1
+                },
+                {
+                    "name": "matter",
+                    "version": 1
+                },
+                {
+                    "name": "localSmart",
+                    "version": 1
+                }
+            ]
+        }
+    },
+    "getChildDeviceComponentList": {
+        "child_component_list": [
+            {
+                "component_list": [
+                    {
+                        "id": "device",
+                        "ver_code": 2
+                    },
+                    {
+                        "id": "quick_setup",
+                        "ver_code": 3
+                    },
+                    {
+                        "id": "trigger_log",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "device_local_time",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "account",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "synchronize",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "cloud_connect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "iot_cloud",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "firmware",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "localSmart",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "battery_detect",
+                        "ver_code": 1
+                    },
+                    {
+                        "id": "double_click",
+                        "ver_code": 1
+                    }
+                ],
+                "device_id": "0000000000000000000000000000000000000000"
+            }
+        ],
+        "start_index": 0,
+        "sum": 1
+    },
     "getChildDeviceList": {
         "child_device_list": [
             {
                 "at_low_battery": false,
                 "avatar": "button",
-                "bind_count": 1,
+                "bind_count": 2,
                 "category": "subg.trigger.button",
                 "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "fw_ver": "1.11.0 Build 230821 Rel.113553",
                 "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
-                "jamming_rssi": -116,
-                "jamming_signal_level": 1,
-                "lastOnboardingTimestamp": 1713970593,
+                "jamming_rssi": -108,
+                "jamming_signal_level": 2,
+                "lastOnboardingTimestamp": 1714016798,
                 "mac": "202351000000",
                 "model": "S200B",
                 "nickname": "I01BU0tFRF9OQU1FIw==",
@@ -52,7 +221,7 @@
                 "parent_device_id": "0000000000000000000000000000000000000000",
                 "region": "Europe/London",
                 "report_interval": 16,
-                "rssi": -68,
+                "rssi": -66,
                 "signal_level": 3,
                 "specs": "EU",
                 "status": "online",
@@ -73,8 +242,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-04-25 16:15:39",
-                "seconds_from_1970": 1714061739
+                "local_time": "2024-11-01 13:56:27",
+                "seconds_from_1970": 1730469387
             }
         }
     },
@@ -134,7 +303,7 @@
     "getFirmwareAutoUpgradeConfig": {
         "auto_upgrade": {
             "common": {
-                "enabled": "on",
+                "enabled": "off",
                 "random_range": 120,
                 "time": "03:00"
             }
