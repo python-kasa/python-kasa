@@ -5,6 +5,8 @@
             "connect_type": "wireless",
             "device_id": "0000000000000000000000000000000000000000",
             "http_port": 443,
+            "last_alarm_time": "1698149810",
+            "last_alarm_type": "motion",
             "owner": "00000000000000000000000000000000",
             "sd_status": "offline"
         },
@@ -40,6 +42,132 @@
             }
         }
     },
+    "getAppComponentList": {
+        "app_component": {
+            "app_component_list": [
+                {
+                    "name": "sdCard",
+                    "version": 1
+                },
+                {
+                    "name": "timezone",
+                    "version": 1
+                },
+                {
+                    "name": "system",
+                    "version": 4
+                },
+                {
+                    "name": "led",
+                    "version": 1
+                },
+                {
+                    "name": "playback",
+                    "version": 4
+                },
+                {
+                    "name": "detection",
+                    "version": 3
+                },
+                {
+                    "name": "alert",
+                    "version": 1
+                },
+                {
+                    "name": "firmware",
+                    "version": 2
+                },
+                {
+                    "name": "account",
+                    "version": 1
+                },
+                {
+                    "name": "quickSetup",
+                    "version": 1
+                },
+                {
+                    "name": "video",
+                    "version": 2
+                },
+                {
+                    "name": "lensMask",
+                    "version": 2
+                },
+                {
+                    "name": "lightFrequency",
+                    "version": 1
+                },
+                {
+                    "name": "dayNightMode",
+                    "version": 1
+                },
+                {
+                    "name": "osd",
+                    "version": 2
+                },
+                {
+                    "name": "record",
+                    "version": 1
+                },
+                {
+                    "name": "videoRotation",
+                    "version": 1
+                },
+                {
+                    "name": "audio",
+                    "version": 2
+                },
+                {
+                    "name": "diagnose",
+                    "version": 1
+                },
+                {
+                    "name": "msgPush",
+                    "version": 3
+                },
+                {
+                    "name": "intrusionDetection",
+                    "version": 2
+                },
+                {
+                    "name": "linecrossingDetection",
+                    "version": 2
+                },
+                {
+                    "name": "deviceShare",
+                    "version": 1
+                },
+                {
+                    "name": "tamperDetection",
+                    "version": 1
+                },
+                {
+                    "name": "tapoCare",
+                    "version": 1
+                },
+                {
+                    "name": "blockZone",
+                    "version": 1
+                },
+                {
+                    "name": "personDetection",
+                    "version": 2
+                },
+                {
+                    "name": "needSubscriptionServiceList",
+                    "version": 1
+                },
+                {
+                    "name": "iotCloud",
+                    "version": 1
+                },
+                {
+                    "name": "recordDownload",
+                    "version": 1
+                }
+            ]
+        }
+    },
     "getAudioConfig": {
         "audio_config": {
             "microphone": {
@@ -71,15 +199,15 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-10-27 16:56:20",
-                "seconds_from_1970": 1730044580
+                "local_time": "2024-11-01 16:10:28",
+                "seconds_from_1970": 1730473828
             }
         }
     },
     "getConnectionType": {
         "link_type": "wifi",
         "rssi": "3",
-        "rssiValue": -57,
+        "rssiValue": -58,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -96,7 +224,7 @@
     "getDeviceInfo": {
         "device_info": {
             "basic_info": {
-                "avatar": "Baby room",
+                "avatar": "room",
                 "barcode": "",
                 "dev_id": "0000000000000000000000000000000000000000",
                 "device_alias": "#MASKED_NAME#",
@@ -140,8 +268,8 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "",
-                "last_alarm_type": ""
+                "last_alarm_time": "1698149810",
+                "last_alarm_type": "motion"
             }
         }
     },
@@ -275,7 +403,7 @@
             "chn1_msg_push_info": {
                 ".name": "chn1_msg_push_info",
                 ".type": "on_off",
-                "notification_enabled": "off",
+                "notification_enabled": "on",
                 "rich_notification_enabled": "off"
             }
         }
