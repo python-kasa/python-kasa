@@ -26,13 +26,15 @@ class ChildProtection(SmartModule):
             )
         )
 
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        return {}
+
     @property
     def enabled(self) -> bool:
         """Return True if child protection is enabled."""
-        return self.data["enable"]
+        return self._device.sys_info["child_protection"]
 
     async def set_enabled(self, enabled: bool) -> dict:
         """Set child protection."""
-        new_info = self.data.copy()
-        new_info.update({"enable": enabled})
-        return await self.call("set_child_protection", new_info)
+        return await self.call("set_child_protection", {"enable": enabled})
