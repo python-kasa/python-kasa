@@ -15,7 +15,7 @@ from kasa import (
     Discover,
     UnsupportedDeviceError,
 )
-from kasa.discover import DiscoveryResult
+from kasa.discover import ConnectAttempt, DiscoveryResult
 
 from .common import echo, error
 
@@ -165,8 +165,17 @@ async def config(ctx):
 
     credentials = Credentials(username, password) if username and password else None
 
+    host_port = host + (f":{port}" if port else "")
+
+    def on_attempt(connect_attempt: ConnectAttempt, success: bool) -> None:
+        prot, tran, dev = connect_attempt
+        key_str = f"{prot.__name__} + {tran.__name__} + {dev.__name__}"
+        result = "succeeded" if success else "failed"
+        msg = f"Attempt to connect to {host_port} with {key_str} {result}"
+        echo(msg)
+
     dev = await Discover.try_connect_all(
-        host, credentials=credentials, timeout=timeout, port=port
+        host, credentials=credentials, timeout=timeout, port=port, on_attempt=on_attempt
     )
     if dev:
         cparams = dev.config.connection_type

@@ -1162,7 +1162,7 @@ async def test_cli_child_commands(
 async def test_discover_config(dev: Device, mocker, runner):
     """Test that device config is returned."""
     host = "127.0.0.1"
-    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=dev)
+    mocker.patch("kasa.device_factory._connect", side_effect=[Exception, dev])
 
     res = await runner.invoke(
         cli,
@@ -1182,6 +1182,14 @@ async def test_discover_config(dev: Device, mocker, runner):
     cparam = dev.config.connection_type
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
+    assert re.search(
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ failed",
+        res.output.replace("\n", ""),
+    )
+    assert re.search(
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ succeeded",
+        res.output.replace("\n", ""),
+    )
 
 
 async def test_discover_config_invalid(mocker, runner):
