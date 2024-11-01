@@ -28,7 +28,7 @@ class LightEffect(SmartModule, SmartLightEffect):
     _effect_list: list[str]
     _scenes_names_to_id: dict[str, str]
 
-    def _post_update_hook(self) -> None:
+    async def _post_update_hook(self) -> None:
         """Update internal effect state."""
         # Copy the effects so scene name updates do not update the underlying dict.
         effects = copy.deepcopy(

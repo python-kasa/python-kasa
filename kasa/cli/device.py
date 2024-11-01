@@ -40,7 +40,7 @@ async def state(ctx, dev: Device):
     echo(f"Port: {dev.port}")
     echo(f"Device state: {dev.is_on}")
 
-    echo(f"Time:         {dev.time} (tz: {dev.timezone}")
+    echo(f"Time:         {dev.time} (tz: {dev.timezone})")
     echo(f"Hardware:     {dev.hw_info['hw_ver']}")
     echo(f"Software:     {dev.hw_info['sw_ver']}")
     echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
@@ -193,3 +193,13 @@ async def update_credentials(dev, username, password):
     click.confirm("Do you really want to replace the existing credentials?", abort=True)
 
     return await dev.update_credentials(username, password)
+
+
+@device.command(name="logs")
+@pass_dev_or_child
+async def child_logs(dev):
+    """Print child device trigger logs."""
+    if logs := dev.modules.get(Module.TriggerLogs):
+        await dev.update(update_children=True)
+        for entry in logs.logs:
+            print(entry)

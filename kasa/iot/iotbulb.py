@@ -219,7 +219,7 @@ class IotBulb(IotDevice):
         self.add_module(
             Module.IotAntitheft, Antitheft(self, "smartlife.iot.common.anti_theft")
         )
-        self.add_module(Module.IotTime, Time(self, "smartlife.iot.common.timesetting"))
+        self.add_module(Module.Time, Time(self, "smartlife.iot.common.timesetting"))
         self.add_module(Module.Energy, Emeter(self, self.emeter_type))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.IotCloud, Cloud(self, "smartlife.iot.common.cloud"))
@@ -367,7 +367,9 @@ class IotBulb(IotDevice):
         saturation = light_state["saturation"]
         value = self._brightness
 
-        return HSV(hue, saturation, value)
+        # Simple HSV(hue, saturation, value) is less efficent than below
+        # due to the cpython implementation.
+        return tuple.__new__(HSV, (hue, saturation, value))
 
     @requires_update
     async def _set_hsv(

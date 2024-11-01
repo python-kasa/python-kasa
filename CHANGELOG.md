@@ -1,5 +1,106 @@
 # Changelog
 
+## [0.7.6](https://github.com/python-kasa/python-kasa/tree/0.7.6) (2024-10-29)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.5...0.7.6)
+
+**Release summary:**
+
+- Experimental support for Tapo cameras and the Tapo H200 hub which uses the same protocol.
+- Better timestamp support across all devices.
+- Support for new devices P304M, S200D and S200B (see README.md for note on the S200 support).
+- Various other fixes and minor features.
+
+**Implemented enhancements:**
+
+- Add support for setting the timezone [\#436](https://github.com/python-kasa/python-kasa/issues/436)
+- Add stream\_rtsp\_url to camera module [\#1197](https://github.com/python-kasa/python-kasa/pull/1197) (@sdb9696)
+- Try default logon credentials in SslAesTransport [\#1195](https://github.com/python-kasa/python-kasa/pull/1195) (@sdb9696)
+- Allow enabling experimental devices from environment variable [\#1194](https://github.com/python-kasa/python-kasa/pull/1194) (@sdb9696)
+- Add core device, child and camera modules to smartcamera [\#1193](https://github.com/python-kasa/python-kasa/pull/1193) (@sdb9696)
+- Fallback to get\_current\_power if get\_energy\_usage does not provide current\_power [\#1186](https://github.com/python-kasa/python-kasa/pull/1186) (@Fulch36)
+- Add https parameter to device class factory [\#1184](https://github.com/python-kasa/python-kasa/pull/1184) (@sdb9696)
+- Add discovery list command to cli [\#1183](https://github.com/python-kasa/python-kasa/pull/1183) (@sdb9696)
+- Add Time module to SmartCamera devices [\#1182](https://github.com/python-kasa/python-kasa/pull/1182) (@sdb9696)
+- Add try\_connect\_all to allow initialisation without udp broadcast [\#1171](https://github.com/python-kasa/python-kasa/pull/1171) (@sdb9696)
+- Update dump\_devinfo for smart camera protocol [\#1169](https://github.com/python-kasa/python-kasa/pull/1169) (@sdb9696)
+- Enable newer encrypted discovery protocol [\#1168](https://github.com/python-kasa/python-kasa/pull/1168) (@sdb9696)
+- Initial TapoCamera support [\#1165](https://github.com/python-kasa/python-kasa/pull/1165) (@sdb9696)
+- Add waterleak alert timestamp [\#1162](https://github.com/python-kasa/python-kasa/pull/1162) (@rytilahti)
+- Create common Time module and add time set cli command [\#1157](https://github.com/python-kasa/python-kasa/pull/1157) (@sdb9696)
+
+**Fixed bugs:**
+
+- Only send 20002 discovery request with key included [\#1207](https://github.com/python-kasa/python-kasa/pull/1207) (@sdb9696)
+- Fix SslAesTransport default login and add tests [\#1202](https://github.com/python-kasa/python-kasa/pull/1202) (@sdb9696)
+- Fix device\_config serialisation of https value [\#1196](https://github.com/python-kasa/python-kasa/pull/1196) (@sdb9696)
+
+**Added support for devices:**
+
+- Add S200B\(EU\) fw 1.11.0 fixture [\#1205](https://github.com/python-kasa/python-kasa/pull/1205) (@sdb9696)
+- Add TC65 fixture [\#1200](https://github.com/python-kasa/python-kasa/pull/1200) (@rytilahti)
+- Add P304M\(UK\) test fixture [\#1185](https://github.com/python-kasa/python-kasa/pull/1185) (@Fulch36)
+- Add H200 experimental fixture [\#1180](https://github.com/python-kasa/python-kasa/pull/1180) (@sdb9696)
+- Add S200D button fixtures [\#1161](https://github.com/python-kasa/python-kasa/pull/1161) (@rytilahti)
+
+**Project maintenance:**
+
+- Fix mypy errors in parse_pcap_klap [\#1214](https://github.com/python-kasa/python-kasa/pull/1214) (@sdb9696)
+- Make HSV NamedTuple creation more efficient [\#1211](https://github.com/python-kasa/python-kasa/pull/1211) (@sdb9696)
+- dump\_devinfo: query get\_current\_brt for iot dimmers [\#1209](https://github.com/python-kasa/python-kasa/pull/1209) (@rytilahti)
+- Add trigger\_logs and double\_click to dump\_devinfo helper [\#1208](https://github.com/python-kasa/python-kasa/pull/1208) (@sdb9696)
+- Fix smartcamera childdevice module [\#1206](https://github.com/python-kasa/python-kasa/pull/1206) (@sdb9696)
+- Add H200\(EU\) fw 1.3.2 fixture [\#1204](https://github.com/python-kasa/python-kasa/pull/1204) (@sdb9696)
+- Do not pass None as timeout to http requests [\#1203](https://github.com/python-kasa/python-kasa/pull/1203) (@sdb9696)
+- Update SMART test framework to use fake child protocols [\#1199](https://github.com/python-kasa/python-kasa/pull/1199) (@sdb9696)
+- Allow passing an aiohttp client session during discover try\_connect\_all [\#1198](https://github.com/python-kasa/python-kasa/pull/1198) (@sdb9696)
+- Add test framework for smartcamera [\#1192](https://github.com/python-kasa/python-kasa/pull/1192) (@sdb9696)
+- Rename experimental fixtures folder to smartcamera [\#1191](https://github.com/python-kasa/python-kasa/pull/1191) (@sdb9696)
+- Combine smartcamera error codes into SmartErrorCode [\#1190](https://github.com/python-kasa/python-kasa/pull/1190) (@sdb9696)
+- Allow deriving from SmartModule without being registered [\#1189](https://github.com/python-kasa/python-kasa/pull/1189) (@sdb9696)
+- Improve supported module checks for hub children [\#1188](https://github.com/python-kasa/python-kasa/pull/1188) (@sdb9696)
+- Update smartcamera to support single get/set/do requests [\#1187](https://github.com/python-kasa/python-kasa/pull/1187) (@sdb9696)
+- Add S200B\(US\) fw 1.12.0 fixture [\#1181](https://github.com/python-kasa/python-kasa/pull/1181) (@sdb9696)
+- Add T110\(US\), T310\(US\) and T315\(US\) sensor fixtures [\#1179](https://github.com/python-kasa/python-kasa/pull/1179) (@sdb9696)
+- Enforce EOLs for \*.rst and \*.md [\#1178](https://github.com/python-kasa/python-kasa/pull/1178) (@rytilahti)
+- Convert fixtures to use unix newlines [\#1177](https://github.com/python-kasa/python-kasa/pull/1177) (@rytilahti)
+- Add motion sensor to known categories [\#1176](https://github.com/python-kasa/python-kasa/pull/1176) (@rytilahti)
+- Drop urllib3 dependency and create ssl context in executor thread [\#1175](https://github.com/python-kasa/python-kasa/pull/1175) (@sdb9696)
+- Expose smart child device map as a class constant [\#1173](https://github.com/python-kasa/python-kasa/pull/1173) (@sdb9696)
+
+## [0.7.5](https://github.com/python-kasa/python-kasa/tree/0.7.5) (2024-10-08)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.4...0.7.5)
+
+**Release summary:**
+
+- Fix for KP303 on Firmware 1.0.6
+- Fix for `on_since` value jitter
+- Various maintenance items
+
+**Breaking changes:**
+
+- Make iot time timezone aware [\#1147](https://github.com/python-kasa/python-kasa/pull/1147) (@sdb9696)
+
+**Fixed bugs:**
+
+- Send empty dictionary instead of null for iot queries [\#1145](https://github.com/python-kasa/python-kasa/pull/1145) (@sdb9696)
+- parse\_pcap\_klap: require source host [\#1137](https://github.com/python-kasa/python-kasa/pull/1137) (@rytilahti)
+- parse\_pcap\_klap: use request\_uri for matching the response [\#1136](https://github.com/python-kasa/python-kasa/pull/1136) (@rytilahti)
+- Use tzinfo in time constructor instead of astime for iot devices [\#1158](https://github.com/python-kasa/python-kasa/pull/1158) (@sdb9696)
+- Stabilise on\_since value for smart devices [\#1144](https://github.com/python-kasa/python-kasa/pull/1144) (@sdb9696)
+
+**Project maintenance:**
+
+- Move feature initialization from \_\_init\_\_ to \_initialize\_features [\#1140](https://github.com/python-kasa/python-kasa/pull/1140) (@rytilahti)
+- Cache zoneinfo for smart devices [\#1156](https://github.com/python-kasa/python-kasa/pull/1156) (@sdb9696)
+- Correctly define SmartModule.call as an async function [\#1148](https://github.com/python-kasa/python-kasa/pull/1148) (@sdb9696)
+- Remove async magic patch from tests [\#1146](https://github.com/python-kasa/python-kasa/pull/1146) (@sdb9696)
+
+**Closed issues:**
+
+- Move code examples out from docs [\#630](https://github.com/python-kasa/python-kasa/issues/630)
+
 ## [0.7.4](https://github.com/python-kasa/python-kasa/tree/0.7.4) (2024-09-27)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.3...0.7.4)
@@ -446,6 +547,10 @@ For more information on the changes please checkout our [documentation on the AP
 - Add missing firmware module import [\#774](https://github.com/python-kasa/python-kasa/pull/774) (@rytilahti)
 - Fix dump\_devinfo scrubbing for ks240 [\#765](https://github.com/python-kasa/python-kasa/pull/765) (@rytilahti)
 - Rename and deprecate exception classes [\#739](https://github.com/python-kasa/python-kasa/pull/739) (@sdb9696)
+
+**Closed issues:**
+
+- Improve timezone support [\#980](https://github.com/python-kasa/python-kasa/issues/980)
 
 ## [0.6.2.1](https://github.com/python-kasa/python-kasa/tree/0.6.2.1) (2024-02-02)
 

@@ -41,7 +41,7 @@ from kasa.iotprotocol import (
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
 )
 from kasa.module import Module
-from kasa.protocol import BaseProtocol
+from kasa.protocol import BaseProtocol, BaseTransport
 from kasa.smartprotocol import SmartProtocol
 
 __version__ = version("python-kasa")
@@ -50,6 +50,7 @@ __version__ = version("python-kasa")
 __all__ = [
     "Discover",
     "BaseProtocol",
+    "BaseTransport",
     "IotProtocol",
     "SmartProtocol",
     "LightState",
@@ -102,7 +103,7 @@ deprecated_classes = {
 
 def __getattr__(name):
     if name in deprecated_names:
-        warn(f"{name} is deprecated", DeprecationWarning, stacklevel=1)
+        warn(f"{name} is deprecated", DeprecationWarning, stacklevel=2)
         return globals()[f"_deprecated_{name}"]
     if name in deprecated_smart_devices:
         new_class = deprecated_smart_devices[name]
@@ -112,13 +113,13 @@ def __getattr__(name):
             + f"from package {package_name} instead or use Discover.discover_single()"
             + " and Device.connect() to support new protocols",
             DeprecationWarning,
-            stacklevel=1,
+            stacklevel=2,
         )
         return new_class
     if name in deprecated_classes:
         new_class = deprecated_classes[name]
         msg = f"{name} is deprecated, use {new_class.__name__} instead"
-        warn(msg, DeprecationWarning, stacklevel=1)
+        warn(msg, DeprecationWarning, stacklevel=2)
         return new_class
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

@@ -140,14 +140,3 @@ def mock_datagram_endpoint(request):  # noqa: PT004
             side_effect=_create_datagram_endpoint,
         ):
             yield
-
-
-# allow mocks to be awaited
-# https://stackoverflow.com/questions/51394411/python-object-magicmock-cant-be-used-in-await-expression/51399767#51399767
-
-
-async def async_magic():
-    pass
-
-
-MagicMock.__await__ = lambda x: async_magic().__await__()

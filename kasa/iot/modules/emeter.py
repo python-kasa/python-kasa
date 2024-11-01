@@ -12,7 +12,7 @@ from .usage import Usage
 class Emeter(Usage, EnergyInterface):
     """Emeter module."""
 
-    def _post_update_hook(self) -> None:
+    async def _post_update_hook(self) -> None:
         self._supported = EnergyInterface.ModuleFeature.PERIODIC_STATS
         if (
             "voltage_mv" in self.data["get_realtime"]

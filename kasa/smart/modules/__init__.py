@@ -28,6 +28,7 @@ from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
 from .time import Time
+from .triggerlogs import TriggerLogs
 from .waterleaksensor import WaterleakSensor
 
 __all__ = [
@@ -58,6 +59,7 @@ __all__ = [
     "WaterleakSensor",
     "ContactSensor",
     "MotionSensor",
+    "TriggerLogs",
     "FrostProtection",
     "SmartLightEffect",
 ]

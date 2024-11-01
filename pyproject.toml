@@ -1,6 +1,6 @@
 [project]
 name = "python-kasa"
-version = "0.7.4"
+version = "0.7.6"
 description = "Python API for TP-Link Kasa and Tapo devices"
 license = {text = "GPL-3.0-or-later"}
 authors = [ { name = "python-kasa developers" }]
@@ -13,6 +13,7 @@ dependencies = [
   "async-timeout>=3.0.0",
   "aiohttp>=3",
   "typing-extensions>=4.12.2,<5.0",
+  "tzdata>=2024.2 ; platform_system == 'Windows'",
 ]
 
 classifiers = [
@@ -84,7 +85,10 @@ exclude = [
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
-omit = ["kasa/tests/*"]
+omit = [
+  "kasa/tests/*",
+  "kasa/experimental/*"
+]
 
 [tool.coverage.report]
 exclude_lines = [

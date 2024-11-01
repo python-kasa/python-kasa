@@ -76,9 +76,11 @@ class SmartModule(Module):
         self._error_count = 0
 
     def __init_subclass__(cls, **kwargs):
-        name = getattr(cls, "NAME", cls.__name__)
-        _LOGGER.debug("Registering %s", cls)
-        cls.REGISTERED_MODULES[name] = cls
+        # We only want to register submodules in a modules package so that
+        # other classes can inherit from smartmodule and not be registered
+        if cls.__module__.split(".")[-2] == "modules":
+            _LOGGER.debug("Registering %s", cls)
+            cls.REGISTERED_MODULES[cls._module_name()] = cls
 
     def _set_error(self, err: Exception | None):
         if err is None:
@@ -116,12 +118,16 @@ class SmartModule(Module):
         """Return true if the module is disabled due to errors."""
         return self._error_count >= self.DISABLE_AFTER_ERROR_COUNT
 
+    @classmethod
+    def _module_name(cls):
+        return getattr(cls, "NAME", cls.__name__)
+
     @property
     def name(self) -> str:
         """Name of the module."""
-        return getattr(self, "NAME", self.__class__.__name__)
+        return self._module_name()
 
-    def _post_update_hook(self):  # noqa: B027
+    async def _post_update_hook(self):  # noqa: B027
         """Perform actions after a device update.
 
         Any modules overriding this should ensure that self.data is
@@ -136,12 +142,12 @@ class SmartModule(Module):
         """
         return {self.QUERY_GETTER_NAME: None}
 
-    def call(self, method, params=None):
+    async def call(self, method, params=None):
         """Call a method.
 
         Just a helper method.
         """
-        return self._device._query_helper(method, params)
+        return await self._device._query_helper(method, params)
 
     @property
     def data(self):

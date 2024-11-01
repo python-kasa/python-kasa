@@ -64,6 +64,7 @@ class HttpClient:
         json: dict | Any | None = None,
         headers: dict[str, str] | None = None,
         cookies_dict: dict[str, str] | None = None,
+        ssl=False,
     ) -> tuple[int, dict | bytes | None]:
         """Send an http post request to the device.
 
@@ -88,6 +89,8 @@ class HttpClient:
         self._last_url = url
         self.client.cookie_jar.clear()
         return_json = bool(json)
+        if self._config.timeout is None:
+            _LOGGER.warning("Request timeout is set to None.")
         client_timeout = aiohttp.ClientTimeout(total=self._config.timeout)
 
         # If json is not a dict send as data.
@@ -106,7 +109,7 @@ class HttpClient:
                 timeout=client_timeout,
                 cookies=cookies_dict,
                 headers=headers,
-                ssl=False,
+                ssl=ssl,
             )
             async with resp:
                 if resp.status == 200:
