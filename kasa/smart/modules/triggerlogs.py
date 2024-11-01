@@ -22,6 +22,7 @@ class TriggerLogs(SmartModule):
     """Implementation of trigger logs."""
 
     REQUIRED_COMPONENT = "trigger_log"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
