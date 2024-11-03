@@ -9,7 +9,7 @@ from ..deviceconfig import DeviceConfig
 from ..module import Module
 from ..protocol import BaseProtocol
 from .iotdevice import IotDevice, requires_update
-from .modules import Antitheft, Cloud, Led, Schedule, Time, Usage
+from .modules import AmbientLight, Antitheft, Cloud, Led, Motion, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,3 +92,12 @@ class IotWallSwitch(IotPlug):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.WallSwitch
+
+    async def _initialize_modules(self) -> None:
+        """Initialize modules."""
+        await super()._initialize_modules()
+        if (dev_name := self.sys_info["dev_name"]) and "PIR" in dev_name:
+            self.add_module(Module.IotMotion, Motion(self, "smartlife.iot.PIR"))
+            self.add_module(
+                Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS")
+            )
