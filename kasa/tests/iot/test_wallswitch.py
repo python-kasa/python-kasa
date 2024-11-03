@@ -1,4 +1,4 @@
-from ..device_fixtures import wallswitch_iot
+from kasa.tests.device_fixtures import wallswitch_iot
 
 
 @wallswitch_iot
