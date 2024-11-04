@@ -41,6 +41,7 @@ sed -i "0,/version = /{s/version = .*/version = \"${NEW_RELEASE}\"/}" pyproject.
 ```bash
 uv sync --all-extras
 uv lock --upgrade
+uv sync --all-extras
 ```
 
 ### Run pre-commit and tests

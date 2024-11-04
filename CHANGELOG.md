@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.7.7](https://github.com/python-kasa/python-kasa/tree/0.7.7) (2024-11-04)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.6...0.7.7)
+
+**Release summary:**
+
+- Bugfix for child device device creation error with credentials_hash
+- PIR support for iot dimmers and wall switches.
+- Various small enhancements and project improvements.
+
+**Implemented enhancements:**
+
+- Add PIR&LAS for wall switches mentioning PIR support [\#1227](https://github.com/python-kasa/python-kasa/pull/1227) (@rytilahti)
+- Expose ambient light setting for iot dimmers [\#1210](https://github.com/python-kasa/python-kasa/pull/1210) (@rytilahti)
+- Expose PIR enabled setting for iot dimmers [\#1174](https://github.com/python-kasa/python-kasa/pull/1174) (@rytilahti)
+- Add childprotection module [\#1141](https://github.com/python-kasa/python-kasa/pull/1141) (@rytilahti)
+- Initial trigger logs implementation [\#900](https://github.com/python-kasa/python-kasa/pull/900) (@rytilahti)
+
+**Fixed bugs:**
+
+- Fix AES child device creation error [\#1220](https://github.com/python-kasa/python-kasa/pull/1220) (@sdb9696)
+
+**Project maintenance:**
+
+- Update TC65 fixture [\#1225](https://github.com/python-kasa/python-kasa/pull/1225) (@rytilahti)
+- Update smartcamera fixtures from latest dump\_devinfo [\#1224](https://github.com/python-kasa/python-kasa/pull/1224) (@sdb9696)
+- Add component queries to smartcamera devices [\#1223](https://github.com/python-kasa/python-kasa/pull/1223) (@sdb9696)
+- Update try\_connect\_all to be more efficient and report attempts [\#1222](https://github.com/python-kasa/python-kasa/pull/1222) (@sdb9696)
+- Use stacklevel=2 for warnings to report on callsites [\#1219](https://github.com/python-kasa/python-kasa/pull/1219) (@rytilahti)
+- parse\_pcap\_klap: various code cleanups [\#1138](https://github.com/python-kasa/python-kasa/pull/1138) (@rytilahti)
+
 ## [0.7.6](https://github.com/python-kasa/python-kasa/tree/0.7.6) (2024-10-29)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.5...0.7.6)
@@ -45,7 +76,7 @@
 
 **Project maintenance:**
 
-- Fix mypy errors in parse_pcap_klap [\#1214](https://github.com/python-kasa/python-kasa/pull/1214) (@sdb9696)
+- Fix mypy errors in parse\_pcap\_klap [\#1214](https://github.com/python-kasa/python-kasa/pull/1214) (@sdb9696)
 - Make HSV NamedTuple creation more efficient [\#1211](https://github.com/python-kasa/python-kasa/pull/1211) (@sdb9696)
 - dump\_devinfo: query get\_current\_brt for iot dimmers [\#1209](https://github.com/python-kasa/python-kasa/pull/1209) (@rytilahti)
 - Add trigger\_logs and double\_click to dump\_devinfo helper [\#1208](https://github.com/python-kasa/python-kasa/pull/1208) (@sdb9696)
