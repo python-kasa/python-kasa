@@ -319,7 +319,7 @@ async def cli(
             click.echo("Host and discovery info given, trying connect on %s." % host)
 
             di = json.loads(discovery_info)
-            dr = DiscoveryResult(**di)
+            dr = DiscoveryResult.from_dict(di)
             connection_type = DeviceConnectionParameters.from_values(
                 dr.device_type,
                 dr.mgt_encrypt_schm.encrypt_type,
@@ -336,7 +336,7 @@ async def cli(
                 basedir,
                 autosave,
                 device.protocol,
-                discovery_info=dr.get_dict(),
+                discovery_info=dr.to_dict(),
                 batch_size=batch_size,
             )
         elif device_family and encrypt_type:
@@ -443,7 +443,7 @@ async def get_legacy_fixture(protocol, *, discovery_info):
     if discovery_info and not discovery_info.get("system"):
         # Need to recreate a DiscoverResult here because we don't want the aliases
         # in the fixture, we want the actual field names as returned by the device.
-        dr = DiscoveryResult(**protocol._discovery_info)
+        dr = DiscoveryResult.from_dict(protocol._discovery_info)
         final["discovery_result"] = dr.dict(
             by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
         )
@@ -960,10 +960,8 @@ async def get_smart_fixtures(
     # Need to recreate a DiscoverResult here because we don't want the aliases
     # in the fixture, we want the actual field names as returned by the device.
     if discovery_info:
-        dr = DiscoveryResult(**discovery_info)  # type: ignore
-        final["discovery_result"] = dr.dict(
-            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
-        )
+        dr = DiscoveryResult.from_dict(discovery_info)  # type: ignore
+        final["discovery_result"] = dr.to_dict()
 
     click.echo("Got %s successes" % len(successes))
     click.echo(click.style("## device info file ##", bold=True))

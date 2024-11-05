@@ -832,6 +832,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mashumaro"
+version = "3.14"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/eb/47/0a450b281bef2d7e97ec02c8e1168d821e283f58e02e6c403b2bb4d73c1c/mashumaro-3.14.tar.gz", hash = "sha256:5ef6f2b963892cbe9a4ceb3441dfbea37f8c3412523f25d42e9b3a7186555f1d", size = 166160 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/35/8d63733a2c12149d0c7663c29bf626bdbeea5f0ff963afe58a42b4810981/mashumaro-3.14-py3-none-any.whl", hash = "sha256:c12a649599a8f7b1a0b35d18f12e678423c3066189f7bc7bd8dd431c5c8132c3", size = 92183 },
+]
+
+[[package]]
 name = "mdit-py-plugins"
 version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1494,6 +1506,7 @@ dependencies = [
     { name = "async-timeout" },
     { name = "asyncclick" },
     { name = "cryptography" },
+    { name = "mashumaro" },
     { name = "pydantic" },
     { name = "typing-extensions" },
     { name = "tzdata", marker = "platform_system == 'Windows'" },
@@ -1544,6 +1557,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=1.9" },
     { name = "docutils", marker = "extra == 'docs'", specifier = ">=0.17" },
     { name = "kasa-crypt", marker = "extra == 'speedups'", specifier = ">=0.2.0" },
+    { name = "mashumaro", specifier = ">=3.14" },
     { name = "myst-parser", marker = "extra == 'docs'" },
     { name = "orjson", marker = "extra == 'speedups'", specifier = ">=3.9.1" },
     { name = "ptpython", marker = "extra == 'shell'" },

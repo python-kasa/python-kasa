@@ -90,6 +90,7 @@ import secrets
 import socket
 import struct
 from collections.abc import Awaitable
+from dataclasses import dataclass
 from pprint import pformat as pf
 from typing import TYPE_CHECKING, Any, Callable, Dict, NamedTuple, Optional, Type, cast
 
@@ -98,7 +99,12 @@ from aiohttp import ClientSession
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
-from pydantic.v1 import BaseModel, ValidationError
+from mashumaro.config import BaseConfig
+
+try:
+    from mashumaro.mixins.orjson import DataClassORJSONMixin as DataClassJSONMixin
+except ImportError:
+    from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore[assignment]
 
 from kasa import Device
 from kasa.aestransport import AesEncyptionSession, KeyPair
@@ -629,7 +635,7 @@ class Discover:
     def _get_device_class(info: dict) -> type[Device]:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
-            discovery_result = DiscoveryResult(**info["result"])
+            discovery_result = DiscoveryResult.from_dict(info["result"])
             https = discovery_result.mgt_encrypt_schm.is_support_https
             dev_class = get_device_class_from_family(
                 discovery_result.device_type, https=https
@@ -703,12 +709,8 @@ class Discover:
                 f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
         try:
-            discovery_result = DiscoveryResult(**info["result"])
-            if (
-                encrypt_info := discovery_result.encrypt_info
-            ) and encrypt_info.sym_schm == "AES":
-                Discover._decrypt_discovery_data(discovery_result)
-        except ValidationError as ex:
+            discovery_result = DiscoveryResult.from_dict(info["result"])
+        except Exception as ex:
             if debug_enabled:
                 data = (
                     redact_data(info, NEW_DISCOVERY_REDACTORS)
@@ -724,6 +726,16 @@ class Discover:
                 f"Unable to parse discovery from device: {config.host}: {ex}",
                 host=config.host,
             ) from ex
+        # Decrypt the data
+        if (
+            encrypt_info := discovery_result.encrypt_info
+        ) and encrypt_info.sym_schm == "AES":
+            try:
+                Discover._decrypt_discovery_data(discovery_result)
+            except Exception:
+                _LOGGER.exception(
+                    "Unable to decrypt discovery data %s: %s", config.host, data
+                )
 
         type_ = discovery_result.device_type
         encrypt_schm = discovery_result.mgt_encrypt_schm
@@ -736,7 +748,7 @@ class Discover:
                 raise UnsupportedDeviceError(
                     f"Unsupported device {config.host} of type {type_} "
                     + "with no encryption type",
-                    discovery_result=discovery_result.get_dict(),
+                    discovery_result=discovery_result.to_dict(),
                     host=config.host,
                 )
             config.connection_type = DeviceConnectionParameters.from_values(
@@ -749,7 +761,7 @@ class Discover:
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
                 + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
-                discovery_result=discovery_result.get_dict(),
+                discovery_result=discovery_result.to_dict(),
                 host=config.host,
             ) from ex
         if (
@@ -760,7 +772,7 @@ class Discover:
             _LOGGER.warning("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
-                discovery_result=discovery_result.get_dict(),
+                discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
         if (protocol := get_protocol(config)) is None:
@@ -770,7 +782,7 @@ class Discover:
             raise UnsupportedDeviceError(
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
-                discovery_result=discovery_result.get_dict(),
+                discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
 
@@ -783,22 +795,34 @@ class Discover:
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
         device = device_class(config.host, protocol=protocol)
 
-        di = discovery_result.get_dict()
+        di = discovery_result.to_dict()
         di["model"], _, _ = discovery_result.device_model.partition("(")
         device.update_from_discover_info(di)
         return device
 
 
-class EncryptionScheme(BaseModel):
+class _BaseMixin(DataClassJSONMixin):
+    """Base class for serialization mixin."""
+
+    class Config(BaseConfig):
+        """Serialization config."""
+
+        omit_none = True
+        omit_default = True
+
+
+@dataclass
+class EncryptionScheme(_BaseMixin):
     """Base model for encryption scheme of discovery result."""
 
     is_support_https: bool
-    encrypt_type: Optional[str]  # noqa: UP007
+    encrypt_type: Optional[str] = None  # noqa: UP007
     http_port: Optional[int] = None  # noqa: UP007
     lv: Optional[int] = None  # noqa: UP007
 
 
-class EncryptionInfo(BaseModel):
+@dataclass
+class EncryptionInfo(_BaseMixin):
     """Base model for encryption info of discovery result."""
 
     sym_schm: str
@@ -806,19 +830,21 @@ class EncryptionInfo(BaseModel):
     data: str
 
 
-class DiscoveryResult(BaseModel):
+@dataclass
+class DiscoveryResult(_BaseMixin):
     """Base model for discovery result."""
 
     device_type: str
     device_model: str
-    device_name: Optional[str]  # noqa: UP007
+    device_id: str
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme
+    device_name: Optional[str] = None  # noqa: UP007
     encrypt_info: Optional[EncryptionInfo] = None  # noqa: UP007
     encrypt_type: Optional[list[str]] = None  # noqa: UP007
     decrypted_data: Optional[dict] = None  # noqa: UP007
-    device_id: str
+    isResetWiFi: Optional[bool] = None  # noqa: UP007
 
     firmware_version: Optional[str] = None  # noqa: UP007
     hardware_version: Optional[str] = None  # noqa: UP007
@@ -827,12 +853,3 @@ class DiscoveryResult(BaseModel):
     is_support_iot_cloud: Optional[bool] = None  # noqa: UP007
     obd_src: Optional[str] = None  # noqa: UP007
     factory_default: Optional[bool] = None  # noqa: UP007
-
-    def get_dict(self) -> dict:
-        """Return a dict for this discovery result.
-
-        containing only the values actually set and with aliases as field names.
-        """
-        return self.dict(
-            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
-        )

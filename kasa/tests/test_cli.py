@@ -612,7 +612,7 @@ async def test_credentials(discovery_mock, mocker, runner):
 
     mocker.patch("kasa.cli.device.state", new=_state)
 
-    dr = DiscoveryResult(**discovery_mock.discovery_data["result"])
+    dr = DiscoveryResult.from_dict(discovery_mock.discovery_data["result"])
     res = await runner.invoke(
         cli,
         [

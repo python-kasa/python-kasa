@@ -388,8 +388,8 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
     discovery_data = discovery_mock.discovery_data
     device_class = Discover._get_device_class(discovery_data)
     device = device_class("127.0.0.1")
-    discover_info = DiscoveryResult(**discovery_data["result"])
-    discover_dump = discover_info.get_dict()
+    discover_info = DiscoveryResult.from_dict(discovery_data["result"])
+    discover_dump = discover_info.to_dict()
     model, _, _ = discover_dump["device_model"].partition("(")
     discover_dump["model"] = model
     device.update_from_discover_info(discover_dump)
@@ -649,7 +649,7 @@ async def test_discovery_decryption():
         "sym_schm": "AES",
     }
     info = {**UNSUPPORTED["result"], "encrypt_info": encrypt_info}
-    dr = DiscoveryResult(**info)
+    dr = DiscoveryResult.from_dict(info)
     Discover._decrypt_discovery_data(dr)
     assert dr.decrypted_data == data_dict
 

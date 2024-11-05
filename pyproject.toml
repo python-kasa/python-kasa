@@ -14,6 +14,7 @@ dependencies = [
   "aiohttp>=3",
   "typing-extensions>=4.12.2,<5.0",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
+  "mashumaro>=3.14",
 ]
 
 classifiers = [
