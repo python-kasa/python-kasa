@@ -430,6 +430,16 @@ class FakeSmartTransport(BaseTransport):
         info["get_preset_rules"]["states"][params["index"]] = params["state"]
         return {"error_code": 0}
 
+    def _update_sysinfo_key(self, info: dict, key: str, value: str) -> dict:
+        """Update a single key in the main system info.
+
+        This is used to implement child device setters that change the main sysinfo state.
+        """
+        sys_info = info.get("get_device_info", info)
+        sys_info[key] = value
+
+        return {"error_code": 0}
+
     async def _send_request(self, request_dict: dict):
         method = request_dict["method"]
 
@@ -437,7 +447,7 @@ class FakeSmartTransport(BaseTransport):
         if method == "control_child":
             return await self._handle_control_child(request_dict["params"])
 
-        params = request_dict.get("params")
+        params = request_dict.get("params", {})
         if method == "component_nego" or method[:4] == "get_":
             if method in info:
                 result = copy.deepcopy(info[method])
@@ -518,6 +528,8 @@ class FakeSmartTransport(BaseTransport):
             return self._edit_preset_rules(info, params)
         elif method == "set_on_off_gradually_info":
             return self._set_on_off_gradually_info(info, params)
+        elif method == "set_child_protection":
+            return self._update_sysinfo_key(info, "child_protection", params["enable"])
         elif method[:4] == "set_":
             target_method = f"get_{method[4:]}"
             info[target_method].update(params)

@@ -41,7 +41,7 @@ from kasa.iotprotocol import (
     _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
 )
 from kasa.module import Module
-from kasa.protocol import BaseProtocol
+from kasa.protocol import BaseProtocol, BaseTransport
 from kasa.smartprotocol import SmartProtocol
 
 __version__ = version("python-kasa")
@@ -50,6 +50,7 @@ __version__ = version("python-kasa")
 __all__ = [
     "Discover",
     "BaseProtocol",
+    "BaseTransport",
     "IotProtocol",
     "SmartProtocol",
     "LightState",
