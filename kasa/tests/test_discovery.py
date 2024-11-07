@@ -706,3 +706,27 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
     assert dev.config.uses_http is (transport_class != XorTransport)
     if transport_class != XorTransport:
         assert dev.protocol._transport._http_client.client == session
+
+
+async def test_discovery_device_repr(discovery_mock, mocker):
+    """Test that repr works when only discovery data is available."""
+    host = "foobar"
+    ip = "127.0.0.1"
+
+    discovery_mock.ip = ip
+    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    update_mock = mocker.patch.object(device_class, "update")
+
+    dev = await Discover.discover_single(host, credentials=Credentials())
+    assert update_mock.call_count == 0
+
+    repr_ = repr(dev)
+    assert dev.host in repr_
+    assert str(dev.device_type) in repr_
+    assert dev.model in repr_
+
+    # For IOT devices, _last_update is filled from the discovery data
+    if dev._last_update:
+        assert "update() needed" not in repr_
+    else:
+        assert "update() needed" in repr_

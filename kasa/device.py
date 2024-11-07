@@ -469,9 +469,11 @@ class Device(ABC):
         """
 
     def __repr__(self):
-        if self._last_update is None:
-            return f"<{self.device_type} at {self.host} - update() needed>"
-        return f"<{self.device_type} at {self.host} - {self.alias} ({self.model})>"
+        update_needed = " - update() needed" if not self._last_update else ""
+        return (
+            f"<{self.device_type} at {self.host} -"
+            f" {self.alias} ({self.model}){update_needed}>"
+        )
 
     _deprecated_device_type_attributes = {
         # is_type
