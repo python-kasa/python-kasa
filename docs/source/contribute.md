@@ -42,7 +42,7 @@ $ uv run pytest kasa
 This will run the tests against the contributed example responses.
 
 ```{note}
-You can also execute the tests against a real device using `pytest --ip <address>`.
+You can also execute the tests against a real device using `uv run pytest --ip=<address> --username=<username> --password=<password>`.
 Note that this will perform state changes on the device.
 ```
 
@@ -74,7 +74,7 @@ $ python -m devtools.dump_devinfo --username <username> --password <password> --
 ```
 
 ```{note}
-You can also execute the script against a network by using `--target`: `python -m devtools.dump_devinfo --target network 192.168.1.255`
+You can also execute the script against a network by using `--target`: `python -m devtools.dump_devinfo --target 192.168.1.255`
 ```
 
 The script will run queries against the device, and prompt at the end if you want to save the results.
