@@ -142,7 +142,7 @@ ALL_DEVICES_SMART = (
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
-IP_MODEL_CACHE: dict[str, str] = {}
+IP_FIXTURE_CACHE: dict[str, FixtureInfo] = {}
 
 
 def parametrize_combine(parametrized: list[pytest.MarkDecorator]):
@@ -448,6 +448,34 @@ def get_fixture_info(fixture, protocol):
             return fixture_info
 
 
+def get_nearest_fixture_to_ip(dev):
+    if isinstance(dev, SmartDevice):
+        protocol_fixtures = filter_fixtures("", protocol_filter={"SMART"})
+    elif isinstance(dev, SmartCamera):
+        protocol_fixtures = filter_fixtures("", protocol_filter={"SMARTCAMERA"})
+    else:
+        protocol_fixtures = filter_fixtures("", protocol_filter={"IOT"})
+    assert protocol_fixtures, "Unknown device type"
+
+    # Could try an exact match here but would be easier if region was available
+    # on the device
+    if "(" in dev.model:
+        model, _, _ = dev.model.partition("(")
+    else:
+        model = dev.model
+    if model_fixtures := filter_fixtures(
+        "", model_filter={model}, fixture_list=protocol_fixtures
+    ):
+        return next(iter(model_fixtures))
+
+    if device_type_fixtures := filter_fixtures(
+        "", device_type_filter={dev.device_type}, fixture_list=protocol_fixtures
+    ):
+        return next(iter(device_type_fixtures))
+
+    return next(iter(protocol_fixtures))
+
+
 @pytest.fixture(params=filter_fixtures("main devices"), ids=idgenerator)
 async def dev(request) -> AsyncGenerator[Device, None]:
     """Device fixture.
@@ -462,21 +490,25 @@ async def dev(request) -> AsyncGenerator[Device, None]:
     username = request.config.getoption("--username")
     password = request.config.getoption("--password")
     if ip:
-        model = IP_MODEL_CACHE.get(ip)
-        d = None
-        if not model:
-            d = await _discover_update_and_close(ip, username, password)
-            IP_MODEL_CACHE[ip] = model = d.model
+        fixture = IP_FIXTURE_CACHE.get(ip)
 
-        if model not in fixture_data.name:
+        d = None
+        if not fixture:
+            d = await _discover_update_and_close(ip, username, password)
+            IP_FIXTURE_CACHE[ip] = fixture = get_nearest_fixture_to_ip(d)
+        assert fixture
+        if fixture.name != fixture_data.name:
             pytest.skip(f"skipping file {fixture_data.name}")
-        dev = d if d else await _discover_update_and_close(ip, username, password)
+            dev = None
+        else:
+            dev = d if d else await _discover_update_and_close(ip, username, password)
     else:
         dev = await get_device_for_fixture(fixture_data)
 
     yield dev
 
-    await dev.disconnect()
+    if dev:
+        await dev.disconnect()
 
 
 def get_parent_and_child_modules(device: Device, module_name):

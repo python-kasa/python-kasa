@@ -35,6 +35,8 @@ from kasa.discover import DiscoveryResult
 
 from .conftest import DISCOVERY_MOCK_IP
 
+pytestmark = [pytest.mark.requires_dummy]
+
 
 def _get_connection_type_device_class(discovery_info):
     if "result" in discovery_info:

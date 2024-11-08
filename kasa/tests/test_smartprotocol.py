@@ -1,5 +1,4 @@
 import logging
-from typing import cast
 
 import pytest
 import pytest_mock
@@ -420,10 +419,11 @@ async def test_smart_queries_redaction(
     dev: SmartDevice, caplog: pytest.LogCaptureFixture
 ):
     """Test query sensitive info redaction."""
-    device_id = "123456789ABCDEF"
-    cast(FakeSmartTransport, dev.protocol._transport).info["get_device_info"][
-        "device_id"
-    ] = device_id
+    if isinstance(dev.protocol._transport, FakeSmartTransport):
+        device_id = "123456789ABCDEF"
+        dev.protocol._transport.info["get_device_info"]["device_id"] = device_id
+    else:  # real device
+        device_id = dev.device_id
 
     # Info no message logging
     caplog.set_level(logging.INFO)

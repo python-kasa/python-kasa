@@ -24,6 +24,8 @@ from ..exceptions import (
 from ..experimental.sslaestransport import SslAesTransport, TransportState, _sha256_hash
 from ..httpclient import HttpClient
 
+pytestmark = [pytest.mark.requires_dummy]
+
 MOCK_ADMIN_USER = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"]).username
 MOCK_PWD = "correct_pwd"  # noqa: S105
 MOCK_USER = "mock@example.com"

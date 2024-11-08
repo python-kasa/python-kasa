@@ -29,6 +29,8 @@ from ..exceptions import (
 )
 from ..httpclient import HttpClient
 
+pytestmark = [pytest.mark.requires_dummy]
+
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
 key = b"8\x89\x02\xfa\xf5Xs\x1c\xa1 H\x9a\x82\xc7\xd9\t"

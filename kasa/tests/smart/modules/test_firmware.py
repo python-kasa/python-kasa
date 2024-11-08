@@ -73,6 +73,7 @@ async def test_update_available_without_cloud(dev: SmartDevice):
         pytest.param(False, pytest.raises(KasaException), id="not-available"),
     ],
 )
+@pytest.mark.requires_dummy()
 async def test_firmware_update(
     dev: SmartDevice,
     mocker: MockerFixture,

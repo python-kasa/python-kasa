@@ -26,6 +26,7 @@ from .conftest import (
 
 
 @device_smart
+@pytest.mark.requires_dummy()
 async def test_try_get_response(dev: SmartDevice, caplog):
     mock_response: dict = {
         "get_device_info": SmartErrorCode.PARAMS_ERROR,
@@ -37,6 +38,7 @@ async def test_try_get_response(dev: SmartDevice, caplog):
 
 
 @device_smart
+@pytest.mark.requires_dummy()
 async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
     mock_response: dict = {
         "get_device_usage": {},

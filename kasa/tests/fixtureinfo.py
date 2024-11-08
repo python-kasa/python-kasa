@@ -106,6 +106,7 @@ def filter_fixtures(
     model_filter: set[str] | None = None,
     component_filter: str | ComponentFilter | None = None,
     device_type_filter: Iterable[DeviceType] | None = None,
+    fixture_list: list[FixtureInfo] = FIXTURE_DATA,
 ):
     """Filter the fixtures based on supplied parameters.
 
@@ -175,7 +176,7 @@ def filter_fixtures(
     filtered = []
     if protocol_filter is None:
         protocol_filter = {"IOT", "SMART"}
-    for fixture_data in FIXTURE_DATA:
+    for fixture_data in fixture_list:
         if data_root_filter and data_root_filter not in fixture_data.data:
             continue
         if fixture_data.protocol not in protocol_filter:
@@ -191,8 +192,9 @@ def filter_fixtures(
 
         filtered.append(fixture_data)
 
-    print(f"# {desc}")
-    for value in filtered:
-        print(f"\t{value.name}")
+    if desc:
+        print(f"# {desc}")
+        for value in filtered:
+            print(f"\t{value.name}")
     filtered.sort()
     return filtered
