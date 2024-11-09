@@ -47,6 +47,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 1.0 (US) / Firmware: 1.0.6
 - **KP125M**
   - Hardware: 1.0 (US) / Firmware: 1.1.3<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.2.3<sup>\*</sup>
 - **KP401**
   - Hardware: 1.0 (US) / Firmware: 1.0.0
 
@@ -68,6 +69,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KP303**
   - Hardware: 1.0 (UK) / Firmware: 1.0.3
   - Hardware: 2.0 (US) / Firmware: 1.0.3
+  - Hardware: 2.0 (US) / Firmware: 1.0.9
 - **KP400**
   - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 2.0 (US) / Firmware: 1.0.6
@@ -77,12 +79,16 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 ### Wall Switches
 
 - **ES20M**
+  - Hardware: 1.0 (US) / Firmware: 1.0.11
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **HS200**
   - Hardware: 2.0 (US) / Firmware: 1.5.7
+  - Hardware: 3.0 (US) / Firmware: 1.1.5
+  - Hardware: 5.0 (US) / Firmware: 1.0.11
   - Hardware: 5.0 (US) / Firmware: 1.0.2
 - **HS210**
   - Hardware: 1.0 (US) / Firmware: 1.5.8
+  - Hardware: 2.0 (US) / Firmware: 1.1.5
 - **HS220**
   - Hardware: 1.0 (US) / Firmware: 1.5.7
   - Hardware: 2.0 (US) / Firmware: 1.0.3
@@ -91,6 +97,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 1.0 (US) / Firmware: 1.0.5
   - Hardware: 1.0 (US) / Firmware: 1.0.6
 - **KS200M**
+  - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 1.0 (US) / Firmware: 1.0.11
   - Hardware: 1.0 (US) / Firmware: 1.0.12
   - Hardware: 1.0 (US) / Firmware: 1.0.8
@@ -109,6 +116,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KS240**
   - Hardware: 1.0 (US) / Firmware: 1.0.4<sup>\*</sup>
   - Hardware: 1.0 (US) / Firmware: 1.0.5<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.0.7<sup>\*</sup>
 
 ### Bulbs
 
