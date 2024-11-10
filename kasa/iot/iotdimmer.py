@@ -197,7 +197,7 @@ class IotDimmer(IotPlug):
     @requires_update
     async def set_button_action(
         self, action_type: ActionType, action: ButtonAction, index: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set action to perform on button click/hold.
 
         :param action_type ActionType: whether to control double click or hold action.
@@ -211,15 +211,17 @@ class IotDimmer(IotPlug):
         if index is not None:
             payload["index"] = index
 
-        await self._query_helper(self.DIMMER_SERVICE, action_type_setter, payload)
+        return await self._query_helper(
+            self.DIMMER_SERVICE, action_type_setter, payload
+        )
 
     @requires_update
-    async def set_fade_time(self, fade_type: FadeType, time: int) -> None:
+    async def set_fade_time(self, fade_type: FadeType, time: int) -> dict:
         """Set time for fade in / fade out."""
         fade_type_setter = f"set_{fade_type}_time"
         payload = {"fadeTime": time}
 
-        await self._query_helper(self.DIMMER_SERVICE, fade_type_setter, payload)
+        return await self._query_helper(self.DIMMER_SERVICE, fade_type_setter, payload)
 
     @property  # type: ignore
     @requires_update
