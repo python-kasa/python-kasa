@@ -195,7 +195,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Plugs**: P100, P110, P115, P125M, P135, TP15
 - **Power Strips**: P300, P304M, TP25
 - **Wall Switches**: S500D, S505, S505D
-- **Bulbs**: L510B, L510E, L530E
+- **Bulbs**: L510B, L510E, L530E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Hubs**: H100
 - **Hub-Connected Devices<sup>\*\*\*</sup>**: S200B, S200D, T100, T110, T300, T310, T315
