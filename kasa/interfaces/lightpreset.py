@@ -83,7 +83,7 @@ class LightPreset(Module):
 
     PRESET_NOT_SET = "Not set"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         device = self._device
         self._add_feature(
@@ -127,7 +127,7 @@ class LightPreset(Module):
     async def set_preset(
         self,
         preset_name: str,
-    ) -> None:
+    ) -> dict:
         """Set a light preset for the device."""
 
     @abstractmethod
@@ -135,7 +135,7 @@ class LightPreset(Module):
         self,
         preset_name: str,
         preset_info: LightState,
-    ) -> None:
+    ) -> dict:
         """Update the preset with *preset_name* with the new *preset_info*."""
 
     @property

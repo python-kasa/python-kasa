@@ -75,14 +75,14 @@ class DeviceFamily(Enum):
     SmartIpCamera = "SMART.IPCAMERA"
 
 
-def _dataclass_from_dict(klass, in_val):
+def _dataclass_from_dict(klass: Any, in_val: dict) -> Any:
     if is_dataclass(klass):
         fieldtypes = {f.name: f.type for f in fields(klass)}
         val = {}
         for dict_key in in_val:
             if dict_key in fieldtypes:
                 if hasattr(fieldtypes[dict_key], "from_dict"):
-                    val[dict_key] = fieldtypes[dict_key].from_dict(in_val[dict_key])
+                    val[dict_key] = fieldtypes[dict_key].from_dict(in_val[dict_key])  # type: ignore[union-attr]
                 else:
                     val[dict_key] = _dataclass_from_dict(
                         fieldtypes[dict_key], in_val[dict_key]
@@ -91,12 +91,12 @@ def _dataclass_from_dict(klass, in_val):
                 raise KasaException(
                     f"Cannot create dataclass from dict, unknown key: {dict_key}"
                 )
-        return klass(**val)
+        return klass(**val)  # type: ignore[operator]
     else:
         return in_val
 
 
-def _dataclass_to_dict(in_val):
+def _dataclass_to_dict(in_val: Any) -> dict:
     fieldtypes = {f.name: f.type for f in fields(in_val) if f.compare}
     out_val = {}
     for field_name in fieldtypes:
@@ -210,7 +210,7 @@ class DeviceConfig:
 
     aes_keys: Optional[KeyPairDict] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.connection_type is None:
             self.connection_type = DeviceConnectionParameters(
                 DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor

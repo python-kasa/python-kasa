@@ -135,13 +135,13 @@ class Module(ABC):
     # SMARTCAMERA only modules
     Camera: Final[ModuleName[experimental.Camera]] = ModuleName("Camera")
 
-    def __init__(self, device: Device, module: str):
+    def __init__(self, device: Device, module: str) -> None:
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}
 
     @abstractmethod
-    def query(self):
+    def query(self) -> dict:
         """Query to execute during the update cycle.
 
         The inheriting modules implement this to include their wanted
@@ -150,10 +150,10 @@ class Module(ABC):
 
     @property
     @abstractmethod
-    def data(self):
+    def data(self) -> dict:
         """Return the module specific raw data from the last update."""
 
-    def _initialize_features(self):  # noqa: B027
+    def _initialize_features(self) -> None:  # noqa: B027
         """Initialize features after the initial update.
 
         This can be implemented if features depend on module query responses.
@@ -162,7 +162,7 @@ class Module(ABC):
         children's modules.
         """
 
-    async def _post_update_hook(self):  # noqa: B027
+    async def _post_update_hook(self) -> None:  # noqa: B027
         """Perform actions after a device update.
 
         This can be implemented if a module needs to perform actions each time
@@ -171,11 +171,11 @@ class Module(ABC):
         *_initialize_features* on the first update.
         """
 
-    def _add_feature(self, feature: Feature):
+    def _add_feature(self, feature: Feature) -> None:
         """Add module feature."""
         id_ = feature.id
         if id_ in self._module_features:
-            raise KasaException("Duplicate id detected %s" % id_)
+            raise KasaException(f"Duplicate id detected {id_}")
         self._module_features[id_] = feature
 
     def __repr__(self) -> str:

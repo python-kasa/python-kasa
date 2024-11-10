@@ -24,7 +24,7 @@ def _echo_features(
     category: Feature.Category | None = None,
     verbose: bool = False,
     indent: str = "\t",
-):
+) -> None:
     """Print out a listing of features and their values."""
     if category is not None:
         features = {
@@ -43,7 +43,9 @@ def _echo_features(
             echo(f"{indent}{feat.name} ({feat.id}): [red]got exception ({ex})[/red]")
 
 
-def _echo_all_features(features, *, verbose=False, title_prefix=None, indent=""):
+def _echo_all_features(
+    features, *, verbose=False, title_prefix=None, indent=""
+) -> None:
     """Print out all features by category."""
     if title_prefix is not None:
         echo(f"[bold]\n{indent}== {title_prefix} ==[/bold]")

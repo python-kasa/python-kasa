@@ -162,7 +162,7 @@ class Feature:
     #: If set, this property will be used to get *choices*.
     choices_getter: str | Callable[[], list[str]] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Handle late-binding of members."""
         # Populate minimum & maximum values, if range_getter is given
         self._container = self.container if self.container is not None else self.device
@@ -188,7 +188,7 @@ class Feature:
                     f"Read-only feat defines attribute_setter: {self.name} ({self.id}):"
                 )
 
-    def _get_property_value(self, getter):
+    def _get_property_value(self, getter: str | Callable | None) -> Any:
         if getter is None:
             return None
         if isinstance(getter, str):
@@ -227,7 +227,7 @@ class Feature:
         return 0
 
     @property
-    def value(self):
+    def value(self) -> int | float | bool | str | Enum | None:
         """Return the current value."""
         if self.type == Feature.Type.Action:
             return "<Action>"
@@ -264,7 +264,7 @@ class Feature:
 
         return await getattr(container, self.attribute_setter)(value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         try:
             value = self.value
             choices = self.choices
@@ -286,8 +286,8 @@ class Feature:
             value = " ".join(
                 [f"*{choice}*" if choice == value else choice for choice in choices]
             )
-        if self.precision_hint is not None and value is not None:
-            value = round(self.value, self.precision_hint)
+        if self.precision_hint is not None and isinstance(value, float):
+            value = round(value, self.precision_hint)
 
         s = f"{self.name} ({self.id}): {value}"
         if self.unit is not None:
