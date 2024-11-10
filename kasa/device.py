@@ -488,7 +488,9 @@ class Device(ABC):
         "is_strip_socket": (None, DeviceType.StripSocket),
     }
 
-    def _get_replacing_attr(self, module_name: ModuleName, *attrs: Any) -> str | None:
+    def _get_replacing_attr(
+        self, module_name: ModuleName | None, *attrs: Any
+    ) -> str | None:
         # If module name is None check self
         if not module_name:
             check = self
@@ -553,8 +555,7 @@ class Device(ABC):
             return self.device_type == dep_device_type_attr[1]
         # Other deprecated attributes
         if (dep_attr := self._deprecated_other_attributes.get(name)) and (
-            dep_attr[0] is not None
-            and (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
+            (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
             is not None
         ):
             mod = dep_attr[0]
