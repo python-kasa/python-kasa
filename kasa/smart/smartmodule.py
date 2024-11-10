@@ -22,17 +22,17 @@ _R = TypeVar("_R")
 
 
 def allow_update_after(
-    func: Callable[Concatenate[_T, _P], Awaitable[None]],
-) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]]:
+    func: Callable[Concatenate[_T, _P], Awaitable[dict]],
+) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, dict]]:
     """Define a wrapper to set _last_update_time to None.
 
     This will ensure that a module is updated in the next update cycle after
     a value has been changed.
     """
 
-    async def _async_wrap(self: _T, *args: _P.args, **kwargs: _P.kwargs) -> None:
+    async def _async_wrap(self: _T, *args: _P.args, **kwargs: _P.kwargs) -> dict:
         try:
-            await func(self, *args, **kwargs)
+            return await func(self, *args, **kwargs)
         finally:
             self._last_update_time = None
 

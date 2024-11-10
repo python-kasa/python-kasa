@@ -90,9 +90,18 @@ import secrets
 import socket
 import struct
 from asyncio.transports import DatagramTransport
-from collections.abc import Awaitable
 from pprint import pformat as pf
-from typing import TYPE_CHECKING, Any, Callable, Dict, NamedTuple, Optional, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    NamedTuple,
+    Optional,
+    Type,
+    cast,
+)
 
 from aiohttp import ClientSession
 
@@ -141,8 +150,8 @@ class ConnectAttempt(NamedTuple):
     device: type
 
 
-OnDiscoveredCallable = Callable[[Device], Awaitable[None]]
-OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Awaitable[None]]
+OnDiscoveredCallable = Callable[[Device], Coroutine]
+OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Coroutine]
 OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
 DeviceDict = Dict[str, Device]
 
@@ -240,7 +249,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target_discovered: bool = False
         self._started_event = asyncio.Event()
 
-    def _run_callback_task(self, coro: Awaitable) -> None:
+    def _run_callback_task(self, coro: Coroutine) -> None:
         task: asyncio.Task = asyncio.create_task(coro)
         self.callback_tasks.append(task)
 
@@ -261,11 +270,11 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         # Wait for any pending callbacks to complete
         await asyncio.gather(*self.callback_tasks)
 
-    def connection_made(self, transport: DatagramTransport) -> None:
+    def connection_made(self, transport: DatagramTransport) -> None:  # type: ignore[override]
         """Set socket options for broadcasting."""
-        self.transport = transport
+        self.transport = cast(DatagramTransport, transport)
 
-        sock = transport.get_extra_info("socket")
+        sock = self.transport.get_extra_info("socket")
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         try:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -381,11 +390,11 @@ class Discover:
     async def discover(
         *,
         target: str = "255.255.255.255",
-        on_discovered: Awaitable | None = None,
+        on_discovered: OnDiscoveredCallable | None = None,
         discovery_timeout: int = 5,
         discovery_packets: int = 3,
         interface: str | None = None,
-        on_unsupported: Awaitable | None = None,
+        on_unsupported: OnUnsupportedCallable | None = None,
         credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,

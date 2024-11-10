@@ -191,13 +191,13 @@ class AesTransport(BaseTransport):
                 + f"status code {status_code} to passthrough"
             )
 
-        self._handle_response_error_code(
-            resp_dict, "Error sending secure_passthrough message"
-        )
-
         if TYPE_CHECKING:
             resp_dict = cast(Dict[str, Any], resp_dict)
             assert self._encryption_session is not None
+
+        self._handle_response_error_code(
+            resp_dict, "Error sending secure_passthrough message"
+        )
 
         raw_response: str = resp_dict["result"]["response"]
 
@@ -324,10 +324,10 @@ class AesTransport(BaseTransport):
                 + f"status code {status_code} to handshake"
             )
 
-        self._handle_response_error_code(resp_dict, "Unable to complete handshake")
-
         if TYPE_CHECKING:
             resp_dict = cast(Dict[str, Any], resp_dict)
+
+        self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 
         handshake_key = resp_dict["result"]["key"]
 
@@ -418,7 +418,7 @@ class AesEncyptionSession:
         encrypted = encryptor.update(padded_data) + encryptor.finalize()
         return base64.b64encode(encrypted)
 
-    def decrypt(self, data: str) -> str:
+    def decrypt(self, data: str | bytes) -> str:
         """Decrypt the message."""
         decryptor = self.cipher.decryptor()
         unpadder = self.padding_strategy.unpadder()

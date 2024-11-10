@@ -127,7 +127,7 @@ class LightPreset(Module):
     async def set_preset(
         self,
         preset_name: str,
-    ) -> None:
+    ) -> dict:
         """Set a light preset for the device."""
 
     @abstractmethod
@@ -135,7 +135,7 @@ class LightPreset(Module):
         self,
         preset_name: str,
         preset_info: LightState,
-    ) -> None:
+    ) -> dict:
         """Update the preset with *preset_name* with the new *preset_info*."""
 
     @property

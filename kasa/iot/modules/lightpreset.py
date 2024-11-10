@@ -93,7 +93,7 @@ class LightPreset(IotModule, LightPresetInterface):
     async def set_preset(
         self,
         preset_name: str,
-    ) -> None:
+    ) -> dict:
         """Set a light preset for the device."""
         light = self._device.modules[Module.Light]
         if preset_name == self.PRESET_NOT_SET:
@@ -104,7 +104,7 @@ class LightPreset(IotModule, LightPresetInterface):
         elif (preset := self._presets.get(preset_name)) is None:  # type: ignore[assignment]
             raise ValueError(f"{preset_name} is not a valid preset: {self.preset_list}")
 
-        await light.set_state(preset)
+        return await light.set_state(preset)
 
     @property
     def has_save_preset(self) -> bool:

@@ -75,7 +75,7 @@ class RuleModule(IotModule):
 
     async def set_enabled(self, state: bool) -> dict:
         """Enable or disable the service."""
-        return await self.call("set_overall_enable", state)
+        return await self.call("set_overall_enable", {"enable": state})
 
     async def delete_rule(self, rule: Rule) -> dict:
         """Delete the given rule."""

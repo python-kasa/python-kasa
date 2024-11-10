@@ -50,9 +50,9 @@ import logging
 import secrets
 import struct
 import time
+from asyncio import Future
 from typing import TYPE_CHECKING, Any, Generator, cast
 
-from _asyncio import Future
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
@@ -317,7 +317,7 @@ class KlapTransport(BaseTransport):
             or self._session_expire_at - time.monotonic() <= 0
         )
 
-    async def send(self, request: str) -> Generator[Future, None, dict[str, str]]:
+    async def send(self, request: str) -> Generator[Future, None, dict[str, str]]:  # type: ignore[override]
         """Send the request."""
         if not self._handshake_done or self._handshake_session_expired():
             await self.perform_handshake()
@@ -356,6 +356,7 @@ class KlapTransport(BaseTransport):
 
             if TYPE_CHECKING:
                 assert self._encryption_session
+                assert isinstance(response_data, bytes)
             try:
                 decrypted_response = self._encryption_session.decrypt(response_data)
             except Exception as ex:

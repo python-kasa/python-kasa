@@ -81,7 +81,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         *,
         brightness: int | None = None,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set an effect for the device.
 
         Calling this will modify the brightness of the effect on the device.
@@ -105,9 +105,9 @@ class LightEffect(SmartModule, SmartLightEffect):
             brightness = (
                 brightness if brightness is not None else brightness_module.brightness
             )
-            await self.set_brightness(brightness, effect_id=effect_id)
+            return await self.set_brightness(brightness, effect_id=effect_id)
 
-        await self.call("set_dynamic_light_effect_rule_enable", params)
+        return await self.call("set_dynamic_light_effect_rule_enable", params)
 
     @property
     def is_active(self) -> bool:

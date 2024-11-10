@@ -30,12 +30,12 @@ class Usage(IotModule):
         return 2048
 
     @property
-    def daily_data(self) -> dict:
+    def daily_data(self) -> list[dict]:
         """Return statistics on daily basis."""
         return self.data["get_daystat"]["day_list"]
 
     @property
-    def monthly_data(self) -> dict:
+    def monthly_data(self) -> list[dict]:
         """Return statistics on monthly basis."""
         return self.data["get_monthstat"]["month_list"]
 
@@ -117,6 +117,6 @@ class Usage(IotModule):
         if not data:
             return {}
 
-        data = {entry[entry_key]: entry["time"] for entry in data}
+        res = {entry[entry_key]: entry["time"] for entry in data}
 
-        return data
+        return res

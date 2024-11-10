@@ -19,7 +19,7 @@ import inspect
 import logging
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, tzinfo
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 from warnings import warn
 
 from ..device import Device, WifiNetwork
@@ -35,7 +35,7 @@ from .modules import Emeter
 _LOGGER = logging.getLogger(__name__)
 
 
-def requires_update(f: Awaitable | Callable) -> Any:
+def requires_update(f: Callable) -> Any:
     """Indicate that `update` should be called before accessing this method."""  # noqa: D202
     if inspect.iscoroutinefunction(f):
 
@@ -55,7 +55,7 @@ def requires_update(f: Awaitable | Callable) -> Any:
                 raise KasaException("You need to await update() to access the data")
             return f(*args, **kwargs)
 
-    f.requires_update = True
+    f.requires_update = True  # type: ignore[attr-defined]
     return wrapped
 
 
@@ -371,10 +371,8 @@ class IotDevice(Device):
                 type=Feature.Type.Action,
             )
         )
-        if TYPE_CHECKING:
-            assert isinstance(self._supported_modules, ModuleMapping)
 
-        for module in self._supported_modules.values():
+        for module in self.modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)

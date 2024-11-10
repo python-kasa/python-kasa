@@ -117,7 +117,7 @@ def __getattr__(name: str) -> Any:
         )
         return new_class
     if name in deprecated_classes:
-        new_class = deprecated_classes[name]
+        new_class = deprecated_classes[name]  # type: ignore[assignment]
         msg = f"{name} is deprecated, use {new_class.__name__} instead"
         warn(msg, DeprecationWarning, stacklevel=2)
         return new_class

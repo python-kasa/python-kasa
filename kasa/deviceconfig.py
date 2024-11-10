@@ -82,7 +82,7 @@ def _dataclass_from_dict(klass: Any, in_val: dict) -> Any:
         for dict_key in in_val:
             if dict_key in fieldtypes:
                 if hasattr(fieldtypes[dict_key], "from_dict"):
-                    val[dict_key] = fieldtypes[dict_key].from_dict(in_val[dict_key])
+                    val[dict_key] = fieldtypes[dict_key].from_dict(in_val[dict_key])  # type: ignore[union-attr]
                 else:
                     val[dict_key] = _dataclass_from_dict(
                         fieldtypes[dict_key], in_val[dict_key]
@@ -91,7 +91,7 @@ def _dataclass_from_dict(klass: Any, in_val: dict) -> Any:
                 raise KasaException(
                     f"Cannot create dataclass from dict, unknown key: {dict_key}"
                 )
-        return klass(**val)
+        return klass(**val)  # type: ignore[operator]
     else:
         return in_val
 

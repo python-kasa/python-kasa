@@ -33,7 +33,7 @@ class Energy(SmartModule, EnergyInterface):
         # Fallback if get_energy_usage does not provide current_power,
         # which can happen on some newer devices (e.g. P304M).
         elif (
-            power := self.data.get("get_current_power").get("current_power")
+            power := self.data.get("get_current_power", {}).get("current_power")
         ) is not None:
             return power
         return None

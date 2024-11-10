@@ -50,7 +50,7 @@ class LightEffect(IotModule, LightEffectInterface):
         *,
         brightness: int | None = None,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set an effect on the device.
 
         If brightness or transition is defined,
@@ -73,7 +73,7 @@ class LightEffect(IotModule, LightEffectInterface):
                 effect_dict = EFFECT_MAPPING_V1["Aurora"]
             effect_dict = {**effect_dict}
             effect_dict["enable"] = 0
-            await self.set_custom_effect(effect_dict)
+            return await self.set_custom_effect(effect_dict)
         elif effect not in EFFECT_MAPPING_V1:
             raise ValueError(f"The effect {effect} is not a built in effect.")
         else:
@@ -84,7 +84,7 @@ class LightEffect(IotModule, LightEffectInterface):
             if transition is not None:
                 effect_dict["transition"] = transition
 
-            await self.set_custom_effect(effect_dict)
+            return await self.set_custom_effect(effect_dict)
 
     async def set_custom_effect(
         self,

@@ -183,7 +183,7 @@ class Firmware(SmartModule):
     @allow_update_after
     async def update(
         self, progress_cb: Callable[[DownloadState], Coroutine] | None = None
-    ) -> None:
+    ) -> dict:
         """Update the device firmware."""
         if not self._firmware_update_info:
             raise KasaException(
@@ -236,13 +236,15 @@ class Firmware(SmartModule):
                 else:
                     _LOGGER.warning("Unhandled state code: %s", state)
 
+        return state.dict()
+
     @property
     def auto_update_enabled(self) -> bool:
         """Return True if autoupdate is enabled."""
         return "enable" in self.data and self.data["enable"]
 
     @allow_update_after
-    async def set_auto_update_enabled(self, enabled: bool) -> None:
+    async def set_auto_update_enabled(self, enabled: bool) -> dict:
         """Change autoupdate setting."""
         data = {**self.data, "enable": enabled}
-        await self.call("set_auto_update_info", data)
+        return await self.call("set_auto_update_info", data)

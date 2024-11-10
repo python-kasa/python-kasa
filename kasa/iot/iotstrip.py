@@ -246,10 +246,12 @@ class StripEmeter(IotModule, Energy):
             ]
         )
 
-    async def erase_stats(self) -> None:
+    async def erase_stats(self) -> dict:
         """Erase energy meter statistics for all plugs."""
         for plug in self._device.children:
             await plug.modules[Module.Energy].erase_stats()
+
+        return {}
 
     @property  # type: ignore
     def consumption_this_month(self) -> float | None:
@@ -353,7 +355,8 @@ class IotStripPlug(IotPlug):
                 type=Feature.Type.Sensor,
             )
         )
-        for module in self._supported_modules.values():
+
+        for module in self.modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)

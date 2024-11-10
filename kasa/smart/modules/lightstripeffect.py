@@ -68,7 +68,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> None:
+    ) -> dict:
         """Set effect brightness."""
         if brightness <= 0:
             return await self.set_effect(self.LIGHT_EFFECTS_OFF)
@@ -93,7 +93,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         *,
         brightness: int | None = None,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set an effect on the device.
 
         If brightness or transition is defined,
@@ -117,8 +117,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
                 effect_dict = self._effect_mapping["Aurora"]
             effect_dict = {**effect_dict}
             effect_dict["enable"] = 0
-            await self.set_custom_effect(effect_dict)
-            return
+            return await self.set_custom_effect(effect_dict)
 
         if effect not in self._effect_mapping:
             raise ValueError(f"The effect {effect} is not a built in effect.")
@@ -136,7 +135,7 @@ class LightStripEffect(SmartModule, SmartLightEffect):
         if transition is not None:
             effect_dict["transition"] = transition
 
-        await self.set_custom_effect(effect_dict)
+        return await self.set_custom_effect(effect_dict)
 
     @allow_update_after
     async def set_custom_effect(

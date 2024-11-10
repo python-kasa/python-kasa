@@ -96,7 +96,7 @@ class LightEffect(Module, ABC):
         *,
         brightness: int | None = None,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set an effect on the device.
 
         If brightness or transition is defined,

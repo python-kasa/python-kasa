@@ -148,7 +148,8 @@ class SmartDevice(Device):
         self._info = self._try_get_response(resp, "get_device_info")
 
         # Create our internal presentation of available components
-        self._components_raw = resp["component_nego"]
+        self._components_raw = cast(dict, resp["component_nego"])
+
         self._components = {
             comp["id"]: int(comp["ver_code"])
             for comp in self._components_raw["component_list"]
@@ -335,17 +336,18 @@ class SmartDevice(Device):
                 skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
             ) or mod.__name__ in child_modules_to_skip:
                 continue
-            if mod.REQUIRED_COMPONENT in self._components or (
+            required_component = cast(str, mod.REQUIRED_COMPONENT)
+            if required_component in self._components or (
                 mod.REQUIRED_KEY_ON_PARENT
                 and self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
             ):
                 _LOGGER.debug(
                     "Device %s, found required %s, adding %s to modules.",
                     self.host,
-                    mod.REQUIRED_COMPONENT,
+                    required_component,
                     mod.__name__,
                 )
-                module = mod(self, mod.REQUIRED_COMPONENT)
+                module = mod(self, required_component)
                 if await module._check_supported():
                     self._modules[module.name] = module
 
