@@ -12,7 +12,7 @@ class ChildProtection(SmartModule):
     REQUIRED_COMPONENT = "child_protection"
     QUERY_GETTER_NAME = "get_child_protection"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
