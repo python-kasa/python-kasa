@@ -105,7 +105,7 @@ class LightEffect(SmartModule, SmartLightEffect):
             brightness = (
                 brightness if brightness is not None else brightness_module.brightness
             )
-            return await self.set_brightness(brightness, effect_id=effect_id)
+            await self.set_brightness(brightness, effect_id=effect_id)
 
         return await self.call("set_dynamic_light_effect_rule_enable", params)
 
