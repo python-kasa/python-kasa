@@ -71,6 +71,7 @@ include = [
   "/kasa",
   "/devtools",
   "/docs",
+  "/tests",
   "/CHANGELOG.md",
 ]
 
@@ -78,15 +79,11 @@ include = [
 include = [
   "/kasa",
 ]
-exclude = [
-  "/kasa/tests",
-]
 
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
 omit = [
-  "kasa/tests/*",
   "kasa/experimental/*"
 ]
 
@@ -107,6 +104,9 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
 markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
@@ -154,7 +154,7 @@ ignore = [
 convention = "pep257"
 
 [tool.ruff.lint.per-file-ignores]
-"kasa/tests/*.py" = [
+"tests/*.py" = [
     "D100",
     "D101",
     "D102",
