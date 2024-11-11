@@ -322,7 +322,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def model_region(self) -> str:
+    def _model_region(self) -> str:
         """Return device full model name and region."""
 
     @property

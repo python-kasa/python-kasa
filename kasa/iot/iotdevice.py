@@ -457,7 +457,7 @@ class IotDevice(Device):
 
     @property
     @requires_update
-    def model_region(self) -> str:
+    def _model_region(self) -> str:
         """Return device full model name and region."""
         return self.model
 

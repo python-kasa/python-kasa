@@ -460,7 +460,7 @@ def get_nearest_fixture_to_ip(dev):
 
     # This will get the best fixture with a match on model region
     if model_region_fixtures := filter_fixtures(
-        "", model_filter={dev.model_region}, fixture_list=protocol_fixtures
+        "", model_filter={dev._model_region}, fixture_list=protocol_fixtures
     ):
         return next(iter(model_region_fixtures))
 

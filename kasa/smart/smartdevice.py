@@ -493,7 +493,7 @@ class SmartDevice(Device):
         return str(self._info.get("model"))
 
     @property
-    def model_region(self) -> str:
+    def _model_region(self) -> str:
         """Return device full model name and region."""
         if (disco := self._discovery_info) and (
             disco_model := disco.get("device_model")
