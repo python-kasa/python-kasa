@@ -36,7 +36,8 @@ from kasa.exceptions import (
 from kasa.httpclient import HttpClient
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
-from kasa.protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
+from kasa.transports.basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -11,7 +11,7 @@ from kasa import (
     DeviceConfig,
     SmartProtocol,
 )
-from kasa.protocol import BaseTransport
+from kasa.transports.basetransport import BaseTransport
 
 from .device_fixtures import *  # noqa: F403
 from .discovery_fixtures import *  # noqa: F403

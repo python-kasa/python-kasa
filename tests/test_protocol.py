@@ -21,11 +21,11 @@ from kasa.iot import IotDevice
 from kasa.iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
 from kasa.protocol import (
     BaseProtocol,
-    BaseTransport,
     mask_mac,
     redact_data,
 )
 from kasa.transports.aestransport import AesTransport
+from kasa.transports.basetransport import BaseTransport
 from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
 from kasa.transports.xortransport import XorEncryption, XorTransport
 

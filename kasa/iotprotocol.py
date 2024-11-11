@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pprint import pformat as pf
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
@@ -18,7 +18,10 @@ from .exceptions import (
     _RetryableError,
 )
 from .json import dumps as json_dumps
-from .protocol import BaseProtocol, BaseTransport, mask_mac, redact_data
+from .protocol import BaseProtocol, mask_mac, redact_data
+
+if TYPE_CHECKING:
+    from kasa.transports.basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

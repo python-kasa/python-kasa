@@ -139,7 +139,8 @@ from kasa.transports.xortransport import XorEncryption
 _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from kasa import BaseProtocol, BaseTransport
+    from kasa import BaseProtocol
+    from kasa.transports.basetransport import BaseTransport
 
 
 class ConnectAttempt(NamedTuple):

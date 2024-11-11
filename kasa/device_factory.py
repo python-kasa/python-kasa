@@ -7,6 +7,7 @@ import time
 from typing import Any
 
 from kasa.transports.aestransport import AesTransport
+from kasa.transports.basetransport import BaseTransport
 from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
 from kasa.transports.xortransport import XorTransport
 
@@ -29,7 +30,6 @@ from .iot import (
 from .iotprotocol import IotProtocol
 from .protocol import (
     BaseProtocol,
-    BaseTransport,
 )
 from .smart import SmartDevice
 from .smartprotocol import SmartProtocol

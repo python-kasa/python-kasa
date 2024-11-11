@@ -27,7 +27,7 @@ from async_timeout import timeout as asyncio_timeout
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException, _RetryableError
 from kasa.json import loads as json_loads
-from kasa.protocol import BaseTransport
+from kasa.transports.basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Dict, cast
 from yarl import URL
 
 from kasa.transports.aestransport import AesEncyptionSession
+from kasa.transports.basetransport import BaseTransport
 
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
@@ -29,7 +30,7 @@ from ..exceptions import (
 from ..httpclient import HttpClient
 from ..json import dumps as json_dumps
 from ..json import loads as json_loads
-from ..protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from ..protocol import DEFAULT_CREDENTIALS, get_default_credentials
 
 _LOGGER = logging.getLogger(__name__)
 
