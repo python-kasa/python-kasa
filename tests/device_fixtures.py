@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -492,8 +493,8 @@ async def dev(request) -> AsyncGenerator[Device, None]:
     dev: Device
 
     ip = request.config.getoption("--ip")
-    username = request.config.getoption("--username")
-    password = request.config.getoption("--password")
+    username = request.config.getoption("--username") or os.environ.get("KASA_USERNAME")
+    password = request.config.getoption("--password") or os.environ.get("KASA_PASSWORD")
     if ip:
         fixture = IP_FIXTURE_CACHE.get(ip)
 
