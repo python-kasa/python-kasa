@@ -6,7 +6,8 @@ import logging
 import time
 from typing import Any
 
-from .aestransport import AesTransport
+from kasa.transports.aestransport import AesTransport
+
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig

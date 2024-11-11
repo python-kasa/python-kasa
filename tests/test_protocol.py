@@ -13,7 +13,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kasa.aestransport import AesTransport
 from kasa.credentials import Credentials
 from kasa.device import Device
 from kasa.deviceconfig import DeviceConfig
@@ -27,6 +26,7 @@ from kasa.protocol import (
     mask_mac,
     redact_data,
 )
+from kasa.transports.aestransport import AesTransport
 from kasa.xortransport import XorEncryption, XorTransport
 
 from .conftest import device_iot

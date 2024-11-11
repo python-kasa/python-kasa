@@ -9,7 +9,6 @@ import aiohttp
 import pytest
 from yarl import URL
 
-from kasa.aestransport import AesTransport
 from kasa.credentials import Credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
@@ -29,6 +28,7 @@ from kasa.klaptransport import (
 )
 from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 from kasa.smartprotocol import SmartProtocol
+from kasa.transports.aestransport import AesTransport
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 

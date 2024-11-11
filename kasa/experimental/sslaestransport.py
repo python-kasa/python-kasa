@@ -13,7 +13,8 @@ from typing import TYPE_CHECKING, Any, Dict, cast
 
 from yarl import URL
 
-from ..aestransport import AesEncyptionSession
+from kasa.transports.aestransport import AesEncyptionSession
+
 from ..credentials import Credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (

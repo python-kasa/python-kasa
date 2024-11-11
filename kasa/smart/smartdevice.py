@@ -9,7 +9,8 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
-from ..aestransport import AesTransport
+from kasa.transports.aestransport import AesTransport
+
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
