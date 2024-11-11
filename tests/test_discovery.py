@@ -78,14 +78,16 @@ UNSUPPORTED = {
 @wallswitch_iot
 async def test_type_detection_switch(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_wallswitch
-    assert d.device_type == DeviceType.WallSwitch
+    with pytest.deprecated_call(match="use device_type property instead"):
+        assert d.is_wallswitch
+    assert d.device_type is DeviceType.WallSwitch
 
 
 @plug_iot
 async def test_type_detection_plug(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_plug
+    with pytest.deprecated_call(match="use device_type property instead"):
+        assert d.is_plug
     assert d.device_type == DeviceType.Plug
 
 
@@ -93,29 +95,34 @@ async def test_type_detection_plug(dev: Device):
 async def test_type_detection_bulb(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     # TODO: light_strip is a special case for now to force bulb tests on it
-    if not d.is_light_strip:
-        assert d.is_bulb
+
+    if d.device_type is not DeviceType.LightStrip:
+        with pytest.deprecated_call(match="use device_type property instead"):
+            assert d.is_bulb
         assert d.device_type == DeviceType.Bulb
 
 
 @strip_iot
 async def test_type_detection_strip(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_strip
+    with pytest.deprecated_call(match="use device_type property instead"):
+        assert d.is_strip
     assert d.device_type == DeviceType.Strip
 
 
 @dimmer_iot
 async def test_type_detection_dimmer(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_dimmer
+    with pytest.deprecated_call(match="use device_type property instead"):
+        assert d.is_dimmer
     assert d.device_type == DeviceType.Dimmer
 
 
 @lightstrip_iot
 async def test_type_detection_lightstrip(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_light_strip
+    with pytest.deprecated_call(match="use device_type property instead"):
+        assert d.is_light_strip
     assert d.device_type == DeviceType.LightStrip
 
 
