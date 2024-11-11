@@ -71,6 +71,7 @@ include = [
   "/kasa",
   "/devtools",
   "/docs",
+  "/tests",
   "/CHANGELOG.md",
 ]
 
