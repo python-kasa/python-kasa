@@ -479,11 +479,11 @@ class Device(ABC):
 
     _deprecated_device_type_attributes = {
         # is_type
-        "is_bulb": (Module.Light, DeviceType.Bulb),
-        "is_dimmer": (Module.Light, DeviceType.Dimmer),
-        "is_light_strip": (Module.LightEffect, DeviceType.LightStrip),
-        "is_plug": (Module.Led, DeviceType.Plug),
-        "is_wallswitch": (Module.Led, DeviceType.WallSwitch),
+        "is_bulb": (None, DeviceType.Bulb),
+        "is_dimmer": (None, DeviceType.Dimmer),
+        "is_light_strip": (None, DeviceType.LightStrip),
+        "is_plug": (None, DeviceType.Plug),
+        "is_wallswitch": (None, DeviceType.WallSwitch),
         "is_strip": (None, DeviceType.Strip),
         "is_strip_socket": (None, DeviceType.StripSocket),
     }
@@ -547,10 +547,7 @@ class Device(ABC):
     def __getattr__(self, name: str) -> Any:
         # is_device_type
         if dep_device_type_attr := self._deprecated_device_type_attributes.get(name):
-            module = dep_device_type_attr[0]
-            msg = f"{name} is deprecated"
-            if module:
-                msg += f", use: {module} in device.modules instead"
+            msg = f"{name} is deprecated, use device_type property instead"
             warn(msg, DeprecationWarning, stacklevel=2)
             return self.device_type == dep_device_type_attr[1]
         # Other deprecated attributes
