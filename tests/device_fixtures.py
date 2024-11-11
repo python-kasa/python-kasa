@@ -457,14 +457,19 @@ def get_nearest_fixture_to_ip(dev):
         protocol_fixtures = filter_fixtures("", protocol_filter={"IOT"})
     assert protocol_fixtures, "Unknown device type"
 
-    # Could try an exact match here but would be easier if region was available
-    # on the device
+    # This will get the best fixture with a match on model region
+    if model_region_fixtures := filter_fixtures(
+        "", model_filter={dev.model_region}, fixture_list=protocol_fixtures
+    ):
+        return next(iter(model_region_fixtures))
+
+    # This will get the best fixture based on model starting with the name.
     if "(" in dev.model:
         model, _, _ = dev.model.partition("(")
     else:
         model = dev.model
     if model_fixtures := filter_fixtures(
-        "", model_filter={model}, fixture_list=protocol_fixtures
+        "", model_startswith_filter=model, fixture_list=protocol_fixtures
     ):
         return next(iter(model_fixtures))
 

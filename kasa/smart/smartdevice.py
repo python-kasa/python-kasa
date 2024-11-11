@@ -493,6 +493,17 @@ class SmartDevice(Device):
         return str(self._info.get("model"))
 
     @property
+    def model_region(self) -> str:
+        """Return device full model name and region."""
+        if (disco := self._discovery_info) and (
+            disco_model := disco.get("device_model")
+        ):
+            return disco_model
+        # Some devices have the region in the specs element.
+        region = f"({specs})" if (specs := self._info.get("specs")) else ""
+        return f"{self.model}{region}"
+
+    @property
     def alias(self) -> str | None:
         """Returns the device alias or nickname."""
         if self._info and (nickname := self._info.get("nickname")):

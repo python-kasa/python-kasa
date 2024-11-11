@@ -104,6 +104,7 @@ def filter_fixtures(
     data_root_filter: str | None = None,
     protocol_filter: set[str] | None = None,
     model_filter: set[str] | None = None,
+    model_startswith_filter: str | None = None,
     component_filter: str | ComponentFilter | None = None,
     device_type_filter: Iterable[DeviceType] | None = None,
     fixture_list: list[FixtureInfo] = FIXTURE_DATA,
@@ -128,11 +129,14 @@ def filter_fixtures(
             and (model := model_filter_list[0])
             and len(model.split("_")) == 3
         ):
-            # return exact match
+            # filter string includes hw and fw, return exact match
             return fixture_data.name == f"{model}.json"
         file_model_region = fixture_data.name.split("_")[0]
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter
+
+    def _model_startswith_match(fixture_data: FixtureInfo, starts_with: str):
+        return fixture_data.name.startswith(starts_with)
 
     def _component_match(
         fixture_data: FixtureInfo, component_filter: str | ComponentFilter
@@ -182,6 +186,10 @@ def filter_fixtures(
         if fixture_data.protocol not in protocol_filter:
             continue
         if model_filter is not None and not _model_match(fixture_data, model_filter):
+            continue
+        if model_startswith_filter is not None and not _model_startswith_match(
+            fixture_data, model_startswith_filter
+        ):
             continue
         if component_filter and not _component_match(fixture_data, component_filter):
             continue

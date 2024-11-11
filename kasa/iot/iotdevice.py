@@ -455,6 +455,12 @@ class IotDevice(Device):
         sys_info = self._sys_info
         return str(sys_info["model"])
 
+    @property
+    @requires_update
+    def model_region(self) -> str:
+        """Return device full model name and region."""
+        return self.model
+
     @property  # type: ignore
     def alias(self) -> str | None:
         """Return device name (alias)."""
