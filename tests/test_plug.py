@@ -1,3 +1,4 @@
+import pytest
 from kasa import DeviceType
 
 from .conftest import plug, plug_iot, plug_smart, switch_smart, wallswitch_iot
@@ -32,32 +33,34 @@ async def test_switch_sysinfo(dev):
 
 @plug_iot
 async def test_plug_led(dev):
-    original = dev.led
+    with pytest.deprecated_call(match="use: Module.Led in device.modules instead"):
+        original = dev.led
 
-    await dev.set_led(False)
-    await dev.update()
-    assert not dev.led
+        await dev.set_led(False)
+        await dev.update()
+        assert not dev.led
 
-    await dev.set_led(True)
-    await dev.update()
-    assert dev.led
+        await dev.set_led(True)
+        await dev.update()
+        assert dev.led
 
-    await dev.set_led(original)
+        await dev.set_led(original)
 
 
 @wallswitch_iot
 async def test_switch_led(dev):
-    original = dev.led
+    with pytest.deprecated_call(match="use: Module.Led in device.modules instead"):
+        original = dev.led
 
-    await dev.set_led(False)
-    await dev.update()
-    assert not dev.led
+        await dev.set_led(False)
+        await dev.update()
+        assert not dev.led
 
-    await dev.set_led(True)
-    await dev.update()
-    assert dev.led
+        await dev.set_led(True)
+        await dev.update()
+        assert dev.led
 
-    await dev.set_led(original)
+        await dev.set_led(original)
 
 
 @plug_smart
