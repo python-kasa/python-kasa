@@ -149,7 +149,7 @@
         "longitude": 0,
         "mac": "F0-09-0D-00-00-00",
         "model": "P110M",
-        "nickname": "redacted",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
         "oem_id": "00000000000000000000000000000000",
         "on_time": 186533,
         "overcurrent_status": "normal",
@@ -159,7 +159,7 @@
         "rssi": -53,
         "signal_level": 2,
         "specs": "",
-        "ssid": "redacted",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
         "time_diff": 600,
         "type": "SMART.TAPOPLUG"
     },
@@ -342,7 +342,7 @@
                 "cipher_type": 2,
                 "key_type": "wpa2_psk",
                 "signal_level": 3,
-                "ssid": "redacted"
+                "ssid": "I01BU0tFRF9TU0lEIw=="
             },
             {
                 "bssid": "000000000000",
@@ -350,7 +350,7 @@
                 "cipher_type": 2,
                 "key_type": "wpa2_psk",
                 "signal_level": 1,
-                "ssid": "redacted"
+                "ssid": "I01BU0tFRF9TU0lEIw=="
             },
             {
                 "bssid": "000000000000",
@@ -358,7 +358,7 @@
                 "cipher_type": 2,
                 "key_type": "wpa2_psk",
                 "signal_level": 1,
-                "ssid": "redacted"
+                "ssid": "I01BU0tFRF9TU0lEIw=="
             }
         ],
         "start_index": 0,
