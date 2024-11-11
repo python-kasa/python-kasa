@@ -35,6 +35,8 @@ from kasa.discover import DiscoveryResult
 
 from .conftest import DISCOVERY_MOCK_IP
 
+# Device Factory tests are not relevant for real devices which run against
+# a single device that has already been created via the factory.
 pytestmark = [pytest.mark.requires_dummy]
 
 

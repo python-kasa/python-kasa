@@ -27,6 +27,7 @@ from kasa.experimental.sslaestransport import (
 from kasa.httpclient import HttpClient
 from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 
+# Transport tests are not designed for real devices
 pytestmark = [pytest.mark.requires_dummy]
 
 MOCK_ADMIN_USER = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"]).username
