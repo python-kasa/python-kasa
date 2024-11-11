@@ -125,8 +125,13 @@ async def test_parent_property(dev: Device):
 
 
 @has_children_smart
+@pytest.mark.requires_dummy()
 async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory):
-    """Test a child device gets the time from it's parent module."""
+    """Test a child device gets the time from it's parent module.
+
+    This is excluded from real device testing as the test often fail if the
+    device time is not in the past.
+    """
     if not dev.children:
         pytest.skip(f"Device {dev} fixture does not have any children")
 
