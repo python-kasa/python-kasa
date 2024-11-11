@@ -20,15 +20,15 @@ from kasa.exceptions import (
 )
 from kasa.httpclient import HttpClient
 from kasa.iotprotocol import IotProtocol
-from kasa.klaptransport import (
+from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
+from kasa.smartprotocol import SmartProtocol
+from kasa.transports.aestransport import AesTransport
+from kasa.transports.klaptransport import (
     KlapEncryptionSession,
     KlapTransport,
     KlapTransportV2,
     _sha256,
 )
-from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
-from kasa.smartprotocol import SmartProtocol
-from kasa.transports.aestransport import AesTransport
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 

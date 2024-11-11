@@ -19,7 +19,6 @@ from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException
 from kasa.iot import IotDevice
 from kasa.iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
-from kasa.klaptransport import KlapTransport, KlapTransportV2
 from kasa.protocol import (
     BaseProtocol,
     BaseTransport,
@@ -27,6 +26,7 @@ from kasa.protocol import (
     redact_data,
 )
 from kasa.transports.aestransport import AesTransport
+from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
 from kasa.xortransport import XorEncryption, XorTransport
 
 from .conftest import device_iot

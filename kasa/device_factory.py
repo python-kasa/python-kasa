@@ -7,6 +7,7 @@ import time
 from typing import Any
 
 from kasa.transports.aestransport import AesTransport
+from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
 
 from .device import Device
 from .device_type import DeviceType
@@ -25,7 +26,6 @@ from .iot import (
     IotWallSwitch,
 )
 from .iotprotocol import IotProtocol
-from .klaptransport import KlapTransport, KlapTransportV2
 from .protocol import (
     BaseProtocol,
     BaseTransport,
