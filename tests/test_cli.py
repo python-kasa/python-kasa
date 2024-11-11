@@ -51,6 +51,10 @@ from .conftest import (
     turn_on,
 )
 
+# The cli tests should be testing the cli logic rather than a physical device
+# so mark the whole file for skipping with real devices.
+pytestmark = [pytest.mark.requires_dummy]
+
 
 @pytest.fixture()
 def runner():

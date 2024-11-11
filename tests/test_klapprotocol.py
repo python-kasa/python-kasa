@@ -32,6 +32,9 @@ from kasa.smartprotocol import SmartProtocol
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 
+# Transport tests are not designed for real devices
+pytestmark = [pytest.mark.requires_dummy]
+
 
 class _mock_response:
     def __init__(self, status, content: bytes):
