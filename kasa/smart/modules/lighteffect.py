@@ -81,7 +81,7 @@ class LightEffect(SmartModule, SmartLightEffect):
         *,
         brightness: int | None = None,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set an effect for the device.
 
         Calling this will modify the brightness of the effect on the device.
@@ -107,7 +107,7 @@ class LightEffect(SmartModule, SmartLightEffect):
             )
             await self.set_brightness(brightness, effect_id=effect_id)
 
-        await self.call("set_dynamic_light_effect_rule_enable", params)
+        return await self.call("set_dynamic_light_effect_rule_enable", params)
 
     @property
     def is_active(self) -> bool:
@@ -139,11 +139,11 @@ class LightEffect(SmartModule, SmartLightEffect):
         *,
         transition: int | None = None,
         effect_id: str | None = None,
-    ):
+    ) -> dict:
         """Set effect brightness."""
         new_effect = self._get_effect_data(effect_id=effect_id).copy()
 
-        def _replace_brightness(data, new_brightness):
+        def _replace_brightness(data: list[int], new_brightness: int) -> list[int]:
             """Replace brightness.
 
             The first element is the brightness, the rest are unknown.
@@ -163,7 +163,7 @@ class LightEffect(SmartModule, SmartLightEffect):
     async def set_custom_effect(
         self,
         effect_dict: dict,
-    ) -> None:
+    ) -> dict:
         """Set a custom effect on the device.
 
         :param str effect_dict: The custom effect dict to set

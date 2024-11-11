@@ -41,7 +41,7 @@ class LightPreset(IotModule, LightPresetInterface):
     _presets: dict[str, IotLightPreset]
     _preset_list: list[str]
 
-    async def _post_update_hook(self):
+    async def _post_update_hook(self) -> None:
         """Update the internal presets."""
         self._presets = {
             f"Light preset {index+1}": IotLightPreset(**vals)
@@ -93,7 +93,7 @@ class LightPreset(IotModule, LightPresetInterface):
     async def set_preset(
         self,
         preset_name: str,
-    ) -> None:
+    ) -> dict:
         """Set a light preset for the device."""
         light = self._device.modules[Module.Light]
         if preset_name == self.PRESET_NOT_SET:
@@ -104,7 +104,7 @@ class LightPreset(IotModule, LightPresetInterface):
         elif (preset := self._presets.get(preset_name)) is None:  # type: ignore[assignment]
             raise ValueError(f"{preset_name} is not a valid preset: {self.preset_list}")
 
-        await light.set_state(preset)
+        return await light.set_state(preset)
 
     @property
     def has_save_preset(self) -> bool:
@@ -115,7 +115,7 @@ class LightPreset(IotModule, LightPresetInterface):
         self,
         preset_name: str,
         preset_state: LightState,
-    ) -> None:
+    ) -> dict:
         """Update the preset with preset_name with the new preset_info."""
         if len(self._presets) == 0:
             raise KasaException("Device does not supported saving presets")
@@ -129,7 +129,7 @@ class LightPreset(IotModule, LightPresetInterface):
 
         return await self.call("set_preferred_state", state)
 
-    def query(self):
+    def query(self) -> dict:
         """Return the base query."""
         return {}
 
@@ -142,7 +142,7 @@ class LightPreset(IotModule, LightPresetInterface):
             if "id" not in vals
         ]
 
-    async def _deprecated_save_preset(self, preset: IotLightPreset):
+    async def _deprecated_save_preset(self, preset: IotLightPreset) -> dict:
         """Save a setting preset.
 
         You can either construct a preset object manually, or pass an existing one

@@ -15,10 +15,10 @@ class KasaException(Exception):
 class TimeoutError(KasaException, _asyncioTimeoutError):
     """Timeout exception for device errors."""
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return KasaException.__repr__(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return KasaException.__str__(self)
 
 
@@ -42,11 +42,11 @@ class DeviceError(KasaException):
         self.error_code: SmartErrorCode | None = kwargs.get("error_code", None)
         super().__init__(*args)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         err_code = self.error_code.__repr__() if self.error_code else ""
         return f"{self.__class__.__name__}({err_code})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         err_code = f" (error_code={self.error_code.name})" if self.error_code else ""
         return super().__str__() + err_code
 
@@ -62,7 +62,7 @@ class _RetryableError(DeviceError):
 class SmartErrorCode(IntEnum):
     """Enum for SMART Error Codes."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name}({self.value})"
 
     @staticmethod

@@ -13,7 +13,7 @@ to be handled by the user of the library.
 """
 
 from importlib.metadata import version
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 from kasa.credentials import Credentials
@@ -101,7 +101,7 @@ deprecated_classes = {
 }
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     if name in deprecated_names:
         warn(f"{name} is deprecated", DeprecationWarning, stacklevel=2)
         return globals()[f"_deprecated_{name}"]
@@ -117,7 +117,7 @@ def __getattr__(name):
         )
         return new_class
     if name in deprecated_classes:
-        new_class = deprecated_classes[name]
+        new_class = deprecated_classes[name]  # type: ignore[assignment]
         msg = f"{name} is deprecated, use {new_class.__name__} instead"
         warn(msg, DeprecationWarning, stacklevel=2)
         return new_class

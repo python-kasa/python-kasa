@@ -310,9 +310,7 @@ class FakeSmartTransport(BaseTransport):
             }
             return retval
 
-        raise NotImplementedError(
-            "Method %s not implemented for children" % child_method
-        )
+        raise NotImplementedError(f"Method {child_method} not implemented for children")
 
     def _get_on_off_gradually_info(self, info, params):
         if self.components["on_off_gradually"] == 1:

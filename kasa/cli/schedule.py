@@ -14,7 +14,7 @@ from .common import (
 
 @click.group()
 @pass_dev
-async def schedule(dev):
+async def schedule(dev) -> None:
     """Scheduling commands."""
 
 

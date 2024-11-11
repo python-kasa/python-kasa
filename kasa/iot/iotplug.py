@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -54,7 +55,7 @@ class IotPlug(IotDevice):
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules."""
         await super()._initialize_modules()
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
@@ -71,11 +72,11 @@ class IotPlug(IotDevice):
         sys_info = self.sys_info
         return bool(sys_info["relay_state"])
 
-    async def turn_on(self, **kwargs):
+    async def turn_on(self, **kwargs: Any) -> dict:
         """Turn the switch on."""
         return await self._query_helper("system", "set_relay_state", {"state": 1})
 
-    async def turn_off(self, **kwargs):
+    async def turn_off(self, **kwargs: Any) -> dict:
         """Turn the switch off."""
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 

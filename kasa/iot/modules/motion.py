@@ -24,7 +24,7 @@ class Range(Enum):
 class Motion(IotModule):
     """Implements the motion detection (PIR) module."""
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         # Only add features if the device supports the module
         if "get_config" not in self.data:
@@ -48,7 +48,7 @@ class Motion(IotModule):
             )
         )
 
-    def query(self):
+    def query(self) -> dict:
         """Request PIR configuration."""
         return self.query_for_command("get_config")
 
@@ -67,13 +67,13 @@ class Motion(IotModule):
         """Return True if module is enabled."""
         return bool(self.config["enable"])
 
-    async def set_enabled(self, state: bool):
+    async def set_enabled(self, state: bool) -> dict:
         """Enable/disable PIR."""
         return await self.call("set_enable", {"enable": int(state)})
 
     async def set_range(
         self, *, range: Range | None = None, custom_range: int | None = None
-    ):
+    ) -> dict:
         """Set the range for the sensor.
 
         :param range: for using standard ranges
@@ -93,7 +93,7 @@ class Motion(IotModule):
         """Return inactivity timeout in milliseconds."""
         return self.config["cold_time"]
 
-    async def set_inactivity_timeout(self, timeout: int):
+    async def set_inactivity_timeout(self, timeout: int) -> dict:
         """Set inactivity timeout in milliseconds.
 
         Note, that you need to delete the default "Smart Control" rule in the app
