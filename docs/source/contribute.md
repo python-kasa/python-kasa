@@ -59,7 +59,7 @@ One of the easiest ways to contribute is by creating a fixture file and uploadin
 These files will help us to improve the library and run tests against devices that we have no access to.
 
 This library is tested against responses from real devices ("fixture files").
-These files contain responses for selected, known device commands and are stored [in our test suite](https://github.com/python-kasa/python-kasa/tree/master/kasa/tests/fixtures).
+These files contain responses for selected, known device commands and are stored [in our test suite](https://github.com/python-kasa/python-kasa/tree/master/tests/fixtures).
 
 You can generate these files by using the `dump_devinfo.py` script.
 Note, that this script should be run inside the main source directory so that the generated files are stored in the correct directories.

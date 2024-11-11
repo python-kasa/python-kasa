@@ -41,8 +41,8 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
 SUPPORTED_FILENAME = "SUPPORTED.md"
 README_FILENAME = "README.md"
 
-IOT_FOLDER = "kasa/tests/fixtures/"
-SMART_FOLDER = "kasa/tests/fixtures/smart/"
+IOT_FOLDER = "tests/fixtures/"
+SMART_FOLDER = "tests/fixtures/smart/"
 
 
 def generate_supported(args):
