@@ -42,8 +42,9 @@ class Energy(SmartModule, EnergyInterface):
     @raise_if_update_error
     def energy(self) -> dict:
         """Return get_energy_usage results."""
-        if en := self.data.get("get_energy_usage"):
-            return en
+        energy_usage = self.data.get("get_energy_usage")
+        if isinstance(energy_usage, dict):
+            return energy_usage
         return self.data
 
     def _get_status_from_energy(self, energy: dict) -> EmeterStatus:
