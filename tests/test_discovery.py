@@ -41,7 +41,7 @@ from kasa.discover import (
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
 from kasa.iot import IotDevice
 from kasa.transports.aestransport import AesEncyptionSession
-from kasa.xortransport import XorEncryption, XorTransport
+from kasa.transports.xortransport import XorEncryption, XorTransport
 
 from .conftest import (
     bulb_iot,

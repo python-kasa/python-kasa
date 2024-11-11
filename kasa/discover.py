@@ -134,7 +134,7 @@ from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import mask_mac, redact_data
 from kasa.transports.aestransport import AesEncyptionSession, KeyPair
-from kasa.xortransport import XorEncryption
+from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
 

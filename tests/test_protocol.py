@@ -27,7 +27,7 @@ from kasa.protocol import (
 )
 from kasa.transports.aestransport import AesTransport
 from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
-from kasa.xortransport import XorEncryption, XorTransport
+from kasa.transports.xortransport import XorEncryption, XorTransport
 
 from .conftest import device_iot
 from .fakeprotocol_iot import FakeIotTransport

@@ -7,6 +7,8 @@ import logging
 from pprint import pformat as pf
 from typing import Any, Callable
 
+from kasa.transports.xortransport import XorEncryption, XorTransport
+
 from .deviceconfig import DeviceConfig
 from .exceptions import (
     AuthenticationError,
@@ -17,7 +19,6 @@ from .exceptions import (
 )
 from .json import dumps as json_dumps
 from .protocol import BaseProtocol, BaseTransport, mask_mac, redact_data
-from .xortransport import XorEncryption, XorTransport
 
 _LOGGER = logging.getLogger(__name__)
 
