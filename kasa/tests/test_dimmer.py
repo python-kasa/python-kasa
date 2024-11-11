@@ -9,6 +9,7 @@ from .conftest import dimmer_iot, handle_turn_on, turn_on
 @dimmer_iot
 async def test_set_brightness(dev):
     await handle_turn_on(dev, False)
+    await dev.update()
     assert dev.is_on is False
 
     await dev.set_brightness(99)
@@ -89,6 +90,7 @@ async def test_turn_off_transition(dev, mocker):
     original_brightness = dev.brightness
 
     await dev.turn_off(transition=1000)
+    await dev.update()
 
     assert dev.is_off
     assert dev.brightness == original_brightness
@@ -126,6 +128,7 @@ async def test_set_dimmer_transition_to_off(dev, turn_on, mocker):
     query_helper = mocker.spy(IotDimmer, "_query_helper")
 
     await dev.set_dimmer_transition(0, 1000)
+    await dev.update()
 
     assert dev.is_off
     assert dev.brightness == original_brightness
