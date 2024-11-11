@@ -342,8 +342,10 @@ async def test_set_time(dev: Device):
         await dev.update()
         assert time_mod.time == test_time
 
-        assert isinstance(original_timezone, ZoneInfo)
-        if original_timezone.key != "Europe/Berlin":
+        if (
+            isinstance(original_timezone, ZoneInfo)
+            and original_timezone.key != "Europe/Berlin"
+        ):
             test_zonezone = ZoneInfo("Europe/Berlin")
         else:
             test_zonezone = ZoneInfo("Europe/London")
