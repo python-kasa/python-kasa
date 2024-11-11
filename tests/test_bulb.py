@@ -32,7 +32,7 @@ from .conftest import (
 from .test_iotdevice import SYSINFO_SCHEMA
 
 
-@bulb
+@bulb_iot
 async def test_bulb_sysinfo(dev: Device):
     assert dev.sys_info is not None
     SYSINFO_SCHEMA_BULB(dev.sys_info)

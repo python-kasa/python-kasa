@@ -687,10 +687,13 @@ def test_deprecated_protocol():
 @device_iot
 async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFixture):
     """Test query sensitive info redaction."""
-    device_id = "123456789ABCDEF"
-    cast(FakeIotTransport, dev.protocol._transport).proto["system"]["get_sysinfo"][
-        "deviceId"
-    ] = device_id
+    if isinstance(dev.protocol._transport, FakeIotTransport):
+        device_id = "123456789ABCDEF"
+        cast(FakeIotTransport, dev.protocol._transport).proto["system"]["get_sysinfo"][
+            "deviceId"
+        ] = device_id
+    else:  # real device with --ip
+        device_id = dev.sys_info["deviceId"]
 
     # Info no message logging
     caplog.set_level(logging.INFO)

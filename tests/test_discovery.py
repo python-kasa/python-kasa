@@ -53,6 +53,9 @@ from .conftest import (
     wallswitch_iot,
 )
 
+# A physical device has to respond to discovery for the tests to work.
+pytestmark = [pytest.mark.requires_dummy]
+
 UNSUPPORTED = {
     "result": {
         "device_id": "xx",

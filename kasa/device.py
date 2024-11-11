@@ -322,6 +322,11 @@ class Device(ABC):
 
     @property
     @abstractmethod
+    def _model_region(self) -> str:
+        """Return device full model name and region."""
+
+    @property
+    @abstractmethod
     def alias(self) -> str | None:
         """Returns the device alias or nickname."""
 
