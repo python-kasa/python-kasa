@@ -25,8 +25,8 @@ from kasa.deviceconfig import (
     DeviceEncryptionType,
     DeviceFamily,
 )
-from kasa.klaptransport import KlapEncryptionSession, KlapTransportV2
 from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
+from kasa.transports.klaptransport import KlapEncryptionSession, KlapTransportV2
 
 
 def _get_seq_from_query(packet):
