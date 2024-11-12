@@ -181,9 +181,7 @@ async def test_emeter_daily():
     emeter_data["get_daystat"]["day_list"].append(
         {"day": now.day, "energy_wh": 500, "month": now.month, "year": now.year}
     )
-    # TODO: unclear how to fix this, or if it is even needed anymore, so using deprecated_call
-    with pytest.deprecated_call(match="use consumption_today instead"):
-        assert emeter.emeter_today == 0.500
+    assert emeter.consumption_today == 0.500
 
 
 @has_emeter

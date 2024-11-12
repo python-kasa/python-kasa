@@ -18,8 +18,6 @@ async def test_plug_sysinfo(dev):
     assert dev.model is not None
 
     assert dev.device_type == DeviceType.Plug or dev.device_type == DeviceType.Strip
-    with pytest.deprecated_call(match="use device_type property instead"):
-        assert dev.is_plug or dev.is_strip
 
 
 @wallswitch_iot
@@ -30,8 +28,6 @@ async def test_switch_sysinfo(dev):
     assert dev.model is not None
 
     assert dev.device_type == DeviceType.WallSwitch
-    with pytest.deprecated_call(match="use device_type property instead"):
-        assert dev.is_wallswitch
 
 
 @plug_iot
