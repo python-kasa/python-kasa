@@ -21,3 +21,13 @@ except ImportError:
         return json.dumps(obj, separators=(",", ":"))
 
     loads = json.loads
+
+
+try:
+    from mashumaro.mixins.orjson import DataClassORJSONMixin
+
+    DataClassJSONMixin = DataClassORJSONMixin
+except ImportError:
+    from mashumaro.mixins.json import DataClassJSONMixin as JSONMixin
+
+    DataClassJSONMixin = JSONMixin  # type: ignore[assignment, misc]

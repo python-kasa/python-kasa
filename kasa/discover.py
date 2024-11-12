@@ -112,11 +112,6 @@ from async_timeout import timeout as asyncio_timeout
 from mashumaro import field_options
 from mashumaro.config import BaseConfig
 
-try:
-    from mashumaro.mixins.orjson import DataClassORJSONMixin as DataClassJSONMixin
-except ImportError:
-    from mashumaro.mixins.json import DataClassJSONMixin  # type: ignore[assignment]
-
 from kasa import Device
 from kasa.credentials import Credentials
 from kasa.device_factory import (
@@ -137,6 +132,7 @@ from kasa.exceptions import (
 from kasa.experimental import Experimental
 from kasa.iot.iotdevice import IotDevice
 from kasa.iotprotocol import REDACTORS as IOT_REDACTORS
+from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import mask_mac, redact_data
@@ -820,7 +816,7 @@ class Discover:
         return device
 
 
-class _BaseMixin(DataClassJSONMixin):
+class _DiscoveryBaseMixin(DataClassJSONMixin):
     """Base class for serialization mixin."""
 
     class Config(BaseConfig):
@@ -832,7 +828,7 @@ class _BaseMixin(DataClassJSONMixin):
 
 
 @dataclass
-class EncryptionScheme(_BaseMixin):
+class EncryptionScheme(_DiscoveryBaseMixin):
     """Base model for encryption scheme of discovery result."""
 
     is_support_https: bool
@@ -842,7 +838,7 @@ class EncryptionScheme(_BaseMixin):
 
 
 @dataclass
-class EncryptionInfo(_BaseMixin):
+class EncryptionInfo(_DiscoveryBaseMixin):
     """Base model for encryption info of discovery result."""
 
     sym_schm: str
@@ -851,7 +847,7 @@ class EncryptionInfo(_BaseMixin):
 
 
 @dataclass
-class DiscoveryResult(_BaseMixin):
+class DiscoveryResult(_DiscoveryBaseMixin):
     """Base model for discovery result."""
 
     device_type: str
