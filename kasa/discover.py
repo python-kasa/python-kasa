@@ -90,7 +90,7 @@ import secrets
 import socket
 import struct
 from asyncio.transports import DatagramTransport
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pprint import pformat as pf
 from typing import (
     TYPE_CHECKING,
@@ -109,6 +109,7 @@ from aiohttp import ClientSession
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
+from mashumaro import field_options
 from mashumaro.config import BaseConfig
 
 try:
@@ -826,6 +827,7 @@ class _BaseMixin(DataClassJSONMixin):
 
         omit_none = True
         omit_default = True
+        serialize_by_alias = True
 
 
 @dataclass
@@ -861,7 +863,9 @@ class DiscoveryResult(_BaseMixin):
     encrypt_info: Optional[EncryptionInfo] = None  # noqa: UP007
     encrypt_type: Optional[list[str]] = None  # noqa: UP007
     decrypted_data: Optional[dict] = None  # noqa: UP007
-    isResetWiFi: Optional[bool] = None  # noqa: UP007
+    is_reset_wifi: Optional[bool] = field(  # noqa: UP007
+        metadata=field_options(alias="isResetWiFi"), default=None
+    )
 
     firmware_version: Optional[str] = None  # noqa: UP007
     hardware_version: Optional[str] = None  # noqa: UP007
