@@ -74,7 +74,7 @@ class SmartCameraModule(SmartModule):
             if isinstance(query_resp, SmartErrorCode):
                 raise DeviceError(
                     f"Error accessing module data in {self._module}",
-                    error_code=SmartErrorCode,
+                    error_code=query_resp,
                 )
 
             if not query_resp:
@@ -95,6 +95,6 @@ class SmartCameraModule(SmartModule):
                 if isinstance(found[key], SmartErrorCode):
                     raise DeviceError(
                         f"Error accessing module data {key} in {self._module}",
-                        error_code=SmartErrorCode,
+                        error_code=found[key],
                     )
             return found

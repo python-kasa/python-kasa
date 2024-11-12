@@ -43,18 +43,16 @@ class SmartCamera(SmartDevice):
             for info in child_info["child_device_list"]:
                 self._children[info["device_id"]]._update_internal_state(info)
 
-    async def _initialize_smart_child(self, info: dict) -> SmartDevice:
+    async def _initialize_smart_child(
+        self, info: dict, child_components: dict
+    ) -> SmartDevice:
         """Initialize a smart child device attached to a smartcamera."""
         child_id = info["device_id"]
         child_protocol = _ChildCameraProtocolWrapper(child_id, self.protocol)
         try:
             initial_response = await child_protocol.query(
-                {"component_nego": None, "get_connect_cloud_state": None}
+                {"get_connect_cloud_state": None}
             )
-            child_components = {
-                item["id"]: item["ver_code"]
-                for item in initial_response["component_nego"]["component_list"]
-            }
         except Exception as ex:
             _LOGGER.exception("Error initialising child %s: %s", child_id, ex)
 
@@ -68,20 +66,28 @@ class SmartCamera(SmartDevice):
 
     async def _initialize_children(self) -> None:
         """Initialize children for hubs."""
-        if not (
-            child_info := self._try_get_response(
-                self._last_update, "getChildDeviceList", {}
-            )
-        ):
-            return
+        child_info_query = {
+            "getChildDeviceList": {"childControl": {"start_index": 0}},
+            "getChildDeviceComponentList": {"childControl": {"start_index": 0}},
+        }
+        resp = await self.protocol.query(child_info_query)
+        self.internal_state.update(resp)
 
+        children_components = {
+            child["device_id"]: {
+                comp["id"]: int(comp["ver_code"]) for comp in child["component_list"]
+            }
+            for child in resp["getChildDeviceComponentList"]["child_component_list"]
+        }
         children = {}
-        for info in child_info["child_device_list"]:
+        for info in resp["getChildDeviceList"]["child_device_list"]:
             if (
                 category := info.get("category")
             ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
                 child_id = info["device_id"]
-                children[child_id] = await self._initialize_smart_child(info)
+                children[child_id] = await self._initialize_smart_child(
+                    info, children_components[child_id]
+                )
             else:
                 _LOGGER.debug("Child device type not supported: %s", info)
 
@@ -90,6 +96,11 @@ class SmartCamera(SmartDevice):
     async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""
         for mod in SmartCameraModule.REGISTERED_MODULES.values():
+            if (
+                mod.REQUIRED_COMPONENT
+                and mod.REQUIRED_COMPONENT not in self._components
+            ):
+                continue
             module = mod(self, mod._module_name())
             if await module._check_supported():
                 self._modules[module.name] = module
@@ -126,12 +137,21 @@ class SmartCamera(SmartDevice):
         """
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
-            "getChildDeviceList": {"childControl": {"start_index": 0}},
+            "getAppComponentList": {"app_component": {"name": "app_component_list"}},
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
         self._update_internal_info(resp)
-        await self._initialize_children()
+
+        self._components = {
+            comp["name"]: int(comp["version"])
+            for comp in resp["getAppComponentList"]["app_component"][
+                "app_component_list"
+            ]
+        }
+
+        if "childControl" in self._components and not self.children:
+            await self._initialize_children()
 
     def _map_info(self, device_info: dict) -> dict:
         basic_info = device_info["basic_info"]

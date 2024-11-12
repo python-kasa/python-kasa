@@ -7,6 +7,7 @@ from ..smartcameramodule import SmartCameraModule
 class ChildDevice(SmartCameraModule):
     """Implementation for child devices."""
 
+    REQUIRED_COMPONENT = "childControl"
     NAME = "childdevice"
     QUERY_GETTER_NAME = "getChildDeviceList"
     # This module is unusual in that QUERY_MODULE_NAME in the response is not
