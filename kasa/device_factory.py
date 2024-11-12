@@ -6,7 +6,6 @@ import logging
 import time
 from typing import Any
 
-from .aestransport import AesTransport
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
@@ -24,14 +23,18 @@ from .iot import (
     IotWallSwitch,
 )
 from .iotprotocol import IotProtocol
-from .klaptransport import KlapTransport, KlapTransportV2
 from .protocol import (
     BaseProtocol,
-    BaseTransport,
 )
 from .smart import SmartDevice
 from .smartprotocol import SmartProtocol
-from .xortransport import XorTransport
+from .transports import (
+    AesTransport,
+    BaseTransport,
+    KlapTransport,
+    KlapTransportV2,
+    XorTransport,
+)
 
 _LOGGER = logging.getLogger(__name__)
 

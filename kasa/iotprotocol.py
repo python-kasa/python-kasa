@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pprint import pformat as pf
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from .deviceconfig import DeviceConfig
 from .exceptions import (
@@ -16,8 +16,11 @@ from .exceptions import (
     _RetryableError,
 )
 from .json import dumps as json_dumps
-from .protocol import BaseProtocol, BaseTransport, mask_mac, redact_data
-from .xortransport import XorEncryption, XorTransport
+from .protocol import BaseProtocol, mask_mac, redact_data
+from .transports import XorEncryption, XorTransport
+
+if TYPE_CHECKING:
+    from .transports import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

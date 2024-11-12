@@ -111,7 +111,6 @@ from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, ValidationError
 
 from kasa import Device
-from kasa.aestransport import AesEncyptionSession, KeyPair
 from kasa.credentials import Credentials
 from kasa.device_factory import (
     get_device_class_from_family,
@@ -134,12 +133,14 @@ from kasa.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.protocol import mask_mac, redact_data
-from kasa.xortransport import XorEncryption
+from kasa.transports.aestransport import AesEncyptionSession, KeyPair
+from kasa.transports.xortransport import XorEncryption
 
 _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from kasa import BaseProtocol, BaseTransport
+    from kasa import BaseProtocol
+    from kasa.transports import BaseTransport
 
 
 class ConnectAttempt(NamedTuple):

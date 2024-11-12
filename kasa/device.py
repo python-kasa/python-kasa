@@ -128,7 +128,7 @@ from .feature import Feature
 from .iotprotocol import IotProtocol
 from .module import Module
 from .protocol import BaseProtocol
-from .xortransport import XorTransport
+from .transports import XorTransport
 
 if TYPE_CHECKING:
     from .modulemapping import ModuleMapping, ModuleName
