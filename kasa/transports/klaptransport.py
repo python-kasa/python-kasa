@@ -67,7 +67,8 @@ from kasa.protocol import (
     get_default_credentials,
     md5,
 )
-from kasa.transports.basetransport import BaseTransport
+
+from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

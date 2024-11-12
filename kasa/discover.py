@@ -140,7 +140,7 @@ _LOGGER = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from kasa import BaseProtocol
-    from kasa.transports.basetransport import BaseTransport
+    from kasa.transports import BaseTransport
 
 
 class ConnectAttempt(NamedTuple):

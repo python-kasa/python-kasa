@@ -43,7 +43,7 @@ from kasa.iotprotocol import (
 from kasa.module import Module
 from kasa.protocol import BaseProtocol
 from kasa.smartprotocol import SmartProtocol
-from kasa.transports.basetransport import BaseTransport
+from kasa.transports import BaseTransport
 
 __version__ = version("python-kasa")
 

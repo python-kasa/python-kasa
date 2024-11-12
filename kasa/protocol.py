@@ -33,7 +33,7 @@ _T = TypeVar("_T")
 
 
 if TYPE_CHECKING:
-    from kasa.transports.basetransport import BaseTransport
+    from .transports import BaseTransport
 
 
 def redact_data(data: _T, redactors: dict[str, Callable[[Any], Any] | None]) -> _T:

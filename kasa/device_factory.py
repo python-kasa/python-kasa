@@ -6,11 +6,6 @@ import logging
 import time
 from typing import Any
 
-from kasa.transports.aestransport import AesTransport
-from kasa.transports.basetransport import BaseTransport
-from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
-from kasa.transports.xortransport import XorTransport
-
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
@@ -33,6 +28,13 @@ from .protocol import (
 )
 from .smart import SmartDevice
 from .smartprotocol import SmartProtocol
+from .transports import (
+    AesTransport,
+    BaseTransport,
+    KlapTransport,
+    KlapTransportV2,
+    XorTransport,
+)
 
 _LOGGER = logging.getLogger(__name__)
 

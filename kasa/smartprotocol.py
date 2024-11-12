@@ -29,7 +29,7 @@ from .json import dumps as json_dumps
 from .protocol import BaseProtocol, mask_mac, md5, redact_data
 
 if TYPE_CHECKING:
-    from kasa.transports.basetransport import BaseTransport
+    from .transports import BaseTransport
 
 
 _LOGGER = logging.getLogger(__name__)

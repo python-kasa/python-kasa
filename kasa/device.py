@@ -115,8 +115,6 @@ from warnings import warn
 
 from typing_extensions import TypeAlias
 
-from kasa.transports.xortransport import XorTransport
-
 from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
 from .deviceconfig import (
@@ -130,6 +128,7 @@ from .feature import Feature
 from .iotprotocol import IotProtocol
 from .module import Module
 from .protocol import BaseProtocol
+from .transports import XorTransport
 
 if TYPE_CHECKING:
     from .modulemapping import ModuleMapping, ModuleName

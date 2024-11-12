@@ -9,8 +9,6 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
-from kasa.transports.aestransport import AesTransport
-
 from ..device import Device, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -19,6 +17,7 @@ from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..smartprotocol import SmartProtocol
+from ..transports import AesTransport
 from .modules import (
     ChildDevice,
     Cloud,
