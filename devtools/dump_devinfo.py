@@ -1,7 +1,7 @@
 """This script generates devinfo files for the test suite.
 
 If you have new, yet unsupported device or a device with no devinfo file under
- kasa/tests/fixtures, feel free to run this script and create a PR to add the file
+ tests/fixtures, feel free to run this script and create a PR to add the file
  to the repository.
 
 Executing this script will several modules and methods one by one,
@@ -50,10 +50,10 @@ from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 Call = namedtuple("Call", "module method")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 
-SMART_FOLDER = "kasa/tests/fixtures/smart/"
-SMARTCAMERA_FOLDER = "kasa/tests/fixtures/smartcamera/"
-SMART_CHILD_FOLDER = "kasa/tests/fixtures/smart/child/"
-IOT_FOLDER = "kasa/tests/fixtures/"
+SMART_FOLDER = "tests/fixtures/smart/"
+SMARTCAMERA_FOLDER = "tests/fixtures/smartcamera/"
+SMART_CHILD_FOLDER = "tests/fixtures/smart/child/"
+IOT_FOLDER = "tests/fixtures/"
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 

@@ -19,7 +19,7 @@ import inspect
 import logging
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, tzinfo
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 from warnings import warn
 
 from ..device import Device, WifiNetwork
@@ -35,12 +35,12 @@ from .modules import Emeter
 _LOGGER = logging.getLogger(__name__)
 
 
-def requires_update(f):
+def requires_update(f: Callable) -> Any:
     """Indicate that `update` should be called before accessing this method."""  # noqa: D202
     if inspect.iscoroutinefunction(f):
 
         @functools.wraps(f)
-        async def wrapped(*args, **kwargs):
+        async def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
             if self._last_update is None and f.__name__ not in self._sys_info:
                 raise KasaException("You need to await update() to access the data")
@@ -49,13 +49,13 @@ def requires_update(f):
     else:
 
         @functools.wraps(f)
-        def wrapped(*args, **kwargs):
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
             if self._last_update is None and f.__name__ not in self._sys_info:
                 raise KasaException("You need to await update() to access the data")
             return f(*args, **kwargs)
 
-    f.requires_update = True
+    f.requires_update = True  # type: ignore[attr-defined]
     return wrapped
 
 
@@ -197,7 +197,7 @@ class IotDevice(Device):
             return cast(ModuleMapping[IotModule], self._supported_modules)
         return self._supported_modules
 
-    def add_module(self, name: str | ModuleName[Module], module: IotModule):
+    def add_module(self, name: str | ModuleName[Module], module: IotModule) -> None:
         """Register a module."""
         if name in self._modules:
             _LOGGER.debug("Module %s already registered, ignoring...", name)
@@ -207,8 +207,12 @@ class IotDevice(Device):
         self._modules[name] = module
 
     def _create_request(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ):
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         if arg is None:
             arg = {}
         request: dict[str, Any] = {target: {cmd: arg}}
@@ -225,8 +229,12 @@ class IotDevice(Device):
             raise KasaException("update() required prior accessing emeter")
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ) -> Any:
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         """Query device, return results or raise an exception.
 
         :param target: Target system {system, time, emeter, ..}
@@ -276,7 +284,7 @@ class IotDevice(Device):
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True) -> None:
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.
@@ -305,7 +313,7 @@ class IotDevice(Device):
         if not self._features:
             await self._initialize_features()
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
         if self.has_emeter:
             _LOGGER.debug(
@@ -313,7 +321,7 @@ class IotDevice(Device):
             )
             self.add_module(Module.Energy, Emeter(self, self.emeter_type))
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize common features."""
         self._add_feature(
             Feature(
@@ -364,7 +372,7 @@ class IotDevice(Device):
             )
         )
 
-        for module in self._supported_modules.values():
+        for module in self.modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)
@@ -447,13 +455,19 @@ class IotDevice(Device):
         sys_info = self._sys_info
         return str(sys_info["model"])
 
+    @property
+    @requires_update
+    def _model_region(self) -> str:
+        """Return device full model name and region."""
+        return self.model
+
     @property  # type: ignore
     def alias(self) -> str | None:
         """Return device name (alias)."""
         sys_info = self._sys_info
         return sys_info.get("alias") if sys_info else None
 
-    async def set_alias(self, alias: str) -> None:
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
         return await self._query_helper("system", "set_dev_alias", {"alias": alias})
 
@@ -550,7 +564,7 @@ class IotDevice(Device):
 
         return mac
 
-    async def set_mac(self, mac):
+    async def set_mac(self, mac: str) -> dict:
         """Set the mac address.
 
         :param str mac: mac in hexadecimal with colons, e.g. 01:23:45:67:89:ab
@@ -576,7 +590,7 @@ class IotDevice(Device):
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def turn_on(self, **kwargs) -> dict | None:
+    async def turn_on(self, **kwargs) -> dict:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
@@ -586,7 +600,7 @@ class IotDevice(Device):
         """Return True if the device is on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def set_state(self, on: bool):
+    async def set_state(self, on: bool) -> dict:
         """Set the device state."""
         if on:
             return await self.turn_on()
@@ -627,7 +641,7 @@ class IotDevice(Device):
     async def wifi_scan(self) -> list[WifiNetwork]:  # noqa: D202
         """Scan for available wifi networks."""
 
-        async def _scan(target):
+        async def _scan(target: str) -> dict:
             return await self._query_helper(target, "get_scaninfo", {"refresh": 1})
 
         try:
@@ -639,17 +653,17 @@ class IotDevice(Device):
             info = await _scan("smartlife.iot.common.softaponboarding")
 
         if "ap_list" not in info:
-            raise KasaException("Invalid response for wifi scan: %s" % info)
+            raise KasaException(f"Invalid response for wifi scan: {info}")
 
         return [WifiNetwork(**x) for x in info["ap_list"]]
 
-    async def wifi_join(self, ssid: str, password: str, keytype: str = "3"):  # noqa: D202
+    async def wifi_join(self, ssid: str, password: str, keytype: str = "3") -> dict:  # noqa: D202
         """Join the given wifi network.
 
         If joining the network fails, the device will return to AP mode after a while.
         """
 
-        async def _join(target, payload):
+        async def _join(target: str, payload: dict) -> dict:
             return await self._query_helper(target, "set_stainfo", payload)
 
         payload = {"ssid": ssid, "password": password, "key_type": int(keytype)}

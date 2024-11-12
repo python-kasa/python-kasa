@@ -53,7 +53,7 @@ class LightEffect(Module, ABC):
 
     LIGHT_EFFECTS_OFF = "Off"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         device = self._device
         self._add_feature(
@@ -96,7 +96,7 @@ class LightEffect(Module, ABC):
         *,
         brightness: int | None = None,
         transition: int | None = None,
-    ) -> None:
+    ) -> dict:
         """Set an effect on the device.
 
         If brightness or transition is defined,
@@ -110,10 +110,11 @@ class LightEffect(Module, ABC):
         :param int transition: The wanted transition time
         """
 
+    @abstractmethod
     async def set_custom_effect(
         self,
         effect_dict: dict,
-    ) -> None:
+    ) -> dict:
         """Set a custom effect on the device.
 
         :param str effect_dict: The custom effect dict to set

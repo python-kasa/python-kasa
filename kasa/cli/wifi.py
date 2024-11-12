@@ -16,7 +16,7 @@ from .common import (
 
 @click.group()
 @pass_dev
-def wifi(dev):
+def wifi(dev) -> None:
     """Commands to control wifi settings."""
 
 

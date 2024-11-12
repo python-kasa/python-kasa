@@ -130,7 +130,7 @@ class BaseProtocol(ABC):
         self._transport = transport
 
     @property
-    def _host(self):
+    def _host(self) -> str:
         return self._transport._host
 
     @property

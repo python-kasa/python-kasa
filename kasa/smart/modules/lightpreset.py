@@ -29,12 +29,12 @@ class LightPreset(SmartModule, LightPresetInterface):
     _presets: dict[str, LightState]
     _preset_list: list[str]
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._state_in_sysinfo = self.SYS_INFO_STATE_KEY in device.sys_info
         self._brightness_only: bool = False
 
-    async def _post_update_hook(self):
+    async def _post_update_hook(self) -> None:
         """Update the internal presets."""
         index = 0
         self._presets = {}
@@ -113,7 +113,7 @@ class LightPreset(SmartModule, LightPresetInterface):
     async def set_preset(
         self,
         preset_name: str,
-    ) -> None:
+    ) -> dict:
         """Set a light preset for the device."""
         light = self._device.modules[SmartModule.Light]
         if preset_name == self.PRESET_NOT_SET:
@@ -123,14 +123,14 @@ class LightPreset(SmartModule, LightPresetInterface):
                 preset = LightState(brightness=100)
         elif (preset := self._presets.get(preset_name)) is None:  # type: ignore[assignment]
             raise ValueError(f"{preset_name} is not a valid preset: {self.preset_list}")
-        await self._device.modules[SmartModule.Light].set_state(preset)
+        return await self._device.modules[SmartModule.Light].set_state(preset)
 
     @allow_update_after
     async def save_preset(
         self,
         preset_name: str,
         preset_state: LightState,
-    ) -> None:
+    ) -> dict:
         """Update the preset with preset_name with the new preset_info."""
         if preset_name not in self._presets:
             raise ValueError(f"{preset_name} is not a valid preset: {self.preset_list}")
@@ -138,11 +138,13 @@ class LightPreset(SmartModule, LightPresetInterface):
         if self._brightness_only:
             bright_list = [state.brightness for state in self._presets.values()]
             bright_list[index] = preset_state.brightness
-            await self.call("set_preset_rules", {"brightness": bright_list})
+            return await self.call("set_preset_rules", {"brightness": bright_list})
         else:
             state_params = asdict(preset_state)
             new_info = {k: v for k, v in state_params.items() if v is not None}
-            await self.call("edit_preset_rules", {"index": index, "state": new_info})
+            return await self.call(
+                "edit_preset_rules", {"index": index, "state": new_info}
+            )
 
     @property
     def has_save_preset(self) -> bool:
@@ -158,7 +160,7 @@ class LightPreset(SmartModule, LightPresetInterface):
 
         return {self.QUERY_GETTER_NAME: {"start_index": 0}}
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device.
 
         Parent devices that report components of children such as ks240 will not have

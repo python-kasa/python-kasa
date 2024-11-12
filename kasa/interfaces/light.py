@@ -166,7 +166,7 @@ class Light(Module, ABC):
 
     @abstractmethod
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
+        self, temp: int, *, brightness: int | None = None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
 

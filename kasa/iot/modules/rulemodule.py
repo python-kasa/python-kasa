@@ -57,7 +57,7 @@ _LOGGER = logging.getLogger(__name__)
 class RuleModule(IotModule):
     """Base class for rule-based modules, such as countdown and antitheft."""
 
-    def query(self):
+    def query(self) -> dict:
         """Prepare the query for rules."""
         q = self.query_for_command("get_rules")
         return merge(q, self.query_for_command("get_next_action"))
@@ -73,14 +73,14 @@ class RuleModule(IotModule):
             _LOGGER.error("Unable to read rule list: %s (data: %s)", ex, self.data)
             return []
 
-    async def set_enabled(self, state: bool):
+    async def set_enabled(self, state: bool) -> dict:
         """Enable or disable the service."""
-        return await self.call("set_overall_enable", state)
+        return await self.call("set_overall_enable", {"enable": state})
 
-    async def delete_rule(self, rule: Rule):
+    async def delete_rule(self, rule: Rule) -> dict:
         """Delete the given rule."""
         return await self.call("delete_rule", {"id": rule.id})
 
-    async def delete_all_rules(self):
+    async def delete_all_rules(self) -> dict:
         """Delete all rules."""
         return await self.call("delete_all_rules")

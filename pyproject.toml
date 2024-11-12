@@ -72,6 +72,7 @@ include = [
   "/kasa",
   "/devtools",
   "/docs",
+  "/tests",
   "/CHANGELOG.md",
 ]
 
@@ -79,15 +80,11 @@ include = [
 include = [
   "/kasa",
 ]
-exclude = [
-  "/kasa/tests",
-]
 
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
 omit = [
-  "kasa/tests/*",
   "kasa/experimental/*"
 ]
 
@@ -108,6 +105,9 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
 markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
@@ -140,17 +140,22 @@ select = [
   "PT",  # flake8-pytest-style
   "LOG",  # flake8-logging
   "G",  # flake8-logging-format
+  "ANN",  # annotations
 ]
 ignore = [
   "D105",  # Missing docstring in magic method
   "D107",  # Missing docstring in `__init__`
+  "ANN101",  # Missing type annotation for `self`
+  "ANN102",  # Missing type annotation for `cls` in classmethod
+  "ANN003",  # Missing type annotation for `**kwargs`
+  "ANN401",  # allow any
 ]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
 [tool.ruff.lint.per-file-ignores]
-"kasa/tests/*.py" = [
+"tests/*.py" = [
     "D100",
     "D101",
     "D102",
@@ -158,11 +163,21 @@ convention = "pep257"
     "D104",
     "S101", # allow asserts
     "E501", # ignore line-too-longs
+    "ANN", # skip for now
 ]
 "docs/source/conf.py" = [
     "D100",
     "D103",
 ]
+# Temporary ANN disable
+"kasa/cli/*.py" = [
+    "ANN",
+]
+# Temporary ANN disable
+"devtools/*.py" = [
+    "ANN",
+]
+
 
 [tool.mypy]
 warn_unused_configs = true  # warns if overrides sections unused/mis-spelled

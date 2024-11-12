@@ -80,7 +80,7 @@ class IotDimmer(IotPlug):
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Dimmer
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules."""
         await super()._initialize_modules()
         # TODO: need to be verified if it's okay to call these on HS220 w/o these
@@ -103,7 +103,9 @@ class IotDimmer(IotPlug):
         return int(sys_info["brightness"])
 
     @requires_update
-    async def _set_brightness(self, brightness: int, *, transition: int | None = None):
+    async def _set_brightness(
+        self, brightness: int, *, transition: int | None = None
+    ) -> dict:
         """Set the new dimmer brightness level in percentage.
 
         :param int transition: transition duration in milliseconds.
@@ -134,7 +136,7 @@ class IotDimmer(IotPlug):
             self.DIMMER_SERVICE, "set_brightness", {"brightness": brightness}
         )
 
-    async def turn_off(self, *, transition: int | None = None, **kwargs):
+    async def turn_off(self, *, transition: int | None = None, **kwargs) -> dict:
         """Turn the bulb off.
 
         :param int transition: transition duration in milliseconds.
@@ -145,7 +147,7 @@ class IotDimmer(IotPlug):
         return await super().turn_off()
 
     @requires_update
-    async def turn_on(self, *, transition: int | None = None, **kwargs):
+    async def turn_on(self, *, transition: int | None = None, **kwargs) -> dict:
         """Turn the bulb on.
 
         :param int transition: transition duration in milliseconds.
@@ -157,7 +159,7 @@ class IotDimmer(IotPlug):
 
         return await super().turn_on()
 
-    async def set_dimmer_transition(self, brightness: int, transition: int):
+    async def set_dimmer_transition(self, brightness: int, transition: int) -> dict:
         """Turn the bulb on to brightness percentage over transition milliseconds.
 
         A brightness value of 0 will turn off the dimmer.
@@ -176,7 +178,7 @@ class IotDimmer(IotPlug):
         if not isinstance(transition, int):
             raise TypeError(f"Transition must be integer, not of {type(transition)}.")
         if transition <= 0:
-            raise ValueError("Transition value %s is not valid." % transition)
+            raise ValueError(f"Transition value {transition} is not valid.")
 
         return await self._query_helper(
             self.DIMMER_SERVICE,
@@ -185,7 +187,7 @@ class IotDimmer(IotPlug):
         )
 
     @requires_update
-    async def get_behaviors(self):
+    async def get_behaviors(self) -> dict:
         """Return button behavior settings."""
         behaviors = await self._query_helper(
             self.DIMMER_SERVICE, "get_default_behavior", {}
@@ -195,7 +197,7 @@ class IotDimmer(IotPlug):
     @requires_update
     async def set_button_action(
         self, action_type: ActionType, action: ButtonAction, index: int | None = None
-    ):
+    ) -> dict:
         """Set action to perform on button click/hold.
 
         :param action_type ActionType: whether to control double click or hold action.
@@ -209,15 +211,17 @@ class IotDimmer(IotPlug):
         if index is not None:
             payload["index"] = index
 
-        await self._query_helper(self.DIMMER_SERVICE, action_type_setter, payload)
+        return await self._query_helper(
+            self.DIMMER_SERVICE, action_type_setter, payload
+        )
 
     @requires_update
-    async def set_fade_time(self, fade_type: FadeType, time: int):
+    async def set_fade_time(self, fade_type: FadeType, time: int) -> dict:
         """Set time for fade in / fade out."""
         fade_type_setter = f"set_{fade_type}_time"
         payload = {"fadeTime": time}
 
-        await self._query_helper(self.DIMMER_SERVICE, fade_type_setter, payload)
+        return await self._query_helper(self.DIMMER_SERVICE, fade_type_setter, payload)
 
     @property  # type: ignore
     @requires_update

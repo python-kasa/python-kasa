@@ -12,12 +12,12 @@ class Experimental:
     ENV_VAR = "KASA_EXPERIMENTAL"
 
     @classmethod
-    def set_enabled(cls, enabled):
+    def set_enabled(cls, enabled: bool) -> None:
         """Set the enabled value."""
         cls._enabled = enabled
 
     @classmethod
-    def enabled(cls):
+    def enabled(cls) -> bool:
         """Get the enabled value."""
         if cls._enabled is not None:
             return cls._enabled
