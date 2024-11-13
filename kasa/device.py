@@ -125,9 +125,8 @@ from .deviceconfig import (
 )
 from .exceptions import KasaException
 from .feature import Feature
-from .iotprotocol import IotProtocol
 from .module import Module
-from .protocol import BaseProtocol
+from .protocols import BaseProtocol, IotProtocol
 from .transports import XorTransport
 
 if TYPE_CHECKING:

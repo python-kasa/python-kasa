@@ -7,9 +7,9 @@ from freezegun.api import FrozenDateTimeFactory
 
 from kasa import Device
 from kasa.device_type import DeviceType
+from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart.smartchilddevice import SmartChildDevice
 from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES
-from kasa.smartprotocol import _ChildProtocolWrapper
 
 from .conftest import (
     parametrize,

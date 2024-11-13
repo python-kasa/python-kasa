@@ -20,7 +20,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
 
-from kasa.credentials import Credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -36,7 +36,6 @@ from kasa.exceptions import (
 from kasa.httpclient import HttpClient
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
-from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 
 from .basetransport import BaseTransport
 

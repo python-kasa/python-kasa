@@ -18,8 +18,8 @@ from kasa.device import Device
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException
 from kasa.iot import IotDevice
-from kasa.iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
-from kasa.protocol import (
+from kasa.protocols.iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
+from kasa.protocols.protocol import (
     BaseProtocol,
     mask_mac,
     redact_data,

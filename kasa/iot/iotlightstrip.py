@@ -5,7 +5,7 @@ from __future__ import annotations
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotbulb import IotBulb
 from .iotdevice import requires_update
 from .modules.lighteffect import LightEffect

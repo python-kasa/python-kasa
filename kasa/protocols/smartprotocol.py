@@ -14,7 +14,7 @@ import uuid
 from pprint import pformat as pf
 from typing import TYPE_CHECKING, Any, Callable
 
-from .exceptions import (
+from ..exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
     AuthenticationError,
@@ -25,11 +25,11 @@ from .exceptions import (
     _ConnectionError,
     _RetryableError,
 )
-from .json import dumps as json_dumps
+from ..json import dumps as json_dumps
 from .protocol import BaseProtocol, mask_mac, md5, redact_data
 
 if TYPE_CHECKING:
-    from .transports import BaseTransport
+    from ..transports import BaseTransport
 
 
 _LOGGER = logging.getLogger(__name__)

@@ -116,15 +116,15 @@ In order to support these different configurations the library migrated from a s
 to support pluggable transports and protocols.
 The classes providing this functionality are:
 
-- {class}`BaseProtocol <kasa.protocol.BaseProtocol>`
-- {class}`IotProtocol <kasa.iotprotocol.IotProtocol>`
-- {class}`SmartProtocol <kasa.smartprotocol.SmartProtocol>`
+- {class}`BaseProtocol <kasa.protocols.BaseProtocol>`
+- {class}`IotProtocol <kasa.protocols.IotProtocol>`
+- {class}`SmartProtocol <kasa.protocols.SmartProtocol>`
 
-- {class}`BaseTransport <kasa.protocol.BaseTransport>`
-- {class}`XorTransport <kasa.xortransport.XorTransport>`
-- {class}`AesTransport <kasa.aestransport.AesTransport>`
-- {class}`KlapTransport <kasa.klaptransport.KlapTransport>`
-- {class}`KlapTransportV2 <kasa.klaptransport.KlapTransportV2>`
+- {class}`BaseTransport <kasa.transports.BaseTransport>`
+- {class}`XorTransport <kasa.transports.XorTransport>`
+- {class}`AesTransport <kasa.transports.AesTransport>`
+- {class}`KlapTransport <kasa.transports.KlapTransport>`
+- {class}`KlapTransportV2 <kasa.transports.KlapTransportV2>`
 
 (topics-errors-and-exceptions)=
 ## Errors and Exceptions
@@ -166,42 +166,42 @@ API documentation for modules and features
 API documentation for protocols and transports
 **********************************************
 
-.. autoclass:: kasa.protocol.BaseProtocol
+.. autoclass:: kasa.protocols.BaseProtocol
     :members:
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: kasa.iotprotocol.IotProtocol
+.. autoclass:: kasa.protocols.IotProtocol
     :members:
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: kasa.smartprotocol.SmartProtocol
+.. autoclass:: kasa.protocols.SmartProtocol
     :members:
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: kasa.protocol.BaseTransport
+.. autoclass:: kasa.transports.BaseTransport
     :members:
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: kasa.xortransport.XorTransport
+.. autoclass:: kasa.transports.XorTransport
     :members:
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: kasa.klaptransport.KlapTransport
+.. autoclass:: kasa.transports.KlapTransport
     :members:
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: kasa.klaptransport.KlapTransportV2
+.. autoclass:: kasa.transports.KlapTransportV2
     :members:
     :inherited-members:
     :undoc-members:
 
-.. autoclass:: kasa.aestransport.AesTransport
+.. autoclass:: kasa.transports.AesTransport
     :members:
     :inherited-members:
     :undoc-members:

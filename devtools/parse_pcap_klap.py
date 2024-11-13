@@ -18,14 +18,13 @@ import asyncclick as click
 import pyshark
 from cryptography.hazmat.primitives import padding
 
-from kasa.credentials import Credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import (
     DeviceConfig,
     DeviceConnectionParameters,
     DeviceEncryptionType,
     DeviceFamily,
 )
-from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 from kasa.transports.klaptransport import KlapEncryptionSession, KlapTransportV2
 
 

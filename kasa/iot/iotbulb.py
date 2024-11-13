@@ -13,7 +13,7 @@ from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..interfaces.light import HSV, ColorTempRange
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import (
     Antitheft,

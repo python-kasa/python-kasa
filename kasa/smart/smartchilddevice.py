@@ -8,7 +8,7 @@ from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
+from ..protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from .smartdevice import SmartDevice
 from .smartmodule import SmartModule
 

@@ -9,7 +9,7 @@ import aiohttp
 import pytest
 from yarl import URL
 
-from kasa.credentials import Credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     AuthenticationError,
@@ -19,9 +19,7 @@ from kasa.exceptions import (
     _RetryableError,
 )
 from kasa.httpclient import HttpClient
-from kasa.iotprotocol import IotProtocol
-from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
-from kasa.smartprotocol import SmartProtocol
+from kasa.protocols import IotProtocol, SmartProtocol
 from kasa.transports.aestransport import AesTransport
 from kasa.transports.klaptransport import (
     KlapEncryptionSession,

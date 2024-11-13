@@ -9,8 +9,8 @@ from kasa.exceptions import (
     KasaException,
     SmartErrorCode,
 )
+from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartDevice
-from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 from .conftest import device_smart
 from .fakeprotocol_smart import FakeSmartTransport

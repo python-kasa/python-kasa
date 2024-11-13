@@ -14,7 +14,7 @@ from ..exceptions import KasaException
 from ..feature import Feature
 from ..interfaces import Energy
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import (
     IotDevice,
     requires_update,

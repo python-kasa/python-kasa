@@ -12,7 +12,6 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 from __future__ import annotations
 
-import base64
 import errno
 import hashlib
 import logging
@@ -22,8 +21,7 @@ from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
 
 # When support for cpython older than 3.11 is dropped
 # async_timeout can be replaced with asyncio.timeout
-from .credentials import Credentials
-from .deviceconfig import DeviceConfig
+from ..deviceconfig import DeviceConfig
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
@@ -33,7 +31,7 @@ _T = TypeVar("_T")
 
 
 if TYPE_CHECKING:
-    from .transports import BaseTransport
+    from ..transports import BaseTransport
 
 
 def redact_data(data: _T, redactors: dict[str, Callable[[Any], Any] | None]) -> _T:
@@ -106,17 +104,3 @@ class BaseProtocol(ABC):
     @abstractmethod
     async def close(self) -> None:
         """Close the protocol.  Abstract method to be overriden."""
-
-
-def get_default_credentials(tuple: tuple[str, str]) -> Credentials:
-    """Return decoded default credentials."""
-    un = base64.b64decode(tuple[0].encode()).decode()
-    pw = base64.b64decode(tuple[1].encode()).decode()
-    return Credentials(un, pw)
-
-
-DEFAULT_CREDENTIALS = {
-    "KASA": ("a2FzYUB0cC1saW5rLm5ldA==", "a2FzYVNldHVw"),
-    "TAPO": ("dGVzdEB0cC1saW5rLm5ldA==", "dGVzdA=="),
-    "TAPOCAMERA": ("YWRtaW4=", "YWRtaW4="),
-}

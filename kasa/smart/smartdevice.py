@@ -16,7 +16,7 @@ from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartE
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
-from ..smartprotocol import SmartProtocol
+from ..protocols import SmartProtocol
 from ..transports import AesTransport
 from .modules import (
     ChildDevice,

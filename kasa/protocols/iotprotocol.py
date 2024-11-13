@@ -7,20 +7,20 @@ import logging
 from pprint import pformat as pf
 from typing import TYPE_CHECKING, Any, Callable
 
-from .deviceconfig import DeviceConfig
-from .exceptions import (
+from ..deviceconfig import DeviceConfig
+from ..exceptions import (
     AuthenticationError,
     KasaException,
     TimeoutError,
     _ConnectionError,
     _RetryableError,
 )
-from .json import dumps as json_dumps
+from ..json import dumps as json_dumps
+from ..transports import XorEncryption, XorTransport
 from .protocol import BaseProtocol, mask_mac, redact_data
-from .transports import XorEncryption, XorTransport
 
 if TYPE_CHECKING:
-    from .transports import BaseTransport
+    from ..transports import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

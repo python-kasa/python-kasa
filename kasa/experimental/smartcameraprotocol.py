@@ -14,7 +14,7 @@ from ..exceptions import (
     _RetryableError,
 )
 from ..json import dumps as json_dumps
-from ..smartprotocol import SmartProtocol
+from ..protocols import SmartProtocol
 from .sslaestransport import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,

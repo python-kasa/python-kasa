@@ -28,7 +28,7 @@ from ..exceptions import KasaException
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotmodule import IotModule, merge
 from .modules import Emeter
 
