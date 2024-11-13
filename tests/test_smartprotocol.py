@@ -325,6 +325,7 @@ async def test_smart_protocol_lists_single_request(mocker, list_sum, batch_size)
         "foobar",
         list_return_size=batch_size,
         component_nego_not_included=True,
+        get_child_fixtures=False,
     )
     protocol = SmartProtocol(transport=ft)
     query_spy = mocker.spy(protocol, "_execute_query")
