@@ -49,7 +49,7 @@ Note that this will perform state changes on the device.
 ## Analyzing network captures
 
 The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
-After capturing the traffic, you can either use the [softScheck's wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+After capturing the traffic, you can either use the [softScheck's wireshark dissector](https://github.com/softScheck/tplink-smartplug)
 or the `parse_pcap.py` script contained inside the `devtools` directory.
 Note, that this works currently only on kasa-branded devices which use port 9999 for communications.
 
