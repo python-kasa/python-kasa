@@ -1,4 +1,4 @@
-"""Package for supporting tapo-branded and newer kasa devices."""
+"""Package for supporting tapo-branded cameras."""
 
 from .smartcamera import SmartCamera
 
