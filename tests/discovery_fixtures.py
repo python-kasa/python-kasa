@@ -6,7 +6,7 @@ from json import dumps as json_dumps
 
 import pytest
 
-from kasa.xortransport import XorEncryption
+from kasa.transports.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol, FakeSmartTransport

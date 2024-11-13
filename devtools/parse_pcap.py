@@ -9,7 +9,7 @@ import dpkt
 from dpkt.ethernet import ETH_TYPE_IP, Ethernet
 
 from kasa.cli.main import echo
-from kasa.xortransport import XorEncryption
+from kasa.transports.xortransport import XorEncryption
 
 
 def read_payloads_from_file(file):

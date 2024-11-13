@@ -6,8 +6,8 @@ import pytest
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.exceptions import SmartErrorCode
-from kasa.protocol import BaseTransport
 from kasa.smart import SmartChildDevice
+from kasa.transports.basetransport import BaseTransport
 
 
 class FakeSmartProtocol(SmartProtocol):

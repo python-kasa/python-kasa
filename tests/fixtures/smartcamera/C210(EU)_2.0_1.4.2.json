@@ -78,6 +78,152 @@
             }
         }
     },
+    "getAppComponentList": {
+        "app_component": {
+            "app_component_list": [
+                {
+                    "name": "sdCard",
+                    "version": 1
+                },
+                {
+                    "name": "timezone",
+                    "version": 1
+                },
+                {
+                    "name": "system",
+                    "version": 3
+                },
+                {
+                    "name": "led",
+                    "version": 1
+                },
+                {
+                    "name": "playback",
+                    "version": 6
+                },
+                {
+                    "name": "detection",
+                    "version": 3
+                },
+                {
+                    "name": "alert",
+                    "version": 1
+                },
+                {
+                    "name": "firmware",
+                    "version": 2
+                },
+                {
+                    "name": "account",
+                    "version": 2
+                },
+                {
+                    "name": "quickSetup",
+                    "version": 1
+                },
+                {
+                    "name": "video",
+                    "version": 2
+                },
+                {
+                    "name": "ptz",
+                    "version": 1
+                },
+                {
+                    "name": "lensMask",
+                    "version": 2
+                },
+                {
+                    "name": "lightFrequency",
+                    "version": 1
+                },
+                {
+                    "name": "dayNightMode",
+                    "version": 1
+                },
+                {
+                    "name": "osd",
+                    "version": 2
+                },
+                {
+                    "name": "record",
+                    "version": 1
+                },
+                {
+                    "name": "videoRotation",
+                    "version": 1
+                },
+                {
+                    "name": "audio",
+                    "version": 2
+                },
+                {
+                    "name": "diagnose",
+                    "version": 1
+                },
+                {
+                    "name": "msgPush",
+                    "version": 3
+                },
+                {
+                    "name": "deviceShare",
+                    "version": 1
+                },
+                {
+                    "name": "tamperDetection",
+                    "version": 1
+                },
+                {
+                    "name": "tapoCare",
+                    "version": 1
+                },
+                {
+                    "name": "targetTrack",
+                    "version": 1
+                },
+                {
+                    "name": "blockZone",
+                    "version": 1
+                },
+                {
+                    "name": "babyCryDetection",
+                    "version": 1
+                },
+                {
+                    "name": "personDetection",
+                    "version": 2
+                },
+                {
+                    "name": "needSubscriptionServiceList",
+                    "version": 1
+                },
+                {
+                    "name": "nvmp",
+                    "version": 1
+                },
+                {
+                    "name": "detectionRegion",
+                    "version": 2
+                },
+                {
+                    "name": "iotCloud",
+                    "version": 1
+                },
+                {
+                    "name": "panoramicView",
+                    "version": 1
+                },
+                {
+                    "name": "recordDownload",
+                    "version": 1
+                },
+                {
+                    "name": "staticIp",
+                    "version": 2
+                }
+            ]
+        }
+    },
     "getAudioConfig": {
         "audio_config": {
             "microphone": {

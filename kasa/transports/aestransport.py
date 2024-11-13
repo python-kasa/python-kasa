@@ -20,9 +20,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
 
-from .credentials import Credentials
-from .deviceconfig import DeviceConfig
-from .exceptions import (
+from kasa.credentials import Credentials
+from kasa.deviceconfig import DeviceConfig
+from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
     AuthenticationError,
@@ -33,10 +33,12 @@ from .exceptions import (
     _ConnectionError,
     _RetryableError,
 )
-from .httpclient import HttpClient
-from .json import dumps as json_dumps
-from .json import loads as json_loads
-from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from kasa.httpclient import HttpClient
+from kasa.json import dumps as json_dumps
+from kasa.json import loads as json_loads
+from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
+
+from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

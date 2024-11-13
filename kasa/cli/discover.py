@@ -207,7 +207,7 @@ def _echo_discovery_info(discovery_info) -> None:
         return
 
     try:
-        dr = DiscoveryResult(**discovery_info)
+        dr = DiscoveryResult.from_dict(discovery_info)
     except ValidationError:
         _echo_dictionary(discovery_info)
         return

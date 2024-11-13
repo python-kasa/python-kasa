@@ -3,7 +3,7 @@ import logging
 
 from kasa.deviceconfig import DeviceConfig
 from kasa.iotprotocol import IotProtocol
-from kasa.protocol import BaseTransport
+from kasa.transports.basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

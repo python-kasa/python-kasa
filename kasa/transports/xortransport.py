@@ -24,10 +24,11 @@ from collections.abc import Generator
 # async_timeout can be replaced with asyncio.timeout
 from async_timeout import timeout as asyncio_timeout
 
-from .deviceconfig import DeviceConfig
-from .exceptions import KasaException, _RetryableError
-from .json import loads as json_loads
-from .protocol import BaseTransport
+from kasa.deviceconfig import DeviceConfig
+from kasa.exceptions import KasaException, _RetryableError
+from kasa.json import loads as json_loads
+
+from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 _NO_RETRY_ERRORS = {errno.EHOSTDOWN, errno.EHOSTUNREACH, errno.ECONNREFUSED}
