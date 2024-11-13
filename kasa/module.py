@@ -55,9 +55,9 @@ from .modulemapping import ModuleName
 if TYPE_CHECKING:
     from . import interfaces
     from .device import Device
-    from .experimental import modules as experimental
     from .iot import modules as iot
     from .smart import modules as smart
+    from .smartcamera import modules as smartcamera
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ class Module(ABC):
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
     # SMARTCAMERA only modules
-    Camera: Final[ModuleName[experimental.Camera]] = ModuleName("Camera")
+    Camera: Final[ModuleName[smartcamera.Camera]] = ModuleName("Camera")
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device

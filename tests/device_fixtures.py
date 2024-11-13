@@ -11,9 +11,9 @@ from kasa import (
     DeviceType,
     Discover,
 )
-from kasa.experimental.smartcamera import SmartCamera
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
 from kasa.smart import SmartDevice
+from kasa.smartcamera.smartcamera import SmartCamera
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol

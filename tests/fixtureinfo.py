@@ -8,8 +8,8 @@ from typing import Iterable, NamedTuple
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
-from kasa.experimental.smartcamera import SmartCamera
 from kasa.smart.smartdevice import SmartDevice
+from kasa.smartcamera.smartcamera import SmartCamera
 
 
 class FixtureInfo(NamedTuple):
@@ -179,7 +179,7 @@ def filter_fixtures(
 
     filtered = []
     if protocol_filter is None:
-        protocol_filter = {"IOT", "SMART"}
+        protocol_filter = {"IOT", "SMART", "SMARTCAMERA"}
     for fixture_data in fixture_list:
         if data_root_filter and data_root_filter not in fixture_data.data:
             continue

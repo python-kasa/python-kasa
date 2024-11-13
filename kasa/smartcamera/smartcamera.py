@@ -7,11 +7,10 @@ from typing import Any
 
 from ..device_type import DeviceType
 from ..module import Module
+from ..protocols.smartcameraprotocol import _ChildCameraProtocolWrapper
 from ..smart import SmartChildDevice, SmartDevice
-from .modules.childdevice import ChildDevice
-from .modules.device import DeviceModule
+from .modules import ChildDevice, DeviceModule
 from .smartcameramodule import SmartCameraModule
-from .smartcameraprotocol import _ChildCameraProtocolWrapper
 
 _LOGGER = logging.getLogger(__name__)
 
