@@ -200,10 +200,9 @@ class FakeSmartTransport(BaseTransport):
                         is_child=True,
                     )
                 else:
-                    warn(
-                        f"Could not find child SMART fixture for {child_info}",
-                        stacklevel=2,
-                    )
+                    pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
+                        parent_fixture_name, set()
+                    ).add("child_devices")
             else:
                 warn(
                     f"Child is a cameraprotocol which needs to be implemented {child_info}",
