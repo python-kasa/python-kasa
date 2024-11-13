@@ -426,7 +426,7 @@ async def test_time_set(dev: Device, mocker, runner):
 async def test_emeter(dev: Device, mocker, runner):
     res = await runner.invoke(emeter, obj=dev)
     if not (energy := dev.modules.get(Module.Energy)):
-        assert "Device has no emeter" in res.output
+        assert "Device has no energy module." in res.output
         return
 
     assert "== Emeter ==" in res.output
@@ -457,7 +457,7 @@ async def test_emeter(dev: Device, mocker, runner):
         monthly.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
     if not isinstance(dev, IotDevice):
-        assert "Device has no historical statistics" in res.output
+        assert "Device does not support historical statistics" in res.output
         return
     assert "For year" in res.output
     assert "1, 1234" in res.output
