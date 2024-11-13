@@ -6,7 +6,7 @@ import importlib
 import inspect
 import pkgutil
 import sys
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, nullcontext
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -170,15 +170,22 @@ async def _test_attribute(
     dev: Device, attribute_name, is_expected, module_name, *args, will_raise=False
 ):
     if is_expected and will_raise:
-        ctx: AbstractContextManager = pytest.raises(will_raise)
+        ctx: AbstractContextManager | nullcontext = pytest.raises(will_raise)
+        dep_context: pytest.WarningsRecorder | nullcontext = pytest.deprecated_call(
+            match=(f"{attribute_name} is deprecated, use:")
+        )
     elif is_expected:
-        ctx = pytest.deprecated_call(match=(f"{attribute_name} is deprecated, use:"))
+        ctx = nullcontext()
+        dep_context = pytest.deprecated_call(
+            match=(f"{attribute_name} is deprecated, use:")
+        )
     else:
         ctx = pytest.raises(
             AttributeError, match=f"Device has no attribute '{attribute_name}'"
         )
+        dep_context = nullcontext()
 
-    with ctx:
+    with dep_context, ctx:
         if args:
             await getattr(dev, attribute_name)(*args)
         else:
@@ -267,16 +274,19 @@ async def test_deprecated_light_preset_attributes(dev: Device):
     await _test_attribute(dev, "presets", bool(preset), "LightPreset", will_raise=exc)
 
     exc = None
+    is_expected = bool(preset)
     # deprecated save_preset not implemented for smart devices as it's unlikely anyone
     # has an existing reliance on this for the newer devices.
-    if not preset or isinstance(dev, SmartDevice):
-        exc = AttributeError
-    elif len(preset.preset_states_list) == 0:
+    if isinstance(dev, SmartDevice):
+        is_expected = False
+
+    if preset and len(preset.preset_states_list) == 0:
         exc = KasaException
+
     await _test_attribute(
         dev,
         "save_preset",
-        bool(preset),
+        is_expected,
         "LightPreset",
         IotLightPreset(index=0, hue=100, brightness=100, saturation=0, color_temp=0),  # type: ignore[call-arg]
         will_raise=exc,

@@ -33,6 +33,7 @@ class FakeSmartTransport(BaseTransport):
         warn_fixture_missing_methods=True,
         fix_incomplete_fixture_lists=True,
         is_child=False,
+        get_child_fixtures=True,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -48,9 +49,10 @@ class FakeSmartTransport(BaseTransport):
         # child are then still reflected on the parent's lis of child device in
         if not is_child:
             self.info = copy.deepcopy(info)
-            self.child_protocols = self._get_child_protocols(
-                self.info, self.fixture_name, "get_child_device_list"
-            )
+            if get_child_fixtures:
+                self.child_protocols = self._get_child_protocols(
+                    self.info, self.fixture_name, "get_child_device_list"
+                )
         else:
             self.info = info
         if not component_nego_not_included:
@@ -220,10 +222,7 @@ class FakeSmartTransport(BaseTransport):
         """Handle control_child command."""
         device_id = params.get("device_id")
         if device_id not in self.child_protocols:
-            warn(
-                f"Could not find child fixture {device_id} in {self.fixture_name}",
-                stacklevel=2,
-            )
+            # no need to warn as the warning was raised during protocol init
             return self._handle_control_child_missing(params)
 
         child_protocol: SmartProtocol = self.child_protocols[device_id]

@@ -45,10 +45,8 @@ async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
         "get_device_time": {},
     }
     msg = f"get_device_info not found in {mock_response} for device 127.0.0.123"
-    with (
-        mocker.patch.object(dev.protocol, "query", return_value=mock_response),
-        pytest.raises(KasaException, match=msg),
-    ):
+    mocker.patch.object(dev.protocol, "query", return_value=mock_response)
+    with pytest.raises(KasaException, match=msg):
         await dev.update()
 
 

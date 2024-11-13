@@ -16,7 +16,7 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import KasaException, Module
+from kasa import DeviceType, KasaException, Module
 from kasa.iot import IotDevice
 from kasa.iot.iotmodule import _merge_dict
 
@@ -92,10 +92,8 @@ async def test_state_info(dev):
 @pytest.mark.requires_dummy()
 @device_iot
 async def test_invalid_connection(mocker, dev):
-    with (
-        mocker.patch.object(FakeIotProtocol, "query", side_effect=KasaException),
-        pytest.raises(KasaException),
-    ):
+    mocker.patch.object(FakeIotProtocol, "query", side_effect=KasaException)
+    with pytest.raises(KasaException):
         await dev.update()
 
 
@@ -169,7 +167,7 @@ async def test_state(dev, turn_on):
 async def test_on_since(dev, turn_on):
     await handle_turn_on(dev, turn_on)
     orig_state = dev.is_on
-    if "on_time" not in dev.sys_info and not dev.is_strip:
+    if "on_time" not in dev.sys_info and dev.device_type is not DeviceType.Strip:
         assert dev.on_since is None
     elif orig_state:
         assert isinstance(dev.on_since, datetime)
@@ -179,7 +177,7 @@ async def test_on_since(dev, turn_on):
 
 @device_iot
 async def test_time(dev):
-    assert isinstance(await dev.get_time(), datetime)
+    assert isinstance(dev.modules[Module.Time].time, datetime)
 
 
 @device_iot
@@ -216,7 +214,7 @@ async def test_representation(dev):
 @device_iot
 async def test_children(dev):
     """Make sure that children property is exposed by every device."""
-    if dev.is_strip:
+    if dev.device_type is DeviceType.Strip:
         assert len(dev.children) > 0
     else:
         assert len(dev.children) == 0
