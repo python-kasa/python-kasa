@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from ...cachedzoneinfo import CachedZoneInfo
 from ...feature import Feature
 from ...interfaces import Time as TimeInterface
-from ...smartcamera.smartcameramodule import SmartCameraModule
+from ..smartcameramodule import SmartCameraModule
 
 
 class Time(SmartCameraModule, TimeInterface):
