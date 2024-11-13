@@ -8,7 +8,7 @@ build:
     python: "3"
   jobs:
     pre_build:
-      - python -m sphinx -b linkcheck -D linkcheck_timeout=1 docs/source/ $READTHEDOCS_OUTPUT/linkcheck
+      - python -m sphinx -b linkcheck docs/source/ $READTHEDOCS_OUTPUT/linkcheck
 
 python:
   install:

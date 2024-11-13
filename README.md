@@ -211,7 +211,7 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 
 ### Developer Resources
 
-* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug?tab=readme-ov-file#wireshark-dissector)
 * [TP-Link Smart Home Device Simulator](https://github.com/plasticrake/tplink-smarthome-simulator)
 * [Unofficial API documentation](https://github.com/plasticrake/tplink-smarthome-api)
 * [Another unofficial API documentation](https://github.com/whitslack/kasa)
