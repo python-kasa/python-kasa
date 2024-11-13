@@ -136,6 +136,12 @@ class FakeSmartCameraTransport(BaseTransport):
             "basic",
             "zone_id",
         ],
+        ("led", "config", "enabled"): [
+            "getLedStatus",
+            "led",
+            "config",
+            "enabled",
+        ],
     }
 
     async def _send_request(self, request_dict: dict):

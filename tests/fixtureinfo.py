@@ -179,7 +179,7 @@ def filter_fixtures(
 
     filtered = []
     if protocol_filter is None:
-        protocol_filter = {"IOT", "SMART"}
+        protocol_filter = {"IOT", "SMART", "SMARTCAMERA"}
     for fixture_data in fixture_list:
         if data_root_filter and data_root_filter not in fixture_data.data:
             continue

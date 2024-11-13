@@ -19,6 +19,7 @@ from kasa import (
 )
 from kasa.device_factory import (
     Device,
+    SmartCamera,
     SmartDevice,
     _get_device_type_from_sys_info,
     connect,
@@ -177,7 +178,9 @@ async def test_connect_http_client(discovery_mock, mocker):
 
 async def test_device_types(dev: Device):
     await dev.update()
-    if isinstance(dev, SmartDevice):
+    if isinstance(dev, SmartCamera):
+        res = SmartCamera._get_device_type_from_sysinfo(dev.sys_info)
+    elif isinstance(dev, SmartDevice):
         assert dev._discovery_info
         device_type = cast(str, dev._discovery_info["result"]["device_type"])
         res = SmartDevice._get_device_type_from_components(
