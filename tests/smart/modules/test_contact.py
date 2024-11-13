@@ -1,6 +1,6 @@
 import pytest
 
-from kasa import Module, SmartDevice
+from kasa import Device, Module
 
 from ...device_fixtures import parametrize
 
@@ -16,7 +16,7 @@ contact = parametrize(
         ("is_open", bool),
     ],
 )
-async def test_contact_features(dev: SmartDevice, feature, type):
+async def test_contact_features(dev: Device, feature, type):
     """Test that features are registered and work as expected."""
     contact = dev.modules.get(Module.ContactSensor)
     assert contact is not None

@@ -503,7 +503,9 @@ class Device(ABC):
             return None
 
         for attr in attrs:
-            if hasattr(check, attr):
+            # Use dir() as opposed to hasattr() to avoid raising exceptions
+            # from properties
+            if attr in dir(check):
                 return attr
 
         return None

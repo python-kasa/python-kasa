@@ -15,6 +15,7 @@ from kasa import (
     Credentials,
     Device,
     DeviceError,
+    DeviceType,
     EmeterStatus,
     KasaException,
     Module,
@@ -424,20 +425,22 @@ async def test_time_set(dev: Device, mocker, runner):
 
 async def test_emeter(dev: Device, mocker, runner):
     res = await runner.invoke(emeter, obj=dev)
-    if not dev.has_emeter:
+    if not (energy := dev.modules.get(Module.Energy)):
         assert "Device has no emeter" in res.output
         return
 
     assert "== Emeter ==" in res.output
 
-    if not dev.is_strip:
+    if dev.device_type is not DeviceType.Strip:
         res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
         res = await runner.invoke(emeter, ["--name", "mock"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
 
-    if dev.is_strip and len(dev.children) > 0:
-        realtime_emeter = mocker.patch.object(dev.children[0], "get_emeter_realtime")
+    if dev.device_type is DeviceType.Strip and len(dev.children) > 0:
+        child_energy = dev.children[0].modules.get(Module.Energy)
+        assert child_energy
+        realtime_emeter = mocker.patch.object(child_energy, "get_status")
         realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
 
         res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
@@ -450,7 +453,7 @@ async def test_emeter(dev: Device, mocker, runner):
         assert realtime_emeter.call_count == 2
 
     if isinstance(dev, IotDevice):
-        monthly = mocker.patch.object(dev, "get_emeter_monthly")
+        monthly = mocker.patch.object(energy, "get_monthly_stats")
         monthly.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
     if not isinstance(dev, IotDevice):
@@ -461,7 +464,7 @@ async def test_emeter(dev: Device, mocker, runner):
     monthly.assert_called_with(year=1900)
 
     if isinstance(dev, IotDevice):
-        daily = mocker.patch.object(dev, "get_emeter_daily")
+        daily = mocker.patch.object(energy, "get_daily_stats")
         daily.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
     if not isinstance(dev, IotDevice):
