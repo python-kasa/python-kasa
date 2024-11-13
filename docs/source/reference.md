@@ -86,21 +86,21 @@
 ## Protocols and transports
 
 ```{eval-rst}
-.. autoclass:: kasa.protocol.BaseProtocol
+.. autoclass:: kasa.protocols.BaseProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.iotprotocol.IotProtocol
+.. autoclass:: kasa.protocols.IotProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.smartprotocol.SmartProtocol
+.. autoclass:: kasa.protocols.SmartProtocol
     :members:
     :inherited-members:
     :undoc-members:
