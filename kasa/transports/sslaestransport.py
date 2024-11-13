@@ -27,7 +27,7 @@ from ..exceptions import (
 from ..httpclient import HttpClient
 from ..json import dumps as json_dumps
 from ..json import loads as json_loads
-from ..transports import AesEncyptionSession, BaseTransport
+from . import AesEncyptionSession, BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

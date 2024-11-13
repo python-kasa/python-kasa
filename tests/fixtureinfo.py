@@ -8,8 +8,8 @@ from typing import Iterable, NamedTuple
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
-from kasa.experimental.smartcamera import SmartCamera
 from kasa.smart.smartdevice import SmartDevice
+from kasa.smartcamera.smartcamera import SmartCamera
 
 
 class FixtureInfo(NamedTuple):

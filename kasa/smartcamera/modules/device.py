@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...feature import Feature
-from ..smartcameramodule import SmartCameraModule
+from ...smartcamera.smartcameramodule import SmartCameraModule
 
 
 class DeviceModule(SmartCameraModule):

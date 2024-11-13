@@ -40,7 +40,7 @@ from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
-from kasa.experimental.smartcameraprotocol import (
+from kasa.protocols.smartcameraprotocol import (
     SmartCameraProtocol,
     _ChildCameraProtocolWrapper,
 )

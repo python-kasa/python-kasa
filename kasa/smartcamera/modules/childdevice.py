@@ -1,7 +1,7 @@
 """Module for child devices."""
 
 from ...device_type import DeviceType
-from ..smartcameramodule import SmartCameraModule
+from ...smartcamera.smartcameramodule import SmartCameraModule
 
 
 class ChildDevice(SmartCameraModule):

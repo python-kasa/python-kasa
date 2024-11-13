@@ -10,9 +10,6 @@ from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
-from .experimental.smartcamera import SmartCamera
-from .experimental.smartcameraprotocol import SmartCameraProtocol
-from .experimental.sslaestransport import SslAesTransport
 from .iot import (
     IotBulb,
     IotDevice,
@@ -27,7 +24,9 @@ from .protocols import (
     IotProtocol,
     SmartProtocol,
 )
+from .protocols.smartcameraprotocol import SmartCameraProtocol
 from .smart import SmartDevice
+from .smartcamera.smartcamera import SmartCamera
 from .transports import (
     AesTransport,
     BaseTransport,
@@ -35,6 +34,7 @@ from .transports import (
     KlapTransportV2,
     XorTransport,
 )
+from .transports.sslaestransport import SslAesTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -217,12 +217,9 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+        "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
-        from .experimental import Experimental
-
-        if Experimental.enabled() and protocol_transport_key == "SMART.AES.HTTPS":
-            prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
-        else:
-            return None
-    return prot_tran_cls[0](transport=prot_tran_cls[1](config=config))
+        return None
+    protocol_cls, transport_cls = prot_tran_cls
+    return protocol_cls(transport=transport_cls(config=config))

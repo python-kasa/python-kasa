@@ -7,7 +7,7 @@ from urllib.parse import quote_plus
 from ...credentials import Credentials
 from ...device_type import DeviceType
 from ...feature import Feature
-from ..smartcameramodule import SmartCameraModule
+from ...smartcamera.smartcameramodule import SmartCameraModule
 
 LOCAL_STREAMING_PORT = 554
 

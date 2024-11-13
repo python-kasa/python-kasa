@@ -4,7 +4,7 @@ import copy
 from json import loads as json_loads
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
-from kasa.experimental.smartcameraprotocol import SmartCameraProtocol
+from kasa.protocols.smartcameraprotocol import SmartCameraProtocol
 from kasa.transports.basetransport import BaseTransport
 
 from .fakeprotocol_smart import FakeSmartTransport

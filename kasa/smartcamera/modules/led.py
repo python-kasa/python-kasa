@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...interfaces.led import Led as LedInterface
-from ..smartcameramodule import SmartCameraModule
+from ...smartcamera.smartcameramodule import SmartCameraModule
 
 
 class Led(SmartCameraModule, LedInterface):
