@@ -44,8 +44,8 @@ from kasa.experimental.smartcameraprotocol import (
     SmartCameraProtocol,
     _ChildCameraProtocolWrapper,
 )
+from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartChildDevice
-from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 Call = namedtuple("Call", "module method")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")

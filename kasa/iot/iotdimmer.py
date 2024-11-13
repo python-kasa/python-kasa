@@ -8,7 +8,7 @@ from typing import Any
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
 from .modules import AmbientLight, Light, Motion

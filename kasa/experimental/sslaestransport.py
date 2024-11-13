@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Dict, cast
 
 from yarl import URL
 
-from ..credentials import Credentials
+from ..credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -27,7 +27,6 @@ from ..exceptions import (
 from ..httpclient import HttpClient
 from ..json import dumps as json_dumps
 from ..json import loads as json_loads
-from ..protocol import DEFAULT_CREDENTIALS, get_default_credentials
 from ..transports import AesEncyptionSession, BaseTransport
 
 _LOGGER = logging.getLogger(__name__)

@@ -11,7 +11,7 @@ import aiohttp
 import pytest
 from yarl import URL
 
-from kasa.credentials import Credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     AuthenticationError,
@@ -24,7 +24,6 @@ from kasa.experimental.sslaestransport import (
     _sha256_hash,
 )
 from kasa.httpclient import HttpClient
-from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
 from kasa.transports.aestransport import AesEncyptionSession
 
 # Transport tests are not designed for real devices

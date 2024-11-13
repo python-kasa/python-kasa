@@ -131,11 +131,11 @@ from kasa.exceptions import (
 )
 from kasa.experimental import Experimental
 from kasa.iot.iotdevice import IotDevice
-from kasa.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
-from kasa.protocol import mask_mac, redact_data
+from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
+from kasa.protocols.protocol import mask_mac, redact_data
 from kasa.transports.aestransport import AesEncyptionSession, KeyPair
 from kasa.transports.xortransport import XorEncryption
 

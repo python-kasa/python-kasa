@@ -22,12 +22,12 @@ from .iot import (
     IotStrip,
     IotWallSwitch,
 )
-from .iotprotocol import IotProtocol
-from .protocol import (
+from .protocols import (
     BaseProtocol,
+    IotProtocol,
+    SmartProtocol,
 )
 from .smart import SmartDevice
-from .smartprotocol import SmartProtocol
 from .transports import (
     AesTransport,
     BaseTransport,

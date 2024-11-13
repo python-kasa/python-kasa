@@ -13,10 +13,10 @@ from pytest_mock import MockerFixture
 
 from kasa import Device, KasaException, Module
 from kasa.exceptions import DeviceError, SmartErrorCode
+from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
-from kasa.smartprotocol import _ChildProtocolWrapper
 
 from .conftest import (
     device_smart,
@@ -266,7 +266,9 @@ async def test_update_module_query_errors(
 
     mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
     # children not created yet so cannot patch.object
-    mocker.patch("kasa.smartprotocol._ChildProtocolWrapper.query", new=_child_query)
+    mocker.patch(
+        "kasa.protocols.smartprotocol._ChildProtocolWrapper.query", new=_child_query
+    )
 
     await new_dev.update()
 
@@ -297,7 +299,7 @@ async def test_update_module_query_errors(
             new_dev.protocol, "query", side_effect=new_dev.protocol._query
         )
         mocker.patch(
-            "kasa.smartprotocol._ChildProtocolWrapper.query",
+            "kasa.protocols.smartprotocol._ChildProtocolWrapper.query",
             new=_ChildProtocolWrapper._query,
         )
 

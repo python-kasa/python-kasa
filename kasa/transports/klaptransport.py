@@ -57,16 +57,12 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
 
-from kasa.credentials import Credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import AuthenticationError, KasaException, _RetryableError
 from kasa.httpclient import HttpClient
 from kasa.json import loads as json_loads
-from kasa.protocol import (
-    DEFAULT_CREDENTIALS,
-    get_default_credentials,
-    md5,
-)
+from kasa.protocols.protocol import md5
 
 from .basetransport import BaseTransport
 
