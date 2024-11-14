@@ -240,28 +240,43 @@ def _echo_discovery_info(discovery_info) -> None:
 
 
 async def find_dev_from_alias(
-    alias, credentials, target="255.255.255.255", timeout=1, attempts=3
+    alias, credentials, target="255.255.255.255", timeout=5, attempts=3
 ):
     """Discover a device identified by its alias."""
-    seen_ips = set()
-    for _attempt in range(1, attempts):
-        found_devs = await Discover.discover(
-            target=target, timeout=timeout, credentials=credentials
-        )
-        for ip, dev in found_devs.items():
-            if ip in seen_ips:
-                continue
-            seen_ips.add(ip)
-            try:
-                await dev.update()
-            except Exception as ex:
-                echo(f"Error querying device {dev.host}: {ex}")
-                continue
-            finally:
-                await dev.protocol.close()
-            if not dev.alias:
-                echo(f"Skipping device {dev.host} with no alias")
-                continue
-            if dev.alias.lower() == alias.lower():
-                return dev
-    return None
+    found_event = asyncio.Event()
+    found_device = []
+    seen_hosts = set()
+
+    async def on_discovered(dev: Device):
+        if dev.host in seen_hosts:
+            return
+        seen_hosts.add(dev.host)
+        try:
+            await dev.update()
+        except Exception as ex:
+            echo(f"Error querying device {dev.host}: {ex}")
+            return
+        finally:
+            await dev.protocol.close()
+        if not dev.alias:
+            echo(f"Skipping device {dev.host} with no alias")
+            return
+        if dev.alias.lower() == alias.lower():
+            found_device.append(dev)
+            found_event.set()
+
+    async def do_discover():
+        for _ in range(1, attempts):
+            await Discover.discover(
+                target=target,
+                timeout=timeout,
+                credentials=credentials,
+                on_discovered=on_discovered,
+            )
+            if found_event.is_set():
+                break
+        found_event.set()
+
+    asyncio.create_task(do_discover())
+    await found_event.wait()
+    return found_device[0] if found_device else None
