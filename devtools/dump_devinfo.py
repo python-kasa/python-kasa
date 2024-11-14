@@ -310,10 +310,6 @@ async def cli(
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    from kasa.experimental import Experimental
-
-    Experimental.set_enabled(True)
-
     credentials = Credentials(username=username, password=password)
     if host is not None:
         if discovery_info:
@@ -357,8 +353,7 @@ async def cli(
                 await handle_device(basedir, autosave, protocol, batch_size=batch_size)
             else:
                 raise KasaException(
-                    "Could not find a protocol for the given parameters. "
-                    + "Maybe you need to enable --experimental."
+                    "Could not find a protocol for the given parameters."
                 )
         else:
             click.echo("Host given, performing discovery on %s." % host)
