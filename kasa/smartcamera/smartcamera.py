@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ..device import DeviceInfo
+from ..device import _DeviceInfo
 from ..device_type import DeviceType
 from ..module import Module
 from ..protocols.smartcameraprotocol import _ChildCameraProtocolWrapper
@@ -33,7 +33,7 @@ class SmartCamera(SmartDevice):
     @staticmethod
     def _get_device_model_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> DeviceInfo:
+    ) -> _DeviceInfo:
         """Get model information for a device."""
         basic_info = info["getDeviceInfo"]["device_info"]["basic_info"]
         short_name = basic_info["device_model"]
@@ -46,7 +46,7 @@ class SmartCamera(SmartDevice):
         firmare_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         requires_auth = True
         region = basic_info.get("region")
-        return DeviceInfo(
+        return _DeviceInfo(
             short_name,
             long_name,
             brand,

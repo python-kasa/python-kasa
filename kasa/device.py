@@ -153,7 +153,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class DeviceInfo:
+class _DeviceInfo:
     """Device Model Information."""
 
     short_name: str
