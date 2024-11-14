@@ -974,7 +974,7 @@ async def get_smart_fixtures(
         copy_folder = SMART_FOLDER
     else:
         # smart camera protocol
-        model_info = SmartCamera._get_device_model_info(final, discovery_info)
+        model_info = SmartCamera._get_device_info(final, discovery_info)
         model = model_info.long_name
         hw_version = model_info.hardware_version
         sw_version = model_info.firmare_version

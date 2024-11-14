@@ -243,7 +243,7 @@ def _get_smartcamera_supported(supported):
         with file.open() as f:
             fixture_data = json.load(f)
 
-        model_info = SmartCamera._get_device_model_info(
+        model_info = SmartCamera._get_device_info(
             fixture_data, fixture_data.get("discovery_result")
         )
 
