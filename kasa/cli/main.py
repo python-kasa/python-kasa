@@ -291,18 +291,6 @@ async def cli(
     if alias is not None and host is not None:
         raise click.BadOptionUsage("alias", "Use either --alias or --host, not both.")
 
-    if alias is not None and host is None:
-        echo(f"Alias is given, using discovery to find host {alias}")
-
-        from .discover import find_host_from_alias
-
-        host = await find_host_from_alias(alias=alias, target=target)
-        if host:
-            echo(f"Found hostname is {host}")
-        else:
-            echo(f"No device with name {alias} found")
-            return
-
     if bool(password) != bool(username):
         raise click.BadOptionUsage(
             "username", "Using authentication requires both --username and --password"
@@ -315,7 +303,7 @@ async def cli(
     else:
         credentials = None
 
-    if host is None:
+    if host is None and alias is None:
         if ctx.invoked_subcommand and ctx.invoked_subcommand != "discover":
             error("Only discover is available without --host or --alias")
 
@@ -325,6 +313,7 @@ async def cli(
         return await ctx.invoke(discover)
 
     device_updated = False
+
     if type is not None and type not in {"smart", "camera"}:
         from kasa.deviceconfig import DeviceConfig
 
@@ -366,6 +355,19 @@ async def cli(
             connection_type=ctype,
         )
         dev = await Device.connect(config=config)
+        device_updated = True
+    elif alias:
+        echo(f"Alias is given, using discovery to find host {alias}")
+
+        from .discover import find_dev_from_alias
+
+        dev = await find_dev_from_alias(
+            alias=alias, target=target, credentials=credentials
+        )
+        if not dev:
+            echo(f"No device with name {alias} found")
+            return
+        echo(f"Found hostname by alias: {host}")
         device_updated = True
     else:
         from .discover import discover
