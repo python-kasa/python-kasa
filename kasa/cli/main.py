@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from kasa import Device
 
 from kasa.deviceconfig import DeviceEncryptionType
-from kasa.experimental import Experimental
 
 from .common import (
     SKIP_UPDATE_COMMANDS,
@@ -220,14 +219,6 @@ def _legacy_type_to_class(_type: str) -> Any:
     envvar="KASA_CREDENTIALS_HASH",
     help="Hashed credentials used to authenticate to the device.",
 )
-@click.option(
-    "--experimental/--no-experimental",
-    default=None,
-    is_flag=True,
-    type=bool,
-    envvar=Experimental.ENV_VAR,
-    help="Enable experimental mode for devices not yet fully supported.",
-)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(
@@ -249,7 +240,6 @@ async def cli(
     username,
     password,
     credentials_hash,
-    experimental,
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
@@ -260,12 +250,6 @@ async def cli(
 
     if target != DEFAULT_TARGET and host:
         error("--target is not a valid option for single host discovery")
-
-    if experimental is not None:
-        Experimental.set_enabled(experimental)
-
-    if Experimental.enabled():
-        echo("Experimental support is enabled")
 
     logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -332,10 +316,6 @@ async def cli(
         dev = _legacy_type_to_class(type)(host, config=config)
     elif type in {"smart", "camera"} or (device_family and encrypt_type):
         if type == "camera":
-            if not experimental:
-                error(
-                    "Camera is an experimental type, please enable with --experimental"
-                )
             encrypt_type = "AES"
             https = True
             device_family = "SMART.IPCAMERA"
