@@ -231,6 +231,8 @@ class Feature:
         """Return the current value."""
         if self.type == Feature.Type.Action:
             return "<Action>"
+        if self.type is Feature.Type.Number and not self.attribute_getter:
+            return 0
         if self.attribute_getter is None:
             raise ValueError("Not an action and no attribute_getter set")
 
