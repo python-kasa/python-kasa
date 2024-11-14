@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from ...feature import Feature
 from ..smartcameramodule import SmartCameraModule
 
 DURATION_MIN = 0
 DURATION_MAX = 6000
 
-VOLUME_MIN = 1
+VOLUME_MIN = 0
 VOLUME_MAX = 10
 
 
@@ -46,6 +44,7 @@ class Alarm(SmartCameraModule):
                 container=self,
                 attribute_getter="active",
                 icon="mdi:bell",
+                category=Feature.Category.Debug,
                 type=Feature.Type.BinarySensor,
             )
         )
@@ -130,14 +129,15 @@ class Alarm(SmartCameraModule):
         return self.data["getSirenTypeList"]["siren_type_list"]
 
     @property
-    def alarm_volume(self) -> Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+    def alarm_volume(self) -> int:
         """Return alarm volume."""
         return int(self.data["getSirenConfig"]["volume"])  # type: ignore[return-value]
 
-    async def set_alarm_volume(
-        self, volume: Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    ) -> dict:
+    async def set_alarm_volume(self, volume: int) -> dict:
         """Set alarm volume."""
+        if volume < VOLUME_MIN or volume > VOLUME_MAX:
+            msg = f"volume must be between {VOLUME_MIN} and {VOLUME_MAX}"
+            raise ValueError(msg)
         return await self.call("setSirenConfig", {"siren": {"volume": str(volume)}})
 
     @property
@@ -147,17 +147,15 @@ class Alarm(SmartCameraModule):
 
     async def set_alarm_duration(self, duration: int) -> dict:
         """Set alarm volume."""
+        if duration < DURATION_MIN or duration > DURATION_MAX:
+            msg = f"duration must be between {DURATION_MIN} and {DURATION_MAX}"
+            raise ValueError(msg)
         return await self.call("setSirenConfig", {"siren": {"duration": duration}})
 
     @property
     def active(self) -> bool:
         """Return true if alarm is active."""
         return self.data["getSirenStatus"]["status"] != "off"
-
-    @property
-    def source(self) -> str | None:
-        """Return the alarm cause."""
-        return None
 
     async def play(self) -> dict:
         """Play alarm."""
