@@ -133,7 +133,7 @@ async def feature(
         echo(f"{feat.name} ({name}): {feat.value}{unit}")
         return feat.value
 
-    value = ast.literal_eval(value)
+    value = feat.parse_value(value, ast.literal_eval)
     echo(f"Changing {name} from {feat.value} to {value}")
     response = await dev.features[name].set_value(value)
     await dev.update()

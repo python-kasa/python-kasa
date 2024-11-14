@@ -1,6 +1,8 @@
+import pytest
 from pytest_mock import MockerFixture
 
 from kasa import Module
+from kasa.exceptions import KasaException
 from kasa.iot import IotDimmer
 from kasa.iot.modules.motion import Motion, Range
 
@@ -36,7 +38,14 @@ async def test_motion_range(dev: IotDimmer, mocker: MockerFixture):
     motion: Motion = dev.modules[Module.IotMotion]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
-    await motion.set_range(custom_range=123)
+    await motion.set_range(value=123)
+    query_helper.assert_called_with(
+        "smartlife.iot.PIR",
+        "set_trigger_sens",
+        {"index": Range.Custom.value, "value": 123},
+    )
+
+    await motion.set_range(range=Range.Custom, value=123)
     query_helper.assert_called_with(
         "smartlife.iot.PIR",
         "set_trigger_sens",
@@ -47,6 +56,14 @@ async def test_motion_range(dev: IotDimmer, mocker: MockerFixture):
     query_helper.assert_called_with(
         "smartlife.iot.PIR", "set_trigger_sens", {"index": Range.Far.value}
     )
+
+    with pytest.raises(KasaException, match="Refusing to set non-custom range"):
+        await motion.set_range(range=Range.Near, value=100)  # type: ignore[call-overload]
+
+    with pytest.raises(
+        KasaException, match="Either range or value needs to be defined"
+    ):
+        await motion.set_range()  # type: ignore[call-overload]
 
 
 @dimmer_iot
