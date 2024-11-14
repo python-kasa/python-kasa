@@ -870,7 +870,9 @@ async def test_type_param(device_type, mocker, runner):
         result_device = dev
 
     mocker.patch("kasa.cli.device.state", new=_state)
-    if device_type == "smart":
+    if device_type == "camera":
+        expected_type = SmartCamera
+    elif device_type == "smart":
         expected_type = SmartDevice
     else:
         expected_type = _legacy_type_to_class(device_type)
