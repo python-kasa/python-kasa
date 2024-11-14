@@ -152,6 +152,22 @@ class WifiNetwork:
 _LOGGER = logging.getLogger(__name__)
 
 
+@dataclass
+class DeviceModelInfo:
+    """Device Model Information."""
+
+    short_name: str
+    long_name: str
+    brand: str
+    device_family: str
+    device_type: DeviceType
+    hardware_version: str
+    firmare_version: str
+    firmware_build: str
+    requires_auth: bool
+    region: str | None
+
+
 class Device(ABC):
     """Common device interface.
 
