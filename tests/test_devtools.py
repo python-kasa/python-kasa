@@ -46,7 +46,7 @@ async def test_fixture_names(fixture_info: FixtureInfo):
 
 @smart_fixtures
 async def test_smart_fixtures(fixture_info: FixtureInfo):
-    """Test that device info gets the right fixture names."""
+    """Test that smart fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartDevice)
     if dev.children:
@@ -63,7 +63,7 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
 
 @smartcamera_fixtures
 async def test_smartcamera_fixtures(fixture_info: FixtureInfo):
-    """Test that device info gets the right fixture names."""
+    """Test that smartcamera fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamera)
     if dev.children:
@@ -80,7 +80,7 @@ async def test_smartcamera_fixtures(fixture_info: FixtureInfo):
 
 @iot_fixtures
 async def test_iot_fixtures(fixture_info: FixtureInfo):
-    """Test that device info gets the right fixture names."""
+    """Test that iot fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True, update=False)
 
     fixture = await get_legacy_fixture(

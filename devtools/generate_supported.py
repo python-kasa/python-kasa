@@ -226,24 +226,6 @@ def _get_supported(supported, fixture_location, device_cls):
         )
 
 
-def _get_iot_supported(supported):
-    for file in Path(IOT_FOLDER).glob("*.json"):
-        with file.open() as f:
-            fixture_data = json.load(f)
-        sysinfo = fixture_data["system"]["get_sysinfo"]
-        dt = IotDevice._get_device_type_from_sys_info(fixture_data)
-        supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[dt]
-
-        model, _, region = sysinfo["model"][:-1].partition("(")
-        auth = "discovery_result" in fixture_data
-        stype = supported["kasa"].setdefault(supported_type, {})
-        smodel = stype.setdefault(model, [])
-        fw = sysinfo["sw_ver"].split(" ", maxsplit=1)[0]
-        smodel.append(
-            SupportedVersion(region=region, hw=sysinfo["hw_ver"], fw=fw, auth=auth)
-        )
-
-
 def main():
     """Entry point to module."""
     generate_supported(sys.argv[1:])
