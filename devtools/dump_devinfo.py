@@ -46,6 +46,7 @@ from kasa.protocols.smartcameraprotocol import (
 )
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartChildDevice
+from kasa.smartcamera import SmartCamera
 
 Call = namedtuple("Call", "module method")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
@@ -973,14 +974,12 @@ async def get_smart_fixtures(
         copy_folder = SMART_FOLDER
     else:
         # smart camera protocol
-        basic_info = final["getDeviceInfo"]["device_info"]["basic_info"]
-        hw_version = basic_info["hw_version"]
-        sw_version = basic_info["sw_version"]
-        model = basic_info["device_model"]
-        region = basic_info.get("region")
-        sw_version = sw_version.split(" ", maxsplit=1)[0]
-        if region is not None:
-            model = f"{model}({region})"
+        model_info = SmartCamera._get_device_info(final, discovery_info)
+        model = model_info.long_name
+        hw_version = model_info.hardware_version
+        sw_version = model_info.firmare_version
+        if model_info.region is not None:
+            model = f"{model}({model_info.region})"
         copy_folder = SMARTCAMERA_FOLDER
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"

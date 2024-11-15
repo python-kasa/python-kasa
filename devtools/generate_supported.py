@@ -10,7 +10,8 @@ from typing import NamedTuple
 
 from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
-from kasa.smart.smartdevice import SmartDevice
+from kasa.smart import SmartDevice
+from kasa.smartcamera import SmartCamera
 
 
 class SupportedVersion(NamedTuple):
@@ -32,6 +33,7 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Fan: "Wall Switches",
     DeviceType.Bulb: "Bulbs",
     DeviceType.LightStrip: "Light Strips",
+    DeviceType.Camera: "Cameras",
     DeviceType.Hub: "Hubs",
     DeviceType.Sensor: "Hub-Connected Devices",
     DeviceType.Thermostat: "Hub-Connected Devices",
@@ -43,6 +45,7 @@ README_FILENAME = "README.md"
 
 IOT_FOLDER = "tests/fixtures/"
 SMART_FOLDER = "tests/fixtures/smart/"
+SMARTCAMERA_FOLDER = "tests/fixtures/smartcamera/"
 
 
 def generate_supported(args):
@@ -58,6 +61,7 @@ def generate_supported(args):
 
     _get_iot_supported(supported)
     _get_smart_supported(supported)
+    _get_smartcamera_supported(supported)
 
     readme_updated = _update_supported_file(
         README_FILENAME, _supported_summary(supported), print_diffs
@@ -231,6 +235,29 @@ def _get_smart_supported(supported):
         smodel = stype.setdefault(model, [])
         smodel.append(
             SupportedVersion(region=region, hw=hw_version, fw=fw_version, auth=True)
+        )
+
+
+def _get_smartcamera_supported(supported):
+    for file in Path(SMARTCAMERA_FOLDER).glob("**/*.json"):
+        with file.open() as f:
+            fixture_data = json.load(f)
+
+        model_info = SmartCamera._get_device_info(
+            fixture_data, fixture_data.get("discovery_result")
+        )
+
+        supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[model_info.device_type]
+
+        stype = supported[model_info.brand].setdefault(supported_type, {})
+        smodel = stype.setdefault(model_info.long_name, [])
+        smodel.append(
+            SupportedVersion(
+                region=model_info.region,
+                hw=model_info.hardware_version,
+                fw=model_info.firmare_version,
+                auth=model_info.requires_auth,
+            )
         )
 
 
