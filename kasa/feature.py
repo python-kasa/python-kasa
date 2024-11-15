@@ -71,7 +71,7 @@ import logging
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Coroutine
 
 if TYPE_CHECKING:
     from .device import Device
@@ -139,7 +139,7 @@ class Feature:
     #: Name of the property that allows accessing the value
     attribute_getter: str | Callable | None = None
     #: Name of the method that allows changing the value
-    attribute_setter: str | None = None
+    attribute_setter: str | Callable[..., Coroutine[Any, Any, Any]] | None = None
     #: Container storing the data, this overrides 'device' for getters
     container: Any = None
     #: Icon suggestion
@@ -231,8 +231,6 @@ class Feature:
         """Return the current value."""
         if self.type == Feature.Type.Action:
             return "<Action>"
-        if self.type is Feature.Type.Number and not self.attribute_getter:
-            return 0
         if self.attribute_getter is None:
             raise ValueError("Not an action and no attribute_getter set")
 
@@ -260,11 +258,16 @@ class Feature:
                     f" - allowed: {self.choices}"
                 )
 
-        container = self.container if self.container is not None else self.device
-        if self.type == Feature.Type.Action:
-            return await getattr(container, self.attribute_setter)()
+        if callable(self.attribute_setter):
+            attribute_setter = self.attribute_setter
+        else:
+            container = self.container if self.container is not None else self.device
+            attribute_setter = getattr(container, self.attribute_setter)
 
-        return await getattr(container, self.attribute_setter)(value)
+        if self.type == Feature.Type.Action:
+            return await attribute_setter()
+
+        return await attribute_setter(value)
 
     def __repr__(self) -> str:
         try:
