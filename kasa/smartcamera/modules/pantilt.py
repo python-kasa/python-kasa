@@ -19,7 +19,7 @@ class PanTilt(SmartCameraModule):
                 "pan",
                 "Pan",
                 container=self,
-                attribute_setter="do_pan",
+                attribute_setter="pan",
                 type=Feature.Type.Number,
                 range_getter=lambda: (-360, 360),
             )
@@ -30,7 +30,7 @@ class PanTilt(SmartCameraModule):
                 "tilt",
                 "Tilt",
                 container=self,
-                attribute_setter="do_tilt",
+                attribute_setter="tilt",
                 type=Feature.Type.Number,
                 range_getter=lambda: (-180, 180),
             )
@@ -40,20 +40,20 @@ class PanTilt(SmartCameraModule):
         """Query to execute during the update cycle."""
         return {}
 
-    async def do_pan(self, pan: int) -> dict:
+    async def pan(self, pan: int) -> dict:
         """Pan horizontally."""
         return await self._device._raw_query(
             {"do": {"motor": {"move": {"x_coord": str(pan), "y_coord": str(0)}}}}
         )
 
-    async def do_tilt(self, tilt: int) -> dict:
-        """Tilt vertically horizontally."""
+    async def tilt(self, tilt: int) -> dict:
+        """Tilt vertically."""
         return await self._device._raw_query(
             {"do": {"motor": {"move": {"x_coord": str(0), "y_coord": str(tilt)}}}}
         )
 
-    async def do_move(self, pan: int, tilt: int) -> dict:
-        """Tilt vertically horizontally."""
+    async def move(self, pan: int, tilt: int) -> dict:
+        """Pan and tilte camera."""
         return await self._device._raw_query(
             {"do": {"motor": {"move": {"x_coord": str(pan), "y_coord": str(tilt)}}}}
         )
