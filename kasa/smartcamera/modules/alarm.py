@@ -31,10 +31,7 @@ class Alarm(SmartCameraModule):
         return q
 
     def _initialize_features(self) -> None:
-        """Initialize features.
-
-        This is implemented as some features depend on device responses.
-        """
+        """Initialize features."""
         device = self._device
         self._add_feature(
             Feature(
@@ -119,8 +116,9 @@ class Alarm(SmartCameraModule):
         See *alarm_sounds* for list of available sounds.
         """
         if sound not in self.alarm_sounds:
-            msg = f"sound must be one of {', '.join(self.alarm_sounds)}: {sound}"
-            raise ValueError(msg)
+            raise ValueError(
+                f"sound must be one of {', '.join(self.alarm_sounds)}: {sound}"
+            )
         return await self.call("setSirenConfig", {"siren": {"siren_type": sound}})
 
     @property
@@ -130,14 +128,16 @@ class Alarm(SmartCameraModule):
 
     @property
     def alarm_volume(self) -> int:
-        """Return alarm volume."""
-        return int(self.data["getSirenConfig"]["volume"])  # type: ignore[return-value]
+        """Return alarm volume.
+
+        Unlike duration the device expects/returns a string for volume.
+        """
+        return int(self.data["getSirenConfig"]["volume"])
 
     async def set_alarm_volume(self, volume: int) -> dict:
         """Set alarm volume."""
         if volume < VOLUME_MIN or volume > VOLUME_MAX:
-            msg = f"volume must be between {VOLUME_MIN} and {VOLUME_MAX}"
-            raise ValueError(msg)
+            raise ValueError(f"volume must be between {VOLUME_MIN} and {VOLUME_MAX}")
         return await self.call("setSirenConfig", {"siren": {"volume": str(volume)}})
 
     @property

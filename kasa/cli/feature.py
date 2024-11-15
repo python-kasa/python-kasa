@@ -122,12 +122,6 @@ async def feature(
 
     feat = dev.features[name]
 
-    if value is None and feat.type is Feature.Type.Action:
-        echo(f"Changing {name} from {feat.value} to {value}")
-        response = await dev.features[name].set_value(value)
-        echo(response)
-        return response
-
     if value is None:
         unit = f" {feat.unit}" if feat.unit else ""
         echo(f"{feat.name} ({name}): {feat.value}{unit}")
