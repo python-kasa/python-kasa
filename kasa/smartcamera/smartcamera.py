@@ -40,7 +40,7 @@ class SmartCamera(SmartDevice):
         long_name = discovery_info["device_model"] if discovery_info else short_name
         device_type = SmartCamera._get_device_type_from_sysinfo(basic_info)
         fw_version_full = basic_info["sw_version"]
-        firmare_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         return _DeviceInfo(
             short_name=basic_info["device_model"],
             long_name=long_name,
@@ -48,7 +48,7 @@ class SmartCamera(SmartDevice):
             device_family=basic_info["device_type"],
             device_type=device_type,
             hardware_version=basic_info["hw_version"],
-            firmare_version=firmare_version,
+            firmware_version=firmware_version,
             firmware_build=firmware_build,
             requires_auth=True,
             region=basic_info.get("region"),

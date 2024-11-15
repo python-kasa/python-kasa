@@ -45,7 +45,7 @@ from kasa.protocols.smartcameraprotocol import (
     _ChildCameraProtocolWrapper,
 )
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
-from kasa.smart import SmartChildDevice
+from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcamera import SmartCamera
 
 Call = namedtuple("Call", "module method")
@@ -439,10 +439,8 @@ async def get_legacy_fixture(protocol, *, discovery_info):
     if discovery_info and not discovery_info.get("system"):
         # Need to recreate a DiscoverResult here because we don't want the aliases
         # in the fixture, we want the actual field names as returned by the device.
-        dr = DiscoveryResult.from_dict(protocol._discovery_info)
-        final["discovery_result"] = dr.dict(
-            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
-        )
+        dr = DiscoveryResult.from_dict(discovery_info)
+        final["discovery_result"] = dr.to_dict()
 
     click.echo("Got %s successes" % len(successes))
     click.echo(click.style("## device info file ##", bold=True))
@@ -817,15 +815,13 @@ async def get_smart_test_calls(protocol: SmartProtocol):
 
 def get_smart_child_fixture(response):
     """Get a seperate fixture for the child device."""
-    info = response["get_device_info"]
-    hw_version = info["hw_ver"]
-    sw_version = info["fw_ver"]
-    sw_version = sw_version.split(" ", maxsplit=1)[0]
-    model = info["model"]
-    if region := info.get("specs"):
-        model += f"({region})"
-
-    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    model_info = SmartDevice._get_device_info(response, None)
+    hw_version = model_info.hardware_version
+    fw_version = model_info.firmware_version
+    model = model_info.long_name
+    if model_info.region is not None:
+        model = f"{model}({model_info.region})"
+    save_filename = f"{model}_{hw_version}_{fw_version}.json"
     return FixtureResult(
         filename=save_filename, folder=SMART_CHILD_FOLDER, data=response
     )
@@ -964,23 +960,17 @@ async def get_smart_fixtures(
 
     if "get_device_info" in final:
         # smart protocol
-        hw_version = final["get_device_info"]["hw_ver"]
-        sw_version = final["get_device_info"]["fw_ver"]
-        if discovery_info:
-            model = discovery_info["device_model"]
-        else:
-            model = final["get_device_info"]["model"] + "(XX)"
-        sw_version = sw_version.split(" ", maxsplit=1)[0]
+        model_info = SmartDevice._get_device_info(final, discovery_info)
         copy_folder = SMART_FOLDER
     else:
         # smart camera protocol
         model_info = SmartCamera._get_device_info(final, discovery_info)
-        model = model_info.long_name
-        hw_version = model_info.hardware_version
-        sw_version = model_info.firmare_version
-        if model_info.region is not None:
-            model = f"{model}({model_info.region})"
         copy_folder = SMARTCAMERA_FOLDER
+    hw_version = model_info.hardware_version
+    sw_version = model_info.firmware_version
+    model = model_info.long_name
+    if model_info.region is not None:
+        model = f"{model}({model_info.region})"
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
 

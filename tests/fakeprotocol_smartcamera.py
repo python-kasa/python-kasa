@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from itertools import islice
 from json import loads as json_loads
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
@@ -11,9 +12,11 @@ from .fakeprotocol_smart import FakeSmartTransport
 
 
 class FakeSmartCameraProtocol(SmartCameraProtocol):
-    def __init__(self, info, fixture_name, *, is_child=False):
+    def __init__(self, info, fixture_name, *, is_child=False, verbatim=False):
         super().__init__(
-            transport=FakeSmartCameraTransport(info, fixture_name, is_child=is_child),
+            transport=FakeSmartCameraTransport(
+                info, fixture_name, is_child=is_child, verbatim=verbatim
+            ),
         )
 
     async def query(self, request, retry_count: int = 3):
@@ -30,6 +33,7 @@ class FakeSmartCameraTransport(BaseTransport):
         *,
         list_return_size=10,
         is_child=False,
+        verbatim=False,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -41,6 +45,7 @@ class FakeSmartCameraTransport(BaseTransport):
             ),
         )
         self.fixture_name = fixture_name
+        self.verbatim = verbatim
         if not is_child:
             self.info = copy.deepcopy(info)
             self.child_protocols = FakeSmartTransport._get_child_protocols(
@@ -70,11 +75,11 @@ class FakeSmartCameraTransport(BaseTransport):
             responses = []
             for request in params["requests"]:
                 response = await self._send_request(request)  # type: ignore[arg-type]
+                response["method"] = request["method"]  # type: ignore[index]
+                responses.append(response)
                 # Devices do not continue after error
                 if response["error_code"] != 0:
                     break
-                response["method"] = request["method"]  # type: ignore[index]
-                responses.append(response)
             return {"result": {"responses": responses}, "error_code": 0}
         else:
             return await self._send_request(request_dict)
@@ -176,6 +181,16 @@ class FakeSmartCameraTransport(BaseTransport):
                             return {"error_code": -1}
                     break
             return {"error_code": 0}
+        elif method == "get":
+            it = iter(request_dict)
+            next(islice(it, 1, 1), None)
+            module = next(it)
+            get_method = f"get_{module}"
+            if get_method in info:
+                result = copy.deepcopy(info[get_method]["get"])
+                return {**result, "error_code": 0}
+            else:
+                return {"error_code": -1}
         elif method[:3] == "get":
             params = request_dict.get("params")
             if method in info:

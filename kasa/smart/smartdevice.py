@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
-from ..device import Device, WifiNetwork
+from ..device import Device, WifiNetwork, _DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
@@ -790,3 +790,42 @@ class SmartDevice(Device):
             return DeviceType.Thermostat
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
+
+    @staticmethod
+    def _get_device_info(
+        info: dict[str, Any], discovery_info: dict[str, Any] | None
+    ) -> _DeviceInfo:
+        """Get model information for a device."""
+        di = info["get_device_info"]
+        components = [comp["id"] for comp in info["component_nego"]["component_list"]]
+        short_name = di["model"]
+        region = None
+        if discovery_info:
+            device_model = discovery_info["device_model"]
+            long_name, _, region = device_model.partition("(")
+            if region:  # P100 doesn't have region
+                region = region.replace(")", "")
+        else:
+            long_name = short_name
+        if not region:  # some devices have region in specs
+            region = di.get("specs")
+        device_family = di["type"]
+        device_type = SmartDevice._get_device_type_from_components(
+            components, device_family
+        )
+        fw_version_full = di["fw_ver"]
+        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        _protocol, devicetype = device_family.split(".")
+        brand = devicetype[:4].lower()
+        return _DeviceInfo(
+            short_name=short_name,
+            long_name=long_name,
+            brand=brand,
+            device_family=device_family,
+            device_type=device_type,
+            hardware_version=di["hw_ver"],
+            firmware_version=firmware_version,
+            firmware_build=firmware_build,
+            requires_auth=True,
+            region=region,
+        )

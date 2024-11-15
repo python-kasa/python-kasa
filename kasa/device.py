@@ -162,7 +162,7 @@ class _DeviceInfo:
     device_family: str
     device_type: DeviceType
     hardware_version: str
-    firmare_version: str
+    firmware_version: str
     firmware_build: str
     requires_auth: bool
     region: str | None
