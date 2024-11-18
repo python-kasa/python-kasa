@@ -17,8 +17,11 @@ from ..iotmodule import IotModule
 if TYPE_CHECKING:
     pass
 
+# type ignore can be removed after migration mashumaro:
+# error: Signature of "__replace__" incompatible with supertype "LightState"
 
-class IotLightPreset(BaseModel, LightState):
+
+class IotLightPreset(BaseModel, LightState):  # type: ignore[override]
     """Light configuration preset."""
 
     index: int = Field(kw_only=True)
