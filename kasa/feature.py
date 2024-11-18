@@ -136,9 +136,9 @@ class Feature:
     name: str
     #: Type of the feature
     type: Feature.Type
-    #: Name of the property that allows accessing the value
+    #: Callable or name of the property that allows accessing the value
     attribute_getter: str | Callable | None = None
-    #: Name of the method that allows changing the value
+    #: Callable coroutine or name of the method that allows changing the value
     attribute_setter: str | Callable[..., Coroutine[Any, Any, Any]] | None = None
     #: Container storing the data, this overrides 'device' for getters
     container: Any = None
