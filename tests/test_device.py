@@ -91,7 +91,7 @@ async def test_device_class_ctors(device_class_name_obj):
 
 @device_classes
 async def test_device_class_repr(device_class_name_obj):
-    """Make sure constructor api not broken for new and existing SmartDevices."""
+    """Test device repr when update() not called and no discovery info."""
     host = "127.0.0.2"
     port = 1234
     credentials = Credentials("foo", "bar")
