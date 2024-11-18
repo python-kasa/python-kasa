@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 """Script that checks supported devices and updates README.md and SUPPORTED.md."""
 
+from __future__ import annotations
+
 import json
 import os
 import sys
 from pathlib import Path
 from string import Template
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
-from kasa.device_factory import _get_device_type_from_sys_info
 from kasa.device_type import DeviceType
+from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
 from kasa.smartcamera import SmartCamera
 
@@ -17,7 +19,7 @@ from kasa.smartcamera import SmartCamera
 class SupportedVersion(NamedTuple):
     """Supported version."""
 
-    region: str
+    region: str | None
     hw: str
     fw: str
     auth: bool
@@ -45,6 +47,7 @@ README_FILENAME = "README.md"
 
 IOT_FOLDER = "tests/fixtures/"
 SMART_FOLDER = "tests/fixtures/smart/"
+SMART_CHILD_FOLDER = "tests/fixtures/smart/child"
 SMARTCAMERA_FOLDER = "tests/fixtures/smartcamera/"
 
 
@@ -59,9 +62,10 @@ def generate_supported(args):
 
     supported = {"kasa": {}, "tapo": {}}
 
-    _get_iot_supported(supported)
-    _get_smart_supported(supported)
-    _get_smartcamera_supported(supported)
+    _get_supported_devices(supported, IOT_FOLDER, IotDevice)
+    _get_supported_devices(supported, SMART_FOLDER, SmartDevice)
+    _get_supported_devices(supported, SMART_CHILD_FOLDER, SmartDevice)
+    _get_supported_devices(supported, SMARTCAMERA_FOLDER, SmartCamera)
 
     readme_updated = _update_supported_file(
         README_FILENAME, _supported_summary(supported), print_diffs
@@ -201,49 +205,16 @@ def _supported_text(
     return brands
 
 
-def _get_smart_supported(supported):
-    for file in Path(SMART_FOLDER).glob("**/*.json"):
+def _get_supported_devices(
+    supported: dict[str, Any],
+    fixture_location: str,
+    device_cls: type[IotDevice | SmartDevice | SmartCamera],
+):
+    for file in Path(fixture_location).glob("*.json"):
         with file.open() as f:
             fixture_data = json.load(f)
 
-        if "discovery_result" in fixture_data:
-            model, _, region = fixture_data["discovery_result"][
-                "device_model"
-            ].partition("(")
-            device_type = fixture_data["discovery_result"]["device_type"]
-        else:  # child devices of hubs do not have discovery result
-            model = fixture_data["get_device_info"]["model"]
-            region = fixture_data["get_device_info"].get("specs")
-            device_type = fixture_data["get_device_info"]["type"]
-        # P100 doesn't have region HW
-        region = region.replace(")", "") if region else ""
-
-        _protocol, devicetype = device_type.split(".")
-        brand = devicetype[:4].lower()
-        components = [
-            component["id"]
-            for component in fixture_data["component_nego"]["component_list"]
-        ]
-        dt = SmartDevice._get_device_type_from_components(components, device_type)
-        supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[dt]
-
-        hw_version = fixture_data["get_device_info"]["hw_ver"]
-        fw_version = fixture_data["get_device_info"]["fw_ver"]
-        fw_version = fw_version.split(" ", maxsplit=1)[0]
-
-        stype = supported[brand].setdefault(supported_type, {})
-        smodel = stype.setdefault(model, [])
-        smodel.append(
-            SupportedVersion(region=region, hw=hw_version, fw=fw_version, auth=True)
-        )
-
-
-def _get_smartcamera_supported(supported):
-    for file in Path(SMARTCAMERA_FOLDER).glob("**/*.json"):
-        with file.open() as f:
-            fixture_data = json.load(f)
-
-        model_info = SmartCamera._get_device_info(
+        model_info = device_cls._get_device_info(
             fixture_data, fixture_data.get("discovery_result")
         )
 
@@ -255,27 +226,9 @@ def _get_smartcamera_supported(supported):
             SupportedVersion(
                 region=model_info.region,
                 hw=model_info.hardware_version,
-                fw=model_info.firmare_version,
+                fw=model_info.firmware_version,
                 auth=model_info.requires_auth,
             )
-        )
-
-
-def _get_iot_supported(supported):
-    for file in Path(IOT_FOLDER).glob("*.json"):
-        with file.open() as f:
-            fixture_data = json.load(f)
-        sysinfo = fixture_data["system"]["get_sysinfo"]
-        dt = _get_device_type_from_sys_info(fixture_data)
-        supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[dt]
-
-        model, _, region = sysinfo["model"][:-1].partition("(")
-        auth = "discovery_result" in fixture_data
-        stype = supported["kasa"].setdefault(supported_type, {})
-        smodel = stype.setdefault(model, [])
-        fw = sysinfo["sw_ver"].split(" ", maxsplit=1)[0]
-        smodel.append(
-            SupportedVersion(region=region, hw=sysinfo["hw_ver"], fw=fw, auth=auth)
         )
 
 

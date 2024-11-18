@@ -21,6 +21,7 @@ import traceback
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from pprint import pprint
+from typing import Any
 
 import asyncclick as click
 
@@ -40,12 +41,13 @@ from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
+from kasa.protocols import IotProtocol
 from kasa.protocols.smartcameraprotocol import (
     SmartCameraProtocol,
     _ChildCameraProtocolWrapper,
 )
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
-from kasa.smart import SmartChildDevice
+from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcamera import SmartCamera
 
 Call = namedtuple("Call", "module method")
@@ -389,7 +391,9 @@ async def cli(
             )
 
 
-async def get_legacy_fixture(protocol, *, discovery_info):
+async def get_legacy_fixture(
+    protocol: IotProtocol, *, discovery_info: dict[str, Any] | None
+) -> FixtureResult:
     """Get fixture for legacy IOT style protocol."""
     items = [
         Call(module="system", method="get_sysinfo"),
@@ -422,8 +426,8 @@ async def get_legacy_fixture(protocol, *, discovery_info):
         finally:
             await protocol.close()
 
-    final_query = defaultdict(defaultdict)
-    final = defaultdict(defaultdict)
+    final_query: dict = defaultdict(defaultdict)
+    final: dict = defaultdict(defaultdict)
     for succ, resp in successes:
         final_query[succ.module][succ.method] = {}
         final[succ.module][succ.method] = resp
@@ -433,16 +437,14 @@ async def get_legacy_fixture(protocol, *, discovery_info):
     try:
         final = await protocol.query(final_query)
     except Exception as ex:
-        _echo_error(f"Unable to query all successes at once: {ex}", bold=True, fg="red")
+        _echo_error(f"Unable to query all successes at once: {ex}")
     finally:
         await protocol.close()
     if discovery_info and not discovery_info.get("system"):
         # Need to recreate a DiscoverResult here because we don't want the aliases
         # in the fixture, we want the actual field names as returned by the device.
-        dr = DiscoveryResult.from_dict(protocol._discovery_info)
-        final["discovery_result"] = dr.dict(
-            by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
-        )
+        dr = DiscoveryResult.from_dict(discovery_info)
+        final["discovery_result"] = dr.to_dict()
 
     click.echo("Got %s successes" % len(successes))
     click.echo(click.style("## device info file ##", bold=True))
@@ -817,23 +819,21 @@ async def get_smart_test_calls(protocol: SmartProtocol):
 
 def get_smart_child_fixture(response):
     """Get a seperate fixture for the child device."""
-    info = response["get_device_info"]
-    hw_version = info["hw_ver"]
-    sw_version = info["fw_ver"]
-    sw_version = sw_version.split(" ", maxsplit=1)[0]
-    model = info["model"]
-    if region := info.get("specs"):
-        model += f"({region})"
-
-    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    model_info = SmartDevice._get_device_info(response, None)
+    hw_version = model_info.hardware_version
+    fw_version = model_info.firmware_version
+    model = model_info.long_name
+    if model_info.region is not None:
+        model = f"{model}({model_info.region})"
+    save_filename = f"{model}_{hw_version}_{fw_version}.json"
     return FixtureResult(
         filename=save_filename, folder=SMART_CHILD_FOLDER, data=response
     )
 
 
 async def get_smart_fixtures(
-    protocol: SmartProtocol, *, discovery_info=None, batch_size: int
-):
+    protocol: SmartProtocol, *, discovery_info: dict[str, Any] | None, batch_size: int
+) -> list[FixtureResult]:
     """Get fixture for new TAPO style protocol."""
     if isinstance(protocol, SmartCameraProtocol):
         test_calls, successes = await get_smart_camera_test_calls(protocol)
@@ -964,23 +964,17 @@ async def get_smart_fixtures(
 
     if "get_device_info" in final:
         # smart protocol
-        hw_version = final["get_device_info"]["hw_ver"]
-        sw_version = final["get_device_info"]["fw_ver"]
-        if discovery_info:
-            model = discovery_info["device_model"]
-        else:
-            model = final["get_device_info"]["model"] + "(XX)"
-        sw_version = sw_version.split(" ", maxsplit=1)[0]
+        model_info = SmartDevice._get_device_info(final, discovery_info)
         copy_folder = SMART_FOLDER
     else:
         # smart camera protocol
         model_info = SmartCamera._get_device_info(final, discovery_info)
-        model = model_info.long_name
-        hw_version = model_info.hardware_version
-        sw_version = model_info.firmare_version
-        if model_info.region is not None:
-            model = f"{model}({model_info.region})"
         copy_folder = SMARTCAMERA_FOLDER
+    hw_version = model_info.hardware_version
+    sw_version = model_info.firmware_version
+    model = model_info.long_name
+    if model_info.region is not None:
+        model = f"{model}({model_info.region})"
 
     save_filename = f"{model}_{hw_version}_{sw_version}.json"
 
