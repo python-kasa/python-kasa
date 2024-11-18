@@ -409,7 +409,7 @@ async def _discover_update_and_close(ip, username, password) -> Device:
 
 
 async def get_device_for_fixture(
-    fixture_data: FixtureInfo, *, verbatim=False, update=True
+    fixture_data: FixtureInfo, *, verbatim=False, update_after_init=True
 ) -> Device:
     # if the wanted file is not an absolute path, prepend the fixtures directory
 
@@ -438,7 +438,7 @@ async def get_device_for_fixture(
     if discovery_data:  # Child devices do not have discovery info
         d.update_from_discover_info(discovery_data)
 
-    if update:
+    if update_after_init:
         await _update_and_close(d)
     return d
 

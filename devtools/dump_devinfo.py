@@ -21,6 +21,7 @@ import traceback
 from collections import defaultdict, namedtuple
 from pathlib import Path
 from pprint import pprint
+from typing import Any
 
 import asyncclick as click
 
@@ -40,6 +41,7 @@ from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
+from kasa.protocols import IotProtocol
 from kasa.protocols.smartcameraprotocol import (
     SmartCameraProtocol,
     _ChildCameraProtocolWrapper,
@@ -389,7 +391,9 @@ async def cli(
             )
 
 
-async def get_legacy_fixture(protocol, *, discovery_info):
+async def get_legacy_fixture(
+    protocol: IotProtocol, *, discovery_info: dict[str, Any] | None
+) -> FixtureResult:
     """Get fixture for legacy IOT style protocol."""
     items = [
         Call(module="system", method="get_sysinfo"),
@@ -422,8 +426,8 @@ async def get_legacy_fixture(protocol, *, discovery_info):
         finally:
             await protocol.close()
 
-    final_query = defaultdict(defaultdict)
-    final = defaultdict(defaultdict)
+    final_query: dict = defaultdict(defaultdict)
+    final: dict = defaultdict(defaultdict)
     for succ, resp in successes:
         final_query[succ.module][succ.method] = {}
         final[succ.module][succ.method] = resp
@@ -433,7 +437,7 @@ async def get_legacy_fixture(protocol, *, discovery_info):
     try:
         final = await protocol.query(final_query)
     except Exception as ex:
-        _echo_error(f"Unable to query all successes at once: {ex}", bold=True, fg="red")
+        _echo_error(f"Unable to query all successes at once: {ex}")
     finally:
         await protocol.close()
     if discovery_info and not discovery_info.get("system"):
@@ -828,8 +832,8 @@ def get_smart_child_fixture(response):
 
 
 async def get_smart_fixtures(
-    protocol: SmartProtocol, *, discovery_info=None, batch_size: int
-):
+    protocol: SmartProtocol, *, discovery_info: dict[str, Any] | None, batch_size: int
+) -> list[FixtureResult]:
     """Get fixture for new TAPO style protocol."""
     if isinstance(protocol, SmartCameraProtocol):
         test_calls, successes = await get_smart_camera_test_calls(protocol)

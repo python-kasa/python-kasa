@@ -798,6 +798,8 @@ class SmartDevice(Device):
         """Get model information for a device."""
         di = info["get_device_info"]
         components = [comp["id"] for comp in info["component_nego"]["component_list"]]
+
+        # Get model/region info
         short_name = di["model"]
         region = None
         if discovery_info:
@@ -809,6 +811,8 @@ class SmartDevice(Device):
             long_name = short_name
         if not region:  # some devices have region in specs
             region = di.get("specs")
+
+        # Get other info
         device_family = di["type"]
         device_type = SmartDevice._get_device_type_from_components(
             components, device_family
@@ -816,7 +820,9 @@ class SmartDevice(Device):
         fw_version_full = di["fw_ver"]
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         _protocol, devicetype = device_family.split(".")
+        # Brand inferred from SMART.KASAPLUG/SMART.TAPOPLUG etc.
         brand = devicetype[:4].lower()
+
         return _DeviceInfo(
             short_name=short_name,
             long_name=long_name,

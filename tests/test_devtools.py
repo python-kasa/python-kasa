@@ -4,6 +4,7 @@ import pytest
 
 from devtools.dump_devinfo import get_legacy_fixture, get_smart_fixtures
 from kasa.iot import IotDevice
+from kasa.protocols import IotProtocol
 from kasa.smart import SmartDevice
 from kasa.smartcamera import SmartCamera
 
@@ -56,9 +57,9 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
         discovery_info=fixture_info.data.get("discovery_result"),
         batch_size=5,
     )
-    fixture_result = fixtures[0][2]
+    fixture_result = fixtures[0]
 
-    assert fixture_info.data == fixture_result
+    assert fixture_info.data == fixture_result.data
 
 
 @smartcamera_fixtures
@@ -73,25 +74,30 @@ async def test_smartcamera_fixtures(fixture_info: FixtureInfo):
         discovery_info=fixture_info.data.get("discovery_result"),
         batch_size=5,
     )
-    fixture_result = fixtures[0][2]
+    fixture_result = fixtures[0]
 
-    assert fixture_info.data == fixture_result
+    assert fixture_info.data == fixture_result.data
 
 
 @iot_fixtures
 async def test_iot_fixtures(fixture_info: FixtureInfo):
     """Test that iot fixtures are created the same."""
-    dev = await get_device_for_fixture(fixture_info, verbatim=True, update=False)
+    # Iot fixtures often do not have enough data to perform a device update()
+    # without missing info being added to suppress the update
+    dev = await get_device_for_fixture(
+        fixture_info, verbatim=True, update_after_init=False
+    )
+    assert isinstance(dev.protocol, IotProtocol)
 
     fixture = await get_legacy_fixture(
         dev.protocol, discovery_info=fixture_info.data.get("discovery_result")
     )
-    fixture_result = fixture[2]
+    fixture_result = fixture
 
-    fixture_result = {
-        key: val for key, val in fixture_result.items() if "err_code" not in val
+    created_fixture = {
+        key: val for key, val in fixture_result.data.items() if "err_code" not in val
     }
     saved_fixture = {
         key: val for key, val in fixture_info.data.items() if "err_code" not in val
     }
-    assert saved_fixture == fixture_result
+    assert saved_fixture == created_fixture

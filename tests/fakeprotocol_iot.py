@@ -198,42 +198,44 @@ class FakeIotTransport(BaseTransport):
         self.reader = None
         self.verbatim = verbatim
 
-        proto = {} if verbatim else copy.deepcopy(FakeIotTransport.baseproto)
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        if verbatim:
+            self.proto = copy.deepcopy(info)
+        else:
+            self.proto = self._build_fake_proto(info)
+
+    @staticmethod
+    def _build_fake_proto(info):
+        """Create an internal protocol with extra data not in the fixture."""
+        proto = copy.deepcopy(FakeIotTransport.baseproto)
 
         for target in info:
-            if self.verbatim:
-                proto[target] = info[target]
-                continue
-
             if target != "discovery_result":
                 for cmd in info[target]:
                     # print("initializing tgt %s cmd %s" % (target, cmd))
                     proto[target][cmd] = info[target][cmd]
 
-        if not verbatim:
-            # if we have emeter support, we need to add the missing pieces
-            for module in ["emeter", "smartlife.iot.common.emeter"]:
-                if (
-                    module in info
-                    and "err_code" in info[module]
-                    and info[module]["err_code"] != 0
-                ):
-                    proto[module] = info[module]
-                else:
-                    for etype in ["get_realtime", "get_daystat", "get_monthstat"]:
-                        if (
-                            module in info and etype in info[module]
-                        ):  # if the fixture has the data, use it
-                            # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
-                            proto[module][etype] = info[module][etype]
-                        else:  # otherwise fall back to the static one
-                            dummy_data = emeter_commands[module][etype]
-                            # print("got %s %s from dummy: %s" % (module, etype, dummy_data))
-                            proto[module][etype] = dummy_data
-
-            # print("initialized: %s" % proto[module])
-
-        self.proto = proto
+        # if we have emeter support, we need to add the missing pieces
+        for module in ["emeter", "smartlife.iot.common.emeter"]:
+            if (
+                module in info
+                and "err_code" in info[module]
+                and info[module]["err_code"] != 0
+            ):
+                proto[module] = info[module]
+            else:
+                for etype in ["get_realtime", "get_daystat", "get_monthstat"]:
+                    if (
+                        module in info and etype in info[module]
+                    ):  # if the fixture has the data, use it
+                        # print("got %s %s from fixture: %s" % (module, etype, info[module][etype]))
+                        proto[module][etype] = info[module][etype]
+                    else:  # otherwise fall back to the static one
+                        dummy_data = emeter_commands[module][etype]
+                        # print("got %s %s from dummy: %s" % (module, etype, dummy_data))
+                        proto[module][etype] = dummy_data
+        return proto
 
     @property
     def default_port(self) -> int:
@@ -428,14 +430,26 @@ class FakeIotTransport(BaseTransport):
     }
 
     async def send(self, request, port=9999):
-        proto = self.proto
+        if not self.verbatim:
+            return await self._send(request, port)
 
+        # Simply return whatever is in the fixture
+        response = {}
+        for target in request:
+            if target in self.proto:
+                response.update({target: self.proto[target]})
+            else:
+                response.update({"err_msg": "module not support"})
+        return copy.deepcopy(response)
+
+    async def _send(self, request, port=9999):
+        proto = self.proto
         # collect child ids from context
         try:
             child_ids = request["context"]["child_ids"]
+            request.pop("context", None)
         except KeyError:
             child_ids = []
-        request.pop("context", None)
 
         def get_response_for_module(target):
             if target not in proto:
@@ -473,13 +487,7 @@ class FakeIotTransport(BaseTransport):
 
         response = {}
         for target in request:
-            if self.verbatim:
-                if target in self.proto:
-                    response.update({target: self.proto[target]})
-                else:
-                    response.update({"err_msg": "module not support"})
-            else:
-                response.update(get_response_for_module(target))
+            response.update(get_response_for_module(target))
 
         return copy.deepcopy(response)
 

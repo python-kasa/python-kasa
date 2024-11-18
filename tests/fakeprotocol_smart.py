@@ -48,7 +48,6 @@ class FakeSmartTransport(BaseTransport):
             ),
         )
         self.fixture_name = fixture_name
-        self.verbatim = verbatim
         # Don't copy the dict if the device is a child so that updates on the
         # child are then still reflected on the parent's lis of child device in
         if not is_child:
@@ -67,7 +66,12 @@ class FakeSmartTransport(BaseTransport):
         self.list_return_size = list_return_size
         self.warn_fixture_missing_methods = warn_fixture_missing_methods
         self.fix_incomplete_fixture_lists = fix_incomplete_fixture_lists
+
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        self.verbatim = verbatim
         if verbatim:
+            self.warn_fixture_missing_methods = False
             self.fix_incomplete_fixture_lists = False
 
     @property

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import copy
-from itertools import islice
 from json import loads as json_loads
+from typing import Any
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.protocols.smartcameraprotocol import SmartCameraProtocol
@@ -45,6 +45,8 @@ class FakeSmartCameraTransport(BaseTransport):
             ),
         )
         self.fixture_name = fixture_name
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
         self.verbatim = verbatim
         if not is_child:
             self.info = copy.deepcopy(info)
@@ -134,6 +136,15 @@ class FakeSmartCameraTransport(BaseTransport):
         ],
     }
 
+    @staticmethod
+    def _get_second_key(request_dict: dict[str, Any]) -> str:
+        assert (
+            len(request_dict) == 2
+        ), f"Unexpected dict {request_dict}, should be length 2"
+        it = iter(request_dict)
+        next(it, None)
+        return next(it)
+
     async def _send_request(self, request_dict: dict):
         method = request_dict["method"]
 
@@ -181,9 +192,7 @@ class FakeSmartCameraTransport(BaseTransport):
                 break
             return {"error_code": 0}
         elif method == "get":
-            it = iter(request_dict)
-            next(islice(it, 1, 1), None)
-            module = next(it)
+            module = self._get_second_key(request_dict)
             get_method = f"get_{module}"
             if get_method in info:
                 result = copy.deepcopy(info[get_method]["get"])
