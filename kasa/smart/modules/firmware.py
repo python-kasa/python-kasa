@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Coroutine
+from asyncio import timeout as asyncio_timeout
+from collections.abc import Callable, Coroutine
 from datetime import date
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING
 
-# When support for cpython older than 3.11 is dropped
-# async_timeout can be replaced with asyncio.timeout
-from async_timeout import timeout as asyncio_timeout
 from pydantic.v1 import BaseModel, Field, validator
 
 from ...exceptions import KasaException
@@ -41,11 +39,11 @@ class UpdateInfo(BaseModel):
     """Update info status object."""
 
     status: int = Field(alias="type")
-    version: Optional[str] = Field(alias="fw_ver", default=None)  # noqa: UP007
-    release_date: Optional[date] = None  # noqa: UP007
-    release_notes: Optional[str] = Field(alias="release_note", default=None)  # noqa: UP007
-    fw_size: Optional[int] = None  # noqa: UP007
-    oem_id: Optional[str] = None  # noqa: UP007
+    version: str | None = Field(alias="fw_ver", default=None)
+    release_date: date | None = None
+    release_notes: str | None = Field(alias="release_note", default=None)
+    fw_size: int | None = None
+    oem_id: str | None = None
     needs_upgrade: bool = Field(alias="need_to_upgrade")
 
     @validator("release_date", pre=True)
@@ -58,9 +56,7 @@ class UpdateInfo(BaseModel):
     @property
     def update_available(self) -> bool:
         """Return True if update available."""
-        if self.status != 0:
-            return True
-        return False
+        return self.status != 0
 
 
 class Firmware(SmartModule):

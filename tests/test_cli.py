@@ -3,12 +3,12 @@ import os
 import re
 from datetime import datetime
 from unittest.mock import ANY
+from zoneinfo import ZoneInfo
 
 import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
 from pytest_mock import MockerFixture
-from zoneinfo import ZoneInfo
 
 from kasa import (
     AuthenticationError,
@@ -58,7 +58,7 @@ from .conftest import (
 pytestmark = [pytest.mark.requires_dummy]
 
 
-@pytest.fixture()
+@pytest.fixture
 def runner():
     """Runner fixture that unsets the KASA_ environment variables for tests."""
     KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}

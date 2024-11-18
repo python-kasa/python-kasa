@@ -9,7 +9,7 @@ import logging
 import secrets
 import ssl
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Dict, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from yarl import URL
 
@@ -227,7 +227,7 @@ class SslAesTransport(BaseTransport):
         )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
             assert self._encryption_session is not None
 
         if "result" in resp_dict and "response" in resp_dict["result"]:
@@ -393,7 +393,7 @@ class SslAesTransport(BaseTransport):
             raise AuthenticationError(f"Error trying handshake1: {resp_dict}")
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
 
         server_nonce = resp_dict["result"]["data"]["nonce"]
         device_confirm = resp_dict["result"]["data"]["device_confirm"]

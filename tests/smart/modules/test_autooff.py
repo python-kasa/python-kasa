@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sys
 from datetime import datetime
-from typing import Optional
 
 import pytest
 from pytest_mock import MockerFixture
@@ -23,7 +22,7 @@ autooff = parametrize(
     [
         ("auto_off_enabled", "enabled", bool),
         ("auto_off_minutes", "delay", int),
-        ("auto_off_at", "auto_off_at", Optional[datetime]),
+        ("auto_off_at", "auto_off_at", datetime | None),
     ],
 )
 @pytest.mark.skipif(

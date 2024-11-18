@@ -68,7 +68,7 @@ async def test_get_emeter_realtime(dev):
 
 
 @has_emeter_iot
-@pytest.mark.requires_dummy()
+@pytest.mark.requires_dummy
 async def test_get_emeter_daily(dev):
     emeter = dev.modules[Module.Energy]
 
@@ -88,7 +88,7 @@ async def test_get_emeter_daily(dev):
 
 
 @has_emeter_iot
-@pytest.mark.requires_dummy()
+@pytest.mark.requires_dummy
 async def test_get_emeter_monthly(dev):
     emeter = dev.modules[Module.Energy]
 

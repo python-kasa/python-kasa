@@ -17,7 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
 
     steps:
       - name: "Checkout source files"
@@ -39,11 +39,10 @@ jobs:
     name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
     needs: linting
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ startsWith(matrix.python-version, 'pypy') }}
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "pypy-3.9", "pypy-3.10"]
+        python-version: ["3.11", "3.12", "3.13"]
         os: [ubuntu-latest, macos-latest, windows-latest]
         extras: [false, true]
         exclude:
@@ -51,25 +50,6 @@ jobs:
             extras: true
           - os: windows-latest
             extras: true
-          - os: ubuntu-latest
-            python-version: "pypy-3.9"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "pypy-3.10"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "3.9"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "3.10"
-            extras: true
-          # Exclude pypy on windows due to significant performance issues
-          # running pytest requires ~12 min instead of 2 min on other platforms
-          - os: windows-latest
-            python-version: "pypy-3.9"
-          - os: windows-latest
-            python-version: "pypy-3.10"
-
 
     steps:
       - uses: "actions/checkout@v4"
@@ -79,16 +59,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           uv-version: ${{ env.UV_VERSION }}
           uv-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
-      - name: "Run tests (no coverage)"
-        if: ${{ startsWith(matrix.python-version, 'pypy') }}
-        run: |
-          uv run pytest -n auto
       - name: "Run tests (with coverage)"
-        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: |
           uv run pytest -n auto --cov kasa --cov-report xml
       - name: "Upload coverage to Codecov"
-        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         uses: "codecov/codecov-action@v4"
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

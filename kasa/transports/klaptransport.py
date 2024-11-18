@@ -51,7 +51,8 @@ import secrets
 import struct
 import time
 from asyncio import Future
-from typing import TYPE_CHECKING, Any, Generator, cast
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any, cast
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes

@@ -1,4 +1,3 @@
-import asyncio
 import re
 
 import aiohttp
@@ -32,7 +31,7 @@ from kasa.httpclient import HttpClient
             "Unable to query the device, timed out: ",
         ),
         (
-            asyncio.TimeoutError(),
+            TimeoutError(),
             TimeoutError,
             "Unable to query the device, timed out: ",
         ),

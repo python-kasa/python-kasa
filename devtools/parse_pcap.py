@@ -67,7 +67,7 @@ def parse_pcap(file):
         for module, cmds in json_payload.items():
             seen_items["modules"][module] += 1
             if "err_code" in cmds:
-                echo("[red]Got error for module: %s[/red]" % cmds)
+                echo(f"[red]Got error for module: {cmds}[/red]")
                 continue
 
             for cmd, response in cmds.items():

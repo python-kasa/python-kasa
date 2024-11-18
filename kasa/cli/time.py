@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import zoneinfo
 from datetime import datetime
 
 import asyncclick as click
-import zoneinfo
 
 from kasa import (
     Device,

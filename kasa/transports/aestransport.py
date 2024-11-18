@@ -12,7 +12,7 @@ import logging
 import time
 from collections.abc import AsyncGenerator
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Dict, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
@@ -193,7 +193,7 @@ class AesTransport(BaseTransport):
             )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
             assert self._encryption_session is not None
 
         self._handle_response_error_code(
@@ -326,7 +326,7 @@ class AesTransport(BaseTransport):
             )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
 
         self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 

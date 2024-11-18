@@ -11,8 +11,9 @@ import base64
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from pprint import pformat as pf
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from ..exceptions import (
     SMART_AUTHENTICATION_ERRORS,

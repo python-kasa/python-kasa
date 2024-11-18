@@ -17,10 +17,9 @@ import hashlib
 import logging
 import struct
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-# When support for cpython older than 3.11 is dropped
-# async_timeout can be replaced with asyncio.timeout
 from ..deviceconfig import DeviceConfig
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ if TYPE_CHECKING:
 
 def redact_data(data: _T, redactors: dict[str, Callable[[Any], Any] | None]) -> _T:
     """Redact sensitive data for logging."""
-    if not isinstance(data, (dict, list)):
+    if not isinstance(data, dict | list):
         return data
 
     if isinstance(data, list):

@@ -68,10 +68,11 @@ Type.Choice
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Callable, Coroutine
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .device import Device
@@ -244,7 +245,7 @@ class Feature:
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
         if self.type == Feature.Type.Number:  # noqa: SIM102
-            if not isinstance(value, (int, float)):
+            if not isinstance(value, int | float):
                 raise ValueError("value must be a number")
             if value < self.minimum_value or value > self.maximum_value:
                 raise ValueError(
