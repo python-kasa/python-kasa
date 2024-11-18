@@ -58,6 +58,7 @@ class DeviceEncryptionType(Enum):
     Klap = "KLAP"
     Aes = "AES"
     Xor = "XOR"
+    Linkie = "Linkie"
 
 
 class DeviceFamily(Enum):
@@ -65,6 +66,7 @@ class DeviceFamily(Enum):
 
     IotSmartPlugSwitch = "IOT.SMARTPLUGSWITCH"
     IotSmartBulb = "IOT.SMARTBULB"
+    IotCamera = "IOT.IPCAMERA"
     SmartKasaPlug = "SMART.KASAPLUG"
     SmartKasaSwitch = "SMART.KASASWITCH"
     SmartTapoPlug = "SMART.TAPOPLUG"

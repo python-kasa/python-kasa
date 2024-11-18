@@ -686,6 +686,11 @@ class Discover:
                 device_family=device_type,
                 encryption_type=DeviceEncryptionType.Xor.value,
             )
+        elif device_type := sys_info.get("system", {}).get("type"):
+            config.connection_type = DeviceConnectionParameters.from_values(
+                device_family=device_type,
+                encryption_type=DeviceEncryptionType.Linkie.value,
+            )
         device.protocol = get_protocol(config)  # type: ignore[assignment]
         device.update_from_discover_info(info)
         return device
