@@ -111,16 +111,14 @@ class SmartChildDevice(SmartDevice):
             return self._device_type
 
         if self.sys_info and (category := self.sys_info.get("category")):
-            dev_type = self.CHILD_DEVICE_TYPE_MAP.get(category)
-            if dev_type is None:
+            self._device_type = self.CHILD_DEVICE_TYPE_MAP.get(category)
+            if self._device_type is None:
                 _LOGGER.warning(
                     "Unknown child device type %s for model %s, please open issue",
                     category,
                     self.model,
                 )
                 self._device_type = DeviceType.Unknown
-            else:
-                self._device_type = dev_type
 
         return self._device_type
 
