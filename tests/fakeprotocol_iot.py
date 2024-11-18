@@ -177,9 +177,9 @@ MOTION_MODULE = {
 
 
 class FakeIotProtocol(IotProtocol):
-    def __init__(self, info, fixture_name=None):
+    def __init__(self, info, fixture_name=None, *, verbatim=False):
         super().__init__(
-            transport=FakeIotTransport(info, fixture_name),
+            transport=FakeIotTransport(info, fixture_name, verbatim=verbatim),
         )
 
     async def query(self, request, retry_count: int = 3):
@@ -189,21 +189,33 @@ class FakeIotProtocol(IotProtocol):
 
 
 class FakeIotTransport(BaseTransport):
-    def __init__(self, info, fixture_name=None):
+    def __init__(self, info, fixture_name=None, *, verbatim=False):
         super().__init__(config=DeviceConfig("127.0.0.123"))
         info = copy.deepcopy(info)
         self.discovery_data = info
         self.fixture_name = fixture_name
         self.writer = None
         self.reader = None
+        self.verbatim = verbatim
+
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        if verbatim:
+            self.proto = copy.deepcopy(info)
+        else:
+            self.proto = self._build_fake_proto(info)
+
+    @staticmethod
+    def _build_fake_proto(info):
+        """Create an internal protocol with extra data not in the fixture."""
         proto = copy.deepcopy(FakeIotTransport.baseproto)
 
         for target in info:
-            # print("target %s" % target)
             if target != "discovery_result":
                 for cmd in info[target]:
                     # print("initializing tgt %s cmd %s" % (target, cmd))
                     proto[target][cmd] = info[target][cmd]
+
         # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
             if (
@@ -223,10 +235,7 @@ class FakeIotTransport(BaseTransport):
                         dummy_data = emeter_commands[module][etype]
                         # print("got %s %s from dummy: %s" % (module, etype, dummy_data))
                         proto[module][etype] = dummy_data
-
-            # print("initialized: %s" % proto[module])
-
-        self.proto = proto
+        return proto
 
     @property
     def default_port(self) -> int:
@@ -421,8 +430,20 @@ class FakeIotTransport(BaseTransport):
     }
 
     async def send(self, request, port=9999):
-        proto = self.proto
+        if not self.verbatim:
+            return await self._send(request, port)
 
+        # Simply return whatever is in the fixture
+        response = {}
+        for target in request:
+            if target in self.proto:
+                response.update({target: self.proto[target]})
+            else:
+                response.update({"err_msg": "module not support"})
+        return copy.deepcopy(response)
+
+    async def _send(self, request, port=9999):
+        proto = self.proto
         # collect child ids from context
         try:
             child_ids = request["context"]["child_ids"]

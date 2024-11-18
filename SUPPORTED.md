@@ -179,9 +179,9 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 ### Plugs
 
 - **P100**
-  - Hardware: 1.0.0 / Firmware: 1.1.3
-  - Hardware: 1.0.0 / Firmware: 1.3.7
-  - Hardware: 1.0.0 / Firmware: 1.4.0
+  - Hardware: 1.0.0 (US) / Firmware: 1.1.3
+  - Hardware: 1.0.0 (US) / Firmware: 1.3.7
+  - Hardware: 1.0.0 (US) / Firmware: 1.4.0
 - **P110**
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
   - Hardware: 1.0 (EU) / Firmware: 1.2.3

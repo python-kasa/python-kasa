@@ -15,6 +15,7 @@ from kasa.transports.basetransport import BaseTransport
 
 from .device_fixtures import *  # noqa: F403
 from .discovery_fixtures import *  # noqa: F403
+from .fixtureinfo import fixture_info  # noqa: F401
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])

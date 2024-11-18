@@ -39,7 +39,7 @@ from kasa.discover import (
     json_dumps,
 )
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
-from kasa.iot import IotDevice
+from kasa.iot import IotDevice, IotPlug
 from kasa.transports.aestransport import AesEncyptionSession
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
@@ -119,10 +119,11 @@ async def test_type_detection_lightstrip(dev: Device):
     assert d.device_type == DeviceType.LightStrip
 
 
-async def test_type_unknown():
+async def test_type_unknown(caplog):
     invalid_info = {"system": {"get_sysinfo": {"type": "nosuchtype"}}}
-    with pytest.raises(UnsupportedDeviceError):
-        Discover._get_device_class(invalid_info)
+    assert Discover._get_device_class(invalid_info) is IotPlug
+    msg = "Unknown device type nosuchtype, falling back to plug"
+    assert msg in caplog.text
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
@@ -266,7 +267,6 @@ INVALIDS = [
         "Unable to find the device type field",
         {"system": {"get_sysinfo": {"missing_type": 1}}},
     ),
-    ("Unknown device type: foo", {"system": {"get_sysinfo": {"type": "foo"}}}),
 ]
 
 

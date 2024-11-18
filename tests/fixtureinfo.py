@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import glob
 import json
 import os
@@ -7,8 +8,10 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import NamedTuple
 
-from kasa.device_factory import _get_device_type_from_sys_info
+import pytest
+
 from kasa.device_type import DeviceType
+from kasa.iot import IotDevice
 from kasa.smart.smartdevice import SmartDevice
 from kasa.smartcamera.smartcamera import SmartCamera
 
@@ -172,7 +175,10 @@ def filter_fixtures(
                 in device_type
             )
         elif fixture_data.protocol == "IOT":
-            return _get_device_type_from_sys_info(fixture_data.data) in device_type
+            return (
+                IotDevice._get_device_type_from_sys_info(fixture_data.data)
+                in device_type
+            )
         elif fixture_data.protocol == "SMARTCAMERA":
             info = fixture_data.data["getDeviceInfo"]["device_info"]["basic_info"]
             return SmartCamera._get_device_type_from_sysinfo(info) in device_type
@@ -207,3 +213,14 @@ def filter_fixtures(
             print(f"\t{value.name}")
     filtered.sort()
     return filtered
+
+
+@pytest.fixture(
+    params=filter_fixtures("all fixture infos"),
+    ids=idgenerator,
+)
+def fixture_info(request, mocker):
+    """Return raw discovery file contents as JSON. Used for discovery tests."""
+    fixture_info = request.param
+    fixture_data = copy.deepcopy(fixture_info.data)
+    return FixtureInfo(fixture_info.name, fixture_info.protocol, fixture_data)

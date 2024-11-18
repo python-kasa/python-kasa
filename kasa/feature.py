@@ -68,7 +68,7 @@ Type.Choice
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property
@@ -137,10 +137,10 @@ class Feature:
     name: str
     #: Type of the feature
     type: Feature.Type
-    #: Name of the property that allows accessing the value
+    #: Callable or name of the property that allows accessing the value
     attribute_getter: str | Callable | None = None
-    #: Name of the method that allows changing the value
-    attribute_setter: str | None = None
+    #: Callable coroutine or name of the method that allows changing the value
+    attribute_setter: str | Callable[..., Coroutine[Any, Any, Any]] | None = None
     #: Container storing the data, this overrides 'device' for getters
     container: Any = None
     #: Icon suggestion
@@ -259,11 +259,16 @@ class Feature:
                     f" - allowed: {self.choices}"
                 )
 
-        container = self.container if self.container is not None else self.device
-        if self.type == Feature.Type.Action:
-            return await getattr(container, self.attribute_setter)()
+        if callable(self.attribute_setter):
+            attribute_setter = self.attribute_setter
+        else:
+            container = self.container if self.container is not None else self.device
+            attribute_setter = getattr(container, self.attribute_setter)
 
-        return await getattr(container, self.attribute_setter)(value)
+        if self.type == Feature.Type.Action:
+            return await attribute_setter()
+
+        return await attribute_setter(value)
 
     def __repr__(self) -> str:
         try:
