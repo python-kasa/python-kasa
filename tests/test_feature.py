@@ -1,5 +1,4 @@
 import logging
-import sys
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -159,10 +158,6 @@ async def test_precision_hint(dummy_feature, precision_hint):
     assert f"{round(dummy_value, precision_hint)} dummyunit" in repr(dummy_feature)
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="exceptiongroup requires python3.11+",
-)
 async def test_feature_setters(dev: Device, mocker: MockerFixture):
     """Test that all feature setters query something."""
 

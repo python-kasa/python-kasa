@@ -1,5 +1,4 @@
 import inspect
-import sys
 from datetime import UTC, datetime
 
 import pytest
@@ -58,10 +57,6 @@ async def test_childdevice_update(dev, dummy_protocol, mocker):
 
 
 @strip_smart
-@pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="exceptiongroup requires python3.11+",
-)
 async def test_childdevice_properties(dev: SmartChildDevice):
     """Check that accessing childdevice properties do not raise exceptions."""
     assert len(dev.children) > 0
