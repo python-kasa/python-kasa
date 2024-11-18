@@ -22,7 +22,8 @@ from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, Callable, cast
 from warnings import warn
 
-from ..device import Device, WifiNetwork
+from ..device import Device, WifiNetwork, _DeviceInfo
+from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
 from ..feature import Feature
@@ -42,7 +43,9 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         async def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and f.__name__ not in self._sys_info:
+            if self._last_update is None and (
+                self._sys_info is None or f.__name__ not in self._sys_info
+            ):
                 raise KasaException("You need to await update() to access the data")
             return await f(*args, **kwargs)
 
@@ -51,7 +54,9 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and f.__name__ not in self._sys_info:
+            if self._last_update is None and (
+                self._sys_info is None or f.__name__ not in self._sys_info
+            ):
                 raise KasaException("You need to await update() to access the data")
             return f(*args, **kwargs)
 
@@ -688,3 +693,66 @@ class IotDevice(Device):
         This should only be used for debugging purposes.
         """
         return self._last_update or self._discovery_info
+
+    @staticmethod
+    def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
+        """Find SmartDevice subclass for device described by passed data."""
+        if "system" not in info or "get_sysinfo" not in info["system"]:
+            raise KasaException("No 'system' or 'get_sysinfo' in response")
+
+        sysinfo: dict[str, Any] = info["system"]["get_sysinfo"]
+        type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
+        if type_ is None:
+            raise KasaException("Unable to find the device type field!")
+
+        if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
+            return DeviceType.Dimmer
+
+        if "smartplug" in type_.lower():
+            if "children" in sysinfo:
+                return DeviceType.Strip
+            if (dev_name := sysinfo.get("dev_name")) and "light" in dev_name.lower():
+                return DeviceType.WallSwitch
+            return DeviceType.Plug
+
+        if "smartbulb" in type_.lower():
+            if "length" in sysinfo:  # strips have length
+                return DeviceType.LightStrip
+
+            return DeviceType.Bulb
+        _LOGGER.warning("Unknown device type %s, falling back to plug", type_)
+        return DeviceType.Plug
+
+    @staticmethod
+    def _get_device_info(
+        info: dict[str, Any], discovery_info: dict[str, Any] | None
+    ) -> _DeviceInfo:
+        """Get model information for a device."""
+        sys_info = info["system"]["get_sysinfo"]
+
+        # Get model and region info
+        region = None
+        device_model = sys_info["model"]
+        long_name, _, region = device_model.partition("(")
+        if region:  # All iot devices have region but just in case
+            region = region.replace(")", "")
+
+        # Get other info
+        device_family = sys_info.get("type", sys_info.get("mic_type"))
+        device_type = IotDevice._get_device_type_from_sys_info(info)
+        fw_version_full = sys_info["sw_ver"]
+        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        auth = bool(discovery_info and ("mgt_encrypt_schm" in discovery_info))
+
+        return _DeviceInfo(
+            short_name=long_name,
+            long_name=long_name,
+            brand="kasa",
+            device_family=device_family,
+            device_type=device_type,
+            hardware_version=sys_info["hw_ver"],
+            firmware_version=firmware_version,
+            firmware_build=firmware_build,
+            requires_auth=auth,
+            region=region,
+        )
