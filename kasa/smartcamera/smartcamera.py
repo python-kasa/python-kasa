@@ -25,8 +25,11 @@ class SmartCamera(SmartDevice):
     @staticmethod
     def _get_device_type_from_sysinfo(sysinfo: dict[str, Any]) -> DeviceType:
         """Find type to be displayed as a supported device category."""
-        device_type = sysinfo["device_type"]
-        if device_type.endswith("HUB"):
+        if (
+            sysinfo
+            and (device_type := sysinfo.get("device_type"))
+            and device_type.endswith("HUB")
+        ):
             return DeviceType.Hub
         return DeviceType.Camera
 

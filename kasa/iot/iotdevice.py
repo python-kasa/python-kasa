@@ -42,7 +42,9 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         async def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and f.__name__ not in self._sys_info:
+            if self._last_update is None and (
+                self._sys_info is None or f.__name__ not in self._sys_info
+            ):
                 raise KasaException("You need to await update() to access the data")
             return await f(*args, **kwargs)
 
@@ -51,7 +53,9 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and f.__name__ not in self._sys_info:
+            if self._last_update is None and (
+                self._sys_info is None or f.__name__ not in self._sys_info
+            ):
                 raise KasaException("You need to await update() to access the data")
             return f(*args, **kwargs)
 
