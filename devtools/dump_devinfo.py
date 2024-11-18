@@ -313,7 +313,7 @@ async def cli(
     credentials = Credentials(username=username, password=password)
     if host is not None:
         if discovery_info:
-            click.echo("Host and discovery info given, trying connect on %s." % host)
+            click.echo(f"Host and discovery info given, trying connect on {host}.")
 
             di = json.loads(discovery_info)
             dr = DiscoveryResult.from_dict(di)
@@ -356,7 +356,7 @@ async def cli(
                     "Could not find a protocol for the given parameters."
                 )
         else:
-            click.echo("Host given, performing discovery on %s." % host)
+            click.echo(f"Host given, performing discovery on {host}.")
             device = await Discover.discover_single(
                 host,
                 credentials=credentials,
@@ -372,13 +372,13 @@ async def cli(
             )
     else:
         click.echo(
-            "No --host given, performing discovery on %s. Use --target to override."
-            % target
+            "No --host given, performing discovery on"
+            f" {target}. Use --target to override."
         )
         devices = await Discover.discover(
             target=target, credentials=credentials, discovery_timeout=discovery_timeout
         )
-        click.echo("Detected %s devices" % len(devices))
+        click.echo(f"Detected {len(devices)} devices")
         for dev in devices.values():
             await handle_device(
                 basedir,
@@ -444,7 +444,7 @@ async def get_legacy_fixture(protocol, *, discovery_info):
             by_alias=False, exclude_unset=True, exclude_none=True, exclude_defaults=True
         )
 
-    click.echo("Got %s successes" % len(successes))
+    click.echo(f"Got {len(successes)} successes")
     click.echo(click.style("## device info file ##", bold=True))
 
     sysinfo = final["system"]["get_sysinfo"]
@@ -959,7 +959,7 @@ async def get_smart_fixtures(
         dr = DiscoveryResult.from_dict(discovery_info)  # type: ignore
         final["discovery_result"] = dr.to_dict()
 
-    click.echo("Got %s successes" % len(successes))
+    click.echo(f"Got {len(successes)} successes")
     click.echo(click.style("## device info file ##", bold=True))
 
     if "get_device_info" in final:

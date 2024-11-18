@@ -14,7 +14,7 @@ class DummyDevice:
     pass
 
 
-@pytest.fixture()
+@pytest.fixture
 def dummy_feature() -> Feature:
     # create_autospec for device slows tests way too much, so we use a dummy here
 

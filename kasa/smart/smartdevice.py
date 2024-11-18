@@ -6,7 +6,7 @@ import base64
 import logging
 import time
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
 from ..device import Device, WifiNetwork
@@ -520,7 +520,7 @@ class SmartDevice(Device):
             return time_mod.time
 
         # We have no device time, use current local time.
-        return datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+        return datetime.now(UTC).astimezone().replace(microsecond=0)
 
     @property
     def on_since(self) -> datetime | None:

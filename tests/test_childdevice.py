@@ -1,6 +1,6 @@
 import inspect
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
@@ -125,7 +125,7 @@ async def test_parent_property(dev: Device):
 
 
 @has_children_smart
-@pytest.mark.requires_dummy()
+@pytest.mark.requires_dummy
 async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory):
     """Test a child device gets the time from it's parent module.
 
@@ -135,7 +135,7 @@ async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory):
     if not dev.children:
         pytest.skip(f"Device {dev} fixture does not have any children")
 
-    fallback_time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+    fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
     assert dev.parent is None
     for child in dev.children:
         assert child.time != fallback_time

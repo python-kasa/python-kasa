@@ -278,7 +278,7 @@ async def test_non_variable_temp(dev: Device):
 @dimmable_iot
 @turn_on
 async def test_dimmable_brightness(dev: IotBulb, turn_on):
-    assert isinstance(dev, (IotBulb, IotDimmer))
+    assert isinstance(dev, IotBulb | IotDimmer)
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
@@ -375,7 +375,7 @@ async def test_list_presets(dev: IotBulb):
     ]
     assert len(presets) == len(raw_presets)
 
-    for preset, raw in zip(presets, raw_presets):
+    for preset, raw in zip(presets, raw_presets, strict=False):
         assert preset.index == raw["index"]
         assert preset.brightness == raw["brightness"]
         assert preset.hue == raw["hue"]

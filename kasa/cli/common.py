@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections.abc import Callable
 from contextlib import contextmanager
 from functools import singledispatch, update_wrapper, wraps
-from typing import TYPE_CHECKING, Any, Callable, Final
+from typing import TYPE_CHECKING, Any, Final
 
 import asyncclick as click
 

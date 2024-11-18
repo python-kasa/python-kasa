@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from pydantic.v1 import BaseModel, Field
 
@@ -25,14 +25,14 @@ class IotLightPreset(BaseModel, LightState):
     brightness: int = Field(kw_only=True)
 
     # These are not available for effect mode presets on light strips
-    hue: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
-    saturation: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
-    color_temp: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
+    hue: int | None = Field(kw_only=True, default=None)
+    saturation: int | None = Field(kw_only=True, default=None)
+    color_temp: int | None = Field(kw_only=True, default=None)
 
     # Variables for effect mode presets
-    custom: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
-    id: Optional[str] = Field(kw_only=True, default=None)  # noqa: UP007
-    mode: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
+    custom: int | None = Field(kw_only=True, default=None)
+    id: str | None = Field(kw_only=True, default=None)
+    mode: int | None = Field(kw_only=True, default=None)
 
 
 class LightPreset(IotModule, LightPresetInterface):
