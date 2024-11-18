@@ -347,7 +347,7 @@ async def cli(
         if not dev:
             echo(f"No device with name {alias} found")
             return
-        echo(f"Found hostname by alias: {host}")
+        echo(f"Found hostname by alias: {dev.host}")
         device_updated = True
     else:
         from .discover import discover

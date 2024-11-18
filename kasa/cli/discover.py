@@ -240,8 +240,12 @@ def _echo_discovery_info(discovery_info) -> None:
 
 
 async def find_dev_from_alias(
-    alias, credentials, target="255.255.255.255", timeout=5, attempts=3
-):
+    alias: str,
+    credentials: Credentials | None,
+    target: str = "255.255.255.255",
+    timeout: int = 5,
+    attempts: int = 3,
+) -> Device | None:
     """Discover a device identified by its alias."""
     found_event = asyncio.Event()
     found_device = []
