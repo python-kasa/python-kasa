@@ -19,9 +19,9 @@ from kasa import (
 )
 from kasa.device_factory import (
     Device,
+    IotDevice,
     SmartCamera,
     SmartDevice,
-    _get_device_type_from_sys_info,
     connect,
     get_device_class_from_family,
     get_protocol,
@@ -182,12 +182,12 @@ async def test_device_types(dev: Device):
         res = SmartCamera._get_device_type_from_sysinfo(dev.sys_info)
     elif isinstance(dev, SmartDevice):
         assert dev._discovery_info
-        device_type = cast(str, dev._discovery_info["result"]["device_type"])
+        device_type = cast(str, dev._discovery_info["device_type"])
         res = SmartDevice._get_device_type_from_components(
             list(dev._components.keys()), device_type
         )
     else:
-        res = _get_device_type_from_sys_info(dev._last_update)
+        res = IotDevice._get_device_type_from_sys_info(dev._last_update)
 
     assert dev.device_type == res
 

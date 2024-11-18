@@ -197,7 +197,8 @@ The following devices have been tested and confirmed as working. If your device 
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
-- **Hubs**: H100
+- **Cameras**: C210, TC65
+- **Hubs**: H100, H200
 - **Hub-Connected Devices<sup>\*\*\*</sup>**: S200B, S200D, T100, T110, T300, T310, T315
 
 <!--SUPPORTED_END-->

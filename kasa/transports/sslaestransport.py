@@ -173,7 +173,7 @@ class SslAesTransport(BaseTransport):
         raise DeviceError(msg, error_code=error_code)
 
     def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.set_ciphers(self.CIPHERS)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE

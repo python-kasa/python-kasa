@@ -152,6 +152,22 @@ class WifiNetwork:
 _LOGGER = logging.getLogger(__name__)
 
 
+@dataclass
+class _DeviceInfo:
+    """Device Model Information."""
+
+    short_name: str
+    long_name: str
+    brand: str
+    device_family: str
+    device_type: DeviceType
+    hardware_version: str
+    firmware_version: str
+    firmware_build: str
+    requires_auth: bool
+    region: str | None
+
+
 class Device(ABC):
     """Common device interface.
 
@@ -194,12 +210,12 @@ class Device(ABC):
         self.protocol: BaseProtocol = protocol or IotProtocol(
             transport=XorTransport(config=config or DeviceConfig(host=host)),
         )
-        _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
+        self._last_update: Any = None
+        _LOGGER.debug("Initializing %s of type %s", host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using Optional[Dict] would require separate
         #       checks in accessors. the @updated_required decorator does not ensure
         #       mypy that these are not accessed incorrectly.
-        self._last_update: Any = None
         self._discovery_info: dict[str, Any] | None = None
 
         self._features: dict[str, Feature] = {}
@@ -476,6 +492,8 @@ class Device(ABC):
 
     def __repr__(self) -> str:
         update_needed = " - update() needed" if not self._last_update else ""
+        if not self._last_update and not self._discovery_info:
+            return f"<{self.device_type} at {self.host}{update_needed}>"
         return (
             f"<{self.device_type} at {self.host} -"
             f" {self.alias} ({self.model}){update_needed}>"

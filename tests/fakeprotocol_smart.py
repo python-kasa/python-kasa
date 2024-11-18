@@ -11,9 +11,11 @@ from kasa.transports.basetransport import BaseTransport
 
 
 class FakeSmartProtocol(SmartProtocol):
-    def __init__(self, info, fixture_name, *, is_child=False):
+    def __init__(self, info, fixture_name, *, is_child=False, verbatim=False):
         super().__init__(
-            transport=FakeSmartTransport(info, fixture_name, is_child=is_child),
+            transport=FakeSmartTransport(
+                info, fixture_name, is_child=is_child, verbatim=verbatim
+            ),
         )
 
     async def query(self, request, retry_count: int = 3):
@@ -34,6 +36,7 @@ class FakeSmartTransport(BaseTransport):
         fix_incomplete_fixture_lists=True,
         is_child=False,
         get_child_fixtures=True,
+        verbatim=False,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -63,6 +66,13 @@ class FakeSmartTransport(BaseTransport):
         self.list_return_size = list_return_size
         self.warn_fixture_missing_methods = warn_fixture_missing_methods
         self.fix_incomplete_fixture_lists = fix_incomplete_fixture_lists
+
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        self.verbatim = verbatim
+        if verbatim:
+            self.warn_fixture_missing_methods = False
+            self.fix_incomplete_fixture_lists = False
 
     @property
     def default_port(self):
@@ -444,10 +454,10 @@ class FakeSmartTransport(BaseTransport):
             return await self._handle_control_child(request_dict["params"])
 
         params = request_dict.get("params", {})
-        if method == "component_nego" or method[:4] == "get_":
+        if method in {"component_nego", "qs_component_nego"} or method[:4] == "get_":
             if method in info:
                 result = copy.deepcopy(info[method])
-                if "start_index" in result and "sum" in result:
+                if result and "start_index" in result and "sum" in result:
                     list_key = next(
                         iter([key for key in result if isinstance(result[key], list)])
                     )
@@ -472,6 +482,12 @@ class FakeSmartTransport(BaseTransport):
                         start_index : start_index + self.list_return_size
                     ]
                 return {"result": result, "error_code": 0}
+
+            if self.verbatim:
+                return {
+                    "error_code": SmartErrorCode.PARAMS_ERROR.value,
+                    "method": method,
+                }
 
             if (
                 # FIXTURE_MISSING is for service calls not in place when

@@ -31,8 +31,8 @@ from .transports import (
     AesTransport,
     BaseTransport,
     KlapTransport,
-    LinkieTransport,
     KlapTransportV2,
+    LinkieTransport,
     XorTransport,
 )
 from .transports.sslaestransport import SslAesTransport
@@ -129,41 +129,6 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
         )
 
 
-def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
-    """Find SmartDevice subclass for device described by passed data."""
-    if "system" not in info or "get_sysinfo" not in info["system"]:
-        raise KasaException("No 'system' or 'get_sysinfo' in response")
-
-    sysinfo: dict[str, Any] = info["system"]["get_sysinfo"]
-    type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
-    if type_ is None:
-        # Kasa cameras have `system` nested again
-        sysinfo = sysinfo.get("system")
-        type_ = sysinfo.get("type")
-        if type_ is None:
-            raise KasaException("Unable to find the device type field!")
-
-    if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
-        return DeviceType.Dimmer
-
-    if "smartplug" in type_.lower():
-        if "children" in sysinfo:
-            return DeviceType.Strip
-        if (dev_name := sysinfo.get("dev_name")) and "light" in dev_name.lower():
-            return DeviceType.WallSwitch
-        return DeviceType.Plug
-
-    if "smartbulb" in type_.lower():
-        if "length" in sysinfo:  # strips have length
-            return DeviceType.LightStrip
-
-    if "camera" in type_.lower():
-        return DeviceType.Camera
-
-        return DeviceType.Bulb
-    raise UnsupportedDeviceError(f"Unknown device type: {type_}")
-
-
 def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
     """Find SmartDevice subclass for device described by passed data."""
     TYPE_TO_CLASS = {
@@ -173,9 +138,9 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
         DeviceType.Strip: IotStrip,
         DeviceType.WallSwitch: IotWallSwitch,
         DeviceType.LightStrip: IotLightStrip,
-        DeviceType.Camera: IotPlug, # TODO
+        DeviceType.Camera: IotPlug,  # TODO
     }
-    return TYPE_TO_CLASS[_get_device_type_from_sys_info(sysinfo)]
+    return TYPE_TO_CLASS[IotDevice._get_device_type_from_sys_info(sysinfo)]
 
 
 def get_device_class_from_family(
@@ -194,7 +159,7 @@ def get_device_class_from_family(
         "SMART.IPCAMERA.HTTPS": SmartCamera,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
-        "IOT.IPCAMERA": IotPlug, # TODO
+        "IOT.IPCAMERA": IotPlug,  # TODO
     }
     lookup_key = f"{device_type}{'.HTTPS' if https else ''}"
     if (

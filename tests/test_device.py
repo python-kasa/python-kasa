@@ -14,7 +14,15 @@ import zoneinfo
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
-from kasa.iot import IotDevice
+from kasa.iot import (
+    IotBulb,
+    IotDevice,
+    IotDimmer,
+    IotLightStrip,
+    IotPlug,
+    IotStrip,
+    IotWallSwitch,
+)
 from kasa.iot.iottimezone import (
     TIMEZONE_INDEX,
     get_timezone,
@@ -22,6 +30,7 @@ from kasa.iot.iottimezone import (
 )
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
+from kasa.smartcamera import SmartCamera
 
 
 def _get_subclasses(of_class):
@@ -78,6 +87,41 @@ async def test_device_class_ctors(device_class_name_obj):
     assert dev.host == host
     assert dev.port == port
     assert dev.credentials == credentials
+
+
+@device_classes
+async def test_device_class_repr(device_class_name_obj):
+    """Test device repr when update() not called and no discovery info."""
+    host = "127.0.0.2"
+    port = 1234
+    credentials = Credentials("foo", "bar")
+    config = DeviceConfig(host, port_override=port, credentials=credentials)
+    klass = device_class_name_obj[1]
+    if issubclass(klass, SmartChildDevice):
+        parent = SmartDevice(host, config=config)
+        dev = klass(
+            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+        )
+    else:
+        dev = klass(host, config=config)
+
+    CLASS_TO_DEFAULT_TYPE = {
+        IotDevice: DeviceType.Unknown,
+        IotBulb: DeviceType.Bulb,
+        IotPlug: DeviceType.Plug,
+        IotDimmer: DeviceType.Dimmer,
+        IotStrip: DeviceType.Strip,
+        IotWallSwitch: DeviceType.WallSwitch,
+        IotLightStrip: DeviceType.LightStrip,
+        SmartChildDevice: DeviceType.Unknown,
+        SmartDevice: DeviceType.Unknown,
+        SmartCamera: DeviceType.Camera,
+    }
+    type_ = CLASS_TO_DEFAULT_TYPE[klass]
+    child_repr = "<DeviceType.Unknown(child) of <DeviceType.Unknown at 127.0.0.2 - update() needed>>"
+    not_child_repr = f"<{type_} at 127.0.0.2 - update() needed>"
+    expected_repr = child_repr if klass is SmartChildDevice else not_child_repr
+    assert repr(dev) == expected_repr
 
 
 async def test_create_device_with_timeout():

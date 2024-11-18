@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from json import loads as json_loads
+from typing import Any
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.protocols.smartcameraprotocol import SmartCameraProtocol
@@ -11,9 +12,11 @@ from .fakeprotocol_smart import FakeSmartTransport
 
 
 class FakeSmartCameraProtocol(SmartCameraProtocol):
-    def __init__(self, info, fixture_name, *, is_child=False):
+    def __init__(self, info, fixture_name, *, is_child=False, verbatim=False):
         super().__init__(
-            transport=FakeSmartCameraTransport(info, fixture_name, is_child=is_child),
+            transport=FakeSmartCameraTransport(
+                info, fixture_name, is_child=is_child, verbatim=verbatim
+            ),
         )
 
     async def query(self, request, retry_count: int = 3):
@@ -30,6 +33,7 @@ class FakeSmartCameraTransport(BaseTransport):
         *,
         list_return_size=10,
         is_child=False,
+        verbatim=False,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -41,6 +45,9 @@ class FakeSmartCameraTransport(BaseTransport):
             ),
         )
         self.fixture_name = fixture_name
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        self.verbatim = verbatim
         if not is_child:
             self.info = copy.deepcopy(info)
             self.child_protocols = FakeSmartTransport._get_child_protocols(
@@ -70,11 +77,11 @@ class FakeSmartCameraTransport(BaseTransport):
             responses = []
             for request in params["requests"]:
                 response = await self._send_request(request)  # type: ignore[arg-type]
+                response["method"] = request["method"]  # type: ignore[index]
+                responses.append(response)
                 # Devices do not continue after error
                 if response["error_code"] != 0:
                     break
-                response["method"] = request["method"]  # type: ignore[index]
-                responses.append(response)
             return {"result": {"responses": responses}, "error_code": 0}
         else:
             return await self._send_request(request_dict)
@@ -105,6 +112,7 @@ class FakeSmartCameraTransport(BaseTransport):
             info = info[key]
         info[set_keys[-1]] = value
 
+    # Setters for when there's not a simple mapping of setters to getters
     SETTERS = {
         ("system", "sys", "dev_alias"): [
             "getDeviceInfo",
@@ -112,37 +120,30 @@ class FakeSmartCameraTransport(BaseTransport):
             "basic_info",
             "device_alias",
         ],
-        ("lens_mask", "lens_mask_info", "enabled"): [
-            "getLensMaskConfig",
-            "lens_mask",
-            "lens_mask_info",
-            "enabled",
-        ],
+        # setTimezone maps to getClockStatus
         ("system", "clock_status", "seconds_from_1970"): [
             "getClockStatus",
             "system",
             "clock_status",
             "seconds_from_1970",
         ],
+        # setTimezone maps to getClockStatus
         ("system", "clock_status", "local_time"): [
             "getClockStatus",
             "system",
             "clock_status",
             "local_time",
         ],
-        ("system", "basic", "zone_id"): [
-            "getTimezone",
-            "system",
-            "basic",
-            "zone_id",
-        ],
-        ("led", "config", "enabled"): [
-            "getLedStatus",
-            "led",
-            "config",
-            "enabled",
-        ],
     }
+
+    @staticmethod
+    def _get_second_key(request_dict: dict[str, Any]) -> str:
+        assert (
+            len(request_dict) == 2
+        ), f"Unexpected dict {request_dict}, should be length 2"
+        it = iter(request_dict)
+        next(it, None)
+        return next(it)
 
     async def _send_request(self, request_dict: dict):
         method = request_dict["method"]
@@ -154,28 +155,50 @@ class FakeSmartCameraTransport(BaseTransport):
             )
 
         if method[:3] == "set":
+            get_method = "g" + method[1:]
             for key, val in request_dict.items():
-                if key != "method":
-                    # key is params for multi request and the actual params
-                    # for single requests
-                    if key == "params":
-                        module = next(iter(val))
-                        val = val[module]
+                if key == "method":
+                    continue
+                # key is params for multi request and the actual params
+                # for single requests
+                if key == "params":
+                    module = next(iter(val))
+                    val = val[module]
+                else:
+                    module = key
+                section = next(iter(val))
+                skey_val = val[section]
+                if not isinstance(skey_val, dict):  # single level query
+                    section_key = section
+                    section_val = skey_val
+                    if (get_info := info.get(get_method)) and section_key in get_info:
+                        get_info[section_key] = section_val
                     else:
-                        module = key
-                    section = next(iter(val))
-                    skey_val = val[section]
-                    for skey, sval in skey_val.items():
-                        section_key = skey
-                        section_value = sval
-                        if setter_keys := self.SETTERS.get(
-                            (module, section, section_key)
-                        ):
-                            self._get_param_set_value(info, setter_keys, section_value)
-                        else:
-                            return {"error_code": -1}
+                        return {"error_code": -1}
                     break
+                for skey, sval in skey_val.items():
+                    section_key = skey
+                    section_value = sval
+                    if setter_keys := self.SETTERS.get((module, section, section_key)):
+                        self._get_param_set_value(info, setter_keys, section_value)
+                    elif (
+                        section := info.get(get_method, {})
+                        .get(module, {})
+                        .get(section, {})
+                    ) and section_key in section:
+                        section[section_key] = section_value
+                    else:
+                        return {"error_code": -1}
+                break
             return {"error_code": 0}
+        elif method == "get":
+            module = self._get_second_key(request_dict)
+            get_method = f"get_{module}"
+            if get_method in info:
+                result = copy.deepcopy(info[get_method]["get"])
+                return {**result, "error_code": 0}
+            else:
+                return {"error_code": -1}
         elif method[:3] == "get":
             params = request_dict.get("params")
             if method in info:
