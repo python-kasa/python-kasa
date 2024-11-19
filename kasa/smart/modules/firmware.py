@@ -6,11 +6,12 @@ import asyncio
 import logging
 from asyncio import timeout as asyncio_timeout
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
-from mashumaro import DataClassDictMixin, field_options
+from mashumaro import DataClassDictMixin
+from mashumaro.types import Alias
 
 from ...exceptions import KasaException
 from ...feature import Feature
@@ -31,7 +32,7 @@ class DownloadState(DataClassDictMixin):
     #   {'status': 0, 'download_progress': 0, 'reboot_time': 5,
     #    'upgrade_time': 5, 'auto_upgrade': False}
     status: int
-    progress: int = field(metadata=field_options(alias="download_progress"))
+    progress: Annotated[int, Alias("download_progress")]
     reboot_time: int
     upgrade_time: int
     auto_upgrade: bool
@@ -41,13 +42,11 @@ class DownloadState(DataClassDictMixin):
 class UpdateInfo(DataClassDictMixin):
     """Update info status object."""
 
-    status: int = field(metadata=field_options(alias="type"))
-    needs_upgrade: bool = field(metadata=field_options(alias="need_to_upgrade"))
-    version: str | None = field(metadata=field_options(alias="fw_ver"), default=None)
+    status: Annotated[int, Alias("type")]
+    needs_upgrade: Annotated[bool, Alias("need_to_upgrade")]
+    version: Annotated[str | None, Alias("fw_ver")] = None
     release_date: date | None = None
-    release_notes: str | None = field(
-        metadata=field_options(alias="release_note"), default=None
-    )
+    release_notes: Annotated[str | None, Alias("release_note")] = None
     fw_size: int | None = None
     oem_id: str | None = None
 
