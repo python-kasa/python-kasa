@@ -17,9 +17,9 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timedelta, tzinfo
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 from warnings import warn
 
 from ..device import Device, WifiNetwork, _DeviceInfo

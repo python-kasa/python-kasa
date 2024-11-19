@@ -27,14 +27,12 @@ Living Room Bulb
 
 """
 
-# Note that this module does not work with from __future__ import annotations
-# due to it's use of type returned by fields() which becomes a string with the import.
-# https://bugs.python.org/issue39442
-# ruff: noqa: FA100
+#  Module cannot use from __future__ import annotations until migrated to mashumaru
+#  as dataclass.fields() will not resolve the type.
 import logging
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from .credentials import Credentials
 from .exceptions import KasaException
@@ -120,15 +118,15 @@ class DeviceConnectionParameters:
 
     device_family: DeviceFamily
     encryption_type: DeviceEncryptionType
-    login_version: Optional[int] = None
+    login_version: int | None = None
     https: bool = False
 
     @staticmethod
     def from_values(
         device_family: str,
         encryption_type: str,
-        login_version: Optional[int] = None,
-        https: Optional[bool] = None,
+        login_version: int | None = None,
+        https: bool | None = None,
     ) -> "DeviceConnectionParameters":
         """Return connection parameters from string values."""
         try:
@@ -147,7 +145,7 @@ class DeviceConnectionParameters:
             ) from ex
 
     @staticmethod
-    def from_dict(connection_type_dict: Dict[str, Any]) -> "DeviceConnectionParameters":
+    def from_dict(connection_type_dict: dict[str, Any]) -> "DeviceConnectionParameters":
         """Return connection parameters from dict."""
         if (
             isinstance(connection_type_dict, dict)
@@ -165,9 +163,9 @@ class DeviceConnectionParameters:
 
         raise KasaException(f"Invalid connection type data for {connection_type_dict}")
 
-    def to_dict(self) -> Dict[str, Union[str, int, bool]]:
+    def to_dict(self) -> dict[str, str | int | bool]:
         """Convert connection params to dict."""
-        result: Dict[str, Union[str, int]] = {
+        result: dict[str, str | int] = {
             "device_family": self.device_family.value,
             "encryption_type": self.encryption_type.value,
             "https": self.https,
@@ -185,17 +183,17 @@ class DeviceConfig:
     #: IP address or hostname
     host: str
     #: Timeout for querying the device
-    timeout: Optional[int] = DEFAULT_TIMEOUT
+    timeout: int | None = DEFAULT_TIMEOUT
     #: Override the default 9999 port to support port forwarding
-    port_override: Optional[int] = None
+    port_override: int | None = None
     #: Credentials for devices requiring authentication
-    credentials: Optional[Credentials] = None
+    credentials: Credentials | None = None
     #: Credentials hash for devices requiring authentication.
     #: If credentials are also supplied they take precendence over credentials_hash.
     #: Credentials hash can be retrieved from :attr:`Device.credentials_hash`
-    credentials_hash: Optional[str] = None
+    credentials_hash: str | None = None
     #: The protocol specific type of connection.  Defaults to the legacy type.
-    batch_size: Optional[int] = None
+    batch_size: int | None = None
     #: The batch size for protoools supporting multiple request batches.
     connection_type: DeviceConnectionParameters = field(
         default_factory=lambda: DeviceConnectionParameters(
@@ -210,7 +208,7 @@ class DeviceConfig:
     #: Set a custom http_client for the device to use.
     http_client: Optional["ClientSession"] = field(default=None, compare=False)
 
-    aes_keys: Optional[KeyPairDict] = None
+    aes_keys: KeyPairDict | None = None
 
     def __post_init__(self) -> None:
         if self.connection_type is None:
@@ -221,9 +219,9 @@ class DeviceConfig:
     def to_dict(
         self,
         *,
-        credentials_hash: Optional[str] = None,
+        credentials_hash: str | None = None,
         exclude_credentials: bool = False,
-    ) -> Dict[str, Dict[str, str]]:
+    ) -> dict[str, dict[str, str]]:
         """Convert device config to dict."""
         if credentials_hash is not None or exclude_credentials:
             self.credentials = None
@@ -232,7 +230,7 @@ class DeviceConfig:
         return _dataclass_to_dict(self)
 
     @staticmethod
-    def from_dict(config_dict: Dict[str, Dict[str, str]]) -> "DeviceConfig":
+    def from_dict(config_dict: dict[str, dict[str, str]]) -> "DeviceConfig":
         """Return device config from dict."""
         if isinstance(config_dict, dict):
             return _dataclass_from_dict(DeviceConfig, config_dict)

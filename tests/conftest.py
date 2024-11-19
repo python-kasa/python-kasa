@@ -28,7 +28,7 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
-@pytest.fixture()
+@pytest.fixture
 def dummy_protocol():
     """Return a smart protocol instance with a mocking-ready dummy transport."""
 
@@ -95,7 +95,7 @@ def pytest_collection_modifyitems(config, items):
             for item in items:
                 item.add_marker(pytest.mark.enable_socket)
     else:
-        print("Running against ip %s" % config.getoption("--ip"))
+        print("Running against ip {}".format(config.getoption("--ip")))
         requires_dummy = pytest.mark.skip(
             reason="test requires to be run against dummy data"
         )

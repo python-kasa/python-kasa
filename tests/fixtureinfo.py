@@ -4,8 +4,9 @@ import copy
 import glob
 import json
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, NamedTuple
+from typing import NamedTuple
 
 import pytest
 

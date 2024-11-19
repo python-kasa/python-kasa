@@ -110,10 +110,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 from warnings import warn
-
-from typing_extensions import TypeAlias
 
 from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
@@ -213,7 +211,7 @@ class Device(ABC):
         self._last_update: Any = None
         _LOGGER.debug("Initializing %s of type %s", host, type(self))
         self._device_type = DeviceType.Unknown
-        # TODO: typing Any is just as using Optional[Dict] would require separate
+        # TODO: typing Any is just as using dict | None would require separate
         #       checks in accessors. the @updated_required decorator does not ensure
         #       mypy that these are not accessed incorrectly.
         self._discovery_info: dict[str, Any] | None = None

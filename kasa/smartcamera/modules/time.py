@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, tzinfo
+from datetime import UTC, datetime, tzinfo
 from typing import cast
-
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ...cachedzoneinfo import CachedZoneInfo
@@ -20,7 +19,7 @@ class Time(SmartCameraModule, TimeInterface):
     QUERY_MODULE_NAME = "system"
     QUERY_SECTION_NAMES = "basic"
 
-    _timezone: tzinfo = timezone.utc
+    _timezone: tzinfo = UTC
     _time: datetime
 
     def _initialize_features(self) -> None:

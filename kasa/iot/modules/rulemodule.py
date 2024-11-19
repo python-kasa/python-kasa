@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Dict, List, Optional
 
 from pydantic.v1 import BaseModel
 
@@ -35,20 +34,20 @@ class Rule(BaseModel):
     id: str
     name: str
     enable: bool
-    wday: List[int]  # noqa: UP006
+    wday: list[int]
     repeat: bool
 
     # start action
-    sact: Optional[Action]  # noqa: UP007
+    sact: Action | None
     stime_opt: TimeOption
     smin: int
 
-    eact: Optional[Action]  # noqa: UP007
+    eact: Action | None
     etime_opt: TimeOption
     emin: int
 
     # Only on bulbs
-    s_light: Optional[Dict]  # noqa: UP006,UP007
+    s_light: dict | None
 
 
 _LOGGER = logging.getLogger(__name__)

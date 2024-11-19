@@ -1,8 +1,8 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 from pytest_mock import MockerFixture
-from zoneinfo import ZoneInfo
 
 from kasa import Device, LightState, Module
 

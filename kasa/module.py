@@ -29,7 +29,7 @@ If you know or expect the module to exist you can access by index:
 
 Modules support typing via the Module names in Module:
 
->>> from typing_extensions import reveal_type, TYPE_CHECKING
+>>> from typing import reveal_type, TYPE_CHECKING
 >>> light_effect = dev.modules.get("LightEffect")
 >>> light_effect_typed = dev.modules.get(Module.LightEffect)
 >>> if TYPE_CHECKING:

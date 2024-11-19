@@ -89,26 +89,19 @@ import logging
 import secrets
 import socket
 import struct
+from asyncio import timeout as asyncio_timeout
 from asyncio.transports import DatagramTransport
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
 from pprint import pformat as pf
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Coroutine,
-    Dict,
     NamedTuple,
-    Optional,
-    Type,
     cast,
 )
 
 from aiohttp import ClientSession
-
-# When support for cpython older than 3.11 is dropped
-# async_timeout can be replaced with asyncio.timeout
-from async_timeout import timeout as asyncio_timeout
 from mashumaro import field_options
 from mashumaro.config import BaseConfig
 
@@ -156,7 +149,7 @@ class ConnectAttempt(NamedTuple):
 OnDiscoveredCallable = Callable[[Device], Coroutine]
 OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Coroutine]
 OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
-DeviceDict = Dict[str, Device]
+DeviceDict = dict[str, Device]
 
 NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
@@ -676,7 +669,7 @@ class Discover:
             data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
 
-        device_class = cast(Type[IotDevice], Discover._get_device_class(info))
+        device_class = cast(type[IotDevice], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
         sys_info = info["system"]["get_sysinfo"]
         if device_type := sys_info.get("mic_type", sys_info.get("type")):
@@ -835,9 +828,9 @@ class EncryptionScheme(_DiscoveryBaseMixin):
     """Base model for encryption scheme of discovery result."""
 
     is_support_https: bool
-    encrypt_type: Optional[str] = None  # noqa: UP007
-    http_port: Optional[int] = None  # noqa: UP007
-    lv: Optional[int] = None  # noqa: UP007
+    encrypt_type: str | None = None
+    http_port: int | None = None
+    lv: int | None = None
 
 
 @dataclass
@@ -859,18 +852,18 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     ip: str
     mac: str
     mgt_encrypt_schm: EncryptionScheme
-    device_name: Optional[str] = None  # noqa: UP007
-    encrypt_info: Optional[EncryptionInfo] = None  # noqa: UP007
-    encrypt_type: Optional[list[str]] = None  # noqa: UP007
-    decrypted_data: Optional[dict] = None  # noqa: UP007
-    is_reset_wifi: Optional[bool] = field(  # noqa: UP007
+    device_name: str | None = None
+    encrypt_info: EncryptionInfo | None = None
+    encrypt_type: list[str] | None = None
+    decrypted_data: dict | None = None
+    is_reset_wifi: bool | None = field(
         metadata=field_options(alias="isResetWiFi"), default=None
     )
 
-    firmware_version: Optional[str] = None  # noqa: UP007
-    hardware_version: Optional[str] = None  # noqa: UP007
-    hw_ver: Optional[str] = None  # noqa: UP007
-    owner: Optional[str] = None  # noqa: UP007
-    is_support_iot_cloud: Optional[bool] = None  # noqa: UP007
-    obd_src: Optional[str] = None  # noqa: UP007
-    factory_default: Optional[bool] = None  # noqa: UP007
+    firmware_version: str | None = None
+    hardware_version: str | None = None
+    hw_ver: str | None = None
+    owner: str | None = None
+    is_support_iot_cloud: bool | None = None
+    obd_src: str | None = None
+    factory_default: bool | None = None

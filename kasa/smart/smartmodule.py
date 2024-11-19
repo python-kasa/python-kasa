@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable, Coroutine
-from typing import TYPE_CHECKING, Any
-
-from typing_extensions import Concatenate, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
 from ..module import Module
