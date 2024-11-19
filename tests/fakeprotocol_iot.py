@@ -213,8 +213,9 @@ class FakeIotTransport(BaseTransport):
         for target in info:
             if target != "discovery_result":
                 for cmd in info[target]:
-                    # print("initializing tgt %s cmd %s" % (target, cmd))
-                    proto[target][cmd] = info[target][cmd]
+                    # Use setdefault in case the fixture has modules not yet
+                    # part of the baseproto.
+                    proto.setdefault(target, {})[cmd] = info[target][cmd]
 
         # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
