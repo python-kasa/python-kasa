@@ -31,9 +31,6 @@ class IotLightPreset(DataClassJSONMixin, LightState):  # type: ignore[override]
 
         omit_none = True
 
-    def __repr__(self) -> str:
-        return repr(self.to_dict())
-
     index: int
     brightness: int
 

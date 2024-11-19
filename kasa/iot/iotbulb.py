@@ -178,7 +178,7 @@ class IotBulb(IotDevice):
 
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
-        >>> bulb.presets
+        >>> [ preset.to_dict() for preset in bulb.presets }
         [{'brightness': 50, 'hue': 0, 'saturation': 0, 'color_temp': 2700, 'index': 0}, {'brightness': 100, 'hue': 0, 'saturation': 75, 'color_temp': 0, 'index': 1}, {'brightness': 100, 'hue': 120, 'saturation': 75, 'color_temp': 0, 'index': 2}, {'brightness': 100, 'hue': 240, 'saturation': 75, 'color_temp': 0, 'index': 3}]
 
         To modify an existing preset, pass :class:`~kasa.interfaces.light.LightPreset`
