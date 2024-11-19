@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Annotated
 
-from mashumaro import DataClassDictMixin, field_options
+from mashumaro import DataClassDictMixin
+from mashumaro.types import Alias
 
 from ..smartmodule import SmartModule
 
@@ -14,7 +16,7 @@ class LogEntry(DataClassDictMixin):
     """Presentation of a single log entry."""
 
     id: int
-    event_id: str = field(metadata=field_options(alias="eventId"))
+    event_id: Annotated[str, Alias("eventId")]
     timestamp: int
     event: str
 
