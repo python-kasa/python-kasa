@@ -1215,7 +1215,7 @@ requires-dist = [
     { name = "ptpython", marker = "extra == 'shell'" },
     { name = "pydantic", specifier = ">=1.10.15" },
     { name = "rich", marker = "extra == 'shell'" },
-    { name = "sphinx", marker = "extra == 'docs'", specifier = "~=5.0" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = "~=6.2" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = "~=2.0" },
     { name = "sphinxcontrib-programoutput", marker = "extra == 'docs'", specifier = "~=0.0" },
     { name = "tzdata", marker = "platform_system == 'Windows'", specifier = ">=2024.2" },
@@ -1359,7 +1359,7 @@ wheels = [
 
 [[package]]
 name = "sphinx"
-version = "5.3.0"
+version = "6.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alabaster" },
@@ -1379,9 +1379,9 @@ dependencies = [
     { name = "sphinxcontrib-qthelp" },
     { name = "sphinxcontrib-serializinghtml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/b2/02a43597980903483fe5eb081ee8e0ba2bb62ea43a70499484343795f3bf/Sphinx-5.3.0.tar.gz", hash = "sha256:51026de0a9ff9fc13c05d74913ad66047e104f56a129ff73e174eb5c3ee794b5", size = 6811365 }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/6d/392defcc95ca48daf62aecb89550143e97a4651275e62a3d7755efe35a3a/Sphinx-6.2.1.tar.gz", hash = "sha256:6d56a34697bb749ffa0152feafc4b19836c755d90a7c59b72bc7dfd371b9cc6b", size = 6681092 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/a7/01dd6fd9653c056258d65032aa09a615b5d7b07dd840845a9f41a8860fbc/sphinx-5.3.0-py3-none-any.whl", hash = "sha256:060ca5c9f7ba57a08a1219e547b269fadf125ae25b06b9fa7f66768efb652d6d", size = 3183160 },
+    { url = "https://files.pythonhosted.org/packages/5f/d8/45ba6097c39ba44d9f0e1462fb232e13ca4ddb5aea93a385dcfa964687da/sphinx-6.2.1-py3-none-any.whl", hash = "sha256:97787ff1fa3256a3eef9eda523a63dbf299f7b47e053cfcf684a1c2a8380c912", size = 3024615 },
 ]
 
 [[package]]
