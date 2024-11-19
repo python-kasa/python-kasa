@@ -124,10 +124,10 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
 
 class _DoNotSerialize(SerializationStrategy):
     def serialize(self, value: Any) -> None:
-        return None
+        return None  # pragma: no cover
 
     def deserialize(self, value: Any) -> None:
-        return None
+        return None  # pragma: no cover
 
 
 @dataclass
