@@ -5,6 +5,7 @@ from json import loads as json_loads
 
 import aiohttp
 import pytest
+from mashumaro import MissingField
 
 from kasa.credentials import Credentials
 from kasa.deviceconfig import (
@@ -13,7 +14,6 @@ from kasa.deviceconfig import (
     DeviceEncryptionType,
     DeviceFamily,
 )
-from kasa.exceptions import KasaException
 
 from .conftest import load_fixture
 
@@ -82,15 +82,15 @@ async def test_conn_param_no_https():
 
 
 @pytest.mark.parametrize(
-    ("input_value", "expected_msg"),
+    ("input_value", "expected_error"),
     [
-        ({"Foo": "Bar"}, "Cannot create dataclass from dict, unknown key: Foo"),
-        ("foobar", "Invalid device config data: foobar"),
+        ({"Foo": "Bar"}, MissingField),
+        ("foobar", ValueError),
     ],
     ids=["invalid-dict", "not-dict"],
 )
-def test_deserialization_errors(input_value, expected_msg):
-    with pytest.raises(KasaException, match=expected_msg):
+def test_deserialization_errors(input_value, expected_error):
+    with pytest.raises(expected_error):
         DeviceConfig.from_dict(input_value)
 
 
@@ -100,7 +100,7 @@ async def test_credentials_hash():
         http_client=aiohttp.ClientSession(),
         credentials=Credentials("foo", "bar"),
     )
-    config_dict = config.to_dict(credentials_hash="credhash")
+    config_dict = config.to_dict_control_credentials(credentials_hash="credhash")
     config_json = json_dumps(config_dict)
     config2_dict = json_loads(config_json)
     config2 = DeviceConfig.from_dict(config2_dict)
@@ -114,7 +114,7 @@ async def test_blank_credentials_hash():
         http_client=aiohttp.ClientSession(),
         credentials=Credentials("foo", "bar"),
     )
-    config_dict = config.to_dict(credentials_hash="")
+    config_dict = config.to_dict_control_credentials(credentials_hash="")
     config_json = json_dumps(config_dict)
     config2_dict = json_loads(config_json)
     config2 = DeviceConfig.from_dict(config2_dict)
@@ -128,7 +128,7 @@ async def test_exclude_credentials():
         http_client=aiohttp.ClientSession(),
         credentials=Credentials("foo", "bar"),
     )
-    config_dict = config.to_dict(exclude_credentials=True)
+    config_dict = config.to_dict_control_credentials(exclude_credentials=True)
     config_json = json_dumps(config_dict)
     config2_dict = json_loads(config_json)
     config2 = DeviceConfig.from_dict(config2_dict)
