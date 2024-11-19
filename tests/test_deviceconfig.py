@@ -40,6 +40,7 @@ async def test_serialization():
     config2_dict = json_loads(config_json)
     config2 = DeviceConfig.from_dict(config2_dict)
     assert config == config2
+    assert config.to_dict_control_credentials() == config.to_dict()
 
 
 @pytest.mark.parametrize(
