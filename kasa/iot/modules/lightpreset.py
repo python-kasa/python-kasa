@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 # error: Signature of "__replace__" incompatible with supertype "LightState"
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, repr=False)
 class IotLightPreset(DataClassJSONMixin, LightState):  # type: ignore[override]
     """Light configuration preset."""
 
@@ -30,6 +30,9 @@ class IotLightPreset(DataClassJSONMixin, LightState):  # type: ignore[override]
         """Config class."""
 
         omit_none = True
+
+    def __repr__(self) -> str:
+        return repr(self.to_dict())
 
     index: int
     brightness: int
