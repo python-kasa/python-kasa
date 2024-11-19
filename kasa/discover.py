@@ -92,18 +92,19 @@ import struct
 from asyncio import timeout as asyncio_timeout
 from asyncio.transports import DatagramTransport
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pprint import pformat as pf
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     NamedTuple,
     cast,
 )
 
 from aiohttp import ClientSession
-from mashumaro import field_options
 from mashumaro.config import BaseConfig
+from mashumaro.types import Alias
 
 from kasa import Device
 from kasa.credentials import Credentials
@@ -851,9 +852,7 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     encrypt_info: EncryptionInfo | None = None
     encrypt_type: list[str] | None = None
     decrypted_data: dict | None = None
-    is_reset_wifi: bool | None = field(
-        metadata=field_options(alias="isResetWiFi"), default=None
-    )
+    is_reset_wifi: Annotated[bool | None, Alias("isResetWiFi")] = None
 
     firmware_version: str | None = None
     hardware_version: str | None = None
