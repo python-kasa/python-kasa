@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from enum import Enum
-from typing import Optional, cast
+from typing import cast
 
 from pydantic.v1 import BaseModel, Field, root_validator
 
@@ -49,7 +49,7 @@ class TurnOnBehavior(BaseModel):
     """
 
     #: Index of preset to use, or ``None`` for the last known state.
-    preset: Optional[int] = Field(alias="index", default=None)  # noqa: UP007
+    preset: int | None = Field(alias="index", default=None)
     #: Wanted behavior
     mode: BehaviorMode
 

@@ -7,11 +7,11 @@ import json
 import logging
 import re
 import socket
+from asyncio import timeout as asyncio_timeout
 from unittest.mock import MagicMock
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
-from async_timeout import timeout as asyncio_timeout
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 

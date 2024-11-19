@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, tzinfo
+from datetime import UTC, datetime, tzinfo
 
 from ...exceptions import KasaException
 from ...interfaces import Time as TimeInterface
@@ -13,7 +13,7 @@ from ..iottimezone import get_timezone, get_timezone_index
 class Time(IotModule, TimeInterface):
     """Implements the timezone settings."""
 
-    _timezone: tzinfo = timezone.utc
+    _timezone: tzinfo = UTC
 
     def query(self) -> dict:
         """Request time and timezone."""

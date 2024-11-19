@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from typing import cast
-
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ...cachedzoneinfo import CachedZoneInfo
@@ -19,7 +18,7 @@ class Time(SmartModule, TimeInterface):
     REQUIRED_COMPONENT = "time"
     QUERY_GETTER_NAME = "get_device_time"
 
-    _timezone: tzinfo = timezone.utc
+    _timezone: tzinfo = UTC
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""

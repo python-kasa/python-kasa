@@ -6,11 +6,11 @@ import importlib
 import inspect
 import pkgutil
 import sys
+import zoneinfo
 from contextlib import AbstractContextManager, nullcontext
 from unittest.mock import AsyncMock, patch
 
 import pytest
-import zoneinfo
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module

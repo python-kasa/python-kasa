@@ -6,7 +6,7 @@ import asyncio
 import logging
 import ssl
 import time
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp
 from yarl import URL
@@ -98,7 +98,7 @@ class HttpClient:
         # This allows the json parameter to be used to pass other
         # types of data such as async_generator and still have json
         # returned.
-        if json and not isinstance(json, Dict):
+        if json and not isinstance(json, dict):
             data = json
             json = None
         try:
@@ -131,7 +131,7 @@ class HttpClient:
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
-        except (aiohttp.ServerTimeoutError, asyncio.TimeoutError) as ex:
+        except (aiohttp.ServerTimeoutError, TimeoutError) as ex:
             raise TimeoutError(
                 "Unable to query the device, "
                 + f"timed out: {self._config.host}: {ex}",
