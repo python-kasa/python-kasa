@@ -1,0 +1,10 @@
+{
+    "host": "127.0.0.1",
+    "timeout": 5,
+    "connection_type": {
+        "device_family": "IOT.SMARTPLUGSWITCH",
+        "encryption_type": "XOR",
+        "https": false
+    },
+    "uses_http": false
+}
