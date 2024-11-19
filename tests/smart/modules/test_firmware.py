@@ -105,15 +105,15 @@ async def test_firmware_update(
     }
     update_states = [
         # Unknown 1
-        DownloadState(status=1, download_progress=0, **extras),
+        DownloadState(status=1, progress=0, **extras),
         # Downloading
-        DownloadState(status=2, download_progress=10, **extras),
-        DownloadState(status=2, download_progress=100, **extras),
+        DownloadState(status=2, progress=10, **extras),
+        DownloadState(status=2, progress=100, **extras),
         # Flashing
-        DownloadState(status=3, download_progress=100, **extras),
-        DownloadState(status=3, download_progress=100, **extras),
+        DownloadState(status=3, progress=100, **extras),
+        DownloadState(status=3, progress=100, **extras),
         # Done
-        DownloadState(status=0, download_progress=100, **extras),
+        DownloadState(status=0, progress=100, **extras),
     ]
 
     asyncio_sleep = asyncio.sleep

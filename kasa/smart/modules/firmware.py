@@ -6,10 +6,11 @@ import asyncio
 import logging
 from asyncio import timeout as asyncio_timeout
 from collections.abc import Callable, Coroutine
+from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic.v1 import BaseModel, Field, validator
+from mashumaro import DataClassDictMixin, field_options
 
 from ...exceptions import KasaException
 from ...feature import Feature
@@ -22,36 +23,39 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class DownloadState(BaseModel):
+@dataclass
+class DownloadState(DataClassDictMixin):
     """Download state."""
 
     # Example:
     #   {'status': 0, 'download_progress': 0, 'reboot_time': 5,
     #    'upgrade_time': 5, 'auto_upgrade': False}
     status: int
-    progress: int = Field(alias="download_progress")
+    progress: int = field(metadata=field_options(alias="download_progress"))
     reboot_time: int
     upgrade_time: int
     auto_upgrade: bool
 
 
-class UpdateInfo(BaseModel):
+@dataclass
+class UpdateInfo(DataClassDictMixin):
     """Update info status object."""
 
-    status: int = Field(alias="type")
-    version: str | None = Field(alias="fw_ver", default=None)
+    status: int = field(metadata=field_options(alias="type"))
+    needs_upgrade: bool = field(metadata=field_options(alias="need_to_upgrade"))
+    version: str | None = field(metadata=field_options(alias="fw_ver"), default=None)
     release_date: date | None = None
-    release_notes: str | None = Field(alias="release_note", default=None)
+    release_notes: str | None = field(
+        metadata=field_options(alias="release_note"), default=None
+    )
     fw_size: int | None = None
     oem_id: str | None = None
-    needs_upgrade: bool = Field(alias="need_to_upgrade")
 
-    @validator("release_date", pre=True)
-    def _release_date_optional(cls, v: str) -> str | None:
-        if not v:
-            return None
-
-        return v
+    @classmethod
+    def __pre_deserialize__(cls, d: dict) -> dict:
+        if d.get("release_date") == "":
+            return {**d, "release_date": None}
+        return d
 
     @property
     def update_available(self) -> bool:
@@ -139,7 +143,7 @@ class Firmware(SmartModule):
         """Check for the latest firmware for the device."""
         try:
             fw = await self.call("get_latest_fw")
-            self._firmware_update_info = UpdateInfo.parse_obj(fw["get_latest_fw"])
+            self._firmware_update_info = UpdateInfo.from_dict(fw["get_latest_fw"])
             return self._firmware_update_info
         except Exception:
             _LOGGER.exception("Error getting latest firmware for %s:", self._device)
@@ -174,7 +178,7 @@ class Firmware(SmartModule):
         """Return update state."""
         resp = await self.call("get_fw_download_state")
         state = resp["get_fw_download_state"]
-        return DownloadState(**state)
+        return DownloadState.from_dict(state)
 
     @allow_update_after
     async def update(
@@ -232,7 +236,7 @@ class Firmware(SmartModule):
                 else:
                     _LOGGER.warning("Unhandled state code: %s", state)
 
-        return state.dict()
+        return state.to_dict()
 
     @property
     def auto_update_enabled(self) -> bool:
