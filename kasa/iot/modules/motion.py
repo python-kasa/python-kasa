@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from enum import Enum
 from typing import Literal, overload
 
@@ -84,6 +85,50 @@ class Motion(IotModule):
                 attribute_setter="set_threshold",
                 type=Feature.Type.Number,
                 category=Feature.Category.Config,
+                range_getter=lambda: (0, 100),
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                device=self._device,
+                container=self,
+                id="pir_triggered",
+                name="PIR Triggered",
+                icon="mdi:motion-sensor",
+                attribute_getter="pir_triggered",
+                attribute_setter=None,
+                type=Feature.Type.Sensor,
+                category=Feature.Category.Primary,
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                device=self._device,
+                container=self,
+                id="pir_value",
+                name="PIR Reading",
+                icon="mdi:motion-sensor",
+                attribute_getter="pir_value",
+                attribute_setter=None,
+                type=Feature.Type.Sensor,
+                category=Feature.Category.Info,
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                device=self._device,
+                container=self,
+                id="pir_percent",
+                name="PIR Percentage",
+                icon="mdi:motion-sensor",
+                attribute_getter="pir_percent",
+                attribute_setter=None,
+                type=Feature.Type.Sensor,
+                category=Feature.Category.Info,
+                unit_getter=lambda: "%",
             )
         )
 
@@ -97,7 +142,7 @@ class Motion(IotModule):
                 attribute_getter="adc_value",
                 attribute_setter=None,
                 type=Feature.Type.Sensor,
-                category=Feature.Category.Primary,
+                category=Feature.Category.Debug,
             )
         )
 
@@ -105,13 +150,41 @@ class Motion(IotModule):
             Feature(
                 device=self._device,
                 container=self,
-                id="pir_triggered",
-                name="PIR Triggered",
+                id="pir_adc_min",
+                name="PIR ADC Min",
                 icon="mdi:motion-sensor",
-                attribute_getter="is_triggered",
+                attribute_getter="adc_min",
                 attribute_setter=None,
                 type=Feature.Type.Sensor,
-                category=Feature.Category.Primary,
+                category=Feature.Category.Debug,
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                device=self._device,
+                container=self,
+                id="pir_adc_mid",
+                name="PIR ADC Mid",
+                icon="mdi:motion-sensor",
+                attribute_getter="adc_midpoint",
+                attribute_setter=None,
+                type=Feature.Type.Sensor,
+                category=Feature.Category.Debug,
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                device=self._device,
+                container=self,
+                id="pir_adc_max",
+                name="PIR ADC Max",
+                icon="mdi:motion-sensor",
+                attribute_getter="adc_max",
+                attribute_setter=None,
+                type=Feature.Type.Sensor,
+                category=Feature.Category.Debug,
             )
         )
 
@@ -133,6 +206,28 @@ class Motion(IotModule):
     def enabled(self) -> bool:
         """Return True if module is enabled."""
         return bool(self.config["enable"])
+
+    @property
+    def adc_min(self) -> int:
+        """Return minimum ADC sensor value."""
+        return int(self.config["min_adc"])
+
+    @property
+    def adc_max(self) -> int:
+        """Return maximum ADC sensor value."""
+        return int(self.config["max_adc"])
+
+    @property
+    def adc_midpoint(self) -> int:
+        """
+        Return the midpoint for the ADC.
+
+        The midpoint represents the zero point for the PIR sensor waveform.
+
+        Currently this is estimated by:
+            math.floor(abs(adc_max - adc_min) / 2)
+        """
+        return math.floor(abs(self.adc_max - self.adc_min) / 2)
 
     async def set_enabled(self, state: bool) -> dict:
         """Enable/disable PIR."""
@@ -192,7 +287,7 @@ class Motion(IotModule):
         if value is not None:
             if range is not None and range is not Range.Custom:
                 raise KasaException(
-                    "Refusing to set non-custom range %s to value %d." % (range, value)
+                    f"Refusing to set non-custom range {range} to value {value}."
                 )
             elif value is None:
                 raise KasaException("Custom range threshold may not be set to None.")
@@ -210,9 +305,7 @@ class Motion(IotModule):
         elif isinstance(input, int):
             return await self.set_range(value=input)
         else:
-            raise KasaException(
-                "Invalid type: %s given to cli motion set." % (type(input))
-            )
+            raise KasaException(f"Invalid type: {type(input)} given to cli motion set.")
 
     def get_range_threshold(self, range_type: Range) -> int:
         """Get the distance threshold at which the PIR sensor is will trigger."""
@@ -247,9 +340,25 @@ class Motion(IotModule):
     @property
     def adc_value(self) -> int:
         """Return motion adc value."""
-        return int(self.data["get_adc_value"]["value"])
+        return self.data["get_adc_value"]["value"]
 
     @property
-    def is_triggered(self) -> bool:
+    def pir_value(self) -> int:
+        """Return the computed PIR sensor value."""
+        return self.adc_midpoint - self.adc_value
+
+    @property
+    def pir_percent(self) -> float:
+        """Return the computed PIR sensor value, in percentile form."""
+        amp = self.pir_value
+        per: float
+        if amp < 0:
+            per = (float(amp) / (self.adc_midpoint - self.adc_min)) * 100
+        else:
+            per = (float(amp) / (self.adc_max - self.adc_midpoint)) * 100
+        return per
+
+    @property
+    def pir_triggered(self) -> bool:
         """Return if the motion sensor has been triggered."""
-        return (self.enabled) and (self.adc_value < self.threshold)
+        return (self.enabled) and (abs(self.pir_percent) > (100 - self.threshold))
