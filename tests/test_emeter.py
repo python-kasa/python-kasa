@@ -210,15 +210,9 @@ async def test_supported(dev: Device):
         )
         assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is True
     else:
+        assert energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
+        assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
         if energy_module.supported_version < 2:
-            assert (
-                energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
-            )
             assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is False
-            assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
         else:
-            assert (
-                energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
-            )
             assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is True
-            assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
