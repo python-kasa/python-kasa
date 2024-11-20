@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import sys
 import warnings
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,6 +20,13 @@ from .fixtureinfo import fixture_info  # noqa: F401
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
+
+
+def load_fixture(foldername, filename):
+    """Load a fixture."""
+    path = Path(Path(__file__).parent / "fixtures" / foldername / filename)
+    with path.open() as fdp:
+        return fdp.read()
 
 
 async def handle_turn_on(dev, turn_on):

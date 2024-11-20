@@ -114,6 +114,7 @@ def scrub(res):
         "connect_ssid",
         "encrypt_info",
         "local_ip",
+        "username",
     ]
 
     for k, v in res.items():
@@ -152,7 +153,7 @@ def scrub(res):
                     v = base64.b64encode(b"#MASKED_SSID#").decode()
                 elif k in ["nickname"]:
                     v = base64.b64encode(b"#MASKED_NAME#").decode()
-                elif k in ["alias", "device_alias", "device_name"]:
+                elif k in ["alias", "device_alias", "device_name", "username"]:
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
@@ -398,10 +399,24 @@ async def get_legacy_fixture(
     items = [
         Call(module="system", method="get_sysinfo"),
         Call(module="emeter", method="get_realtime"),
+        Call(module="cnCloud", method="get_info"),
+        Call(module="cnCloud", method="get_intl_fw_list"),
+        Call(module="smartlife.iot.common.schedule", method="get_next_action"),
+        Call(module="smartlife.iot.common.schedule", method="get_rules"),
+        Call(module="schedule", method="get_next_action"),
+        Call(module="schedule", method="get_rules"),
         Call(module="smartlife.iot.dimmer", method="get_dimmer_parameters"),
+        Call(module="smartlife.iot.dimmer", method="get_default_behavior"),
         Call(module="smartlife.iot.common.emeter", method="get_realtime"),
         Call(
             module="smartlife.iot.smartbulb.lightingservice", method="get_light_state"
+        ),
+        Call(
+            module="smartlife.iot.smartbulb.lightingservice",
+            method="get_default_behavior",
+        ),
+        Call(
+            module="smartlife.iot.smartbulb.lightingservice", method="get_light_details"
         ),
         Call(module="smartlife.iot.LAS", method="get_config"),
         Call(module="smartlife.iot.LAS", method="get_current_brt"),
