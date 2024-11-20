@@ -1,23 +1,28 @@
 """Cloud module implementation."""
 
-from pydantic.v1 import BaseModel
+from dataclasses import dataclass
+from typing import Annotated
+
+from mashumaro import DataClassDictMixin
+from mashumaro.types import Alias
 
 from ...feature import Feature
 from ..iotmodule import IotModule
 
 
-class CloudInfo(BaseModel):
+@dataclass
+class CloudInfo(DataClassDictMixin):
     """Container for cloud settings."""
 
-    binded: bool
+    binded: int
     cld_connection: int
-    fwDlPage: str
-    fwNotifyType: int
-    illegalType: int
+    fw_dl_page: Annotated[str, Alias("fwDlPage")]
+    fw_notify_type: Annotated[int, Alias("fwNotifyType")]
+    illegal_type: Annotated[int, Alias("illegalType")]
     server: str
-    stopConnect: int
-    tcspInfo: str
-    tcspStatus: int
+    stop_connect: Annotated[int, Alias("stopConnect")]
+    tcsp_info: Annotated[str, Alias("tcspInfo")]
+    tcsp_status: Annotated[int, Alias("tcspStatus")]
     username: str
 
 
@@ -42,7 +47,7 @@ class Cloud(IotModule):
     @property
     def is_connected(self) -> bool:
         """Return true if device is connected to the cloud."""
-        return self.info.binded
+        return bool(self.info.binded)
 
     def query(self) -> dict:
         """Request cloud connectivity info."""
@@ -51,7 +56,7 @@ class Cloud(IotModule):
     @property
     def info(self) -> CloudInfo:
         """Return information about the cloud connectivity."""
-        return CloudInfo.parse_obj(self.data["get_info"])
+        return CloudInfo.from_dict(self.data["get_info"])
 
     def get_available_firmwares(self) -> dict:
         """Return list of available firmwares."""
