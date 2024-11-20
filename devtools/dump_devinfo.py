@@ -401,6 +401,8 @@ async def get_legacy_fixture(
         Call(module="emeter", method="get_realtime"),
         Call(module="cnCloud", method="get_info"),
         Call(module="cnCloud", method="get_intl_fw_list"),
+        Call(module="smartlife.iot.common.cloud", method="get_info"),
+        Call(module="smartlife.iot.common.cloud", method="get_intl_fw_list"),
         Call(module="smartlife.iot.common.schedule", method="get_next_action"),
         Call(module="smartlife.iot.common.schedule", method="get_rules"),
         Call(module="schedule", method="get_next_action"),

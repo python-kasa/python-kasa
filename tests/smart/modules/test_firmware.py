@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from contextlib import nullcontext
+from datetime import date
 from typing import TypedDict
 
 import pytest
@@ -50,6 +51,20 @@ async def test_firmware_features(
     feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
+
+
+@firmware
+async def test_firmware_update_info(dev: SmartDevice):
+    """Test that the firmware UpdateInfo object deserializes correctly."""
+    fw = dev.modules.get(Module.Firmware)
+    assert fw
+
+    if not dev.is_cloud_connected:
+        pytest.skip("Device is not cloud connected, skipping test")
+    assert fw.firmware_update_info is None
+    await fw.check_latest_firmware()
+    assert fw.firmware_update_info is not None
+    assert isinstance(fw.firmware_update_info.release_date, date | None)
 
 
 @firmware
@@ -105,15 +120,15 @@ async def test_firmware_update(
     }
     update_states = [
         # Unknown 1
-        DownloadState(status=1, download_progress=0, **extras),
+        DownloadState(status=1, progress=0, **extras),
         # Downloading
-        DownloadState(status=2, download_progress=10, **extras),
-        DownloadState(status=2, download_progress=100, **extras),
+        DownloadState(status=2, progress=10, **extras),
+        DownloadState(status=2, progress=100, **extras),
         # Flashing
-        DownloadState(status=3, download_progress=100, **extras),
-        DownloadState(status=3, download_progress=100, **extras),
+        DownloadState(status=3, progress=100, **extras),
+        DownloadState(status=3, progress=100, **extras),
         # Done
-        DownloadState(status=0, download_progress=100, **extras),
+        DownloadState(status=0, progress=100, **extras),
     ]
 
     asyncio_sleep = asyncio.sleep
