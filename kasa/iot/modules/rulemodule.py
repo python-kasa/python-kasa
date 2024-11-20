@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from enum import Enum
 
-from pydantic.v1 import BaseModel
+from mashumaro import DataClassDictMixin
 
 from ..iotmodule import IotModule, merge
 
@@ -28,26 +29,27 @@ class TimeOption(Enum):
     AtSunset = 2
 
 
-class Rule(BaseModel):
+@dataclass
+class Rule(DataClassDictMixin):
     """Representation of a rule."""
 
     id: str
     name: str
-    enable: bool
+    enable: int
     wday: list[int]
-    repeat: bool
+    repeat: int
 
     # start action
-    sact: Action | None
-    stime_opt: TimeOption
-    smin: int
+    sact: Action | None = None
+    stime_opt: TimeOption | None = None
+    smin: int | None = None
 
-    eact: Action | None
-    etime_opt: TimeOption
-    emin: int
+    eact: Action | None = None
+    etime_opt: TimeOption | None = None
+    emin: int | None = None
 
     # Only on bulbs
-    s_light: dict | None
+    s_light: dict | None = None
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -66,7 +68,7 @@ class RuleModule(IotModule):
         """Return the list of rules for the service."""
         try:
             return [
-                Rule.parse_obj(rule) for rule in self.data["get_rules"]["rule_list"]
+                Rule.from_dict(rule) for rule in self.data["get_rules"]["rule_list"]
             ]
         except Exception as ex:
             _LOGGER.error("Unable to read rule list: %s (data: %s)", ex, self.data)
