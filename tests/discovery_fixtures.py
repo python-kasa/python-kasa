@@ -51,6 +51,7 @@ def _make_unsupported(device_family, encrypt_type, *, omit_keys=None):
 
 UNSUPPORTED_DEVICES = {
     "unknown_device_family": _make_unsupported("SMART.TAPOXMASTREE", "AES"),
+    "unknown_iot_device_family": _make_unsupported("IOT.IOTXMASTREE", "AES"),
     "wrong_encryption_iot": _make_unsupported("IOT.SMARTPLUGSWITCH", "AES"),
     "wrong_encryption_smart": _make_unsupported("SMART.TAPOBULB", "IOT"),
     "unknown_encryption": _make_unsupported("IOT.SMARTPLUGSWITCH", "FOO"),
