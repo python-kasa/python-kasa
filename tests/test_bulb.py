@@ -453,6 +453,8 @@ LIGHT_STATE_SCHEMA = Schema(
         "mode": str,
         "on_off": Boolean,
         "saturation": All(int, Range(min=0, max=100)),
+        "length": Optional(int),
+        "transition": Optional(int),
         "dft_on_state": Optional(
             {
                 "brightness": All(int, Range(min=0, max=100)),
@@ -460,6 +462,7 @@ LIGHT_STATE_SCHEMA = Schema(
                 "hue": All(int, Range(min=0, max=360)),
                 "mode": str,
                 "saturation": All(int, Range(min=0, max=100)),
+                "groups": Optional(list[int]),
             }
         ),
         "err_code": int,
