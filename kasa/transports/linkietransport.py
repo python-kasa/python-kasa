@@ -1,28 +1,21 @@
-"""Implementation of the legacy TP-Link Smart Home Protocol.
-
-Encryption/Decryption methods based on the works of
-Lubomir Stroetmann and Tobias Esser
-
-https://www.softscheck.com/en/reverse-engineering-tp-link-hs110/
-https://github.com/softScheck/tplink-smartplug/
-
-which are licensed under the Apache License, Version 2.0
-http://www.apache.org/licenses/LICENSE-2.0
-"""
+"""Implementation of the linkie kasa camera transport."""
 
 from __future__ import annotations
 
-import logging
+import asyncio
 import base64
+import logging
 import ssl
+from typing import TYPE_CHECKING, cast
 from urllib.parse import quote
+
 from yarl import URL
 
-from kasa.httpclient import HttpClient
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException, _RetryableError
+from kasa.httpclient import HttpClient
 from kasa.json import loads as json_loads
-from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.transports.xortransport import XorEncryption
 
 from .basetransport import BaseTransport
@@ -31,8 +24,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LinkieTransport(BaseTransport):
-    """Implementation of the Linkie encryption protocol
-    
+    """Implementation of the Linkie encryption protocol.
+
     Linkie is used as the endpoint for TP-Link's camera encryption
     protocol, used by newer firmware versions.
     """
@@ -51,7 +44,7 @@ class LinkieTransport(BaseTransport):
     def __init__(self, *, config: DeviceConfig) -> None:
         super().__init__(config=config)
         self._http_client = HttpClient(config)
-        self._ssl_context = self._create_ssl_context()
+        self._ssl_context: ssl.SSLContext | None = None
         self._app_url = URL(f"https://{self._host}:{self._port}/data/LINKIE2.json")
 
         self._headers = {
@@ -81,12 +74,15 @@ class LinkieTransport(BaseTransport):
         b64_cmd = base64.b64encode(encrypted_cmd).decode()
         url_safe_cmd = quote(b64_cmd, safe="!~*'()")
 
-        status_code, resp_dict = await self._http_client.post(
+        status_code, response = await self._http_client.post(
             self._app_url,
             headers=self._headers,
-            data=f"content={url_safe_cmd}",
-            ssl=self._ssl_context,
+            data=f"content={url_safe_cmd}".encode(),
+            ssl=await self._get_ssl_context(),
         )
+
+        if TYPE_CHECKING:
+            response = cast(bytes, response)
 
         if status_code != 200:
             raise KasaException(
@@ -94,33 +90,35 @@ class LinkieTransport(BaseTransport):
                 + f"status code {status_code} to passthrough"
             )
 
-        json_payload: dict | None = None
-
         # Expected response
         try:
-            json_payload = json_loads(XorEncryption.decrypt(base64.b64decode(resp_dict)))
+            json_payload: dict = json_loads(
+                XorEncryption.decrypt(base64.b64decode(response))
+            )
             _LOGGER.debug("%s << %s", self._host, json_payload)
             return json_payload
-        except Exception:
+        except Exception:  # noqa: S110
             pass
 
         # Device returned error as json plaintext
         try:
-            json_payload = json_loads(resp_dict.decode("utf-8"))
-            raise KasaException(f"[Device error] Code {json_payload['err_code']}: {json_payload['msg']}")
-        except Exception:
-            raise KasaException("Unable to read response")
+            error_payload: dict = json_loads(response)
+            raise KasaException(f"Device {self._host} send error: {error_payload}")
+        except Exception as ex:
+            raise KasaException("Unable to read response") from ex
 
     async def close(self) -> None:
         """Close the http client and reset internal state."""
         await self._http_client.close()
 
     async def reset(self) -> None:
-        pass
+        """Reset the transport.
+
+        NOOP for this transport.
+        """
 
     async def send(self, request: str) -> dict:
         """Send a message to the device and return a response."""
-
         try:
             return await self._execute_send(request)
         except Exception as ex:
@@ -129,8 +127,16 @@ class LinkieTransport(BaseTransport):
                 f"Unable to query the device {self._host}:{self._port}: {ex}"
             ) from ex
 
+    async def _get_ssl_context(self) -> ssl.SSLContext:
+        if not self._ssl_context:
+            loop = asyncio.get_running_loop()
+            self._ssl_context = await loop.run_in_executor(
+                None, self._create_ssl_context
+            )
+        return self._ssl_context
+
     def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.set_ciphers(self.CIPHERS)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE

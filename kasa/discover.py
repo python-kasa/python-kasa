@@ -677,7 +677,9 @@ class Discover:
                 device_family=device_type,
                 encryption_type=DeviceEncryptionType.Xor.value,
             )
-        elif device_type := sys_info.get("system", {}).get("type"):
+        elif (
+            device_type := sys_info.get("system", {}).get("type")
+        ) and device_type == "IOT.IPCAMERA":
             config.connection_type = DeviceConnectionParameters.from_values(
                 device_family=device_type,
                 encryption_type=DeviceEncryptionType.Linkie.value,
