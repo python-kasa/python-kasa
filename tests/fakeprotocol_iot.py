@@ -136,6 +136,34 @@ CLOUD_MODULE = {
     }
 }
 
+SCHEDULE_MODULE = {
+    "get_next_action": {
+        "action": 1,
+        "err_code": 0,
+        "id": "0794F4729DB271627D1CF35A9A854030",
+        "schd_time": 68927,
+        "type": 2,
+    },
+    "get_rules": {
+        "enable": 1,
+        "err_code": 0,
+        "rule_list": [
+            {
+                "eact": -1,
+                "enable": 1,
+                "id": "8AA75A50A8440B17941D192BD9E01FFA",
+                "name": "name",
+                "repeat": 1,
+                "sact": 1,
+                "smin": 1027,
+                "soffset": 0,
+                "stime_opt": 2,
+                "wday": [1, 1, 1, 1, 1, 1, 1],
+            },
+        ],
+        "version": 2,
+    },
+}
 
 AMBIENT_MODULE = {
     "get_current_brt": {"value": 26, "err_code": 0},
@@ -450,6 +478,8 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.PIR": MOTION_MODULE,
         "cnCloud": CLOUD_MODULE,
         "smartlife.iot.common.cloud": CLOUD_MODULE,
+        "schedule": SCHEDULE_MODULE,
+        "smartlife.iot.common.schedule": SCHEDULE_MODULE,
     }
 
     async def send(self, request, port=9999):
