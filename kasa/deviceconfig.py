@@ -159,7 +159,6 @@ class DeviceConfig(_DeviceConfigBaseMixin):
     #: in order to determine whether they should pass a custom http client if desired.
     uses_http: bool = False
 
-    # compare=False will be excluded from object comparison.
     #: Set a custom http_client for the device to use.
     http_client: ClientSession | None = field(
         default=None,
