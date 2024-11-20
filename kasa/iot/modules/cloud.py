@@ -14,10 +14,10 @@ from ..iotmodule import IotModule
 class CloudInfo(DataClassDictMixin):
     """Container for cloud settings."""
 
-    binded: int
-    cld_connection: int
-    fw_dl_page: Annotated[str, Alias("fwDlPage")]
-    fw_notify_type: Annotated[int, Alias("fwNotifyType")]
+    provisioned: Annotated[int, Alias("binded")]
+    cloud_connected: Annotated[int, Alias("cld_connection")]
+    firmware_download_page: Annotated[str, Alias("fwDlPage")]
+    firmware_notify_type: Annotated[int, Alias("fwNotifyType")]
     illegal_type: Annotated[int, Alias("illegalType")]
     server: str
     stop_connect: Annotated[int, Alias("stopConnect")]
@@ -47,7 +47,7 @@ class Cloud(IotModule):
     @property
     def is_connected(self) -> bool:
         """Return true if device is connected to the cloud."""
-        return bool(self.info.binded)
+        return bool(self.info.cloud_connected)
 
     def query(self) -> dict:
         """Request cloud connectivity info."""

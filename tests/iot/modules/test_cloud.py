@@ -9,5 +9,5 @@ def test_cloud(dev: Device):
     assert cloud
     info = cloud.info
     assert info
-    assert isinstance(info.binded, int)
-    assert cloud.is_connected == bool(info.binded)
+    assert isinstance(info.provisioned, int)
+    assert cloud.is_connected == bool(info.cloud_connected)
