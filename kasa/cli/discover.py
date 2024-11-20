@@ -6,7 +6,6 @@ import asyncio
 from pprint import pformat as pf
 
 import asyncclick as click
-from pydantic.v1 import ValidationError
 
 from kasa import (
     AuthenticationError,
@@ -208,7 +207,7 @@ def _echo_discovery_info(discovery_info) -> None:
 
     try:
         dr = DiscoveryResult.from_dict(discovery_info)
-    except ValidationError:
+    except Exception:
         _echo_dictionary(discovery_info)
         return
 
