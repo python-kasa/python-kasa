@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import IotDevice, requires_update
-from .modules import Antitheft, Cloud, Led, Schedule, Time, Usage
+from .modules import AmbientLight, Antitheft, Cloud, Led, Motion, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -54,13 +55,13 @@ class IotPlug(IotDevice):
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Plug
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules."""
         await super()._initialize_modules()
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
         self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
-        self.add_module(Module.IotTime, Time(self, "time"))
+        self.add_module(Module.Time, Time(self, "time"))
         self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
         self.add_module(Module.Led, Led(self, "system"))
 
@@ -71,11 +72,11 @@ class IotPlug(IotDevice):
         sys_info = self.sys_info
         return bool(sys_info["relay_state"])
 
-    async def turn_on(self, **kwargs):
+    async def turn_on(self, **kwargs: Any) -> dict:
         """Turn the switch on."""
         return await self._query_helper("system", "set_relay_state", {"state": 1})
 
-    async def turn_off(self, **kwargs):
+    async def turn_off(self, **kwargs: Any) -> dict:
         """Turn the switch off."""
         return await self._query_helper("system", "set_relay_state", {"state": 0})
 
@@ -92,3 +93,12 @@ class IotWallSwitch(IotPlug):
     ) -> None:
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.WallSwitch
+
+    async def _initialize_modules(self) -> None:
+        """Initialize modules."""
+        await super()._initialize_modules()
+        if (dev_name := self.sys_info["dev_name"]) and "PIR" in dev_name:
+            self.add_module(Module.IotMotion, Motion(self, "smartlife.iot.PIR"))
+            self.add_module(
+                Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS")
+            )

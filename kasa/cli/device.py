@@ -22,7 +22,7 @@ from .common import (
 
 @click.group()
 @pass_dev_or_child
-def device(dev):
+def device(dev) -> None:
     """Commands to control basic device settings."""
 
 
@@ -193,3 +193,13 @@ async def update_credentials(dev, username, password):
     click.confirm("Do you really want to replace the existing credentials?", abort=True)
 
     return await dev.update_credentials(username, password)
+
+
+@device.command(name="logs")
+@pass_dev_or_child
+async def child_logs(dev):
+    """Print child device trigger logs."""
+    if logs := dev.modules.get(Module.TriggerLogs):
+        await dev.update(update_children=True)
+        for entry in logs.logs:
+            print(entry)

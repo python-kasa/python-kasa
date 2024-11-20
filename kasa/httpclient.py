@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import ssl
 import time
-from typing import Any, Dict
+from typing import Any
 
 import aiohttp
 from yarl import URL
@@ -64,6 +65,7 @@ class HttpClient:
         json: dict | Any | None = None,
         headers: dict[str, str] | None = None,
         cookies_dict: dict[str, str] | None = None,
+        ssl: ssl.SSLContext | bool = False,
     ) -> tuple[int, dict | bytes | None]:
         """Send an http post request to the device.
 
@@ -88,13 +90,15 @@ class HttpClient:
         self._last_url = url
         self.client.cookie_jar.clear()
         return_json = bool(json)
+        if self._config.timeout is None:
+            _LOGGER.warning("Request timeout is set to None.")
         client_timeout = aiohttp.ClientTimeout(total=self._config.timeout)
 
         # If json is not a dict send as data.
         # This allows the json parameter to be used to pass other
         # types of data such as async_generator and still have json
         # returned.
-        if json and not isinstance(json, Dict):
+        if json and not isinstance(json, dict):
             data = json
             json = None
         try:
@@ -106,7 +110,7 @@ class HttpClient:
                 timeout=client_timeout,
                 cookies=cookies_dict,
                 headers=headers,
-                ssl=False,
+                ssl=ssl,
             )
             async with resp:
                 if resp.status == 200:
@@ -127,7 +131,7 @@ class HttpClient:
             raise _ConnectionError(
                 f"Device connection error: {self._config.host}: {ex}", ex
             ) from ex
-        except (aiohttp.ServerTimeoutError, asyncio.TimeoutError) as ex:
+        except (aiohttp.ServerTimeoutError, TimeoutError) as ex:
             raise TimeoutError(
                 "Unable to query the device, "
                 + f"timed out: {self._config.host}: {ex}",

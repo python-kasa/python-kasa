@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections.abc import Callable
 from contextlib import contextmanager
 from functools import singledispatch, update_wrapper, wraps
-from typing import Final
+from typing import TYPE_CHECKING, Any, Final
 
 import asyncclick as click
 
@@ -37,7 +38,7 @@ except ImportError:
         """Strip rich formatting from messages."""
 
         @wraps(echo_func)
-        def wrapper(message=None, *args, **kwargs):
+        def wrapper(message=None, *args, **kwargs) -> None:
             if message is not None:
                 message = rich_formatting.sub("", message)
             echo_func(message, *args, **kwargs)
@@ -47,20 +48,20 @@ except ImportError:
     _echo = _strip_rich_formatting(click.echo)
 
 
-def echo(*args, **kwargs):
+def echo(*args, **kwargs) -> None:
     """Print a message."""
     ctx = click.get_current_context().find_root()
     if "json" not in ctx.params or ctx.params["json"] is False:
         _echo(*args, **kwargs)
 
 
-def error(msg: str):
+def error(msg: str) -> None:
     """Print an error and exit."""
     echo(f"[bold red]{msg}[/bold red]")
     sys.exit(1)
 
 
-def json_formatter_cb(result, **kwargs):
+def json_formatter_cb(result: Any, **kwargs) -> None:
     """Format and output the result as JSON, if requested."""
     if not kwargs.get("json"):
         return
@@ -82,7 +83,7 @@ def json_formatter_cb(result, **kwargs):
     print(json_content)
 
 
-def pass_dev_or_child(wrapped_function):
+def pass_dev_or_child(wrapped_function: Callable) -> Callable:
     """Pass the device or child to the click command based on the child options."""
     child_help = (
         "Child ID or alias for controlling sub-devices. "
@@ -133,7 +134,10 @@ def pass_dev_or_child(wrapped_function):
 
 
 async def _get_child_device(
-    device: Device, child_option, child_index_option, info_command
+    device: Device,
+    child_option: str | None,
+    child_index_option: int | None,
+    info_command: str | None,
 ) -> Device | None:
     def _list_children():
         return "\n".join(
@@ -178,11 +182,15 @@ async def _get_child_device(
                 f"{child_option} children are:\n{_list_children()}"
             )
 
+    if TYPE_CHECKING:
+        assert isinstance(child_index_option, int)
+
     if child_index_option + 1 > len(device.children) or child_index_option < 0:
         error(
             f"Invalid index {child_index_option}, "
             f"device has {len(device.children)} children"
         )
+
     child_by_index = device.children[child_index_option]
     echo(f"Targeting child device {child_by_index.alias}")
     return child_by_index
@@ -195,12 +203,14 @@ def CatchAllExceptions(cls):
     https://stackoverflow.com/questions/52213375
     """
 
-    def _handle_exception(debug, exc):
+    def _handle_exception(debug, exc) -> None:
         if isinstance(exc, click.ClickException):
             raise
         # Handle exit request from click.
         if isinstance(exc, click.exceptions.Exit):
             sys.exit(exc.exit_code)
+        if isinstance(exc, click.exceptions.Abort):
+            sys.exit(0)
 
         echo(f"Raised error: {exc}")
         if debug:

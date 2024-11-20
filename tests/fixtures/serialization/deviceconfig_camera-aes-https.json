@@ -1,0 +1,10 @@
+{
+    "host": "127.0.0.1",
+    "timeout": 5,
+    "connection_type": {
+        "device_family": "SMART.IPCAMERA",
+        "encryption_type": "AES",
+        "https": true
+    },
+    "uses_http": false
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import IntFlag, auto
+from typing import Any
 from warnings import warn
 
 from ..emeterstatus import EmeterStatus
@@ -31,7 +32,7 @@ class Energy(Module, ABC):
         """Return True if module supports the feature."""
         return module_feature in self._supported
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         device = self._device
         self._add_feature(
@@ -151,22 +152,26 @@ class Energy(Module, ABC):
         """Get the current voltage in V."""
 
     @abstractmethod
-    async def get_status(self):
+    async def get_status(self) -> EmeterStatus:
         """Return real-time statistics."""
 
     @abstractmethod
-    async def erase_stats(self):
+    async def erase_stats(self) -> dict:
         """Erase all stats."""
 
     @abstractmethod
-    async def get_daily_stats(self, *, year=None, month=None, kwh=True) -> dict:
+    async def get_daily_stats(
+        self, *, year: int | None = None, month: int | None = None, kwh: bool = True
+    ) -> dict:
         """Return daily stats for the given year & month.
 
         The return value is a dictionary of {day: energy, ...}.
         """
 
     @abstractmethod
-    async def get_monthly_stats(self, *, year=None, kwh=True) -> dict:
+    async def get_monthly_stats(
+        self, *, year: int | None = None, kwh: bool = True
+    ) -> dict:
         """Return monthly stats for the given year."""
 
     _deprecated_attributes = {
@@ -179,9 +184,9 @@ class Energy(Module, ABC):
         "get_monthstat": "get_monthly_stats",
     }
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         if attr := self._deprecated_attributes.get(name):
             msg = f"{name} is deprecated, use {attr} instead"
-            warn(msg, DeprecationWarning, stacklevel=1)
+            warn(msg, DeprecationWarning, stacklevel=2)
             return getattr(self, attr)
         raise AttributeError(f"Energy module has no attribute {name!r}")

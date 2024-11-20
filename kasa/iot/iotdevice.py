@@ -17,44 +17,50 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
+from warnings import warn
 
-from ..device import Device, WifiNetwork
+from ..device import Device, WifiNetwork, _DeviceInfo
+from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotmodule import IotModule, merge
 from .modules import Emeter
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def requires_update(f):
+def requires_update(f: Callable) -> Any:
     """Indicate that `update` should be called before accessing this method."""  # noqa: D202
     if inspect.iscoroutinefunction(f):
 
         @functools.wraps(f)
-        async def wrapped(*args, **kwargs):
+        async def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and f.__name__ not in self._sys_info:
+            if self._last_update is None and (
+                self._sys_info is None or f.__name__ not in self._sys_info
+            ):
                 raise KasaException("You need to await update() to access the data")
             return await f(*args, **kwargs)
 
     else:
 
         @functools.wraps(f)
-        def wrapped(*args, **kwargs):
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and f.__name__ not in self._sys_info:
+            if self._last_update is None and (
+                self._sys_info is None or f.__name__ not in self._sys_info
+            ):
                 raise KasaException("You need to await update() to access the data")
             return f(*args, **kwargs)
 
-    f.requires_update = True
+    f.requires_update = True  # type: ignore[attr-defined]
     return wrapped
 
 
@@ -196,7 +202,7 @@ class IotDevice(Device):
             return cast(ModuleMapping[IotModule], self._supported_modules)
         return self._supported_modules
 
-    def add_module(self, name: str | ModuleName[Module], module: IotModule):
+    def add_module(self, name: str | ModuleName[Module], module: IotModule) -> None:
         """Register a module."""
         if name in self._modules:
             _LOGGER.debug("Module %s already registered, ignoring...", name)
@@ -206,8 +212,12 @@ class IotDevice(Device):
         self._modules[name] = module
 
     def _create_request(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ):
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         if arg is None:
             arg = {}
         request: dict[str, Any] = {target: {cmd: arg}}
@@ -224,8 +234,12 @@ class IotDevice(Device):
             raise KasaException("update() required prior accessing emeter")
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ) -> Any:
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         """Query device, return results or raise an exception.
 
         :param target: Target system {system, time, emeter, ..}
@@ -275,7 +289,7 @@ class IotDevice(Device):
         """Retrieve system information."""
         return await self._query_helper("system", "get_sysinfo")
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True) -> None:
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.
@@ -304,7 +318,7 @@ class IotDevice(Device):
         if not self._features:
             await self._initialize_features()
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
         if self.has_emeter:
             _LOGGER.debug(
@@ -312,7 +326,7 @@ class IotDevice(Device):
             )
             self.add_module(Module.Energy, Emeter(self, self.emeter_type))
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize common features."""
         self._add_feature(
             Feature(
@@ -363,7 +377,7 @@ class IotDevice(Device):
             )
         )
 
-        for module in self._supported_modules.values():
+        for module in self.modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)
@@ -398,7 +412,15 @@ class IotDevice(Device):
         # every other update will query for them
         update: dict = self._last_update.copy() if self._last_update else {}
         for response in responses:
-            update = {**update, **response}
+            for k, v in response.items():
+                # The same module could have results in different responses
+                # i.e. smartlife.iot.common.schedule for Usage and
+                # Schedule, so need to call update(**v) here. If a module is
+                # not supported the response
+                # {'err_code': -1, 'err_msg': 'module not support'}
+                # become top level key/values of the response so check for dict
+                if isinstance(v, dict):
+                    update.setdefault(k, {}).update(**v)
         self._last_update = update
 
         # IOT modules are added as default but could be unsupported post first update
@@ -446,13 +468,19 @@ class IotDevice(Device):
         sys_info = self._sys_info
         return str(sys_info["model"])
 
+    @property
+    @requires_update
+    def _model_region(self) -> str:
+        """Return device full model name and region."""
+        return self.model
+
     @property  # type: ignore
     def alias(self) -> str | None:
         """Return device name (alias)."""
         sys_info = self._sys_info
         return sys_info.get("alias") if sys_info else None
 
-    async def set_alias(self, alias: str) -> None:
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
         return await self._query_helper("system", "set_dev_alias", {"alias": alias})
 
@@ -460,27 +488,27 @@ class IotDevice(Device):
     @requires_update
     def time(self) -> datetime:
         """Return current time from the device."""
-        return self.modules[Module.IotTime].time
+        return self.modules[Module.Time].time
 
     @property
     @requires_update
     def timezone(self) -> tzinfo:
         """Return the current timezone."""
-        return self.modules[Module.IotTime].timezone
+        return self.modules[Module.Time].timezone
 
-    async def get_time(self) -> datetime | None:
+    async def get_time(self) -> datetime:
         """Return current time from the device, if available."""
-        _LOGGER.warning(
-            "Use `time` property instead, this call will be removed in the future."
-        )
-        return await self.modules[Module.IotTime].get_time()
+        msg = "Use `time` property instead, this call will be removed in the future."
+        warn(msg, DeprecationWarning, stacklevel=2)
+        return self.time
 
-    async def get_timezone(self) -> dict:
+    async def get_timezone(self) -> tzinfo:
         """Return timezone information."""
-        _LOGGER.warning(
+        msg = (
             "Use `timezone` property instead, this call will be removed in the future."
         )
-        return await self.modules[Module.IotTime].get_timezone()
+        warn(msg, DeprecationWarning, stacklevel=2)
+        return self.timezone
 
     @property  # type: ignore
     @requires_update
@@ -549,7 +577,7 @@ class IotDevice(Device):
 
         return mac
 
-    async def set_mac(self, mac):
+    async def set_mac(self, mac: str) -> dict:
         """Set the mac address.
 
         :param str mac: mac in hexadecimal with colons, e.g. 01:23:45:67:89:ab
@@ -575,7 +603,7 @@ class IotDevice(Device):
         """Turn off the device."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def turn_on(self, **kwargs) -> dict | None:
+    async def turn_on(self, **kwargs) -> dict:
         """Turn device on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
@@ -585,7 +613,7 @@ class IotDevice(Device):
         """Return True if the device is on."""
         raise NotImplementedError("Device subclass needs to implement this.")
 
-    async def set_state(self, on: bool):
+    async def set_state(self, on: bool) -> dict:
         """Set the device state."""
         if on:
             return await self.turn_on()
@@ -626,7 +654,7 @@ class IotDevice(Device):
     async def wifi_scan(self) -> list[WifiNetwork]:  # noqa: D202
         """Scan for available wifi networks."""
 
-        async def _scan(target):
+        async def _scan(target: str) -> dict:
             return await self._query_helper(target, "get_scaninfo", {"refresh": 1})
 
         try:
@@ -638,17 +666,17 @@ class IotDevice(Device):
             info = await _scan("smartlife.iot.common.softaponboarding")
 
         if "ap_list" not in info:
-            raise KasaException("Invalid response for wifi scan: %s" % info)
+            raise KasaException(f"Invalid response for wifi scan: {info}")
 
         return [WifiNetwork(**x) for x in info["ap_list"]]
 
-    async def wifi_join(self, ssid: str, password: str, keytype: str = "3"):  # noqa: D202
+    async def wifi_join(self, ssid: str, password: str, keytype: str = "3") -> dict:  # noqa: D202
         """Join the given wifi network.
 
         If joining the network fails, the device will return to AP mode after a while.
         """
 
-        async def _join(target, payload):
+        async def _join(target: str, payload: dict) -> dict:
             return await self._query_helper(target, "set_stainfo", payload)
 
         payload = {"ssid": ssid, "password": password, "key_type": int(keytype)}
@@ -673,3 +701,66 @@ class IotDevice(Device):
         This should only be used for debugging purposes.
         """
         return self._last_update or self._discovery_info
+
+    @staticmethod
+    def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
+        """Find SmartDevice subclass for device described by passed data."""
+        if "system" not in info or "get_sysinfo" not in info["system"]:
+            raise KasaException("No 'system' or 'get_sysinfo' in response")
+
+        sysinfo: dict[str, Any] = info["system"]["get_sysinfo"]
+        type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
+        if type_ is None:
+            raise KasaException("Unable to find the device type field!")
+
+        if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
+            return DeviceType.Dimmer
+
+        if "smartplug" in type_.lower():
+            if "children" in sysinfo:
+                return DeviceType.Strip
+            if (dev_name := sysinfo.get("dev_name")) and "light" in dev_name.lower():
+                return DeviceType.WallSwitch
+            return DeviceType.Plug
+
+        if "smartbulb" in type_.lower():
+            if "length" in sysinfo:  # strips have length
+                return DeviceType.LightStrip
+
+            return DeviceType.Bulb
+        _LOGGER.warning("Unknown device type %s, falling back to plug", type_)
+        return DeviceType.Plug
+
+    @staticmethod
+    def _get_device_info(
+        info: dict[str, Any], discovery_info: dict[str, Any] | None
+    ) -> _DeviceInfo:
+        """Get model information for a device."""
+        sys_info = info["system"]["get_sysinfo"]
+
+        # Get model and region info
+        region = None
+        device_model = sys_info["model"]
+        long_name, _, region = device_model.partition("(")
+        if region:  # All iot devices have region but just in case
+            region = region.replace(")", "")
+
+        # Get other info
+        device_family = sys_info.get("type", sys_info.get("mic_type"))
+        device_type = IotDevice._get_device_type_from_sys_info(info)
+        fw_version_full = sys_info["sw_ver"]
+        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        auth = bool(discovery_info and ("mgt_encrypt_schm" in discovery_info))
+
+        return _DeviceInfo(
+            short_name=long_name,
+            long_name=long_name,
+            brand="kasa",
+            device_family=device_family,
+            device_type=device_type,
+            hardware_version=sys_info["hw_ver"],
+            firmware_version=firmware_version,
+            firmware_build=firmware_build,
+            requires_auth=auth,
+            region=region,
+        )

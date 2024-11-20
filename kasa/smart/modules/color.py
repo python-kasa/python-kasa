@@ -12,7 +12,7 @@ class Color(SmartModule):
 
     REQUIRED_COMPONENT = "color"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -44,9 +44,11 @@ class Color(SmartModule):
             self.data.get("brightness", 0),
         )
 
-        return HSV(hue=h, saturation=s, value=v)
+        # Simple HSV(h, s, v) is less efficent than below
+        # due to the cpython implementation.
+        return tuple.__new__(HSV, (h, s, v))
 
-    def _raise_for_invalid_brightness(self, value):
+    def _raise_for_invalid_brightness(self, value: int) -> None:
         """Raise error on invalid brightness value."""
         if not isinstance(value, int):
             raise TypeError("Brightness must be an integer")

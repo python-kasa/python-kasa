@@ -14,7 +14,7 @@ from ..exceptions import KasaException
 from ..feature import Feature
 from ..interfaces import Energy
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import (
     IotDevice,
     requires_update,
@@ -26,7 +26,7 @@ from .modules import Antitheft, Cloud, Countdown, Emeter, Led, Schedule, Time, U
 _LOGGER = logging.getLogger(__name__)
 
 
-def merge_sums(dicts):
+def merge_sums(dicts: list[dict]) -> dict:
     """Merge the sum of dicts."""
     total_dict: defaultdict[int, float] = defaultdict(lambda: 0.0)
     for sum_dict in dicts:
@@ -99,13 +99,13 @@ class IotStrip(IotDevice):
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules."""
         # Strip has different modules to plug so do not call super
         self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
-        self.add_module(Module.IotTime, Time(self, "time"))
+        self.add_module(Module.Time, Time(self, "time"))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.Led, Led(self, "system"))
         self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
@@ -121,7 +121,7 @@ class IotStrip(IotDevice):
         """Return if any of the outlets are on."""
         return any(plug.is_on for plug in self.children)
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True) -> None:
         """Update some of the attributes.
 
         Needed for methods that are decorated with `requires_update`.
@@ -150,20 +150,20 @@ class IotStrip(IotDevice):
         if not self.features:
             await self._initialize_features()
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize common features."""
         # Do not initialize features until children are created
         if not self.children:
             return
         await super()._initialize_features()
 
-    async def turn_on(self, **kwargs):
+    async def turn_on(self, **kwargs) -> dict:
         """Turn the strip on."""
-        await self._query_helper("system", "set_relay_state", {"state": 1})
+        return await self._query_helper("system", "set_relay_state", {"state": 1})
 
-    async def turn_off(self, **kwargs):
+    async def turn_off(self, **kwargs) -> dict:
         """Turn the strip off."""
-        await self._query_helper("system", "set_relay_state", {"state": 0})
+        return await self._query_helper("system", "set_relay_state", {"state": 0})
 
     @property  # type: ignore
     @requires_update
@@ -188,7 +188,7 @@ class StripEmeter(IotModule, Energy):
         """Return True if module supports the feature."""
         return module_feature in self._supported
 
-    def query(self):
+    def query(self) -> dict:
         """Return the base query."""
         return {}
 
@@ -246,10 +246,12 @@ class StripEmeter(IotModule, Energy):
             ]
         )
 
-    async def erase_stats(self):
+    async def erase_stats(self) -> dict:
         """Erase energy meter statistics for all plugs."""
         for plug in self._device.children:
             await plug.modules[Module.Energy].erase_stats()
+
+        return {}
 
     @property  # type: ignore
     def consumption_this_month(self) -> float | None:
@@ -320,7 +322,7 @@ class IotStripPlug(IotPlug):
         self.protocol = parent.protocol  # Must use the same connection as the parent
         self._on_since: datetime | None = None
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
         if self.has_emeter:
             self.add_module(Module.Energy, Emeter(self, self.emeter_type))
@@ -329,7 +331,7 @@ class IotStripPlug(IotPlug):
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize common features."""
         self._add_feature(
             Feature(
@@ -353,19 +355,20 @@ class IotStripPlug(IotPlug):
                 type=Feature.Type.Sensor,
             )
         )
-        for module in self._supported_modules.values():
+
+        for module in self.modules.values():
             module._initialize_features()
             for module_feat in module._module_features.values():
                 self._add_feature(module_feat)
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True) -> None:
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.
         """
         await self._update(update_children)
 
-    async def _update(self, update_children: bool = True):
+    async def _update(self, update_children: bool = True) -> None:
         """Query the device to update the data.
 
         Internal implementation to allow patching of public update in the cli
@@ -379,8 +382,12 @@ class IotStripPlug(IotPlug):
             await self._initialize_features()
 
     def _create_request(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ):
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         request: dict[str, Any] = {
             "context": {"child_ids": [self.child_id]},
             target: {cmd: arg},
@@ -388,8 +395,12 @@ class IotStripPlug(IotPlug):
         return request
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ) -> Any:
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         """Override query helper to include the child_ids."""
         return await self._parent._query_helper(
             target, cmd, arg, child_ids=[self.child_id]

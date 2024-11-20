@@ -6,7 +6,6 @@ import logging
 import time
 from typing import Any
 
-from .aestransport import AesTransport
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
@@ -20,15 +19,22 @@ from .iot import (
     IotStrip,
     IotWallSwitch,
 )
-from .iotprotocol import IotProtocol
-from .klaptransport import KlapTransport, KlapTransportV2
-from .protocol import (
+from .protocols import (
     BaseProtocol,
-    BaseTransport,
+    IotProtocol,
+    SmartProtocol,
 )
+from .protocols.smartcameraprotocol import SmartCameraProtocol
 from .smart import SmartDevice
-from .smartprotocol import SmartProtocol
-from .xortransport import XorTransport
+from .smartcamera.smartcamera import SmartCamera
+from .transports import (
+    AesTransport,
+    BaseTransport,
+    KlapTransport,
+    KlapTransportV2,
+    XorTransport,
+)
+from .transports.sslaestransport import SslAesTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,7 +70,8 @@ async def connect(*, host: str | None = None, config: DeviceConfig) -> Device:
     if (protocol := get_protocol(config=config)) is None:
         raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
-            + f"{config.connection_type.device_family.value}"
+            + f"{config.connection_type.device_family.value}",
+            host=config.host,
         )
 
     try:
@@ -79,7 +86,7 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     if debug_enabled:
         start_time = time.perf_counter()
 
-    def _perf_log(has_params, perf_type):
+    def _perf_log(has_params: bool, perf_type: str) -> None:
         nonlocal start_time
         if debug_enabled:
             end_time = time.perf_counter()
@@ -107,7 +114,7 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
         _perf_log(True, "update")
         return device
     elif device_class := get_device_class_from_family(
-        config.connection_type.device_family.value
+        config.connection_type.device_family.value, https=config.connection_type.https
     ):
         device = device_class(host=config.host, protocol=protocol)
         await device.update()
@@ -116,36 +123,9 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
     else:
         raise UnsupportedDeviceError(
             f"Unsupported device for {config.host}: "
-            + f"{config.connection_type.device_family.value}"
+            + f"{config.connection_type.device_family.value}",
+            host=config.host,
         )
-
-
-def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
-    """Find SmartDevice subclass for device described by passed data."""
-    if "system" not in info or "get_sysinfo" not in info["system"]:
-        raise KasaException("No 'system' or 'get_sysinfo' in response")
-
-    sysinfo: dict[str, Any] = info["system"]["get_sysinfo"]
-    type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
-    if type_ is None:
-        raise KasaException("Unable to find the device type field!")
-
-    if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
-        return DeviceType.Dimmer
-
-    if "smartplug" in type_.lower():
-        if "children" in sysinfo:
-            return DeviceType.Strip
-        if (dev_name := sysinfo.get("dev_name")) and "light" in dev_name.lower():
-            return DeviceType.WallSwitch
-        return DeviceType.Plug
-
-    if "smartbulb" in type_.lower():
-        if "length" in sysinfo:  # strips have length
-            return DeviceType.LightStrip
-
-        return DeviceType.Bulb
-    raise UnsupportedDeviceError("Unknown device type: %s" % type_)
 
 
 def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
@@ -158,10 +138,12 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
         DeviceType.WallSwitch: IotWallSwitch,
         DeviceType.LightStrip: IotLightStrip,
     }
-    return TYPE_TO_CLASS[_get_device_type_from_sys_info(sysinfo)]
+    return TYPE_TO_CLASS[IotDevice._get_device_type_from_sys_info(sysinfo)]
 
 
-def get_device_class_from_family(device_type: str) -> type[Device] | None:
+def get_device_class_from_family(
+    device_type: str, *, https: bool, require_exact: bool = False
+) -> type[Device] | None:
     """Return the device class from the type name."""
     supported_device_types: dict[str, type[Device]] = {
         "SMART.TAPOPLUG": SmartDevice,
@@ -169,14 +151,19 @@ def get_device_class_from_family(device_type: str) -> type[Device] | None:
         "SMART.TAPOSWITCH": SmartDevice,
         "SMART.KASAPLUG": SmartDevice,
         "SMART.TAPOHUB": SmartDevice,
+        "SMART.TAPOHUB.HTTPS": SmartCamera,
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
+        "SMART.IPCAMERA.HTTPS": SmartCamera,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
     }
+    lookup_key = f"{device_type}{'.HTTPS' if https else ''}"
     if (
-        cls := supported_device_types.get(device_type)
-    ) is None and device_type.startswith("SMART."):
+        (cls := supported_device_types.get(lookup_key)) is None
+        and device_type.startswith("SMART.")
+        and not require_exact
+    ):
         _LOGGER.warning("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
 
@@ -188,8 +175,12 @@ def get_protocol(
 ) -> BaseProtocol | None:
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
+    ctype = config.connection_type
     protocol_transport_key = (
-        protocol_name + "." + config.connection_type.encryption_type.value
+        protocol_name
+        + "."
+        + ctype.encryption_type.value
+        + (".HTTPS" if ctype.https else "")
     )
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
@@ -198,11 +189,9 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+        "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),
     }
-    if protocol_transport_key not in supported_device_protocols:
+    if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None
-
-    protocol_class, transport_class = supported_device_protocols.get(
-        protocol_transport_key
-    )  # type: ignore
-    return protocol_class(transport=transport_class(config=config))
+    protocol_cls, transport_cls = prot_tran_cls
+    return protocol_cls(transport=transport_cls(config=config))

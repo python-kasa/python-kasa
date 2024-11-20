@@ -35,12 +35,14 @@ TYPES = [
     "strip",
     "lightstrip",
     "smart",
+    "camera",
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
+DEFAULT_TARGET = "255.255.255.255"
 
 
-def _legacy_type_to_class(_type):
+def _legacy_type_to_class(_type: str) -> Any:
     from kasa.iot import (
         IotBulb,
         IotDimmer,
@@ -114,7 +116,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--target",
     envvar="KASA_TARGET",
-    default="255.255.255.255",
+    default=DEFAULT_TARGET,
     required=False,
     show_default=True,
     help="The broadcast address to be used for discovery.",
@@ -158,6 +160,7 @@ def _legacy_type_to_class(_type):
     type=click.Choice(ENCRYPT_TYPES, case_sensitive=False),
 )
 @click.option(
+    "-df",
     "--device-family",
     envvar="KASA_DEVICE_FAMILY",
     default="SMART.TAPOPLUG",
@@ -172,6 +175,14 @@ def _legacy_type_to_class(_type):
     help="The login version for device authentication. Defaults to 2",
 )
 @click.option(
+    "--https/--no-https",
+    envvar="KASA_HTTPS",
+    default=False,
+    is_flag=True,
+    type=bool,
+    help="Set flag if the device encryption uses https.",
+)
+@click.option(
     "--timeout",
     envvar="KASA_TIMEOUT",
     default=5,
@@ -182,7 +193,7 @@ def _legacy_type_to_class(_type):
 @click.option(
     "--discovery-timeout",
     envvar="KASA_DISCOVERY_TIMEOUT",
-    default=5,
+    default=10,
     required=False,
     show_default=True,
     help="Timeout for discovery.",
@@ -220,6 +231,7 @@ async def cli(
     debug,
     type,
     encrypt_type,
+    https,
     device_family,
     login_version,
     json,
@@ -235,6 +247,9 @@ async def cli(
         # Context object is required to avoid crashing on sub-groups
         ctx.obj = object()
         return
+
+    if target != DEFAULT_TARGET and host:
+        error("--target is not a valid option for single host discovery")
 
     logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -260,18 +275,6 @@ async def cli(
     if alias is not None and host is not None:
         raise click.BadOptionUsage("alias", "Use either --alias or --host, not both.")
 
-    if alias is not None and host is None:
-        echo(f"Alias is given, using discovery to find host {alias}")
-
-        from .discover import find_host_from_alias
-
-        host = await find_host_from_alias(alias=alias, target=target)
-        if host:
-            echo(f"Found hostname is {host}")
-        else:
-            echo(f"No device with name {alias} found")
-            return
-
     if bool(password) != bool(username):
         raise click.BadOptionUsage(
             "username", "Using authentication requires both --username and --password"
@@ -284,7 +287,7 @@ async def cli(
     else:
         credentials = None
 
-    if host is None:
+    if host is None and alias is None:
         if ctx.invoked_subcommand and ctx.invoked_subcommand != "discover":
             error("Only discover is available without --host or --alias")
 
@@ -294,12 +297,18 @@ async def cli(
         return await ctx.invoke(discover)
 
     device_updated = False
-    if type is not None and type != "smart":
+
+    if type is not None and type not in {"smart", "camera"}:
         from kasa.deviceconfig import DeviceConfig
 
         config = DeviceConfig(host=host, port_override=port, timeout=timeout)
         dev = _legacy_type_to_class(type)(host, config=config)
-    elif type == "smart" or (device_family and encrypt_type):
+    elif type in {"smart", "camera"} or (device_family and encrypt_type):
+        if type == "camera":
+            encrypt_type = "AES"
+            https = True
+            device_family = "SMART.IPCAMERA"
+
         from kasa.device import Device
         from kasa.deviceconfig import (
             DeviceConfig,
@@ -310,10 +319,12 @@ async def cli(
 
         if not encrypt_type:
             encrypt_type = "KLAP"
+
         ctype = DeviceConnectionParameters(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
             login_version,
+            https,
         )
         config = DeviceConfig(
             host=host,
@@ -325,16 +336,25 @@ async def cli(
         )
         dev = await Device.connect(config=config)
         device_updated = True
-    else:
-        from kasa.discover import Discover
+    elif alias:
+        echo(f"Alias is given, using discovery to find host {alias}")
 
-        dev = await Discover.discover_single(
-            host,
-            port=port,
-            credentials=credentials,
-            timeout=timeout,
-            discovery_timeout=discovery_timeout,
+        from .discover import find_dev_from_alias
+
+        dev = await find_dev_from_alias(
+            alias=alias, target=target, credentials=credentials
         )
+        if not dev:
+            echo(f"No device with name {alias} found")
+            return
+        echo(f"Found hostname by alias: {dev.host}")
+        device_updated = True
+    else:
+        from .discover import discover
+
+        dev = await ctx.invoke(discover)
+        if not dev:
+            error(f"Unable to create device for {host}")
 
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.
@@ -358,9 +378,9 @@ async def cli(
 
 @cli.command()
 @pass_dev_or_child
-async def shell(dev: Device):
+async def shell(dev: Device) -> None:
     """Open interactive shell."""
-    echo("Opening shell for %s" % dev)
+    echo(f"Opening shell for {dev}")
     from ptpython.repl import embed
 
     logging.getLogger("parso").setLevel(logging.WARNING)  # prompt parsing

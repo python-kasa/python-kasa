@@ -9,11 +9,9 @@ import asyncclick as click
 
 from kasa import (
     Device,
+    Module,
 )
-from kasa.iot import (
-    IotDevice,
-)
-from kasa.iot.iotstrip import IotStripPlug
+from kasa.interfaces import Energy
 from kasa.iot.modules import Usage
 
 from .common import (
@@ -49,42 +47,39 @@ async def energy(dev: Device, year, month, erase):
     Daily and monthly data provided in CSV format.
     """
     echo("[bold]== Emeter ==[/bold]")
-    if not dev.has_emeter:
-        error("Device has no emeter")
+    if not (energy := dev.modules.get(Module.Energy)):
+        error("Device has no energy module.")
         return
 
-    if (year or month or erase) and not isinstance(dev, IotDevice):
-        error("Device has no historical statistics")
+    if (year or month or erase) and not energy.supports(
+        Energy.ModuleFeature.PERIODIC_STATS
+    ):
+        error("Device does not support historical statistics")
         return
-    else:
-        dev = cast(IotDevice, dev)
 
     if erase:
         echo("Erasing emeter statistics..")
-        return await dev.erase_emeter_stats()
+        return await energy.erase_stats()
 
     if year:
         echo(f"== For year {year.year} ==")
         echo("Month, usage (kWh)")
-        usage_data = await dev.get_emeter_monthly(year=year.year)
+        usage_data = await energy.get_monthly_stats(year=year.year)
     elif month:
         echo(f"== For month {month.month} of {month.year} ==")
         echo("Day, usage (kWh)")
-        usage_data = await dev.get_emeter_daily(year=month.year, month=month.month)
+        usage_data = await energy.get_daily_stats(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        if isinstance(dev, IotStripPlug):
-            emeter_status = await dev.get_emeter_realtime()
-        else:
-            emeter_status = dev.emeter_realtime
+        emeter_status = await energy.get_status()
 
-        echo("Current: %s A" % emeter_status["current"])
-        echo("Voltage: %s V" % emeter_status["voltage"])
-        echo("Power: %s W" % emeter_status["power"])
-        echo("Total consumption: %s kWh" % emeter_status["total"])
+        echo("Current: {} A".format(emeter_status["current"]))
+        echo("Voltage: {} V".format(emeter_status["voltage"]))
+        echo("Power: {} W".format(emeter_status["power"]))
+        echo("Total consumption: {} kWh".format(emeter_status["total"]))
 
-        echo("Today: %s kWh" % dev.emeter_today)
-        echo("This month: %s kWh" % dev.emeter_this_month)
+        echo(f"Today: {energy.consumption_today} kWh")
+        echo(f"This month: {energy.consumption_this_month} kWh")
 
         return emeter_status
 
@@ -122,8 +117,8 @@ async def usage(dev: Device, year, month, erase):
         usage_data = await usage.get_daystat(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        echo("Today: %s minutes" % usage.usage_today)
-        echo("This month: %s minutes" % usage.usage_this_month)
+        echo(f"Today: {usage.usage_today} minutes")
+        echo(f"This month: {usage.usage_this_month} minutes")
 
         return usage
 

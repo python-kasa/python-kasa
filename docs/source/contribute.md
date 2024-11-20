@@ -42,14 +42,14 @@ $ uv run pytest kasa
 This will run the tests against the contributed example responses.
 
 ```{note}
-You can also execute the tests against a real device using `pytest --ip <address>`.
+You can also execute the tests against a real device using `uv run pytest --ip=<address> --username=<username> --password=<password>`.
 Note that this will perform state changes on the device.
 ```
 
 ## Analyzing network captures
 
 The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
-After capturing the traffic, you can either use the [softScheck's wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+After capturing the traffic, you can either use the [softScheck's wireshark dissector](https://github.com/softScheck/tplink-smartplug)
 or the `parse_pcap.py` script contained inside the `devtools` directory.
 Note, that this works currently only on kasa-branded devices which use port 9999 for communications.
 
@@ -59,7 +59,7 @@ One of the easiest ways to contribute is by creating a fixture file and uploadin
 These files will help us to improve the library and run tests against devices that we have no access to.
 
 This library is tested against responses from real devices ("fixture files").
-These files contain responses for selected, known device commands and are stored [in our test suite](https://github.com/python-kasa/python-kasa/tree/master/kasa/tests/fixtures).
+These files contain responses for selected, known device commands and are stored [in our test suite](https://github.com/python-kasa/python-kasa/tree/master/tests/fixtures).
 
 You can generate these files by using the `dump_devinfo.py` script.
 Note, that this script should be run inside the main source directory so that the generated files are stored in the correct directories.
@@ -74,7 +74,7 @@ $ python -m devtools.dump_devinfo --username <username> --password <password> --
 ```
 
 ```{note}
-You can also execute the script against a network by using `--target`: `python -m devtools.dump_devinfo --target network 192.168.1.255`
+You can also execute the script against a network by using `--target`: `python -m devtools.dump_devinfo --target 192.168.1.255`
 ```
 
 The script will run queries against the device, and prompt at the end if you want to save the results.

@@ -50,9 +50,7 @@ def _test_module_mapping_typing() -> None:
 
     This is tested during the mypy run and needs to be in this file.
     """
-    from typing import Any, NewType, cast
-
-    from typing_extensions import assert_type
+    from typing import Any, NewType, assert_type, cast
 
     from .iot.iotmodule import IotModule
     from .module import Module

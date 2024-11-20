@@ -14,7 +14,7 @@ class Fan(SmartModule, FanInterface):
 
     REQUIRED_COMPONENT = "fan_control"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         self._add_feature(
             Feature(
@@ -51,7 +51,7 @@ class Fan(SmartModule, FanInterface):
         """Return fan speed level."""
         return 0 if self.data["device_on"] is False else self.data["fan_speed_level"]
 
-    async def set_fan_speed_level(self, level: int):
+    async def set_fan_speed_level(self, level: int) -> dict:
         """Set fan speed level, 0 for off, 1-4 for on."""
         if level < 0 or level > 4:
             raise ValueError("Invalid level, should be in range 0-4.")
@@ -66,10 +66,10 @@ class Fan(SmartModule, FanInterface):
         """Return sleep mode status."""
         return self.data["fan_sleep_mode_on"]
 
-    async def set_sleep_mode(self, on: bool):
+    async def set_sleep_mode(self, on: bool) -> dict:
         """Set sleep mode."""
         return await self.call("set_device_info", {"fan_sleep_mode_on": on})
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Is the module available on this device."""
         return "fan_speed_level" in self.data

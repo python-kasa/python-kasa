@@ -51,7 +51,7 @@ Energy
 schedule
 usage
 anti_theft
-time
+Time
 cloud
 Led
 
@@ -110,10 +110,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 from warnings import warn
-
-from typing_extensions import TypeAlias
 
 from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
@@ -125,10 +123,9 @@ from .deviceconfig import (
 )
 from .exceptions import KasaException
 from .feature import Feature
-from .iotprotocol import IotProtocol
 from .module import Module
-from .protocol import BaseProtocol
-from .xortransport import XorTransport
+from .protocols import BaseProtocol, IotProtocol
+from .transports import XorTransport
 
 if TYPE_CHECKING:
     from .modulemapping import ModuleMapping, ModuleName
@@ -151,6 +148,22 @@ class WifiNetwork:
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class _DeviceInfo:
+    """Device Model Information."""
+
+    short_name: str
+    long_name: str
+    brand: str
+    device_family: str
+    device_type: DeviceType
+    hardware_version: str
+    firmware_version: str
+    firmware_build: str
+    requires_auth: bool
+    region: str | None
 
 
 class Device(ABC):
@@ -195,12 +208,12 @@ class Device(ABC):
         self.protocol: BaseProtocol = protocol or IotProtocol(
             transport=XorTransport(config=config or DeviceConfig(host=host)),
         )
-        _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
+        self._last_update: Any = None
+        _LOGGER.debug("Initializing %s of type %s", host, type(self))
         self._device_type = DeviceType.Unknown
-        # TODO: typing Any is just as using Optional[Dict] would require separate
+        # TODO: typing Any is just as using dict | None would require separate
         #       checks in accessors. the @updated_required decorator does not ensure
         #       mypy that these are not accessed incorrectly.
-        self._last_update: Any = None
         self._discovery_info: dict[str, Any] | None = None
 
         self._features: dict[str, Feature] = {}
@@ -234,10 +247,10 @@ class Device(ABC):
         return await connect(host=host, config=config)  # type: ignore[arg-type]
 
     @abstractmethod
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True) -> None:
         """Update the device."""
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Disconnect and close any underlying connection resources."""
         await self.protocol.close()
 
@@ -257,15 +270,15 @@ class Device(ABC):
         return not self.is_on
 
     @abstractmethod
-    async def turn_on(self, **kwargs) -> dict | None:
+    async def turn_on(self, **kwargs) -> dict:
         """Turn on the device."""
 
     @abstractmethod
-    async def turn_off(self, **kwargs) -> dict | None:
+    async def turn_off(self, **kwargs) -> dict:
         """Turn off the device."""
 
     @abstractmethod
-    async def set_state(self, on: bool):
+    async def set_state(self, on: bool) -> dict:
         """Set the device state to *on*.
 
         This allows turning the device on and off.
@@ -278,7 +291,7 @@ class Device(ABC):
         return self.protocol._transport._host
 
     @host.setter
-    def host(self, value):
+    def host(self, value: str) -> None:
         """Set the device host.
 
         Generally used by discovery to set the hostname after ip discovery.
@@ -307,7 +320,7 @@ class Device(ABC):
         return self._device_type
 
     @abstractmethod
-    def update_from_discover_info(self, info):
+    def update_from_discover_info(self, info: dict) -> None:
         """Update state from info from the discover call."""
 
     @property
@@ -322,10 +335,15 @@ class Device(ABC):
 
     @property
     @abstractmethod
+    def _model_region(self) -> str:
+        """Return device full model name and region."""
+
+    @property
+    @abstractmethod
     def alias(self) -> str | None:
         """Returns the device alias or nickname."""
 
-    async def _raw_query(self, request: str | dict) -> Any:
+    async def _raw_query(self, request: str | dict) -> dict:
         """Send a raw query to the device."""
         return await self.protocol.query(request=request)
 
@@ -407,7 +425,7 @@ class Device(ABC):
 
     @property
     @abstractmethod
-    def internal_state(self) -> Any:
+    def internal_state(self) -> dict:
         """Return all the internal state data."""
 
     @property
@@ -420,10 +438,10 @@ class Device(ABC):
         """Return the list of supported features."""
         return self._features
 
-    def _add_feature(self, feature: Feature):
+    def _add_feature(self, feature: Feature) -> None:
         """Add a new feature to the device."""
         if feature.id in self._features:
-            raise KasaException("Duplicate feature id %s" % feature.id)
+            raise KasaException(f"Duplicate feature id {feature.id}")
         assert feature.id is not None  # TODO: hack for typing # noqa: S101
         self._features[feature.id] = feature
 
@@ -446,11 +464,13 @@ class Device(ABC):
         """Scan for available wifi networks."""
 
     @abstractmethod
-    async def wifi_join(self, ssid: str, password: str, keytype: str = "wpa2_psk"):
+    async def wifi_join(
+        self, ssid: str, password: str, keytype: str = "wpa2_psk"
+    ) -> dict:
         """Join the given wifi network."""
 
     @abstractmethod
-    async def set_alias(self, alias: str):
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
 
     @abstractmethod
@@ -468,23 +488,29 @@ class Device(ABC):
         Note, this does not downgrade the firmware.
         """
 
-    def __repr__(self):
-        if self._last_update is None:
-            return f"<{self.device_type} at {self.host} - update() needed>"
-        return f"<{self.device_type} at {self.host} - {self.alias} ({self.model})>"
+    def __repr__(self) -> str:
+        update_needed = " - update() needed" if not self._last_update else ""
+        if not self._last_update and not self._discovery_info:
+            return f"<{self.device_type} at {self.host}{update_needed}>"
+        return (
+            f"<{self.device_type} at {self.host} -"
+            f" {self.alias} ({self.model}){update_needed}>"
+        )
 
     _deprecated_device_type_attributes = {
         # is_type
-        "is_bulb": (Module.Light, DeviceType.Bulb),
-        "is_dimmer": (Module.Light, DeviceType.Dimmer),
-        "is_light_strip": (Module.LightEffect, DeviceType.LightStrip),
-        "is_plug": (Module.Led, DeviceType.Plug),
-        "is_wallswitch": (Module.Led, DeviceType.WallSwitch),
+        "is_bulb": (None, DeviceType.Bulb),
+        "is_dimmer": (None, DeviceType.Dimmer),
+        "is_light_strip": (None, DeviceType.LightStrip),
+        "is_plug": (None, DeviceType.Plug),
+        "is_wallswitch": (None, DeviceType.WallSwitch),
         "is_strip": (None, DeviceType.Strip),
         "is_strip_socket": (None, DeviceType.StripSocket),
     }
 
-    def _get_replacing_attr(self, module_name: ModuleName, *attrs):
+    def _get_replacing_attr(
+        self, module_name: ModuleName | None, *attrs: Any
+    ) -> str | None:
         # If module name is None check self
         if not module_name:
             check = self
@@ -492,7 +518,9 @@ class Device(ABC):
             return None
 
         for attr in attrs:
-            if hasattr(check, attr):
+            # Use dir() as opposed to hasattr() to avoid raising exceptions
+            # from properties
+            if attr in dir(check):
                 return attr
 
         return None
@@ -538,14 +566,11 @@ class Device(ABC):
         "supported_modules": (None, ["modules"]),
     }
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         # is_device_type
         if dep_device_type_attr := self._deprecated_device_type_attributes.get(name):
-            module = dep_device_type_attr[0]
-            msg = f"{name} is deprecated"
-            if module:
-                msg += f", use: {module} in device.modules instead"
-            warn(msg, DeprecationWarning, stacklevel=1)
+            msg = f"{name} is deprecated, use device_type property instead"
+            warn(msg, DeprecationWarning, stacklevel=2)
             return self.device_type == dep_device_type_attr[1]
         # Other deprecated attributes
         if (dep_attr := self._deprecated_other_attributes.get(name)) and (
@@ -556,6 +581,6 @@ class Device(ABC):
             dev_or_mod = self.modules[mod] if mod else self
             replacing = f"Module.{mod} in device.modules" if mod else replacing_attr
             msg = f"{name} is deprecated, use: {replacing} instead"
-            warn(msg, DeprecationWarning, stacklevel=1)
+            warn(msg, DeprecationWarning, stacklevel=2)
             return getattr(dev_or_mod, replacing_attr)
         raise AttributeError(f"Device has no attribute {name!r}")

@@ -1,27 +1,23 @@
 [project]
 name = "python-kasa"
-version = "0.7.5"
+version = "0.7.7"
 description = "Python API for TP-Link Kasa and Tapo devices"
 license = {text = "GPL-3.0-or-later"}
 authors = [ { name = "python-kasa developers" }]
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.11,<4.0"
 dependencies = [
   "asyncclick>=8.1.7",
-  "pydantic>=1.10.15",
   "cryptography>=1.9",
-  "async-timeout>=3.0.0",
   "aiohttp>=3",
-  "typing-extensions>=4.12.2,<5.0",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
+  "mashumaro>=3.14",
 ]
 
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -29,7 +25,7 @@ classifiers = [
 
 [project.optional-dependencies]
 speedups = ["orjson>=3.9.1", "kasa-crypt>=0.2.0"]
-docs = ["sphinx~=5.0", "sphinx_rtd_theme~=2.0", "sphinxcontrib-programoutput~=0.0", "myst-parser", "docutils>=0.17"]
+docs = ["sphinx~=6.2", "sphinx_rtd_theme~=2.0", "sphinxcontrib-programoutput~=0.0", "myst-parser", "docutils>=0.17"]
 shell = ["ptpython", "rich"]
 
 [project.urls]
@@ -59,6 +55,7 @@ dev-dependencies = [
   "mypy~=1.0",
   "pytest-xdist>=3.6.1",
   "pytest-socket>=0.7.0",
+  "ruff==0.7.4",
 ]
 
 
@@ -71,6 +68,7 @@ include = [
   "/kasa",
   "/devtools",
   "/docs",
+  "/tests",
   "/CHANGELOG.md",
 ]
 
@@ -78,14 +76,10 @@ include = [
 include = [
   "/kasa",
 ]
-exclude = [
-  "/kasa/tests",
-]
 
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
-omit = ["kasa/tests/*"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -104,6 +98,9 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
 markers = [
     "requires_dummy: test requires dummy data to pass, skipped on real devices",
 ]
@@ -119,7 +116,7 @@ ignore-path-errors = ["docs/source/index.rst;D000"]
 
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
@@ -136,17 +133,22 @@ select = [
   "PT",  # flake8-pytest-style
   "LOG",  # flake8-logging
   "G",  # flake8-logging-format
+  "ANN",  # annotations
 ]
 ignore = [
   "D105",  # Missing docstring in magic method
   "D107",  # Missing docstring in `__init__`
+  "ANN101",  # Missing type annotation for `self`
+  "ANN102",  # Missing type annotation for `cls` in classmethod
+  "ANN003",  # Missing type annotation for `**kwargs`
+  "ANN401",  # allow any
 ]
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
 
 [tool.ruff.lint.per-file-ignores]
-"kasa/tests/*.py" = [
+"tests/*.py" = [
     "D100",
     "D101",
     "D102",
@@ -154,11 +156,21 @@ convention = "pep257"
     "D104",
     "S101", # allow asserts
     "E501", # ignore line-too-longs
+    "ANN", # skip for now
 ]
 "docs/source/conf.py" = [
     "D100",
     "D103",
 ]
+# Temporary ANN disable
+"kasa/cli/*.py" = [
+    "ANN",
+]
+# Temporary ANN disable
+"devtools/*.py" = [
+    "ANN",
+]
+
 
 [tool.mypy]
 warn_unused_configs = true  # warns if overrides sections unused/mis-spelled

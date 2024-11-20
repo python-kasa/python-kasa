@@ -68,12 +68,11 @@ Type.Choice
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Callable, Literal, get_type_hints
-
-from typing_extensions import TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, get_type_hints
 
 from .exceptions import KasaException
 
@@ -150,10 +149,10 @@ class Feature:
     name: str
     #: Type of the feature
     type: Feature.Type
-    #: Name of the property that allows accessing the value
+    #: Callable or name of the property that allows accessing the value
     attribute_getter: str | Callable | None = None
-    #: Name of the method that allows changing the value
-    attribute_setter: str | None = None
+    #: Callable coroutine or name of the method that allows changing the value
+    attribute_setter: str | Callable[..., Coroutine[Any, Any, Any]] | None = None
     #: Container storing the data, this overrides 'device' for getters
     container: Any = None
     #: Icon suggestion
@@ -176,7 +175,7 @@ class Feature:
     #: If set, this property will be used to get *choices*.
     choices_getter: str | Callable[[], list[str]] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Handle late-binding of members."""
         # Populate minimum & maximum values, if range_getter is given
         self._container = self.container if self.container is not None else self.device
@@ -206,7 +205,7 @@ class Feature:
                     f"Read-only feat defines attribute_setter: {self.name} ({self.id}):"
                 )
 
-    def _get_property_value(self, getter):
+    def _get_property_value(self, getter: str | Callable | None) -> Any:
         if getter is None:
             return None
         if isinstance(getter, str):
@@ -215,7 +214,9 @@ class Feature:
             return getter()
         raise ValueError("Invalid getter: %s", getter)  # pragma: no cover
 
-    def _get_annotation_property(self, kind: FeaturePropertyKind = "getter"):
+    def _get_annotation_property(
+        self, kind: FeaturePropertyKind = "getter"
+    ) -> Callable:
         props = [
             prop
             for p in dir(self.container.__class__)
@@ -263,7 +264,7 @@ class Feature:
         return 0
 
     @property
-    def value(self):
+    def value(self) -> int | float | bool | str | Enum | None:
         """Return the current value."""
         if self.type == Feature.Type.Action:
             return "<Action>"
@@ -280,7 +281,7 @@ class Feature:
         if self.attribute_setter is None:
             raise ValueError("Tried to set read-only feature.")
         if self.type == Feature.Type.Number:  # noqa: SIM102
-            if not isinstance(value, (int, float)):
+            if not isinstance(value, int | float):
                 raise ValueError("value must be a number")
             if value < self.minimum_value or value > self.maximum_value:
                 raise ValueError(
@@ -294,13 +295,18 @@ class Feature:
                     f" - allowed: {self.choices}"
                 )
 
-        container = self.container if self.container is not None else self.device
+        if callable(self.attribute_setter):
+            attribute_setter = self.attribute_setter
+        else:
+            container = self.container if self.container is not None else self.device
+            attribute_setter = getattr(container, self.attribute_setter)
+
         if self.type == Feature.Type.Action:
-            return await getattr(container, self.attribute_setter)()
+            return await attribute_setter()
 
-        return await getattr(container, self.attribute_setter)(value)
+        return await attribute_setter(value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         try:
             value = self.value
             choices = self.choices
@@ -322,8 +328,8 @@ class Feature:
             value = " ".join(
                 [f"*{choice}*" if choice == value else choice for choice in choices]
             )
-        if self.precision_hint is not None and value is not None:
-            value = round(self.value, self.precision_hint)
+        if self.precision_hint is not None and isinstance(value, float):
+            value = round(value, self.precision_hint)
 
         s = f"{self.name} ({self.id}): {value}"
         if self.unit is not None:
