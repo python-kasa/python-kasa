@@ -125,6 +125,7 @@ CLOUD_MODULE = {
         "username": "",
         "server": "devs.tplinkcloud.com",
         "binded": 0,
+        "err_code": 0,
         "cld_connection": 0,
         "illegalType": -1,
         "stopConnect": -1,
