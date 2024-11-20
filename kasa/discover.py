@@ -776,14 +776,14 @@ class Discover:
                 type_, https=encrypt_schm.is_support_https
             )
         ) is None:
-            _LOGGER.warning("Got unsupported device type: %s", type_)
+            _LOGGER.debug("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
         if (protocol := get_protocol(config)) is None:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
             )
             raise UnsupportedDeviceError(
