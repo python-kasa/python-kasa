@@ -207,10 +207,6 @@ def filter_fixtures(
 
         filtered.append(fixture_data)
 
-    if desc:
-        print(f"# {desc}")
-        for value in filtered:
-            print(f"\t{value.name}")
     filtered.sort()
     return filtered
 
