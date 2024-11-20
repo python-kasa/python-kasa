@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from contextlib import nullcontext
+from datetime import date
 from typing import TypedDict
 
 import pytest
@@ -50,6 +51,20 @@ async def test_firmware_features(
     feat = dev.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
+
+
+@firmware
+async def test_firmware_update_info(dev: SmartDevice):
+    """Test that the firmware UpdateInfo object deserializes correctly."""
+    fw = dev.modules.get(Module.Firmware)
+    assert fw
+
+    if not dev.is_cloud_connected:
+        pytest.skip("Device is not cloud connected, skipping test")
+    assert fw.firmware_update_info is None
+    await fw.check_latest_firmware()
+    assert fw.firmware_update_info is not None
+    assert isinstance(fw.firmware_update_info.release_date, date | None)
 
 
 @firmware

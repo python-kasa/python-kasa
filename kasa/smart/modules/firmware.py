@@ -6,11 +6,11 @@ import asyncio
 import logging
 from asyncio import timeout as asyncio_timeout
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import TYPE_CHECKING, Annotated
 
-from mashumaro import DataClassDictMixin
+from mashumaro import DataClassDictMixin, field_options
 from mashumaro.types import Alias
 
 from ...exceptions import KasaException
@@ -45,16 +45,15 @@ class UpdateInfo(DataClassDictMixin):
     status: Annotated[int, Alias("type")]
     needs_upgrade: Annotated[bool, Alias("need_to_upgrade")]
     version: Annotated[str | None, Alias("fw_ver")] = None
-    release_date: date | None = None
+    release_date: date | None = field(
+        default=None,
+        metadata=field_options(
+            deserialize=lambda x: date.fromisoformat(x) if x else None
+        ),
+    )
     release_notes: Annotated[str | None, Alias("release_note")] = None
     fw_size: int | None = None
     oem_id: str | None = None
-
-    @classmethod
-    def __pre_deserialize__(cls, d: dict) -> dict:
-        if d.get("release_date") == "":
-            return {**d, "release_date": None}
-        return d
 
     @property
     def update_available(self) -> bool:
