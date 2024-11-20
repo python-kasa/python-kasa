@@ -494,3 +494,9 @@ SYSINFO_SCHEMA_BULB = SYSINFO_SCHEMA.extend(
 @bulb
 def test_device_type_bulb(dev: Device):
     assert dev.device_type in {DeviceType.Bulb, DeviceType.LightStrip}
+
+
+@bulb_iot
+async def test_turn_on_behaviours(dev: IotBulb):
+    behavior = await dev.get_turn_on_behavior()
+    assert behavior

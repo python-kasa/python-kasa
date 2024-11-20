@@ -175,6 +175,23 @@ MOTION_MODULE = {
     }
 }
 
+LIGHT_DETAILS = {
+    "color_rendering_index": 80,
+    "err_code": 0,
+    "incandescent_equivalent": 60,
+    "lamp_beam_angle": 150,
+    "max_lumens": 800,
+    "max_voltage": 120,
+    "min_voltage": 110,
+    "wattage": 10,
+}
+
+DEFAULT_BEHAVIOR = {
+    "err_code": 0,
+    "hard_on": {"mode": "circadian"},
+    "soft_on": {"mode": "last_status"},
+}
+
 
 class FakeIotProtocol(IotProtocol):
     def __init__(self, info, fixture_name=None, *, verbatim=False):
@@ -398,6 +415,8 @@ class FakeIotTransport(BaseTransport):
         },
         "smartlife.iot.smartbulb.lightingservice": {
             "get_light_state": light_state,
+            "get_light_details": LIGHT_DETAILS,
+            "get_default_behavior": DEFAULT_BEHAVIOR,
             "transition_light_state": transition_light_state,
             "set_preferred_state": set_preferred_state,
         },
@@ -408,6 +427,8 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.lightStrip": {
             "set_light_state": transition_light_state,
             "get_light_state": light_state,
+            "get_light_details": LIGHT_DETAILS,
+            "get_default_behavior": DEFAULT_BEHAVIOR,
             "set_preferred_state": set_preferred_state,
         },
         "smartlife.iot.common.system": {

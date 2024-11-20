@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from enum import Enum
-from typing import cast
+from typing import Annotated, cast
 
-from pydantic.v1 import BaseModel, Field, root_validator
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import Alias
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -35,9 +38,12 @@ class BehaviorMode(str, Enum):
     Last = "last_status"
     #: Use chosen preset.
     Preset = "customize_preset"
+    #: Circadian
+    Circadian = "circadian"
 
 
-class TurnOnBehavior(BaseModel):
+@dataclass
+class TurnOnBehavior(DataClassDictMixin):
     """Model to present a single turn on behavior.
 
     :param int preset: the index number of wanted preset.
@@ -48,34 +54,30 @@ class TurnOnBehavior(BaseModel):
     to contain either the preset index, or ``None`` for the last known state.
     """
 
-    #: Index of preset to use, or ``None`` for the last known state.
-    preset: int | None = Field(alias="index", default=None)
+    class Config(BaseConfig):
+        """Serialization config."""
+
+        omit_none = True
+        serialize_by_alias = True
+
     #: Wanted behavior
     mode: BehaviorMode
-
-    @root_validator
-    def _mode_based_on_preset(cls, values: dict) -> dict:
-        """Set the mode based on the preset value."""
-        if values["preset"] is not None:
-            values["mode"] = BehaviorMode.Preset
-        else:
-            values["mode"] = BehaviorMode.Last
-
-        return values
-
-    class Config:
-        """Configuration to make the validator run when changing the values."""
-
-        validate_assignment = True
+    #: Index of preset to use, or ``None`` for the last known state.
+    preset: Annotated[int | None, Alias("index")] = None
+    brightness: int | None = None
+    color_temp: int | None = None
+    hue: int | None = None
+    saturation: int | None = None
 
 
-class TurnOnBehaviors(BaseModel):
+@dataclass
+class TurnOnBehaviors(DataClassDictMixin):
     """Model to contain turn on behaviors."""
 
     #: The behavior when the bulb is turned on programmatically.
-    soft: TurnOnBehavior = Field(alias="soft_on")
+    soft: Annotated[TurnOnBehavior, Alias("soft_on")]
     #: The behavior when the bulb has been off from mains power.
-    hard: TurnOnBehavior = Field(alias="hard_on")
+    hard: Annotated[TurnOnBehavior, Alias("hard_on")]
 
 
 TPLINK_KELVIN = {
@@ -303,7 +305,7 @@ class IotBulb(IotDevice):
 
     async def get_turn_on_behavior(self) -> TurnOnBehaviors:
         """Return the behavior for turning the bulb on."""
-        return TurnOnBehaviors.parse_obj(
+        return TurnOnBehaviors.from_dict(
             await self._query_helper(self.LIGHT_SERVICE, "get_default_behavior")
         )
 
@@ -314,7 +316,7 @@ class IotBulb(IotDevice):
         you should use :func:`get_turn_on_behavior` to get the current settings.
         """
         return await self._query_helper(
-            self.LIGHT_SERVICE, "set_default_behavior", behavior.dict(by_alias=True)
+            self.LIGHT_SERVICE, "set_default_behavior", behavior.to_dict()
         )
 
     async def get_light_state(self) -> dict[str, dict]:
