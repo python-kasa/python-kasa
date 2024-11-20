@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from dataclasses import dataclass
+from typing import Annotated
 
-from pydantic.v1 import BaseModel, Field, parse_obj_as
+from mashumaro import DataClassDictMixin
+from mashumaro.types import Alias
 
 from ..smartmodule import SmartModule
 
 
-class LogEntry(BaseModel):
+@dataclass
+class LogEntry(DataClassDictMixin):
     """Presentation of a single log entry."""
 
     id: int
-    event_id: str = Field(alias="eventId")
-    timestamp: datetime
+    event_id: Annotated[str, Alias("eventId")]
+    timestamp: int
     event: str
 
 
@@ -31,4 +34,4 @@ class TriggerLogs(SmartModule):
     @property
     def logs(self) -> list[LogEntry]:
         """Return logs."""
-        return parse_obj_as(list[LogEntry], self.data["logs"])
+        return [LogEntry.from_dict(log) for log in self.data["logs"]]
