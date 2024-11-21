@@ -1,8 +1,9 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Module
+from kasa import KasaException, Module
 from kasa.smart import SmartDevice
+from kasa.smart.modules import Fan
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
@@ -77,12 +78,7 @@ async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
     await dev.update()
     assert not device.is_on
 
-    assert fan.is_bound_feature("fan_speed_level")
-    assert fan.has_bound_feature("fan_speed_level")
-    fan_speed_level_feature = fan.get_bound_feature("fan_speed_level")
-    assert fan_speed_level_feature
-    assert fan_speed_level_feature.value == 0
-
+    fan_speed_level_feature = fan._module_features["fan_speed_level"]
     max_level = fan_speed_level_feature.maximum_value
     min_level = fan_speed_level_feature.minimum_value
     with pytest.raises(ValueError, match="Invalid level"):
@@ -90,3 +86,29 @@ async def test_fan_module(dev: SmartDevice, mocker: MockerFixture):
 
     with pytest.raises(ValueError, match="Invalid level"):
         await fan.set_fan_speed_level(max_level - 5)
+
+
+@fan
+async def test_fan_features(dev: SmartDevice, mocker: MockerFixture):
+    """Test fan speed on device interface."""
+    assert isinstance(dev, SmartDevice)
+    fan = next(get_parent_and_child_modules(dev, Module.Fan))
+    assert fan
+    expected_feature = fan._module_features["fan_speed_level"]
+    fan_speed_level_feature = fan.get_feature(Fan.set_fan_speed_level)
+    assert expected_feature == fan_speed_level_feature
+    fan_speed_level_feature = fan.get_feature(fan.set_fan_speed_level)
+    assert expected_feature == fan_speed_level_feature
+    fan_speed_level_feature = fan.get_feature(Fan.fan_speed_level)
+    assert expected_feature == fan_speed_level_feature
+    fan_speed_level_feature = fan.get_feature("fan_speed_level")
+    assert expected_feature == fan_speed_level_feature
+    assert fan.has_feature(Fan.fan_speed_level)
+
+    msg = "Attribute _check_supported of module Fan is not bound to a feature"
+    with pytest.raises(KasaException, match=msg):
+        assert fan.has_feature(fan._check_supported)
+
+    msg = "No attribute named foobar in module Fan"
+    with pytest.raises(KasaException, match=msg):
+        assert fan.has_feature("foobar")

@@ -42,6 +42,8 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from functools import cache
 from typing import (
     TYPE_CHECKING,
     Final,
@@ -50,7 +52,7 @@ from typing import (
 )
 
 from .exceptions import KasaException
-from .feature import Feature, FeatureProperty
+from .feature import Feature
 from .modulemapping import ModuleName
 
 if TYPE_CHECKING:
@@ -63,8 +65,10 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 ModuleT = TypeVar("ModuleT", bound="Module")
-_R = TypeVar("_R")
-_T = TypeVar("_T")
+
+
+class FeatureAttribute:
+    """Class for annotating attributes bound to feature."""
 
 
 class Module(ABC):
@@ -142,44 +146,14 @@ class Module(ABC):
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}
-        self._bound_feature_ids: dict[str, str] = {}
 
-    def _bound_feature_id(self, property_name: str) -> str | None:
-        """Get bound feature for module or none if not supported."""
-        if not hasattr(self.__class__, property_name) or (
-            (attr := getattr(self.__class__, property_name))
-            and not isinstance(getattr(self.__class__, property_name), property)
-        ):
-            raise KasaException(f"{property_name} is not a valid property")
-        if attr in self._bound_feature_ids:
-            return self._bound_feature_ids[attr]
-        if isinstance(attr, property):
-            hints = get_type_hints(attr.fget, include_extras=True)
-            if (return_hints := hints.get("return")) and hasattr(
-                return_hints, "__metadata__"
-            ):
-                metadata = hints["return"].__metadata__
-                for meta in metadata:
-                    if isinstance(meta, FeatureProperty):
-                        self._bound_feature_ids[property_name] = meta.id
-                        return meta.id
-        return None
+    def has_feature(self, attribute: str | property | Callable) -> bool:
+        """Return True if the module attribute feature is supported."""
+        return bool(self.get_feature(attribute))
 
-    def is_bound_feature(self, property_name: str) -> bool:
-        """Return True if property is bound to a feature."""
-        return bool(self._bound_feature_id(property_name))
-
-    def has_bound_feature(self, property_name: str) -> bool:
-        """Return True if the bound property feature is supported."""
-        if id := self._bound_feature_id(property_name):
-            return id in self._module_features
-        raise KasaException(f"{property_name} is not bound to a feature")
-
-    def get_bound_feature(self, property_name: str) -> Feature | None:
-        """Get Feature for a bound property or None if not supported."""
-        if id := self._bound_feature_id(property_name):
-            return self._module_features.get(id)
-        raise KasaException(f"{property_name} is not bound to a feature")
+    def get_feature(self, attribute: str | property | Callable) -> Feature | None:
+        """Get Feature for a module attribute or None if not supported."""
+        return _get_bound_feature(self, attribute)
 
     @abstractmethod
     def query(self) -> dict:
@@ -224,3 +198,49 @@ class Module(ABC):
             f"<Module {self.__class__.__name__} ({self._module})"
             f" for {self._device.host}>"
         )
+
+
+def _is_bound_feature(attribute: property | Callable) -> bool:
+    """Check if an attribute is bound to a feature with FeatureAttribute."""
+    if isinstance(attribute, property):
+        hints = get_type_hints(attribute.fget, include_extras=True)
+    else:
+        hints = get_type_hints(attribute, include_extras=True)
+    if (return_hints := hints.get("return")) and hasattr(return_hints, "__metadata__"):
+        metadata = hints["return"].__metadata__
+        for meta in metadata:
+            if isinstance(meta, FeatureAttribute):
+                return True
+    return False
+
+
+@cache
+def _get_bound_feature(
+    module: Module, attribute: str | property | Callable
+) -> Feature | None:
+    """Get Feature for a bound property or None if not supported."""
+    if not isinstance(attribute, str):
+        attribute_name = attribute.__name__
+        attribute_callable = attribute
+    else:
+        if TYPE_CHECKING:
+            assert isinstance(attribute, str)
+        attribute_name = attribute
+        attribute_callable = getattr(module.__class__, attribute, None)  # type: ignore[assignment]
+        if not attribute_callable:
+            raise KasaException(
+                f"No attribute named {attribute_name} in "
+                f"module {module.__class__.__name__}"
+            )
+    if not _is_bound_feature(attribute_callable):
+        raise KasaException(
+            f"Attribute {attribute_name} of module {module.__class__.__name__}"
+            " is not bound to a feature"
+        )
+    check = {attribute_name, attribute_callable}
+    for feature in module._module_features.values():
+        if (getter := feature.attribute_getter) and getter in check:
+            return feature
+        if (setter := feature.attribute_setter) and setter in check:
+            return feature
+    return None

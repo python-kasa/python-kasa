@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from ...feature import Feature, FeatureProperty
+from ...feature import Feature
 from ...interfaces.fan import Fan as FanInterface
+from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
 
 
@@ -22,6 +23,7 @@ class Fan(SmartModule, FanInterface):
                 id="fan_speed_level",
                 name="Fan speed level",
                 container=self,
+                attribute_getter="fan_speed_level",
                 attribute_setter="set_fan_speed_level",
                 icon="mdi:fan",
                 type=Feature.Type.Number,
@@ -47,11 +49,13 @@ class Fan(SmartModule, FanInterface):
         return {}
 
     @property
-    def fan_speed_level(self) -> Annotated[int, FeatureProperty("fan_speed_level")]:
+    def fan_speed_level(self) -> Annotated[int, FeatureAttribute()]:
         """Return fan speed level."""
         return 0 if self.data["device_on"] is False else self.data["fan_speed_level"]
 
-    async def set_fan_speed_level(self, level: int) -> dict:
+    async def set_fan_speed_level(
+        self, level: int
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set fan speed level, 0 for off, 1-4 for on."""
         if level < 0 or level > 4:
             raise ValueError("Invalid level, should be in range 0-4.")
@@ -62,11 +66,11 @@ class Fan(SmartModule, FanInterface):
         )
 
     @property
-    def sleep_mode(self) -> bool:
+    def sleep_mode(self) -> Annotated[bool, FeatureAttribute()]:
         """Return sleep mode status."""
         return self.data["fan_sleep_mode_on"]
 
-    async def set_sleep_mode(self, on: bool) -> dict:
+    async def set_sleep_mode(self, on: bool) -> Annotated[dict, FeatureAttribute()]:
         """Set sleep mode."""
         return await self.call("set_device_info", {"fan_sleep_mode_on": on})
 
