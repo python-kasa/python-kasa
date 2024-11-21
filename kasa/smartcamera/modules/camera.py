@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 from urllib.parse import quote_plus
 
 from ...credentials import Credentials
@@ -10,6 +11,8 @@ from ...device_type import DeviceType
 from ...feature import Feature
 from ...json import loads as json_loads
 from ..smartcameramodule import SmartCameraModule
+
+_LOGGER = logging.getLogger(__name__)
 
 LOCAL_STREAMING_PORT = 554
 
@@ -52,6 +55,9 @@ class Camera(SmartCameraModule):
                     base64.b64decode(credentials_hash.encode()).decode()
                 )
             except Exception:
+                _LOGGER.warning(
+                    "Unable to deserialize credentials_hash: %s", credentials_hash
+                )
                 return None
             if (username := decoded.get("un")) and (password := decoded.get("pwd")):
                 return Credentials(username, password)
