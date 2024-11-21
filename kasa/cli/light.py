@@ -9,6 +9,7 @@ from kasa import (
 from kasa.iot import (
     IotBulb,
 )
+from kasa.iot.modules import LightPreset as IotLightPreset
 
 from .common import echo, error, pass_dev_or_child
 
@@ -148,7 +149,12 @@ def presets_list(dev: Device):
 @pass_dev_or_child
 async def presets_modify(dev: Device, index, brightness, hue, saturation, temperature):
     """Modify a preset."""
-    for preset in dev.presets:
+    light_preset = dev.modules.get(Module.LightPreset)
+    if not light_preset or not isinstance(light_preset, IotLightPreset):
+        error("Modify presets not supported on device")
+        return
+
+    for preset in light_preset._deprecated_presets:
         if preset.index == index:
             break
     else:
@@ -166,7 +172,7 @@ async def presets_modify(dev: Device, index, brightness, hue, saturation, temper
 
     echo(f"Going to save preset: {preset}")
 
-    return await dev.save_preset(preset)
+    return await light_preset._deprecated_save_preset(preset)
 
 
 @light.command()
@@ -176,7 +182,7 @@ async def presets_modify(dev: Device, index, brightness, hue, saturation, temper
 @click.option("--preset", type=int)
 async def turn_on_behavior(dev: Device, type, last, preset):
     """Modify bulb turn-on behavior."""
-    if not dev.is_bulb or not isinstance(dev, IotBulb):
+    if dev.device_type is not Device.Type.Bulb or not isinstance(dev, IotBulb):
         error("Presets only supported on iot bulbs")
         return
     settings = await dev.get_turn_on_behavior()

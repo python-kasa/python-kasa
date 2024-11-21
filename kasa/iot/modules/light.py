@@ -207,6 +207,8 @@ class Light(IotModule, LightInterface):
         # iot protocol Dimmers and smart protocol devices do not support
         # brightness of 0 so 0 will turn off all devices for consistency
         if (bulb := self._get_bulb_device()) is None:  # Dimmer
+            if TYPE_CHECKING:
+                assert isinstance(self._device, IotDimmer)
             if state.brightness == 0 or state.light_on is False:
                 return await self._device.turn_off(transition=state.transition)
             elif state.brightness:
