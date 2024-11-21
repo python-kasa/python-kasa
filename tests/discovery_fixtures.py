@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass
 from json import dumps as json_dumps
+from typing import Any, TypedDict
 
 import pytest
 
@@ -16,10 +17,21 @@ from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 DISCOVERY_MOCK_IP = "127.0.0.123"
 
 
-def _make_unsupported(device_family, encrypt_type, *, omit_keys=None):
+class DiscoveryResponse(TypedDict):
+    result: dict[str, Any]
+    error_code: int
+
+
+def _make_unsupported(
+    device_family,
+    encrypt_type,
+    *,
+    https: bool = False,
+    omit_keys: dict[str, Any] | None = None,
+) -> DiscoveryResponse:
     if omit_keys is None:
         omit_keys = {"encrypt_info": None}
-    result = {
+    result: DiscoveryResponse = {
         "result": {
             "device_id": "xx",
             "owner": "xx",
@@ -31,7 +43,7 @@ def _make_unsupported(device_family, encrypt_type, *, omit_keys=None):
             "obd_src": "tplink",
             "factory_default": False,
             "mgt_encrypt_schm": {
-                "is_support_https": False,
+                "is_support_https": https,
                 "encrypt_type": encrypt_type,
                 "http_port": 80,
                 "lv": 2,
@@ -64,6 +76,11 @@ UNSUPPORTED_DEVICES = {
         "SMART.TAPOBULB",
         "FOO",
         omit_keys={"mgt_encrypt_schm": None},
+    ),
+    "invalidinstance": _make_unsupported(
+        "IOT.SMARTPLUGSWITCH",
+        "KLAP",
+        https=True,
     ),
 }
 
