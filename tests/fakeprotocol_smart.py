@@ -138,6 +138,19 @@ class FakeSmartTransport(BaseTransport):
         ),
         "get_device_usage": ("device", {}),
         "get_connect_cloud_state": ("cloud_connect", {"status": 0}),
+        "get_emeter_data": (
+            "energy_monitoring",
+            {
+                "current_ma": 33,
+                "energy_wh": 971,
+                "power_mw": 1003,
+                "voltage_mv": 121215,
+            },
+        ),
+        "get_emeter_vgain_igain": (
+            "energy_monitoring",
+            {"igain": 10861, "vgain": 118657},
+        ),
     }
 
     async def send(self, request: str):

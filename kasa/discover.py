@@ -715,6 +715,7 @@ class Discover:
             raise KasaException(
                 f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
+
         try:
             discovery_result = DiscoveryResult.from_dict(info["result"])
         except Exception as ex:
@@ -733,6 +734,7 @@ class Discover:
                 f"Unable to parse discovery from device: {config.host}: {ex}",
                 host=config.host,
             ) from ex
+
         # Decrypt the data
         if (
             encrypt_info := discovery_result.encrypt_info
@@ -746,11 +748,13 @@ class Discover:
 
         type_ = discovery_result.device_type
         encrypt_schm = discovery_result.mgt_encrypt_schm
+
         try:
             if not (encrypt_type := encrypt_schm.encrypt_type) and (
                 encrypt_info := discovery_result.encrypt_info
             ):
                 encrypt_type = encrypt_info.sym_schm
+
             if not encrypt_type:
                 raise UnsupportedDeviceError(
                     f"Unsupported device {config.host} of type {type_} "
@@ -771,19 +775,21 @@ class Discover:
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             ) from ex
+
         if (
             device_class := get_device_class_from_family(
                 type_, https=encrypt_schm.is_support_https
             )
         ) is None:
-            _LOGGER.warning("Got unsupported device type: %s", type_)
+            _LOGGER.debug("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
+
         if (protocol := get_protocol(config)) is None:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
             )
             raise UnsupportedDeviceError(
@@ -800,6 +806,7 @@ class Discover:
                 else info
             )
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
+
         device = device_class(config.host, protocol=protocol)
 
         di = discovery_result.to_dict()

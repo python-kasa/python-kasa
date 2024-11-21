@@ -566,21 +566,25 @@ class Device(ABC):
         "supported_modules": (None, ["modules"]),
     }
 
-    def __getattr__(self, name: str) -> Any:
-        # is_device_type
-        if dep_device_type_attr := self._deprecated_device_type_attributes.get(name):
-            msg = f"{name} is deprecated, use device_type property instead"
-            warn(msg, DeprecationWarning, stacklevel=2)
-            return self.device_type == dep_device_type_attr[1]
-        # Other deprecated attributes
-        if (dep_attr := self._deprecated_other_attributes.get(name)) and (
-            (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
-            is not None
-        ):
-            mod = dep_attr[0]
-            dev_or_mod = self.modules[mod] if mod else self
-            replacing = f"Module.{mod} in device.modules" if mod else replacing_attr
-            msg = f"{name} is deprecated, use: {replacing} instead"
-            warn(msg, DeprecationWarning, stacklevel=2)
-            return getattr(dev_or_mod, replacing_attr)
-        raise AttributeError(f"Device has no attribute {name!r}")
+    if not TYPE_CHECKING:
+
+        def __getattr__(self, name: str) -> Any:
+            # is_device_type
+            if dep_device_type_attr := self._deprecated_device_type_attributes.get(
+                name
+            ):
+                msg = f"{name} is deprecated, use device_type property instead"
+                warn(msg, DeprecationWarning, stacklevel=2)
+                return self.device_type == dep_device_type_attr[1]
+            # Other deprecated attributes
+            if (dep_attr := self._deprecated_other_attributes.get(name)) and (
+                (replacing_attr := self._get_replacing_attr(dep_attr[0], *dep_attr[1]))
+                is not None
+            ):
+                mod = dep_attr[0]
+                dev_or_mod = self.modules[mod] if mod else self
+                replacing = f"Module.{mod} in device.modules" if mod else replacing_attr
+                msg = f"{name} is deprecated, use: {replacing} instead"
+                warn(msg, DeprecationWarning, stacklevel=2)
+                return getattr(dev_or_mod, replacing_attr)
+            raise AttributeError(f"Device has no attribute {name!r}")

@@ -195,6 +195,6 @@ async def test_device_types(dev: Device):
 async def test_device_class_from_unknown_family(caplog):
     """Verify that unknown SMART devices yield a warning and fallback to SmartDevice."""
     dummy_name = "SMART.foo"
-    with caplog.at_level(logging.WARNING):
+    with caplog.at_level(logging.DEBUG):
         assert get_device_class_from_family(dummy_name, https=False) == SmartDevice
     assert f"Unknown SMART device with {dummy_name}" in caplog.text
