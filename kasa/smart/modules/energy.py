@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, NoReturn
+from typing import NoReturn
 
 from ...emeterstatus import EmeterStatus
 from ...exceptions import KasaException
@@ -17,11 +17,11 @@ class Energy(SmartModule, EnergyInterface):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        req: dict[str, Any] = {
-            "get_energy_usage": {},
+        req = {
+            "get_energy_usage": None,
         }
         if self.supported_version > 1:
-            req["get_current_power"] = {}
+            req["get_current_power"] = None
         return req
 
     @property
