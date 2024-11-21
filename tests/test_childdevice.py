@@ -1,15 +1,14 @@
 import inspect
-import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 
 from kasa import Device
 from kasa.device_type import DeviceType
+from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart.smartchilddevice import SmartChildDevice
-from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES
-from kasa.smartprotocol import _ChildProtocolWrapper
+from kasa.smart.smartdevice import NON_HUB_PARENT_ONLY_MODULES, SmartDevice
 
 from .conftest import (
     parametrize,
@@ -58,10 +57,6 @@ async def test_childdevice_update(dev, dummy_protocol, mocker):
 
 
 @strip_smart
-@pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="exceptiongroup requires python3.11+",
-)
 async def test_childdevice_properties(dev: SmartChildDevice):
     """Check that accessing childdevice properties do not raise exceptions."""
     assert len(dev.children) > 0
@@ -125,12 +120,33 @@ async def test_parent_property(dev: Device):
 
 
 @has_children_smart
+@pytest.mark.requires_dummy
 async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory):
-    """Test a child device gets the time from it's parent module."""
+    """Test a child device gets the time from it's parent module.
+
+    This is excluded from real device testing as the test often fail if the
+    device time is not in the past.
+    """
     if not dev.children:
         pytest.skip(f"Device {dev} fixture does not have any children")
 
-    fallback_time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+    fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
     assert dev.parent is None
     for child in dev.children:
         assert child.time != fallback_time
+
+
+async def test_child_device_type_unknown(caplog):
+    """Test for device type when category is unknown."""
+
+    class DummyDevice(SmartChildDevice):
+        def __init__(self):
+            super().__init__(
+                SmartDevice("127.0.0.1"),
+                {"device_id": "1", "category": "foobar"},
+                {"device", 1},
+            )
+
+    assert DummyDevice().device_type is DeviceType.Unknown
+    msg = "Unknown child device type foobar for model None, please open issue"
+    assert msg in caplog.text

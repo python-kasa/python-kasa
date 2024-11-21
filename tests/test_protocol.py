@@ -13,21 +13,21 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from kasa.aestransport import AesTransport
 from kasa.credentials import Credentials
 from kasa.device import Device
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException
 from kasa.iot import IotDevice
-from kasa.iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
-from kasa.klaptransport import KlapTransport, KlapTransportV2
-from kasa.protocol import (
+from kasa.protocols.iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
+from kasa.protocols.protocol import (
     BaseProtocol,
-    BaseTransport,
     mask_mac,
     redact_data,
 )
-from kasa.xortransport import XorEncryption, XorTransport
+from kasa.transports.aestransport import AesTransport
+from kasa.transports.basetransport import BaseTransport
+from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
+from kasa.transports.xortransport import XorEncryption, XorTransport
 
 from .conftest import device_iot
 from .fakeprotocol_iot import FakeIotTransport
@@ -687,10 +687,13 @@ def test_deprecated_protocol():
 @device_iot
 async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFixture):
     """Test query sensitive info redaction."""
-    device_id = "123456789ABCDEF"
-    cast(FakeIotTransport, dev.protocol._transport).proto["system"]["get_sysinfo"][
-        "deviceId"
-    ] = device_id
+    if isinstance(dev.protocol._transport, FakeIotTransport):
+        device_id = "123456789ABCDEF"
+        cast(FakeIotTransport, dev.protocol._transport).proto["system"]["get_sysinfo"][
+            "deviceId"
+        ] = device_id
+    else:  # real device with --ip
+        device_id = dev.sys_info["deviceId"]
 
     # Info no message logging
     caplog.set_level(logging.INFO)

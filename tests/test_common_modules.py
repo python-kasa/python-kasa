@@ -1,9 +1,8 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
-from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
-from zoneinfo import ZoneInfo
 
 from kasa import Device, LightState, Module
 
@@ -326,22 +325,38 @@ async def test_light_preset_save(dev: Device, mocker: MockerFixture):
     assert new_preset_state.color_temp == new_preset.color_temp
 
 
-async def test_set_time(dev: Device, freezer: FrozenDateTimeFactory):
+async def test_set_time(dev: Device):
     """Test setting the device time."""
-    freezer.move_to("2021-01-09 12:00:00+00:00")
     time_mod = dev.modules[Module.Time]
-    tz_info = time_mod.timezone
-    now = datetime.now(tz=tz_info)
-    now = now.replace(microsecond=0)
-    assert time_mod.time != now
 
-    await time_mod.set_time(now)
-    await dev.update()
-    assert time_mod.time == now
+    original_time = time_mod.time
+    original_timezone = time_mod.timezone
 
-    zone = ZoneInfo("Europe/Berlin")
-    now = datetime.now(tz=zone)
-    now = now.replace(microsecond=0)
-    await time_mod.set_time(now)
-    await dev.update()
-    assert time_mod.time == now
+    test_time = datetime.fromisoformat("2021-01-09 12:00:00+00:00")
+    test_time = test_time.astimezone(original_timezone)
+
+    try:
+        assert time_mod.time != test_time
+
+        await time_mod.set_time(test_time)
+        await dev.update()
+        assert time_mod.time == test_time
+
+        if (
+            isinstance(original_timezone, ZoneInfo)
+            and original_timezone.key != "Europe/Berlin"
+        ):
+            test_zonezone = ZoneInfo("Europe/Berlin")
+        else:
+            test_zonezone = ZoneInfo("Europe/London")
+
+        # Just update the timezone
+        new_time = time_mod.time.astimezone(test_zonezone)
+        await time_mod.set_time(new_time)
+        await dev.update()
+        assert time_mod.time == new_time
+    finally:
+        # Reset back to the original
+        await time_mod.set_time(original_time)
+        await dev.update()
+        assert time_mod.time == original_time

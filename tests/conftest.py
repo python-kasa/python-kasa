@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import sys
 import warnings
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,13 +12,21 @@ from kasa import (
     DeviceConfig,
     SmartProtocol,
 )
-from kasa.protocol import BaseTransport
+from kasa.transports.basetransport import BaseTransport
 
 from .device_fixtures import *  # noqa: F403
 from .discovery_fixtures import *  # noqa: F403
+from .fixtureinfo import fixture_info  # noqa: F401
 
 # Parametrize tests to run with device both on and off
 turn_on = pytest.mark.parametrize("turn_on", [True, False])
+
+
+def load_fixture(foldername, filename):
+    """Load a fixture."""
+    path = Path(Path(__file__).parent / "fixtures" / foldername / filename)
+    with path.open() as fdp:
+        return fdp.read()
 
 
 async def handle_turn_on(dev, turn_on):
@@ -27,7 +36,7 @@ async def handle_turn_on(dev, turn_on):
         await dev.turn_off()
 
 
-@pytest.fixture()
+@pytest.fixture
 def dummy_protocol():
     """Return a smart protocol instance with a mocking-ready dummy transport."""
 
@@ -94,7 +103,7 @@ def pytest_collection_modifyitems(config, items):
             for item in items:
                 item.add_marker(pytest.mark.enable_socket)
     else:
-        print("Running against ip %s" % config.getoption("--ip"))
+        print("Running against ip {}".format(config.getoption("--ip")))
         requires_dummy = pytest.mark.skip(
             reason="test requires to be run against dummy data"
         )

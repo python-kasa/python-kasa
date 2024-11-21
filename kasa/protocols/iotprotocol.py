@@ -4,20 +4,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from pprint import pformat as pf
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
-from .deviceconfig import DeviceConfig
-from .exceptions import (
+from ..deviceconfig import DeviceConfig
+from ..exceptions import (
     AuthenticationError,
     KasaException,
     TimeoutError,
     _ConnectionError,
     _RetryableError,
 )
-from .json import dumps as json_dumps
-from .protocol import BaseProtocol, BaseTransport, mask_mac, redact_data
-from .xortransport import XorEncryption, XorTransport
+from ..json import dumps as json_dumps
+from ..transports import XorEncryption, XorTransport
+from .protocol import BaseProtocol, mask_mac, redact_data
+
+if TYPE_CHECKING:
+    from ..transports import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 

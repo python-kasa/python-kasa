@@ -86,7 +86,7 @@ async def test_light_effect_brightness(
 
     if effect_active:
         assert light_effect.is_active
-        assert light_effect.brightness == dev.brightness
+        assert light_effect.brightness == light_module.brightness
 
         light_effect_set_brightness.assert_called_with(10)
         mock_light_effect_call.assert_called_with(

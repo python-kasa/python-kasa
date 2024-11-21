@@ -18,7 +18,6 @@ from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padd
 from freezegun.api import FrozenDateTimeFactory
 from yarl import URL
 
-from kasa.aestransport import AesEncyptionSession, AesTransport, TransportState
 from kasa.credentials import Credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
@@ -28,6 +27,13 @@ from kasa.exceptions import (
     _ConnectionError,
 )
 from kasa.httpclient import HttpClient
+from kasa.transports.aestransport import (
+    AesEncyptionSession,
+    AesTransport,
+    TransportState,
+)
+
+pytestmark = [pytest.mark.requires_dummy]
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 

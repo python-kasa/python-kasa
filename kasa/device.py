@@ -110,10 +110,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 from warnings import warn
-
-from typing_extensions import TypeAlias
 
 from .credentials import Credentials as _Credentials
 from .device_type import DeviceType
@@ -125,10 +123,9 @@ from .deviceconfig import (
 )
 from .exceptions import KasaException
 from .feature import Feature
-from .iotprotocol import IotProtocol
 from .module import Module
-from .protocol import BaseProtocol
-from .xortransport import XorTransport
+from .protocols import BaseProtocol, IotProtocol
+from .transports import XorTransport
 
 if TYPE_CHECKING:
     from .modulemapping import ModuleMapping, ModuleName
@@ -151,6 +148,22 @@ class WifiNetwork:
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class _DeviceInfo:
+    """Device Model Information."""
+
+    short_name: str
+    long_name: str
+    brand: str
+    device_family: str
+    device_type: DeviceType
+    hardware_version: str
+    firmware_version: str
+    firmware_build: str
+    requires_auth: bool
+    region: str | None
 
 
 class Device(ABC):
@@ -195,12 +208,12 @@ class Device(ABC):
         self.protocol: BaseProtocol = protocol or IotProtocol(
             transport=XorTransport(config=config or DeviceConfig(host=host)),
         )
-        _LOGGER.debug("Initializing %s of type %s", self.host, type(self))
+        self._last_update: Any = None
+        _LOGGER.debug("Initializing %s of type %s", host, type(self))
         self._device_type = DeviceType.Unknown
-        # TODO: typing Any is just as using Optional[Dict] would require separate
+        # TODO: typing Any is just as using dict | None would require separate
         #       checks in accessors. the @updated_required decorator does not ensure
         #       mypy that these are not accessed incorrectly.
-        self._last_update: Any = None
         self._discovery_info: dict[str, Any] | None = None
 
         self._features: dict[str, Feature] = {}
@@ -319,6 +332,11 @@ class Device(ABC):
     @abstractmethod
     def model(self) -> str:
         """Returns the device model."""
+
+    @property
+    @abstractmethod
+    def _model_region(self) -> str:
+        """Return device full model name and region."""
 
     @property
     @abstractmethod
@@ -472,6 +490,8 @@ class Device(ABC):
 
     def __repr__(self) -> str:
         update_needed = " - update() needed" if not self._last_update else ""
+        if not self._last_update and not self._discovery_info:
+            return f"<{self.device_type} at {self.host}{update_needed}>"
         return (
             f"<{self.device_type} at {self.host} -"
             f" {self.alias} ({self.model}){update_needed}>"
@@ -479,11 +499,11 @@ class Device(ABC):
 
     _deprecated_device_type_attributes = {
         # is_type
-        "is_bulb": (Module.Light, DeviceType.Bulb),
-        "is_dimmer": (Module.Light, DeviceType.Dimmer),
-        "is_light_strip": (Module.LightEffect, DeviceType.LightStrip),
-        "is_plug": (Module.Led, DeviceType.Plug),
-        "is_wallswitch": (Module.Led, DeviceType.WallSwitch),
+        "is_bulb": (None, DeviceType.Bulb),
+        "is_dimmer": (None, DeviceType.Dimmer),
+        "is_light_strip": (None, DeviceType.LightStrip),
+        "is_plug": (None, DeviceType.Plug),
+        "is_wallswitch": (None, DeviceType.WallSwitch),
         "is_strip": (None, DeviceType.Strip),
         "is_strip_socket": (None, DeviceType.StripSocket),
     }
@@ -498,7 +518,9 @@ class Device(ABC):
             return None
 
         for attr in attrs:
-            if hasattr(check, attr):
+            # Use dir() as opposed to hasattr() to avoid raising exceptions
+            # from properties
+            if attr in dir(check):
                 return attr
 
         return None
@@ -547,10 +569,7 @@ class Device(ABC):
     def __getattr__(self, name: str) -> Any:
         # is_device_type
         if dep_device_type_attr := self._deprecated_device_type_attributes.get(name):
-            module = dep_device_type_attr[0]
-            msg = f"{name} is deprecated"
-            if module:
-                msg += f", use: {module} in device.modules instead"
+            msg = f"{name} is deprecated, use device_type property instead"
             warn(msg, DeprecationWarning, stacklevel=2)
             return self.device_type == dep_device_type_attr[1]
         # Other deprecated attributes

@@ -10,7 +10,7 @@ from voluptuous import (
     Schema,
 )
 
-from kasa import Device, EmeterStatus, Module
+from kasa import Device, DeviceType, EmeterStatus, Module
 from kasa.interfaces.energy import Energy
 from kasa.iot import IotDevice, IotStrip
 from kasa.iot.modules.emeter import Emeter
@@ -61,20 +61,20 @@ async def test_get_emeter_realtime(dev):
         if not await mod._check_supported():
             pytest.skip(f"Energy module not supported for {dev}.")
 
-    assert dev.has_emeter
+    emeter = dev.modules[Module.Energy]
 
-    current_emeter = await dev.get_emeter_realtime()
+    current_emeter = await emeter.get_status()
     CURRENT_CONSUMPTION_SCHEMA(current_emeter)
 
 
 @has_emeter_iot
-@pytest.mark.requires_dummy()
+@pytest.mark.requires_dummy
 async def test_get_emeter_daily(dev):
-    assert dev.has_emeter
+    emeter = dev.modules[Module.Energy]
 
-    assert await dev.get_emeter_daily(year=1900, month=1) == {}
+    assert await emeter.get_daily_stats(year=1900, month=1) == {}
 
-    d = await dev.get_emeter_daily()
+    d = await emeter.get_daily_stats()
     assert len(d) > 0
 
     k, v = d.popitem()
@@ -82,19 +82,19 @@ async def test_get_emeter_daily(dev):
     assert isinstance(v, float)
 
     # Test kwh (energy, energy_wh)
-    d = await dev.get_emeter_daily(kwh=False)
+    d = await emeter.get_daily_stats(kwh=False)
     k2, v2 = d.popitem()
     assert v * 1000 == v2
 
 
 @has_emeter_iot
-@pytest.mark.requires_dummy()
+@pytest.mark.requires_dummy
 async def test_get_emeter_monthly(dev):
-    assert dev.has_emeter
+    emeter = dev.modules[Module.Energy]
 
-    assert await dev.get_emeter_monthly(year=1900) == {}
+    assert await emeter.get_monthly_stats(year=1900) == {}
 
-    d = await dev.get_emeter_monthly()
+    d = await emeter.get_monthly_stats()
     assert len(d) > 0
 
     k, v = d.popitem()
@@ -102,23 +102,26 @@ async def test_get_emeter_monthly(dev):
     assert isinstance(v, float)
 
     # Test kwh (energy, energy_wh)
-    d = await dev.get_emeter_monthly(kwh=False)
+    d = await emeter.get_monthly_stats(kwh=False)
     k2, v2 = d.popitem()
     assert v * 1000 == v2
 
 
 @has_emeter_iot
 async def test_emeter_status(dev):
-    assert dev.has_emeter
+    emeter = dev.modules[Module.Energy]
 
-    d = await dev.get_emeter_realtime()
+    d = await emeter.get_status()
 
     with pytest.raises(KeyError):
         assert d["foo"]
 
     assert d["power_mw"] == d["power"] * 1000
     # bulbs have only power according to tplink simulator.
-    if not dev.is_bulb and not dev.is_light_strip:
+    if (
+        dev.device_type is not DeviceType.Bulb
+        and dev.device_type is not DeviceType.LightStrip
+    ):
         assert d["voltage_mv"] == d["voltage"] * 1000
 
         assert d["current_ma"] == d["current"] * 1000
@@ -128,19 +131,17 @@ async def test_emeter_status(dev):
 @pytest.mark.skip("not clearing your stats..")
 @has_emeter
 async def test_erase_emeter_stats(dev):
-    assert dev.has_emeter
+    emeter = dev.modules[Module.Energy]
 
-    await dev.erase_emeter()
+    await emeter.erase_emeter()
 
 
 @has_emeter_iot
 async def test_current_consumption(dev):
-    if dev.has_emeter:
-        x = dev.current_consumption
-        assert isinstance(x, float)
-        assert x >= 0.0
-    else:
-        assert dev.current_consumption is None
+    emeter = dev.modules[Module.Energy]
+    x = emeter.current_consumption
+    assert isinstance(x, float)
+    assert x >= 0.0
 
 
 async def test_emeterstatus_missing_current():
@@ -180,7 +181,7 @@ async def test_emeter_daily():
     emeter_data["get_daystat"]["day_list"].append(
         {"day": now.day, "energy_wh": 500, "month": now.month, "year": now.year}
     )
-    assert emeter.emeter_today == 0.500
+    assert emeter.consumption_today == 0.500
 
 
 @has_emeter
@@ -210,5 +211,8 @@ async def test_supported(dev: Device):
         assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is True
     else:
         assert energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
-        assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is False
         assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
+        if energy_module.supported_version < 2:
+            assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is False
+        else:
+            assert energy_module.supports(Energy.ModuleFeature.VOLTAGE_CURRENT) is True

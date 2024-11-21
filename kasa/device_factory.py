@@ -6,14 +6,10 @@ import logging
 import time
 from typing import Any
 
-from .aestransport import AesTransport
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
-from .experimental.smartcamera import SmartCamera
-from .experimental.smartcameraprotocol import SmartCameraProtocol
-from .experimental.sslaestransport import SslAesTransport
 from .iot import (
     IotBulb,
     IotDevice,
@@ -23,15 +19,22 @@ from .iot import (
     IotStrip,
     IotWallSwitch,
 )
-from .iotprotocol import IotProtocol
-from .klaptransport import KlapTransport, KlapTransportV2
-from .protocol import (
+from .protocols import (
     BaseProtocol,
-    BaseTransport,
+    IotProtocol,
+    SmartProtocol,
 )
+from .protocols.smartcameraprotocol import SmartCameraProtocol
 from .smart import SmartDevice
-from .smartprotocol import SmartProtocol
-from .xortransport import XorTransport
+from .smartcamera.smartcamera import SmartCamera
+from .transports import (
+    AesTransport,
+    BaseTransport,
+    KlapTransport,
+    KlapTransportV2,
+    XorTransport,
+)
+from .transports.sslaestransport import SslAesTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -125,34 +128,6 @@ async def _connect(config: DeviceConfig, protocol: BaseProtocol) -> Device:
         )
 
 
-def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
-    """Find SmartDevice subclass for device described by passed data."""
-    if "system" not in info or "get_sysinfo" not in info["system"]:
-        raise KasaException("No 'system' or 'get_sysinfo' in response")
-
-    sysinfo: dict[str, Any] = info["system"]["get_sysinfo"]
-    type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
-    if type_ is None:
-        raise KasaException("Unable to find the device type field!")
-
-    if "dev_name" in sysinfo and "Dimmer" in sysinfo["dev_name"]:
-        return DeviceType.Dimmer
-
-    if "smartplug" in type_.lower():
-        if "children" in sysinfo:
-            return DeviceType.Strip
-        if (dev_name := sysinfo.get("dev_name")) and "light" in dev_name.lower():
-            return DeviceType.WallSwitch
-        return DeviceType.Plug
-
-    if "smartbulb" in type_.lower():
-        if "length" in sysinfo:  # strips have length
-            return DeviceType.LightStrip
-
-        return DeviceType.Bulb
-    raise UnsupportedDeviceError(f"Unknown device type: {type_}")
-
-
 def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
     """Find SmartDevice subclass for device described by passed data."""
     TYPE_TO_CLASS = {
@@ -163,7 +138,7 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
         DeviceType.WallSwitch: IotWallSwitch,
         DeviceType.LightStrip: IotLightStrip,
     }
-    return TYPE_TO_CLASS[_get_device_type_from_sys_info(sysinfo)]
+    return TYPE_TO_CLASS[IotDevice._get_device_type_from_sys_info(sysinfo)]
 
 
 def get_device_class_from_family(
@@ -214,12 +189,9 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+        "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
-        from .experimental import Experimental
-
-        if Experimental.enabled() and protocol_transport_key == "SMART.AES.HTTPS":
-            prot_tran_cls = (SmartCameraProtocol, SslAesTransport)
-        else:
-            return None
-    return prot_tran_cls[0](transport=prot_tran_cls[1](config=config))
+        return None
+    protocol_cls, transport_cls = prot_tran_cls
+    return protocol_cls(transport=transport_cls(config=config))

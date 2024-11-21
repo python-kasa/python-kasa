@@ -16,7 +16,6 @@ if TYPE_CHECKING:
     from kasa import Device
 
 from kasa.deviceconfig import DeviceEncryptionType
-from kasa.experimental import Experimental
 
 from .common import (
     SKIP_UPDATE_COMMANDS,
@@ -220,14 +219,6 @@ def _legacy_type_to_class(_type: str) -> Any:
     envvar="KASA_CREDENTIALS_HASH",
     help="Hashed credentials used to authenticate to the device.",
 )
-@click.option(
-    "--experimental/--no-experimental",
-    default=None,
-    is_flag=True,
-    type=bool,
-    envvar=Experimental.ENV_VAR,
-    help="Enable experimental mode for devices not yet fully supported.",
-)
 @click.version_option(package_name="python-kasa")
 @click.pass_context
 async def cli(
@@ -249,7 +240,6 @@ async def cli(
     username,
     password,
     credentials_hash,
-    experimental,
 ):
     """A tool for controlling TP-Link smart home devices."""  # noqa
     # no need to perform any checks if we are just displaying the help
@@ -260,12 +250,6 @@ async def cli(
 
     if target != DEFAULT_TARGET and host:
         error("--target is not a valid option for single host discovery")
-
-    if experimental is not None:
-        Experimental.set_enabled(experimental)
-
-    if Experimental.enabled():
-        echo("Experimental support is enabled")
 
     logging_config: dict[str, Any] = {
         "level": logging.DEBUG if debug > 0 else logging.INFO
@@ -291,18 +275,6 @@ async def cli(
     if alias is not None and host is not None:
         raise click.BadOptionUsage("alias", "Use either --alias or --host, not both.")
 
-    if alias is not None and host is None:
-        echo(f"Alias is given, using discovery to find host {alias}")
-
-        from .discover import find_host_from_alias
-
-        host = await find_host_from_alias(alias=alias, target=target)
-        if host:
-            echo(f"Found hostname is {host}")
-        else:
-            echo(f"No device with name {alias} found")
-            return
-
     if bool(password) != bool(username):
         raise click.BadOptionUsage(
             "username", "Using authentication requires both --username and --password"
@@ -315,7 +287,7 @@ async def cli(
     else:
         credentials = None
 
-    if host is None:
+    if host is None and alias is None:
         if ctx.invoked_subcommand and ctx.invoked_subcommand != "discover":
             error("Only discover is available without --host or --alias")
 
@@ -325,6 +297,7 @@ async def cli(
         return await ctx.invoke(discover)
 
     device_updated = False
+
     if type is not None and type not in {"smart", "camera"}:
         from kasa.deviceconfig import DeviceConfig
 
@@ -332,10 +305,6 @@ async def cli(
         dev = _legacy_type_to_class(type)(host, config=config)
     elif type in {"smart", "camera"} or (device_family and encrypt_type):
         if type == "camera":
-            if not experimental:
-                error(
-                    "Camera is an experimental type, please enable with --experimental"
-                )
             encrypt_type = "AES"
             https = True
             device_family = "SMART.IPCAMERA"
@@ -366,6 +335,19 @@ async def cli(
             connection_type=ctype,
         )
         dev = await Device.connect(config=config)
+        device_updated = True
+    elif alias:
+        echo(f"Alias is given, using discovery to find host {alias}")
+
+        from .discover import find_dev_from_alias
+
+        dev = await find_dev_from_alias(
+            alias=alias, target=target, credentials=credentials
+        )
+        if not dev:
+            echo(f"No device with name {alias} found")
+            return
+        echo(f"Found hostname by alias: {dev.host}")
         device_updated = True
     else:
         from .discover import discover

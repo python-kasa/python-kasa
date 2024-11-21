@@ -6,18 +6,18 @@ import base64
 import logging
 import time
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta, timezone, tzinfo
+from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 
-from ..aestransport import AesTransport
-from ..device import Device, WifiNetwork
+from ..device import Device, WifiNetwork, _DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
-from ..smartprotocol import SmartProtocol
+from ..protocols import SmartProtocol
+from ..transports import AesTransport
 from .modules import (
     ChildDevice,
     Cloud,
@@ -493,6 +493,17 @@ class SmartDevice(Device):
         return str(self._info.get("model"))
 
     @property
+    def _model_region(self) -> str:
+        """Return device full model name and region."""
+        if (disco := self._discovery_info) and (
+            disco_model := disco.get("device_model")
+        ):
+            return disco_model
+        # Some devices have the region in the specs element.
+        region = f"({specs})" if (specs := self._info.get("specs")) else ""
+        return f"{self.model}{region}"
+
+    @property
     def alias(self) -> str | None:
         """Returns the device alias or nickname."""
         if self._info and (nickname := self._info.get("nickname")):
@@ -509,7 +520,7 @@ class SmartDevice(Device):
             return time_mod.time
 
         # We have no device time, use current local time.
-        return datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+        return datetime.now(UTC).astimezone().replace(microsecond=0)
 
     @property
     def on_since(self) -> datetime | None:
@@ -746,6 +757,10 @@ class SmartDevice(Device):
 
         # Fallback to device_type (from disco info)
         type_str = self._info.get("type", self._info.get("device_type"))
+
+        if not type_str:  # no update or discovery info
+            return self._device_type
+
         self._device_type = self._get_device_type_from_components(
             list(self._components.keys()), type_str
         )
@@ -779,3 +794,48 @@ class SmartDevice(Device):
             return DeviceType.Thermostat
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
+
+    @staticmethod
+    def _get_device_info(
+        info: dict[str, Any], discovery_info: dict[str, Any] | None
+    ) -> _DeviceInfo:
+        """Get model information for a device."""
+        di = info["get_device_info"]
+        components = [comp["id"] for comp in info["component_nego"]["component_list"]]
+
+        # Get model/region info
+        short_name = di["model"]
+        region = None
+        if discovery_info:
+            device_model = discovery_info["device_model"]
+            long_name, _, region = device_model.partition("(")
+            if region:  # P100 doesn't have region
+                region = region.replace(")", "")
+        else:
+            long_name = short_name
+        if not region:  # some devices have region in specs
+            region = di.get("specs")
+
+        # Get other info
+        device_family = di["type"]
+        device_type = SmartDevice._get_device_type_from_components(
+            components, device_family
+        )
+        fw_version_full = di["fw_ver"]
+        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        _protocol, devicetype = device_family.split(".")
+        # Brand inferred from SMART.KASAPLUG/SMART.TAPOPLUG etc.
+        brand = devicetype[:4].lower()
+
+        return _DeviceInfo(
+            short_name=short_name,
+            long_name=long_name,
+            brand=brand,
+            device_family=device_family,
+            device_type=device_type,
+            hardware_version=di["hw_ver"],
+            firmware_version=firmware_version,
+            firmware_build=firmware_build,
+            requires_auth=True,
+            region=region,
+        )

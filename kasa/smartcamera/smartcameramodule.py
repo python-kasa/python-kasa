@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
+from ..modulemapping import ModuleName
 from ..smart.smartmodule import SmartModule
 
 if TYPE_CHECKING:
+    from . import modules
     from .smartcamera import SmartCamera
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,12 +19,14 @@ _LOGGER = logging.getLogger(__name__)
 class SmartCameraModule(SmartModule):
     """Base class for SMARTCAMERA modules."""
 
+    SmartCameraAlarm: Final[ModuleName[modules.Alarm]] = ModuleName("SmartCameraAlarm")
+
     #: Query to execute during the main update cycle
     QUERY_GETTER_NAME: str
     #: Module name to be queried
     QUERY_MODULE_NAME: str
     #: Section name or names to be queried
-    QUERY_SECTION_NAMES: str | list[str]
+    QUERY_SECTION_NAMES: str | list[str] | None = None
 
     REGISTERED_MODULES = {}
 
@@ -33,11 +37,10 @@ class SmartCameraModule(SmartModule):
 
         Default implementation uses the raw query getter w/o parameters.
         """
-        return {
-            self.QUERY_GETTER_NAME: {
-                self.QUERY_MODULE_NAME: {"name": self.QUERY_SECTION_NAMES}
-            }
-        }
+        section_names = (
+            {"name": self.QUERY_SECTION_NAMES} if self.QUERY_SECTION_NAMES else {}
+        )
+        return {self.QUERY_GETTER_NAME: {self.QUERY_MODULE_NAME: section_names}}
 
     async def call(self, method: str, params: dict | None = None) -> dict:
         """Call a method.
@@ -74,7 +77,7 @@ class SmartCameraModule(SmartModule):
             if isinstance(query_resp, SmartErrorCode):
                 raise DeviceError(
                     f"Error accessing module data in {self._module}",
-                    error_code=SmartErrorCode,
+                    error_code=query_resp,
                 )
 
             if not query_resp:
@@ -95,6 +98,6 @@ class SmartCameraModule(SmartModule):
                 if isinstance(found[key], SmartErrorCode):
                     raise DeviceError(
                         f"Error accessing module data {key} in {self._module}",
-                        error_code=SmartErrorCode,
+                        error_code=found[key],
                     )
             return found

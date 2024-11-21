@@ -1,5 +1,4 @@
 import logging
-from typing import cast
 
 import pytest
 import pytest_mock
@@ -10,8 +9,8 @@ from kasa.exceptions import (
     KasaException,
     SmartErrorCode,
 )
+from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartDevice
-from kasa.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 
 from .conftest import device_smart
 from .fakeprotocol_smart import FakeSmartTransport
@@ -326,6 +325,7 @@ async def test_smart_protocol_lists_single_request(mocker, list_sum, batch_size)
         "foobar",
         list_return_size=batch_size,
         component_nego_not_included=True,
+        get_child_fixtures=False,
     )
     protocol = SmartProtocol(transport=ft)
     query_spy = mocker.spy(protocol, "_execute_query")
@@ -358,6 +358,7 @@ async def test_smart_protocol_lists_multiple_request(mocker, list_sum, batch_siz
         "foobar",
         list_return_size=batch_size,
         component_nego_not_included=True,
+        get_child_fixtures=False,
     )
     protocol = SmartProtocol(transport=ft)
     query_spy = mocker.spy(protocol, "_execute_query")
@@ -420,10 +421,11 @@ async def test_smart_queries_redaction(
     dev: SmartDevice, caplog: pytest.LogCaptureFixture
 ):
     """Test query sensitive info redaction."""
-    device_id = "123456789ABCDEF"
-    cast(FakeSmartTransport, dev.protocol._transport).info["get_device_info"][
-        "device_id"
-    ] = device_id
+    if isinstance(dev.protocol._transport, FakeSmartTransport):
+        device_id = "123456789ABCDEF"
+        dev.protocol._transport.info["get_device_info"]["device_id"] = device_id
+    else:  # real device
+        device_id = dev.device_id
 
     # Info no message logging
     caplog.set_level(logging.INFO)

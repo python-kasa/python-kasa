@@ -8,7 +8,7 @@ from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..smartprotocol import SmartProtocol, _ChildProtocolWrapper
+from ..protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from .smartdevice import SmartDevice
 from .smartmodule import SmartModule
 
@@ -107,16 +107,26 @@ class SmartChildDevice(SmartDevice):
     @property
     def device_type(self) -> DeviceType:
         """Return child device type."""
-        category = self.sys_info["category"]
-        dev_type = self.CHILD_DEVICE_TYPE_MAP.get(category)
-        if dev_type is None:
-            _LOGGER.warning(
-                "Unknown child device type %s for model %s, please open issue",
-                category,
-                self.model,
-            )
-            dev_type = DeviceType.Unknown
-        return dev_type
+        if self._device_type is not DeviceType.Unknown:
+            return self._device_type
+
+        if self.sys_info and (category := self.sys_info.get("category")):
+            dev_type = self.CHILD_DEVICE_TYPE_MAP.get(category)
+            if dev_type is None:
+                _LOGGER.warning(
+                    "Unknown child device type %s for model %s, please open issue",
+                    category,
+                    self.model,
+                )
+                self._device_type = DeviceType.Unknown
+            else:
+                self._device_type = dev_type
+
+        return self._device_type
 
     def __repr__(self) -> str:
+        if not self._parent:
+            return f"<{self.device_type}(child) without parent>"
+        if not self._parent._last_update:
+            return f"<{self.device_type}(child) of {self._parent}>"
         return f"<{self.device_type} {self.alias} ({self.model}) of {self._parent}>"

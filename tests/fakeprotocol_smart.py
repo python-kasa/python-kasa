@@ -6,14 +6,16 @@ import pytest
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.exceptions import SmartErrorCode
-from kasa.protocol import BaseTransport
 from kasa.smart import SmartChildDevice
+from kasa.transports.basetransport import BaseTransport
 
 
 class FakeSmartProtocol(SmartProtocol):
-    def __init__(self, info, fixture_name, *, is_child=False):
+    def __init__(self, info, fixture_name, *, is_child=False, verbatim=False):
         super().__init__(
-            transport=FakeSmartTransport(info, fixture_name, is_child=is_child),
+            transport=FakeSmartTransport(
+                info, fixture_name, is_child=is_child, verbatim=verbatim
+            ),
         )
 
     async def query(self, request, retry_count: int = 3):
@@ -33,6 +35,8 @@ class FakeSmartTransport(BaseTransport):
         warn_fixture_missing_methods=True,
         fix_incomplete_fixture_lists=True,
         is_child=False,
+        get_child_fixtures=True,
+        verbatim=False,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -48,9 +52,10 @@ class FakeSmartTransport(BaseTransport):
         # child are then still reflected on the parent's lis of child device in
         if not is_child:
             self.info = copy.deepcopy(info)
-            self.child_protocols = self._get_child_protocols(
-                self.info, self.fixture_name, "get_child_device_list"
-            )
+            if get_child_fixtures:
+                self.child_protocols = self._get_child_protocols(
+                    self.info, self.fixture_name, "get_child_device_list"
+                )
         else:
             self.info = info
         if not component_nego_not_included:
@@ -61,6 +66,13 @@ class FakeSmartTransport(BaseTransport):
         self.list_return_size = list_return_size
         self.warn_fixture_missing_methods = warn_fixture_missing_methods
         self.fix_incomplete_fixture_lists = fix_incomplete_fixture_lists
+
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        self.verbatim = verbatim
+        if verbatim:
+            self.warn_fixture_missing_methods = False
+            self.fix_incomplete_fixture_lists = False
 
     @property
     def default_port(self):
@@ -126,6 +138,19 @@ class FakeSmartTransport(BaseTransport):
         ),
         "get_device_usage": ("device", {}),
         "get_connect_cloud_state": ("cloud_connect", {"status": 0}),
+        "get_emeter_data": (
+            "energy_monitoring",
+            {
+                "current_ma": 33,
+                "energy_wh": 971,
+                "power_mw": 1003,
+                "voltage_mv": 121215,
+            },
+        ),
+        "get_emeter_vgain_igain": (
+            "energy_monitoring",
+            {"igain": 10861, "vgain": 118657},
+        ),
     }
 
     async def send(self, request: str):
@@ -200,10 +225,9 @@ class FakeSmartTransport(BaseTransport):
                         is_child=True,
                     )
                 else:
-                    warn(
-                        f"Could not find child SMART fixture for {child_info}",
-                        stacklevel=2,
-                    )
+                    pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
+                        parent_fixture_name, set()
+                    ).add("child_devices")
             else:
                 warn(
                     f"Child is a cameraprotocol which needs to be implemented {child_info}",
@@ -221,10 +245,7 @@ class FakeSmartTransport(BaseTransport):
         """Handle control_child command."""
         device_id = params.get("device_id")
         if device_id not in self.child_protocols:
-            warn(
-                f"Could not find child fixture {device_id} in {self.fixture_name}",
-                stacklevel=2,
-            )
+            # no need to warn as the warning was raised during protocol init
             return self._handle_control_child_missing(params)
 
         child_protocol: SmartProtocol = self.child_protocols[device_id]
@@ -446,10 +467,10 @@ class FakeSmartTransport(BaseTransport):
             return await self._handle_control_child(request_dict["params"])
 
         params = request_dict.get("params", {})
-        if method == "component_nego" or method[:4] == "get_":
+        if method in {"component_nego", "qs_component_nego"} or method[:4] == "get_":
             if method in info:
                 result = copy.deepcopy(info[method])
-                if "start_index" in result and "sum" in result:
+                if result and "start_index" in result and "sum" in result:
                     list_key = next(
                         iter([key for key in result if isinstance(result[key], list)])
                     )
@@ -474,6 +495,12 @@ class FakeSmartTransport(BaseTransport):
                         start_index : start_index + self.list_return_size
                     ]
                 return {"result": result, "error_code": 0}
+
+            if self.verbatim:
+                return {
+                    "error_code": SmartErrorCode.PARAMS_ERROR.value,
+                    "method": method,
+                }
 
             if (
                 # FIXTURE_MISSING is for service calls not in place when

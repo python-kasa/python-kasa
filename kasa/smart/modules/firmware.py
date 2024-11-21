@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Coroutine
+from asyncio import timeout as asyncio_timeout
+from collections.abc import Callable, Coroutine
+from dataclasses import dataclass, field
 from datetime import date
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Annotated
 
-# When support for cpython older than 3.11 is dropped
-# async_timeout can be replaced with asyncio.timeout
-from async_timeout import timeout as asyncio_timeout
-from pydantic.v1 import BaseModel, Field, validator
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.types import Alias
 
 from ...exceptions import KasaException
 from ...feature import Feature
@@ -24,43 +24,41 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class DownloadState(BaseModel):
+@dataclass
+class DownloadState(DataClassDictMixin):
     """Download state."""
 
     # Example:
     #   {'status': 0, 'download_progress': 0, 'reboot_time': 5,
     #    'upgrade_time': 5, 'auto_upgrade': False}
     status: int
-    progress: int = Field(alias="download_progress")
+    progress: Annotated[int, Alias("download_progress")]
     reboot_time: int
     upgrade_time: int
     auto_upgrade: bool
 
 
-class UpdateInfo(BaseModel):
+@dataclass
+class UpdateInfo(DataClassDictMixin):
     """Update info status object."""
 
-    status: int = Field(alias="type")
-    version: Optional[str] = Field(alias="fw_ver", default=None)  # noqa: UP007
-    release_date: Optional[date] = None  # noqa: UP007
-    release_notes: Optional[str] = Field(alias="release_note", default=None)  # noqa: UP007
-    fw_size: Optional[int] = None  # noqa: UP007
-    oem_id: Optional[str] = None  # noqa: UP007
-    needs_upgrade: bool = Field(alias="need_to_upgrade")
-
-    @validator("release_date", pre=True)
-    def _release_date_optional(cls, v: str) -> str | None:
-        if not v:
-            return None
-
-        return v
+    status: Annotated[int, Alias("type")]
+    needs_upgrade: Annotated[bool, Alias("need_to_upgrade")]
+    version: Annotated[str | None, Alias("fw_ver")] = None
+    release_date: date | None = field(
+        default=None,
+        metadata=field_options(
+            deserialize=lambda x: date.fromisoformat(x) if x else None
+        ),
+    )
+    release_notes: Annotated[str | None, Alias("release_note")] = None
+    fw_size: int | None = None
+    oem_id: str | None = None
 
     @property
     def update_available(self) -> bool:
         """Return True if update available."""
-        if self.status != 0:
-            return True
-        return False
+        return self.status != 0
 
 
 class Firmware(SmartModule):
@@ -143,7 +141,7 @@ class Firmware(SmartModule):
         """Check for the latest firmware for the device."""
         try:
             fw = await self.call("get_latest_fw")
-            self._firmware_update_info = UpdateInfo.parse_obj(fw["get_latest_fw"])
+            self._firmware_update_info = UpdateInfo.from_dict(fw["get_latest_fw"])
             return self._firmware_update_info
         except Exception:
             _LOGGER.exception("Error getting latest firmware for %s:", self._device)
@@ -178,7 +176,7 @@ class Firmware(SmartModule):
         """Return update state."""
         resp = await self.call("get_fw_download_state")
         state = resp["get_fw_download_state"]
-        return DownloadState(**state)
+        return DownloadState.from_dict(state)
 
     @allow_update_after
     async def update(
@@ -236,7 +234,7 @@ class Firmware(SmartModule):
                 else:
                     _LOGGER.warning("Unhandled state code: %s", state)
 
-        return state.dict()
+        return state.to_dict()
 
     @property
     def auto_update_enabled(self) -> bool:

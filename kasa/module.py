@@ -29,7 +29,7 @@ If you know or expect the module to exist you can access by index:
 
 Modules support typing via the Module names in Module:
 
->>> from typing_extensions import reveal_type, TYPE_CHECKING
+>>> from typing import reveal_type, TYPE_CHECKING
 >>> light_effect = dev.modules.get("LightEffect")
 >>> light_effect_typed = dev.modules.get(Module.LightEffect)
 >>> if TYPE_CHECKING:
@@ -55,9 +55,9 @@ from .modulemapping import ModuleName
 if TYPE_CHECKING:
     from . import interfaces
     from .device import Device
-    from .experimental import modules as experimental
     from .iot import modules as iot
     from .smart import modules as smart
+    from .smartcamera import modules as smartcamera
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ class Module(ABC):
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
     # SMARTCAMERA only modules
-    Camera: Final[ModuleName[experimental.Camera]] = ModuleName("Camera")
+    Camera: Final[ModuleName[smartcamera.Camera]] = ModuleName("Camera")
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device

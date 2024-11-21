@@ -13,10 +13,10 @@ from pytest_mock import MockerFixture
 
 from kasa import Device, KasaException, Module
 from kasa.exceptions import DeviceError, SmartErrorCode
+from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
-from kasa.smartprotocol import _ChildProtocolWrapper
 
 from .conftest import (
     device_smart,
@@ -26,6 +26,7 @@ from .conftest import (
 
 
 @device_smart
+@pytest.mark.requires_dummy
 async def test_try_get_response(dev: SmartDevice, caplog):
     mock_response: dict = {
         "get_device_info": SmartErrorCode.PARAMS_ERROR,
@@ -37,16 +38,15 @@ async def test_try_get_response(dev: SmartDevice, caplog):
 
 
 @device_smart
+@pytest.mark.requires_dummy
 async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
     mock_response: dict = {
         "get_device_usage": {},
         "get_device_time": {},
     }
     msg = f"get_device_info not found in {mock_response} for device 127.0.0.123"
-    with (
-        mocker.patch.object(dev.protocol, "query", return_value=mock_response),
-        pytest.raises(KasaException, match=msg),
-    ):
+    mocker.patch.object(dev.protocol, "query", return_value=mock_response)
+    with pytest.raises(KasaException, match=msg):
         await dev.update()
 
 
@@ -266,7 +266,9 @@ async def test_update_module_query_errors(
 
     mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
     # children not created yet so cannot patch.object
-    mocker.patch("kasa.smartprotocol._ChildProtocolWrapper.query", new=_child_query)
+    mocker.patch(
+        "kasa.protocols.smartprotocol._ChildProtocolWrapper.query", new=_child_query
+    )
 
     await new_dev.update()
 
@@ -297,7 +299,7 @@ async def test_update_module_query_errors(
             new_dev.protocol, "query", side_effect=new_dev.protocol._query
         )
         mocker.patch(
-            "kasa.smartprotocol._ChildProtocolWrapper.query",
+            "kasa.protocols.smartprotocol._ChildProtocolWrapper.query",
             new=_ChildProtocolWrapper._query,
         )
 
