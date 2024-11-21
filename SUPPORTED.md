@@ -179,9 +179,9 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 ### Plugs
 
 - **P100**
-  - Hardware: 1.0.0 / Firmware: 1.1.3
-  - Hardware: 1.0.0 / Firmware: 1.3.7
-  - Hardware: 1.0.0 / Firmware: 1.4.0
+  - Hardware: 1.0.0 (US) / Firmware: 1.1.3
+  - Hardware: 1.0.0 (US) / Firmware: 1.3.7
+  - Hardware: 1.0.0 (US) / Firmware: 1.4.0
 - **P110**
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
@@ -248,12 +248,23 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **L930-5**
   - Hardware: 1.0 (US) / Firmware: 1.1.2
 
+### Cameras
+
+- **C210**
+  - Hardware: 2.0 (EU) / Firmware: 1.4.2
+  - Hardware: 2.0 (EU) / Firmware: 1.4.3
+- **TC65**
+  - Hardware: 1.0 / Firmware: 1.3.9
+
 ### Hubs
 
 - **H100**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (EU) / Firmware: 1.5.10
   - Hardware: 1.0 (EU) / Firmware: 1.5.5
+- **H200**
+  - Hardware: 1.0 (EU) / Firmware: 1.3.2
+  - Hardware: 1.0 (US) / Firmware: 1.3.6
 
 ### Hub-Connected Devices
 

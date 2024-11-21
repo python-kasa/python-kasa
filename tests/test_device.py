@@ -6,15 +6,23 @@ import importlib
 import inspect
 import pkgutil
 import sys
-from contextlib import AbstractContextManager
+import zoneinfo
+from contextlib import AbstractContextManager, nullcontext
 from unittest.mock import AsyncMock, patch
 
 import pytest
-import zoneinfo
 
 import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
-from kasa.iot import IotDevice
+from kasa.iot import (
+    IotBulb,
+    IotDevice,
+    IotDimmer,
+    IotLightStrip,
+    IotPlug,
+    IotStrip,
+    IotWallSwitch,
+)
 from kasa.iot.iottimezone import (
     TIMEZONE_INDEX,
     get_timezone,
@@ -22,6 +30,7 @@ from kasa.iot.iottimezone import (
 )
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
+from kasa.smartcamera import SmartCamera
 
 
 def _get_subclasses(of_class):
@@ -78,6 +87,41 @@ async def test_device_class_ctors(device_class_name_obj):
     assert dev.host == host
     assert dev.port == port
     assert dev.credentials == credentials
+
+
+@device_classes
+async def test_device_class_repr(device_class_name_obj):
+    """Test device repr when update() not called and no discovery info."""
+    host = "127.0.0.2"
+    port = 1234
+    credentials = Credentials("foo", "bar")
+    config = DeviceConfig(host, port_override=port, credentials=credentials)
+    klass = device_class_name_obj[1]
+    if issubclass(klass, SmartChildDevice):
+        parent = SmartDevice(host, config=config)
+        dev = klass(
+            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+        )
+    else:
+        dev = klass(host, config=config)
+
+    CLASS_TO_DEFAULT_TYPE = {
+        IotDevice: DeviceType.Unknown,
+        IotBulb: DeviceType.Bulb,
+        IotPlug: DeviceType.Plug,
+        IotDimmer: DeviceType.Dimmer,
+        IotStrip: DeviceType.Strip,
+        IotWallSwitch: DeviceType.WallSwitch,
+        IotLightStrip: DeviceType.LightStrip,
+        SmartChildDevice: DeviceType.Unknown,
+        SmartDevice: DeviceType.Unknown,
+        SmartCamera: DeviceType.Camera,
+    }
+    type_ = CLASS_TO_DEFAULT_TYPE[klass]
+    child_repr = "<DeviceType.Unknown(child) of <DeviceType.Unknown at 127.0.0.2 - update() needed>>"
+    not_child_repr = f"<{type_} at 127.0.0.2 - update() needed>"
+    expected_repr = child_repr if klass is SmartChildDevice else not_child_repr
+    assert repr(dev) == expected_repr
 
 
 async def test_create_device_with_timeout():
@@ -170,15 +214,22 @@ async def _test_attribute(
     dev: Device, attribute_name, is_expected, module_name, *args, will_raise=False
 ):
     if is_expected and will_raise:
-        ctx: AbstractContextManager = pytest.raises(will_raise)
+        ctx: AbstractContextManager | nullcontext = pytest.raises(will_raise)
+        dep_context: pytest.WarningsRecorder | nullcontext = pytest.deprecated_call(
+            match=(f"{attribute_name} is deprecated, use:")
+        )
     elif is_expected:
-        ctx = pytest.deprecated_call(match=(f"{attribute_name} is deprecated, use:"))
+        ctx = nullcontext()
+        dep_context = pytest.deprecated_call(
+            match=(f"{attribute_name} is deprecated, use:")
+        )
     else:
         ctx = pytest.raises(
             AttributeError, match=f"Device has no attribute '{attribute_name}'"
         )
+        dep_context = nullcontext()
 
-    with ctx:
+    with dep_context, ctx:
         if args:
             await getattr(dev, attribute_name)(*args)
         else:
@@ -267,16 +318,19 @@ async def test_deprecated_light_preset_attributes(dev: Device):
     await _test_attribute(dev, "presets", bool(preset), "LightPreset", will_raise=exc)
 
     exc = None
+    is_expected = bool(preset)
     # deprecated save_preset not implemented for smart devices as it's unlikely anyone
     # has an existing reliance on this for the newer devices.
-    if not preset or isinstance(dev, SmartDevice):
-        exc = AttributeError
-    elif len(preset.preset_states_list) == 0:
+    if isinstance(dev, SmartDevice):
+        is_expected = False
+
+    if preset and len(preset.preset_states_list) == 0:
         exc = KasaException
+
     await _test_attribute(
         dev,
         "save_preset",
-        bool(preset),
+        is_expected,
         "LightPreset",
         IotLightPreset(index=0, hue=100, brightness=100, saturation=0, color_temp=0),  # type: ignore[call-arg]
         will_raise=exc,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -10,9 +11,9 @@ from kasa import (
     DeviceType,
     Discover,
 )
-from kasa.experimental.smartcamera import SmartCamera
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
 from kasa.smart import SmartDevice
+from kasa.smartcamera.smartcamera import SmartCamera
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
@@ -143,7 +144,7 @@ ALL_DEVICES_SMART = (
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
-IP_MODEL_CACHE: dict[str, str] = {}
+IP_FIXTURE_CACHE: dict[str, FixtureInfo] = {}
 
 
 def parametrize_combine(parametrized: list[pytest.MarkDecorator]):
@@ -188,11 +189,12 @@ def parametrize(
     data_root_filter=None,
     device_type_filter=None,
     ids=None,
+    fixture_name="dev",
 ):
     if ids is None:
         ids = idgenerator
     return pytest.mark.parametrize(
-        "dev",
+        fixture_name,
         filter_fixtures(
             desc,
             model_filter=model_filter,
@@ -407,22 +409,28 @@ async def _discover_update_and_close(ip, username, password) -> Device:
     return await _update_and_close(d)
 
 
-async def get_device_for_fixture(fixture_data: FixtureInfo) -> Device:
+async def get_device_for_fixture(
+    fixture_data: FixtureInfo, *, verbatim=False, update_after_init=True
+) -> Device:
     # if the wanted file is not an absolute path, prepend the fixtures directory
 
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
         host="127.0.0.123"
     )
     if fixture_data.protocol in {"SMART", "SMART.CHILD"}:
-        d.protocol = FakeSmartProtocol(fixture_data.data, fixture_data.name)
+        d.protocol = FakeSmartProtocol(
+            fixture_data.data, fixture_data.name, verbatim=verbatim
+        )
     elif fixture_data.protocol == "SMARTCAMERA":
-        d.protocol = FakeSmartCameraProtocol(fixture_data.data, fixture_data.name)
+        d.protocol = FakeSmartCameraProtocol(
+            fixture_data.data, fixture_data.name, verbatim=verbatim
+        )
     else:
-        d.protocol = FakeIotProtocol(fixture_data.data)
+        d.protocol = FakeIotProtocol(fixture_data.data, verbatim=verbatim)
 
     discovery_data = None
     if "discovery_result" in fixture_data.data:
-        discovery_data = {"result": fixture_data.data["discovery_result"]}
+        discovery_data = fixture_data.data["discovery_result"]
     elif "system" in fixture_data.data:
         discovery_data = {
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
@@ -431,7 +439,8 @@ async def get_device_for_fixture(fixture_data: FixtureInfo) -> Device:
     if discovery_data:  # Child devices do not have discovery info
         d.update_from_discover_info(discovery_data)
 
-    await _update_and_close(d)
+    if update_after_init:
+        await _update_and_close(d)
     return d
 
 
@@ -449,6 +458,39 @@ def get_fixture_info(fixture, protocol):
             return fixture_info
 
 
+def get_nearest_fixture_to_ip(dev):
+    if isinstance(dev, SmartDevice):
+        protocol_fixtures = filter_fixtures("", protocol_filter={"SMART"})
+    elif isinstance(dev, SmartCamera):
+        protocol_fixtures = filter_fixtures("", protocol_filter={"SMARTCAMERA"})
+    else:
+        protocol_fixtures = filter_fixtures("", protocol_filter={"IOT"})
+    assert protocol_fixtures, "Unknown device type"
+
+    # This will get the best fixture with a match on model region
+    if model_region_fixtures := filter_fixtures(
+        "", model_filter={dev._model_region}, fixture_list=protocol_fixtures
+    ):
+        return next(iter(model_region_fixtures))
+
+    # This will get the best fixture based on model starting with the name.
+    if "(" in dev.model:
+        model, _, _ = dev.model.partition("(")
+    else:
+        model = dev.model
+    if model_fixtures := filter_fixtures(
+        "", model_startswith_filter=model, fixture_list=protocol_fixtures
+    ):
+        return next(iter(model_fixtures))
+
+    if device_type_fixtures := filter_fixtures(
+        "", device_type_filter={dev.device_type}, fixture_list=protocol_fixtures
+    ):
+        return next(iter(device_type_fixtures))
+
+    return next(iter(protocol_fixtures))
+
+
 @pytest.fixture(params=filter_fixtures("main devices"), ids=idgenerator)
 async def dev(request) -> AsyncGenerator[Device, None]:
     """Device fixture.
@@ -460,24 +502,28 @@ async def dev(request) -> AsyncGenerator[Device, None]:
     dev: Device
 
     ip = request.config.getoption("--ip")
-    username = request.config.getoption("--username")
-    password = request.config.getoption("--password")
+    username = request.config.getoption("--username") or os.environ.get("KASA_USERNAME")
+    password = request.config.getoption("--password") or os.environ.get("KASA_PASSWORD")
     if ip:
-        model = IP_MODEL_CACHE.get(ip)
-        d = None
-        if not model:
-            d = await _discover_update_and_close(ip, username, password)
-            IP_MODEL_CACHE[ip] = model = d.model
+        fixture = IP_FIXTURE_CACHE.get(ip)
 
-        if model not in fixture_data.name:
+        d = None
+        if not fixture:
+            d = await _discover_update_and_close(ip, username, password)
+            IP_FIXTURE_CACHE[ip] = fixture = get_nearest_fixture_to_ip(d)
+        assert fixture
+        if fixture.name != fixture_data.name:
             pytest.skip(f"skipping file {fixture_data.name}")
-        dev = d if d else await _discover_update_and_close(ip, username, password)
+            dev = None
+        else:
+            dev = d if d else await _discover_update_and_close(ip, username, password)
     else:
         dev = await get_device_for_fixture(fixture_data)
 
     yield dev
 
-    await dev.disconnect()
+    if dev:
+        await dev.disconnect()
 
 
 def get_parent_and_child_modules(device: Device, module_name):

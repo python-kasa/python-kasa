@@ -3,36 +3,46 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import asdict
-from typing import TYPE_CHECKING, Optional
+from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
-from pydantic.v1 import BaseModel, Field
+from mashumaro.config import BaseConfig
 
 from ...exceptions import KasaException
 from ...interfaces import LightPreset as LightPresetInterface
 from ...interfaces import LightState
+from ...json import DataClassJSONMixin
 from ...module import Module
 from ..iotmodule import IotModule
 
 if TYPE_CHECKING:
     pass
 
+# type ignore can be removed after migration mashumaro:
+# error: Signature of "__replace__" incompatible with supertype "LightState"
 
-class IotLightPreset(BaseModel, LightState):
+
+@dataclass(kw_only=True, repr=False)
+class IotLightPreset(DataClassJSONMixin, LightState):  # type: ignore[override]
     """Light configuration preset."""
 
-    index: int = Field(kw_only=True)
-    brightness: int = Field(kw_only=True)
+    class Config(BaseConfig):
+        """Config class."""
+
+        omit_none = True
+
+    index: int
+    brightness: int
 
     # These are not available for effect mode presets on light strips
-    hue: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
-    saturation: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
-    color_temp: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
+    hue: int | None = None
+    saturation: int | None = None
+    color_temp: int | None = None
 
     # Variables for effect mode presets
-    custom: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
-    id: Optional[str] = Field(kw_only=True, default=None)  # noqa: UP007
-    mode: Optional[int] = Field(kw_only=True, default=None)  # noqa: UP007
+    custom: int | None = None
+    id: str | None = None
+    mode: int | None = None
 
 
 class LightPreset(IotModule, LightPresetInterface):
@@ -44,7 +54,7 @@ class LightPreset(IotModule, LightPresetInterface):
     async def _post_update_hook(self) -> None:
         """Update the internal presets."""
         self._presets = {
-            f"Light preset {index+1}": IotLightPreset(**vals)
+            f"Light preset {index+1}": IotLightPreset.from_dict(vals)
             for index, vals in enumerate(self.data["preferred_state"])
             # Devices may list some light effects along with normal presets but these
             # are handled by the LightEffect module so exclude preferred states with id
@@ -154,4 +164,4 @@ class LightPreset(IotModule, LightPresetInterface):
         if preset.index >= len(self._presets):
             raise KasaException("Invalid preset index")
 
-        return await self.call("set_preferred_state", preset.dict(exclude_none=True))
+        return await self.call("set_preferred_state", preset.to_dict())

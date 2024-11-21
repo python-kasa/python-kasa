@@ -3,18 +3,19 @@ import os
 import re
 from datetime import datetime
 from unittest.mock import ANY
+from zoneinfo import ZoneInfo
 
 import asyncclick as click
 import pytest
 from asyncclick.testing import CliRunner
 from pytest_mock import MockerFixture
-from zoneinfo import ZoneInfo
 
 from kasa import (
     AuthenticationError,
     Credentials,
     Device,
     DeviceError,
+    DeviceType,
     EmeterStatus,
     KasaException,
     Module,
@@ -42,6 +43,7 @@ from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
+from kasa.smartcamera import SmartCamera
 
 from .conftest import (
     device_smart,
@@ -51,8 +53,12 @@ from .conftest import (
     turn_on,
 )
 
+# The cli tests should be testing the cli logic rather than a physical device
+# so mark the whole file for skipping with real devices.
+pytestmark = [pytest.mark.requires_dummy]
 
-@pytest.fixture()
+
+@pytest.fixture
 def runner():
     """Runner fixture that unsets the KASA_ environment variables for tests."""
     KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
@@ -173,6 +179,9 @@ async def test_state(dev, turn_on, runner):
 
 @turn_on
 async def test_toggle(dev, turn_on, runner):
+    if isinstance(dev, SmartCamera) and dev.device_type == DeviceType.Hub:
+        pytest.skip(reason="Hub cannot toggle state")
+
     await handle_turn_on(dev, turn_on)
     await dev.update()
     assert dev.is_on == turn_on
@@ -203,7 +212,9 @@ async def test_raw_command(dev, mocker, runner):
     update = mocker.patch.object(dev, "update")
     from kasa.smart import SmartDevice
 
-    if isinstance(dev, SmartDevice):
+    if isinstance(dev, SmartCamera):
+        params = ["na", "getDeviceInfo"]
+    elif isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
     else:
         params = ["system", "get_sysinfo"]
@@ -420,20 +431,22 @@ async def test_time_set(dev: Device, mocker, runner):
 
 async def test_emeter(dev: Device, mocker, runner):
     res = await runner.invoke(emeter, obj=dev)
-    if not dev.has_emeter:
-        assert "Device has no emeter" in res.output
+    if not (energy := dev.modules.get(Module.Energy)):
+        assert "Device has no energy module." in res.output
         return
 
     assert "== Emeter ==" in res.output
 
-    if not dev.is_strip:
+    if dev.device_type is not DeviceType.Strip:
         res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
         res = await runner.invoke(emeter, ["--name", "mock"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
 
-    if dev.is_strip and len(dev.children) > 0:
-        realtime_emeter = mocker.patch.object(dev.children[0], "get_emeter_realtime")
+    if dev.device_type is DeviceType.Strip and len(dev.children) > 0:
+        child_energy = dev.children[0].modules.get(Module.Energy)
+        assert child_energy
+        realtime_emeter = mocker.patch.object(child_energy, "get_status")
         realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
 
         res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
@@ -446,18 +459,18 @@ async def test_emeter(dev: Device, mocker, runner):
         assert realtime_emeter.call_count == 2
 
     if isinstance(dev, IotDevice):
-        monthly = mocker.patch.object(dev, "get_emeter_monthly")
+        monthly = mocker.patch.object(energy, "get_monthly_stats")
         monthly.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
     if not isinstance(dev, IotDevice):
-        assert "Device has no historical statistics" in res.output
+        assert "Device does not support historical statistics" in res.output
         return
     assert "For year" in res.output
     assert "1, 1234" in res.output
     monthly.assert_called_with(year=1900)
 
     if isinstance(dev, IotDevice):
-        daily = mocker.patch.object(dev, "get_emeter_daily")
+        daily = mocker.patch.object(energy, "get_daily_stats")
         daily.return_value = {1: 1234}
     res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
     if not isinstance(dev, IotDevice):
@@ -612,7 +625,7 @@ async def test_credentials(discovery_mock, mocker, runner):
 
     mocker.patch("kasa.cli.device.state", new=_state)
 
-    dr = DiscoveryResult(**discovery_mock.discovery_data["result"])
+    dr = DiscoveryResult.from_dict(discovery_mock.discovery_data["result"])
     res = await runner.invoke(
         cli,
         [
@@ -848,9 +861,6 @@ async def test_host_auth_failed(discovery_mock, mocker, runner):
 @pytest.mark.parametrize("device_type", TYPES)
 async def test_type_param(device_type, mocker, runner):
     """Test for handling only one of username or password supplied."""
-    if device_type == "camera":
-        pytest.skip(reason="camera is experimental")
-
     result_device = FileNotFoundError
     pass_dev = click.make_pass_decorator(Device)
 
@@ -860,7 +870,9 @@ async def test_type_param(device_type, mocker, runner):
         result_device = dev
 
     mocker.patch("kasa.cli.device.state", new=_state)
-    if device_type == "smart":
+    if device_type == "camera":
+        expected_type = SmartCamera
+    elif device_type == "smart":
         expected_type = SmartDevice
     else:
         expected_type = _legacy_type_to_class(device_type)
@@ -1240,39 +1252,3 @@ async def test_discover_config_invalid(mocker, runner):
     )
     assert res.exit_code == 1
     assert "--target is not a valid option for single host discovery" in res.output
-
-
-@pytest.mark.parametrize(
-    ("option", "env_var_value", "expectation"),
-    [
-        pytest.param("--experimental", None, True),
-        pytest.param("--experimental", "false", True),
-        pytest.param(None, None, False),
-        pytest.param(None, "true", True),
-        pytest.param(None, "false", False),
-        pytest.param("--no-experimental", "true", False),
-    ],
-)
-async def test_experimental_flags(mocker, option, env_var_value, expectation):
-    """Test the experimental flag is set correctly."""
-    mocker.patch("kasa.discover.Discover.try_connect_all", return_value=None)
-
-    # reset the class internal variable
-    from kasa.experimental import Experimental
-
-    Experimental._enabled = None
-
-    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
-    if env_var_value:
-        KASA_VARS["KASA_EXPERIMENTAL"] = env_var_value
-    args = [
-        "--host",
-        "127.0.0.2",
-        "discover",
-        "config",
-    ]
-    if option:
-        args.insert(0, option)
-    runner = CliRunner(env=KASA_VARS)
-    res = await runner.invoke(cli, args)
-    assert ("Experimental support is enabled" in res.output) is expectation

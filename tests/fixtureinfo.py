@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import copy
 import glob
 import json
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, NamedTuple
+from typing import NamedTuple
 
-from kasa.device_factory import _get_device_type_from_sys_info
+import pytest
+
 from kasa.device_type import DeviceType
-from kasa.experimental.smartcamera import SmartCamera
+from kasa.iot import IotDevice
 from kasa.smart.smartdevice import SmartDevice
+from kasa.smartcamera.smartcamera import SmartCamera
 
 
 class FixtureInfo(NamedTuple):
@@ -104,8 +108,10 @@ def filter_fixtures(
     data_root_filter: str | None = None,
     protocol_filter: set[str] | None = None,
     model_filter: set[str] | None = None,
+    model_startswith_filter: str | None = None,
     component_filter: str | ComponentFilter | None = None,
     device_type_filter: Iterable[DeviceType] | None = None,
+    fixture_list: list[FixtureInfo] = FIXTURE_DATA,
 ):
     """Filter the fixtures based on supplied parameters.
 
@@ -127,11 +133,14 @@ def filter_fixtures(
             and (model := model_filter_list[0])
             and len(model.split("_")) == 3
         ):
-            # return exact match
+            # filter string includes hw and fw, return exact match
             return fixture_data.name == f"{model}.json"
         file_model_region = fixture_data.name.split("_")[0]
         file_model = file_model_region.split("(")[0]
         return file_model in model_filter
+
+    def _model_startswith_match(fixture_data: FixtureInfo, starts_with: str):
+        return fixture_data.name.startswith(starts_with)
 
     def _component_match(
         fixture_data: FixtureInfo, component_filter: str | ComponentFilter
@@ -166,7 +175,10 @@ def filter_fixtures(
                 in device_type
             )
         elif fixture_data.protocol == "IOT":
-            return _get_device_type_from_sys_info(fixture_data.data) in device_type
+            return (
+                IotDevice._get_device_type_from_sys_info(fixture_data.data)
+                in device_type
+            )
         elif fixture_data.protocol == "SMARTCAMERA":
             info = fixture_data.data["getDeviceInfo"]["device_info"]["basic_info"]
             return SmartCamera._get_device_type_from_sysinfo(info) in device_type
@@ -174,13 +186,17 @@ def filter_fixtures(
 
     filtered = []
     if protocol_filter is None:
-        protocol_filter = {"IOT", "SMART"}
-    for fixture_data in FIXTURE_DATA:
+        protocol_filter = {"IOT", "SMART", "SMARTCAMERA"}
+    for fixture_data in fixture_list:
         if data_root_filter and data_root_filter not in fixture_data.data:
             continue
         if fixture_data.protocol not in protocol_filter:
             continue
         if model_filter is not None and not _model_match(fixture_data, model_filter):
+            continue
+        if model_startswith_filter is not None and not _model_startswith_match(
+            fixture_data, model_startswith_filter
+        ):
             continue
         if component_filter and not _component_match(fixture_data, component_filter):
             continue
@@ -191,8 +207,16 @@ def filter_fixtures(
 
         filtered.append(fixture_data)
 
-    print(f"# {desc}")
-    for value in filtered:
-        print(f"\t{value.name}")
     filtered.sort()
     return filtered
+
+
+@pytest.fixture(
+    params=filter_fixtures("all fixture infos"),
+    ids=idgenerator,
+)
+def fixture_info(request, mocker):
+    """Return raw discovery file contents as JSON. Used for discovery tests."""
+    fixture_info = request.param
+    fixture_data = copy.deepcopy(fixture_info.data)
+    return FixtureInfo(fixture_info.name, fixture_info.protocol, fixture_data)

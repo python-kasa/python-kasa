@@ -9,8 +9,7 @@ import aiohttp
 import pytest
 from yarl import URL
 
-from kasa.aestransport import AesTransport
-from kasa.credentials import Credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     AuthenticationError,
@@ -20,17 +19,19 @@ from kasa.exceptions import (
     _RetryableError,
 )
 from kasa.httpclient import HttpClient
-from kasa.iotprotocol import IotProtocol
-from kasa.klaptransport import (
+from kasa.protocols import IotProtocol, SmartProtocol
+from kasa.transports.aestransport import AesTransport
+from kasa.transports.klaptransport import (
     KlapEncryptionSession,
     KlapTransport,
     KlapTransportV2,
     _sha256,
 )
-from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
-from kasa.smartprotocol import SmartProtocol
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
+
+# Transport tests are not designed for real devices
+pytestmark = [pytest.mark.requires_dummy]
 
 
 class _mock_response:

@@ -13,6 +13,7 @@ from voluptuous import (
 
 from kasa import Device, DeviceType, IotLightPreset, KasaException, LightState, Module
 from kasa.iot import IotBulb, IotDimmer
+from kasa.iot.modules import LightPreset as IotLightPresetModule
 
 from .conftest import (
     bulb,
@@ -32,17 +33,12 @@ from .conftest import (
 from .test_iotdevice import SYSINFO_SCHEMA
 
 
-@bulb
+@bulb_iot
 async def test_bulb_sysinfo(dev: Device):
     assert dev.sys_info is not None
     SYSINFO_SCHEMA_BULB(dev.sys_info)
 
     assert dev.model is not None
-
-    # TODO: remove special handling for lightstrip
-    if not dev.is_light_strip:
-        assert dev.device_type == DeviceType.Bulb
-        assert dev.is_bulb
 
 
 @bulb
@@ -88,7 +84,9 @@ async def test_hsv(dev: Device, turn_on):
 @color_bulb_iot
 async def test_set_hsv_transition(dev: IotBulb, mocker):
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
-    await dev.set_hsv(10, 10, 100, transition=1000)
+    light = dev.modules.get(Module.Light)
+    assert light
+    await light.set_hsv(10, 10, 100, transition=1000)
 
     set_light_state.assert_called_with(
         {"hue": 10, "saturation": 10, "brightness": 100, "color_temp": 0},
@@ -226,7 +224,9 @@ async def test_try_set_colortemp(dev: Device, turn_on):
 @variable_temp_iot
 async def test_set_color_temp_transition(dev: IotBulb, mocker):
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
-    await dev.set_color_temp(2700, transition=100)
+    light = dev.modules.get(Module.Light)
+    assert light
+    await light.set_color_temp(2700, transition=100)
 
     set_light_state.assert_called_with({"color_temp": 2700}, transition=100)
 
@@ -234,8 +234,9 @@ async def test_set_color_temp_transition(dev: IotBulb, mocker):
 @variable_temp_iot
 async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
     monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
-
-    assert dev.valid_temperature_range == (2700, 5000)
+    light = dev.modules.get(Module.Light)
+    assert light
+    assert light.valid_temperature_range == (2700, 5000)
     assert "Unknown color temperature range, fallback to 2700-5000" in caplog.text
 
 
@@ -277,20 +278,22 @@ async def test_non_variable_temp(dev: Device):
 @dimmable_iot
 @turn_on
 async def test_dimmable_brightness(dev: IotBulb, turn_on):
-    assert isinstance(dev, (IotBulb, IotDimmer))
+    assert isinstance(dev, IotBulb | IotDimmer)
+    light = dev.modules.get(Module.Light)
+    assert light
     await handle_turn_on(dev, turn_on)
     assert dev._is_dimmable
 
-    await dev.set_brightness(50)
+    await light.set_brightness(50)
     await dev.update()
-    assert dev.brightness == 50
+    assert light.brightness == 50
 
-    await dev.set_brightness(10)
+    await light.set_brightness(10)
     await dev.update()
-    assert dev.brightness == 10
+    assert light.brightness == 10
 
     with pytest.raises(TypeError, match="Brightness must be an integer"):
-        await dev.set_brightness("foo")  # type: ignore[arg-type]
+        await light.set_brightness("foo")  # type: ignore[arg-type]
 
 
 @bulb_iot
@@ -308,7 +311,9 @@ async def test_turn_on_transition(dev: IotBulb, mocker):
 @bulb_iot
 async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
     set_light_state = mocker.patch("kasa.iot.IotBulb._set_light_state")
-    await dev.set_brightness(10, transition=1000)
+    light = dev.modules.get(Module.Light)
+    assert light
+    await light.set_brightness(10, transition=1000)
 
     set_light_state.assert_called_with({"brightness": 10, "on_off": 1}, transition=1000)
 
@@ -316,28 +321,30 @@ async def test_dimmable_brightness_transition(dev: IotBulb, mocker):
 @dimmable_iot
 async def test_invalid_brightness(dev: IotBulb):
     assert dev._is_dimmable
-
+    light = dev.modules.get(Module.Light)
+    assert light
     with pytest.raises(
         ValueError,
         match=re.escape("Invalid brightness value: 110 (valid range: 0-100%)"),
     ):
-        await dev.set_brightness(110)
+        await light.set_brightness(110)
 
     with pytest.raises(
         ValueError,
         match=re.escape("Invalid brightness value: -100 (valid range: 0-100%)"),
     ):
-        await dev.set_brightness(-100)
+        await light.set_brightness(-100)
 
 
 @non_dimmable_iot
 async def test_non_dimmable(dev: IotBulb):
     assert not dev._is_dimmable
-
+    light = dev.modules.get(Module.Light)
+    assert light
     with pytest.raises(KasaException):
-        assert dev.brightness == 0
+        assert light.brightness == 0
     with pytest.raises(KasaException):
-        await dev.set_brightness(100)
+        await light.set_brightness(100)
 
 
 @bulb_iot
@@ -357,7 +364,10 @@ async def test_ignore_default_not_set_without_color_mode_change_turn_on(
 
 @bulb_iot
 async def test_list_presets(dev: IotBulb):
-    presets = dev.presets
+    light_preset = dev.modules.get(Module.LightPreset)
+    assert light_preset
+    assert isinstance(light_preset, IotLightPresetModule)
+    presets = light_preset._deprecated_presets
     # Light strip devices may list some light effects along with normal presets but these
     # are handled by the LightEffect module so exclude preferred states with id
     raw_presets = [
@@ -365,7 +375,7 @@ async def test_list_presets(dev: IotBulb):
     ]
     assert len(presets) == len(raw_presets)
 
-    for preset, raw in zip(presets, raw_presets):
+    for preset, raw in zip(presets, raw_presets, strict=False):
         assert preset.index == raw["index"]
         assert preset.brightness == raw["brightness"]
         assert preset.hue == raw["hue"]
@@ -376,9 +386,13 @@ async def test_list_presets(dev: IotBulb):
 @bulb_iot
 async def test_modify_preset(dev: IotBulb, mocker):
     """Verify that modifying preset calls the and exceptions are raised properly."""
-    if not dev.presets:
+    if (
+        not (light_preset := dev.modules.get(Module.LightPreset))
+        or not light_preset._deprecated_presets
+    ):
         pytest.skip("Some strips do not support presets")
 
+    assert isinstance(light_preset, IotLightPresetModule)
     data: dict[str, int | None] = {
         "index": 0,
         "brightness": 10,
@@ -394,12 +408,12 @@ async def test_modify_preset(dev: IotBulb, mocker):
     assert preset.saturation == 0
     assert preset.color_temp == 0
 
-    await dev.save_preset(preset)
+    await light_preset._deprecated_save_preset(preset)
     await dev.update()
-    assert dev.presets[0].brightness == 10
+    assert light_preset._deprecated_presets[0].brightness == 10
 
     with pytest.raises(KasaException):
-        await dev.save_preset(
+        await light_preset._deprecated_save_preset(
             IotLightPreset(index=5, hue=0, brightness=0, saturation=0, color_temp=0)  # type: ignore[call-arg]
         )
 
@@ -420,11 +434,14 @@ async def test_modify_preset(dev: IotBulb, mocker):
 )
 async def test_modify_preset_payloads(dev: IotBulb, preset, payload, mocker):
     """Test that modify preset payloads ignore none values."""
-    if not dev.presets:
+    if (
+        not (light_preset := dev.modules.get(Module.LightPreset))
+        or not light_preset._deprecated_presets
+    ):
         pytest.skip("Some strips do not support presets")
 
     query_helper = mocker.patch("kasa.iot.IotBulb._query_helper")
-    await dev.save_preset(preset)
+    await light_preset._deprecated_save_preset(preset)
     query_helper.assert_called_with(dev.LIGHT_SERVICE, "set_preferred_state", payload)
 
 
@@ -436,6 +453,8 @@ LIGHT_STATE_SCHEMA = Schema(
         "mode": str,
         "on_off": Boolean,
         "saturation": All(int, Range(min=0, max=100)),
+        "length": Optional(int),
+        "transition": Optional(int),
         "dft_on_state": Optional(
             {
                 "brightness": All(int, Range(min=0, max=100)),
@@ -443,6 +462,7 @@ LIGHT_STATE_SCHEMA = Schema(
                 "hue": All(int, Range(min=0, max=360)),
                 "mode": str,
                 "saturation": All(int, Range(min=0, max=100)),
+                "groups": Optional(list[int]),
             }
         ),
         "err_code": int,
@@ -476,6 +496,10 @@ SYSINFO_SCHEMA_BULB = SYSINFO_SCHEMA.extend(
 
 @bulb
 def test_device_type_bulb(dev: Device):
-    if dev.is_light_strip:
-        pytest.skip("bulb has also lightstrips to test the api")
-    assert dev.device_type == DeviceType.Bulb
+    assert dev.device_type in {DeviceType.Bulb, DeviceType.LightStrip}
+
+
+@bulb_iot
+async def test_turn_on_behaviours(dev: IotBulb):
+    behavior = await dev.get_turn_on_behavior()
+    assert behavior

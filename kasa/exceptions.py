@@ -39,7 +39,7 @@ class DeviceError(KasaException):
     """Base exception for device errors."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self.error_code: SmartErrorCode | None = kwargs.get("error_code", None)
+        self.error_code: SmartErrorCode | None = kwargs.get("error_code")
         super().__init__(*args)
 
     def __repr__(self) -> str:

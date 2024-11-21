@@ -8,7 +8,7 @@ from typing import Any
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import IotDevice, requires_update
 from .modules import AmbientLight, Antitheft, Cloud, Led, Motion, Schedule, Time, Usage
 

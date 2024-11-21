@@ -197,7 +197,8 @@ The following devices have been tested and confirmed as working. If your device 
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
-- **Hubs**: H100
+- **Cameras**: C210, TC65
+- **Hubs**: H100, H200
 - **Hub-Connected Devices<sup>\*\*\*</sup>**: S200B, S200D, T100, T110, T300, T310, T315
 
 <!--SUPPORTED_END-->
@@ -211,7 +212,7 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 
 ### Developer Resources
 
-* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+* [softScheck's github contains lot of information and wireshark dissector](https://github.com/softScheck/tplink-smartplug)
 * [TP-Link Smart Home Device Simulator](https://github.com/plasticrake/tplink-smarthome-simulator)
 * [Unofficial API documentation](https://github.com/plasticrake/tplink-smarthome-api)
 * [Another unofficial API documentation](https://github.com/whitslack/kasa)

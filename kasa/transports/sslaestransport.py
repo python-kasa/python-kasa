@@ -9,12 +9,11 @@ import logging
 import secrets
 import ssl
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Dict, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from yarl import URL
 
-from ..aestransport import AesEncyptionSession
-from ..credentials import Credentials
+from ..credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from ..deviceconfig import DeviceConfig
 from ..exceptions import (
     SMART_AUTHENTICATION_ERRORS,
@@ -28,7 +27,7 @@ from ..exceptions import (
 from ..httpclient import HttpClient
 from ..json import dumps as json_dumps
 from ..json import loads as json_loads
-from ..protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from . import AesEncyptionSession, BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -174,7 +173,7 @@ class SslAesTransport(BaseTransport):
         raise DeviceError(msg, error_code=error_code)
 
     def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         context.set_ciphers(self.CIPHERS)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
@@ -228,7 +227,7 @@ class SslAesTransport(BaseTransport):
         )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
             assert self._encryption_session is not None
 
         if "result" in resp_dict and "response" in resp_dict["result"]:
@@ -394,7 +393,7 @@ class SslAesTransport(BaseTransport):
             raise AuthenticationError(f"Error trying handshake1: {resp_dict}")
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
 
         server_nonce = resp_dict["result"]["data"]["nonce"]
         device_confirm = resp_dict["result"]["data"]["device_confirm"]

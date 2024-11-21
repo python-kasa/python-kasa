@@ -86,56 +86,56 @@
 ## Protocols and transports
 
 ```{eval-rst}
-.. autoclass:: kasa.protocol.BaseProtocol
+.. autoclass:: kasa.protocols.BaseProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.iotprotocol.IotProtocol
+.. autoclass:: kasa.protocols.IotProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.smartprotocol.SmartProtocol
+.. autoclass:: kasa.protocols.SmartProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.protocol.BaseTransport
+.. autoclass:: kasa.transports.BaseTransport
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.xortransport.XorTransport
+.. autoclass:: kasa.transports.XorTransport
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.klaptransport.KlapTransport
+.. autoclass:: kasa.transports.KlapTransport
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.klaptransport.KlapTransportV2
+.. autoclass:: kasa.transports.KlapTransportV2
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.aestransport.AesTransport
+.. autoclass:: kasa.transports.AesTransport
     :members:
     :inherited-members:
     :undoc-members:

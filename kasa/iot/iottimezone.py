@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, tzinfo
 from typing import cast
-
 from zoneinfo import ZoneInfo
 
 from ..cachedzoneinfo import CachedZoneInfo

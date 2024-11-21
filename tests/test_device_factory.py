@@ -19,8 +19,9 @@ from kasa import (
 )
 from kasa.device_factory import (
     Device,
+    IotDevice,
+    SmartCamera,
     SmartDevice,
-    _get_device_type_from_sys_info,
     connect,
     get_device_class_from_family,
     get_protocol,
@@ -35,11 +36,15 @@ from kasa.discover import DiscoveryResult
 
 from .conftest import DISCOVERY_MOCK_IP
 
+# Device Factory tests are not relevant for real devices which run against
+# a single device that has already been created via the factory.
+pytestmark = [pytest.mark.requires_dummy]
+
 
 def _get_connection_type_device_class(discovery_info):
     if "result" in discovery_info:
         device_class = Discover._get_device_class(discovery_info)
-        dr = DiscoveryResult(**discovery_info["result"])
+        dr = DiscoveryResult.from_dict(discovery_info["result"])
 
         connection_type = DeviceConnectionParameters.from_values(
             dr.device_type, dr.mgt_encrypt_schm.encrypt_type
@@ -173,14 +178,16 @@ async def test_connect_http_client(discovery_mock, mocker):
 
 async def test_device_types(dev: Device):
     await dev.update()
-    if isinstance(dev, SmartDevice):
+    if isinstance(dev, SmartCamera):
+        res = SmartCamera._get_device_type_from_sysinfo(dev.sys_info)
+    elif isinstance(dev, SmartDevice):
         assert dev._discovery_info
-        device_type = cast(str, dev._discovery_info["result"]["device_type"])
+        device_type = cast(str, dev._discovery_info["device_type"])
         res = SmartDevice._get_device_type_from_components(
             list(dev._components.keys()), device_type
         )
     else:
-        res = _get_device_type_from_sys_info(dev._last_update)
+        res = IotDevice._get_device_type_from_sys_info(dev._last_update)
 
     assert dev.device_type == res
 

@@ -12,7 +12,7 @@ import logging
 import time
 from collections.abc import AsyncGenerator
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Dict, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
@@ -20,9 +20,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from yarl import URL
 
-from .credentials import Credentials
-from .deviceconfig import DeviceConfig
-from .exceptions import (
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
+from kasa.deviceconfig import DeviceConfig
+from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
     AuthenticationError,
@@ -33,10 +33,11 @@ from .exceptions import (
     _ConnectionError,
     _RetryableError,
 )
-from .httpclient import HttpClient
-from .json import dumps as json_dumps
-from .json import loads as json_loads
-from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from kasa.httpclient import HttpClient
+from kasa.json import dumps as json_dumps
+from kasa.json import loads as json_loads
+
+from .basetransport import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -192,7 +193,7 @@ class AesTransport(BaseTransport):
             )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
             assert self._encryption_session is not None
 
         self._handle_response_error_code(
@@ -325,7 +326,7 @@ class AesTransport(BaseTransport):
             )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
 
         self._handle_response_error_code(resp_dict, "Unable to complete handshake")
 

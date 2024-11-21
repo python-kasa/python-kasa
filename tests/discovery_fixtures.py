@@ -6,10 +6,11 @@ from json import dumps as json_dumps
 
 import pytest
 
-from kasa.xortransport import XorEncryption
+from kasa.transports.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol, FakeSmartTransport
+from .fakeprotocol_smartcamera import FakeSmartCameraProtocol
 from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 
 DISCOVERY_MOCK_IP = "127.0.0.123"
@@ -126,12 +127,14 @@ def create_discovery_mock(ip: str, fixture_data: dict):
 
     if "discovery_result" in fixture_data:
         discovery_data = {"result": fixture_data["discovery_result"].copy()}
-        device_type = fixture_data["discovery_result"]["device_type"]
-        encrypt_type = fixture_data["discovery_result"]["mgt_encrypt_schm"][
-            "encrypt_type"
-        ]
-        login_version = fixture_data["discovery_result"]["mgt_encrypt_schm"].get("lv")
-        https = fixture_data["discovery_result"]["mgt_encrypt_schm"]["is_support_https"]
+        discovery_result = fixture_data["discovery_result"]
+        device_type = discovery_result["device_type"]
+        encrypt_type = discovery_result["mgt_encrypt_schm"].get(
+            "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
+        )
+
+        login_version = discovery_result["mgt_encrypt_schm"].get("lv")
+        https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
         dm = _DiscoveryMock(
             ip,
             80,
@@ -172,7 +175,9 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     }
     protos = {
         ip: FakeSmartProtocol(fixture_info.data, fixture_info.name)
-        if "SMART" in fixture_info.protocol
+        if fixture_info.protocol in {"SMART", "SMART.CHILD"}
+        else FakeSmartCameraProtocol(fixture_info.data, fixture_info.name)
+        if fixture_info.protocol in {"SMARTCAMERA", "SMARTCAMERA.CHILD"}
         else FakeIotProtocol(fixture_info.data, fixture_info.name)
         for ip, fixture_info in fixture_infos.items()
     }
@@ -197,7 +202,9 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
             # update the protos for any host testing or the test overriding the first ip
             protos[host] = (
                 FakeSmartProtocol(fixture_info.data, fixture_info.name)
-                if "SMART" in fixture_info.protocol
+                if fixture_info.protocol in {"SMART", "SMART.CHILD"}
+                else FakeSmartCameraProtocol(fixture_info.data, fixture_info.name)
+                if fixture_info.protocol in {"SMARTCAMERA", "SMARTCAMERA.CHILD"}
                 else FakeIotProtocol(fixture_info.data, fixture_info.name)
             )
             port = (

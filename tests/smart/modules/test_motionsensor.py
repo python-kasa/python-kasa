@@ -1,6 +1,6 @@
 import pytest
 
-from kasa import Module, SmartDevice
+from kasa import Device, Module
 
 from ...device_fixtures import parametrize
 
@@ -16,7 +16,7 @@ motion = parametrize(
         ("motion_detected", bool),
     ],
 )
-async def test_motion_features(dev: SmartDevice, feature, type):
+async def test_motion_features(dev: Device, feature, type):
     """Test that features are registered and work as expected."""
     motion = dev.modules.get(Module.MotionSensor)
     assert motion is not None

@@ -7,11 +7,11 @@ import json
 import logging
 import re
 import socket
+from asyncio import timeout as asyncio_timeout
 from unittest.mock import MagicMock
 
 import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
-from async_timeout import timeout as asyncio_timeout
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
 
@@ -23,7 +23,6 @@ from kasa import (
     IotProtocol,
     KasaException,
 )
-from kasa.aestransport import AesEncyptionSession
 from kasa.device_factory import (
     get_device_class_from_family,
     get_device_class_from_sys_info,
@@ -40,8 +39,9 @@ from kasa.discover import (
     json_dumps,
 )
 from kasa.exceptions import AuthenticationError, UnsupportedDeviceError
-from kasa.iot import IotDevice
-from kasa.xortransport import XorEncryption, XorTransport
+from kasa.iot import IotDevice, IotPlug
+from kasa.transports.aestransport import AesEncyptionSession
+from kasa.transports.xortransport import XorEncryption, XorTransport
 
 from .conftest import (
     bulb_iot,
@@ -52,6 +52,9 @@ from .conftest import (
     strip_iot,
     wallswitch_iot,
 )
+
+# A physical device has to respond to discovery for the tests to work.
+pytestmark = [pytest.mark.requires_dummy]
 
 UNSUPPORTED = {
     "result": {
@@ -78,14 +81,14 @@ UNSUPPORTED = {
 @wallswitch_iot
 async def test_type_detection_switch(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_wallswitch
-    assert d.device_type == DeviceType.WallSwitch
+    with pytest.deprecated_call(match="use device_type property instead"):
+        assert d.is_wallswitch
+    assert d.device_type is DeviceType.WallSwitch
 
 
 @plug_iot
 async def test_type_detection_plug(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_plug
     assert d.device_type == DeviceType.Plug
 
 
@@ -93,36 +96,34 @@ async def test_type_detection_plug(dev: Device):
 async def test_type_detection_bulb(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
     # TODO: light_strip is a special case for now to force bulb tests on it
-    if not d.is_light_strip:
-        assert d.is_bulb
+
+    if d.device_type is not DeviceType.LightStrip:
         assert d.device_type == DeviceType.Bulb
 
 
 @strip_iot
 async def test_type_detection_strip(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_strip
     assert d.device_type == DeviceType.Strip
 
 
 @dimmer_iot
 async def test_type_detection_dimmer(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_dimmer
     assert d.device_type == DeviceType.Dimmer
 
 
 @lightstrip_iot
 async def test_type_detection_lightstrip(dev: Device):
     d = Discover._get_device_class(dev._last_update)("localhost")
-    assert d.is_light_strip
     assert d.device_type == DeviceType.LightStrip
 
 
-async def test_type_unknown():
+async def test_type_unknown(caplog):
     invalid_info = {"system": {"get_sysinfo": {"type": "nosuchtype"}}}
-    with pytest.raises(UnsupportedDeviceError):
-        Discover._get_device_class(invalid_info)
+    assert Discover._get_device_class(invalid_info) is IotPlug
+    msg = "Unknown device type nosuchtype, falling back to plug"
+    assert msg in caplog.text
 
 
 @pytest.mark.parametrize("custom_port", [123, None])
@@ -266,7 +267,6 @@ INVALIDS = [
         "Unable to find the device type field",
         {"system": {"get_sysinfo": {"missing_type": 1}}},
     ),
-    ("Unknown device type: foo", {"system": {"get_sysinfo": {"type": "foo"}}}),
 ]
 
 
@@ -388,8 +388,8 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
     discovery_data = discovery_mock.discovery_data
     device_class = Discover._get_device_class(discovery_data)
     device = device_class("127.0.0.1")
-    discover_info = DiscoveryResult(**discovery_data["result"])
-    discover_dump = discover_info.get_dict()
+    discover_info = DiscoveryResult.from_dict(discovery_data["result"])
+    discover_dump = discover_info.to_dict()
     model, _, _ = discover_dump["device_model"].partition("(")
     discover_dump["model"] = model
     device.update_from_discover_info(discover_dump)
@@ -649,7 +649,7 @@ async def test_discovery_decryption():
         "sym_schm": "AES",
     }
     info = {**UNSUPPORTED["result"], "encrypt_info": encrypt_info}
-    dr = DiscoveryResult(**info)
+    dr = DiscoveryResult.from_dict(info)
     Discover._decrypt_discovery_data(dr)
     assert dr.decrypted_data == data_dict
 

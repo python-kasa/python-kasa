@@ -36,13 +36,10 @@ from kasa.exceptions import (
 )
 from kasa.feature import Feature
 from kasa.interfaces.light import HSV, ColorTempRange, Light, LightState
-from kasa.iotprotocol import (
-    IotProtocol,
-    _deprecated_TPLinkSmartHomeProtocol,  # noqa: F401
-)
 from kasa.module import Module
-from kasa.protocol import BaseProtocol, BaseTransport
-from kasa.smartprotocol import SmartProtocol
+from kasa.protocols import BaseProtocol, IotProtocol, SmartProtocol
+from kasa.protocols.iotprotocol import _deprecated_TPLinkSmartHomeProtocol  # noqa: F401
+from kasa.transports import BaseTransport
 
 __version__ = version("python-kasa")
 

@@ -262,6 +262,8 @@ class SmartRequest:
         """Get energy usage."""
         return [
             SmartRequest("get_energy_usage"),
+            SmartRequest("get_emeter_data"),
+            SmartRequest("get_emeter_vgain_igain"),
             SmartRequest.get_raw_request("get_electricity_price_config"),
         ]
 

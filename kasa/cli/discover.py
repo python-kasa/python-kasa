@@ -6,7 +6,6 @@ import asyncio
 from pprint import pformat as pf
 
 import asyncclick as click
-from pydantic.v1 import ValidationError
 
 from kasa import (
     AuthenticationError,
@@ -207,8 +206,8 @@ def _echo_discovery_info(discovery_info) -> None:
         return
 
     try:
-        dr = DiscoveryResult(**discovery_info)
-    except ValidationError:
+        dr = DiscoveryResult.from_dict(discovery_info)
+    except Exception:
         _echo_dictionary(discovery_info)
         return
 
@@ -239,13 +238,48 @@ def _echo_discovery_info(discovery_info) -> None:
     _conditional_echo("Decrypted", pf(dr.decrypted_data) if dr.decrypted_data else None)
 
 
-async def find_host_from_alias(alias, target="255.255.255.255", timeout=1, attempts=3):
+async def find_dev_from_alias(
+    alias: str,
+    credentials: Credentials | None,
+    target: str = "255.255.255.255",
+    timeout: int = 5,
+    attempts: int = 3,
+) -> Device | None:
     """Discover a device identified by its alias."""
-    for _attempt in range(1, attempts):
-        found_devs = await Discover.discover(target=target, timeout=timeout)
-        for _ip, dev in found_devs.items():
-            if dev.alias.lower() == alias.lower():
-                host = dev.host
-                return host
+    found_event = asyncio.Event()
+    found_device = []
+    seen_hosts = set()
 
-    return None
+    async def on_discovered(dev: Device):
+        if dev.host in seen_hosts:
+            return
+        seen_hosts.add(dev.host)
+        try:
+            await dev.update()
+        except Exception as ex:
+            echo(f"Error querying device {dev.host}: {ex}")
+            return
+        finally:
+            await dev.protocol.close()
+        if not dev.alias:
+            echo(f"Skipping device {dev.host} with no alias")
+            return
+        if dev.alias.lower() == alias.lower():
+            found_device.append(dev)
+            found_event.set()
+
+    async def do_discover():
+        for _ in range(1, attempts):
+            await Discover.discover(
+                target=target,
+                timeout=timeout,
+                credentials=credentials,
+                on_discovered=on_discovered,
+            )
+            if found_event.is_set():
+                break
+        found_event.set()
+
+    asyncio.create_task(do_discover())
+    await found_event.wait()
+    return found_device[0] if found_device else None

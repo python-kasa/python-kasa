@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 try:
     import orjson
@@ -21,3 +22,13 @@ except ImportError:
         return json.dumps(obj, separators=(",", ":"))
 
     loads = json.loads
+
+
+try:
+    from mashumaro.mixins.orjson import DataClassORJSONMixin
+
+    DataClassJSONMixin = DataClassORJSONMixin
+except ImportError:
+    from mashumaro.mixins.json import DataClassJSONMixin as JSONMixin
+
+    DataClassJSONMixin = JSONMixin  # type: ignore[assignment, misc]

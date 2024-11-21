@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -91,7 +91,7 @@ async def test_hub(dev):
 @device_smartcamera
 async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
     """Test a child device gets the time from it's parent module."""
-    fallback_time = datetime.now(timezone.utc).astimezone().replace(microsecond=0)
+    fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
     assert dev.time != fallback_time
     module = dev.modules[Module.Time]
     await module.set_time(fallback_time)

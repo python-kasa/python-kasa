@@ -5,23 +5,19 @@ description = "Python API for TP-Link Kasa and Tapo devices"
 license = {text = "GPL-3.0-or-later"}
 authors = [ { name = "python-kasa developers" }]
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.11,<4.0"
 dependencies = [
   "asyncclick>=8.1.7",
-  "pydantic>=1.10.15",
   "cryptography>=1.9",
-  "async-timeout>=3.0.0",
   "aiohttp>=3",
-  "typing-extensions>=4.12.2,<5.0",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
+  "mashumaro>=3.14",
 ]
 
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -29,7 +25,7 @@ classifiers = [
 
 [project.optional-dependencies]
 speedups = ["orjson>=3.9.1", "kasa-crypt>=0.2.0"]
-docs = ["sphinx~=5.0", "sphinx_rtd_theme~=2.0", "sphinxcontrib-programoutput~=0.0", "myst-parser", "docutils>=0.17"]
+docs = ["sphinx~=6.2", "sphinx_rtd_theme~=2.0", "sphinxcontrib-programoutput~=0.0", "myst-parser", "docutils>=0.17"]
 shell = ["ptpython", "rich"]
 
 [project.urls]
@@ -59,6 +55,7 @@ dev-dependencies = [
   "mypy~=1.0",
   "pytest-xdist>=3.6.1",
   "pytest-socket>=0.7.0",
+  "ruff==0.7.4",
 ]
 
 
@@ -83,9 +80,6 @@ include = [
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
-omit = [
-  "kasa/experimental/*"
-]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -122,7 +116,7 @@ ignore-path-errors = ["docs/source/index.rst;D000"]
 
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [

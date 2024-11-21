@@ -11,21 +11,23 @@ import aiohttp
 import pytest
 from yarl import URL
 
-from kasa.aestransport import AesEncyptionSession
-from kasa.credentials import Credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     AuthenticationError,
     KasaException,
     SmartErrorCode,
 )
-from kasa.experimental.sslaestransport import (
+from kasa.httpclient import HttpClient
+from kasa.transports.aestransport import AesEncyptionSession
+from kasa.transports.sslaestransport import (
     SslAesTransport,
     TransportState,
     _sha256_hash,
 )
-from kasa.httpclient import HttpClient
-from kasa.protocol import DEFAULT_CREDENTIALS, get_default_credentials
+
+# Transport tests are not designed for real devices
+pytestmark = [pytest.mark.requires_dummy]
 
 MOCK_ADMIN_USER = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"]).username
 MOCK_PWD = "correct_pwd"  # noqa: S105
