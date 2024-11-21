@@ -27,7 +27,7 @@ class Light(IotModule, LightInterface):
     _device: IotBulb | IotDimmer
     _light_state: LightState
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features."""
         super()._initialize_features()
         device = self._device
@@ -41,8 +41,7 @@ class Light(IotModule, LightInterface):
                     container=self,
                     attribute_getter="brightness",
                     attribute_setter="set_brightness",
-                    minimum_value=BRIGHTNESS_MIN,
-                    maximum_value=BRIGHTNESS_MAX,
+                    range_getter=lambda: (BRIGHTNESS_MIN, BRIGHTNESS_MAX),
                     type=Feature.Type.Number,
                     category=Feature.Category.Primary,
                 )
@@ -186,7 +185,7 @@ class Light(IotModule, LightInterface):
         return bulb._color_temp
 
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
+        self, temp: int, *, brightness: int | None = None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
 
@@ -231,6 +230,8 @@ class Light(IotModule, LightInterface):
                 state_dict["on_off"] = 1
             else:
                 state_dict["on_off"] = int(state.light_on)
+            # Remove the light_on from the dict
+            state_dict.pop("light_on", None)
             return await bulb._set_light_state(state_dict, transition=transition)
 
     @property
@@ -238,7 +239,7 @@ class Light(IotModule, LightInterface):
         """Return the current light state."""
         return self._light_state
 
-    def _post_update_hook(self) -> None:
+    async def _post_update_hook(self) -> None:
         if self._device.is_on is False:
             state = LightState(light_on=False)
         else:

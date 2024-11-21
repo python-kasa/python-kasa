@@ -17,14 +17,8 @@ class AutoOff(SmartModule):
     REQUIRED_COMPONENT = "auto_off"
     QUERY_GETTER_NAME = "get_auto_off_config"
 
-    def _initialize_features(self):
+    def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
-        if not isinstance(self.data, dict):
-            _LOGGER.warning(
-                "No data available for module, skipping %s: %s", self, self.data
-            )
-            return
-
         self._add_feature(
             Feature(
                 self._device,
@@ -40,11 +34,12 @@ class AutoOff(SmartModule):
             Feature(
                 self._device,
                 id="auto_off_minutes",
-                name="Auto off minutes",
+                name="Auto off in",
                 container=self,
                 attribute_getter="delay",
                 attribute_setter="set_delay",
                 type=Feature.Type.Number,
+                unit_getter=lambda: "min",  # ha-friendly unit, see UnitOfTime.MINUTES
             )
         )
         self._add_feature(
@@ -55,6 +50,7 @@ class AutoOff(SmartModule):
                 container=self,
                 attribute_getter="auto_off_at",
                 category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
             )
         )
 
@@ -67,7 +63,7 @@ class AutoOff(SmartModule):
         """Return True if enabled."""
         return self.data["enable"]
 
-    async def set_enabled(self, enable: bool):
+    async def set_enabled(self, enable: bool) -> dict:
         """Enable/disable auto off."""
         return await self.call(
             "set_auto_off_config",
@@ -79,7 +75,7 @@ class AutoOff(SmartModule):
         """Return time until auto off."""
         return self.data["delay_min"]
 
-    async def set_delay(self, delay: int):
+    async def set_delay(self, delay: int) -> dict:
         """Set time until auto off."""
         return await self.call(
             "set_auto_off_config", {"delay_min": delay, "enable": self.data["enable"]}
@@ -100,7 +96,7 @@ class AutoOff(SmartModule):
 
         return self._device.time + timedelta(seconds=sysinfo["auto_off_remain_time"])
 
-    async def _check_supported(self):
+    async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device.
 
         Parent devices that report components of children such as P300 will not have

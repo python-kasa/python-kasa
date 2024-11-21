@@ -3,18 +3,16 @@
 ## Discover
 
 
-```{module} kasa.discover
+```{module} kasa
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.Discover
+.. autoclass:: Discover
     :members:
 ```
 
 ## Device
 
-```{module} kasa.device
-```
 
 ```{eval-rst}
 .. autoclass:: Device
@@ -25,17 +23,14 @@
 
 ## Device Config
 
-```{module} kasa.credentials
-```
 
 ```{eval-rst}
 .. autoclass:: Credentials
     :members:
     :undoc-members:
+    :noindex:
 ```
 
-```{module} kasa.deviceconfig
-```
 
 ```{eval-rst}
 .. autoclass:: DeviceConfig
@@ -45,19 +40,19 @@
 
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceFamily
+.. autoclass:: DeviceFamily
     :members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceConnection
+.. autoclass:: DeviceConnectionParameters
     :members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.DeviceEncryption
+.. autoclass:: DeviceEncryptionType
     :members:
     :undoc-members:
 ```
@@ -65,7 +60,15 @@
 ## Modules and Features
 
 ```{eval-rst}
-.. autoclass:: kasa.Module
+.. autoclass:: Module
+    :noindex:
+    :members:
+    :inherited-members:
+    :undoc-members:
+```
+
+```{eval-rst}
+.. autoclass:: Feature
     :noindex:
     :members:
     :inherited-members:
@@ -80,67 +83,59 @@
     :undoc-members:
 ```
 
-```{eval-rst}
-.. autoclass:: kasa.Feature
-    :noindex:
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
-
 ## Protocols and transports
 
 ```{eval-rst}
-.. autoclass:: kasa.protocol.BaseProtocol
+.. autoclass:: kasa.protocols.BaseProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.iotprotocol.IotProtocol
+.. autoclass:: kasa.protocols.IotProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.smartprotocol.SmartProtocol
+.. autoclass:: kasa.protocols.SmartProtocol
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.protocol.BaseTransport
+.. autoclass:: kasa.transports.BaseTransport
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.xortransport.XorTransport
+.. autoclass:: kasa.transports.XorTransport
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.klaptransport.KlapTransport
+.. autoclass:: kasa.transports.KlapTransport
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.klaptransport.KlapTransportV2
+.. autoclass:: kasa.transports.KlapTransportV2
     :members:
     :inherited-members:
     :undoc-members:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.aestransport.AesTransport
+.. autoclass:: kasa.transports.AesTransport
     :members:
     :inherited-members:
     :undoc-members:

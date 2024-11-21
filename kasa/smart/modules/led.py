@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...interfaces.led import Led as LedInterface
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, allow_update_after
 
 
 class Led(SmartModule, LedInterface):
@@ -11,13 +11,15 @@ class Led(SmartModule, LedInterface):
 
     REQUIRED_COMPONENT = "led"
     QUERY_GETTER_NAME = "get_led_info"
+    # Led queries can cause device to crash on P100
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {self.QUERY_GETTER_NAME: {"led_rule": None}}
+        return {self.QUERY_GETTER_NAME: None}
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         """LED mode setting.
 
         "always", "never", "night_mode"
@@ -25,11 +27,12 @@ class Led(SmartModule, LedInterface):
         return self.data["led_rule"]
 
     @property
-    def led(self):
+    def led(self) -> bool:
         """Return current led status."""
-        return self.data["led_status"]
+        return self.data["led_rule"] != "never"
 
-    async def set_led(self, enable: bool):
+    @allow_update_after
+    async def set_led(self, enable: bool) -> dict:
         """Set led.
 
         This should probably be a select with always/never/nightmode.
@@ -38,7 +41,7 @@ class Led(SmartModule, LedInterface):
         return await self.call("set_led_info", dict(self.data, **{"led_rule": rule}))
 
     @property
-    def night_mode_settings(self):
+    def night_mode_settings(self) -> dict:
         """Night mode settings."""
         return {
             "start": self.data["start_time"],

@@ -3,6 +3,10 @@ on:
   release:
     types: [published]
 
+env:
+  UV_VERSION: 0.4.16
+  PYTHON_VERSION: 3.12
+
 jobs:
   build-n-publish:
     name: Build release packages
@@ -11,25 +15,19 @@ jobs:
       id-token: write
 
     steps:
-    - uses: actions/checkout@master
+    - name: Checkout source files
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+
     - name: Setup python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.x"
+        python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install pypa/build
-      run: >-
-        python -m
-        pip install
-        build
-        --user
     - name: Build a binary wheel and a source tarball
-      run: >-
-        python -m
-        build
-        --sdist
-        --wheel
-        --outdir dist/
-        .
+      run: uv build
+
     - name: Publish release on pypi
       uses: pypa/gh-action-pypi-publish@release/v1

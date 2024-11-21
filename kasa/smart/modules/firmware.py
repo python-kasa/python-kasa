@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from asyncio import timeout as asyncio_timeout
+from collections.abc import Callable, Coroutine
+from dataclasses import dataclass, field
 from datetime import date
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, Optional
+from typing import TYPE_CHECKING, Annotated
 
-# When support for cpython older than 3.11 is dropped
-# async_timeout can be replaced with asyncio.timeout
-from async_timeout import timeout as asyncio_timeout
-from pydantic.v1 import BaseModel, Field, validator
+from mashumaro import DataClassDictMixin, field_options
+from mashumaro.types import Alias
 
-from ...exceptions import SmartErrorCode
+from ...exceptions import KasaException
 from ...feature import Feature
-from ..smartmodule import SmartModule
+from ..smartmodule import SmartModule, allow_update_after
 
 if TYPE_CHECKING:
     from ..smartdevice import SmartDevice
@@ -23,52 +24,56 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class DownloadState(BaseModel):
+@dataclass
+class DownloadState(DataClassDictMixin):
     """Download state."""
 
     # Example:
     #   {'status': 0, 'download_progress': 0, 'reboot_time': 5,
     #    'upgrade_time': 5, 'auto_upgrade': False}
     status: int
-    progress: int = Field(alias="download_progress")
+    progress: Annotated[int, Alias("download_progress")]
     reboot_time: int
     upgrade_time: int
     auto_upgrade: bool
 
 
-class UpdateInfo(BaseModel):
+@dataclass
+class UpdateInfo(DataClassDictMixin):
     """Update info status object."""
 
-    status: int = Field(alias="type")
-    version: Optional[str] = Field(alias="fw_ver", default=None)  # noqa: UP007
-    release_date: Optional[date] = None  # noqa: UP007
-    release_notes: Optional[str] = Field(alias="release_note", default=None)  # noqa: UP007
-    fw_size: Optional[int] = None  # noqa: UP007
-    oem_id: Optional[str] = None  # noqa: UP007
-    needs_upgrade: bool = Field(alias="need_to_upgrade")
-
-    @validator("release_date", pre=True)
-    def _release_date_optional(cls, v):
-        if not v:
-            return None
-
-        return v
+    status: Annotated[int, Alias("type")]
+    needs_upgrade: Annotated[bool, Alias("need_to_upgrade")]
+    version: Annotated[str | None, Alias("fw_ver")] = None
+    release_date: date | None = field(
+        default=None,
+        metadata=field_options(
+            deserialize=lambda x: date.fromisoformat(x) if x else None
+        ),
+    )
+    release_notes: Annotated[str | None, Alias("release_note")] = None
+    fw_size: int | None = None
+    oem_id: str | None = None
 
     @property
-    def update_available(self):
+    def update_available(self) -> bool:
         """Return True if update available."""
-        if self.status != 0:
-            return True
-        return False
+        return self.status != 0
 
 
 class Firmware(SmartModule):
     """Implementation of firmware module."""
 
     REQUIRED_COMPONENT = "firmware"
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60 * 24
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
+        self._firmware_update_info: UpdateInfo | None = None
+
+    def _initialize_features(self) -> None:
+        """Initialize features."""
+        device = self._device
         if self.supported_version > 1:
             self._add_feature(
                 Feature(
@@ -100,6 +105,7 @@ class Firmware(SmartModule):
                 container=self,
                 attribute_getter="current_firmware",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
         self._add_feature(
@@ -110,15 +116,37 @@ class Firmware(SmartModule):
                 container=self,
                 attribute_getter="latest_firmware",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                id="check_latest_firmware",
+                name="Check latest firmware",
+                container=self,
+                attribute_setter="check_latest_firmware",
+                category=Feature.Category.Info,
+                type=Feature.Type.Action,
             )
         )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        req: dict[str, Any] = {"get_latest_fw": None}
         if self.supported_version > 1:
-            req["get_auto_update_info"] = None
-        return req
+            return {"get_auto_update_info": None}
+        return {}
+
+    async def check_latest_firmware(self) -> UpdateInfo | None:
+        """Check for the latest firmware for the device."""
+        try:
+            fw = await self.call("get_latest_fw")
+            self._firmware_update_info = UpdateInfo.from_dict(fw["get_latest_fw"])
+            return self._firmware_update_info
+        except Exception:
+            _LOGGER.exception("Error getting latest firmware for %s:", self._device)
+            self._firmware_update_info = None
+            return None
 
     @property
     def current_firmware(self) -> str:
@@ -126,42 +154,46 @@ class Firmware(SmartModule):
         return self._device.hw_info["sw_ver"]
 
     @property
-    def latest_firmware(self) -> str:
+    def latest_firmware(self) -> str | None:
         """Return the latest firmware version."""
-        return self.firmware_update_info.version
+        if not self._firmware_update_info:
+            return None
+        return self._firmware_update_info.version
 
     @property
-    def firmware_update_info(self):
+    def firmware_update_info(self) -> UpdateInfo | None:
         """Return latest firmware information."""
-        fw = self.data.get("get_latest_fw") or self.data
-        if not self._device.is_cloud_connected or isinstance(fw, SmartErrorCode):
-            # Error in response, probably disconnected from the cloud.
-            return UpdateInfo(type=0, need_to_upgrade=False)
-
-        return UpdateInfo.parse_obj(fw)
+        return self._firmware_update_info
 
     @property
     def update_available(self) -> bool | None:
         """Return True if update is available."""
-        if not self._device.is_cloud_connected:
+        if not self._device.is_cloud_connected or not self._firmware_update_info:
             return None
-        return self.firmware_update_info.update_available
+        return self._firmware_update_info.update_available
 
     async def get_update_state(self) -> DownloadState:
         """Return update state."""
         resp = await self.call("get_fw_download_state")
         state = resp["get_fw_download_state"]
-        return DownloadState(**state)
+        return DownloadState.from_dict(state)
 
+    @allow_update_after
     async def update(
         self, progress_cb: Callable[[DownloadState], Coroutine] | None = None
-    ):
+    ) -> dict:
         """Update the device firmware."""
+        if not self._firmware_update_info:
+            raise KasaException(
+                "You must call check_latest_firmware before calling update"
+            )
+        if not self.update_available:
+            raise KasaException("A new update must be available to call update")
         current_fw = self.current_firmware
         _LOGGER.info(
             "Going to upgrade from %s to %s",
             current_fw,
-            self.firmware_update_info.version,
+            self._firmware_update_info.version,
         )
         await self.call("fw_download")
 
@@ -177,14 +209,14 @@ class Firmware(SmartModule):
                     )
                     continue
 
-                _LOGGER.debug("Update state: %s" % state)
+                _LOGGER.debug("Update state: %s", state)
                 if progress_cb is not None:
                     asyncio.create_task(progress_cb(state))
 
                 if state.status == 0:
                     _LOGGER.info(
                         "Update idle, hopefully updated to %s",
-                        self.firmware_update_info.version,
+                        self._firmware_update_info.version,
                     )
                     break
                 elif state.status == 2:
@@ -202,15 +234,15 @@ class Firmware(SmartModule):
                 else:
                     _LOGGER.warning("Unhandled state code: %s", state)
 
-    @property
-    def auto_update_enabled(self):
-        """Return True if autoupdate is enabled."""
-        return (
-            "get_auto_update_info" in self.data
-            and self.data["get_auto_update_info"]["enable"]
-        )
+        return state.to_dict()
 
-    async def set_auto_update_enabled(self, enabled: bool):
+    @property
+    def auto_update_enabled(self) -> bool:
+        """Return True if autoupdate is enabled."""
+        return "enable" in self.data and self.data["enable"]
+
+    @allow_update_after
+    async def set_auto_update_enabled(self, enabled: bool) -> dict:
         """Change autoupdate setting."""
-        data = {**self.data["get_auto_update_info"], "enable": enabled}
-        await self.call("set_auto_update_info", data)
+        data = {**self.data, "enable": enabled}
+        return await self.call("set_auto_update_info", data)

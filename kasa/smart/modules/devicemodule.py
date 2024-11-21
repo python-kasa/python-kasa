@@ -10,13 +10,21 @@ class DeviceModule(SmartModule):
 
     REQUIRED_COMPONENT = "device"
 
+    async def _post_update_hook(self) -> None:
+        """Perform actions after a device update.
+
+        Overrides the default behaviour to disable a module if the query returns
+        an error because this module is critical.
+        """
+
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         query = {
             "get_device_info": None,
         }
         # Device usage is not available on older firmware versions
-        if self.supported_version >= 2:
+        # or child devices of hubs
+        if self.supported_version >= 2 and not self._device._is_hub_child:
             query["get_device_usage"] = None
 
         return query

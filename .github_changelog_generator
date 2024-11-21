@@ -1,5 +1,11 @@
-breaking_labels=breaking change
-add-sections={"docs":{"prefix":"**Documentation updates:**","labels":["documentation"]},"maintenance":{"prefix":"**Project maintenance:**","labels":["maintenance"]}}
-release_branch=master
+output=CHANGELOG.md
+base=HISTORY.md
+user=python-kasa
+project=python-kasa
+since-tag=0.3.5
+release-branch=master
 usernames-as-github-logins=true
-exclude-labels=duplicate,question,invalid,wontfix,release-prep
+breaking_labels=breaking change
+add-sections={"new-device":{"prefix":"**Added support for devices:**","labels":["new device"]},"docs":{"prefix":"**Documentation updates:**","labels":["documentation"]},"maintenance":{"prefix":"**Project maintenance:**","labels":["maintenance"]}}
+exclude-labels=duplicate,question,invalid,wontfix,release-prep,stale
+issues-wo-labels=false

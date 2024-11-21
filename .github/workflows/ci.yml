@@ -2,13 +2,13 @@ name: CI
 
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "patch"]
   pull_request:
-    branches: ["master"]
+    branches: ["master", "patch"]
   workflow_dispatch:  # to allow manual re-runs
 
 env:
-  POETRY_VERSION: 1.8.2
+  UV_VERSION: 0.4.16
 
 jobs:
   linting:
@@ -17,78 +17,38 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
 
     steps:
-      - uses: "actions/checkout@v4"
+      - name: "Checkout source files"
+        uses: "actions/checkout@v4"
       - name: Setup environment
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
-          poetry-version: ${{ env.POETRY_VERSION }}
-      - name: "Check supported device md files are up to date"
+          uv-version: ${{ env.UV_VERSION }}
+          uv-install-options: "--all-extras"
+
+      - name: "Run pre-commit checks"
         run: |
-          poetry run pre-commit run generate-supported --all-files
-      - name: "Linting and code formating (ruff)"
-        run: |
-          poetry run pre-commit run ruff --all-files
-      - name: "Typing checks (mypy)"
-        run: |
-          poetry run pre-commit run mypy --all-files
-      - name: "Run trailing-whitespace"
-        run: |
-          poetry run pre-commit run trailing-whitespace --all-files
-      - name: "Run end-of-file-fixer"
-        run: |
-          poetry run pre-commit run end-of-file-fixer --all-files
-      - name: "Run check-docstring-first"
-        run: |
-          poetry run pre-commit run check-docstring-first --all-files
-      - name: "Run debug-statements"
-        run: |
-          poetry run pre-commit run debug-statements --all-files
-      - name: "Run check-ast"
-        run: |
-          poetry run pre-commit run check-ast --all-files
+          uv run pre-commit run --all-files --verbose
 
 
   tests:
     name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
     needs: linting
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ startsWith(matrix.python-version, 'pypy') }}
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.9", "pypy-3.10"]
+        python-version: ["3.11", "3.12", "3.13"]
         os: [ubuntu-latest, macos-latest, windows-latest]
         extras: [false, true]
         exclude:
           - os: macos-latest
             extras: true
-          # setup-python not currently working with macos-latest
-          # https://github.com/actions/setup-python/issues/808
-          - os: macos-latest
-            python-version: "3.8"
-          - os: macos-latest
-            python-version: "3.9"
           - os: windows-latest
-            extras: true
-          - os: ubuntu-latest
-            python-version: "pypy-3.9"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "pypy-3.10"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "3.8"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "3.9"
-            extras: true
-          - os: ubuntu-latest
-            python-version: "3.10"
             extras: true
 
     steps:
@@ -97,18 +57,12 @@ jobs:
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
-          poetry-version: ${{ env.POETRY_VERSION }}
-          poetry-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
-      - name: "Run tests (no coverage)"
-        if: ${{ startsWith(matrix.python-version, 'pypy') }}
-        run: |
-          poetry run pytest
+          uv-version: ${{ env.UV_VERSION }}
+          uv-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
       - name: "Run tests (with coverage)"
-        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: |
-          poetry run pytest --cov kasa --cov-report xml
+          uv run pytest -n auto --cov kasa --cov-report xml
       - name: "Upload coverage to Codecov"
-        if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         uses: "codecov/codecov-action@v4"
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

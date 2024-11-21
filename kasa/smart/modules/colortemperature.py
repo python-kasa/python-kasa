@@ -3,15 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
 from ...feature import Feature
 from ...interfaces.light import ColorTempRange
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,11 +18,11 @@ class ColorTemperature(SmartModule):
 
     REQUIRED_COMPONENT = "color_temperature"
 
-    def __init__(self, device: SmartDevice, module: str):
-        super().__init__(device, module)
+    def _initialize_features(self) -> None:
+        """Initialize features."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 "color_temperature",
                 "Color temperature",
                 container=self,
@@ -57,11 +52,11 @@ class ColorTemperature(SmartModule):
         return ColorTempRange(*ct_range)
 
     @property
-    def color_temp(self):
+    def color_temp(self) -> int:
         """Return current color temperature."""
         return self.data["color_temp"]
 
-    async def set_color_temp(self, temp: int):
+    async def set_color_temp(self, temp: int, *, brightness: int | None = None) -> dict:
         """Set the color temperature."""
         valid_temperature_range = self.valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
@@ -70,8 +65,10 @@ class ColorTemperature(SmartModule):
                     *valid_temperature_range, temp
                 )
             )
-
-        return await self.call("set_device_info", {"color_temp": temp})
+        params = {"color_temp": temp}
+        if brightness:
+            params["brightness"] = brightness
+        return await self.call("set_device_info", params)
 
     async def _check_supported(self) -> bool:
         """Check the color_temp_range has more than one value."""

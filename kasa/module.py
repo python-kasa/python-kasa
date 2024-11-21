@@ -1,4 +1,42 @@
-"""Base class for all module implementations."""
+"""Interact with modules.
+
+Modules are implemented by devices to encapsulate sets of functionality like
+Light, AutoOff, Firmware etc.
+
+>>> from kasa import Discover, Module
+>>>
+>>> dev = await Discover.discover_single(
+>>>     "127.0.0.3",
+>>>     username="user@example.com",
+>>>     password="great_password"
+>>> )
+>>> await dev.update()
+>>> print(dev.alias)
+Living Room Bulb
+
+To see whether a device supports functionality check for the existence of the module:
+
+>>> if light := dev.modules.get("Light"):
+>>>     print(light.hsv)
+HSV(hue=0, saturation=100, value=100)
+
+If you know or expect the module to exist you can access by index:
+
+>>> light_preset = dev.modules["LightPreset"]
+>>> print(light_preset.preset_list)
+['Not set', 'Light preset 1', 'Light preset 2', 'Light preset 3',\
+ 'Light preset 4', 'Light preset 5', 'Light preset 6', 'Light preset 7']
+
+Modules support typing via the Module names in Module:
+
+>>> from typing import reveal_type, TYPE_CHECKING
+>>> light_effect = dev.modules.get("LightEffect")
+>>> light_effect_typed = dev.modules.get(Module.LightEffect)
+>>> if TYPE_CHECKING:
+>>>     reveal_type(light_effect)  # Static checker will reveal: str
+>>>     reveal_type(light_effect_typed)  # Static checker will reveal: LightEffect
+
+"""
 
 from __future__ import annotations
 
@@ -19,6 +57,7 @@ if TYPE_CHECKING:
     from .device import Device
     from .iot import modules as iot
     from .smart import modules as smart
+    from .smartcamera import modules as smartcamera
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,22 +72,23 @@ class Module(ABC):
     """
 
     # Common Modules
+    Energy: Final[ModuleName[interfaces.Energy]] = ModuleName("Energy")
+    Fan: Final[ModuleName[interfaces.Fan]] = ModuleName("Fan")
     LightEffect: Final[ModuleName[interfaces.LightEffect]] = ModuleName("LightEffect")
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
     LightPreset: Final[ModuleName[interfaces.LightPreset]] = ModuleName("LightPreset")
     Thermostat: Final[ModuleName[interfaces.Thermostat]] = ModuleName("Thermostat")
+    Time: Final[ModuleName[interfaces.Time]] = ModuleName("Time")
 
     # IOT only Modules
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
     IotAntitheft: Final[ModuleName[iot.Antitheft]] = ModuleName("anti_theft")
     IotCountdown: Final[ModuleName[iot.Countdown]] = ModuleName("countdown")
-    IotEmeter: Final[ModuleName[iot.Emeter]] = ModuleName("emeter")
     IotMotion: Final[ModuleName[iot.Motion]] = ModuleName("motion")
     IotSchedule: Final[ModuleName[iot.Schedule]] = ModuleName("schedule")
     IotUsage: Final[ModuleName[iot.Usage]] = ModuleName("usage")
     IotCloud: Final[ModuleName[iot.Cloud]] = ModuleName("cloud")
-    IotTime: Final[ModuleName[iot.Time]] = ModuleName("time")
 
     # SMART only Modules
     Alarm: Final[ModuleName[smart.Alarm]] = ModuleName("Alarm")
@@ -63,8 +103,6 @@ class Module(ABC):
     )
     ContactSensor: Final[ModuleName[smart.ContactSensor]] = ModuleName("ContactSensor")
     DeviceModule: Final[ModuleName[smart.DeviceModule]] = ModuleName("DeviceModule")
-    Energy: Final[ModuleName[smart.Energy]] = ModuleName("Energy")
-    Fan: Final[ModuleName[smart.Fan]] = ModuleName("Fan")
     Firmware: Final[ModuleName[smart.Firmware]] = ModuleName("Firmware")
     FrostProtection: Final[ModuleName[smart.FrostProtection]] = ModuleName(
         "FrostProtection"
@@ -75,25 +113,36 @@ class Module(ABC):
     LightTransition: Final[ModuleName[smart.LightTransition]] = ModuleName(
         "LightTransition"
     )
+    MotionSensor: Final[ModuleName[smart.MotionSensor]] = ModuleName("MotionSensor")
     ReportMode: Final[ModuleName[smart.ReportMode]] = ModuleName("ReportMode")
+    SmartLightEffect: Final[ModuleName[smart.SmartLightEffect]] = ModuleName(
+        "LightEffect"
+    )
+    IotLightEffect: Final[ModuleName[iot.LightEffect]] = ModuleName("LightEffect")
     TemperatureSensor: Final[ModuleName[smart.TemperatureSensor]] = ModuleName(
         "TemperatureSensor"
     )
     TemperatureControl: Final[ModuleName[smart.TemperatureControl]] = ModuleName(
         "TemperatureControl"
     )
-    Time: Final[ModuleName[smart.Time]] = ModuleName("Time")
     WaterleakSensor: Final[ModuleName[smart.WaterleakSensor]] = ModuleName(
         "WaterleakSensor"
     )
+    ChildProtection: Final[ModuleName[smart.ChildProtection]] = ModuleName(
+        "ChildProtection"
+    )
+    TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
-    def __init__(self, device: Device, module: str):
+    # SMARTCAMERA only modules
+    Camera: Final[ModuleName[smartcamera.Camera]] = ModuleName("Camera")
+
+    def __init__(self, device: Device, module: str) -> None:
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}
 
     @abstractmethod
-    def query(self):
+    def query(self) -> dict:
         """Query to execute during the update cycle.
 
         The inheriting modules implement this to include their wanted
@@ -102,10 +151,10 @@ class Module(ABC):
 
     @property
     @abstractmethod
-    def data(self):
+    def data(self) -> dict:
         """Return the module specific raw data from the last update."""
 
-    def _initialize_features(self):  # noqa: B027
+    def _initialize_features(self) -> None:  # noqa: B027
         """Initialize features after the initial update.
 
         This can be implemented if features depend on module query responses.
@@ -114,7 +163,7 @@ class Module(ABC):
         children's modules.
         """
 
-    def _post_update_hook(self):  # noqa: B027
+    async def _post_update_hook(self) -> None:  # noqa: B027
         """Perform actions after a device update.
 
         This can be implemented if a module needs to perform actions each time
@@ -123,11 +172,11 @@ class Module(ABC):
         *_initialize_features* on the first update.
         """
 
-    def _add_feature(self, feature: Feature):
+    def _add_feature(self, feature: Feature) -> None:
         """Add module feature."""
         id_ = feature.id
         if id_ in self._module_features:
-            raise KasaException("Duplicate id detected %s" % id_)
+            raise KasaException(f"Duplicate id detected {id_}")
         self._module_features[id_] = feature
 
     def __repr__(self) -> str:

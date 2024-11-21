@@ -4,20 +4,22 @@ from __future__ import annotations
 
 import base64
 import logging
-from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
+import time
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime, timedelta, tzinfo
+from typing import TYPE_CHECKING, Any, cast
 
-from ..aestransport import AesTransport
-from ..device import Device, WifiNetwork
+from ..device import Device, WifiNetwork, _DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..emeterstatus import EmeterStatus
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
 from ..feature import Feature
 from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
-from ..smartprotocol import SmartProtocol
+from ..protocols import SmartProtocol
+from ..transports import AesTransport
 from .modules import (
+    ChildDevice,
     Cloud,
     DeviceModule,
     Firmware,
@@ -42,6 +44,9 @@ NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 class SmartDevice(Device):
     """Base class to represent a SMART protocol based device."""
 
+    # Modules that are called as part of the init procedure on first update
+    FIRST_UPDATE_MODULES = {DeviceModule, ChildDevice, Cloud}
+
     def __init__(
         self,
         host: str,
@@ -61,8 +66,11 @@ class SmartDevice(Device):
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
         self._last_update = {}
+        self._last_update_time: float | None = None
+        self._on_since: datetime | None = None
+        self._info: dict[str, Any] = {}
 
-    async def _initialize_children(self):
+    async def _initialize_children(self) -> None:
         """Initialize children for power strips."""
         child_info_query = {
             "get_child_device_component_list": None,
@@ -99,11 +107,11 @@ class SmartDevice(Device):
     @property
     def modules(self) -> ModuleMapping[SmartModule]:
         """Return the device modules."""
-        if TYPE_CHECKING:  # Needed for python 3.8
-            return cast(ModuleMapping[SmartModule], self._modules)
-        return self._modules
+        return cast(ModuleMapping[SmartModule], self._modules)
 
-    def _try_get_response(self, responses: dict, request: str, default=None) -> dict:
+    def _try_get_response(
+        self, responses: dict, request: str, default: Any | None = None
+    ) -> dict:
         response = responses.get(request)
         if isinstance(response, SmartErrorCode):
             _LOGGER.debug(
@@ -121,7 +129,7 @@ class SmartDevice(Device):
             f"{request} not found in {responses} for device {self.host}"
         )
 
-    async def _negotiate(self):
+    async def _negotiate(self) -> None:
         """Perform initialization.
 
         We fetch the device info and the available components as early as possible.
@@ -141,7 +149,8 @@ class SmartDevice(Device):
         self._info = self._try_get_response(resp, "get_device_info")
 
         # Create our internal presentation of available components
-        self._components_raw = resp["component_nego"]
+        self._components_raw = cast(dict, resp["component_nego"])
+
         self._components = {
             comp["id"]: int(comp["ver_code"])
             for comp in self._components_raw["component_list"]
@@ -150,50 +159,164 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def update(self, update_children: bool = False):
+    def _update_children_info(self) -> None:
+        """Update the internal child device info from the parent info."""
+        if child_info := self._try_get_response(
+            self._last_update, "get_child_device_list", {}
+        ):
+            for info in child_info["child_device_list"]:
+                self._children[info["device_id"]]._update_internal_state(info)
+
+    def _update_internal_info(self, info_resp: dict) -> None:
+        """Update the internal device info."""
+        self._info = self._try_get_response(info_resp, "get_device_info")
+
+    async def update(self, update_children: bool = False) -> None:
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
 
-        if self._components_raw is None:
+        first_update = self._last_update_time is None
+        now = time.monotonic()
+        self._last_update_time = now
+
+        if first_update:
             await self._negotiate()
             await self._initialize_modules()
+            # Run post update for the cloud module
+            if cloud_mod := self.modules.get(Module.Cloud):
+                await self._handle_module_post_update(cloud_mod, now, had_query=True)
 
-        req: dict[str, Any] = {}
+        resp = await self._modular_update(first_update, now)
 
-        # TODO: this could be optimized by constructing the query only once
-        for module in self._modules.values():
-            req.update(module.query())
-
-        self._last_update = resp = await self.protocol.query(req)
-
-        self._info = self._try_get_response(resp, "get_device_info")
-
+        self._update_children_info()
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
         # devices will always update children to prevent errors on module access.
+        # This needs to go after updating the internal state of the children so that
+        # child modules have access to their sysinfo.
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
-                await child.update()
-        if child_info := self._try_get_response(resp, "get_child_device_list", {}):
-            for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
-
-        # Call handle update for modules that want to update internal data
-        for module in self._modules.values():
-            module._post_update_hook()
-        for child in self._children.values():
-            for child_module in child._modules.values():
-                child_module._post_update_hook()
+                await child._update()
 
         # We can first initialize the features after the first update.
         # We make here an assumption that every device has at least a single feature.
         if not self._features:
             await self._initialize_features()
 
-        _LOGGER.debug("Got an update: %s", self._last_update)
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            updated = self._last_update if first_update else resp
+            _LOGGER.debug("Update completed %s: %s", self.host, list(updated.keys()))
 
-    async def _initialize_modules(self):
+    async def _handle_module_post_update(
+        self, module: SmartModule, update_time: float, had_query: bool
+    ) -> None:
+        if module.disabled:
+            return  # pragma: no cover
+        if had_query:
+            module._last_update_time = update_time
+        try:
+            await module._post_update_hook()
+            module._set_error(None)
+        except Exception as ex:
+            # Only set the error if a query happened.
+            if had_query:
+                module._set_error(ex)
+                _LOGGER.warning(
+                    "Error processing %s for device %s, module will be unavailable: %s",
+                    module.name,
+                    self.host,
+                    ex,
+                )
+
+    async def _modular_update(
+        self, first_update: bool, update_time: float
+    ) -> dict[str, Any]:
+        """Update the device with via the module queries."""
+        req: dict[str, Any] = {}
+        # Keep a track of actual module queries so we can track the time for
+        # modules that do not need to be updated frequently
+        module_queries: list[SmartModule] = []
+        mq = {
+            module: query
+            for module in self._modules.values()
+            if (first_update or module.disabled is False) and (query := module.query())
+        }
+        for module, query in mq.items():
+            if first_update and module.__class__ in self.FIRST_UPDATE_MODULES:
+                module._last_update_time = update_time
+                continue
+            if (
+                not module.update_interval
+                or not module._last_update_time
+                or (update_time - module._last_update_time) >= module.update_interval
+            ):
+                module_queries.append(module)
+                req.update(query)
+
+        _LOGGER.debug(
+            "Querying %s for modules: %s",
+            self.host,
+            ", ".join(mod.name for mod in module_queries),
+        )
+
+        try:
+            resp = await self.protocol.query(req)
+        except Exception as ex:
+            resp = await self._handle_modular_update_error(
+                ex, first_update, ", ".join(mod.name for mod in module_queries), req
+            )
+
+        info_resp = self._last_update if first_update else resp
+        self._last_update.update(**resp)
+        self._update_internal_info(info_resp)
+
+        # Call handle update for modules that want to update internal data
+        for module in self._modules.values():
+            await self._handle_module_post_update(
+                module, update_time, had_query=module in module_queries
+            )
+
+        return resp
+
+    async def _handle_modular_update_error(
+        self,
+        ex: Exception,
+        first_update: bool,
+        module_names: str,
+        requests: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Handle an error on calling module update.
+
+        Will try to call all modules individually
+        and any errors such as timeouts will be set as a SmartErrorCode.
+        """
+        msg_part = "on first update" if first_update else "after first update"
+
+        _LOGGER.error(
+            "Error querying %s for modules '%s' %s: %s",
+            self.host,
+            module_names,
+            msg_part,
+            ex,
+        )
+        responses = {}
+        for meth, params in requests.items():
+            try:
+                resp = await self.protocol.query({meth: params})
+                responses[meth] = resp[meth]
+            except Exception as iex:
+                _LOGGER.error(
+                    "Error querying %s individually for module query '%s' %s: %s",
+                    self.host,
+                    meth,
+                    msg_part,
+                    iex,
+                )
+                responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
+        return responses
+
+    async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
 
@@ -205,24 +328,27 @@ class SmartDevice(Device):
         # It also ensures that devices like power strips do not add modules such as
         # firmware to the child devices.
         skip_parent_only_modules = False
+        child_modules_to_skip: dict = {}  # TODO: this is never non-empty
         if self._parent and self._parent.device_type != DeviceType.Hub:
             skip_parent_only_modules = True
 
         for mod in SmartModule.REGISTERED_MODULES.values():
-            _LOGGER.debug("%s requires %s", mod, mod.REQUIRED_COMPONENT)
-
-            if skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES:
-                continue
             if (
-                mod.REQUIRED_COMPONENT in self._components
-                or self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
+                skip_parent_only_modules and mod in NON_HUB_PARENT_ONLY_MODULES
+            ) or mod.__name__ in child_modules_to_skip:
+                continue
+            required_component = cast(str, mod.REQUIRED_COMPONENT)
+            if required_component in self._components or (
+                mod.REQUIRED_KEY_ON_PARENT
+                and self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
             ):
                 _LOGGER.debug(
-                    "Found required %s, adding %s to modules.",
-                    mod.REQUIRED_COMPONENT,
+                    "Device %s, found required %s, adding %s to modules.",
+                    self.host,
+                    required_component,
                     mod.__name__,
                 )
-                module = mod(self, mod.REQUIRED_COMPONENT)
+                module = mod(self, required_component)
                 if await module._check_supported():
                     self._modules[module.name] = module
 
@@ -239,7 +365,7 @@ class SmartDevice(Device):
         ):
             self._modules[Thermostat.__name__] = Thermostat(self, "thermostat")
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize device features."""
         self._add_feature(
             Feature(
@@ -248,6 +374,7 @@ class SmartDevice(Device):
                 name="Device ID",
                 attribute_getter="device_id",
                 category=Feature.Category.Debug,
+                type=Feature.Type.Sensor,
             )
         )
         if "device_on" in self._info:
@@ -272,6 +399,7 @@ class SmartDevice(Device):
                     attribute_getter=lambda x: x._info["signal_level"],
                     icon="mdi:signal",
                     category=Feature.Category.Info,
+                    type=Feature.Type.Sensor,
                 )
             )
 
@@ -283,7 +411,9 @@ class SmartDevice(Device):
                     name="RSSI",
                     attribute_getter=lambda x: x._info["rssi"],
                     icon="mdi:signal",
+                    unit_getter=lambda: "dBm",
                     category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
                 )
             )
 
@@ -296,6 +426,7 @@ class SmartDevice(Device):
                     attribute_getter="ssid",
                     icon="mdi:wifi",
                     category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
                 )
             )
 
@@ -322,9 +453,22 @@ class SmartDevice(Device):
                     name="On since",
                     attribute_getter="on_since",
                     icon="mdi:clock",
-                    category=Feature.Category.Info,
+                    category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
                 )
             )
+
+        self._add_feature(
+            Feature(
+                device=self,
+                id="reboot",
+                name="Reboot",
+                attribute_setter="reboot",
+                icon="mdi:restart",
+                category=Feature.Category.Debug,
+                type=Feature.Type.Action,
+            )
+        )
 
         for module in self.modules.values():
             module._initialize_features()
@@ -332,6 +476,11 @@ class SmartDevice(Device):
                 self._add_feature(feat)
         for child in self._children.values():
             await child._initialize_features()
+
+    @property
+    def _is_hub_child(self) -> bool:
+        """Returns true if the device is a child of a hub."""
+        return self.parent is not None and self.parent.device_type is DeviceType.Hub
 
     @property
     def is_cloud_connected(self) -> bool:
@@ -351,6 +500,17 @@ class SmartDevice(Device):
         return str(self._info.get("model"))
 
     @property
+    def _model_region(self) -> str:
+        """Return device full model name and region."""
+        if (disco := self._discovery_info) and (
+            disco_model := disco.get("device_model")
+        ):
+            return disco_model
+        # Some devices have the region in the specs element.
+        region = f"({specs})" if (specs := self._info.get("specs")) else ""
+        return f"{self.model}{region}"
+
+    @property
     def alias(self) -> str | None:
         """Returns the device alias or nickname."""
         if self._info and (nickname := self._info.get("nickname")):
@@ -361,18 +521,42 @@ class SmartDevice(Device):
     @property
     def time(self) -> datetime:
         """Return the time."""
-        if self._parent and Module.Time in self._parent.modules:
-            _timemod = self._parent.modules[Module.Time]
-        else:
-            _timemod = self.modules[Module.Time]
+        if (time_mod := self.modules.get(Module.Time)) or (
+            self._parent and (time_mod := self._parent.modules.get(Module.Time))
+        ):
+            return time_mod.time
 
-        return _timemod.time
+        # We have no device time, use current local time.
+        return datetime.now(UTC).astimezone().replace(microsecond=0)
 
     @property
-    def timezone(self) -> dict:
+    def on_since(self) -> datetime | None:
+        """Return the time that the device was turned on or None if turned off.
+
+        This returns a cached value if the device reported value difference is under
+        five seconds to avoid device-caused jitter.
+        """
+        if (
+            not self._info.get("device_on")
+            or (on_time := self._info.get("on_time")) is None
+        ):
+            self._on_since = None
+            return None
+
+        on_time = cast(float, on_time)
+        on_since = self.time - timedelta(seconds=on_time)
+        if not self._on_since or timedelta(
+            seconds=0
+        ) < on_since - self._on_since > timedelta(seconds=5):
+            self._on_since = on_since
+        return self._on_since
+
+    @property
+    def timezone(self) -> tzinfo:
         """Return the timezone and time_difference."""
-        ti = self.time
-        return {"timezone": ti.tzname()}
+        if TYPE_CHECKING:
+            assert self.time.tzinfo
+        return self.time.tzinfo
 
     @property
     def hw_info(self) -> dict:
@@ -413,11 +597,11 @@ class SmartDevice(Device):
         return str(self._info.get("device_id"))
 
     @property
-    def internal_state(self) -> Any:
+    def internal_state(self) -> dict:
         """Return all the internal state data."""
         return self._last_update
 
-    def _update_internal_state(self, info):
+    def _update_internal_state(self, info: dict[str, Any]) -> None:
         """Update the internal info state.
 
         This is used by the parent to push updates to its children.
@@ -425,8 +609,8 @@ class SmartDevice(Device):
         self._info = info
 
     async def _query_helper(
-        self, method: str, params: dict | None = None, child_ids=None
-    ) -> Any:
+        self, method: str, params: dict | None = None, child_ids: None = None
+    ) -> dict:
         res = await self.protocol.query({method: params})
 
         return res
@@ -448,69 +632,33 @@ class SmartDevice(Device):
         """Return true if the device is on."""
         return bool(self._info.get("device_on"))
 
-    async def set_state(self, on: bool):  # TODO: better name wanted.
+    async def set_state(self, on: bool) -> dict:
         """Set the device state.
 
         See :meth:`is_on`.
         """
         return await self.protocol.query({"set_device_info": {"device_on": on}})
 
-    async def turn_on(self, **kwargs):
+    async def turn_on(self, **kwargs: Any) -> dict:
         """Turn on the device."""
-        await self.set_state(True)
+        return await self.set_state(True)
 
-    async def turn_off(self, **kwargs):
+    async def turn_off(self, **kwargs: Any) -> dict:
         """Turn off the device."""
-        await self.set_state(False)
+        return await self.set_state(False)
 
-    def update_from_discover_info(self, info):
+    def update_from_discover_info(
+        self,
+        info: dict,
+    ) -> None:
         """Update state from info from the discover call."""
         self._discovery_info = info
         self._info = info
 
-    async def get_emeter_realtime(self) -> EmeterStatus:
-        """Retrieve current energy readings."""
-        _LOGGER.warning("Deprecated, use `emeter_realtime`.")
-        if not self.has_emeter:
-            raise KasaException("Device has no emeter")
-        return self.emeter_realtime
-
-    @property
-    def emeter_realtime(self) -> EmeterStatus:
-        """Get the emeter status."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_realtime
-
-    @property
-    def emeter_this_month(self) -> float | None:
-        """Get the emeter value for this month."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_this_month
-
-    @property
-    def emeter_today(self) -> float | None:
-        """Get the emeter value for today."""
-        energy = self.modules[Module.Energy]
-        return energy.emeter_today
-
-    @property
-    def on_since(self) -> datetime | None:
-        """Return the time that the device was turned on or None if turned off."""
-        if (
-            not self._info.get("device_on")
-            or (on_time := self._info.get("on_time")) is None
-        ):
-            return None
-        on_time = cast(float, on_time)
-        if (timemod := self.modules.get(Module.Time)) is not None:
-            return timemod.time - timedelta(seconds=on_time)
-        else:  # We have no device time, use current local time.
-            return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
-
     async def wifi_scan(self) -> list[WifiNetwork]:
         """Scan for available wifi networks."""
 
-        def _net_for_scan_info(res):
+        def _net_for_scan_info(res: dict) -> WifiNetwork:
             return WifiNetwork(
                 ssid=base64.b64decode(res["ssid"]).decode(),
                 cipher_type=res["cipher_type"],
@@ -528,7 +676,9 @@ class SmartDevice(Device):
         ]
         return networks
 
-    async def wifi_join(self, ssid: str, password: str, keytype: str = "wpa2_psk"):
+    async def wifi_join(
+        self, ssid: str, password: str, keytype: str = "wpa2_psk"
+    ) -> dict:
         """Join the given wifi network.
 
         This method returns nothing as the device tries to activate the new
@@ -565,9 +715,12 @@ class SmartDevice(Device):
         except DeviceError:
             raise  # Re-raise on device-reported errors
         except KasaException:
-            _LOGGER.debug("Received an expected for wifi join, but this is expected")
+            _LOGGER.debug(
+                "Received a kasa exception for wifi join, but this is expected"
+            )
+            return {}
 
-    async def update_credentials(self, username: str, password: str):
+    async def update_credentials(self, username: str, password: str) -> dict:
         """Update device credentials.
 
         This will replace the existing authentication credentials on the device.
@@ -582,7 +735,7 @@ class SmartDevice(Device):
         }
         return await self.protocol.query({"set_qs_info": payload})
 
-    async def set_alias(self, alias: str):
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias)."""
         return await self.protocol.query(
             {"set_device_info": {"nickname": base64.b64encode(alias.encode()).decode()}}
@@ -609,8 +762,14 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
+        # Fallback to device_type (from disco info)
+        type_str = self._info.get("type", self._info.get("device_type"))
+
+        if not type_str:  # no update or discovery info
+            return self._device_type
+
         self._device_type = self._get_device_type_from_components(
-            list(self._components.keys()), self._info["type"]
+            list(self._components.keys()), type_str
         )
 
         return self._device_type
@@ -642,3 +801,48 @@ class SmartDevice(Device):
             return DeviceType.Thermostat
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
+
+    @staticmethod
+    def _get_device_info(
+        info: dict[str, Any], discovery_info: dict[str, Any] | None
+    ) -> _DeviceInfo:
+        """Get model information for a device."""
+        di = info["get_device_info"]
+        components = [comp["id"] for comp in info["component_nego"]["component_list"]]
+
+        # Get model/region info
+        short_name = di["model"]
+        region = None
+        if discovery_info:
+            device_model = discovery_info["device_model"]
+            long_name, _, region = device_model.partition("(")
+            if region:  # P100 doesn't have region
+                region = region.replace(")", "")
+        else:
+            long_name = short_name
+        if not region:  # some devices have region in specs
+            region = di.get("specs")
+
+        # Get other info
+        device_family = di["type"]
+        device_type = SmartDevice._get_device_type_from_components(
+            components, device_family
+        )
+        fw_version_full = di["fw_ver"]
+        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        _protocol, devicetype = device_family.split(".")
+        # Brand inferred from SMART.KASAPLUG/SMART.TAPOPLUG etc.
+        brand = devicetype[:4].lower()
+
+        return _DeviceInfo(
+            short_name=short_name,
+            long_name=long_name,
+            brand=brand,
+            device_family=device_family,
+            device_type=device_type,
+            hardware_version=di["hw_ver"],
+            firmware_version=firmware_version,
+            firmware_build=firmware_build,
+            requires_auth=True,
+            region=region,
+        )

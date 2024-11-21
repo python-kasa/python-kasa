@@ -1,7 +1,9 @@
 """Base class for IOT module implementations."""
 
-import collections
+from __future__ import annotations
+
 import logging
+from typing import Any
 
 from ..exceptions import KasaException
 from ..module import Module
@@ -9,30 +11,32 @@ from ..module import Module
 _LOGGER = logging.getLogger(__name__)
 
 
-# TODO: This is used for query constructing, check for a better place
-def merge(d, u):
+def _merge_dict(dest: dict, source: dict) -> dict:
     """Update dict recursively."""
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = merge(d.get(k, {}), v)
+    for k, v in source.items():
+        if k in dest and type(v) is dict:  # noqa: E721 - only accepts `dict` type
+            _merge_dict(dest[k], v)
         else:
-            d[k] = v
-    return d
+            dest[k] = v
+    return dest
+
+
+merge = _merge_dict
 
 
 class IotModule(Module):
     """Base class implemention for all IOT modules."""
 
-    def call(self, method, params=None):
+    async def call(self, method: str, params: dict | None = None) -> dict:
         """Call the given method with the given parameters."""
-        return self._device._query_helper(self._module, method, params)
+        return await self._device._query_helper(self._module, method, params)
 
-    def query_for_command(self, query, params=None):
+    def query_for_command(self, query: str, params: dict | None = None) -> dict:
         """Create a request object for the given parameters."""
         return self._device._create_request(self._module, query, params)
 
     @property
-    def estimated_query_response_size(self):
+    def estimated_query_response_size(self) -> int:
         """Estimated maximum size of query response.
 
         The inheriting modules implement this to estimate how large a query response
@@ -41,7 +45,7 @@ class IotModule(Module):
         return 256  # Estimate for modules that don't specify
 
     @property
-    def data(self):
+    def data(self) -> dict[str, Any]:
         """Return the module specific raw data from the last update."""
         dev = self._device
         q = self.query()

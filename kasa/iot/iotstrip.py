@@ -9,23 +9,24 @@ from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
+from ..emeterstatus import EmeterStatus
 from ..exceptions import KasaException
 from ..feature import Feature
+from ..interfaces import Energy
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import (
-    EmeterStatus,
     IotDevice,
-    merge,
     requires_update,
 )
+from .iotmodule import IotModule
 from .iotplug import IotPlug
-from .modules import Antitheft, Countdown, Schedule, Time, Usage
+from .modules import Antitheft, Cloud, Countdown, Emeter, Led, Schedule, Time, Usage
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def merge_sums(dicts):
+def merge_sums(dicts: list[dict]) -> dict:
     """Merge the sum of dicts."""
     total_dict: defaultdict[int, float] = defaultdict(lambda: 0.0)
     for sum_dict in dicts:
@@ -97,11 +98,22 @@ class IotStrip(IotDevice):
         super().__init__(host=host, config=config, protocol=protocol)
         self.emeter_type = "emeter"
         self._device_type = DeviceType.Strip
+
+    async def _initialize_modules(self) -> None:
+        """Initialize modules."""
+        # Strip has different modules to plug so do not call super
         self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotUsage, Usage(self, "schedule"))
-        self.add_module(Module.IotTime, Time(self, "time"))
+        self.add_module(Module.Time, Time(self, "time"))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
+        self.add_module(Module.Led, Led(self, "system"))
+        self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
+        if self.has_emeter:
+            _LOGGER.debug(
+                "The device has emeter, querying its information along sysinfo"
+            )
+            self.add_module(Module.Energy, StripEmeter(self, self.emeter_type))
 
     @property  # type: ignore
     @requires_update
@@ -109,15 +121,17 @@ class IotStrip(IotDevice):
         """Return if any of the outlets are on."""
         return any(plug.is_on for plug in self.children)
 
-    async def update(self, update_children: bool = True):
+    async def update(self, update_children: bool = True) -> None:
         """Update some of the attributes.
 
         Needed for methods that are decorated with `requires_update`.
         """
+        # Super initializes modules and features
         await super().update(update_children)
 
+        initialize_children = not self.children
         # Initialize the child devices during the first update.
-        if not self.children:
+        if initialize_children:
             children = self.sys_info["children"]
             _LOGGER.debug("Initializing %s child sockets", len(children))
             self._children = {
@@ -127,19 +141,29 @@ class IotStrip(IotDevice):
                 for child in children
             }
             for child in self._children.values():
-                await child._initialize_features()
+                await child._initialize_modules()
 
-        if update_children and self.has_emeter:
+        if update_children:
             for plug in self.children:
-                await plug.update()
+                await plug._update()
 
-    async def turn_on(self, **kwargs):
+        if not self.features:
+            await self._initialize_features()
+
+    async def _initialize_features(self) -> None:
+        """Initialize common features."""
+        # Do not initialize features until children are created
+        if not self.children:
+            return
+        await super()._initialize_features()
+
+    async def turn_on(self, **kwargs) -> dict:
         """Turn the strip on."""
-        await self._query_helper("system", "set_relay_state", {"state": 1})
+        return await self._query_helper("system", "set_relay_state", {"state": 1})
 
-    async def turn_off(self, **kwargs):
+    async def turn_off(self, **kwargs) -> dict:
         """Turn the strip off."""
-        await self._query_helper("system", "set_relay_state", {"state": 0})
+        return await self._query_helper("system", "set_relay_state", {"state": 0})
 
     @property  # type: ignore
     @requires_update
@@ -148,23 +172,45 @@ class IotStrip(IotDevice):
         if self.is_off:
             return None
 
-        return max(plug.on_since for plug in self.children if plug.on_since is not None)
+        return min(plug.on_since for plug in self.children if plug.on_since is not None)
 
-    async def current_consumption(self) -> float:
+
+class StripEmeter(IotModule, Energy):
+    """Energy module implementation to aggregate child modules."""
+
+    _supported = (
+        Energy.ModuleFeature.CONSUMPTION_TOTAL
+        | Energy.ModuleFeature.PERIODIC_STATS
+        | Energy.ModuleFeature.VOLTAGE_CURRENT
+    )
+
+    def supports(self, module_feature: Energy.ModuleFeature) -> bool:
+        """Return True if module supports the feature."""
+        return module_feature in self._supported
+
+    def query(self) -> dict:
+        """Return the base query."""
+        return {}
+
+    @property
+    def current_consumption(self) -> float | None:
         """Get the current power consumption in watts."""
-        return sum([await plug.current_consumption() for plug in self.children])
+        return sum(
+            v if (v := plug.modules[Module.Energy].current_consumption) else 0.0
+            for plug in self._device.children
+        )
 
-    @requires_update
-    async def get_emeter_realtime(self) -> EmeterStatus:
+    async def get_status(self) -> EmeterStatus:
         """Retrieve current energy readings."""
-        emeter_rt = await self._async_get_emeter_sum("get_emeter_realtime", {})
+        emeter_rt = await self._async_get_emeter_sum("get_status", {})
         # Voltage is averaged since each read will result
         # in a slightly different voltage since they are not atomic
-        emeter_rt["voltage_mv"] = int(emeter_rt["voltage_mv"] / len(self.children))
+        emeter_rt["voltage_mv"] = int(
+            emeter_rt["voltage_mv"] / len(self._device.children)
+        )
         return EmeterStatus(emeter_rt)
 
-    @requires_update
-    async def get_emeter_daily(
+    async def get_daily_stats(
         self, year: int | None = None, month: int | None = None, kwh: bool = True
     ) -> dict:
         """Retrieve daily statistics for a given month.
@@ -176,11 +222,10 @@ class IotStrip(IotDevice):
         :return: mapping of day of month to value
         """
         return await self._async_get_emeter_sum(
-            "get_emeter_daily", {"year": year, "month": month, "kwh": kwh}
+            "get_daily_stats", {"year": year, "month": month, "kwh": kwh}
         )
 
-    @requires_update
-    async def get_emeter_monthly(
+    async def get_monthly_stats(
         self, year: int | None = None, kwh: bool = True
     ) -> dict:
         """Retrieve monthly statistics for a given year.
@@ -189,43 +234,69 @@ class IotStrip(IotDevice):
         :param kwh: return usage in kWh (default: True)
         """
         return await self._async_get_emeter_sum(
-            "get_emeter_monthly", {"year": year, "kwh": kwh}
+            "get_monthly_stats", {"year": year, "kwh": kwh}
         )
 
     async def _async_get_emeter_sum(self, func: str, kwargs: dict[str, Any]) -> dict:
-        """Retreive emeter stats for a time period from children."""
-        self._verify_emeter()
+        """Retrieve emeter stats for a time period from children."""
         return merge_sums(
-            [await getattr(plug, func)(**kwargs) for plug in self.children]
+            [
+                await getattr(plug.modules[Module.Energy], func)(**kwargs)
+                for plug in self._device.children
+            ]
         )
 
-    @requires_update
-    async def erase_emeter_stats(self):
+    async def erase_stats(self) -> dict:
         """Erase energy meter statistics for all plugs."""
-        for plug in self.children:
-            await plug.erase_emeter_stats()
+        for plug in self._device.children:
+            await plug.modules[Module.Energy].erase_stats()
+
+        return {}
 
     @property  # type: ignore
-    @requires_update
-    def emeter_this_month(self) -> float | None:
+    def consumption_this_month(self) -> float | None:
         """Return this month's energy consumption in kWh."""
-        return sum(v if (v := plug.emeter_this_month) else 0 for plug in self.children)
+        return sum(
+            v if (v := plug.modules[Module.Energy].consumption_this_month) else 0.0
+            for plug in self._device.children
+        )
 
     @property  # type: ignore
-    @requires_update
-    def emeter_today(self) -> float | None:
+    def consumption_today(self) -> float | None:
         """Return this month's energy consumption in kWh."""
-        return sum(v if (v := plug.emeter_today) else 0 for plug in self.children)
+        return sum(
+            v if (v := plug.modules[Module.Energy].consumption_today) else 0.0
+            for plug in self._device.children
+        )
 
     @property  # type: ignore
-    @requires_update
-    def emeter_realtime(self) -> EmeterStatus:
+    def consumption_total(self) -> float | None:
+        """Return total energy consumption since reboot in kWh."""
+        return sum(
+            v if (v := plug.modules[Module.Energy].consumption_total) else 0.0
+            for plug in self._device.children
+        )
+
+    @property  # type: ignore
+    def status(self) -> EmeterStatus:
         """Return current energy readings."""
-        emeter = merge_sums([plug.emeter_realtime for plug in self.children])
+        emeter = merge_sums(
+            [plug.modules[Module.Energy].status for plug in self._device.children]
+        )
         # Voltage is averaged since each read will result
         # in a slightly different voltage since they are not atomic
-        emeter["voltage_mv"] = int(emeter["voltage_mv"] / len(self.children))
+        emeter["voltage_mv"] = int(emeter["voltage_mv"] / len(self._device.children))
         return EmeterStatus(emeter)
+
+    @property
+    def current(self) -> float | None:
+        """Return the current in A."""
+        return self.status.current
+
+    @property
+    def voltage(self) -> float | None:
+        """Get the current voltage in V."""
+        return self.status.voltage
 
 
 class IotStripPlug(IotPlug):
@@ -238,22 +309,29 @@ class IotStripPlug(IotPlug):
     The plug inherits (most of) the system information from the parent.
     """
 
+    _parent: IotStrip
+
     def __init__(self, host: str, parent: IotStrip, child_id: str) -> None:
         super().__init__(host)
 
-        self.parent = parent
+        self._parent = parent
         self.child_id = child_id
         self._last_update = parent._last_update
         self._set_sys_info(parent.sys_info)
         self._device_type = DeviceType.StripSocket
         self.protocol = parent.protocol  # Must use the same connection as the parent
+        self._on_since: datetime | None = None
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
-        await super()._initialize_modules()
-        self.add_module("time", Time(self, "time"))
+        if self.has_emeter:
+            self.add_module(Module.Energy, Emeter(self, self.emeter_type))
+        self.add_module(Module.IotUsage, Usage(self, "schedule"))
+        self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
+        self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
+        self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
 
-    async def _initialize_features(self):
+    async def _initialize_features(self) -> None:
         """Initialize common features."""
         self._add_feature(
             Feature(
@@ -273,42 +351,43 @@ class IotStripPlug(IotPlug):
                 name="On since",
                 attribute_getter="on_since",
                 icon="mdi:clock",
+                category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
             )
         )
-        # If the strip plug has it's own modules we should call initialize
-        # features for the modules here. However the _initialize_modules function
-        # above does not seem to be called.
 
-    async def update(self, update_children: bool = True):
+        for module in self.modules.values():
+            module._initialize_features()
+            for module_feat in module._module_features.values():
+                self._add_feature(module_feat)
+
+    async def update(self, update_children: bool = True) -> None:
         """Query the device to update the data.
 
         Needed for properties that are decorated with `requires_update`.
         """
+        await self._update(update_children)
+
+    async def _update(self, update_children: bool = True) -> None:
+        """Query the device to update the data.
+
+        Internal implementation to allow patching of public update in the cli
+        or test framework.
+        """
         await self._modular_update({})
+        for module in self._modules.values():
+            await module._post_update_hook()
 
-    def _create_emeter_request(self, year: int | None = None, month: int | None = None):
-        """Create a request for requesting all emeter statistics at once."""
-        if year is None:
-            year = datetime.now().year
-        if month is None:
-            month = datetime.now().month
-
-        req: dict[str, Any] = {}
-
-        merge(req, self._create_request("emeter", "get_realtime"))
-        merge(req, self._create_request("emeter", "get_monthstat", {"year": year}))
-        merge(
-            req,
-            self._create_request(
-                "emeter", "get_daystat", {"month": month, "year": year}
-            ),
-        )
-
-        return req
+        if not self._features:
+            await self._initialize_features()
 
     def _create_request(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ):
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         request: dict[str, Any] = {
             "context": {"child_ids": [self.child_id]},
             target: {cmd: arg},
@@ -316,10 +395,14 @@ class IotStripPlug(IotPlug):
         return request
 
     async def _query_helper(
-        self, target: str, cmd: str, arg: dict | None = None, child_ids=None
-    ) -> Any:
+        self,
+        target: str,
+        cmd: str,
+        arg: dict | None = None,
+        child_ids: list | None = None,
+    ) -> dict:
         """Override query helper to include the child_ids."""
-        return await self.parent._query_helper(
+        return await self._parent._query_helper(
             target, cmd, arg, child_ids=[self.child_id]
         )
 
@@ -367,24 +450,34 @@ class IotStripPlug(IotPlug):
     def on_since(self) -> datetime | None:
         """Return on-time, if available."""
         if self.is_off:
+            self._on_since = None
             return None
 
         info = self._get_child_info()
         on_time = info["on_time"]
 
-        return datetime.now().replace(microsecond=0) - timedelta(seconds=on_time)
+        time = self._parent.time
+
+        on_since = time - timedelta(seconds=on_time)
+        if not self._on_since or timedelta(
+            seconds=0
+        ) < on_since - self._on_since > timedelta(seconds=5):
+            self._on_since = on_since
+        return self._on_since
 
     @property  # type: ignore
     @requires_update
     def model(self) -> str:
         """Return device model for a child socket."""
-        sys_info = self.parent.sys_info
+        sys_info = self._parent.sys_info
         return f"Socket for {sys_info['model']}"
 
     def _get_child_info(self) -> dict:
         """Return the subdevice information for this device."""
-        for plug in self.parent.sys_info["children"]:
+        for plug in self._parent.sys_info["children"]:
             if plug["id"] == self.child_id:
                 return plug
 
-        raise KasaException(f"Unable to find children {self.child_id}")
+        raise KasaException(
+            f"Unable to find children {self.child_id}"
+        )  # pragma: no cover

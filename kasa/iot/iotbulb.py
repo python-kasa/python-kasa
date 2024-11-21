@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import logging
 import re
+from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, cast
+from typing import Annotated, cast
 
-from pydantic.v1 import BaseModel, Field, root_validator
+from mashumaro import DataClassDictMixin
+from mashumaro.config import BaseConfig
+from mashumaro.types import Alias
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..interfaces.light import HSV, ColorTempRange
 from ..module import Module
-from ..protocol import BaseProtocol
+from ..protocols import BaseProtocol
 from .iotdevice import IotDevice, KasaException, requires_update
 from .modules import (
     Antitheft,
@@ -35,9 +38,12 @@ class BehaviorMode(str, Enum):
     Last = "last_status"
     #: Use chosen preset.
     Preset = "customize_preset"
+    #: Circadian
+    Circadian = "circadian"
 
 
-class TurnOnBehavior(BaseModel):
+@dataclass
+class TurnOnBehavior(DataClassDictMixin):
     """Model to present a single turn on behavior.
 
     :param int preset: the index number of wanted preset.
@@ -48,34 +54,30 @@ class TurnOnBehavior(BaseModel):
     to contain either the preset index, or ``None`` for the last known state.
     """
 
-    #: Index of preset to use, or ``None`` for the last known state.
-    preset: Optional[int] = Field(alias="index", default=None)  # noqa: UP007
+    class Config(BaseConfig):
+        """Serialization config."""
+
+        omit_none = True
+        serialize_by_alias = True
+
     #: Wanted behavior
     mode: BehaviorMode
-
-    @root_validator
-    def _mode_based_on_preset(cls, values):
-        """Set the mode based on the preset value."""
-        if values["preset"] is not None:
-            values["mode"] = BehaviorMode.Preset
-        else:
-            values["mode"] = BehaviorMode.Last
-
-        return values
-
-    class Config:
-        """Configuration to make the validator run when changing the values."""
-
-        validate_assignment = True
+    #: Index of preset to use, or ``None`` for the last known state.
+    preset: Annotated[int | None, Alias("index")] = None
+    brightness: int | None = None
+    color_temp: int | None = None
+    hue: int | None = None
+    saturation: int | None = None
 
 
-class TurnOnBehaviors(BaseModel):
+@dataclass
+class TurnOnBehaviors(DataClassDictMixin):
     """Model to contain turn on behaviors."""
 
     #: The behavior when the bulb is turned on programmatically.
-    soft: TurnOnBehavior = Field(alias="soft_on")
+    soft: Annotated[TurnOnBehavior, Alias("soft_on")]
     #: The behavior when the bulb has been off from mains power.
-    hard: TurnOnBehavior = Field(alias="hard_on")
+    hard: Annotated[TurnOnBehavior, Alias("hard_on")]
 
 
 TPLINK_KELVIN = {
@@ -85,7 +87,7 @@ TPLINK_KELVIN = {
     "KB130": ColorTempRange(2500, 9000),
     "KL130": ColorTempRange(2500, 9000),
     "KL125": ColorTempRange(2500, 6500),
-    "KL135": ColorTempRange(2500, 6500),
+    "KL135": ColorTempRange(2500, 9000),
     r"KL120\(EU\)": ColorTempRange(2700, 6500),
     r"KL120\(US\)": ColorTempRange(2700, 5000),
     r"KL430": ColorTempRange(2500, 9000),
@@ -178,8 +180,8 @@ class IotBulb(IotDevice):
 
         Bulb configuration presets can be accessed using the :func:`presets` property:
 
-        >>> bulb.presets
-        [IotLightPreset(index=0, brightness=50, hue=0, saturation=0, color_temp=2700, custom=None, id=None, mode=None), IotLightPreset(index=1, brightness=100, hue=0, saturation=75, color_temp=0, custom=None, id=None, mode=None), IotLightPreset(index=2, brightness=100, hue=120, saturation=75, color_temp=0, custom=None, id=None, mode=None), IotLightPreset(index=3, brightness=100, hue=240, saturation=75, color_temp=0, custom=None, id=None, mode=None)]
+        >>> [ preset.to_dict() for preset in bulb.presets }
+        [{'brightness': 50, 'hue': 0, 'saturation': 0, 'color_temp': 2700, 'index': 0}, {'brightness': 100, 'hue': 0, 'saturation': 75, 'color_temp': 0, 'index': 1}, {'brightness': 100, 'hue': 120, 'saturation': 75, 'color_temp': 0, 'index': 2}, {'brightness': 100, 'hue': 240, 'saturation': 75, 'color_temp': 0, 'index': 3}]
 
         To modify an existing preset, pass :class:`~kasa.interfaces.light.LightPreset`
         instance to :func:`save_preset` method:
@@ -209,7 +211,7 @@ class IotBulb(IotDevice):
         super().__init__(host=host, config=config, protocol=protocol)
         self._device_type = DeviceType.Bulb
 
-    async def _initialize_modules(self):
+    async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
         await super()._initialize_modules()
         self.add_module(
@@ -219,8 +221,8 @@ class IotBulb(IotDevice):
         self.add_module(
             Module.IotAntitheft, Antitheft(self, "smartlife.iot.common.anti_theft")
         )
-        self.add_module(Module.IotTime, Time(self, "smartlife.iot.common.timesetting"))
-        self.add_module(Module.IotEmeter, Emeter(self, self.emeter_type))
+        self.add_module(Module.Time, Time(self, "smartlife.iot.common.timesetting"))
+        self.add_module(Module.Energy, Emeter(self, self.emeter_type))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.IotCloud, Cloud(self, "smartlife.iot.common.cloud"))
         self.add_module(Module.Light, Light(self, self.LIGHT_SERVICE))
@@ -303,18 +305,18 @@ class IotBulb(IotDevice):
 
     async def get_turn_on_behavior(self) -> TurnOnBehaviors:
         """Return the behavior for turning the bulb on."""
-        return TurnOnBehaviors.parse_obj(
+        return TurnOnBehaviors.from_dict(
             await self._query_helper(self.LIGHT_SERVICE, "get_default_behavior")
         )
 
-    async def set_turn_on_behavior(self, behavior: TurnOnBehaviors):
+    async def set_turn_on_behavior(self, behavior: TurnOnBehaviors) -> dict:
         """Set the behavior for turning the bulb on.
 
         If you do not want to manually construct the behavior object,
         you should use :func:`get_turn_on_behavior` to get the current settings.
         """
         return await self._query_helper(
-            self.LIGHT_SERVICE, "set_default_behavior", behavior.dict(by_alias=True)
+            self.LIGHT_SERVICE, "set_default_behavior", behavior.to_dict()
         )
 
     async def get_light_state(self) -> dict[str, dict]:
@@ -326,6 +328,7 @@ class IotBulb(IotDevice):
         self, state: dict, *, transition: int | None = None
     ) -> dict:
         """Set the light state."""
+        state = {**state}
         if transition is not None:
             state["transition_period"] = transition
 
@@ -364,9 +367,11 @@ class IotBulb(IotDevice):
 
         hue = light_state["hue"]
         saturation = light_state["saturation"]
-        value = light_state["brightness"]
+        value = self._brightness
 
-        return HSV(hue, saturation, value)
+        # Simple HSV(hue, saturation, value) is less efficent than below
+        # due to the cpython implementation.
+        return tuple.__new__(HSV, (hue, saturation, value))
 
     @requires_update
     async def _set_hsv(
@@ -387,10 +392,14 @@ class IotBulb(IotDevice):
         if not self._is_color:
             raise KasaException("Bulb does not support color.")
 
-        if not isinstance(hue, int) or not (0 <= hue <= 360):
+        if not isinstance(hue, int):
+            raise TypeError("Hue must be an integer.")
+        if not (0 <= hue <= 360):
             raise ValueError(f"Invalid hue value: {hue} (valid range: 0-360)")
 
-        if not isinstance(saturation, int) or not (0 <= saturation <= 100):
+        if not isinstance(saturation, int):
+            raise TypeError("Saturation must be an integer.")
+        if not (0 <= saturation <= 100):
             raise ValueError(
                 f"Invalid saturation value: {saturation} (valid range: 0-100%)"
             )
@@ -419,7 +428,7 @@ class IotBulb(IotDevice):
 
     @requires_update
     async def _set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
+        self, temp: int, *, brightness: int | None = None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
 
@@ -429,7 +438,7 @@ class IotBulb(IotDevice):
         if not self._is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
 
-        valid_temperature_range = self.valid_temperature_range
+        valid_temperature_range = self._valid_temperature_range
         if temp < valid_temperature_range[0] or temp > valid_temperature_range[1]:
             raise ValueError(
                 "Temperature should be between {} and {}, was {}".format(
@@ -443,8 +452,10 @@ class IotBulb(IotDevice):
 
         return await self._set_light_state(light_state, transition=transition)
 
-    def _raise_for_invalid_brightness(self, value):
-        if not isinstance(value, int) or not (0 <= value <= 100):
+    def _raise_for_invalid_brightness(self, value: int) -> None:
+        if not isinstance(value, int):
+            raise TypeError("Brightness must be an integer")
+        if not (0 <= value <= 100):
             raise ValueError(f"Invalid brightness value: {value} (valid range: 0-100%)")
 
     @property  # type: ignore
@@ -454,6 +465,13 @@ class IotBulb(IotDevice):
         if not self._is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
 
+        # If the device supports effects and one is active, we get the brightness
+        # from the effect. This is not required when setting the brightness as
+        # the device handles it via set_light_state
+        if (
+            light_effect := self.modules.get(Module.IotLightEffect)
+        ) is not None and light_effect.effect != light_effect.LIGHT_EFFECTS_OFF:
+            return light_effect.brightness
         light_state = self.light_state
         return int(light_state["brightness"])
 
@@ -501,7 +519,7 @@ class IotBulb(IotDevice):
         """Return that the bulb has an emeter."""
         return True
 
-    async def set_alias(self, alias: str) -> None:
+    async def set_alias(self, alias: str) -> dict:
         """Set the device name (alias).
 
         Overridden to use a different module name.

@@ -49,13 +49,13 @@ class EmeterStatus(dict):
         except ValueError:
             return None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"<EmeterStatus power={self.power} voltage={self.voltage}"
             f" current={self.current} total={self.total}>"
         )
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> float | None:
         """Return value in wanted units."""
         valid_keys = [
             "voltage_mv",
@@ -87,5 +87,5 @@ class EmeterStatus(dict):
                     ):
                         return value / 1000
 
-                _LOGGER.debug(f"Unable to find value for '{item}'")
+                _LOGGER.debug("Unable to find value for '%s'", item)
                 return None

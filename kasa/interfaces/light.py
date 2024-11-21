@@ -1,4 +1,64 @@
-"""Module for Device base class."""
+"""Interact with a TPLink Light.
+
+>>> from kasa import Discover, Module
+>>>
+>>> dev = await Discover.discover_single(
+>>>     "127.0.0.3",
+>>>     username="user@example.com",
+>>>     password="great_password"
+>>> )
+>>> await dev.update()
+>>> print(dev.alias)
+Living Room Bulb
+
+Lights, like any other supported devices, can be turned on and off:
+
+>>> print(dev.is_on)
+>>> await dev.turn_on()
+>>> await dev.update()
+>>> print(dev.is_on)
+True
+
+Get the light module to interact:
+
+>>> light = dev.modules[Module.Light]
+
+You can use the ``is_``-prefixed properties to check for supported features:
+
+>>> light.is_dimmable
+True
+>>> light.is_color
+True
+>>> light.is_variable_color_temp
+True
+
+All known bulbs support changing the brightness:
+
+>>> light.brightness
+100
+>>> await light.set_brightness(50)
+>>> await dev.update()
+>>> light.brightness
+50
+
+Bulbs supporting color temperature can be queried for the supported range:
+
+>>> light.valid_temperature_range
+ColorTempRange(min=2500, max=6500)
+>>> await light.set_color_temp(3000)
+>>> await dev.update()
+>>> light.color_temp
+3000
+
+Color bulbs can be adjusted by passing hue, saturation and value:
+
+>>> await light.set_hsv(180, 100, 80)
+>>> await dev.update()
+>>> light.hsv
+HSV(hue=180, saturation=100, value=80)
+
+
+"""
 
 from __future__ import annotations
 
@@ -106,7 +166,7 @@ class Light(Module, ABC):
 
     @abstractmethod
     async def set_color_temp(
-        self, temp: int, *, brightness=None, transition: int | None = None
+        self, temp: int, *, brightness: int | None = None, transition: int | None = None
     ) -> dict:
         """Set the color temperature of the device in kelvin.
 

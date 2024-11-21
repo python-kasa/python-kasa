@@ -1,0 +1,46 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "alias": "#MASKED_NAME#",
+            "child_num": 2,
+            "children": [
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006521377E30159055A751347B5A5E321A8D0A100",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME#",
+                    "id": "8006521377E30159055A751347B5A5E321A8D0A101",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "3.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "3C:52:A1:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP400(US)",
+            "ntc_state": 0,
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -69,
+            "status": "new",
+            "sw_ver": "1.0.4 Build 240305 Rel.111944",
+            "updating": 0
+        }
+    }
+}

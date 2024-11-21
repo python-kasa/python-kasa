@@ -262,6 +262,8 @@ class SmartRequest:
         """Get energy usage."""
         return [
             SmartRequest("get_energy_usage"),
+            SmartRequest("get_emeter_data"),
+            SmartRequest("get_emeter_vgain_igain"),
             SmartRequest.get_raw_request("get_electricity_price_config"),
         ]
 
@@ -283,6 +285,15 @@ class SmartRequest:
     def get_preset_rules(params: GetRulesParams | None = None) -> SmartRequest:
         """Get preset rules."""
         return SmartRequest("get_preset_rules", params or SmartRequest.GetRulesParams())
+
+    @staticmethod
+    def get_on_off_gradually_info(
+        params: SmartRequestParams | None = None,
+    ) -> SmartRequest:
+        """Get preset rules."""
+        return SmartRequest(
+            "get_on_off_gradually_info", params or SmartRequest.SmartRequestParams()
+        )
 
     @staticmethod
     def get_auto_light_info() -> SmartRequest:
@@ -347,8 +358,8 @@ def get_component_requests(component_id, ver_code):
     if (cr := COMPONENT_REQUESTS.get(component_id)) is None:
         return None
     if callable(cr):
-        return cr(ver_code)
-    return cr
+        return SmartRequest._create_request_dict(cr(ver_code))
+    return SmartRequest._create_request_dict(cr)
 
 
 COMPONENT_REQUESTS = {
@@ -382,7 +393,7 @@ COMPONENT_REQUESTS = {
     "auto_light": [SmartRequest.get_auto_light_info()],
     "light_effect": [SmartRequest.get_dynamic_light_effect_rules()],
     "bulb_quick_control": [],
-    "on_off_gradually": [SmartRequest.get_raw_request("get_on_off_gradually_info")],
+    "on_off_gradually": [SmartRequest.get_on_off_gradually_info()],
     "light_strip": [],
     "light_strip_lighting_effect": [
         SmartRequest.get_raw_request("get_lighting_effect")
@@ -399,6 +410,12 @@ COMPONENT_REQUESTS = {
         SmartRequest.get_raw_request("get_alarm_configure"),
     ],
     "alarm_logs": [SmartRequest.get_raw_request("get_alarm_triggers")],
+    "trigger_log": [
+        SmartRequest.get_raw_request(
+            "get_trigger_logs", SmartRequest.GetTriggerLogsParams()
+        )
+    ],
+    "double_click": [SmartRequest.get_raw_request("get_double_click_info")],
     "child_device": [
         SmartRequest.get_raw_request("get_child_device_list"),
         SmartRequest.get_raw_request("get_child_device_component_list"),

@@ -11,13 +11,13 @@ This page aims to help you to get started.
 ## Setting up the development environment
 
 To get started, simply clone this repository and initialize the development environment.
-We are using [poetry](https://python-poetry.org) for dependency management, so after cloning the repository simply execute
-`poetry install` which will install all necessary packages and create a virtual environment for you.
+We are using [uv](https://github.com/astral-sh/uv) for dependency management, so after cloning the repository simply execute
+`uv sync` which will install all necessary packages and create a virtual environment for you in `.venv`.
 
 ```
 $ git clone https://github.com/python-kasa/python-kasa.git
 $ cd python-kasa
-$ poetry install
+$ uv sync --all-extras
 ```
 
 ## Code-style checks
@@ -36,20 +36,20 @@ You can also execute the pre-commit hooks on all files by executing `pre-commit 
 You can run tests on the library by executing `pytest` in the source directory:
 
 ```
-$ poetry run pytest kasa
+$ uv run pytest kasa
 ```
 
 This will run the tests against the contributed example responses.
 
 ```{note}
-You can also execute the tests against a real device using `pytest --ip <address>`.
+You can also execute the tests against a real device using `uv run pytest --ip=<address> --username=<username> --password=<password>`.
 Note that this will perform state changes on the device.
 ```
 
 ## Analyzing network captures
 
 The simplest way to add support for a new device or to improve existing ones is to capture traffic between the mobile app and the device.
-After capturing the traffic, you can either use the [softScheck's wireshark dissector](https://github.com/softScheck/tplink-smartplug#wireshark-dissector)
+After capturing the traffic, you can either use the [softScheck's wireshark dissector](https://github.com/softScheck/tplink-smartplug)
 or the `parse_pcap.py` script contained inside the `devtools` directory.
 Note, that this works currently only on kasa-branded devices which use port 9999 for communications.
 
@@ -59,7 +59,7 @@ One of the easiest ways to contribute is by creating a fixture file and uploadin
 These files will help us to improve the library and run tests against devices that we have no access to.
 
 This library is tested against responses from real devices ("fixture files").
-These files contain responses for selected, known device commands and are stored [in our test suite](https://github.com/python-kasa/python-kasa/tree/master/kasa/tests/fixtures).
+These files contain responses for selected, known device commands and are stored [in our test suite](https://github.com/python-kasa/python-kasa/tree/master/tests/fixtures).
 
 You can generate these files by using the `dump_devinfo.py` script.
 Note, that this script should be run inside the main source directory so that the generated files are stored in the correct directories.
@@ -68,13 +68,13 @@ The easiest way to do that is by doing:
 ```
 $ git clone https://github.com/python-kasa/python-kasa.git
 $ cd python-kasa
-$ poetry install
-$ poetry shell
+$ uv sync --all-extras
+$ source .venv/bin/activate
 $ python -m devtools.dump_devinfo --username <username> --password <password> --host 192.168.1.123
 ```
 
 ```{note}
-You can also execute the script against a network by using `--target`: `python -m devtools.dump_devinfo --target network 192.168.1.255`
+You can also execute the script against a network by using `--target`: `python -m devtools.dump_devinfo --target 192.168.1.255`
 ```
 
 The script will run queries against the device, and prompt at the end if you want to save the results.
@@ -82,5 +82,5 @@ If you choose to do so, it will save the fixture files directly in their correct
 
 ```{note}
 When adding new fixture files, you should run `pre-commit run -a` to re-generate the list of supported devices.
-You may need to adjust `device_fixtures.py` to add a new model into the correct device categories.  Verify that test pass by executing `poetry run pytest kasa`.
+You may need to adjust `device_fixtures.py` to add a new model into the correct device categories.  Verify that test pass by executing `uv run pytest kasa`.
 ```

@@ -1,16 +1,5 @@
 # ruff: noqa
 """
-The kasa library is fully async and methods that perform IO need to be run inside an async couroutine.
-
-These examples assume you are following the tutorial inside `asyncio REPL` (python -m asyncio) or the code
-is running inside an async function (`async def`).
-
-
-The main entry point for the API is :meth:`~kasa.Discover.discover` and
-:meth:`~kasa.Discover.discover_single` which return Device objects.
-
-Most newer devices require your TP-Link cloud username and password, but this can be omitted for older devices.
-
 >>> from kasa import Discover
 
 :func:`~kasa.Discover.discover` returns a dict[str,Device] of devices on your network:
@@ -102,5 +91,5 @@ False
 True
 >>> for feat in dev.features.values():
 >>>     print(f"{feat.name}: {feat.value}")
-Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nOverheated: False\nBrightness: 50\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: False\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: 1.1.6 Build 240130 Rel.173828\nLight effect: Party\nLight preset: Light preset 1\nSmooth transition on: 2\nSmooth transition off: 2\nTime: 2024-02-23 02:40:15+01:00
+Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nOverheated: False\nReboot: <Action>\nBrightness: 50\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: None\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: None\nCheck latest firmware: <Action>\nLight effect: Party\nLight preset: Light preset 1\nSmooth transition on: 2\nSmooth transition off: 2\nDevice time: 2024-02-23 02:40:15+01:00
 """
