@@ -190,7 +190,7 @@ async def presets_modify(dev: Device, index, brightness, hue, saturation, temper
 @click.option("--preset", type=int)
 async def turn_on_behavior(dev: Device, type, last, preset):
     """Modify bulb turn-on behavior."""
-    if not dev.is_bulb or not isinstance(dev, IotBulb):
+    if dev.device_type is not Device.Type.Bulb or not isinstance(dev, IotBulb):
         error("Presets only supported on iot bulbs")
         return
     settings = await dev.get_turn_on_behavior()
