@@ -32,7 +32,7 @@ from .transports import (
     BaseTransport,
     KlapTransport,
     KlapTransportV2,
-    LinkieTransport,
+    LinkieTransportV2,
     XorTransport,
 )
 from .transports.sslaestransport import SslAesTransport
@@ -190,7 +190,7 @@ def get_protocol(
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
-        "IOT.Linkie": (IotProtocol, LinkieTransport),
+        "IOT.Linkie": (IotProtocol, LinkieTransportV2),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),

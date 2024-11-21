@@ -23,7 +23,7 @@ from .basetransport import BaseTransport
 _LOGGER = logging.getLogger(__name__)
 
 
-class LinkieTransport(BaseTransport):
+class LinkieTransportV2(BaseTransport):
     """Implementation of the Linkie encryption protocol.
 
     Linkie is used as the endpoint for TP-Link's camera encryption
