@@ -164,7 +164,7 @@ def get_device_class_from_family(
         and device_type.startswith("SMART.")
         and not require_exact
     ):
-        _LOGGER.warning("Unknown SMART device with %s, using SmartDevice", device_type)
+        _LOGGER.debug("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
 
     return cls
