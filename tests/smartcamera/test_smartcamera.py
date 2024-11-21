@@ -59,6 +59,22 @@ async def test_stream_rtsp_url(dev: Device):
         url = camera_module.stream_rtsp_url()
     assert url == "rtsp://bar:foobar@127.0.0.123:554/stream1"
 
+    # Test with invalid credentials_hash
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", b"238472871"),
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
+    # Test with no credentials
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", None),
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
     # Test with camera off
     await camera_module.set_state(False)
     await dev.update()
