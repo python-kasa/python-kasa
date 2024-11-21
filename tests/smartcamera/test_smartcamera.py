@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import json
 from datetime import UTC, datetime
 from unittest.mock import patch
 
@@ -35,17 +37,41 @@ async def test_stream_rtsp_url(dev: Device):
     url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
     assert url == "rtsp://foo:bar@127.0.0.123:554/stream1"
 
-    with patch.object(
-        dev.protocol._transport, "_credentials", Credentials("bar", "foo")
-    ):
+    with patch.object(dev.config, "credentials", Credentials("bar", "foo")):
         url = camera_module.stream_rtsp_url()
     assert url == "rtsp://bar:foo@127.0.0.123:554/stream1"
 
-    with patch.object(dev.protocol._transport, "_credentials", Credentials("bar", "")):
+    with patch.object(dev.config, "credentials", Credentials("bar", "")):
         url = camera_module.stream_rtsp_url()
     assert url is None
 
-    with patch.object(dev.protocol._transport, "_credentials", Credentials("", "Foo")):
+    with patch.object(dev.config, "credentials", Credentials("", "Foo")):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
+    # Test with credentials_hash
+    cred = json.dumps({"un": "bar", "pwd": "foobar"})
+    cred_hash = base64.b64encode(cred.encode()).decode()
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", cred_hash),
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url == "rtsp://bar:foobar@127.0.0.123:554/stream1"
+
+    # Test with invalid credentials_hash
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", b"238472871"),
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
+    # Test with no credentials
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", None),
+    ):
         url = camera_module.stream_rtsp_url()
     assert url is None
 
@@ -54,9 +80,7 @@ async def test_stream_rtsp_url(dev: Device):
     await dev.update()
     url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
     assert url is None
-    with patch.object(
-        dev.protocol._transport, "_credentials", Credentials("bar", "foo")
-    ):
+    with patch.object(dev.config, "credentials", Credentials("bar", "foo")):
         url = camera_module.stream_rtsp_url()
     assert url is None
 
