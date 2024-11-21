@@ -127,13 +127,15 @@ async def presets(ctx, dev):
 def presets_list(dev: Device):
     """List presets."""
     if not (light_preset := dev.modules.get(Module.LightPreset)):
-        error("Presets not supported on device")
+        error("Device does not support light presets")
         return
 
     for idx, preset in enumerate(light_preset.preset_states_list):
         echo(
-            f"[{idx}] Hue: {preset.hue:3}  Saturation: {preset.saturation:3}  "
-            f"Brightness/Value: {preset.brightness:3}  Temp: {preset.color_temp:4}"
+            f"[{idx}] Hue: {preset.hue or '':3}  "
+            f"Saturation: {preset.saturation or '':3}  "
+            f"Brightness/Value: {preset.brightness or '':3}  "
+            f"Temp: {preset.color_temp or '':4}"
         )
 
     return light_preset.preset_states_list
@@ -141,32 +143,44 @@ def presets_list(dev: Device):
 
 @presets.command(name="modify")
 @click.argument("index", type=int)
-@click.option("--brightness", type=int)
-@click.option("--hue", type=int)
-@click.option("--saturation", type=int)
-@click.option("--temperature", type=int)
+@click.option("--brightness", type=int, required=False, default=None)
+@click.option("--hue", type=int, required=False, default=None)
+@click.option("--saturation", type=int, required=False, default=None)
+@click.option("--temperature", type=int, required=False, default=None)
 @pass_dev_or_child
 async def presets_modify(dev: Device, index, brightness, hue, saturation, temperature):
     """Modify a preset."""
-    for preset in dev.presets:
-        if preset.index == index:
-            break
-    else:
-        error(f"No preset found for index {index}")
+    if not (light_preset := dev.modules.get(Module.LightPreset)):
+        error("Device does not support light presets")
         return
 
-    if brightness is not None:
+    max_index = len(light_preset.preset_states_list) - 1
+    if index > len(light_preset.preset_states_list) - 1:
+        error(f"Invalid index, must be between 0 and {max_index}")
+        return
+
+    if all([val is None for val in {brightness, hue, saturation, temperature}]):
+        error("Need to supply at least one option to modify.")
+        return
+
+    # Preset names have `Not set`` as the first value
+    preset_name = light_preset.preset_list[index + 1]
+    preset = light_preset.preset_states_list[index]
+
+    echo(f"Preset {preset_name} currently: {preset}")
+
+    if brightness is not None and preset.brightness is not None:
         preset.brightness = brightness
-    if hue is not None:
+    if hue is not None and preset.hue is not None:
         preset.hue = hue
-    if saturation is not None:
+    if saturation is not None and preset.saturation is not None:
         preset.saturation = saturation
-    if temperature is not None:
+    if temperature is not None and preset.temperature is not None:
         preset.color_temp = temperature
 
-    echo(f"Going to save preset: {preset}")
+    echo(f"Updating preset {preset_name} to: {preset}")
 
-    return await dev.save_preset(preset)
+    return await light_preset.save_preset(preset_name, preset)
 
 
 @light.command()
