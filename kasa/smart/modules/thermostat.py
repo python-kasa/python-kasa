@@ -22,7 +22,7 @@ class Thermostat(SmartModule, ThermostatInterface):
         """Return thermostat state."""
         return self._device.modules[Module.TemperatureControl].state
 
-    async def set_state(self, enabled: bool):
+    async def set_state(self, enabled: bool) -> dict:
         """Set thermostat state."""
         return await self._device.modules[Module.TemperatureControl].set_state(enabled)
 
@@ -55,7 +55,7 @@ class Thermostat(SmartModule, ThermostatInterface):
         """Return target temperature."""
         return self._device.modules[Module.TemperatureControl].target_temperature
 
-    async def set_target_temperature(self, target: float):
+    async def set_target_temperature(self, target: float) -> dict:
         """Set target temperature."""
         return await self._device.modules[
             Module.TemperatureControl
@@ -66,7 +66,7 @@ class Thermostat(SmartModule, ThermostatInterface):
         """Return temperature offset."""
         return self._device.modules[Module.TemperatureControl].temperature_offset
 
-    async def set_temperature_offset(self, offset: int):
+    async def set_temperature_offset(self, offset: int) -> dict:
         """Set temperature offset."""
         return await self._device.modules[
             Module.TemperatureControl
@@ -74,7 +74,7 @@ class Thermostat(SmartModule, ThermostatInterface):
 
     # temperature sensor
     @property
-    def temperature(self):
+    def temperature(self) -> float:
         """Return current humidity in percentage."""
         return self._device.modules[Module.TemperatureSensor].temperature
 
@@ -84,11 +84,13 @@ class Thermostat(SmartModule, ThermostatInterface):
         return self._device.modules[Module.TemperatureSensor].temperature_warning
 
     @property
-    def temperature_unit(self):
+    def temperature_unit(self) -> Literal["celsius", "fahrenheit"]:
         """Return current temperature unit."""
         return self._device.modules[Module.TemperatureSensor].temperature_unit
 
-    async def set_temperature_unit(self, unit: Literal["celsius", "fahrenheit"]):
+    async def set_temperature_unit(
+        self, unit: Literal["celsius", "fahrenheit"]
+    ) -> dict:
         """Set the device temperature unit."""
         return await self._device.modules[
             Module.TemperatureSensor

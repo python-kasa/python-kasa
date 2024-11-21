@@ -28,7 +28,7 @@ class Thermostat(Module, ABC):
         """Return thermostat state."""
 
     @abstractmethod
-    async def set_state(self, enabled: bool):
+    async def set_state(self, enabled: bool) -> dict:
         """Set thermostat state."""
 
     @property
@@ -57,7 +57,7 @@ class Thermostat(Module, ABC):
         """Return target temperature."""
 
     @abstractmethod
-    async def set_target_temperature(self, target: float):
+    async def set_target_temperature(self, target: float) -> dict:
         """Set target temperature."""
 
     @property
@@ -66,12 +66,12 @@ class Thermostat(Module, ABC):
         """Return temperature offset."""
 
     @abstractmethod
-    async def set_temperature_offset(self, offset: int):
+    async def set_temperature_offset(self, offset: int) -> dict:
         """Set temperature offset."""
 
     @property
     @abstractmethod
-    def temperature(self):
+    def temperature(self) -> float:
         """Return current humidity in percentage."""
         return self._device.sys_info["current_temp"]
 
@@ -82,12 +82,13 @@ class Thermostat(Module, ABC):
 
     @property
     @abstractmethod
-    def temperature_unit(self):
+    def temperature_unit(self) -> Literal["celsius", "fahrenheit"]:
         """Return current temperature unit."""
-        return self._device.sys_info["temp_unit"]
 
     @abstractmethod
-    async def set_temperature_unit(self, unit: Literal["celsius", "fahrenheit"]):
+    async def set_temperature_unit(
+        self, unit: Literal["celsius", "fahrenheit"]
+    ) -> dict:
         """Set the device temperature unit."""
 
     @property
