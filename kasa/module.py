@@ -220,7 +220,12 @@ def _get_bound_feature(
 ) -> Feature | None:
     """Get Feature for a bound property or None if not supported."""
     if not isinstance(attribute, str):
-        attribute_name = attribute.__name__
+        if isinstance(attribute, property):
+            # Properties have __name__ in 3.13 so this could be simplified
+            # when only 3.13 supported
+            attribute_name = attribute.fget.__name__  # type: ignore[union-attr]
+        else:
+            attribute_name = attribute.__name__
         attribute_callable = attribute
     else:
         if TYPE_CHECKING:
