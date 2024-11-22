@@ -16,6 +16,31 @@ class TemperatureSensor(SmartModule):
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
+        self._add_feature(
+            Feature(
+                self._device,
+                id="temperature",
+                name="Temperature",
+                container=self,
+                attribute_getter="temperature",
+                icon="mdi:thermometer",
+                category=Feature.Category.Primary,
+                unit_getter="temperature_unit",
+                type=Feature.Type.Sensor,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="temperature_unit",
+                name="Temperature unit",
+                container=self,
+                attribute_getter="temperature_unit",
+                attribute_setter="set_temperature_unit",
+                type=Feature.Type.Choice,
+                choices_getter=lambda: ["celsius", "fahrenheit"],
+            )
+        )
         if "current_temp_exception" in self._device.sys_info:
             self._add_feature(
                 Feature(

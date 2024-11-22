@@ -62,31 +62,6 @@ class Thermostat(Module, ABC):
                 type=Feature.Type.Sensor,
             )
         )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="temperature",
-                name="Temperature",
-                container=self,
-                attribute_getter="temperature",
-                icon="mdi:thermometer",
-                category=Feature.Category.Primary,
-                unit_getter="temperature_unit",
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="temperature_unit",
-                name="Temperature unit",
-                container=self,
-                attribute_getter="temperature_unit",
-                attribute_setter="set_temperature_unit",
-                type=Feature.Type.Choice,
-                choices_getter=lambda: ["celsius", "fahrenheit"],
-            )
-        )
 
     @property
     @abstractmethod
