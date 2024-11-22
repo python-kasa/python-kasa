@@ -612,7 +612,7 @@ class Device(ABC):
                 warn(msg, DeprecationWarning, stacklevel=2)
                 return self.device_type == dep_device_type_attr[1]
             # callable
-            if result := self._get_deprecated_callable_attributes(name) is not None:
+            if (result := self._get_deprecated_callable_attribute(name)) is not None:
                 return result
             # Other deprecated attributes
             if (dep_attr := self._deprecated_other_attributes.get(name)) and (
