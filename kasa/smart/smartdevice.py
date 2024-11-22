@@ -364,8 +364,7 @@ class SmartDevice(Device):
             self._modules[Light.__name__] = Light(self, "light")
         if (
             Module.TemperatureControl in self._modules
-            or Module.TemperatureSensor in self._modules
-            or Module.FrostProtection in self._modules
+            and Module.TemperatureSensor in self._modules
         ):
             self._modules[Thermostat.__name__] = Thermostat(self, "thermostat")
 
