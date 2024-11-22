@@ -35,7 +35,7 @@ FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assi
 SUPPORTED_IOT_DEVICES = [
     (device, "IOT")
     for device in glob.glob(
-        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/iot/*.json"
     )
 ]
 
