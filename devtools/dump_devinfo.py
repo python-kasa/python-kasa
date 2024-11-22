@@ -425,7 +425,10 @@ async def get_legacy_fixture(
         Call(module="smartlife.iot.lightStrip", method="get_light_details"),
         Call(module="smartlife.iot.LAS", method="get_config"),
         Call(module="smartlife.iot.LAS", method="get_current_brt"),
+        Call(module="smartlife.iot.LAS", method="get_dark_status"),
+        Call(module="smartlife.iot.LAS", method="get_adc_value"),
         Call(module="smartlife.iot.PIR", method="get_config"),
+        Call(module="smartlife.iot.PIR", method="get_adc_value"),
     ]
 
     successes = []
