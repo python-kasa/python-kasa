@@ -29,6 +29,8 @@ from .modules import (
 )
 from .smartmodule import SmartModule
 
+if TYPE_CHECKING:
+    from .smartchilddevice import SmartChildDevice
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -197,6 +199,8 @@ class SmartDevice(Device):
         # child modules have access to their sysinfo.
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
+                if TYPE_CHECKING:
+                    assert isinstance(child, SmartChildDevice)
                 await child._update()
 
         # We can first initialize the features after the first update.

@@ -34,6 +34,8 @@ from kasa.cli.light import (
     brightness,
     effect,
     hsv,
+    presets,
+    presets_modify,
     temperature,
 )
 from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
@@ -573,6 +575,50 @@ async def test_light_effect(dev: Device, runner: CliRunner):
     res = await runner.invoke(effect, ["foobar"], obj=dev)
     assert f"Effect must be one of: {light_effect.effect_list}" in res.output
     assert res.exit_code == 2
+
+
+async def test_light_preset(dev: Device, runner: CliRunner):
+    res = await runner.invoke(presets, obj=dev)
+    if not (light_preset := dev.modules.get(Module.LightPreset)):
+        assert "Device does not support light presets" in res.output
+        return
+
+    if len(light_preset.preset_states_list) == 0:
+        pytest.skip(
+            "Some fixtures do not have presets and"
+            " the api doesn'tsupport creating them"
+        )
+    # Start off with a known state
+    first_name = light_preset.preset_list[1]
+    await light_preset.set_preset(first_name)
+    await dev.update()
+    assert light_preset.preset == first_name
+
+    res = await runner.invoke(presets, obj=dev)
+    assert "Brightness" in res.output
+    assert res.exit_code == 0
+
+    res = await runner.invoke(
+        presets_modify,
+        [
+            "0",
+            "--brightness",
+            "12",
+        ],
+        obj=dev,
+    )
+    await dev.update()
+    assert light_preset.preset_states_list[0].brightness == 12
+
+    res = await runner.invoke(
+        presets_modify,
+        [
+            "0",
+        ],
+        obj=dev,
+    )
+    await dev.update()
+    assert "Need to supply at least one option to modify." in res.output
 
 
 async def test_led(dev: Device, runner: CliRunner):

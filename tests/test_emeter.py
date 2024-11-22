@@ -16,6 +16,7 @@ from kasa.iot import IotDevice, IotStrip
 from kasa.iot.modules.emeter import Emeter
 from kasa.smart import SmartDevice
 from kasa.smart.modules import Energy as SmartEnergyModule
+from kasa.smart.smartmodule import SmartModule
 
 from .conftest import has_emeter, has_emeter_iot, no_emeter
 
@@ -192,6 +193,7 @@ async def test_supported(dev: Device):
             pytest.skip(f"Energy module not supported for {dev}.")
     energy_module = dev.modules.get(Module.Energy)
     assert energy_module
+
     if isinstance(dev, IotDevice):
         info = (
             dev._last_update
@@ -210,6 +212,7 @@ async def test_supported(dev: Device):
         )
         assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is True
     else:
+        assert isinstance(energy_module, SmartModule)
         assert energy_module.supports(Energy.ModuleFeature.CONSUMPTION_TOTAL) is False
         assert energy_module.supports(Energy.ModuleFeature.PERIODIC_STATS) is False
         if energy_module.supported_version < 2:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import IntFlag, auto
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 from ..emeterstatus import EmeterStatus
@@ -184,9 +184,11 @@ class Energy(Module, ABC):
         "get_monthstat": "get_monthly_stats",
     }
 
-    def __getattr__(self, name: str) -> Any:
-        if attr := self._deprecated_attributes.get(name):
-            msg = f"{name} is deprecated, use {attr} instead"
-            warn(msg, DeprecationWarning, stacklevel=2)
-            return getattr(self, attr)
-        raise AttributeError(f"Energy module has no attribute {name!r}")
+    if not TYPE_CHECKING:
+
+        def __getattr__(self, name: str) -> Any:
+            if attr := self._deprecated_attributes.get(name):
+                msg = f"{name} is deprecated, use {attr} instead"
+                warn(msg, DeprecationWarning, stacklevel=2)
+                return getattr(self, attr)
+            raise AttributeError(f"Energy module has no attribute {name!r}")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -145,6 +145,8 @@ class IotStrip(IotDevice):
 
         if update_children:
             for plug in self.children:
+                if TYPE_CHECKING:
+                    assert isinstance(plug, IotStripPlug)
                 await plug._update()
 
         if not self.features:
