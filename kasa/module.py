@@ -202,10 +202,10 @@ class Module(ABC):
 
 def _is_bound_feature(attribute: property | Callable) -> bool:
     """Check if an attribute is bound to a feature with FeatureAttribute."""
-    if isinstance(attribute, Callable):
-        hints = get_type_hints(attribute, include_extras=True)
-    else:
+    if isinstance(attribute, property):
         hints = get_type_hints(attribute.fget, include_extras=True)
+    else:
+        hints = get_type_hints(attribute, include_extras=True)
 
     if (return_hints := hints.get("return")) and hasattr(return_hints, "__metadata__"):
         metadata = hints["return"].__metadata__
