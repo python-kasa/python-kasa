@@ -95,14 +95,19 @@ async def test_fan_features(dev: SmartDevice, mocker: MockerFixture):
     fan = next(get_parent_and_child_modules(dev, Module.Fan))
     assert fan
     expected_feature = fan._module_features["fan_speed_level"]
+
     fan_speed_level_feature = fan.get_feature(Fan.set_fan_speed_level)
     assert expected_feature == fan_speed_level_feature
+
     fan_speed_level_feature = fan.get_feature(fan.set_fan_speed_level)
     assert expected_feature == fan_speed_level_feature
+
     fan_speed_level_feature = fan.get_feature(Fan.fan_speed_level)
     assert expected_feature == fan_speed_level_feature
+
     fan_speed_level_feature = fan.get_feature("fan_speed_level")
     assert expected_feature == fan_speed_level_feature
+
     assert fan.has_feature(Fan.fan_speed_level)
 
     msg = "Attribute _check_supported of module Fan is not bound to a feature"

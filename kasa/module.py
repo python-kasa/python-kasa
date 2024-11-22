@@ -202,15 +202,17 @@ class Module(ABC):
 
 def _is_bound_feature(attribute: property | Callable) -> bool:
     """Check if an attribute is bound to a feature with FeatureAttribute."""
-    if isinstance(attribute, property):
-        hints = get_type_hints(attribute.fget, include_extras=True)
-    else:
+    if isinstance(attribute, Callable):
         hints = get_type_hints(attribute, include_extras=True)
+    else:
+        hints = get_type_hints(attribute.fget, include_extras=True)
+
     if (return_hints := hints.get("return")) and hasattr(return_hints, "__metadata__"):
         metadata = hints["return"].__metadata__
         for meta in metadata:
             if isinstance(meta, FeatureAttribute):
                 return True
+
     return False
 
 
@@ -237,15 +239,19 @@ def _get_bound_feature(
                 f"No attribute named {attribute_name} in "
                 f"module {module.__class__.__name__}"
             )
+
     if not _is_bound_feature(attribute_callable):
         raise KasaException(
             f"Attribute {attribute_name} of module {module.__class__.__name__}"
             " is not bound to a feature"
         )
+
     check = {attribute_name, attribute_callable}
     for feature in module._module_features.values():
         if (getter := feature.attribute_getter) and getter in check:
             return feature
+
         if (setter := feature.attribute_setter) and setter in check:
             return feature
+
     return None
