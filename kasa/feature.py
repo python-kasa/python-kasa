@@ -164,9 +164,6 @@ class Feature:
     #: If set, this property will be used to get *choices*.
     choices_getter: str | Callable[[], list[str]] | None = None
 
-    #: Value converter, for when working with complex types.
-    value_parser: str | None = None
-
     def __post_init__(self) -> None:
         """Handle late-binding of members."""
         # Populate minimum & maximum values, if range_getter is given
@@ -259,7 +256,7 @@ class Feature:
         elif self.type == Feature.Type.Choice:  # noqa: SIM102
             if not self.choices or value not in self.choices:
                 raise ValueError(
-                    f"Unexpected value for {self.name}: {value}"
+                    f"Unexpected value for {self.name}: '{value}'"
                     f" - allowed: {self.choices}"
                 )
 
@@ -273,26 +270,6 @@ class Feature:
             return await attribute_setter()
 
         return await attribute_setter(value)
-
-    def parse_value(
-        self, value: str, fallback: Callable[[str], Any | None] = lambda x: None
-    ) -> Any | None:
-        """Attempt to parse a given string into a value accepted by this feature."""
-        parser = self._get_property_value(self.value_parser)
-        parser = parser if parser else fallback
-        allowed = f"{self.choices}" if self.choices else "Unknown"
-        try:
-            parsed = parser(value)
-            if parsed is None:
-                raise ValueError(
-                    f"Unexpected value for {self.name}: {value}"
-                    f" - allowed: {allowed}"
-                )
-            return parsed
-        except SyntaxError as se:
-            raise ValueError(
-                f"{se.msg} for {self.name}: {value}" f" - allowed: {allowed}",
-            ) from se
 
     def __repr__(self) -> str:
         try:

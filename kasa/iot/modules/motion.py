@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import math
 from enum import Enum
-from typing import Literal, overload
 
 from ...exceptions import KasaException
 from ...feature import Feature
@@ -69,7 +68,6 @@ class Motion(IotModule):
                 attribute_setter="_set_range_cli",
                 type=Feature.Type.Choice,
                 choices_getter="ranges",
-                value_parser="parse_range_value",
                 category=Feature.Category.Config,
             )
         )
@@ -108,27 +106,12 @@ class Motion(IotModule):
                 device=self._device,
                 container=self,
                 id="pir_value",
-                name="PIR Reading",
+                name="PIR Value",
                 icon="mdi:motion-sensor",
                 attribute_getter="pir_value",
                 attribute_setter=None,
                 type=Feature.Type.Sensor,
                 category=Feature.Category.Info,
-            )
-        )
-
-        self._add_feature(
-            Feature(
-                device=self._device,
-                container=self,
-                id="pir_percent",
-                name="PIR Percentage",
-                icon="mdi:motion-sensor",
-                attribute_getter="pir_percent",
-                attribute_setter=None,
-                type=Feature.Type.Sensor,
-                category=Feature.Category.Info,
-                unit_getter=lambda: "%",
             )
         )
 
@@ -188,6 +171,21 @@ class Motion(IotModule):
             )
         )
 
+        self._add_feature(
+            Feature(
+                device=self._device,
+                container=self,
+                id="pir_percent",
+                name="PIR Percentile",
+                icon="mdi:motion-sensor",
+                attribute_getter="pir_percent",
+                attribute_setter=None,
+                type=Feature.Type.Sensor,
+                category=Feature.Category.Debug,
+                unit_getter=lambda: "%",
+            )
+        )
+
     def query(self) -> dict:
         """Request PIR configuration."""
         req = merge(
@@ -233,33 +231,15 @@ class Motion(IotModule):
         """Enable/disable PIR."""
         return await self.call("set_enable", {"enable": int(state)})
 
-    def _parse_range_value(self, value: str) -> int | Range | None:
-        """Attempt to parse a range value from the given string."""
-        _LOGGER.debug("Parse Range Value: %s", value)
-        parsed: int | Range | None = None
-        try:
-            parsed = int(value)
-            _LOGGER.debug("Parse Range Value: %s is an integer.", value)
-            return parsed
-        except ValueError:
-            _LOGGER.debug("Parse Range Value: %s is not an integer.", value)
-        value = value.strip().upper()
-        if value in Range._member_names_:
-            _LOGGER.debug("Parse Range Value: %s is an enumeration.", value)
-            parsed = Range[value]
-            return parsed
-        _LOGGER.debug("Parse Range Value: %s is not a Range Value.", value)
-        return None
-
     @property
-    def ranges(self) -> list[Range]:
+    def ranges(self) -> list[str]:
         """Return set of supported range classes."""
         range_min = 0
         range_max = len(self.config["array"])
         valid_ranges = list()
         for r in Range:
             if (r.value >= range_min) and (r.value < range_max):
-                valid_ranges.append(r)
+                valid_ranges.append(r.name)
         return valid_ranges
 
     @property
@@ -267,45 +247,27 @@ class Motion(IotModule):
         """Return motion detection Range."""
         return Range(self.config["trigger_index"])
 
-    @overload
-    async def set_range(self, *, range: Range) -> dict: ...
-
-    @overload
-    async def set_range(self, *, range: Literal[Range.Custom], value: int) -> dict: ...
-
-    @overload
-    async def set_range(self, *, value: int) -> dict: ...
-
-    async def set_range(
-        self, *, range: Range | None = None, value: int | None = None
-    ) -> dict:
+    async def set_range(self, range: Range) -> dict:
         """Set the Range for the sensor.
 
-        :param Range: for using standard Ranges
-        :param custom_Range: Range in decimeters, overrides the Range parameter
+        :param Range: the range class to use.
         """
-        if value is not None:
-            if range is not None and range is not Range.Custom:
-                raise KasaException(
-                    f"Refusing to set non-custom range {range} to value {value}."
-                )
-            elif value is None:
-                raise KasaException("Custom range threshold may not be set to None.")
-            payload = {"index": Range.Custom.value, "value": value}
-        elif range is not None:
-            payload = {"index": range.value}
-        else:
-            raise KasaException("Either range or value needs to be defined")
-
+        payload = {"index": range.value}
         return await self.call("set_trigger_sens", payload)
 
-    async def _set_range_cli(self, input: Range | int) -> dict:
-        if isinstance(input, Range):
-            return await self.set_range(range=input)
-        elif isinstance(input, int):
-            return await self.set_range(value=input)
-        else:
-            raise KasaException(f"Invalid type: {type(input)} given to cli motion set.")
+    def _parse_range_value(self, value: str) -> Range:
+        """Attempt to parse a range value from the given string."""
+        value = value.strip().capitalize()
+        if value not in Range._member_names_:
+            raise KasaException(
+                f"Invalid range value: '{value}'."
+                f" Valid options are: {Range._member_names_}"
+            )
+        return Range[value]
+
+    async def _set_range_cli(self, input: str) -> dict:
+        value = self._parse_range_value(input)
+        return await self.set_range(range=value)
 
     def get_range_threshold(self, range_type: Range) -> int:
         """Get the distance threshold at which the PIR sensor is will trigger."""
@@ -322,7 +284,8 @@ class Motion(IotModule):
 
     async def set_threshold(self, value: int) -> dict:
         """Set the distance threshold at which the PIR sensor is will trigger."""
-        return await self.set_range(value=value)
+        payload = {"index": Range.Custom.value, "value": value}
+        return await self.call("set_trigger_sens", payload)
 
     @property
     def inactivity_timeout(self) -> int:

@@ -1,8 +1,6 @@
-import pytest
 from pytest_mock import MockerFixture
 
 from kasa import Module
-from kasa.exceptions import KasaException
 from kasa.iot import IotDimmer
 from kasa.iot.modules.motion import Motion, Range
 
@@ -38,32 +36,36 @@ async def test_motion_range(dev: IotDimmer, mocker: MockerFixture):
     motion: Motion = dev.modules[Module.IotMotion]
     query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
-    await motion.set_range(value=123)
-    query_helper.assert_called_with(
-        "smartlife.iot.PIR",
-        "set_trigger_sens",
-        {"index": Range.Custom.value, "value": 123},
-    )
+    for range in Range:
+        await motion.set_range(range)
+        query_helper.assert_called_with(
+            "smartlife.iot.PIR",
+            "set_trigger_sens",
+            {"index": range.value},
+        )
 
-    await motion.set_range(range=Range.Custom, value=123)
-    query_helper.assert_called_with(
-        "smartlife.iot.PIR",
-        "set_trigger_sens",
-        {"index": Range.Custom.value, "value": 123},
-    )
 
-    await motion.set_range(range=Range.Far)
-    query_helper.assert_called_with(
-        "smartlife.iot.PIR", "set_trigger_sens", {"index": Range.Far.value}
-    )
+@dimmer_iot
+async def test_motion_threshold(dev: IotDimmer, mocker: MockerFixture):
+    motion: Motion = dev.modules[Module.IotMotion]
+    query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
 
-    with pytest.raises(KasaException, match="Refusing to set non-custom range"):
-        await motion.set_range(range=Range.Near, value=100)  # type: ignore[call-overload]
+    for range in Range:
+        # Switch to a given range.
+        await motion.set_range(range)
+        query_helper.assert_called_with(
+            "smartlife.iot.PIR",
+            "set_trigger_sens",
+            {"index": range.value},
+        )
 
-    with pytest.raises(
-        KasaException, match="Either range or value needs to be defined"
-    ):
-        await motion.set_range()  # type: ignore[call-overload]
+        # Assert that the range always goes to custom, regardless of current range.
+        await motion.set_threshold(123)
+        query_helper.assert_called_with(
+            "smartlife.iot.PIR",
+            "set_trigger_sens",
+            {"index": Range.Custom.value, "value": 123},
+        )
 
 
 @dimmer_iot
