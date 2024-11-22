@@ -14,9 +14,17 @@ Light, AutoOff, Firmware etc.
 >>> print(dev.alias)
 Living Room Bulb
 
-To see whether a device supports functionality check for the existence of the module:
+To see whether a device supports a group of functionality
+check for the existence of the module:
 
 >>> if light := dev.modules.get("Light"):
+>>>     print(light.brightness)
+100
+
+To see whether a device supports specific functionality check whether the
+module has that feature:
+
+>>> if light.has_feature(light.set_hsv):
 >>>     print(light.hsv)
 HSV(hue=0, saturation=100, value=100)
 
@@ -69,6 +77,9 @@ ModuleT = TypeVar("ModuleT", bound="Module")
 
 class FeatureAttribute:
     """Class for annotating attributes bound to feature."""
+
+    def __repr__(self) -> str:
+        return "FeatureAttribute"
 
 
 class Module(ABC):
