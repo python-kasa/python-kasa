@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Literal
+from typing import Annotated, Literal
 
-from ..module import Module
+from ..feature import Feature
+from ..module import FeatureAttribute, Module
 
 
 class ThermostatState(Enum):
@@ -21,6 +22,71 @@ class ThermostatState(Enum):
 
 class Thermostat(Module, ABC):
     """Base class for TP-Link Thermostat."""
+
+    def _initialize_features(self) -> None:
+        """Initialize features after the initial update."""
+        self._add_feature(
+            Feature(
+                self._device,
+                id="state",
+                name="State",
+                container=self,
+                attribute_getter="state",
+                attribute_setter="set_state",
+                category=Feature.Category.Primary,
+                type=Feature.Type.Switch,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="target_temperature",
+                name="Target temperature",
+                container=self,
+                attribute_getter="target_temperature",
+                attribute_setter="set_target_temperature",
+                range_getter="_target_temperature_range",
+                icon="mdi:thermometer",
+                type=Feature.Type.Number,
+                category=Feature.Category.Primary,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="thermostat_mode",
+                name="Thermostat mode",
+                container=self,
+                attribute_getter="mode",
+                category=Feature.Category.Primary,
+                type=Feature.Type.Sensor,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="temperature",
+                name="Temperature",
+                container=self,
+                attribute_getter="temperature",
+                icon="mdi:thermometer",
+                category=Feature.Category.Primary,
+                unit_getter="temperature_unit",
+                type=Feature.Type.Sensor,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="temperature_unit",
+                name="Temperature unit",
+                container=self,
+                attribute_getter="temperature_unit",
+                attribute_setter="set_temperature_unit",
+                type=Feature.Type.Choice,
+                choices_getter=lambda: ["celsius", "fahrenheit"],
+            )
+        )
 
     @property
     @abstractmethod
@@ -38,47 +104,30 @@ class Thermostat(Module, ABC):
 
     @property
     @abstractmethod
-    def allowed_temperature_range(self) -> tuple[int, int]:
-        """Return allowed temperature range."""
-
-    @property
-    @abstractmethod
-    def minimum_target_temperature(self) -> int:
-        """Minimum available target temperature."""
-
-    @property
-    @abstractmethod
-    def maximum_target_temperature(self) -> int:
-        """Minimum available target temperature."""
-
-    @property
-    @abstractmethod
-    def target_temperature(self) -> float:
+    def target_temperature(self) -> Annotated[float, FeatureAttribute()]:
         """Return target temperature."""
 
     @abstractmethod
-    async def set_target_temperature(self, target: float) -> dict:
+    async def set_target_temperature(
+        self, target: float
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set target temperature."""
 
     @property
     @abstractmethod
-    def temperature_offset(self) -> int:
-        """Return temperature offset."""
+    def _target_temperature_range(self) -> tuple[int, int]:
+        """Return target temperature range.
 
-    @abstractmethod
-    async def set_temperature_offset(self, offset: int) -> dict:
-        """Set temperature offset."""
+        Private method. Consumers of the api should use:
+        get_feature(self.set_target_temperature).minimum_value
+        get_feature(self.set_target_temperature).maximum_value
+        """
 
     @property
     @abstractmethod
-    def temperature(self) -> float:
+    def temperature(self) -> Annotated[float, FeatureAttribute()]:
         """Return current humidity in percentage."""
         return self._device.sys_info["current_temp"]
-
-    @property
-    @abstractmethod
-    def temperature_warning(self) -> bool:
-        """Return True if temperature is outside of the wanted range."""
 
     @property
     @abstractmethod
@@ -90,8 +139,3 @@ class Thermostat(Module, ABC):
         self, unit: Literal["celsius", "fahrenheit"]
     ) -> dict:
         """Set the device temperature unit."""
-
-    @property
-    @abstractmethod
-    def frost_control_temperature(self) -> int:
-        """Return frost protection minimum temperature."""

@@ -348,13 +348,10 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     assert therm_mod.mode is ThermostatState.Heating
     assert therm_mod.target_temperature == 10
 
-    allowed_range = therm_mod.allowed_temperature_range
-    assert therm_mod.minimum_target_temperature == allowed_range[0]
-    assert therm_mod.maximum_target_temperature == allowed_range[1]
-
-    await therm_mod.set_temperature_offset(5)
-    await dev.update()
-    assert therm_mod.temperature_offset == 5
+    target_temperature_feature = therm_mod.get_feature(therm_mod.set_target_temperature)
+    allowed_range = therm_mod._target_temperature_range
+    assert target_temperature_feature.minimum_value == allowed_range[0]
+    assert target_temperature_feature.maximum_value == allowed_range[1]
 
     await therm_mod.set_temperature_unit("celsius")
     await dev.update()
@@ -363,11 +360,6 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     await therm_mod.set_temperature_unit("fahrenheit")
     await dev.update()
     assert therm_mod.temperature_unit == "fahrenheit"
-
-    # get_frost_protection needs to be added to fixtures
-    # assert therm_mod.frost_control_temperature == 5
-
-    assert therm_mod.temperature_warning is False
 
 
 async def test_set_time(dev: Device):
