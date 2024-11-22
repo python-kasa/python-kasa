@@ -56,7 +56,7 @@ FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 SMART_FOLDER = "tests/fixtures/smart/"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child/"
-IOT_FOLDER = "tests/fixtures/"
+IOT_FOLDER = "tests/fixtures/iot/"
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 

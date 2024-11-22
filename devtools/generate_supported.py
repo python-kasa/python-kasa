@@ -45,7 +45,7 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
 SUPPORTED_FILENAME = "SUPPORTED.md"
 README_FILENAME = "README.md"
 
-IOT_FOLDER = "tests/fixtures/"
+IOT_FOLDER = "tests/fixtures/iot/"
 SMART_FOLDER = "tests/fixtures/smart/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
