@@ -107,7 +107,7 @@ markers = [
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 timeout = 10
-addopts = "--disable-socket --allow-unix-socket"
+addopts = "--disable-socket --allow-unix-socket --dist=loadgroup"
 
 [tool.doc8]
 paths = ["docs"]
