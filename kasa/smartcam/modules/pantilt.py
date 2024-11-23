@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from ...feature import Feature
-from ..smartcameramodule import SmartCameraModule
+from ..smartcammodule import SmartCamModule
 
 DEFAULT_PAN_STEP = 30
 DEFAULT_TILT_STEP = 10
 
 
-class PanTilt(SmartCameraModule):
+class PanTilt(SmartCamModule):
     """Implementation of device_local_time."""
 
     REQUIRED_COMPONENT = "ptz"

@@ -11,7 +11,7 @@ from kasa.transports.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol, FakeSmartTransport
-from .fakeprotocol_smartcamera import FakeSmartCameraProtocol
+from .fakeprotocol_smartcam import FakeSmartCamProtocol
 from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 
 DISCOVERY_MOCK_IP = "127.0.0.123"
@@ -194,8 +194,8 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     protos = {
         ip: FakeSmartProtocol(fixture_info.data, fixture_info.name)
         if fixture_info.protocol in {"SMART", "SMART.CHILD"}
-        else FakeSmartCameraProtocol(fixture_info.data, fixture_info.name)
-        if fixture_info.protocol in {"SMARTCAMERA", "SMARTCAMERA.CHILD"}
+        else FakeSmartCamProtocol(fixture_info.data, fixture_info.name)
+        if fixture_info.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}
         else FakeIotProtocol(fixture_info.data, fixture_info.name)
         for ip, fixture_info in fixture_infos.items()
     }
@@ -221,8 +221,8 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
             protos[host] = (
                 FakeSmartProtocol(fixture_info.data, fixture_info.name)
                 if fixture_info.protocol in {"SMART", "SMART.CHILD"}
-                else FakeSmartCameraProtocol(fixture_info.data, fixture_info.name)
-                if fixture_info.protocol in {"SMARTCAMERA", "SMARTCAMERA.CHILD"}
+                else FakeSmartCamProtocol(fixture_info.data, fixture_info.name)
+                if fixture_info.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}
                 else FakeIotProtocol(fixture_info.data, fixture_info.name)
             )
             port = (

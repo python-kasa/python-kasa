@@ -5,21 +5,21 @@ from __future__ import annotations
 import pytest
 
 from kasa import Device
-from kasa.smartcamera.modules.alarm import (
+from kasa.smartcam.modules.alarm import (
     DURATION_MAX,
     DURATION_MIN,
     VOLUME_MAX,
     VOLUME_MIN,
 )
-from kasa.smartcamera.smartcameramodule import SmartCameraModule
+from kasa.smartcam.smartcammodule import SmartCamModule
 
-from ...conftest import hub_smartcamera
+from ...conftest import hub_smartcam
 
 
-@hub_smartcamera
+@hub_smartcam
 async def test_alarm(dev: Device):
     """Test device alarm."""
-    alarm = dev.modules.get(SmartCameraModule.SmartCameraAlarm)
+    alarm = dev.modules.get(SmartCamModule.SmartCamAlarm)
     assert alarm
 
     original_duration = alarm.alarm_duration
@@ -70,10 +70,10 @@ async def test_alarm(dev: Device):
         await dev.update()
 
 
-@hub_smartcamera
+@hub_smartcam
 async def test_alarm_invalid_setters(dev: Device):
     """Test device alarm invalid setter values."""
-    alarm = dev.modules.get(SmartCameraModule.SmartCameraAlarm)
+    alarm = dev.modules.get(SmartCamModule.SmartCamAlarm)
     assert alarm
 
     # test set sound invalid
@@ -92,10 +92,10 @@ async def test_alarm_invalid_setters(dev: Device):
         await alarm.set_alarm_duration(-3)
 
 
-@hub_smartcamera
+@hub_smartcam
 async def test_alarm_features(dev: Device):
     """Test device alarm features."""
-    alarm = dev.modules.get(SmartCameraModule.SmartCameraAlarm)
+    alarm = dev.modules.get(SmartCamModule.SmartCamAlarm)
     assert alarm
 
     original_duration = alarm.alarm_duration

@@ -45,7 +45,7 @@ from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
-from kasa.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 from .conftest import (
     device_smart,
@@ -181,7 +181,7 @@ async def test_state(dev, turn_on, runner):
 
 @turn_on
 async def test_toggle(dev, turn_on, runner):
-    if isinstance(dev, SmartCamera) and dev.device_type == DeviceType.Hub:
+    if isinstance(dev, SmartCamDevice) and dev.device_type == DeviceType.Hub:
         pytest.skip(reason="Hub cannot toggle state")
 
     await handle_turn_on(dev, turn_on)
@@ -214,7 +214,7 @@ async def test_raw_command(dev, mocker, runner):
     update = mocker.patch.object(dev, "update")
     from kasa.smart import SmartDevice
 
-    if isinstance(dev, SmartCamera):
+    if isinstance(dev, SmartCamDevice):
         params = ["na", "getDeviceInfo"]
     elif isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
@@ -917,7 +917,7 @@ async def test_type_param(device_type, mocker, runner):
 
     mocker.patch("kasa.cli.device.state", new=_state)
     if device_type == "camera":
-        expected_type = SmartCamera
+        expected_type = SmartCamDevice
     elif device_type == "smart":
         expected_type = SmartDevice
     else:
