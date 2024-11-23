@@ -124,8 +124,21 @@
     "get_connect_cloud_state": {
         "status": 1
     },
+    "get_energy_usage": {
+        "today_runtime": 306,
+        "month_runtime": 12572,
+        "today_energy": 173,
+        "month_energy": 6110,
+        "local_time": "2024-11-22 21:03:25",
+        "electricity_charge": [
+            0,
+            0,
+            0
+        ],
+        "current_power": 74116
+    },
     "get_current_power": {
-        "current_power": 168
+        "current_power": 74
     },
     "get_device_info": {
         "auto_off_remain_time": 0,
