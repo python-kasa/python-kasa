@@ -12,10 +12,10 @@ from freezegun.api import FrozenDateTimeFactory
 
 from kasa import Credentials, Device, DeviceType, Module
 
-from ..conftest import camera_smartcamera, device_smartcamera, hub_smartcamera
+from ..conftest import camera_smartcam, device_smartcam, hub_smartcam
 
 
-@device_smartcamera
+@device_smartcam
 async def test_state(dev: Device):
     if dev.device_type is DeviceType.Hub:
         pytest.skip("Hubs cannot be switched on and off")
@@ -26,7 +26,7 @@ async def test_state(dev: Device):
     assert dev.is_on is not state
 
 
-@camera_smartcamera
+@camera_smartcam
 async def test_stream_rtsp_url(dev: Device):
     camera_module = dev.modules.get(Module.Camera)
     assert camera_module
@@ -85,7 +85,7 @@ async def test_stream_rtsp_url(dev: Device):
     assert url is None
 
 
-@device_smartcamera
+@device_smartcam
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
@@ -100,7 +100,7 @@ async def test_alias(dev):
     assert dev.alias == original
 
 
-@hub_smartcamera
+@hub_smartcam
 async def test_hub(dev):
     assert dev.children
     for child in dev.children:
@@ -112,7 +112,7 @@ async def test_hub(dev):
         assert child.time
 
 
-@device_smartcamera
+@device_smartcam
 async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
     """Test a child device gets the time from it's parent module."""
     fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)

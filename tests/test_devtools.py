@@ -6,7 +6,7 @@ from devtools.dump_devinfo import get_legacy_fixture, get_smart_fixtures
 from kasa.iot import IotDevice
 from kasa.protocols import IotProtocol
 from kasa.smart import SmartDevice
-from kasa.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 from .conftest import (
     FixtureInfo,
@@ -17,8 +17,8 @@ from .conftest import (
 smart_fixtures = parametrize(
     "smart fixtures", protocol_filter={"SMART"}, fixture_name="fixture_info"
 )
-smartcamera_fixtures = parametrize(
-    "smartcamera fixtures", protocol_filter={"SMARTCAMERA"}, fixture_name="fixture_info"
+smartcam_fixtures = parametrize(
+    "smartcam fixtures", protocol_filter={"SMARTCAM"}, fixture_name="fixture_info"
 )
 iot_fixtures = parametrize(
     "iot fixtures", protocol_filter={"IOT"}, fixture_name="fixture_info"
@@ -27,8 +27,8 @@ iot_fixtures = parametrize(
 
 async def test_fixture_names(fixture_info: FixtureInfo):
     """Test that device info gets the right fixture names."""
-    if fixture_info.protocol in {"SMARTCAMERA"}:
-        device_info = SmartCamera._get_device_info(
+    if fixture_info.protocol in {"SMARTCAM"}:
+        device_info = SmartCamDevice._get_device_info(
             fixture_info.data, fixture_info.data.get("discovery_result")
         )
     elif fixture_info.protocol in {"SMART"}:
@@ -62,11 +62,11 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
     assert fixture_info.data == fixture_result.data
 
 
-@smartcamera_fixtures
-async def test_smartcamera_fixtures(fixture_info: FixtureInfo):
-    """Test that smartcamera fixtures are created the same."""
+@smartcam_fixtures
+async def test_smartcam_fixtures(fixture_info: FixtureInfo):
+    """Test that smartcam fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
-    assert isinstance(dev, SmartCamera)
+    assert isinstance(dev, SmartCamDevice)
     if dev.children:
         pytest.skip("Test not currently implemented for devices with children.")
     fixtures = await get_smart_fixtures(

@@ -1,4 +1,4 @@
-"""Module for smartcamera."""
+"""Module for SmartCamDevice."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from typing import Any
 from ..device import _DeviceInfo
 from ..device_type import DeviceType
 from ..module import Module
-from ..protocols.smartcameraprotocol import _ChildCameraProtocolWrapper
+from ..protocols.smartcamprotocol import _ChildCameraProtocolWrapper
 from ..smart import SmartChildDevice, SmartDevice
 from .modules import ChildDevice, DeviceModule
-from .smartcameramodule import SmartCameraModule
+from .smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SmartCamera(SmartDevice):
+class SmartCamDevice(SmartDevice):
     """Class for smart cameras."""
 
     # Modules that are called as part of the init procedure on first update
@@ -41,7 +41,7 @@ class SmartCamera(SmartDevice):
         basic_info = info["getDeviceInfo"]["device_info"]["basic_info"]
         short_name = basic_info["device_model"]
         long_name = discovery_info["device_model"] if discovery_info else short_name
-        device_type = SmartCamera._get_device_type_from_sysinfo(basic_info)
+        device_type = SmartCamDevice._get_device_type_from_sysinfo(basic_info)
         fw_version_full = basic_info["sw_version"]
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         return _DeviceInfo(
@@ -73,7 +73,7 @@ class SmartCamera(SmartDevice):
     async def _initialize_smart_child(
         self, info: dict, child_components: dict
     ) -> SmartDevice:
-        """Initialize a smart child device attached to a smartcamera."""
+        """Initialize a smart child device attached to a smartcam device."""
         child_id = info["device_id"]
         child_protocol = _ChildCameraProtocolWrapper(child_id, self.protocol)
         try:
@@ -122,7 +122,7 @@ class SmartCamera(SmartDevice):
 
     async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""
-        for mod in SmartCameraModule.REGISTERED_MODULES.values():
+        for mod in SmartCamModule.REGISTERED_MODULES.values():
             if (
                 mod.REQUIRED_COMPONENT
                 and mod.REQUIRED_COMPONENT not in self._components

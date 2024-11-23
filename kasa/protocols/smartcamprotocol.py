@@ -1,4 +1,4 @@
-"""Module for SmartCamera Protocol."""
+"""Module for SmartCamProtocol."""
 
 from __future__ import annotations
 
@@ -46,8 +46,8 @@ class SingleRequest:
     request: dict[str, Any]
 
 
-class SmartCameraProtocol(SmartProtocol):
-    """Class for SmartCamera Protocol."""
+class SmartCamProtocol(SmartProtocol):
+    """Class for SmartCam Protocol."""
 
     async def _handle_response_lists(
         self, response_result: dict[str, Any], method: str, retry_count: int
@@ -123,7 +123,7 @@ class SmartCameraProtocol(SmartProtocol):
         """
         method = request
         method_type = request[:3]
-        snake_name = SmartCameraProtocol._make_snake_name(request)
+        snake_name = SmartCamProtocol._make_snake_name(request)
         param = snake_name[4:]
         if (
             (short_method := method[:3])
