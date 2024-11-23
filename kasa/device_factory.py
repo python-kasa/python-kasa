@@ -24,9 +24,9 @@ from .protocols import (
     IotProtocol,
     SmartProtocol,
 )
-from .protocols.smartcameraprotocol import SmartCameraProtocol
+from .protocols.smartcamprotocol import SmartCamProtocol
 from .smart import SmartDevice
-from .smartcamera.smartcamera import SmartCamera
+from .smartcam import SmartCamDevice
 from .transports import (
     AesTransport,
     BaseTransport,
@@ -151,10 +151,10 @@ def get_device_class_from_family(
         "SMART.TAPOSWITCH": SmartDevice,
         "SMART.KASAPLUG": SmartDevice,
         "SMART.TAPOHUB": SmartDevice,
-        "SMART.TAPOHUB.HTTPS": SmartCamera,
+        "SMART.TAPOHUB.HTTPS": SmartCamDevice,
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
-        "SMART.IPCAMERA.HTTPS": SmartCamera,
+        "SMART.IPCAMERA.HTTPS": SmartCamDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
     }
@@ -189,7 +189,7 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
-        "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),
+        "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None

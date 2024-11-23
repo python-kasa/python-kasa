@@ -184,7 +184,7 @@ The following devices have been tested and confirmed as working. If your device 
 
 - **Plugs**: EP10, EP25<sup>\*</sup>, HS100<sup>\*\*</sup>, HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401
 - **Power Strips**: EP40, EP40M<sup>\*</sup>, HS107, HS300, KP200, KP303, KP400
-- **Wall Switches**: ES20M, HS200, HS210, HS220<sup>\*\*</sup>, KP405, KS200M, KS205<sup>\*</sup>, KS220, KS220M, KS225<sup>\*</sup>, KS230, KS240<sup>\*</sup>
+- **Wall Switches**: ES20M, HS200<sup>\*\*</sup>, HS210, HS220<sup>\*\*</sup>, KP405, KS200M, KS205<sup>\*</sup>, KS220, KS220M, KS225<sup>\*</sup>, KS230, KS240<sup>\*</sup>
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB110
 - **Light Strips**: KL400L5, KL420L5, KL430
 - **Hubs**: KH100<sup>\*</sup>
@@ -192,7 +192,7 @@ The following devices have been tested and confirmed as working. If your device 
 
 ### Supported Tapo<sup>\*</sup> devices
 
-- **Plugs**: P100, P110, P115, P125M, P135, TP15
+- **Plugs**: P100, P110, P110M, P115, P125M, P135, TP15
 - **Power Strips**: P300, P304M, TP25
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E, L630

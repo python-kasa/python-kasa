@@ -9,10 +9,10 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from ...cachedzoneinfo import CachedZoneInfo
 from ...feature import Feature
 from ...interfaces import Time as TimeInterface
-from ..smartcameramodule import SmartCameraModule
+from ..smartcammodule import SmartCamModule
 
 
-class Time(SmartCameraModule, TimeInterface):
+class Time(SmartCamModule, TimeInterface):
     """Implementation of device_local_time."""
 
     QUERY_GETTER_NAME = "getTimezone"

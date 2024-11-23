@@ -27,6 +27,7 @@ from .conftest import (
 
 @device_smart
 @pytest.mark.requires_dummy
+@pytest.mark.xdist_group(name="caplog")
 async def test_try_get_response(dev: SmartDevice, caplog):
     mock_response: dict = {
         "get_device_info": SmartErrorCode.PARAMS_ERROR,
@@ -143,6 +144,7 @@ async def test_update_module_queries(dev: SmartDevice, mocker: MockerFixture):
 
 
 @device_smart
+@pytest.mark.xdist_group(name="caplog")
 async def test_update_module_update_delays(
     dev: SmartDevice,
     mocker: MockerFixture,
@@ -203,6 +205,7 @@ async def test_update_module_update_delays(
     ],
 )
 @device_smart
+@pytest.mark.xdist_group(name="caplog")
 async def test_update_module_query_errors(
     dev: SmartDevice,
     mocker: MockerFixture,
