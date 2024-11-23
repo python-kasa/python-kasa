@@ -184,7 +184,6 @@ async def test_protocol_reconnect(mocker, retry_count, protocol_class, transport
 
 
 @pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])
-@pytest.mark.xdist_group(name="caplog")
 async def test_protocol_logging(mocker, caplog, log_level):
     caplog.set_level(log_level)
     logging.getLogger("kasa").setLevel(log_level)

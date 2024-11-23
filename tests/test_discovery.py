@@ -119,7 +119,6 @@ async def test_type_detection_lightstrip(dev: Device):
     assert d.device_type == DeviceType.LightStrip
 
 
-@pytest.mark.xdist_group(name="caplog")
 async def test_type_unknown(caplog):
     invalid_info = {"system": {"get_sysinfo": {"type": "nosuchtype"}}}
     assert Discover._get_device_class(invalid_info) is IotPlug
@@ -587,7 +586,6 @@ async def test_do_discover_external_cancel(mocker):
             await dp.wait_for_discovery_to_complete()
 
 
-@pytest.mark.xdist_group(name="caplog")
 async def test_discovery_redaction(discovery_mock, caplog: pytest.LogCaptureFixture):
     """Test query sensitive info redaction."""
     mac = "12:34:56:78:9A:BC"

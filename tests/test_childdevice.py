@@ -136,7 +136,6 @@ async def test_child_time(dev: Device, freezer: FrozenDateTimeFactory):
         assert child.time != fallback_time
 
 
-@pytest.mark.xdist_group(name="caplog")
 async def test_child_device_type_unknown(caplog):
     """Test for device type when category is unknown."""
 

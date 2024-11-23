@@ -109,7 +109,6 @@ async def test_connect_custom_port(discovery_mock, mocker, custom_port):
     assert dev.port == custom_port or dev.port == default_port
 
 
-@pytest.mark.xdist_group(name="caplog")
 async def test_connect_logs_connect_time(
     discovery_mock,
     caplog: pytest.LogCaptureFixture,
@@ -193,7 +192,6 @@ async def test_device_types(dev: Device):
     assert dev.device_type == res
 
 
-@pytest.mark.xdist_group(name="caplog")
 async def test_device_class_from_unknown_family(caplog):
     """Verify that unknown SMART devices yield a warning and fallback to SmartDevice."""
     dummy_name = "SMART.foo"

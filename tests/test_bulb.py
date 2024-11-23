@@ -232,7 +232,6 @@ async def test_set_color_temp_transition(dev: IotBulb, mocker):
 
 
 @variable_temp_iot
-@pytest.mark.xdist_group(name="caplog")
 async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
     monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
     light = dev.modules.get(Module.Light)

@@ -37,6 +37,13 @@ async def handle_turn_on(dev, turn_on):
 
 
 @pytest.fixture
+@pytest.mark.xdist_group(name="caplog")
+def caplog(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
+    """Foo."""
+    return caplog
+
+
+@pytest.fixture
 def dummy_protocol():
     """Return a smart protocol instance with a mocking-ready dummy transport."""
 

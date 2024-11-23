@@ -90,7 +90,6 @@ async def test_update_available_without_cloud(dev: SmartDevice):
     ],
 )
 @pytest.mark.requires_dummy
-@pytest.mark.xdist_group(name="caplog")
 async def test_firmware_update(
     dev: SmartDevice,
     mocker: MockerFixture,

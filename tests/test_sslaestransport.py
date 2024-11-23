@@ -175,7 +175,6 @@ async def test_send(mocker):
     assert "result" in res
 
 
-@pytest.mark.xdist_group(name="caplog")
 async def test_unencrypted_response(mocker, caplog):
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host, do_not_encrypt_response=True)

@@ -307,7 +307,6 @@ async def test_protocol_handles_cancellation_during_connection(
     ids=("_deprecated_TPLinkSmartHomeProtocol", "IotProtocol-XorTransport"),
 )
 @pytest.mark.parametrize("log_level", [logging.WARNING, logging.DEBUG])
-@pytest.mark.xdist_group(name="caplog")
 async def test_protocol_logging(
     mocker, caplog, log_level, protocol_class, transport_class, encryption_class
 ):
@@ -686,7 +685,6 @@ def test_deprecated_protocol():
 
 
 @device_iot
-@pytest.mark.xdist_group(name="caplog")
 async def test_iot_queries_redaction(dev: IotDevice, caplog: pytest.LogCaptureFixture):
     """Test query sensitive info redaction."""
     if isinstance(dev.protocol._transport, FakeIotTransport):

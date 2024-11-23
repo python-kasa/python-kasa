@@ -127,7 +127,6 @@ async def test_feature_action(mocker):
     mock_call_action.assert_called()
 
 
-@pytest.mark.xdist_group(name="caplog")
 async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture):
     """Test the choice feature type."""
     dummy_feature.type = Feature.Type.Choice
