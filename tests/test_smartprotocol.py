@@ -54,6 +54,7 @@ async def test_smart_device_errors(dummy_protocol, mocker, error_code):
 
 
 @pytest.mark.parametrize("error_code", [-13333, 13333])
+@pytest.mark.xdist_group(name="caplog")
 async def test_smart_device_unknown_errors(
     dummy_protocol, mocker, error_code, caplog: pytest.LogCaptureFixture
 ):
@@ -417,6 +418,7 @@ async def test_incomplete_list(mocker, caplog):
 
 
 @device_smart
+@pytest.mark.xdist_group(name="caplog")
 async def test_smart_queries_redaction(
     dev: SmartDevice, caplog: pytest.LogCaptureFixture
 ):
