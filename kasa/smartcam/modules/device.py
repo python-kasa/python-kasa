@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from ...feature import Feature
-from ..smartcameramodule import SmartCameraModule
+from ..smartcammodule import SmartCamModule
 
 
-class DeviceModule(SmartCameraModule):
+class DeviceModule(SmartCamModule):
     """Implementation of device module."""
 
     NAME = "devicemodule"

@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass
 from json import dumps as json_dumps
+from typing import Any, TypedDict
 
 import pytest
 
@@ -10,16 +11,27 @@ from kasa.transports.xortransport import XorEncryption
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol, FakeSmartTransport
-from .fakeprotocol_smartcamera import FakeSmartCameraProtocol
+from .fakeprotocol_smartcam import FakeSmartCamProtocol
 from .fixtureinfo import FixtureInfo, filter_fixtures, idgenerator
 
 DISCOVERY_MOCK_IP = "127.0.0.123"
 
 
-def _make_unsupported(device_family, encrypt_type, *, omit_keys=None):
+class DiscoveryResponse(TypedDict):
+    result: dict[str, Any]
+    error_code: int
+
+
+def _make_unsupported(
+    device_family,
+    encrypt_type,
+    *,
+    https: bool = False,
+    omit_keys: dict[str, Any] | None = None,
+) -> DiscoveryResponse:
     if omit_keys is None:
         omit_keys = {"encrypt_info": None}
-    result = {
+    result: DiscoveryResponse = {
         "result": {
             "device_id": "xx",
             "owner": "xx",
@@ -31,7 +43,7 @@ def _make_unsupported(device_family, encrypt_type, *, omit_keys=None):
             "obd_src": "tplink",
             "factory_default": False,
             "mgt_encrypt_schm": {
-                "is_support_https": False,
+                "is_support_https": https,
                 "encrypt_type": encrypt_type,
                 "http_port": 80,
                 "lv": 2,
@@ -51,6 +63,7 @@ def _make_unsupported(device_family, encrypt_type, *, omit_keys=None):
 
 UNSUPPORTED_DEVICES = {
     "unknown_device_family": _make_unsupported("SMART.TAPOXMASTREE", "AES"),
+    "unknown_iot_device_family": _make_unsupported("IOT.IOTXMASTREE", "AES"),
     "wrong_encryption_iot": _make_unsupported("IOT.SMARTPLUGSWITCH", "AES"),
     "wrong_encryption_smart": _make_unsupported("SMART.TAPOBULB", "IOT"),
     "unknown_encryption": _make_unsupported("IOT.SMARTPLUGSWITCH", "FOO"),
@@ -63,6 +76,11 @@ UNSUPPORTED_DEVICES = {
         "SMART.TAPOBULB",
         "FOO",
         omit_keys={"mgt_encrypt_schm": None},
+    ),
+    "invalidinstance": _make_unsupported(
+        "IOT.SMARTPLUGSWITCH",
+        "KLAP",
+        https=True,
     ),
 }
 
@@ -176,8 +194,8 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     protos = {
         ip: FakeSmartProtocol(fixture_info.data, fixture_info.name)
         if fixture_info.protocol in {"SMART", "SMART.CHILD"}
-        else FakeSmartCameraProtocol(fixture_info.data, fixture_info.name)
-        if fixture_info.protocol in {"SMARTCAMERA", "SMARTCAMERA.CHILD"}
+        else FakeSmartCamProtocol(fixture_info.data, fixture_info.name)
+        if fixture_info.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}
         else FakeIotProtocol(fixture_info.data, fixture_info.name)
         for ip, fixture_info in fixture_infos.items()
     }
@@ -203,8 +221,8 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
             protos[host] = (
                 FakeSmartProtocol(fixture_info.data, fixture_info.name)
                 if fixture_info.protocol in {"SMART", "SMART.CHILD"}
-                else FakeSmartCameraProtocol(fixture_info.data, fixture_info.name)
-                if fixture_info.protocol in {"SMARTCAMERA", "SMARTCAMERA.CHILD"}
+                else FakeSmartCamProtocol(fixture_info.data, fixture_info.name)
+                if fixture_info.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}
                 else FakeIotProtocol(fixture_info.data, fixture_info.name)
             )
             port = (

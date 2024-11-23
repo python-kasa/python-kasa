@@ -1,10 +1,10 @@
 """Module for child devices."""
 
 from ...device_type import DeviceType
-from ..smartcameramodule import SmartCameraModule
+from ..smartcammodule import SmartCamModule
 
 
-class ChildDevice(SmartCameraModule):
+class ChildDevice(SmartCamModule):
     """Implementation for child devices."""
 
     REQUIRED_COMPONENT = "childControl"

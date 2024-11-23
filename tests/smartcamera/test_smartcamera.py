@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import json
 from datetime import UTC, datetime
 from unittest.mock import patch
 
@@ -10,10 +12,10 @@ from freezegun.api import FrozenDateTimeFactory
 
 from kasa import Credentials, Device, DeviceType, Module
 
-from ..conftest import camera_smartcamera, device_smartcamera, hub_smartcamera
+from ..conftest import camera_smartcam, device_smartcam, hub_smartcam
 
 
-@device_smartcamera
+@device_smartcam
 async def test_state(dev: Device):
     if dev.device_type is DeviceType.Hub:
         pytest.skip("Hubs cannot be switched on and off")
@@ -24,7 +26,7 @@ async def test_state(dev: Device):
     assert dev.is_on is not state
 
 
-@camera_smartcamera
+@camera_smartcam
 async def test_stream_rtsp_url(dev: Device):
     camera_module = dev.modules.get(Module.Camera)
     assert camera_module
@@ -35,17 +37,41 @@ async def test_stream_rtsp_url(dev: Device):
     url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
     assert url == "rtsp://foo:bar@127.0.0.123:554/stream1"
 
-    with patch.object(
-        dev.protocol._transport, "_credentials", Credentials("bar", "foo")
-    ):
+    with patch.object(dev.config, "credentials", Credentials("bar", "foo")):
         url = camera_module.stream_rtsp_url()
     assert url == "rtsp://bar:foo@127.0.0.123:554/stream1"
 
-    with patch.object(dev.protocol._transport, "_credentials", Credentials("bar", "")):
+    with patch.object(dev.config, "credentials", Credentials("bar", "")):
         url = camera_module.stream_rtsp_url()
     assert url is None
 
-    with patch.object(dev.protocol._transport, "_credentials", Credentials("", "Foo")):
+    with patch.object(dev.config, "credentials", Credentials("", "Foo")):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
+    # Test with credentials_hash
+    cred = json.dumps({"un": "bar", "pwd": "foobar"})
+    cred_hash = base64.b64encode(cred.encode()).decode()
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", cred_hash),
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url == "rtsp://bar:foobar@127.0.0.123:554/stream1"
+
+    # Test with invalid credentials_hash
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", b"238472871"),
+    ):
+        url = camera_module.stream_rtsp_url()
+    assert url is None
+
+    # Test with no credentials
+    with (
+        patch.object(dev.config, "credentials", None),
+        patch.object(dev.config, "credentials_hash", None),
+    ):
         url = camera_module.stream_rtsp_url()
     assert url is None
 
@@ -54,14 +80,12 @@ async def test_stream_rtsp_url(dev: Device):
     await dev.update()
     url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
     assert url is None
-    with patch.object(
-        dev.protocol._transport, "_credentials", Credentials("bar", "foo")
-    ):
+    with patch.object(dev.config, "credentials", Credentials("bar", "foo")):
         url = camera_module.stream_rtsp_url()
     assert url is None
 
 
-@device_smartcamera
+@device_smartcam
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
@@ -76,7 +100,7 @@ async def test_alias(dev):
     assert dev.alias == original
 
 
-@hub_smartcamera
+@hub_smartcam
 async def test_hub(dev):
     assert dev.children
     for child in dev.children:
@@ -88,7 +112,7 @@ async def test_hub(dev):
         assert child.time
 
 
-@device_smartcamera
+@device_smartcam
 async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
     """Test a child device gets the time from it's parent module."""
     fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)

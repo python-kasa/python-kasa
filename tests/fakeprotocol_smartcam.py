@@ -5,16 +5,16 @@ from json import loads as json_loads
 from typing import Any
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
-from kasa.protocols.smartcameraprotocol import SmartCameraProtocol
+from kasa.protocols.smartcamprotocol import SmartCamProtocol
 from kasa.transports.basetransport import BaseTransport
 
 from .fakeprotocol_smart import FakeSmartTransport
 
 
-class FakeSmartCameraProtocol(SmartCameraProtocol):
+class FakeSmartCamProtocol(SmartCamProtocol):
     def __init__(self, info, fixture_name, *, is_child=False, verbatim=False):
         super().__init__(
-            transport=FakeSmartCameraTransport(
+            transport=FakeSmartCamTransport(
                 info, fixture_name, is_child=is_child, verbatim=verbatim
             ),
         )
@@ -25,7 +25,7 @@ class FakeSmartCameraProtocol(SmartCameraProtocol):
         return resp_dict
 
 
-class FakeSmartCameraTransport(BaseTransport):
+class FakeSmartCamTransport(BaseTransport):
     def __init__(
         self,
         info,

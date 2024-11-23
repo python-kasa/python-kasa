@@ -34,6 +34,8 @@ from kasa.cli.light import (
     brightness,
     effect,
     hsv,
+    presets,
+    presets_modify,
     temperature,
 )
 from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
@@ -43,7 +45,7 @@ from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
-from kasa.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 from .conftest import (
     device_smart,
@@ -179,7 +181,7 @@ async def test_state(dev, turn_on, runner):
 
 @turn_on
 async def test_toggle(dev, turn_on, runner):
-    if isinstance(dev, SmartCamera) and dev.device_type == DeviceType.Hub:
+    if isinstance(dev, SmartCamDevice) and dev.device_type == DeviceType.Hub:
         pytest.skip(reason="Hub cannot toggle state")
 
     await handle_turn_on(dev, turn_on)
@@ -212,7 +214,7 @@ async def test_raw_command(dev, mocker, runner):
     update = mocker.patch.object(dev, "update")
     from kasa.smart import SmartDevice
 
-    if isinstance(dev, SmartCamera):
+    if isinstance(dev, SmartCamDevice):
         params = ["na", "getDeviceInfo"]
     elif isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
@@ -575,6 +577,50 @@ async def test_light_effect(dev: Device, runner: CliRunner):
     assert res.exit_code == 2
 
 
+async def test_light_preset(dev: Device, runner: CliRunner):
+    res = await runner.invoke(presets, obj=dev)
+    if not (light_preset := dev.modules.get(Module.LightPreset)):
+        assert "Device does not support light presets" in res.output
+        return
+
+    if len(light_preset.preset_states_list) == 0:
+        pytest.skip(
+            "Some fixtures do not have presets and"
+            " the api doesn'tsupport creating them"
+        )
+    # Start off with a known state
+    first_name = light_preset.preset_list[1]
+    await light_preset.set_preset(first_name)
+    await dev.update()
+    assert light_preset.preset == first_name
+
+    res = await runner.invoke(presets, obj=dev)
+    assert "Brightness" in res.output
+    assert res.exit_code == 0
+
+    res = await runner.invoke(
+        presets_modify,
+        [
+            "0",
+            "--brightness",
+            "12",
+        ],
+        obj=dev,
+    )
+    await dev.update()
+    assert light_preset.preset_states_list[0].brightness == 12
+
+    res = await runner.invoke(
+        presets_modify,
+        [
+            "0",
+        ],
+        obj=dev,
+    )
+    await dev.update()
+    assert "Need to supply at least one option to modify." in res.output
+
+
 async def test_led(dev: Device, runner: CliRunner):
     res = await runner.invoke(led, obj=dev)
     if not (led_module := dev.modules.get(Module.Led)):
@@ -871,7 +917,7 @@ async def test_type_param(device_type, mocker, runner):
 
     mocker.patch("kasa.cli.device.state", new=_state)
     if device_type == "camera":
-        expected_type = SmartCamera
+        expected_type = SmartCamDevice
     elif device_type == "smart":
         expected_type = SmartDevice
     else:

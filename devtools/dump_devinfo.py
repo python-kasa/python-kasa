@@ -25,7 +25,7 @@ from typing import Any
 
 import asyncclick as click
 
-from devtools.helpers.smartcamerarequests import SMARTCAMERA_REQUESTS
+from devtools.helpers.smartcamrequests import SMARTCAM_REQUESTS
 from devtools.helpers.smartrequests import SmartRequest, get_component_requests
 from kasa import (
     AuthenticationError,
@@ -42,21 +42,21 @@ from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
 from kasa.discover import DiscoveryResult
 from kasa.exceptions import SmartErrorCode
 from kasa.protocols import IotProtocol
-from kasa.protocols.smartcameraprotocol import (
-    SmartCameraProtocol,
+from kasa.protocols.smartcamprotocol import (
+    SmartCamProtocol,
     _ChildCameraProtocolWrapper,
 )
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartChildDevice, SmartDevice
-from kasa.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 Call = namedtuple("Call", "module method")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
 
 SMART_FOLDER = "tests/fixtures/smart/"
-SMARTCAMERA_FOLDER = "tests/fixtures/smartcamera/"
+SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child/"
-IOT_FOLDER = "tests/fixtures/"
+IOT_FOLDER = "tests/fixtures/iot/"
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
@@ -65,7 +65,7 @@ _LOGGER = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class SmartCall:
-    """Class for smart and smartcamera calls."""
+    """Class for smart and smartcam calls."""
 
     module: str
     request: dict
@@ -425,7 +425,10 @@ async def get_legacy_fixture(
         Call(module="smartlife.iot.lightStrip", method="get_light_details"),
         Call(module="smartlife.iot.LAS", method="get_config"),
         Call(module="smartlife.iot.LAS", method="get_current_brt"),
+        Call(module="smartlife.iot.LAS", method="get_dark_status"),
+        Call(module="smartlife.iot.LAS", method="get_adc_value"),
         Call(module="smartlife.iot.PIR", method="get_config"),
+        Call(module="smartlife.iot.PIR", method="get_adc_value"),
     ]
 
     successes = []
@@ -559,7 +562,7 @@ async def _make_requests_or_exit(
     # Calling close on child protocol wrappers is a noop
     protocol_to_close = protocol
     if child_device_id:
-        if isinstance(protocol, SmartCameraProtocol):
+        if isinstance(protocol, SmartCamProtocol):
             protocol = _ChildCameraProtocolWrapper(child_device_id, protocol)
         else:
             protocol = _ChildProtocolWrapper(child_device_id, protocol)
@@ -605,7 +608,7 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
     successes: list[SmartCall] = []
 
     test_calls = []
-    for request in SMARTCAMERA_REQUESTS:
+    for request in SMARTCAM_REQUESTS:
         method = next(iter(request))
         if method == "get":
             module = method + "_" + next(iter(request[method]))
@@ -690,7 +693,7 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                         click.echo(f"Skipping {component_id}..", nl=False)
                         click.echo(click.style("UNSUPPORTED", fg="yellow"))
             else:  # Not a smart protocol device so assume camera protocol
-                for request in SMARTCAMERA_REQUESTS:
+                for request in SMARTCAM_REQUESTS:
                     method = next(iter(request))
                     if method == "get":
                         method = method + "_" + next(iter(request[method]))
@@ -855,7 +858,7 @@ async def get_smart_fixtures(
     protocol: SmartProtocol, *, discovery_info: dict[str, Any] | None, batch_size: int
 ) -> list[FixtureResult]:
     """Get fixture for new TAPO style protocol."""
-    if isinstance(protocol, SmartCameraProtocol):
+    if isinstance(protocol, SmartCamProtocol):
         test_calls, successes = await get_smart_camera_test_calls(protocol)
         child_wrapper: type[_ChildProtocolWrapper | _ChildCameraProtocolWrapper] = (
             _ChildCameraProtocolWrapper
@@ -988,8 +991,8 @@ async def get_smart_fixtures(
         copy_folder = SMART_FOLDER
     else:
         # smart camera protocol
-        model_info = SmartCamera._get_device_info(final, discovery_info)
-        copy_folder = SMARTCAMERA_FOLDER
+        model_info = SmartCamDevice._get_device_info(final, discovery_info)
+        copy_folder = SMARTCAM_FOLDER
     hw_version = model_info.hardware_version
     sw_version = model_info.firmware_version
     model = model_info.long_name

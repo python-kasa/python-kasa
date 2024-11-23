@@ -168,7 +168,7 @@ class SmartProtocol(BaseProtocol):
         ]
 
         end = len(multi_requests)
-        # The SmartCameraProtocol sends requests with a length 1 as a
+        # The SmartCamProtocol sends requests with a length 1 as a
         # multipleRequest. The SmartProtocol doesn't so will never
         # raise_on_error
         raise_on_error = end == 1

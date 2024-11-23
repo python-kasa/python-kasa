@@ -154,7 +154,7 @@ class IotDimmer(IotPlug):
         """
         if transition is not None:
             return await self.set_dimmer_transition(
-                brightness=self.brightness, transition=transition
+                brightness=self._brightness, transition=transition
             )
 
         return await super().turn_on()
