@@ -10,14 +10,14 @@ from ...credentials import Credentials
 from ...device_type import DeviceType
 from ...feature import Feature
 from ...json import loads as json_loads
-from ..smartcameramodule import SmartCameraModule
+from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
 
 LOCAL_STREAMING_PORT = 554
 
 
-class Camera(SmartCameraModule):
+class Camera(SmartCamModule):
     """Implementation of device module."""
 
     QUERY_GETTER_NAME = "getLensMaskConfig"

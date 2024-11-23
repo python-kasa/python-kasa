@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...feature import Feature
-from ..smartcameramodule import SmartCameraModule
+from ..smartcammodule import SmartCamModule
 
 DURATION_MIN = 0
 DURATION_MAX = 6000
@@ -12,11 +12,11 @@ VOLUME_MIN = 0
 VOLUME_MAX = 10
 
 
-class Alarm(SmartCameraModule):
+class Alarm(SmartCamModule):
     """Implementation of alarm module."""
 
     # Needs a different name to avoid clashing with SmartAlarm
-    NAME = "SmartCameraAlarm"
+    NAME = "SmartCamAlarm"
 
     REQUIRED_COMPONENT = "siren"
     QUERY_GETTER_NAME = "getSirenStatus"

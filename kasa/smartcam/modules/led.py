@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from ...interfaces.led import Led as LedInterface
-from ..smartcameramodule import SmartCameraModule
+from ..smartcammodule import SmartCamModule
 
 
-class Led(SmartCameraModule, LedInterface):
+class Led(SmartCamModule, LedInterface):
     """Implementation of led controls."""
 
     REQUIRED_COMPONENT = "led"

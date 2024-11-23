@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SMARTCAMERA_REQUESTS: list[dict] = [
+SMARTCAM_REQUESTS: list[dict] = [
     {"getAlertTypeList": {"msg_alarm": {"name": "alert_type"}}},
     {"getNightVisionCapability": {"image_capability": {"name": ["supplement_lamp"]}}},
     {"getDeviceInfo": {"device_info": {"name": ["basic_info"]}}},

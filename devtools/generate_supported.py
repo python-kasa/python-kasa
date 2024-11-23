@@ -13,7 +13,7 @@ from typing import Any, NamedTuple
 from kasa.device_type import DeviceType
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
-from kasa.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 
 class SupportedVersion(NamedTuple):
@@ -48,7 +48,7 @@ README_FILENAME = "README.md"
 IOT_FOLDER = "tests/fixtures/iot/"
 SMART_FOLDER = "tests/fixtures/smart/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child"
-SMARTCAMERA_FOLDER = "tests/fixtures/smartcamera/"
+SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
 
 
 def generate_supported(args):
@@ -65,7 +65,7 @@ def generate_supported(args):
     _get_supported_devices(supported, IOT_FOLDER, IotDevice)
     _get_supported_devices(supported, SMART_FOLDER, SmartDevice)
     _get_supported_devices(supported, SMART_CHILD_FOLDER, SmartDevice)
-    _get_supported_devices(supported, SMARTCAMERA_FOLDER, SmartCamera)
+    _get_supported_devices(supported, SMARTCAM_FOLDER, SmartCamDevice)
 
     readme_updated = _update_supported_file(
         README_FILENAME, _supported_summary(supported), print_diffs
@@ -208,7 +208,7 @@ def _supported_text(
 def _get_supported_devices(
     supported: dict[str, Any],
     fixture_location: str,
-    device_cls: type[IotDevice | SmartDevice | SmartCamera],
+    device_cls: type[IotDevice | SmartDevice | SmartCamDevice],
 ):
     for file in Path(fixture_location).glob("*.json"):
         with file.open() as f:
