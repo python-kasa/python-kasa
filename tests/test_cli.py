@@ -40,6 +40,7 @@ from kasa.cli.light import (
 )
 from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
 from kasa.cli.time import time
+from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
@@ -1204,7 +1205,7 @@ async def test_cli_child_commands(
 
         # Test help has command options plus child options
 
-        res = await runner.invoke(cli, ["energy", "--help"], obj=dev)
+        res = await runner.invoke(energy, ["--help"], obj=dev)
         assert "--year" in res.output
         assert "--child" in res.output
         assert "--child-index" in res.output
