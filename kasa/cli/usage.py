@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import cast
 
 import asyncclick as click
@@ -22,21 +21,6 @@ from .common import (
 
 
 @click.command()
-@click.option("--index", type=int, required=False)
-@click.option("--name", type=str, required=False)
-@click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
-@click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
-@click.option("--erase", is_flag=True)
-@click.pass_context
-async def emeter(ctx: click.Context, index, name, year, month, erase):
-    """Query emeter for historical consumption."""
-    logging.warning("Deprecated, use 'kasa energy'")
-    return await ctx.invoke(
-        energy, child_index=index, child=name, year=year, month=month, erase=erase
-    )
-
-
-@click.command()
 @click.option("--year", type=click.DateTime(["%Y"]), default=None, required=False)
 @click.option("--month", type=click.DateTime(["%Y-%m"]), default=None, required=False)
 @click.option("--erase", is_flag=True)
@@ -46,7 +30,7 @@ async def energy(dev: Device, year, month, erase):
 
     Daily and monthly data provided in CSV format.
     """
-    echo("[bold]== Emeter ==[/bold]")
+    echo("[bold]== Energy ==[/bold]")
     if not (energy := dev.modules.get(Module.Energy)):
         error("Device has no energy module.")
         return
