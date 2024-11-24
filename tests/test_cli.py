@@ -40,7 +40,6 @@ from kasa.cli.light import (
 )
 from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
 from kasa.cli.time import time
-from kasa.cli.usage import emeter, energy
 from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
@@ -432,17 +431,19 @@ async def test_time_set(dev: Device, mocker, runner):
 
 
 async def test_emeter(dev: Device, mocker, runner):
-    res = await runner.invoke(emeter, obj=dev)
+    mocker.patch("kasa.Discover.discover_single", return_value=dev)
+    base_cmd = ["--host", "dummy", "energy"]
+    res = await runner.invoke(cli, base_cmd, obj=dev)
     if not (energy := dev.modules.get(Module.Energy)):
         assert "Device has no energy module." in res.output
         return
 
-    assert "== Emeter ==" in res.output
+    assert "== Energy ==" in res.output
 
     if dev.device_type is not DeviceType.Strip:
-        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
+        res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
-        res = await runner.invoke(emeter, ["--name", "mock"], obj=dev)
+        res = await runner.invoke(cli, [*base_cmd, "--name", "mock"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
 
     if dev.device_type is DeviceType.Strip and len(dev.children) > 0:
@@ -451,19 +452,21 @@ async def test_emeter(dev: Device, mocker, runner):
         realtime_emeter = mocker.patch.object(child_energy, "get_status")
         realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
 
-        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
+        res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
         assert "Voltage: 122.066 V" in res.output
         realtime_emeter.assert_called()
         assert realtime_emeter.call_count == 1
 
-        res = await runner.invoke(emeter, ["--name", dev.children[0].alias], obj=dev)
+        res = await runner.invoke(
+            cli, [*base_cmd, "--name", dev.children[0].alias], obj=dev
+        )
         assert "Voltage: 122.066 V" in res.output
         assert realtime_emeter.call_count == 2
 
     if isinstance(dev, IotDevice):
         monthly = mocker.patch.object(energy, "get_monthly_stats")
         monthly.return_value = {1: 1234}
-    res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
+    res = await runner.invoke(cli, [*base_cmd, "--year", "1900"], obj=dev)
     if not isinstance(dev, IotDevice):
         assert "Device does not support historical statistics" in res.output
         return
@@ -474,7 +477,7 @@ async def test_emeter(dev: Device, mocker, runner):
     if isinstance(dev, IotDevice):
         daily = mocker.patch.object(energy, "get_daily_stats")
         daily.return_value = {1: 1234}
-    res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
+    res = await runner.invoke(cli, [*base_cmd, "--month", "1900-12"], obj=dev)
     if not isinstance(dev, IotDevice):
         assert "Device has no historical statistics" in res.output
         return
@@ -1201,7 +1204,7 @@ async def test_cli_child_commands(
 
         # Test help has command options plus child options
 
-        res = await runner.invoke(energy, ["--help"], obj=dev)
+        res = await runner.invoke(cli, ["energy", "--help"], obj=dev)
         assert "--year" in res.output
         assert "--child" in res.output
         assert "--child-index" in res.output
