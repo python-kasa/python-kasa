@@ -13,7 +13,7 @@ dependencies = [
   "tzdata>=2024.2 ; platform_system == 'Windows'",
   "mashumaro>=3.14",
   "sphinx-autodoc-typehints[docs]>=1.23.0",
-  "sphinx[docs]==7.4.7",
+  "sphinx[docs]>=7.4.7",
 ]
 
 classifiers = [

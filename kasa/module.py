@@ -21,7 +21,7 @@ check for the existence of the module:
 >>>     print(light.brightness)
 100
 
-To see whether a device supports specific functionality check whether the
+To see whether a device supports specific functionality, you can check whether the
 module has that feature:
 
 >>> if light.has_feature(light.set_hsv):
