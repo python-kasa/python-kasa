@@ -55,7 +55,7 @@ async def energy(dev: Device, year, month, erase):
         usage_data = await energy.get_daily_stats(year=month.year, month=month.month)
     else:
         # Call with no argument outputs summary data and returns
-        emeter_status = await energy.get_status()
+        emeter_status = energy.status
 
         echo("Current: {} A".format(emeter_status["current"]))
         echo("Voltage: {} V".format(emeter_status["voltage"]))
