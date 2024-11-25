@@ -1171,7 +1171,7 @@ requires-dist = [
     { name = "orjson", marker = "extra == 'speedups'", specifier = ">=3.9.1" },
     { name = "ptpython", marker = "extra == 'shell'" },
     { name = "rich", marker = "extra == 'shell'" },
-    { name = "sphinx", extras = ["docs"], specifier = "==7.4.7" },
+    { name = "sphinx", extras = ["docs"], specifier = ">=7.4.7" },
     { name = "sphinx-autodoc-typehints", extras = ["docs"], specifier = ">=1.23.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = "~=2.0" },
     { name = "sphinxcontrib-programoutput", marker = "extra == 'docs'", specifier = "~=0.0" },

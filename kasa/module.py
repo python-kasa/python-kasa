@@ -24,7 +24,7 @@ check for the existence of the module:
 To see whether a device supports specific functionality, you can check whether the
 module has that feature:
 
->>> if light.has_feature(light.set_hsv):
+>>> if light.has_feature("hsv"):
 >>>     print(light.hsv)
 HSV(hue=0, saturation=100, value=100)
 
@@ -158,6 +158,11 @@ class Module(ABC):
         self._module = module
         self._module_features: dict[str, Feature] = {}
 
+    @property
+    def _all_features(self) -> dict[str, Feature]:
+        """Get the features for this module and any sub modules."""
+        return self._module_features
+
     def has_feature(self, attribute: str | property | Callable) -> bool:
         """Return True if the module attribute feature is supported."""
         return bool(self.get_feature(attribute))
@@ -258,7 +263,7 @@ def _get_bound_feature(
         )
 
     check = {attribute_name, attribute_callable}
-    for feature in module._module_features.values():
+    for feature in module._all_features.values():
         if (getter := feature.attribute_getter) and getter in check:
             return feature
 
