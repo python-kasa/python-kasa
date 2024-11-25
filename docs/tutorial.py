@@ -52,9 +52,9 @@ True
 >>> await dev.update()
 >>> light.brightness
 50
->>> light.has_feature(light.set_hsv)
+>>> light.has_feature("hsv")
 True
->>> if light.has_feature(light.set_hsv):
+>>> if light.has_feature("hsv"):
 >>>     print(light.hsv)
 HSV(hue=0, saturation=100, value=50)
 

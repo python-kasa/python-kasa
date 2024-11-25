@@ -529,23 +529,23 @@ class Device(ABC):
         vals: dict[str, tuple[ModuleName, Callable[[Any], Any], str]] = {
             "is_dimmable": (
                 Module.Light,
-                lambda c: c.has_feature("set_brightness"),
-                "light_module.has_feature('set_brightness')",
+                lambda c: c.has_feature("brightness"),
+                "light_module.has_feature('brightness')",
             ),
             "is_color": (
                 Module.Light,
-                lambda c: c.has_feature("set_hsv"),
-                "light_module.has_feature('set_hsv')",
+                lambda c: c.has_feature("hsv"),
+                "light_module.has_feature('hsv')",
             ),
             "is_variable_color_temp": (
                 Module.Light,
-                lambda c: c.has_feature("set_color_temp"),
-                "light_module.has_feature('set_color_temp')",
+                lambda c: c.has_feature("color_temp"),
+                "light_module.has_feature('color_temp')",
             ),
             "valid_temperature_range": (
                 Module.Light,
                 lambda c: c._deprecated_valid_temperature_range(),
-                "minimum and maximum value of get_feature('set_color_temp')",
+                "minimum and maximum value of get_feature('color_temp')",
             ),
             "has_effects": (
                 Module.Light,
