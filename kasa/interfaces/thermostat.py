@@ -49,16 +49,6 @@ class Thermostat(Module, ABC):
 
     @property
     @abstractmethod
-    def _target_temperature_range(self) -> tuple[int, int]:
-        """Return target temperature range.
-
-        Private method. Consumers of the api should use:
-        get_feature(self.set_target_temperature).minimum_value
-        get_feature(self.set_target_temperature).maximum_value
-        """
-
-    @property
-    @abstractmethod
     def temperature(self) -> Annotated[float, FeatureAttribute()]:
         """Return current humidity in percentage."""
         return self._device.sys_info["current_temp"]
@@ -73,3 +63,13 @@ class Thermostat(Module, ABC):
         self, unit: Literal["celsius", "fahrenheit"]
     ) -> dict:
         """Set the device temperature unit."""
+
+    @property
+    @abstractmethod
+    def _target_temperature_range(self) -> tuple[int, int]:
+        """Return target temperature range.
+
+        Private method. Consumers of the api should use:
+        get_feature(self.set_target_temperature).minimum_value
+        get_feature(self.set_target_temperature).maximum_value
+        """
