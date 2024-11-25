@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Annotated, cast
 
 from ...device_type import DeviceType
 from ...exceptions import KasaException
 from ...feature import Feature
-from ...interfaces.light import HSV, ColorTempRange, LightState
+from ...interfaces.light import HSV, LightState
 from ...interfaces.light import Light as LightInterface
+from ...module import FeatureAttribute
 from ..iotmodule import IotModule
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ class Light(IotModule, LightInterface):
         super()._initialize_features()
         device = self._device
 
-        if self._device._is_dimmable:
+        if device._is_dimmable:
             self._add_feature(
                 Feature(
                     device,
@@ -46,7 +47,9 @@ class Light(IotModule, LightInterface):
                     category=Feature.Category.Primary,
                 )
             )
-        if self._device._is_variable_color_temp:
+        if device._is_variable_color_temp:
+            if TYPE_CHECKING:
+                assert isinstance(device, IotBulb)
             self._add_feature(
                 Feature(
                     device=device,
@@ -55,12 +58,12 @@ class Light(IotModule, LightInterface):
                     container=self,
                     attribute_getter="color_temp",
                     attribute_setter="set_color_temp",
-                    range_getter="valid_temperature_range",
+                    range_getter=lambda: device._valid_temperature_range,
                     category=Feature.Category.Primary,
                     type=Feature.Type.Number,
                 )
             )
-        if self._device._is_color:
+        if device._is_color:
             self._add_feature(
                 Feature(
                     device=device,
@@ -90,18 +93,13 @@ class Light(IotModule, LightInterface):
         return None
 
     @property  # type: ignore
-    def is_dimmable(self) -> int:
-        """Whether the bulb supports brightness changes."""
-        return self._device._is_dimmable
-
-    @property  # type: ignore
-    def brightness(self) -> int:
+    def brightness(self) -> Annotated[int, FeatureAttribute()]:
         """Return the current brightness in percentage."""
         return self._device._brightness
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the brightness in percentage. A value of 0 will turn off the light.
 
         :param int brightness: brightness in percent
@@ -112,28 +110,7 @@ class Light(IotModule, LightInterface):
         )
 
     @property
-    def is_color(self) -> bool:
-        """Whether the light supports color changes."""
-        if (bulb := self._get_bulb_device()) is None:
-            return False
-        return bulb._is_color
-
-    @property
-    def is_variable_color_temp(self) -> bool:
-        """Whether the bulb supports color temperature changes."""
-        if (bulb := self._get_bulb_device()) is None:
-            return False
-        return bulb._is_variable_color_temp
-
-    @property
-    def has_effects(self) -> bool:
-        """Return True if the device supports effects."""
-        if (bulb := self._get_bulb_device()) is None:
-            return False
-        return bulb._has_effects
-
-    @property
-    def hsv(self) -> HSV:
+    def hsv(self) -> Annotated[HSV, FeatureAttribute()]:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
@@ -149,7 +126,7 @@ class Light(IotModule, LightInterface):
         value: int | None = None,
         *,
         transition: int | None = None,
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -164,19 +141,7 @@ class Light(IotModule, LightInterface):
         return await bulb._set_hsv(hue, saturation, value, transition=transition)
 
     @property
-    def valid_temperature_range(self) -> ColorTempRange:
-        """Return the device-specific white temperature range (in Kelvin).
-
-        :return: White temperature range in Kelvin (minimum, maximum)
-        """
-        if (
-            bulb := self._get_bulb_device()
-        ) is None or not bulb._is_variable_color_temp:
-            raise KasaException("Light does not support colortemp.")
-        return bulb._valid_temperature_range
-
-    @property
-    def color_temp(self) -> int:
+    def color_temp(self) -> Annotated[int, FeatureAttribute()]:
         """Whether the bulb supports color temperature changes."""
         if (
             bulb := self._get_bulb_device()
@@ -186,7 +151,7 @@ class Light(IotModule, LightInterface):
 
     async def set_color_temp(
         self, temp: int, *, brightness: int | None = None, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -246,13 +211,13 @@ class Light(IotModule, LightInterface):
             state = LightState(light_on=False)
         else:
             state = LightState(light_on=True)
-            if self.is_dimmable:
+            if self._device._is_dimmable:
                 state.brightness = self.brightness
-            if self.is_color:
+            if self._device._is_color:
                 hsv = self.hsv
                 state.hue = hsv.hue
                 state.saturation = hsv.saturation
-            if self.is_variable_color_temp:
+            if self._device._is_variable_color_temp:
                 state.color_temp = self.color_temp
         self._light_state = state
 
