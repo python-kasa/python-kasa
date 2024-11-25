@@ -2,7 +2,7 @@ import json
 import os
 import re
 from datetime import datetime
-from unittest.mock import ANY
+from unittest.mock import ANY, PropertyMock
 from zoneinfo import ZoneInfo
 
 import asyncclick as click
@@ -450,19 +450,19 @@ async def test_emeter(dev: Device, mocker, runner):
     if dev.device_type is DeviceType.Strip and len(dev.children) > 0:
         child_energy = dev.children[0].modules.get(Module.Energy)
         assert child_energy
-        realtime_emeter = mocker.patch.object(child_energy, "get_status")
-        realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
+        child_status = PropertyMock(return_value=EmeterStatus({"voltage_mv": 122066}))
+        type(child_energy).status = child_status  # type: ignore[method-assign]
 
         res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
         assert "Voltage: 122.066 V" in res.output
-        realtime_emeter.assert_called()
-        assert realtime_emeter.call_count == 1
+        child_status.assert_called()
+        assert child_status.call_count == 1
 
         res = await runner.invoke(
             cli, [*base_cmd, "--name", dev.children[0].alias], obj=dev
         )
         assert "Voltage: 122.066 V" in res.output
-        assert realtime_emeter.call_count == 2
+        assert child_status.call_count == 2
 
     if isinstance(dev, IotDevice):
         monthly = mocker.patch.object(energy, "get_monthly_stats")
