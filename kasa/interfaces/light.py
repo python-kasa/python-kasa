@@ -25,11 +25,11 @@ Get the light module to interact:
 
 You can use the ``is_``-prefixed properties to check for supported features:
 
->>> light.has_feature(light.set_brightness)
+>>> light.has_feature("brightness")
 True
->>> light.has_feature(light.set_hsv)
+>>> light.has_feature("hsv")
 True
->>> light.has_feature(light.set_color_temp)
+>>> light.has_feature("color_temp")
 True
 
 All known bulbs support changing the brightness:
@@ -43,7 +43,7 @@ All known bulbs support changing the brightness:
 
 Bulbs supporting color temperature can be queried for the supported range:
 
->>> if color_temp_feature := light.get_feature(light.set_color_temp):
+>>> if color_temp_feature := light.get_feature("color_temp"):
 >>>     print(f"{color_temp_feature.minimum_value}, {color_temp_feature.maximum_value}")
 2500, 6500
 >>> await light.set_color_temp(3000)
@@ -174,7 +174,7 @@ class Light(Module, ABC):
         """Set the light state."""
 
     def _deprecated_valid_temperature_range(self) -> ColorTempRange:
-        if not (temp := self.get_feature(self.set_color_temp)):
+        if not (temp := self.get_feature("color_temp")):
             raise KasaException("Color temperature not supported")
         return ColorTempRange(temp.minimum_value, temp.maximum_value)
 
