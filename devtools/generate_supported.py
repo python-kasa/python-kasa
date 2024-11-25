@@ -142,7 +142,7 @@ def _supported_text(
     for brand, types in supported.items():
         preamble_text = (
             "Some newer Kasa devices require authentication. "
-            + "These are marked with <sup>*</sup> in the list below."
+            + "These are marked with [^1] in the list below."
             if brand == "kasa"
             else "All Tapo devices require authentication."
         )
@@ -151,7 +151,7 @@ def _supported_text(
             + "hubs even if they don't work across the native apps."
         )
         brand_text = brand.capitalize()
-        brand_auth = r"<sup>\*</sup>" if brand == "tapo" else ""
+        brand_auth = r"[^1]" if brand == "tapo" else ""
         types_text = ""
         for supported_type, models in sorted(
             # Sort by device type order in the enum
@@ -166,9 +166,7 @@ def _supported_text(
                 for version in sorted(versions):
                     region_text = f" ({version.region})" if version.region else ""
                     auth_count += 1 if version.auth else 0
-                    vauth_flag = (
-                        r"<sup>\*</sup>" if version.auth and brand == "kasa" else ""
-                    )
+                    vauth_flag = r"[^1]" if version.auth and brand == "kasa" else ""
                     if version_template:
                         versions_text += versst.substitute(
                             hw=version.hw,
@@ -177,11 +175,7 @@ def _supported_text(
                             auth_flag=vauth_flag,
                         )
                 if brand == "kasa" and auth_count > 0:
-                    auth_flag = (
-                        r"<sup>\*</sup>"
-                        if auth_count == len(versions)
-                        else r"<sup>\*\*</sup>"
-                    )
+                    auth_flag = r"[^1]" if auth_count == len(versions) else r"[^2]"
                 else:
                     auth_flag = ""
                 if model_template:
@@ -191,11 +185,7 @@ def _supported_text(
                 else:
                     models_list.append(f"{model}{auth_flag}")
             models_text = models_text if models_text else ", ".join(models_list)
-            type_asterix = (
-                r"<sup>\*\*\*</sup>"
-                if supported_type == "Hub-Connected Devices"
-                else ""
-            )
+            type_asterix = r"[^3]" if supported_type == "Hub-Connected Devices" else ""
             types_text += typest.substitute(
                 type_=supported_type, type_asterix=type_asterix, models=models_text
             )
