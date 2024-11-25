@@ -29,18 +29,6 @@ class TemperatureSensor(SmartModule):
                 type=Feature.Type.Sensor,
             )
         )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="temperature_unit",
-                name="Temperature unit",
-                container=self,
-                attribute_getter="temperature_unit",
-                attribute_setter="set_temperature_unit",
-                type=Feature.Type.Choice,
-                choices_getter=lambda: ["celsius", "fahrenheit"],
-            )
-        )
         if "current_temp_exception" in self._device.sys_info:
             self._add_feature(
                 Feature(
@@ -54,6 +42,18 @@ class TemperatureSensor(SmartModule):
                     category=Feature.Category.Debug,
                 )
             )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="temperature_unit",
+                name="Temperature unit",
+                container=self,
+                attribute_getter="temperature_unit",
+                attribute_setter="set_temperature_unit",
+                type=Feature.Type.Choice,
+                choices_getter=lambda: ["celsius", "fahrenheit"],
+            )
+        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""

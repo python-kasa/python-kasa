@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Annotated, Literal
 
-from ..feature import Feature
 from ..module import FeatureAttribute, Module
 
 
@@ -22,46 +21,6 @@ class ThermostatState(Enum):
 
 class Thermostat(Module, ABC):
     """Base class for TP-Link Thermostat."""
-
-    def _initialize_features(self) -> None:
-        """Initialize features after the initial update."""
-        self._add_feature(
-            Feature(
-                self._device,
-                id="state",
-                name="State",
-                container=self,
-                attribute_getter="state",
-                attribute_setter="set_state",
-                category=Feature.Category.Primary,
-                type=Feature.Type.Switch,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="target_temperature",
-                name="Target temperature",
-                container=self,
-                attribute_getter="target_temperature",
-                attribute_setter="set_target_temperature",
-                range_getter="_target_temperature_range",
-                icon="mdi:thermometer",
-                type=Feature.Type.Number,
-                category=Feature.Category.Primary,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="thermostat_mode",
-                name="Thermostat mode",
-                container=self,
-                attribute_getter="mode",
-                category=Feature.Category.Primary,
-                type=Feature.Type.Sensor,
-            )
-        )
 
     @property
     @abstractmethod

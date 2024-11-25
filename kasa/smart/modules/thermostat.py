@@ -49,7 +49,6 @@ class Thermostat(SmartModule, ThermostatInterface):
         """Return allowed temperature range."""
         return self._device.modules[Module.TemperatureControl].allowed_temperature_range
 
-    # temperature sensor
     @property
     def temperature(self) -> Annotated[float, FeatureAttribute()]:
         """Return current humidity in percentage."""

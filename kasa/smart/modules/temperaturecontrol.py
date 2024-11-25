@@ -18,6 +18,20 @@ class TemperatureControl(SmartModule):
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
+        self._add_feature(
+            Feature(
+                self._device,
+                id="target_temperature",
+                name="Target temperature",
+                container=self,
+                attribute_getter="target_temperature",
+                attribute_setter="set_target_temperature",
+                range_getter="_target_temperature_range",
+                icon="mdi:thermometer",
+                type=Feature.Type.Number,
+                category=Feature.Category.Primary,
+            )
+        )
         # TODO: this might belong into its own module, temperature_correction?
         self._add_feature(
             Feature(
@@ -30,6 +44,29 @@ class TemperatureControl(SmartModule):
                 range_getter=lambda: (-10, 10),
                 type=Feature.Type.Number,
                 category=Feature.Category.Config,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="state",
+                name="State",
+                container=self,
+                attribute_getter="state",
+                attribute_setter="set_state",
+                category=Feature.Category.Primary,
+                type=Feature.Type.Switch,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="thermostat_mode",
+                name="Thermostat mode",
+                container=self,
+                attribute_getter="mode",
+                category=Feature.Category.Primary,
+                type=Feature.Type.Sensor,
             )
         )
 
