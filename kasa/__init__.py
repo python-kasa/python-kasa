@@ -74,6 +74,7 @@ __all__ = [
     "DeviceEncryptionType",
     "DeviceFamily",
     "ThermostatState",
+    "Thermostat",
 ]
 
 from . import iot

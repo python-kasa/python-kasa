@@ -63,13 +63,3 @@ class Thermostat(Module, ABC):
         self, unit: Literal["celsius", "fahrenheit"]
     ) -> dict:
         """Set the device temperature unit."""
-
-    @property
-    @abstractmethod
-    def _target_temperature_range(self) -> tuple[int, int]:
-        """Return target temperature range.
-
-        Private method. Consumers of the api should use:
-        get_feature(self.set_target_temperature).minimum_value
-        get_feature(self.set_target_temperature).maximum_value
-        """

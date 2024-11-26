@@ -349,7 +349,9 @@ async def test_thermostat(dev: Device, mocker: MockerFixture):
     assert therm_mod.target_temperature == 10
 
     target_temperature_feature = therm_mod.get_feature(therm_mod.set_target_temperature)
-    allowed_range = therm_mod._target_temperature_range
+    temp_control = dev.modules.get(Module.TemperatureControl)
+    assert temp_control
+    allowed_range = temp_control.allowed_temperature_range
     assert target_temperature_feature.minimum_value == allowed_range[0]
     assert target_temperature_feature.maximum_value == allowed_range[1]
 

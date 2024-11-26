@@ -26,7 +26,7 @@ class TemperatureControl(SmartModule):
                 container=self,
                 attribute_getter="target_temperature",
                 attribute_setter="set_target_temperature",
-                range_getter="_target_temperature_range",
+                range_getter="allowed_temperature_range",
                 icon="mdi:thermometer",
                 type=Feature.Type.Number,
                 category=Feature.Category.Primary,

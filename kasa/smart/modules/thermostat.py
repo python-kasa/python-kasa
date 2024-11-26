@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
+from ...feature import Feature
 from ...interfaces.thermostat import Thermostat as ThermostatInterface
 from ...interfaces.thermostat import ThermostatState
 from ...module import FeatureAttribute, Module
@@ -12,6 +13,16 @@ from ..smartmodule import SmartModule
 
 class Thermostat(SmartModule, ThermostatInterface):
     """Implementation of a Thermostat."""
+
+    @property
+    def _all_features(self) -> dict[str, Feature]:
+        """Get the features for this module and any sub modules."""
+        ret: dict[str, Feature] = {}
+        if temp_control := self._device.modules.get(Module.TemperatureControl):
+            ret.update(**temp_control._module_features)
+        if temp_sensor := self._device.modules.get(Module.TemperatureSensor):
+            ret.update(**temp_sensor._module_features)
+        return ret
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -43,11 +54,6 @@ class Thermostat(SmartModule, ThermostatInterface):
         return await self._device.modules[
             Module.TemperatureControl
         ].set_target_temperature(target)
-
-    @property
-    def _target_temperature_range(self) -> tuple[int, int]:
-        """Return allowed temperature range."""
-        return self._device.modules[Module.TemperatureControl].allowed_temperature_range
 
     @property
     def temperature(self) -> Annotated[float, FeatureAttribute()]:
