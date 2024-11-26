@@ -100,20 +100,29 @@ class SmartCamDevice(SmartDevice):
         resp = await self.protocol.query(child_info_query)
         self.internal_state.update(resp)
 
-        children_components = {
+        smart_children_components = {
             child["device_id"]: {
-                comp["id"]: int(comp["ver_code"]) for comp in child["component_list"]
+                comp["id"]: int(comp["ver_code"]) for comp in component_list
             }
             for child in resp["getChildDeviceComponentList"]["child_component_list"]
+            if (component_list := child.get("component_list"))
+            # Child camera devices will have a different component schema so only
+            # extract smart values.
+            and (first_comp := next(iter(component_list), None))
+            and isinstance(first_comp, dict)
+            and "id" in first_comp
+            and "ver_code" in first_comp
         }
         children = {}
         for info in resp["getChildDeviceList"]["child_device_list"]:
             if (
-                category := info.get("category")
-            ) and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
-                child_id = info["device_id"]
+                (category := info.get("category"))
+                and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
+                and (child_id := info.get("device_id"))
+                and (child_components := smart_children_components.get(child_id))
+            ):
                 children[child_id] = await self._initialize_smart_child(
-                    info, children_components[child_id]
+                    info, child_components
                 )
             else:
                 _LOGGER.debug("Child device type not supported: %s", info)
