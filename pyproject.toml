@@ -12,8 +12,6 @@ dependencies = [
   "aiohttp>=3",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
   "mashumaro>=3.14",
-  "sphinx-autodoc-typehints[docs]>=1.23.0",
-  "sphinx[docs]>=7.4.7",
 ]
 
 classifiers = [
@@ -27,7 +25,13 @@ classifiers = [
 
 [project.optional-dependencies]
 speedups = ["orjson>=3.9.1", "kasa-crypt>=0.2.0"]
-docs = ["sphinx_rtd_theme~=2.0", "sphinxcontrib-programoutput~=0.0", "myst-parser", "docutils>=0.17"]
+docs = [
+    "sphinx_rtd_theme~=2.0",
+    "sphinxcontrib-programoutput~=0.0",
+    "myst-parser",
+    "docutils>=0.17",
+    "sphinx>=7.4.7",
+]
 shell = ["ptpython", "rich"]
 
 [project.urls]

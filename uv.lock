@@ -150,18 +150,6 @@ wheels = [
 ]
 
 [[package]]
-name = "beautifulsoup4"
-version = "4.12.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "soupsieve" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b3/ca/824b1195773ce6166d388573fc106ce56d4a805bd7427b624e063596ec58/beautifulsoup4-4.12.3.tar.gz", hash = "sha256:74e3d1928edc070d21748185c46e3fb33490f22f52a3addee9aee0f4f7781051", size = 581181 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/fe/e8c672695b37eecc5cbf43e1d0638d88d66ba3a44c4d321c796f4e59167f/beautifulsoup4-4.12.3-py3-none-any.whl", hash = "sha256:b80878c9f40111313e55da8ba20bdba06d8fa3969fc68304167741bbf9e082ed", size = 147925 },
-]
-
-[[package]]
 name = "certifi"
 version = "2024.8.30"
 source = { registry = "https://pypi.org/simple" }
@@ -482,21 +470,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ab/42/0595b3dbffc2e82d7fe658c12d5a5bafcd7516c6bf2d1d1feb5387caa9c1/frozenlist-1.5.0-cp313-cp313-win32.whl", hash = "sha256:31a9ac2b38ab9b5a8933b693db4939764ad3f299fcaa931a3e605bc3460e693c", size = 44914 },
     { url = "https://files.pythonhosted.org/packages/17/c4/b7db1206a3fea44bf3b838ca61deb6f74424a8a5db1dd53ecb21da669be6/frozenlist-1.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:11aabdd62b8b9c4b84081a3c246506d1cddd2dd93ff0ad53ede5defec7886b28", size = 51167 },
     { url = "https://files.pythonhosted.org/packages/c6/c8/a5be5b7550c10858fcf9b0ea054baccab474da77d37f1e828ce043a3a5d4/frozenlist-1.5.0-py3-none-any.whl", hash = "sha256:d994863bba198a4a518b467bb971c56e1db3f180a25c6cf7bb1949c267f748c3", size = 11901 },
-]
-
-[[package]]
-name = "furo"
-version = "2024.8.6"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "beautifulsoup4" },
-    { name = "pygments" },
-    { name = "sphinx" },
-    { name = "sphinx-basic-ng" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a0/e2/d351d69a9a9e4badb4a5be062c2d0e87bd9e6c23b5e57337fef14bef34c8/furo-2024.8.6.tar.gz", hash = "sha256:b63e4cee8abfc3136d3bc03a3d45a76a850bada4d6374d24c1716b0e01394a01", size = 1661506 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/48/e791a7ed487dbb9729ef32bb5d1af16693d8925f4366befef54119b2e576/furo-2024.8.6-py3-none-any.whl", hash = "sha256:6cd97c58b47813d3619e63e9081169880fbe331f0ca883c871ff1f3f11814f5c", size = 341333 },
 ]
 
 [[package]]
@@ -1117,8 +1090,6 @@ dependencies = [
     { name = "asyncclick" },
     { name = "cryptography" },
     { name = "mashumaro" },
-    { name = "sphinx", extra = ["docs"] },
-    { name = "sphinx-autodoc-typehints", extra = ["docs"] },
     { name = "tzdata", marker = "platform_system == 'Windows'" },
 ]
 
@@ -1126,6 +1097,7 @@ dependencies = [
 docs = [
     { name = "docutils" },
     { name = "myst-parser" },
+    { name = "sphinx" },
     { name = "sphinx-rtd-theme" },
     { name = "sphinxcontrib-programoutput" },
 ]
@@ -1171,8 +1143,7 @@ requires-dist = [
     { name = "orjson", marker = "extra == 'speedups'", specifier = ">=3.9.1" },
     { name = "ptpython", marker = "extra == 'shell'" },
     { name = "rich", marker = "extra == 'shell'" },
-    { name = "sphinx", extras = ["docs"], specifier = ">=7.4.7" },
-    { name = "sphinx-autodoc-typehints", extras = ["docs"], specifier = ">=1.23.0" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.4.7" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = "~=2.0" },
     { name = "sphinxcontrib-programoutput", marker = "extra == 'docs'", specifier = "~=0.0" },
     { name = "tzdata", marker = "platform_system == 'Windows'", specifier = ">=2024.2" },
@@ -1315,15 +1286,6 @@ wheels = [
 ]
 
 [[package]]
-name = "soupsieve"
-version = "2.6"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d7/ce/fbaeed4f9fb8b2daa961f90591662df6a86c1abf25c548329a86920aedfb/soupsieve-2.6.tar.gz", hash = "sha256:e2e68417777af359ec65daac1057404a3c8a5455bb8abc36f1a9866ab1a51abb", size = 101569 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d1/c2/fe97d779f3ef3b15f05c94a2f1e3d21732574ed441687474db9d342a7315/soupsieve-2.6-py3-none-any.whl", hash = "sha256:e72c4ff06e4fb6e4b5a9f0f55fe6e81514581fca1515028625d0f299c602ccc9", size = 36186 },
-]
-
-[[package]]
 name = "sphinx"
 version = "7.4.7"
 source = { registry = "https://pypi.org/simple" }
@@ -1348,41 +1310,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5b/be/50e50cb4f2eff47df05673d361095cafd95521d2a22521b920c67a372dcb/sphinx-7.4.7.tar.gz", hash = "sha256:242f92a7ea7e6c5b406fdc2615413890ba9f699114a9c09192d7dfead2ee9cfe", size = 8067911 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/ef/153f6803c5d5f8917dbb7f7fcf6d34a871ede3296fa89c2c703f5f8a6c8e/sphinx-7.4.7-py3-none-any.whl", hash = "sha256:c2419e2135d11f1951cd994d6eb18a1835bd8fdd8429f9ca375dc1f3281bd239", size = 3401624 },
-]
-
-[package.optional-dependencies]
-docs = [
-    { name = "sphinxcontrib-websupport" },
-]
-
-[[package]]
-name = "sphinx-autodoc-typehints"
-version = "1.23.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "sphinx" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/46/30/9764a2c735c655c3065f32072fb3d8c6fd5dda8df294d4e9f05670d60e31/sphinx_autodoc_typehints-1.23.0.tar.gz", hash = "sha256:5d44e2996633cdada499b6d27a496ddf9dbc95dd1f0f09f7b37940249e61f6e9", size = 35945 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/be/792b64ddacfcff362062077689ce37eb9750b9924fc0a14f623fa71ffaf6/sphinx_autodoc_typehints-1.23.0-py3-none-any.whl", hash = "sha256:ac099057e66b09e51b698058ba7dd76e57e1fe696cd91b54e121d3dad188f91d", size = 17896 },
-]
-
-[package.optional-dependencies]
-docs = [
-    { name = "furo" },
-    { name = "sphinx" },
-]
-
-[[package]]
-name = "sphinx-basic-ng"
-version = "1.0.0b2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "sphinx" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/98/0b/a866924ded68efec7a1759587a4e478aec7559d8165fac8b2ad1c0e774d6/sphinx_basic_ng-1.0.0b2.tar.gz", hash = "sha256:9ec55a47c90c8c002b5960c57492ec3021f5193cb26cebc2dc4ea226848651c9", size = 20736 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/dd/018ce05c532a22007ac58d4f45232514cd9d6dd0ee1dc374e309db830983/sphinx_basic_ng-1.0.0b2-py3-none-any.whl", hash = "sha256:eb09aedbabfb650607e9b4b68c9d240b90b1e1be221d6ad71d61c52e29f7932b", size = 22496 },
 ]
 
 [[package]]
@@ -1475,20 +1402,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/3b/44/6716b257b0aa6bfd51a1b31665d1c205fb12cb5ad56de752dfa15657de2f/sphinxcontrib_serializinghtml-2.0.0.tar.gz", hash = "sha256:e9d912827f872c029017a53f0ef2180b327c3f7fd23c87229f7a8e8b70031d4d", size = 16080 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/52/a7/d2782e4e3f77c8450f727ba74a8f12756d5ba823d81b941f1b04da9d033a/sphinxcontrib_serializinghtml-2.0.0-py3-none-any.whl", hash = "sha256:6e2cb0eef194e10c27ec0023bfeb25badbbb5868244cf5bc5bdc04e4464bf331", size = 92072 },
-]
-
-[[package]]
-name = "sphinxcontrib-websupport"
-version = "2.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "jinja2" },
-    { name = "sphinx" },
-    { name = "sphinxcontrib-serializinghtml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/87/ed/11167ae7c3eb80e7c67823bceea24207bb7b886aefde6c367b4a571c05de/sphinxcontrib_websupport-2.0.0.tar.gz", hash = "sha256:0b7367d3bac6454b1f97e42aa8c4d4d4a1b756d525fc726ebbe5571e033e79cd", size = 600125 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/c9/b9ce2eaacaf75d94a5ee5b809bb2be351f1c9cda5c14316cc53b1aea0650/sphinxcontrib_websupport-2.0.0-py3-none-any.whl", hash = "sha256:365b4da67e03cc163dc4752ed44b3c4bc334172c8198102135a7eb7945111229", size = 37069 },
 ]
 
 [[package]]
