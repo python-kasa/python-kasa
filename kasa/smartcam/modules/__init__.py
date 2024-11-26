@@ -1,4 +1,4 @@
-"""Modules for SMARTCAMERA devices."""
+"""Modules for SMARTCAM devices."""
 
 from .alarm import Alarm
 from .camera import Camera

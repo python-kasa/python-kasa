@@ -30,7 +30,7 @@ from kasa.iot.iottimezone import (
 )
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
-from kasa.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 
 def _get_subclasses(of_class):
@@ -115,7 +115,7 @@ async def test_device_class_repr(device_class_name_obj):
         IotLightStrip: DeviceType.LightStrip,
         SmartChildDevice: DeviceType.Unknown,
         SmartDevice: DeviceType.Unknown,
-        SmartCamera: DeviceType.Camera,
+        SmartCamDevice: DeviceType.Camera,
     }
     type_ = CLASS_TO_DEFAULT_TYPE[klass]
     child_repr = "<DeviceType.Unknown(child) of <DeviceType.Unknown at 127.0.0.2 - update() needed>>"

@@ -11,15 +11,15 @@ from ..smart.smartmodule import SmartModule
 
 if TYPE_CHECKING:
     from . import modules
-    from .smartcamera import SmartCamera
+    from .smartcamdevice import SmartCamDevice
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SmartCameraModule(SmartModule):
-    """Base class for SMARTCAMERA modules."""
+class SmartCamModule(SmartModule):
+    """Base class for SMARTCAM modules."""
 
-    SmartCameraAlarm: Final[ModuleName[modules.Alarm]] = ModuleName("SmartCameraAlarm")
+    SmartCamAlarm: Final[ModuleName[modules.Alarm]] = ModuleName("SmartCamAlarm")
 
     #: Query to execute during the main update cycle
     QUERY_GETTER_NAME: str
@@ -30,7 +30,7 @@ class SmartCameraModule(SmartModule):
 
     REGISTERED_MODULES = {}
 
-    _device: SmartCamera
+    _device: SmartCamDevice
 
     def query(self) -> dict:
         """Query to execute during the update cycle.
