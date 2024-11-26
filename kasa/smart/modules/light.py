@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from typing import Annotated
 
 from ...exceptions import KasaException
+from ...feature import Feature
 from ...interfaces.light import HSV, ColorTempRange, LightState
 from ...interfaces.light import Light as LightInterface
-from ...module import Module
+from ...module import FeatureAttribute, Module
 from ..smartmodule import SmartModule
 
 
@@ -15,6 +17,18 @@ class Light(SmartModule, LightInterface):
     """Implementation of a light."""
 
     _light_state: LightState
+
+    @property
+    def _all_features(self) -> dict[str, Feature]:
+        """Get the features for this module and any sub modules."""
+        ret: dict[str, Feature] = {}
+        if brightness := self._device.modules.get(Module.Brightness):
+            ret.update(**brightness._module_features)
+        if color := self._device.modules.get(Module.Color):
+            ret.update(**color._module_features)
+        if temp := self._device.modules.get(Module.ColorTemperature):
+            ret.update(**temp._module_features)
+        return ret
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -47,7 +61,7 @@ class Light(SmartModule, LightInterface):
         return self._device.modules[Module.ColorTemperature].valid_temperature_range
 
     @property
-    def hsv(self) -> HSV:
+    def hsv(self) -> Annotated[HSV, FeatureAttribute()]:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
@@ -58,7 +72,7 @@ class Light(SmartModule, LightInterface):
         return self._device.modules[Module.Color].hsv
 
     @property
-    def color_temp(self) -> int:
+    def color_temp(self) -> Annotated[int, FeatureAttribute()]:
         """Whether the bulb supports color temperature changes."""
         if not self.is_variable_color_temp:
             raise KasaException("Bulb does not support colortemp.")
@@ -66,7 +80,7 @@ class Light(SmartModule, LightInterface):
         return self._device.modules[Module.ColorTemperature].color_temp
 
     @property
-    def brightness(self) -> int:
+    def brightness(self) -> Annotated[int, FeatureAttribute()]:
         """Return the current brightness in percentage."""
         if not self.is_dimmable:  # pragma: no cover
             raise KasaException("Bulb is not dimmable.")
@@ -80,7 +94,7 @@ class Light(SmartModule, LightInterface):
         value: int | None = None,
         *,
         transition: int | None = None,
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -97,7 +111,7 @@ class Light(SmartModule, LightInterface):
 
     async def set_color_temp(
         self, temp: int, *, brightness: int | None = None, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -113,7 +127,7 @@ class Light(SmartModule, LightInterface):
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the brightness in percentage.
 
         Note, transition is not supported and will be ignored.
