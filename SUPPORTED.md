@@ -10,18 +10,18 @@ The following devices have been tested and confirmed as working. If your device 
 <!--SUPPORTED_START-->
 ## Kasa devices
 
-Some newer Kasa devices require authentication. These are marked with <sup>*</sup> in the list below.<br>Hub-Connected Devices may work across TAPO/KASA branded hubs even if they don't work across the native apps.
+Some newer Kasa devices require authentication. These are marked with [^1] in the list below.<br>Hub-Connected Devices may work across TAPO/KASA branded hubs even if they don't work across the native apps.
 
 ### Plugs
 
 - **EP10**
   - Hardware: 1.0 (US) / Firmware: 1.0.2
 - **EP25**
-  - Hardware: 2.6 (US) / Firmware: 1.0.1<sup>\*</sup>
-  - Hardware: 2.6 (US) / Firmware: 1.0.2<sup>\*</sup>
+  - Hardware: 2.6 (US) / Firmware: 1.0.1[^1]
+  - Hardware: 2.6 (US) / Firmware: 1.0.2[^1]
 - **HS100**
   - Hardware: 1.0 (UK) / Firmware: 1.2.6
-  - Hardware: 4.1 (UK) / Firmware: 1.1.0<sup>\*</sup>
+  - Hardware: 4.1 (UK) / Firmware: 1.1.0[^1]
   - Hardware: 1.0 (US) / Firmware: 1.2.5
   - Hardware: 2.0 (US) / Firmware: 1.5.6
 - **HS103**
@@ -46,8 +46,8 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **KP125**
   - Hardware: 1.0 (US) / Firmware: 1.0.6
 - **KP125M**
-  - Hardware: 1.0 (US) / Firmware: 1.1.3<sup>\*</sup>
-  - Hardware: 1.0 (US) / Firmware: 1.2.3<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.1.3[^1]
+  - Hardware: 1.0 (US) / Firmware: 1.2.3[^1]
 - **KP401**
   - Hardware: 1.0 (US) / Firmware: 1.0.0
 
@@ -56,7 +56,7 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 - **EP40**
   - Hardware: 1.0 (US) / Firmware: 1.0.2
 - **EP40M**
-  - Hardware: 1.0 (US) / Firmware: 1.1.0<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.1.0[^1]
 - **HS107**
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **HS300**
@@ -86,14 +86,14 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 3.0 (US) / Firmware: 1.1.5
   - Hardware: 5.0 (US) / Firmware: 1.0.11
   - Hardware: 5.0 (US) / Firmware: 1.0.2
-  - Hardware: 5.26 (US) / Firmware: 1.0.3<sup>\*</sup>
+  - Hardware: 5.26 (US) / Firmware: 1.0.3[^1]
 - **HS210**
   - Hardware: 1.0 (US) / Firmware: 1.5.8
   - Hardware: 2.0 (US) / Firmware: 1.1.5
 - **HS220**
   - Hardware: 1.0 (US) / Firmware: 1.5.7
   - Hardware: 2.0 (US) / Firmware: 1.0.3
-  - Hardware: 3.26 (US) / Firmware: 1.0.1<sup>\*</sup>
+  - Hardware: 3.26 (US) / Firmware: 1.0.1[^1]
 - **KP405**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
   - Hardware: 1.0 (US) / Firmware: 1.0.6
@@ -103,21 +103,21 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
   - Hardware: 1.0 (US) / Firmware: 1.0.12
   - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **KS205**
-  - Hardware: 1.0 (US) / Firmware: 1.0.2<sup>\*</sup>
-  - Hardware: 1.0 (US) / Firmware: 1.1.0<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.0.2[^1]
+  - Hardware: 1.0 (US) / Firmware: 1.1.0[^1]
 - **KS220**
   - Hardware: 1.0 (US) / Firmware: 1.0.13
 - **KS220M**
   - Hardware: 1.0 (US) / Firmware: 1.0.4
 - **KS225**
-  - Hardware: 1.0 (US) / Firmware: 1.0.2<sup>\*</sup>
-  - Hardware: 1.0 (US) / Firmware: 1.1.0<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.0.2[^1]
+  - Hardware: 1.0 (US) / Firmware: 1.1.0[^1]
 - **KS230**
   - Hardware: 1.0 (US) / Firmware: 1.0.14
 - **KS240**
-  - Hardware: 1.0 (US) / Firmware: 1.0.4<sup>\*</sup>
-  - Hardware: 1.0 (US) / Firmware: 1.0.5<sup>\*</sup>
-  - Hardware: 1.0 (US) / Firmware: 1.0.7<sup>\*</sup>
+  - Hardware: 1.0 (US) / Firmware: 1.0.4[^1]
+  - Hardware: 1.0 (US) / Firmware: 1.0.5[^1]
+  - Hardware: 1.0 (US) / Firmware: 1.0.7[^1]
 
 ### Bulbs
 
@@ -161,16 +161,16 @@ Some newer Kasa devices require authentication. These are marked with <sup>*</su
 ### Hubs
 
 - **KH100**
-  - Hardware: 1.0 (EU) / Firmware: 1.2.3<sup>\*</sup>
-  - Hardware: 1.0 (EU) / Firmware: 1.5.12<sup>\*</sup>
-  - Hardware: 1.0 (UK) / Firmware: 1.5.6<sup>\*</sup>
+  - Hardware: 1.0 (EU) / Firmware: 1.2.3[^1]
+  - Hardware: 1.0 (EU) / Firmware: 1.5.12[^1]
+  - Hardware: 1.0 (UK) / Firmware: 1.5.6[^1]
 
 ### Hub-Connected Devices
 
 - **KE100**
-  - Hardware: 1.0 (EU) / Firmware: 2.4.0<sup>\*</sup>
-  - Hardware: 1.0 (EU) / Firmware: 2.8.0<sup>\*</sup>
-  - Hardware: 1.0 (UK) / Firmware: 2.8.0<sup>\*</sup>
+  - Hardware: 1.0 (EU) / Firmware: 2.4.0[^1]
+  - Hardware: 1.0 (EU) / Firmware: 2.8.0[^1]
+  - Hardware: 1.0 (UK) / Firmware: 2.8.0[^1]
 
 
 ## Tapo devices
@@ -189,6 +189,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (UK) / Firmware: 1.3.0
 - **P110M**
   - Hardware: 1.0 (AU) / Firmware: 1.2.3
+  - Hardware: 1.0 (EU) / Firmware: 1.2.3
 - **P115**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
 - **P125M**
@@ -292,3 +293,4 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 
 <!--SUPPORTED_END-->
+[^1]: Model requires authentication
