@@ -36,6 +36,7 @@ from kasa.exceptions import (
 )
 from kasa.feature import Feature
 from kasa.interfaces.light import HSV, ColorTempRange, Light, LightState
+from kasa.interfaces.thermostat import Thermostat, ThermostatState
 from kasa.module import Module
 from kasa.protocols import BaseProtocol, IotProtocol, SmartProtocol
 from kasa.protocols.iotprotocol import _deprecated_TPLinkSmartHomeProtocol  # noqa: F401
@@ -72,6 +73,8 @@ __all__ = [
     "DeviceConnectionParameters",
     "DeviceEncryptionType",
     "DeviceFamily",
+    "ThermostatState",
+    "Thermostat",
 ]
 
 from . import iot

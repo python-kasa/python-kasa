@@ -3,22 +3,12 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
 
 from ...feature import Feature
+from ...interfaces.thermostat import ThermostatState
 from ..smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class ThermostatState(Enum):
-    """Thermostat state."""
-
-    Heating = "heating"
-    Calibrating = "progress_calibration"
-    Idle = "idle"
-    Off = "off"
-    Unknown = "unknown"
 
 
 class TemperatureControl(SmartModule):
@@ -56,7 +46,6 @@ class TemperatureControl(SmartModule):
                 category=Feature.Category.Config,
             )
         )
-
         self._add_feature(
             Feature(
                 self._device,
@@ -69,7 +58,6 @@ class TemperatureControl(SmartModule):
                 type=Feature.Type.Switch,
             )
         )
-
         self._add_feature(
             Feature(
                 self._device,
