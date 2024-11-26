@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+from dataclasses import dataclass
 from enum import Enum
 
 from ...exceptions import KasaException
@@ -23,6 +24,64 @@ class Range(Enum):
 
     def __str__(self) -> str:
         return self.name
+
+
+@dataclass
+class PIRConfig:
+    """Dataclass representing a PIR sensor configuration."""
+
+    enabled: bool
+    adc_min: int
+    adc_max: int
+    range: Range
+    threshold: int
+
+    @property
+    def adc_mid(self) -> int:
+        """Compute the ADC midpoint from the configured ADC Max and Min values."""
+        return math.floor(abs(self.adc_max - self.adc_min) / 2)
+
+
+@dataclass
+class PIRStatus:
+    """Dataclass representing the current trigger state of an ADC PIR sensor."""
+
+    adc_value: int
+
+    def get_pir_value(self, config: PIRConfig) -> int:
+        """
+        Get the PIR status value in integer form.
+
+        Computes the PIR status value that this object represents,
+        using the given PIR configuration.
+        """
+        return config.adc_mid - self.adc_value
+
+    def get_pir_percent(self, config: PIRConfig) -> float:
+        """
+        Get the PIR status value in percentile form.
+
+        Computes the PIR status percentage that this object represents,
+        using the given PIR configuration.
+        """
+        value = self.get_pir_value(config)
+        divisor = (
+            (config.adc_mid - config.adc_min)
+            if (value < 0)
+            else (config.adc_max - config.adc_mid)
+        )
+        return (float(value) / divisor) * 100
+
+    def get_pir_triggered(self, config: PIRConfig) -> bool:
+        """
+        Get the PIR status trigger state.
+
+        Compute the PIR trigger state this object represents,
+        using the given PIR configuration.
+        """
+        return (config.enabled) and (
+            abs(self.get_pir_percent(config)) > (100 - config.threshold)
+        )
 
 
 class Motion(IotModule):
@@ -150,7 +209,7 @@ class Motion(IotModule):
                 id="pir_adc_mid",
                 name="PIR ADC Mid",
                 icon="mdi:motion-sensor",
-                attribute_getter="adc_midpoint",
+                attribute_getter="adc_mid",
                 attribute_setter=None,
                 type=Feature.Type.Sensor,
                 category=Feature.Category.Debug,
@@ -201,22 +260,34 @@ class Motion(IotModule):
         return self.data["get_config"]
 
     @property
+    def pir_config(self) -> PIRConfig:
+        """Return PIR sensor configuration."""
+        pir_range = Range(self.config["trigger_index"])
+        return PIRConfig(
+            enabled=bool(self.config["enable"]),
+            adc_min=int(self.config["min_adc"]),
+            adc_max=int(self.config["max_adc"]),
+            range=pir_range,
+            threshold=self.get_range_threshold(pir_range),
+        )
+
+    @property
     def enabled(self) -> bool:
         """Return True if module is enabled."""
-        return bool(self.config["enable"])
+        return self.pir_config.enabled
 
     @property
     def adc_min(self) -> int:
         """Return minimum ADC sensor value."""
-        return int(self.config["min_adc"])
+        return self.pir_config.adc_min
 
     @property
     def adc_max(self) -> int:
         """Return maximum ADC sensor value."""
-        return int(self.config["max_adc"])
+        return self.pir_config.adc_max
 
     @property
-    def adc_midpoint(self) -> int:
+    def adc_mid(self) -> int:
         """
         Return the midpoint for the ADC.
 
@@ -225,7 +296,7 @@ class Motion(IotModule):
         Currently this is estimated by:
             math.floor(abs(adc_max - adc_min) / 2)
         """
-        return math.floor(abs(self.adc_max - self.adc_min) / 2)
+        return self.pir_config.adc_mid
 
     async def set_enabled(self, state: bool) -> dict:
         """Enable/disable PIR."""
@@ -245,7 +316,7 @@ class Motion(IotModule):
     @property
     def range(self) -> Range:
         """Return motion detection Range."""
-        return Range(self.config["trigger_index"])
+        return self.pir_config.range
 
     async def set_range(self, range: Range) -> dict:
         """Set the Range for the sensor.
@@ -280,7 +351,7 @@ class Motion(IotModule):
     @property
     def threshold(self) -> int:
         """Return motion detection Range."""
-        return self.get_range_threshold(self.range)
+        return self.pir_config.threshold
 
     async def set_threshold(self, value: int) -> dict:
         """Set the distance threshold at which the PIR sensor is will trigger."""
@@ -301,27 +372,31 @@ class Motion(IotModule):
         return await self.call("set_cold_time", {"cold_time": timeout})
 
     @property
+    def pir_state(self) -> PIRStatus:
+        """Return cached PIR status."""
+        return PIRStatus(self.data["get_adc_value"]["value"])
+
+    async def get_pir_state(self) -> PIRStatus:
+        """Return real-time PIR status."""
+        current = await self.call("get_adc_value")
+        return PIRStatus(current["value"])
+
+    @property
     def adc_value(self) -> int:
         """Return motion adc value."""
-        return self.data["get_adc_value"]["value"]
+        return self.pir_state.adc_value
 
     @property
     def pir_value(self) -> int:
         """Return the computed PIR sensor value."""
-        return self.adc_midpoint - self.adc_value
+        return self.pir_state.get_pir_value(self.pir_config)
 
     @property
     def pir_percent(self) -> float:
         """Return the computed PIR sensor value, in percentile form."""
-        amp = self.pir_value
-        per: float
-        if amp < 0:
-            per = (float(amp) / (self.adc_midpoint - self.adc_min)) * 100
-        else:
-            per = (float(amp) / (self.adc_max - self.adc_midpoint)) * 100
-        return per
+        return self.pir_state.get_pir_percent(self.pir_config)
 
     @property
     def pir_triggered(self) -> bool:
         """Return if the motion sensor has been triggered."""
-        return (self.enabled) and (abs(self.pir_percent) > (100 - self.threshold))
+        return self.pir_state.get_pir_triggered(self.pir_config)

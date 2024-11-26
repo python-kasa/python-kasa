@@ -69,6 +69,15 @@ async def test_motion_threshold(dev: IotDimmer, mocker: MockerFixture):
 
 
 @dimmer_iot
+async def test_motion_realtime(dev: IotDimmer, mocker: MockerFixture):
+    motion: Motion = dev.modules[Module.IotMotion]
+    query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
+
+    await motion.get_pir_state()
+    query_helper.assert_called_with("smartlife.iot.PIR", "get_adc_value", None)
+
+
+@dimmer_iot
 def test_motion_feature(dev: IotDimmer):
     assert Module.IotMotion in dev.modules
     motion: Motion = dev.modules[Module.IotMotion]
