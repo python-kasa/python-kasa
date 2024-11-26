@@ -6,13 +6,16 @@
 
 **Release highlights:**
 
-- **Initial support for devices using the tapo camera protocol, i.e. tapo cameras and the tapo H200 hub.**
-- New camera functionality such as exposing rtsp urls and camera pan/tilt.
+- **Initial support for devices using the Tapo camera protocol, i.e. Tapo cameras and the Tapo H200 hub.**
+- New camera functionality such as exposing RTSP streaming urls and camera pan/tilt.
 - New way of testing module support for individual features with `has_feature` and `get_feature`.
 - Adding voltage and current monitoring to `smart` devices.
 - Migration from pydantic to mashumaro for serialization.
 
-**Breaking change notes**
+Special thanks to @ryenitcher and @Puxtril for their new contributions to the improvement of the project! Also thanks to everyone who has helped with testing, contributing fixtures, and reporting issues!
+
+**Breaking change notes:**
+
 - Removed support for python <3.11. If you haven't got a compatible version try [uv](https://docs.astral.sh/uv/).
 - Renamed `device_config.to_dict()` to `device_config.to_dict_control_credentials()`. `to_dict()` is still available but takes no parameters.
 - From the `iot.Cloud` module the `iot.CloudInfo` class attributes have been converted to snake case.
