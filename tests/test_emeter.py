@@ -23,14 +23,16 @@ from .conftest import has_emeter, has_emeter_iot, no_emeter
 CURRENT_CONSUMPTION_SCHEMA = Schema(
     Any(
         {
-            "voltage": Any(All(float, Range(min=0, max=300)), None),
-            "power": Any(Coerce(float), None),
-            "total": Any(Coerce(float), None),
-            "current": Any(All(float), None),
             "voltage_mv": Any(All(float, Range(min=0, max=300000)), int, None),
             "power_mw": Any(Coerce(float), None),
-            "total_wh": Any(Coerce(float), None),
             "current_ma": Any(All(float), int, None),
+            "energy_wh": Any(Coerce(float), None),
+            "total_wh": Any(Coerce(float), None),
+            "voltage": Any(All(float, Range(min=0, max=300)), None),
+            "power": Any(Coerce(float), None),
+            "current": Any(All(float), None),
+            "total": Any(Coerce(float), None),
+            "energy": Any(Coerce(float), None),
             "slot_id": Any(Coerce(int), None),
         },
         None,
@@ -65,6 +67,10 @@ async def test_get_emeter_realtime(dev):
     emeter = dev.modules[Module.Energy]
 
     current_emeter = await emeter.get_status()
+    # Check realtime query gets the same value as status property
+    # iot _query_helper strips out the error code from module responses.
+    # but it's not stripped out of the _modular_update queries.
+    assert current_emeter == {k: v for k, v in emeter.status.items() if k != "err_code"}
     CURRENT_CONSUMPTION_SCHEMA(current_emeter)
 
 

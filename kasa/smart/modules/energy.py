@@ -75,8 +75,12 @@ class Energy(SmartModule, EnergyInterface):
 
     async def get_status(self) -> EmeterStatus:
         """Return real-time statistics."""
-        res = await self.call("get_energy_usage")
-        return self._get_status_from_energy(res["get_energy_usage"])
+        if "get_emeter_data" in self.data:
+            res = await self.call("get_emeter_data")
+            return EmeterStatus(res["get_emeter_data"])
+        else:
+            res = await self.call("get_energy_usage")
+            return self._get_status_from_energy(res["get_energy_usage"])
 
     @property
     @raise_if_update_error
