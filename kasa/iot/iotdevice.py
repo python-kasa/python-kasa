@@ -439,12 +439,7 @@ class IotDevice(Device):
     @staticmethod
     def extract_sys_info(info: dict[str, Any]) -> dict[str, Any]:
         """Return the system info structure."""
-        sysinfo_default = info.get("system", {}).get("get_sysinfo", {})
-        sysinfo_nest = sysinfo_default.get("system", {})
-
-        if len(sysinfo_nest.keys()) > len(sysinfo_default.keys()):
-            return sysinfo_nest
-        return sysinfo_default
+        return info.get("system", {}).get("get_sysinfo", {})
 
     def _set_sys_info(self, sys_info: dict[str, Any]) -> None:
         """Set sys_info."""
@@ -707,6 +702,9 @@ class IotDevice(Device):
     @staticmethod
     def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
         """Find SmartDevice subclass for device described by passed data."""
+        if "system" in info.get("system", {}).get("get_sysinfo", {}):
+            return DeviceType.Camera
+
         if "system" not in info or "get_sysinfo" not in info["system"]:
             raise KasaException("No 'system' or 'get_sysinfo' in response")
 
@@ -730,9 +728,6 @@ class IotDevice(Device):
                 return DeviceType.LightStrip
 
             return DeviceType.Bulb
-
-        if "camera" in type_.lower():
-            return DeviceType.Camera
 
         _LOGGER.warning("Unknown device type %s, falling back to plug", type_)
         return DeviceType.Plug

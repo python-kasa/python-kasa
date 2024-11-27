@@ -16,7 +16,7 @@ from kasa import (
     UnsupportedDeviceError,
 )
 from kasa.discover import ConnectAttempt, DiscoveryResult
-from kasa.iot import IotDevice
+from kasa.iot import IotCamera, IotDevice
 
 from .common import echo, error
 
@@ -204,6 +204,8 @@ def _echo_discovery_info(discovery_info) -> None:
         return
 
     if sysinfo := IotDevice.extract_sys_info(discovery_info):
+        if "system" in sysinfo:
+            sysinfo = IotCamera.extract_sys_info(discovery_info)
         _echo_dictionary(sysinfo)
         return
 
