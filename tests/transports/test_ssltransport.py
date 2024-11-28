@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from base64 import b64encode
 from contextlib import nullcontext as does_not_raise
-from json import dumps as json_dumps
-from json import loads as json_loads
 from typing import Any
 
 import aiohttp
@@ -19,6 +17,8 @@ from kasa.exceptions import (
     SmartErrorCode,
 )
 from kasa.httpclient import HttpClient
+from kasa.json import dumps as json_dumps
+from kasa.json import loads as json_loads
 from kasa.transports import SslTransport
 from kasa.transports.ssltransport import TransportState, _md5
 
