@@ -29,8 +29,8 @@ from kasa.transports.basetransport import BaseTransport
 from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
-from .conftest import device_iot
-from .fakeprotocol_iot import FakeIotTransport
+from ..conftest import device_iot
+from ..fakeprotocol_iot import FakeIotTransport
 
 
 @pytest.mark.parametrize(
