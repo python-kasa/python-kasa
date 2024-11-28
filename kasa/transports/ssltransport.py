@@ -78,10 +78,10 @@ class SslTransport(BaseTransport):
         if self._credentials:
             self._login_params = self._get_login_params(self._credentials)
         else:
-            # TODO: Figure out how to handle credential hash
             self._login_params = json_loads(
                 base64.b64decode(self._credentials_hash.encode()).decode()  # type: ignore[union-attr]
             )
+
         self._default_credentials: Credentials | None = None
         self._http_client: HttpClient = HttpClient(config)
 
@@ -89,7 +89,6 @@ class SslTransport(BaseTransport):
         self._session_expire_at: float | None = None
 
         self._app_url = URL(f"https://{self._host}:{self._port}/app")
-        self._token_url: URL | None = None
 
         _LOGGER.debug("Created ssltransport for %s", self._host)
 
@@ -117,11 +116,7 @@ class SslTransport(BaseTransport):
         return un, pw
 
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
-        """Handle response errors to request reauth etc.
-
-        TODO: This should probably be moved to the base class as
-         it's common for all smart protocols?
-        """
+        """Handle response errors to request reauth etc."""
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         if error_code == SmartErrorCode.SUCCESS:
             return
@@ -137,33 +132,29 @@ class SslTransport(BaseTransport):
 
         raise DeviceError(msg, error_code=error_code)
 
-    async def send_cleartext_request(self, request: str) -> dict[str, Any]:
+    async def send_request(self, request: str) -> dict[str, Any]:
         """Send request."""
-        if self._state is TransportState.ESTABLISHED and self._token_url:
-            url = self._token_url
-        else:
-            url = self._app_url
+        url = self._app_url
 
-        _LOGGER.debug("Sending %s", request)
+        _LOGGER.debug("Sending %s to %s", request, url)
 
         status_code, resp = await self._http_client.post(
             url,
             data=request.encode(),
             headers=self.COMMON_HEADERS,
         )
-        _LOGGER.debug("Response with %s: %r", status_code, resp)
-        resp = cast(bytes, resp)
-        resp_dict = json_loads(resp)
 
         if status_code != 200:
             raise KasaException(
                 f"{self._host} responded with an unexpected "
-                + f"status code {status_code} to passthrough"
+                + f"status code {status_code}"
             )
 
-        self._handle_response_error_code(
-            resp_dict, "Error sending secure_passthrough message"
-        )
+        _LOGGER.debug("Response with %s: %r", status_code, resp)
+        resp = cast(bytes, resp)
+        resp_dict = json_loads(resp)
+
+        self._handle_response_error_code(resp_dict, "Error sending request")
 
         if TYPE_CHECKING:
             resp_dict = cast(dict[str, Any], resp_dict)
@@ -206,11 +197,11 @@ class SslTransport(BaseTransport):
         request = json_dumps(login_request)
         _LOGGER.debug("Going to send login request")
 
-        resp_dict = await self.send_cleartext_request(request)
+        resp_dict = await self.send_request(request)
         self._handle_response_error_code(resp_dict, "Error logging in")
 
         login_token = resp_dict["result"]["token"]
-        self._token_url = self._app_url.with_query(f"token={login_token}")
+        self._app_url = self._app_url.with_query(f"token={login_token}")
         self._state = TransportState.ESTABLISHED
         self._session_expire_at = (
             time.time() + ONE_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
@@ -230,7 +221,7 @@ class SslTransport(BaseTransport):
             _LOGGER.debug("Transport not established or session expired, logging in")
             await self.perform_login()
 
-        return await self.send_cleartext_request(request)
+        return await self.send_request(request)
 
     async def close(self) -> None:
         """Close the http client and reset internal state."""
