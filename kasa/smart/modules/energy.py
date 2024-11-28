@@ -33,6 +33,13 @@ class Energy(SmartModule, EnergyInterface):
         return req
 
     @property
+    def optional_response_keys(self) -> list[str]:
+        """Return optional response keys for the module."""
+        if self.supported_version > 1:
+            return ["get_energy_usage"]
+        return []
+
+    @property
     @raise_if_update_error
     def current_consumption(self) -> float | None:
         """Current power in watts."""
@@ -52,9 +59,8 @@ class Energy(SmartModule, EnergyInterface):
     @raise_if_update_error
     def energy(self) -> dict:
         """Return get_energy_usage results."""
-        energy_usage = self.data.get("get_energy_usage")
-        if isinstance(energy_usage, dict):
-            return energy_usage
+        if en := self.data.get("get_energy_usage"):
+            return en
         return self.data
 
     def _get_status_from_energy(self, energy: dict) -> EmeterStatus:
