@@ -99,6 +99,7 @@ class Camera(SmartCamModule):
 
         if not credentials or not credentials.username or not credentials.password:
             return None
+
         username = quote_plus(credentials.username)
         password = quote_plus(credentials.password)
 
