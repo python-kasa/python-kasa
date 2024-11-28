@@ -14,9 +14,17 @@ Light, AutoOff, Firmware etc.
 >>> print(dev.alias)
 Living Room Bulb
 
-To see whether a device supports functionality check for the existence of the module:
+To see whether a device supports a group of functionality
+check for the existence of the module:
 
 >>> if light := dev.modules.get("Light"):
+>>>     print(light.brightness)
+100
+
+To see whether a device supports specific functionality, you can check whether the
+module has that feature:
+
+>>> if light.has_feature("hsv"):
 >>>     print(light.hsv)
 HSV(hue=0, saturation=100, value=100)
 
@@ -42,10 +50,13 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from functools import cache
 from typing import (
     TYPE_CHECKING,
     Final,
     TypeVar,
+    get_type_hints,
 )
 
 from .exceptions import KasaException
@@ -57,11 +68,18 @@ if TYPE_CHECKING:
     from .device import Device
     from .iot import modules as iot
     from .smart import modules as smart
-    from .smartcamera import modules as smartcamera
+    from .smartcam import modules as smartcam
 
 _LOGGER = logging.getLogger(__name__)
 
 ModuleT = TypeVar("ModuleT", bound="Module")
+
+
+class FeatureAttribute:
+    """Class for annotating attributes bound to feature."""
+
+    def __repr__(self) -> str:
+        return "FeatureAttribute"
 
 
 class Module(ABC):
@@ -78,6 +96,7 @@ class Module(ABC):
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
     LightPreset: Final[ModuleName[interfaces.LightPreset]] = ModuleName("LightPreset")
+    Thermostat: Final[ModuleName[interfaces.Thermostat]] = ModuleName("Thermostat")
     Time: Final[ModuleName[interfaces.Time]] = ModuleName("Time")
 
     # IOT only Modules
@@ -132,13 +151,26 @@ class Module(ABC):
     )
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
-    # SMARTCAMERA only modules
-    Camera: Final[ModuleName[smartcamera.Camera]] = ModuleName("Camera")
+    # SMARTCAM only modules
+    Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}
+
+    @property
+    def _all_features(self) -> dict[str, Feature]:
+        """Get the features for this module and any sub modules."""
+        return self._module_features
+
+    def has_feature(self, attribute: str | property | Callable) -> bool:
+        """Return True if the module attribute feature is supported."""
+        return bool(self.get_feature(attribute))
+
+    def get_feature(self, attribute: str | property | Callable) -> Feature | None:
+        """Get Feature for a module attribute or None if not supported."""
+        return _get_bound_feature(self, attribute)
 
     @abstractmethod
     def query(self) -> dict:
@@ -183,3 +215,60 @@ class Module(ABC):
             f"<Module {self.__class__.__name__} ({self._module})"
             f" for {self._device.host}>"
         )
+
+
+def _is_bound_feature(attribute: property | Callable) -> bool:
+    """Check if an attribute is bound to a feature with FeatureAttribute."""
+    if isinstance(attribute, property):
+        hints = get_type_hints(attribute.fget, include_extras=True)
+    else:
+        hints = get_type_hints(attribute, include_extras=True)
+
+    if (return_hints := hints.get("return")) and hasattr(return_hints, "__metadata__"):
+        metadata = hints["return"].__metadata__
+        for meta in metadata:
+            if isinstance(meta, FeatureAttribute):
+                return True
+
+    return False
+
+
+@cache
+def _get_bound_feature(
+    module: Module, attribute: str | property | Callable
+) -> Feature | None:
+    """Get Feature for a bound property or None if not supported."""
+    if not isinstance(attribute, str):
+        if isinstance(attribute, property):
+            # Properties have __name__ in 3.13 so this could be simplified
+            # when only 3.13 supported
+            attribute_name = attribute.fget.__name__  # type: ignore[union-attr]
+        else:
+            attribute_name = attribute.__name__
+        attribute_callable = attribute
+    else:
+        if TYPE_CHECKING:
+            assert isinstance(attribute, str)
+        attribute_name = attribute
+        attribute_callable = getattr(module.__class__, attribute, None)  # type: ignore[assignment]
+        if not attribute_callable:
+            raise KasaException(
+                f"No attribute named {attribute_name} in "
+                f"module {module.__class__.__name__}"
+            )
+
+    if not _is_bound_feature(attribute_callable):
+        raise KasaException(
+            f"Attribute {attribute_name} of module {module.__class__.__name__}"
+            " is not bound to a feature"
+        )
+
+    check = {attribute_name, attribute_callable}
+    for feature in module._all_features.values():
+        if (getter := feature.attribute_getter) and getter in check:
+            return feature
+
+        if (setter := feature.attribute_setter) and setter in check:
+            return feature
+
+    return None

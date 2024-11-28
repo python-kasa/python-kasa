@@ -33,12 +33,11 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Self, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from aiohttp import ClientSession
-from mashumaro import field_options
+from mashumaro import field_options, pass_through
 from mashumaro.config import BaseConfig
-from mashumaro.types import SerializationStrategy
 
 from .credentials import Credentials
 from .exceptions import KasaException
@@ -122,14 +121,6 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
             ) from ex
 
 
-class _DoNotSerialize(SerializationStrategy):
-    def serialize(self, value: Any) -> None:
-        return None  # pragma: no cover
-
-    def deserialize(self, value: Any) -> None:
-        return None  # pragma: no cover
-
-
 @dataclass
 class DeviceConfig(_DeviceConfigBaseMixin):
     """Class to represent paramaters that determine how to connect to devices."""
@@ -163,7 +154,7 @@ class DeviceConfig(_DeviceConfigBaseMixin):
     http_client: ClientSession | None = field(
         default=None,
         compare=False,
-        metadata=field_options(serialization_strategy=_DoNotSerialize()),
+        metadata=field_options(serialize="omit", deserialize=pass_through),
     )
 
     aes_keys: KeyPairDict | None = None
@@ -173,9 +164,6 @@ class DeviceConfig(_DeviceConfigBaseMixin):
             self.connection_type = DeviceConnectionParameters(
                 DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
             )
-
-    def __pre_serialize__(self) -> Self:
-        return replace(self, http_client=None)
 
     def to_dict_control_credentials(
         self,

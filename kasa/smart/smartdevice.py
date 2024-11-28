@@ -24,10 +24,13 @@ from .modules import (
     DeviceModule,
     Firmware,
     Light,
+    Thermostat,
     Time,
 )
 from .smartmodule import SmartModule
 
+if TYPE_CHECKING:
+    from .smartchilddevice import SmartChildDevice
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -196,6 +199,8 @@ class SmartDevice(Device):
         # child modules have access to their sysinfo.
         if update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
+                if TYPE_CHECKING:
+                    assert isinstance(child, SmartChildDevice)
                 await child._update()
 
         # We can first initialize the features after the first update.
@@ -357,6 +362,11 @@ class SmartDevice(Device):
             or Module.ColorTemperature in self._modules
         ):
             self._modules[Light.__name__] = Light(self, "light")
+        if (
+            Module.TemperatureControl in self._modules
+            and Module.TemperatureSensor in self._modules
+        ):
+            self._modules[Thermostat.__name__] = Thermostat(self, "thermostat")
 
     async def _initialize_features(self) -> None:
         """Initialize device features."""

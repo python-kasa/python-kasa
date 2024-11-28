@@ -24,6 +24,7 @@ class LightTransition(SmartModule):
     REQUIRED_COMPONENT = "on_off_gradually"
     QUERY_GETTER_NAME = "get_on_off_gradually_info"
     MINIMUM_UPDATE_INTERVAL_SECS = 60
+    # v3 added max_duration, we default to 60 when it's not available
     MAXIMUM_DURATION = 60
 
     # Key in sysinfo that indicates state can be retrieved from there.
@@ -144,10 +145,22 @@ class LightTransition(SmartModule):
             return await self.call("set_on_off_gradually_info", {"enable": enable})
         else:
             on = await self.call(
-                "set_on_off_gradually_info", {"on_state": {"enable": enable}}
+                "set_on_off_gradually_info",
+                {
+                    "on_state": {
+                        "enable": enable,
+                        "duration": self._on_state["duration"],
+                    }
+                },
             )
             off = await self.call(
-                "set_on_off_gradually_info", {"off_state": {"enable": enable}}
+                "set_on_off_gradually_info",
+                {
+                    "off_state": {
+                        "enable": enable,
+                        "duration": self._off_state["duration"],
+                    }
+                },
             )
             return {**on, **off}
 
@@ -167,7 +180,6 @@ class LightTransition(SmartModule):
     @property
     def _turn_on_transition_max(self) -> int:
         """Maximum turn on duration."""
-        # v3 added max_duration, we default to 60 when it's not available
         return self._on_state["max_duration"]
 
     @allow_update_after
@@ -184,7 +196,7 @@ class LightTransition(SmartModule):
         if seconds <= 0:
             return await self.call(
                 "set_on_off_gradually_info",
-                {"on_state": {"enable": False}},
+                {"on_state": {"enable": False, "duration": self._on_state["duration"]}},
             )
 
         return await self.call(
@@ -220,7 +232,12 @@ class LightTransition(SmartModule):
         if seconds <= 0:
             return await self.call(
                 "set_on_off_gradually_info",
-                {"off_state": {"enable": False}},
+                {
+                    "off_state": {
+                        "enable": False,
+                        "duration": self._off_state["duration"],
+                    }
+                },
             )
 
         return await self.call(

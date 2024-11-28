@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..exceptions import KasaException
 from ..module import Module
 
 _LOGGER = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from .iotdevice import IotDevice
 
 
 def _merge_dict(dest: dict, source: dict) -> dict:
@@ -26,6 +29,8 @@ merge = _merge_dict
 
 class IotModule(Module):
     """Base class implemention for all IOT modules."""
+
+    _device: IotDevice
 
     async def call(self, method: str, params: dict | None = None) -> dict:
         """Call the given method with the given parameters."""

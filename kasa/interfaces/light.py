@@ -64,9 +64,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import NamedTuple
+from typing import Annotated, NamedTuple
 
-from ..module import Module
+from ..module import FeatureAttribute, Module
 
 
 @dataclass
@@ -129,7 +129,7 @@ class Light(Module, ABC):
 
     @property
     @abstractmethod
-    def hsv(self) -> HSV:
+    def hsv(self) -> Annotated[HSV, FeatureAttribute()]:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
@@ -137,12 +137,12 @@ class Light(Module, ABC):
 
     @property
     @abstractmethod
-    def color_temp(self) -> int:
+    def color_temp(self) -> Annotated[int, FeatureAttribute()]:
         """Whether the bulb supports color temperature changes."""
 
     @property
     @abstractmethod
-    def brightness(self) -> int:
+    def brightness(self) -> Annotated[int, FeatureAttribute()]:
         """Return the current brightness in percentage."""
 
     @abstractmethod
@@ -153,7 +153,7 @@ class Light(Module, ABC):
         value: int | None = None,
         *,
         transition: int | None = None,
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -167,7 +167,7 @@ class Light(Module, ABC):
     @abstractmethod
     async def set_color_temp(
         self, temp: int, *, brightness: int | None = None, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -179,7 +179,7 @@ class Light(Module, ABC):
     @abstractmethod
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the brightness in percentage.
 
         Note, transition is not supported and will be ignored.
