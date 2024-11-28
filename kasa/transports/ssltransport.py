@@ -1,4 +1,4 @@
-"""Implementation of the TP-Link cleartext transport.
+"""Implementation of the clear-text ssl transport.
 
 This transport does not encrypt the payloads at all, but requires login to function.
 This has been seen on some devices (like robovacs) with self-signed HTTPS certificates.
@@ -12,13 +12,13 @@ import hashlib
 import logging
 import time
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Dict, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from yarl import URL
 
-from .credentials import Credentials
-from .deviceconfig import DeviceConfig
-from .exceptions import (
+from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
+from kasa.deviceconfig import DeviceConfig
+from kasa.exceptions import (
     SMART_AUTHENTICATION_ERRORS,
     SMART_RETRYABLE_ERRORS,
     AuthenticationError,
@@ -27,10 +27,10 @@ from .exceptions import (
     SmartErrorCode,
     _RetryableError,
 )
-from .httpclient import HttpClient
-from .json import dumps as json_dumps
-from .json import loads as json_loads
-from .protocol import DEFAULT_CREDENTIALS, BaseTransport, get_default_credentials
+from kasa.httpclient import HttpClient
+from kasa.json import dumps as json_dumps
+from kasa.json import loads as json_loads
+from kasa.transports import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class TransportState(Enum):
     ESTABLISHED = auto()  # Ready to send requests
 
 
-class CleartextTransport(BaseTransport):
+class SslTransport(BaseTransport):
     """Implementation of the cleartext transport protocol.
 
     This transport uses HTTPS without any further payload encryption.
@@ -91,7 +91,7 @@ class CleartextTransport(BaseTransport):
         self._app_url = URL(f"https://{self._host}:{self._port}/app")
         self._token_url: URL | None = None
 
-        _LOGGER.debug("Created cleartext transport for %s", self._host)
+        _LOGGER.debug("Created ssltransport for %s", self._host)
 
     @property
     def default_port(self) -> int:
@@ -138,7 +138,7 @@ class CleartextTransport(BaseTransport):
         raise DeviceError(msg, error_code=error_code)
 
     async def send_cleartext_request(self, request: str) -> dict[str, Any]:
-        """Send encrypted message as passthrough."""
+        """Send request."""
         if self._state is TransportState.ESTABLISHED and self._token_url:
             url = self._token_url
         else:
@@ -152,6 +152,7 @@ class CleartextTransport(BaseTransport):
             headers=self.COMMON_HEADERS,
         )
         _LOGGER.debug("Response with %s: %r", status_code, resp)
+        resp = cast(bytes, resp)
         resp_dict = json_loads(resp)
 
         if status_code != 200:
@@ -165,11 +166,11 @@ class CleartextTransport(BaseTransport):
         )
 
         if TYPE_CHECKING:
-            resp_dict = cast(Dict[str, Any], resp_dict)
+            resp_dict = cast(dict[str, Any], resp_dict)
 
         return resp_dict  # type: ignore[return-value]
 
-    async def perform_login(self):
+    async def perform_login(self) -> None:
         """Login to the device."""
         try:
             await self.try_login(self._login_params)
@@ -215,7 +216,7 @@ class CleartextTransport(BaseTransport):
             time.time() + ONE_DAY_SECONDS - SESSION_EXPIRE_BUFFER_SECONDS
         )
 
-    def _session_expired(self):
+    def _session_expired(self) -> bool:
         """Return true if session has expired."""
         return (
             self._session_expire_at is None

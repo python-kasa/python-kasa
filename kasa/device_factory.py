@@ -6,7 +6,6 @@ import logging
 import time
 from typing import Any
 
-from .cleartexttransport import CleartextTransport
 from .device import Device
 from .device_type import DeviceType
 from .deviceconfig import DeviceConfig
@@ -33,6 +32,7 @@ from .transports import (
     BaseTransport,
     KlapTransport,
     KlapTransportV2,
+    SslTransport,
     XorTransport,
 )
 from .transports.sslaestransport import SslAesTransport
@@ -192,7 +192,7 @@ def get_protocol(
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
-        "SMART.CLEAR": (SmartProtocol, CleartextTokenTransport),
+        "SMART.CLEAR": (SmartProtocol, SslTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None
