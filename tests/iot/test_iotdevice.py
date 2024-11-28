@@ -19,10 +19,9 @@ from voluptuous import (
 from kasa import DeviceType, KasaException, Module
 from kasa.iot import IotDevice
 from kasa.iot.iotmodule import _merge_dict
-
-from .conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
-from .device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
-from .fakeprotocol_iot import FakeIotProtocol
+from tests.conftest import get_device_for_fixture_protocol, handle_turn_on, turn_on
+from tests.device_fixtures import device_iot, has_emeter_iot, no_emeter_iot
+from tests.fakeprotocol_iot import FakeIotProtocol
 
 TZ_SCHEMA = Schema(
     {"zone_str": str, "dst_offset": int, "index": All(int, Range(min=0)), "tz_str": str}
