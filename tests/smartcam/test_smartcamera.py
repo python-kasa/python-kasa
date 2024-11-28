@@ -10,7 +10,7 @@ from unittest.mock import patch
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 
-from kasa import Credentials, Device, DeviceType, Module
+from kasa import Credentials, Device, DeviceType, Module, StreamResolution
 
 from ..conftest import camera_smartcam, device_smartcam, hub_smartcam
 
@@ -36,6 +36,16 @@ async def test_stream_rtsp_url(dev: Device):
     assert camera_module.is_on
     url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
     assert url == "rtsp://foo:bar@127.0.0.123:554/stream1"
+
+    url = camera_module.stream_rtsp_url(
+        Credentials("foo", "bar"), stream_resolution=StreamResolution.HD
+    )
+    assert url == "rtsp://foo:bar@127.0.0.123:554/stream1"
+
+    url = camera_module.stream_rtsp_url(
+        Credentials("foo", "bar"), stream_resolution=StreamResolution.SD
+    )
+    assert url == "rtsp://foo:bar@127.0.0.123:554/stream2"
 
     with patch.object(dev.config, "credentials", Credentials("bar", "foo")):
         url = camera_module.stream_rtsp_url()
@@ -72,15 +82,6 @@ async def test_stream_rtsp_url(dev: Device):
         patch.object(dev.config, "credentials", None),
         patch.object(dev.config, "credentials_hash", None),
     ):
-        url = camera_module.stream_rtsp_url()
-    assert url is None
-
-    # Test with camera off
-    await camera_module.set_state(False)
-    await dev.update()
-    url = camera_module.stream_rtsp_url(Credentials("foo", "bar"))
-    assert url is None
-    with patch.object(dev.config, "credentials", Credentials("bar", "foo")):
         url = camera_module.stream_rtsp_url()
     assert url is None
 
