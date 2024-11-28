@@ -12,8 +12,8 @@ from kasa.exceptions import (
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 
-from .conftest import device_smart
-from .fakeprotocol_smart import FakeSmartTransport
+from ..conftest import device_smart
+from ..fakeprotocol_smart import FakeSmartTransport
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 DUMMY_MULTIPLE_QUERY = {
