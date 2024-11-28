@@ -64,6 +64,21 @@ class Camera(SmartCamModule):
 
         return None
 
+    def _get_stream_creds(
+        self, credentials: Credentials | None = None
+    ) -> tuple[str, str] | None:
+        if not self.is_on:
+            return None
+
+        if not credentials:
+            credentials = self._get_credentials()
+
+        if not credentials or not credentials.username or not credentials.password:
+            return None
+        username = quote_plus(credentials.username)
+        password = quote_plus(credentials.password)
+        return username, password
+
     def stream_rtsp_url(self, credentials: Credentials | None = None) -> str | None:
         """Return the local rtsp streaming url.
 
@@ -73,17 +88,40 @@ class Camera(SmartCamModule):
         :return: rtsp url with escaped credentials or None if no credentials or
             camera is off.
         """
-        if not self.is_on:
-            return None
-        dev = self._device
-        if not credentials:
-            credentials = self._get_credentials()
+        if un_pw := self._get_stream_creds(credentials):
+            username, password = un_pw
 
-        if not credentials or not credentials.username or not credentials.password:
-            return None
-        username = quote_plus(credentials.username)
-        password = quote_plus(credentials.password)
-        return f"rtsp://{username}:{password}@{dev.host}:{LOCAL_STREAMING_PORT}/stream1"
+            return f"rtsp://{username}:{password}@{self._device.host}:{LOCAL_STREAMING_PORT}/stream1"
+        return None
+
+    def stream_rtsp_alt_url(self, credentials: Credentials | None = None) -> str | None:
+        """Return the alernative local rtsp streaming url.
+
+        :param credentials: Credentials for camera account.
+            These could be different credentials to tplink cloud credentials.
+            If not provided will use tplink credentials if available
+        :return: rtsp url with escaped credentials or None if no credentials or
+            camera is off.
+        """
+        if un_pw := self._get_stream_creds(credentials):
+            username, password = un_pw
+
+            return f"rtsp://{username}:{password}@{self._device.host}:{LOCAL_STREAMING_PORT}/stream2"
+        return None
+
+    def stream_go2rtc_url(self, credentials: Credentials | None = None) -> str | None:
+        """Return the local rtsp streaming url.
+
+        :param credentials: Credentials for camera account.
+            These could be different credentials to tplink cloud credentials.
+            If not provided will use tplink credentials if available
+        :return: rtsp url with escaped credentials or None if no credentials or
+            camera is off.
+        """
+        if un_pw := self._get_stream_creds(credentials):
+            username, password = un_pw
+            return f"tapo://{password}@{self._device.host}"
+        return None
 
     async def set_state(self, on: bool) -> dict:
         """Set the device state."""
