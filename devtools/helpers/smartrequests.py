@@ -425,4 +425,28 @@ COMPONENT_REQUESTS = {
     "dimmer_calibration": [],
     "fan_control": [],
     "overheat_protection": [],
+    # Vacuum components
+    "clean": [
+        SmartRequest.get_raw_request("get_clean_records"),
+        SmartRequest.get_raw_request("get_vac_state"),
+    ],
+    "battery": [SmartRequest.get_raw_request("get_battery_info")],
+    "consumables": [SmartRequest.get_raw_request("get_consumables_info")],
+    "direction_control": [],
+    "button_and_led": [],
+    "speaker": [
+        SmartRequest.get_raw_request("get_support_voice_language"),
+        SmartRequest.get_raw_request("get_current_voice_language"),
+    ],
+    "map": [
+        SmartRequest.get_raw_request("get_map_info"),
+        SmartRequest.get_raw_request("get_map_data"),
+    ],
+    "auto_change_map": [SmartRequest.get_raw_request("get_auto_change_map")],
+    "dust_bucket": [SmartRequest.get_raw_request("get_auto_dust_collection")],
+    "mop": [SmartRequest.get_raw_request("get_mop_state")],
+    "do_not_disturb": [SmartRequest.get_raw_request("get_do_not_disturb")],
+    "charge_pose_clean": [],
+    "continue_breakpoint_sweep": [],
+    "goto_point": [],
 }
