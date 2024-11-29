@@ -1,7 +1,7 @@
-"""Implementation of the clear-text ssl transport.
+"""Implementation of the clear-text passthrough ssl transport.
 
-This transport does not encrypt the payloads at all, but requires login to function.
-This has been seen on some devices (like robovacs) with self-signed HTTPS certificates.
+This transport does not encrypt the passthrough payloads at all, but requires a login.
+This has been seen on some devices (like robovacs).
 """
 
 from __future__ import annotations
@@ -39,10 +39,8 @@ ONE_DAY_SECONDS = 86400
 SESSION_EXPIRE_BUFFER_SECONDS = 60 * 20
 
 
-def _md5(payload: bytes) -> str:
-    algo = hashlib.md5()  # noqa: S324
-    algo.update(payload)
-    return algo.hexdigest()
+def _md5_hash(payload: bytes) -> str:
+    return hashlib.md5(payload).hexdigest().upper()  # noqa: S324
 
 
 class TransportState(Enum):
@@ -105,8 +103,7 @@ class SslTransport(BaseTransport):
     def _get_login_params(self, credentials: Credentials) -> dict[str, str]:
         """Get the login parameters based on the login_version."""
         un, pw = self.hash_credentials(credentials)
-        # The password hash needs to be upper-case
-        return {"password": pw.upper(), "username": un}
+        return {"password": pw, "username": un}
 
     @staticmethod
     def hash_credentials(credentials: Credentials) -> tuple[str, str]:
@@ -138,9 +135,9 @@ class SslTransport(BaseTransport):
 
         _LOGGER.debug("Sending %s to %s", request, url)
 
-        status_code, resp = await self._http_client.post(
+        status_code, resp_dict = await self._http_client.post(
             url,
-            data=request.encode(),
+            json=request,
             headers=self.COMMON_HEADERS,
         )
 
@@ -151,15 +148,13 @@ class SslTransport(BaseTransport):
             )
 
         _LOGGER.debug("Response with %s: %r", status_code, resp)
-        resp = cast(bytes, resp)
-        resp_dict = json_loads(resp)
 
         self._handle_response_error_code(resp_dict, "Error sending request")
 
         if TYPE_CHECKING:
             resp_dict = cast(dict[str, Any], resp_dict)
 
-        return resp_dict  # type: ignore[return-value]
+        return resp_dict
 
     async def perform_login(self) -> None:
         """Login to the device."""

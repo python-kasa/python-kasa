@@ -183,7 +183,7 @@ def get_protocol(
         + ctype.encryption_type.value
         + (".HTTPS" if ctype.https else "")
     )
-    _LOGGER.info("Finding transport for %s", protocol_transport_key)
+    _LOGGER.debug("Finding transport for %s", protocol_transport_key)
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
     ] = {
@@ -192,7 +192,8 @@ def get_protocol(
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
-        "SMART.CLEAR": (SmartProtocol, SslTransport),
+        "SMART.AES.HTTPS.2": (SmartCamProtocol, SslAesTransport),
+        "SMART.AES.HTTPS": (SmartProtocol, SslTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None
