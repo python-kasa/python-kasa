@@ -178,12 +178,19 @@ def get_protocol(
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
     ctype = config.connection_type
+
     protocol_transport_key = (
         protocol_name
         + "."
         + ctype.encryption_type.value
         + (".HTTPS" if ctype.https else "")
+        + (
+            f".{ctype.login_version}"
+            if ctype.login_version and ctype.login_version > 1
+            else ""
+        )
     )
+
     _LOGGER.debug("Finding transport for %s", protocol_transport_key)
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
@@ -191,7 +198,8 @@ def get_protocol(
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
-        "SMART.KLAP": (SmartProtocol, KlapTransportV2),
+        "SMART.AES.2": (SmartProtocol, AesTransport),
+        "SMART.KLAP.2": (SmartProtocol, KlapTransportV2),
         "SMART.AES.HTTPS.2": (SmartCamProtocol, SslAesTransport),
         "SMART.AES.HTTPS": (SmartProtocol, SslTransport),
     }

@@ -595,10 +595,12 @@ class Discover:
             for encrypt in Device.EncryptionType
             for device_family in main_device_families
             for https in (True, False)
+            for login_version in (None, 2)
             if (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
                     encryption_type=encrypt,
+                    login_version=login_version,
                     https=https,
                 )
             )
