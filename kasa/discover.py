@@ -156,6 +156,9 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
+    "master_device_id": lambda x: "REDACTED_" + x[9::],
+    "group_id": lambda x: "REDACTED_" + x[9::],
+    "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
 }
 
 
@@ -643,7 +646,11 @@ class Discover:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult.from_dict(info["result"])
-            https = discovery_result.mgt_encrypt_schm.is_support_https
+            https = (
+                discovery_result.mgt_encrypt_schm.is_support_https
+                if discovery_result.mgt_encrypt_schm
+                else False
+            )
             dev_class = get_device_class_from_family(
                 discovery_result.device_type, https=https
             )
@@ -747,7 +754,13 @@ class Discover:
                 )
 
         type_ = discovery_result.device_type
-        encrypt_schm = discovery_result.mgt_encrypt_schm
+        if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {config.host} of type {type_} "
+                "with no mgt_encrypt_schm",
+                discovery_result=discovery_result.to_dict(),
+                host=config.host,
+            )
 
         try:
             if not (encrypt_type := encrypt_schm.encrypt_type) and (
@@ -765,13 +778,13 @@ class Discover:
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
                 encrypt_type,
-                discovery_result.mgt_encrypt_schm.lv,
-                discovery_result.mgt_encrypt_schm.is_support_https,
+                encrypt_schm.lv,
+                encrypt_schm.is_support_https,
             )
         except KasaException as ex:
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
-                + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
+                + f"with encrypt_type {encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             ) from ex
@@ -854,7 +867,7 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     device_id: str
     ip: str
     mac: str
-    mgt_encrypt_schm: EncryptionScheme
+    mgt_encrypt_schm: EncryptionScheme | None = None
     device_name: str | None = None
     encrypt_info: EncryptionInfo | None = None
     encrypt_type: list[str] | None = None
