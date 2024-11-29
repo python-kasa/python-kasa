@@ -765,10 +765,10 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
-        # Fallback to device_type (from disco info)
-        type_str = self._info.get("type", self._info.get("device_type"))
-
-        if not type_str:  # no update or discovery info
+        if not self._components or not (
+            type_str := self._info.get("type", self._info.get("device_type"))
+        ):
+            # no update or discovery info
             return self._device_type
 
         self._device_type = self._get_device_type_from_components(
