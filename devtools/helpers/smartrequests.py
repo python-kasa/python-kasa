@@ -426,7 +426,10 @@ COMPONENT_REQUESTS = {
     "fan_control": [],
     "overheat_protection": [],
     # Vacuum components
-    "clean": [SmartRequest.get_raw_request("get_clean_records")],
+    "clean": [
+        SmartRequest.get_raw_request("get_clean_records"),
+        SmartRequest.get_raw_request("get_vac_state"),
+    ],
     "battery": [SmartRequest.get_raw_request("get_battery_info")],
     "consumables": [SmartRequest.get_raw_request("get_consumables_info")],
     "direction_control": [],
