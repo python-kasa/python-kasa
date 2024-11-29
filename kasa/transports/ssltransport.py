@@ -109,7 +109,7 @@ class SslTransport(BaseTransport):
     def hash_credentials(credentials: Credentials) -> tuple[str, str]:
         """Hash the credentials."""
         un = credentials.username
-        pw = _md5(credentials.password.encode())
+        pw = _md5_hash(credentials.password.encode())
         return un, pw
 
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
@@ -147,7 +147,7 @@ class SslTransport(BaseTransport):
                 + f"status code {status_code}"
             )
 
-        _LOGGER.debug("Response with %s: %r", status_code, resp)
+        _LOGGER.debug("Response with %s: %r", status_code, resp_dict)
 
         self._handle_response_error_code(resp_dict, "Error sending request")
 

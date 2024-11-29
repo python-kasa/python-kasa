@@ -20,7 +20,7 @@ from kasa.httpclient import HttpClient
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
 from kasa.transports import SslTransport
-from kasa.transports.ssltransport import TransportState, _md5
+from kasa.transports.ssltransport import TransportState, _md5_hash
 
 # Transport tests are not designed for real devices
 pytestmark = [pytest.mark.requires_dummy]
@@ -32,10 +32,6 @@ MOCK_TOKEN = "abcdefghijklmnopqrstuvwxyz1234)("  # noqa: S105
 MOCK_ERROR_CODE = -10_000
 
 DEFAULT_CREDS = get_default_credentials(DEFAULT_CREDENTIALS["TAPO"])
-
-
-def _get_password_hash(pw):
-    return _md5(pw.encode()).upper()
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -113,7 +109,7 @@ async def test_credentials_hash(mocker):
     )
     creds = Credentials(MOCK_USER, MOCK_PWD)
 
-    data = {"password": _get_password_hash(MOCK_PWD), "username": MOCK_USER}
+    data = {"password": _md5_hash(MOCK_PWD.encode()), "username": MOCK_USER}
 
     creds_hash = b64encode(json_dumps(data).encode()).decode()
 
@@ -223,8 +219,8 @@ class MockSslDevice:
             request_username == MOCK_BAD_USER_OR_PWD
             or request_username == DEFAULT_CREDS.username
         ) or (
-            request_password == _get_password_hash(MOCK_BAD_USER_OR_PWD)
-            or request_password == _get_password_hash(DEFAULT_CREDS.password)
+            request_password == _md5_hash(MOCK_BAD_USER_OR_PWD.encode())
+            or request_password == _md5_hash(DEFAULT_CREDS.password.encode())
         ):
             resp = {
                 "error_code": SmartErrorCode.LOGIN_ERROR.value,
