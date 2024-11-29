@@ -34,11 +34,19 @@ async def test_get_energy_usage_error(dev: SmartDevice):
         pytest.skip(f"Energy module not supported for {dev}.")
 
     version = dev._components["energy_monitoring"]
-    expected = "get_energy_usage" if version > 1 else "current_power"
+
     expected_raise = does_not_raise() if version > 1 else pytest.raises(DeviceError)
+    if version > 1:
+        expected = "get_energy_usage"
+        expected_current_consumption = 2.002
+    else:
+        expected = "current_power"
+        expected_current_consumption = None
 
     assert expected in energy_module.data
     assert energy_module.current_consumption is not None
+    assert energy_module.consumption_today is not None
+    assert energy_module.consumption_this_month is not None
 
     resp = copy.deepcopy(dev._last_update)
 
@@ -53,4 +61,7 @@ async def test_get_energy_usage_error(dev: SmartDevice):
 
     with expected_raise:
         assert "get_energy_usage" not in energy_module.data
-        assert energy_module.current_consumption == 2.002
+
+    assert energy_module.current_consumption == expected_current_consumption
+    assert energy_module.consumption_today is None
+    assert energy_module.consumption_this_month is None

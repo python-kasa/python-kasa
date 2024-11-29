@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import NoReturn
+from typing import Any, NoReturn
 
 from ...emeterstatus import EmeterStatus
-from ...exceptions import KasaException
+from ...exceptions import DeviceError, KasaException
 from ...interfaces.energy import Energy as EnergyInterface
 from ..smartmodule import SmartModule, raise_if_update_error
 
@@ -15,11 +15,37 @@ class Energy(SmartModule, EnergyInterface):
 
     REQUIRED_COMPONENT = "energy_monitoring"
 
+    _energy: dict[str, Any]
+    _current_consumption: float | None
+
     async def _post_update_hook(self) -> None:
-        if "voltage_mv" in self.data.get("get_emeter_data", {}):
+        try:
+            data = self.data
+        except DeviceError as de:
+            self._energy = {}
+            self._current_consumption = None
+            raise de
+
+        # If version is 1 then data is get_energy_usage
+        self._energy = data.get("get_energy_usage", data)
+
+        if "voltage_mv" in data.get("get_emeter_data", {}):
             self._supported = (
                 self._supported | EnergyInterface.ModuleFeature.VOLTAGE_CURRENT
             )
+
+        if (power := self._energy.get("current_power")) is not None or (
+            power := data.get("get_emeter_data", {}).get("power_mw")
+        ) is not None:
+            self._current_consumption = power / 1_000
+        # Fallback if get_energy_usage does not provide current_power,
+        # which can happen on some newer devices (e.g. P304M).
+        elif (
+            power := self.data.get("get_current_power", {}).get("current_power")
+        ) is not None:
+            self._current_consumption = power
+        else:
+            self._current_consumption = None
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -40,28 +66,14 @@ class Energy(SmartModule, EnergyInterface):
         return []
 
     @property
-    @raise_if_update_error
     def current_consumption(self) -> float | None:
         """Current power in watts."""
-        if (power := self.energy.get("current_power")) is not None or (
-            power := self.data.get("get_emeter_data", {}).get("power_mw")
-        ) is not None:
-            return power / 1_000
-        # Fallback if get_energy_usage does not provide current_power,
-        # which can happen on some newer devices (e.g. P304M).
-        elif (
-            power := self.data.get("get_current_power", {}).get("current_power")
-        ) is not None:
-            return power
-        return None
+        return self._current_consumption
 
     @property
-    @raise_if_update_error
     def energy(self) -> dict:
         """Return get_energy_usage results."""
-        if en := self.data.get("get_energy_usage"):
-            return en
-        return self.data
+        return self._energy
 
     def _get_status_from_energy(self, energy: dict) -> EmeterStatus:
         return EmeterStatus(
@@ -90,16 +102,18 @@ class Energy(SmartModule, EnergyInterface):
             return self._get_status_from_energy(res["get_energy_usage"])
 
     @property
-    @raise_if_update_error
     def consumption_this_month(self) -> float | None:
         """Get the emeter value for this month in kWh."""
-        return self.energy.get("month_energy", 0) / 1_000
+        if (month := self.energy.get("month_energy")) is not None:
+            return month / 1_000
+        return None
 
     @property
-    @raise_if_update_error
     def consumption_today(self) -> float | None:
         """Get the emeter value for today in kWh."""
-        return self.energy.get("today_energy", 0) / 1_000
+        if (today := self.energy.get("today_energy")) is not None:
+            return today / 1_000
+        return None
 
     @property
     @raise_if_update_error
