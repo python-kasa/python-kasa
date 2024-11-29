@@ -51,7 +51,7 @@ class TransportState(Enum):
 
 
 class SslTransport(BaseTransport):
-    """Implementation of the clear-text passthrough transport.
+    """Implementation of the cleartext transport protocol.
 
     This transport uses HTTPS without any further payload encryption.
     """
@@ -112,7 +112,7 @@ class SslTransport(BaseTransport):
         pw = _md5_hash(credentials.password.encode())
         return un, pw
 
-    def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
+    async def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
         """Handle response errors to request reauth etc."""
         error_code = SmartErrorCode(resp_dict.get("error_code"))  # type: ignore[arg-type]
         if error_code == SmartErrorCode.SUCCESS:
@@ -124,17 +124,19 @@ class SslTransport(BaseTransport):
             raise _RetryableError(msg, error_code=error_code)
 
         if error_code in SMART_AUTHENTICATION_ERRORS:
-            self._state = TransportState.LOGIN_REQUIRED
+            await self.reset()
             raise AuthenticationError(msg, error_code=error_code)
 
         raise DeviceError(msg, error_code=error_code)
 
     async def send_request(self, request: str) -> dict[str, Any]:
         """Send request."""
-        _LOGGER.debug("Sending %s to %s", request, self._app_url)
+        url = self._app_url
+
+        _LOGGER.debug("Sending %s to %s", request, url)
 
         status_code, resp_dict = await self._http_client.post(
-            self._app_url,
+            url,
             json=request,
             headers=self.COMMON_HEADERS,
         )
@@ -147,7 +149,7 @@ class SslTransport(BaseTransport):
 
         _LOGGER.debug("Response with %s: %r", status_code, resp_dict)
 
-        self._handle_response_error_code(resp_dict, "Error sending request")
+        await self._handle_response_error_code(resp_dict, "Error sending request")
 
         if TYPE_CHECKING:
             resp_dict = cast(dict[str, Any], resp_dict)
@@ -182,7 +184,7 @@ class SslTransport(BaseTransport):
                 ) from ex
 
     async def try_login(self, login_params: dict[str, Any]) -> None:
-        """Try to log in with supplied params."""
+        """Try to login with supplied login_params."""
         login_request = {
             "method": "login",
             "params": login_params,
@@ -191,7 +193,7 @@ class SslTransport(BaseTransport):
         _LOGGER.debug("Going to send login request")
 
         resp_dict = await self.send_request(request)
-        self._handle_response_error_code(resp_dict, "Error logging in")
+        await self._handle_response_error_code(resp_dict, "Error logging in")
 
         login_token = resp_dict["result"]["token"]
         self._app_url = self._app_url.with_query(f"token={login_token}")
@@ -209,7 +211,7 @@ class SslTransport(BaseTransport):
 
     async def send(self, request: str) -> dict[str, Any]:
         """Send the request."""
-        _LOGGER.debug("Going to send %s", request)
+        _LOGGER.info("Going to send %s", request)
         if self._state is not TransportState.ESTABLISHED or self._session_expired():
             _LOGGER.debug("Transport not established or session expired, logging in")
             await self.perform_login()
@@ -224,3 +226,4 @@ class SslTransport(BaseTransport):
     async def reset(self) -> None:
         """Reset internal login state."""
         self._state = TransportState.LOGIN_REQUIRED
+        self._app_url = URL(f"https://{self._host}:{self._port}/app")
