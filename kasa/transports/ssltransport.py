@@ -51,7 +51,7 @@ class TransportState(Enum):
 
 
 class SslTransport(BaseTransport):
-    """Implementation of the cleartext transport protocol.
+    """Implementation of the clear-text passthrough transport.
 
     This transport uses HTTPS without any further payload encryption.
     """
@@ -131,12 +131,10 @@ class SslTransport(BaseTransport):
 
     async def send_request(self, request: str) -> dict[str, Any]:
         """Send request."""
-        url = self._app_url
-
-        _LOGGER.debug("Sending %s to %s", request, url)
+        _LOGGER.debug("Sending %s to %s", request, self._app_url)
 
         status_code, resp_dict = await self._http_client.post(
-            url,
+            self._app_url,
             json=request,
             headers=self.COMMON_HEADERS,
         )
@@ -184,7 +182,7 @@ class SslTransport(BaseTransport):
                 ) from ex
 
     async def try_login(self, login_params: dict[str, Any]) -> None:
-        """Try to login with supplied login_params."""
+        """Try to log in with supplied params."""
         login_request = {
             "method": "login",
             "params": login_params,
@@ -211,7 +209,7 @@ class SslTransport(BaseTransport):
 
     async def send(self, request: str) -> dict[str, Any]:
         """Send the request."""
-        _LOGGER.info("Going to send %s", request)
+        _LOGGER.debug("Going to send %s", request)
         if self._state is not TransportState.ESTABLISHED or self._session_expired():
             _LOGGER.debug("Transport not established or session expired, logging in")
             await self.perform_login()
