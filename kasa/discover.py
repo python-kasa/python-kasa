@@ -757,6 +757,13 @@ class Discover:
             ):
                 encrypt_type = encrypt_info.sym_schm
 
+            if (
+                not (login_version := encrypt_schm.lv)
+                and (et := discovery_result.encrypt_type)
+                and et == ["3"]
+            ):
+                login_version = 2
+
             if not encrypt_type:
                 raise UnsupportedDeviceError(
                     f"Unsupported device {config.host} of type {type_} "
@@ -767,7 +774,7 @@ class Discover:
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
                 encrypt_type,
-                discovery_result.mgt_encrypt_schm.lv,
+                login_version,
                 discovery_result.mgt_encrypt_schm.is_support_https,
             )
         except KasaException as ex:
