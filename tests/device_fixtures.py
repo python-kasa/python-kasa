@@ -124,6 +124,7 @@ DIMMERS = {
 HUBS_SMART = {"H100", "KH100"}
 SENSORS_SMART = {"T310", "T315", "T300", "T100", "T110", "S200B", "S200D"}
 THERMOSTATS_SMART = {"KE100"}
+VACUUMS_SMART = {"RV30"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "P110M", "P115", "KP125M", "EP25", "P304M"}
@@ -142,6 +143,7 @@ ALL_DEVICES_SMART = (
     .union(SENSORS_SMART)
     .union(SWITCHES_SMART)
     .union(THERMOSTATS_SMART)
+    .union(VACUUMS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -310,6 +312,9 @@ dimmers_smart = parametrize(
 hubs_smart = parametrize(
     "hubs smart", model_filter=HUBS_SMART, protocol_filter={"SMART"}
 )
+vacuums_smart = parametrize(
+    "vacuums smart", model_filter=VACUUMS_SMART, protocol_filter={"SMART"}
+)
 sensors_smart = parametrize(
     "sensors smart", model_filter=SENSORS_SMART, protocol_filter={"SMART.CHILD"}
 )
@@ -351,15 +356,15 @@ def check_categories():
         + thermostats_smart.args[1]
         + camera_smartcam.args[1]
         + hub_smartcam.args[1]
+        + vacuums_smart.args[1]
     )
     diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
-        print(diffs)
         for diff in diffs:
             print(
                 f"No category for file {diff.name} protocol {diff.protocol}, add to the corresponding set (BULBS, PLUGS, ..)"
             )
-        raise Exception(f"Missing category for {diff.name}")
+        raise Exception(f"Missing category for {diffs}")
 
 
 check_categories()

@@ -847,7 +847,8 @@ def get_smart_child_fixture(response):
     model_info = SmartDevice._get_device_info(response, None)
     hw_version = model_info.hardware_version
     fw_version = model_info.firmware_version
-    model = model_info.long_name
+    # Vacuum models can have a space in their name
+    model = model_info.long_name.replace(" ", "_")
     if model_info.region is not None:
         model = f"{model}({model_info.region})"
     save_filename = f"{model}_{hw_version}_{fw_version}.json"
