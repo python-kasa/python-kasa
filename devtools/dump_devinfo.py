@@ -157,6 +157,8 @@ def scrub(res):
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
+                elif k in ["map_data"]:  #
+                    v = "#SCRUBBED_MAPDATA#"
                 elif k in ["device_id", "dev_id"] and "SCRUBBED" in v:
                     pass  # already scrubbed
                 elif k == ["device_id", "dev_id"] and len(v) > 40:

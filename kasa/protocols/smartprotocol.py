@@ -54,8 +54,6 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "mfi_setup_id": None,
     "mfi_token_token": None,
     "mfi_token_uuid": None,
-    # Vacuum
-    "map_data": None,
 }
 
 
