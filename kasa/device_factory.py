@@ -156,6 +156,7 @@ def get_device_class_from_family(
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
         "SMART.IPCAMERA.HTTPS": SmartCamDevice,
+        "SMART.TAPOROBOVAC": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
     }
@@ -191,7 +192,6 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
-        "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
         "SMART.AES.HTTPS.2": (SmartCamProtocol, SslAesTransport),
         "SMART.AES.HTTPS": (SmartProtocol, SslTransport),
     }
