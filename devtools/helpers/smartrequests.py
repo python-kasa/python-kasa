@@ -428,7 +428,7 @@ COMPONENT_REQUESTS = {
     # Vacuum components
     "clean": [
         SmartRequest.get_raw_request("getCleanRecords"),
-        SmartRequest.get_raw_request("getVacState"),
+        SmartRequest.get_raw_request("getVacStatus"),
     ],
     "battery": [SmartRequest.get_raw_request("getBatteryInfo")],
     "consumables": [SmartRequest.get_raw_request("getConsumablesInfo")],
