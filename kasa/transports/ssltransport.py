@@ -73,6 +73,7 @@ class SslTransport(BaseTransport):
             not self._credentials or self._credentials.username is None
         ) and not self._credentials_hash:
             self._credentials = Credentials()
+
         if self._credentials:
             self._login_params = self._get_login_params(self._credentials)
         else:
@@ -164,11 +165,14 @@ class SslTransport(BaseTransport):
             try:
                 if aex.error_code is not SmartErrorCode.LOGIN_ERROR:
                     raise aex
+
+                _LOGGER.debug("Login failed, going to try default credentials")
                 if self._default_credentials is None:
                     self._default_credentials = get_default_credentials(
                         DEFAULT_CREDENTIALS["TAPO"]
                     )
                     await asyncio.sleep(self.BACKOFF_SECONDS_AFTER_LOGIN_ERROR)
+
                 await self.try_login(self._get_login_params(self._default_credentials))
                 _LOGGER.debug(
                     "%s: logged in with default credentials",

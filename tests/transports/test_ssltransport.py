@@ -13,8 +13,10 @@ from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_crede
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     AuthenticationError,
+    DeviceError,
     KasaException,
     SmartErrorCode,
+    _RetryableError,
 )
 from kasa.httpclient import HttpClient
 from kasa.json import dumps as json_dumps
@@ -29,7 +31,6 @@ MOCK_PWD = "correct_pwd"  # noqa: S105
 MOCK_USER = "mock@example.com"
 MOCK_BAD_USER_OR_PWD = "foobar"  # noqa: S105
 MOCK_TOKEN = "abcdefghijklmnopqrstuvwxyz1234)("  # noqa: S105
-MOCK_ERROR_CODE = -10_000
 
 DEFAULT_CREDS = get_default_credentials(DEFAULT_CREDENTIALS["TAPO"])
 
@@ -46,10 +47,33 @@ _LOGGER = logging.getLogger(__name__)
         "expectation",
     ),
     [
-        pytest.param(200, 0, MOCK_USER, MOCK_PWD, does_not_raise(), id="success"),
+        pytest.param(
+            200,
+            SmartErrorCode.SUCCESS,
+            MOCK_USER,
+            MOCK_PWD,
+            does_not_raise(),
+            id="success",
+        ),
+        pytest.param(
+            200,
+            SmartErrorCode.UNSPECIFIC_ERROR,
+            MOCK_USER,
+            MOCK_PWD,
+            pytest.raises(_RetryableError),
+            id="test retry",
+        ),
+        pytest.param(
+            200,
+            SmartErrorCode.DEVICE_BLOCKED,
+            MOCK_USER,
+            MOCK_PWD,
+            pytest.raises(DeviceError),
+            id="test regular error",
+        ),
         pytest.param(
             400,
-            MOCK_ERROR_CODE,
+            SmartErrorCode.INTERNAL_UNKNOWN_ERROR,
             MOCK_USER,
             MOCK_PWD,
             pytest.raises(KasaException),
@@ -57,7 +81,7 @@ _LOGGER = logging.getLogger(__name__)
         ),
         pytest.param(
             200,
-            MOCK_ERROR_CODE,
+            SmartErrorCode.LOGIN_ERROR,
             MOCK_BAD_USER_OR_PWD,
             MOCK_PWD,
             pytest.raises(AuthenticationError),
@@ -65,11 +89,35 @@ _LOGGER = logging.getLogger(__name__)
         ),
         pytest.param(
             200,
-            MOCK_ERROR_CODE,
+            [SmartErrorCode.LOGIN_ERROR, SmartErrorCode.SUCCESS],
+            MOCK_BAD_USER_OR_PWD,
+            "",
+            does_not_raise(),
+            id="working-fallback",
+        ),
+        pytest.param(
+            200,
+            [SmartErrorCode.LOGIN_ERROR, SmartErrorCode.LOGIN_ERROR],
+            MOCK_BAD_USER_OR_PWD,
+            "",
+            pytest.raises(AuthenticationError),
+            id="fallback-fail",
+        ),
+        pytest.param(
+            200,
+            SmartErrorCode.LOGIN_ERROR,
             MOCK_USER,
             MOCK_BAD_USER_OR_PWD,
             pytest.raises(AuthenticationError),
             id="bad-password",
+        ),
+        pytest.param(
+            200,
+            SmartErrorCode.TRANSPORT_UNKNOWN_CREDENTIALS_ERROR,
+            MOCK_USER,
+            MOCK_PWD,
+            pytest.raises(AuthenticationError),
+            id="auth-error != login_error",
         ),
     ],
 )
@@ -100,6 +148,8 @@ async def test_login(
         await transport.perform_login()
         assert transport._state is TransportState.ESTABLISHED
 
+    await transport.close()
+
 
 async def test_credentials_hash(mocker):
     host = "127.0.0.1"
@@ -121,10 +171,12 @@ async def test_credentials_hash(mocker):
     transport = SslTransport(config=DeviceConfig(host, credentials_hash=creds_hash))
     assert transport.credentials_hash == creds_hash
 
+    await transport.close()
+
 
 async def test_send(mocker):
     host = "127.0.0.1"
-    mock_ssl_aes_device = MockSslDevice(host)
+    mock_ssl_aes_device = MockSslDevice(host, send_error_code=SmartErrorCode.SUCCESS)
     mocker.patch.object(
         aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
     )
@@ -132,13 +184,69 @@ async def test_send(mocker):
     transport = SslTransport(
         config=DeviceConfig(host, credentials=Credentials(MOCK_USER, MOCK_PWD))
     )
+    try_login_spy = mocker.spy(transport, "try_login")
     request = {
         "method": "get_device_info",
         "params": None,
     }
+    assert transport._state is TransportState.LOGIN_REQUIRED
 
     res = await transport.send(json_dumps(request))
     assert "result" in res
+    try_login_spy.assert_called_once()
+    assert transport._state is TransportState.ESTABLISHED
+
+    # Second request does not
+    res = await transport.send(json_dumps(request))
+    try_login_spy.assert_called_once()
+
+    await transport.close()
+
+
+async def test_no_credentials(mocker):
+    """Test transport without credentials."""
+    host = "127.0.0.1"
+    mock_ssl_aes_device = MockSslDevice(
+        host, send_error_code=SmartErrorCode.LOGIN_ERROR
+    )
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    transport = SslTransport(config=DeviceConfig(host))
+    try_login_spy = mocker.spy(transport, "try_login")
+
+    with pytest.raises(AuthenticationError):
+        await transport.send('{"method": "dummy"}')
+
+    # We get called twice
+    assert try_login_spy.call_count == 2
+
+    await transport.close()
+
+
+async def test_reset(mocker):
+    """Test that transport state adjusts correctly for reset."""
+    host = "127.0.0.1"
+    mock_ssl_aes_device = MockSslDevice(host, send_error_code=SmartErrorCode.SUCCESS)
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    transport = SslTransport(
+        config=DeviceConfig(host, credentials=Credentials(MOCK_USER, MOCK_PWD))
+    )
+
+    assert transport._state is TransportState.LOGIN_REQUIRED
+    assert str(transport._app_url) == "https://127.0.0.1:4433/app"
+
+    await transport.perform_login()
+    assert transport._state is TransportState.ESTABLISHED
+    assert str(transport._app_url).startswith("https://127.0.0.1:4433/app?token=")
+
+    await transport.close()
+    assert transport._state is TransportState.LOGIN_REQUIRED
+    assert str(transport._app_url) == "https://127.0.0.1:4433/app"
 
 
 async def test_port_override():
@@ -151,6 +259,8 @@ async def test_port_override():
     transport = SslTransport(config=config)
 
     assert str(transport._app_url) == f"https://127.0.0.1:{port_override}/app"
+
+    await transport.close()
 
 
 class MockSslDevice:
@@ -177,7 +287,7 @@ class MockSslDevice:
         host,
         *,
         status_code=200,
-        send_error_code=0,
+        send_error_code=SmartErrorCode.INTERNAL_UNKNOWN_ERROR,
     ):
         self.host = host
         self.http_client = HttpClient(DeviceConfig(self.host))
@@ -215,22 +325,40 @@ class MockSslDevice:
         request_username = request["params"].get("username")
         request_password = request["params"].get("password")
 
-        if (
-            request_username == MOCK_BAD_USER_OR_PWD
-            or request_username == DEFAULT_CREDS.username
-        ) or (
-            request_password == _md5_hash(MOCK_BAD_USER_OR_PWD.encode())
-            or request_password == _md5_hash(DEFAULT_CREDS.password.encode())
-        ):
+        _LOGGER.warning("error codes: %s", self.send_error_code)
+        # Handle multiple error codes
+        if isinstance(self.send_error_code, list):
+            error_code = self.send_error_code.pop(0)
+        else:
+            error_code = self.send_error_code
+
+        _LOGGER.warning("using error code %s", error_code)
+
+        def _return_login_error():
             resp = {
-                "error_code": SmartErrorCode.LOGIN_ERROR.value,
+                "error_code": error_code.value,
                 "result": {"unknown": "payload"},
             }
+
             _LOGGER.debug("Returning login error with status %s", self.status_code)
             return self._mock_response(self.status_code, resp)
 
+        if error_code is not SmartErrorCode.SUCCESS:
+            # Bad username
+            if request_username == MOCK_BAD_USER_OR_PWD:
+                return _return_login_error()
+
+            # Bad password
+            if request_password == _md5_hash(MOCK_BAD_USER_OR_PWD.encode()):
+                return _return_login_error()
+
+            # Empty password
+            if request_password == _md5_hash(b""):
+                return _return_login_error()
+
+        self._state = TransportState.ESTABLISHED
         resp = {
-            "error_code": SmartErrorCode.SUCCESS.value,
+            "error_code": error_code.value,
             "result": {
                 "token": MOCK_TOKEN,
             },
@@ -242,6 +370,6 @@ class MockSslDevice:
         method = json["method"]
         result = {
             "result": {method: {"dummy": "response"}},
-            "error_code": self.send_error_code,
+            "error_code": self.send_error_code.value,
         }
         return self._mock_response(self.status_code, result)
