@@ -1,4 +1,4 @@
-"""Implementation of vacuum (experimental)."""
+"""Implementation of vacuum."""
 
 from __future__ import annotations
 
@@ -30,11 +30,11 @@ class Status(IntEnum):
 
 
 class Vacuum(SmartModule):
-    """Implementation of experimental vacuum support."""
+    """Implementation of vacuum support."""
 
     REQUIRED_COMPONENT = "clean"
 
-    def __init__(self, device: SmartDevice, module: str):
+    def __init__(self, device: SmartDevice, module: str) -> None:
         super().__init__(device, module)
         self._add_feature(
             Feature(
@@ -85,7 +85,7 @@ class Vacuum(SmartModule):
         """Query to execute during the update cycle."""
         return {"getVacStatus": None}
 
-    async def start(self) -> None:
+    async def start(self) -> dict:
         """Start cleaning."""
         # If we are paused, do not restart cleaning
 
@@ -103,23 +103,23 @@ class Vacuum(SmartModule):
             },
         )
 
-    async def pause(self):
+    async def pause(self) -> dict:
         """Pause cleaning."""
         return await self.set_pause(True)
 
-    async def resume(self):
+    async def resume(self) -> dict:
         """Resume cleaning."""
         return await self.set_pause(False)
 
-    async def set_pause(self, enabled: bool) -> None:
+    async def set_pause(self, enabled: bool) -> dict:
         """Pause or resume cleaning."""
         return await self.call("setRobotPause", {"pause": enabled})
 
-    async def return_home(self):
+    async def return_home(self) -> dict:
         """Return home."""
         return await self.set_return_home(True)
 
-    async def set_return_home(self, enabled: bool) -> None:
+    async def set_return_home(self, enabled: bool) -> dict:
         """Return home / pause returning."""
         return await self.call("setSwitchCharge", {"switch_charge": enabled})
 
@@ -128,9 +128,10 @@ class Vacuum(SmartModule):
         """Return current status."""
         if self.data.get("err_status"):
             return Status.Error
+
         status_code = self.data["status"]
         try:
             return Status(status_code)
-        except Exception:
+        except ValueError:
             _LOGGER.warning("Got unknown status code: %s (%s)", status_code, self.data)
             return Status.Unknown
