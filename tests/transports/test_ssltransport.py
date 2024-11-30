@@ -301,9 +301,9 @@ class MockSslDevice:
     async def post(self, url: URL, params=None, json=None, data=None, *_, **__):
         if data:
             json = json_loads(data)
-        _LOGGER.warning("Request %s: %s", url, json)
+        _LOGGER.debug("Request %s: %s", url, json)
         res = self._post(url, json)
-        _LOGGER.warning("Response %s, data: %s", res, await res.read())
+        _LOGGER.debug("Response %s, data: %s", res, await res.read())
         return res
 
     def _post(self, url: URL, json: dict[str, Any]):
@@ -325,14 +325,13 @@ class MockSslDevice:
         request_username = request["params"].get("username")
         request_password = request["params"].get("password")
 
-        _LOGGER.warning("error codes: %s", self.send_error_code)
         # Handle multiple error codes
         if isinstance(self.send_error_code, list):
             error_code = self.send_error_code.pop(0)
         else:
             error_code = self.send_error_code
 
-        _LOGGER.warning("using error code %s", error_code)
+        _LOGGER.debug("Using error code %s", error_code)
 
         def _return_login_error():
             resp = {
