@@ -39,8 +39,8 @@ class Vacuum(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "return_home",
-                "Return home",
+                id="vacuum_return_home",
+                name="Return home",
                 container=self,
                 attribute_setter="return_home",
                 category=Feature.Category.Primary,
@@ -50,8 +50,8 @@ class Vacuum(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "start_cleaning",
-                "Start cleaning",
+                id="vacuum_start",
+                name="Start cleaning",
                 container=self,
                 attribute_setter="start",
                 category=Feature.Category.Primary,
@@ -61,8 +61,8 @@ class Vacuum(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "pause",
-                "Pause",
+                id="vacuum_pause",
+                name="Pause",
                 container=self,
                 attribute_setter="pause",
                 category=Feature.Category.Primary,
@@ -72,8 +72,8 @@ class Vacuum(SmartModule):
         self._add_feature(
             Feature(
                 device,
-                "status",
-                "Vacuum state",
+                id="vacuum_status",
+                name="Vacuum status",
                 container=self,
                 attribute_getter="status",
                 category=Feature.Category.Primary,
