@@ -80,10 +80,23 @@ class Vacuum(SmartModule):
                 type=Feature.Type.Sensor,
             )
         )
+        self._add_feature(
+            Feature(
+                self._device,
+                "battery_level",
+                "Battery level",
+                container=self,
+                attribute_getter="battery",
+                icon="mdi:battery",
+                unit_getter=lambda: "%",
+                category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
+            )
+        )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {"getVacStatus": None}
+        return {"getVacStatus": None, "getBatteryInfo": None}
 
     async def start(self) -> dict:
         """Start cleaning."""
@@ -124,12 +137,22 @@ class Vacuum(SmartModule):
         return await self.call("setSwitchCharge", {"switch_charge": enabled})
 
     @property
+    def battery(self) -> int:
+        """Return battery level."""
+        return self.data["getBatteryInfo"]["battery_percentage"]
+
+    @property
+    def _vac_status(self) -> dict:
+        """Return vac status container."""
+        return self.data["getVacStatus"]
+
+    @property
     def status(self) -> Status:
         """Return current status."""
-        if self.data.get("err_status"):
+        if self._vac_status.get("err_status"):
             return Status.Error
 
-        status_code = self.data["status"]
+        status_code = self._vac_status["status"]
         try:
             return Status(status_code)
         except ValueError:
