@@ -3,11 +3,64 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from datetime import timedelta
 
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class Consumable:
+    """Consumable container."""
+
+    #: Name of the consumable.
+    name: str
+    #: Feature base name
+    feature_basename: str
+    #: Data key in the device reported data
+    data_key: str
+    #: Lifetime
+    lifetime: timedelta
+
+
+CONSUMABLES = [
+    # TODO: there is also main_brush_roll, which one to use?
+    Consumable(
+        "Main brush",
+        feature_basename="main_brush",
+        data_key="main_brush_lid_time",
+        lifetime=timedelta(hours=400),
+    ),
+    Consumable(
+        "Side brush",
+        feature_basename="side_brush",
+        data_key="edge_brush_time",
+        lifetime=timedelta(hours=200),
+    ),
+    Consumable(
+        "Filter",
+        feature_basename="filter",
+        data_key="filter_time",
+        lifetime=timedelta(hours=200),
+    ),
+    Consumable(
+        "Sensor",
+        feature_basename="sensor",
+        data_key="sensor_time",
+        lifetime=timedelta(hours=30),
+    ),
+    Consumable(
+        "Charging contacts",
+        feature_basename="contacts",
+        data_key="charge_contact_time",
+        lifetime=timedelta(hours=30),
+    ),
+    # unknown data, does not seem to be mop used
+    # Consumable("Rag", key="rag_time", lifetime=timedelta(hours=30))
+]
 
 
 class VacuumConsumables(SmartModule):
@@ -18,115 +71,33 @@ class VacuumConsumables(SmartModule):
 
     def _initialize_features(self) -> None:
         """Initialize features."""
-        self._add_feature(
-            Feature(
-                self._device,
-                id="consumable_charge_contact",
-                name="Charge contact time",
-                container=self,
-                attribute_getter="charge_contact",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="consumable_main_brush_lid",
-                name="Main brush lid time",
-                container=self,
-                attribute_getter="main_brush_lid",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="consumable_edge_brush",
-                name="Edge brush time",
-                container=self,
-                attribute_getter="edge_brush",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="consumable_roll_brush",
-                name="Roll brush time",
-                container=self,
-                attribute_getter="roll_brush",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="consumable_filter",
-                name="Filter time",
-                container=self,
-                attribute_getter="filter",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="consumable_rag",
-                name="Rag time",
-                container=self,
-                attribute_getter="rag",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="consumable_sensor",
-                name="Sensor time",
-                container=self,
-                attribute_getter="sensor",
-                category=Feature.Category.Info,
-                type=Feature.Type.Sensor,
-            )
-        )
+        for consumable in CONSUMABLES:
+            if consumable.data_key not in self.data:
+                continue
 
-    @property
-    def charge_contact(self) -> int:
-        """Time disconnected from charger?"""
-        return self.data["charge_contact_time"]
+            self._add_feature(
+                Feature(
+                    self._device,
+                    id=f"vacuum_{consumable.feature_basename}_used",
+                    name=f"{consumable.name} used",
+                    container=self.data,
+                    attribute_getter=lambda container: timedelta(
+                        minutes=getattr(container, consumable.data_key)
+                    ),
+                    category=Feature.Category.Debug,
+                    type=Feature.Type.Sensor,
+                )
+            )
 
-    @property
-    def main_brush_lid(self) -> int:
-        """Main brush time? Or something else?"""
-        return self.data["main_brush_lid_time"]
-
-    @property
-    def edge_brush(self) -> int:
-        """Edge brush time."""
-        return self.data["edge_brush_time"]
-
-    @property
-    def roll_brush(self) -> int:
-        """Roll brush time."""
-        return self.data["roll_brush_time"]
-
-    @property
-    def filter(self) -> int:
-        """Filter time."""
-        return self.data["filter_time"]
-
-    @property
-    def rag(self) -> int:
-        """Rag time."""
-        return self.data["rag_time"]
-
-    @property
-    def sensor(self) -> int:
-        """Sensor time.."""
-        return self.data["sensor_time"]
+            self._add_feature(
+                Feature(
+                    self._device,
+                    id=f"vacuum_{consumable.feature_basename}_remaining",
+                    name=f"{consumable.name} remaining",
+                    container=self.data,
+                    attribute_getter=lambda container: consumable.lifetime
+                    - timedelta(minutes=getattr(container, consumable.data_key)),
+                    category=Feature.Category.Info,
+                    type=Feature.Type.Sensor,
+                )
+            )
