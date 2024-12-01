@@ -81,8 +81,8 @@ class VacuumConsumables(SmartModule):
                     id=f"vacuum_{consumable.feature_basename}_used",
                     name=f"{consumable.name} used",
                     container=self.data,
-                    attribute_getter=lambda container: timedelta(
-                        minutes=getattr(container, consumable.data_key)
+                    attribute_getter=lambda container, item=consumable: timedelta(
+                        minutes=getattr(container, item.data_key)
                     ),
                     category=Feature.Category.Debug,
                     type=Feature.Type.Sensor,
@@ -95,8 +95,8 @@ class VacuumConsumables(SmartModule):
                     id=f"vacuum_{consumable.feature_basename}_remaining",
                     name=f"{consumable.name} remaining",
                     container=self.data,
-                    attribute_getter=lambda container: consumable.lifetime
-                    - timedelta(minutes=getattr(container, consumable.data_key)),
+                    attribute_getter=lambda container, item=consumable: item.lifetime
+                    - timedelta(minutes=getattr(container, item.data_key)),
                     category=Feature.Category.Info,
                     type=Feature.Type.Sensor,
                 )
