@@ -692,6 +692,8 @@ async def test_credentials(discovery_mock, mocker, runner):
             dr.device_type,
             "--encrypt-type",
             dr.mgt_encrypt_schm.encrypt_type,
+            "--login-version",
+            dr.mgt_encrypt_schm.lv or 1,
         ],
     )
     assert res.exit_code == 0

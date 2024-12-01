@@ -47,7 +47,10 @@ def _get_connection_type_device_class(discovery_info):
         dr = DiscoveryResult.from_dict(discovery_info["result"])
 
         connection_type = DeviceConnectionParameters.from_values(
-            dr.device_type, dr.mgt_encrypt_schm.encrypt_type
+            dr.device_type,
+            dr.mgt_encrypt_schm.encrypt_type,
+            dr.mgt_encrypt_schm.lv,
+            dr.mgt_encrypt_schm.is_support_https,
         )
     else:
         connection_type = DeviceConnectionParameters.from_values(
