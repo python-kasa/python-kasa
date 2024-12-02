@@ -101,3 +101,24 @@ class VacuumConsumables(SmartModule):
                     type=Feature.Type.Sensor,
                 )
             )
+
+            self._add_feature(
+                Feature(
+                    self._device,
+                    id=f"vacuum_{consumable.feature_basename}_reset",
+                    name=f"Reset {consumable.name}",
+                    container=self.data,
+                    attribute_setter=lambda _, item=consumable: self.reset_consumable(
+                        item
+                    ),
+                    category=Feature.Category.Info,
+                    type=Feature.Type.Action,
+                )
+            )
+
+    async def reset_consumable(self, consumable: Consumable) -> dict:
+        """Reset consumable stats."""
+        consumable_name = consumable.data_key.removesuffix("_time")
+        return await self.call(
+            "resetConsumablesTime", {"reset_list": [consumable_name]}
+        )
