@@ -27,11 +27,11 @@ class Consumable:
 
 
 CONSUMABLES = [
-    # TODO: there is also main_brush_roll, which one to use?
+    # TODO: there is also main_brush_lid_time
     Consumable(
         "Main brush",
         feature_basename="main_brush",
-        data_key="main_brush_lid_time",
+        data_key="roll_brush_time",
         lifetime=timedelta(hours=400),
     ),
     Consumable(
