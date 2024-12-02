@@ -29,6 +29,15 @@ class Status(IntEnum):
     Unknown = 101
 
 
+class FanSpeed(IntEnum):
+    """Fan speed level."""
+
+    Quiet = 1
+    Standard = 2
+    Turbo = 3
+    Max = 4
+
+
 class Vacuum(SmartModule):
     """Implementation of vacuum support."""
 
@@ -83,8 +92,8 @@ class Vacuum(SmartModule):
         self._add_feature(
             Feature(
                 self._device,
-                "battery_level",
-                "Battery level",
+                id="battery_level",
+                name="Battery level",
                 container=self,
                 attribute_getter="battery",
                 icon="mdi:battery",
@@ -94,9 +103,29 @@ class Vacuum(SmartModule):
             )
         )
 
+        self._add_feature(
+            Feature(
+                self._device,
+                id="vacuum_fan_speed",
+                name="Fan speed",
+                container=self,
+                attribute_getter="fan_speed",
+                attribute_setter="set_fan_speed",
+                icon="mdi:fan",
+                choices_getter=lambda: list([str(speed) for speed in FanSpeed]),
+                category=Feature.Category.Primary,
+                type=Feature.Type.Choice,
+            )
+        )
+
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {"getVacStatus": None, "getBatteryInfo": None}
+        return {
+            "getVacStatus": None,
+            "getBatteryInfo": None,
+            "getCleanStatus": None,
+            "getCleanAttr": {"type": "global"},
+        }
 
     async def start(self) -> dict:
         """Start cleaning."""
@@ -135,6 +164,20 @@ class Vacuum(SmartModule):
     async def set_return_home(self, enabled: bool) -> dict:
         """Return home / pause returning."""
         return await self.call("setSwitchCharge", {"switch_charge": enabled})
+
+    @property
+    def fan_speed_preset(self) -> str:
+        """Return fan speed preset."""
+        return FanSpeed(self.data["getCleanAttr"]["suction"]).name
+
+    async def set_fan_speed_preset(self, speed: str) -> dict:
+        """Set fan speed preset."""
+        name_to_value = {x.name.lower(): x.value for x in FanSpeed}
+        if speed not in name_to_value:
+            raise ValueError("Invalid fan speed %s, available %s", speed, name_to_value)
+        return await self.call(
+            "setCleanAttr", {"suction": name_to_value[speed], "type": "global"}
+        )
 
     @property
     def battery(self) -> int:
