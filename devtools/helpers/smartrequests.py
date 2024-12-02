@@ -33,6 +33,35 @@ from dataclasses import asdict, dataclass
 _LOGGER = logging.getLogger(__name__)
 
 
+@dataclass
+class SmartRequestParams:
+    """Base class for Smart request params.
+
+    The to_dict() method of this class omits null values which
+    is required by the devices.
+    """
+
+    def to_dict(self):
+        """Return the params as a dict with values of None omitted."""
+        return asdict(
+            self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
+        )
+
+
+@dataclass
+class GetCleanAttrParams(SmartRequestParams):
+    """Get clean attr parameters."""
+
+    type: str  # global: normal, pose: spot cleaning
+
+
+@dataclass
+class GetMapDataParams(SmartRequestParams):
+    """Map data parameters."""
+
+    id: int
+
+
 class SmartRequest:
     """Class to represent a smart protocol request."""
 
@@ -49,20 +78,6 @@ class SmartRequest:
     def to_dict(self):
         """Return the request as a dict suitable for passing to query()."""
         return {self.method_name: self.params}
-
-    @dataclass
-    class SmartRequestParams:
-        """Base class for Smart request params.
-
-        The to_dict() method of this class omits null values which
-        is required by the devices.
-        """
-
-        def to_dict(self):
-            """Return the params as a dict with values of None ommited."""
-            return asdict(
-                self, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
-            )
 
     @dataclass
     class DeviceOnParams(SmartRequestParams):
@@ -291,9 +306,7 @@ class SmartRequest:
         params: SmartRequestParams | None = None,
     ) -> SmartRequest:
         """Get preset rules."""
-        return SmartRequest(
-            "get_on_off_gradually_info", params or SmartRequest.SmartRequestParams()
-        )
+        return SmartRequest("get_on_off_gradually_info", params or SmartRequestParams())
 
     @staticmethod
     def get_auto_light_info() -> SmartRequest:
@@ -429,23 +442,32 @@ COMPONENT_REQUESTS = {
     "clean": [
         SmartRequest.get_raw_request("getCleanRecords"),
         SmartRequest.get_raw_request("getVacStatus"),
+        SmartRequest.get_raw_request("getCleanStatus"),
+        SmartRequest.get_raw_request("getCleanAttr", GetCleanAttrParams(type="global")),
+        SmartRequest.get_raw_request("getCleanAttr", GetCleanAttrParams(type="pose")),
     ],
     "battery": [SmartRequest.get_raw_request("getBatteryInfo")],
     "consumables": [SmartRequest.get_raw_request("getConsumablesInfo")],
     "direction_control": [],
-    "button_and_led": [],
+    "button_and_led": [SmartRequest.get_raw_request("getChildLockInfo")],
     "speaker": [
         SmartRequest.get_raw_request("getSupportVoiceLanguage"),
         SmartRequest.get_raw_request("getCurrentVoiceLanguage"),
+        SmartRequest.get_raw_request("getVolume"),
     ],
     "map": [
         SmartRequest.get_raw_request("getMapInfo"),
-        SmartRequest.get_raw_request("getMapData"),
+        SmartRequest.get_raw_request("getAreaUnit"),
+        SmartRequest.get_raw_request("getMapData", GetMapDataParams(id=-1)),
     ],
     "auto_change_map": [SmartRequest.get_raw_request("getAutoChangeMap")],
-    "dust_bucket": [SmartRequest.get_raw_request("getAutoDustCollection")],
+    "dust_bucket": [
+        SmartRequest.get_raw_request("getAutoDustCollection"),
+        SmartRequest.get_raw_request("getDustCollectionInfo"),
+    ],
     "mop": [SmartRequest.get_raw_request("getMopState")],
     "do_not_disturb": [SmartRequest.get_raw_request("getDoNotDisturb")],
+    "carpet_area": [SmartRequest.get_raw_request("getCarpetClean")],
     "charge_pose_clean": [],
     "continue_breakpoint_sweep": [],
     "goto_point": [],
