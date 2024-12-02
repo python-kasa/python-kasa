@@ -227,6 +227,7 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 ### Other related projects
 
 * [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
+  * [Home Assistant integration](https://github.com/JurajNyiri/HomeAssistant-Tapo-Control)
 * [Tapo P100 (Tapo plugs, Tapo bulbs)](https://github.com/fishbigger/TapoP100)
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
 * [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)
