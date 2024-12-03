@@ -54,8 +54,8 @@ class SmartModule(Module):
     NAME: str
     #: Module is initialized, if the given component is available
     REQUIRED_COMPONENT: str | None = None
-    #: Module is initialized, if the given key available in the main sysinfo
-    REQUIRED_KEY_ON_PARENT: str | None = None
+    #: Module is initialized, if any of the given keys is available in the main sysinfo
+    REQUIRED_KEY_ON_PARENT: str | list[str] | None = None
     #: Query to execute during the main update cycle
     QUERY_GETTER_NAME: str
 
