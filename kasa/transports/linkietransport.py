@@ -99,11 +99,13 @@ class LinkieTransportV2(BaseTransport):
             pass
 
         # Device returned error as json plaintext
+        to_raise: KasaException | None = None
         try:
             error_payload: dict = json_loads(response)
-            raise KasaException(f"Device {self._host} send error: {error_payload}")
+            to_raise = KasaException(f"Device {self._host} send error: {error_payload}")
         except Exception as ex:
             raise KasaException("Unable to read response") from ex
+        raise to_raise
 
     async def close(self) -> None:
         """Close the http client and reset internal state."""
