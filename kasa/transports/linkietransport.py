@@ -11,7 +11,7 @@ from urllib.parse import quote
 
 from yarl import URL
 
-from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
+from kasa.credentials import DEFAULT_CREDENTIALS, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException, _RetryableError
 from kasa.httpclient import HttpClient
@@ -60,8 +60,6 @@ class LinkieTransportV2(BaseTransport):
     @property
     def credentials_hash(self) -> str | None:
         """The hashed credentials used by the transport."""
-        if self._credentials == Credentials():
-            return None
         creds = get_default_credentials(DEFAULT_CREDENTIALS["KASACAMERA"])
         creds_combined = f"{creds.username}:{creds.password}"
         return base64.b64encode(creds_combined.encode()).decode()
