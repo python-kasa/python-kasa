@@ -27,6 +27,7 @@ from .motionsensor import MotionSensor
 from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
+from .thermostat import Thermostat
 from .time import Time
 from .triggerlogs import TriggerLogs
 from .waterleaksensor import WaterleakSensor
@@ -61,5 +62,6 @@ __all__ = [
     "MotionSensor",
     "TriggerLogs",
     "FrostProtection",
+    "Thermostat",
     "SmartLightEffect",
 ]

@@ -25,15 +25,16 @@ from .protocols import (
     IotProtocol,
     SmartProtocol,
 )
-from .protocols.smartcameraprotocol import SmartCameraProtocol
+from .protocols.smartcamprotocol import SmartCamProtocol
 from .smart import SmartDevice
-from .smartcamera.smartcamera import SmartCamera
+from .smartcam import SmartCamDevice
 from .transports import (
     AesTransport,
     BaseTransport,
     KlapTransport,
     KlapTransportV2,
     LinkieTransportV2,
+    SslTransport,
     XorTransport,
 )
 from .transports.sslaestransport import SslAesTransport
@@ -154,10 +155,11 @@ def get_device_class_from_family(
         "SMART.TAPOSWITCH": SmartDevice,
         "SMART.KASAPLUG": SmartDevice,
         "SMART.TAPOHUB": SmartDevice,
-        "SMART.TAPOHUB.HTTPS": SmartCamera,
+        "SMART.TAPOHUB.HTTPS": SmartCamDevice,
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
-        "SMART.IPCAMERA.HTTPS": SmartCamera,
+        "SMART.IPCAMERA.HTTPS": SmartCamDevice,
+        "SMART.TAPOROBOVAC": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
         "IOT.IPCAMERA": IotCamera,
@@ -168,7 +170,7 @@ def get_device_class_from_family(
         and device_type.startswith("SMART.")
         and not require_exact
     ):
-        _LOGGER.warning("Unknown SMART device with %s, using SmartDevice", device_type)
+        _LOGGER.debug("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
 
     return cls
@@ -180,12 +182,20 @@ def get_protocol(
     """Return the protocol from the connection name."""
     protocol_name = config.connection_type.device_family.value.split(".")[0]
     ctype = config.connection_type
+
     protocol_transport_key = (
         protocol_name
         + "."
         + ctype.encryption_type.value
         + (".HTTPS" if ctype.https else "")
+        + (
+            f".{ctype.login_version}"
+            if ctype.login_version and ctype.login_version > 1
+            else ""
+        )
     )
+
+    _LOGGER.debug("Finding transport for %s", protocol_transport_key)
     supported_device_protocols: dict[
         str, tuple[type[BaseProtocol], type[BaseTransport]]
     ] = {
@@ -193,8 +203,10 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "IOT.XOR.HTTPS": (IotProtocol, LinkieTransportV2),
         "SMART.AES": (SmartProtocol, AesTransport),
-        "SMART.KLAP": (SmartProtocol, KlapTransportV2),
-        "SMART.AES.HTTPS": (SmartCameraProtocol, SslAesTransport),
+        "SMART.AES.2": (SmartProtocol, AesTransport),
+        "SMART.KLAP.2": (SmartProtocol, KlapTransportV2),
+        "SMART.AES.HTTPS.2": (SmartCamProtocol, SslAesTransport),
+        "SMART.AES.HTTPS": (SmartProtocol, SslTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
         return None

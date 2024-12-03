@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device, LightState, Module
+from kasa import Device, LightState, Module, ThermostatState
 
 from .device_fixtures import (
     bulb_iot,
@@ -56,6 +56,12 @@ light_preset_smart = parametrize(
 light_preset = parametrize_combine([light_preset_smart, bulb_iot])
 
 light = parametrize_combine([bulb_smart, bulb_iot, dimmable])
+
+temp_control_smart = parametrize(
+    "has temp control smart",
+    component_filter="temp_control",
+    protocol_filter={"SMART.CHILD"},
+)
 
 
 @led
@@ -323,6 +329,39 @@ async def test_light_preset_save(dev: Device, mocker: MockerFixture):
     assert new_preset_state.hue == new_preset.hue
     assert new_preset_state.saturation == new_preset.saturation
     assert new_preset_state.color_temp == new_preset.color_temp
+
+
+@temp_control_smart
+async def test_thermostat(dev: Device, mocker: MockerFixture):
+    """Test saving a new preset value."""
+    therm_mod = next(get_parent_and_child_modules(dev, Module.Thermostat))
+    assert therm_mod
+
+    await therm_mod.set_state(False)
+    await dev.update()
+    assert therm_mod.state is False
+    assert therm_mod.mode is ThermostatState.Off
+
+    await therm_mod.set_target_temperature(10)
+    await dev.update()
+    assert therm_mod.state is True
+    assert therm_mod.mode is ThermostatState.Heating
+    assert therm_mod.target_temperature == 10
+
+    target_temperature_feature = therm_mod.get_feature(therm_mod.set_target_temperature)
+    temp_control = dev.modules.get(Module.TemperatureControl)
+    assert temp_control
+    allowed_range = temp_control.allowed_temperature_range
+    assert target_temperature_feature.minimum_value == allowed_range[0]
+    assert target_temperature_feature.maximum_value == allowed_range[1]
+
+    await therm_mod.set_temperature_unit("celsius")
+    await dev.update()
+    assert therm_mod.temperature_unit == "celsius"
+
+    await therm_mod.set_temperature_unit("fahrenheit")
+    await dev.update()
+    assert therm_mod.temperature_unit == "fahrenheit"
 
 
 async def test_set_time(dev: Device):

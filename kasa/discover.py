@@ -92,18 +92,19 @@ import struct
 from asyncio import timeout as asyncio_timeout
 from asyncio.transports import DatagramTransport
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pprint import pformat as pf
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     NamedTuple,
     cast,
 )
 
 from aiohttp import ClientSession
-from mashumaro import field_options
 from mashumaro.config import BaseConfig
+from mashumaro.types import Alias
 
 from kasa import Device
 from kasa.credentials import Credentials
@@ -155,6 +156,9 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
+    "master_device_id": lambda x: "REDACTED_" + x[9::],
+    "group_id": lambda x: "REDACTED_" + x[9::],
+    "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
 }
 
 
@@ -594,10 +598,12 @@ class Discover:
             for encrypt in Device.EncryptionType
             for device_family in main_device_families
             for https in (True, False)
+            for login_version in (None, 2)
             if (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
                     encryption_type=encrypt,
+                    login_version=login_version,
                     https=https,
                 )
             )
@@ -642,7 +648,11 @@ class Discover:
         """Find SmartDevice subclass for device described by passed data."""
         if "result" in info:
             discovery_result = DiscoveryResult.from_dict(info["result"])
-            https = discovery_result.mgt_encrypt_schm.is_support_https
+            https = (
+                discovery_result.mgt_encrypt_schm.is_support_https
+                if discovery_result.mgt_encrypt_schm
+                else False
+            )
             dev_class = get_device_class_from_family(
                 discovery_result.device_type, https=https
             )
@@ -715,6 +725,7 @@ class Discover:
             raise KasaException(
                 f"Unable to read response from device: {config.host}: {ex}"
             ) from ex
+
         try:
             discovery_result = DiscoveryResult.from_dict(info["result"])
         except Exception as ex:
@@ -733,6 +744,7 @@ class Discover:
                 f"Unable to parse discovery from device: {config.host}: {ex}",
                 host=config.host,
             ) from ex
+
         # Decrypt the data
         if (
             encrypt_info := discovery_result.encrypt_info
@@ -745,12 +757,27 @@ class Discover:
                 )
 
         type_ = discovery_result.device_type
-        encrypt_schm = discovery_result.mgt_encrypt_schm
+        if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {config.host} of type {type_} "
+                "with no mgt_encrypt_schm",
+                discovery_result=discovery_result.to_dict(),
+                host=config.host,
+            )
+
         try:
             if not (encrypt_type := encrypt_schm.encrypt_type) and (
                 encrypt_info := discovery_result.encrypt_info
             ):
                 encrypt_type = encrypt_info.sym_schm
+
+            if (
+                not (login_version := encrypt_schm.lv)
+                and (et := discovery_result.encrypt_type)
+                and et == ["3"]
+            ):
+                login_version = 2
+
             if not encrypt_type:
                 raise UnsupportedDeviceError(
                     f"Unsupported device {config.host} of type {type_} "
@@ -761,29 +788,31 @@ class Discover:
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
                 encrypt_type,
-                discovery_result.mgt_encrypt_schm.lv,
-                discovery_result.mgt_encrypt_schm.is_support_https,
+                login_version,
+                encrypt_schm.is_support_https,
             )
         except KasaException as ex:
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
-                + f"with encrypt_type {discovery_result.mgt_encrypt_schm.encrypt_type}",
+                + f"with encrypt_type {encrypt_schm.encrypt_type}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             ) from ex
+
         if (
             device_class := get_device_class_from_family(
                 type_, https=encrypt_schm.is_support_https
             )
         ) is None:
-            _LOGGER.warning("Got unsupported device type: %s", type_)
+            _LOGGER.debug("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
+
         if (protocol := get_protocol(config)) is None:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
             )
             raise UnsupportedDeviceError(
@@ -800,6 +829,7 @@ class Discover:
                 else info
             )
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
+
         device = device_class(config.host, protocol=protocol)
 
         di = discovery_result.to_dict()
@@ -847,14 +877,12 @@ class DiscoveryResult(_DiscoveryBaseMixin):
     device_id: str
     ip: str
     mac: str
-    mgt_encrypt_schm: EncryptionScheme
+    mgt_encrypt_schm: EncryptionScheme | None = None
     device_name: str | None = None
     encrypt_info: EncryptionInfo | None = None
     encrypt_type: list[str] | None = None
     decrypted_data: dict | None = None
-    is_reset_wifi: bool | None = field(
-        metadata=field_options(alias="isResetWiFi"), default=None
-    )
+    is_reset_wifi: Annotated[bool | None, Alias("isResetWiFi")] = None
 
     firmware_version: str | None = None
     hardware_version: str | None = None

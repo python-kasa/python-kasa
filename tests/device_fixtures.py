@@ -13,11 +13,11 @@ from kasa import (
 )
 from kasa.iot import IotBulb, IotDimmer, IotLightStrip, IotPlug, IotStrip, IotWallSwitch
 from kasa.smart import SmartDevice
-from kasa.smartcamera.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 from .fakeprotocol_iot import FakeIotProtocol
 from .fakeprotocol_smart import FakeSmartProtocol
-from .fakeprotocol_smartcamera import FakeSmartCameraProtocol
+from .fakeprotocol_smartcam import FakeSmartCamProtocol
 from .fixtureinfo import (
     FIXTURE_DATA,
     ComponentFilter,
@@ -84,6 +84,7 @@ PLUGS_IOT = {
 PLUGS_SMART = {
     "P100",
     "P110",
+    "P110M",
     "P115",
     "KP125M",
     "EP25",
@@ -100,6 +101,7 @@ SWITCHES_IOT = {
     "KS200M",
 }
 SWITCHES_SMART = {
+    "HS200",
     "KS205",
     "KS225",
     "KS240",
@@ -124,7 +126,7 @@ SENSORS_SMART = {"T310", "T315", "T300", "T100", "T110", "S200B", "S200D"}
 THERMOSTATS_SMART = {"KE100"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
-WITH_EMETER_SMART = {"P110", "P115", "KP125M", "EP25", "P304M"}
+WITH_EMETER_SMART = {"P110", "P110M", "P115", "KP125M", "EP25", "P304M"}
 WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
 
 DIMMABLE = {*BULBS, *DIMMERS}
@@ -214,6 +216,9 @@ no_emeter = parametrize(
     "no emeter",
     model_filter=ALL_DEVICES - WITH_EMETER,
     protocol_filter={"SMART", "IOT"},
+)
+has_emeter_smart = parametrize(
+    "has emeter smart", model_filter=WITH_EMETER_SMART, protocol_filter={"SMART"}
 )
 has_emeter_iot = parametrize(
     "has emeter iot", model_filter=WITH_EMETER_IOT, protocol_filter={"IOT"}
@@ -317,16 +322,16 @@ device_smart = parametrize(
 device_iot = parametrize(
     "devices iot", model_filter=ALL_DEVICES_IOT, protocol_filter={"IOT"}
 )
-device_smartcamera = parametrize("devices smartcamera", protocol_filter={"SMARTCAMERA"})
-camera_smartcamera = parametrize(
-    "camera smartcamera",
+device_smartcam = parametrize("devices smartcam", protocol_filter={"SMARTCAM"})
+camera_smartcam = parametrize(
+    "camera smartcam",
     device_type_filter=[DeviceType.Camera],
-    protocol_filter={"SMARTCAMERA"},
+    protocol_filter={"SMARTCAM"},
 )
-hub_smartcamera = parametrize(
-    "hub smartcamera",
+hub_smartcam = parametrize(
+    "hub smartcam",
     device_type_filter=[DeviceType.Hub],
-    protocol_filter={"SMARTCAMERA"},
+    protocol_filter={"SMARTCAM"},
 )
 
 
@@ -344,8 +349,8 @@ def check_categories():
         + hubs_smart.args[1]
         + sensors_smart.args[1]
         + thermostats_smart.args[1]
-        + camera_smartcamera.args[1]
-        + hub_smartcamera.args[1]
+        + camera_smartcam.args[1]
+        + hub_smartcam.args[1]
     )
     diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -363,8 +368,8 @@ check_categories()
 def device_for_fixture_name(model, protocol):
     if protocol in {"SMART", "SMART.CHILD"}:
         return SmartDevice
-    elif protocol == "SMARTCAMERA":
-        return SmartCamera
+    elif protocol == "SMARTCAM":
+        return SmartCamDevice
     else:
         for d in STRIPS_IOT:
             if d in model:
@@ -420,8 +425,8 @@ async def get_device_for_fixture(
         d.protocol = FakeSmartProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
-    elif fixture_data.protocol == "SMARTCAMERA":
-        d.protocol = FakeSmartCameraProtocol(
+    elif fixture_data.protocol == "SMARTCAM":
+        d.protocol = FakeSmartCamProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
     else:
@@ -460,8 +465,8 @@ def get_fixture_info(fixture, protocol):
 def get_nearest_fixture_to_ip(dev):
     if isinstance(dev, SmartDevice):
         protocol_fixtures = filter_fixtures("", protocol_filter={"SMART"})
-    elif isinstance(dev, SmartCamera):
-        protocol_fixtures = filter_fixtures("", protocol_filter={"SMARTCAMERA"})
+    elif isinstance(dev, SmartCamDevice):
+        protocol_fixtures = filter_fixtures("", protocol_filter={"SMARTCAM"})
     else:
         protocol_fixtures = filter_fixtures("", protocol_filter={"IOT"})
     assert protocol_fixtures, "Unknown device type"

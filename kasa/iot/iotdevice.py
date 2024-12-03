@@ -412,7 +412,15 @@ class IotDevice(Device):
         # every other update will query for them
         update: dict = self._last_update.copy() if self._last_update else {}
         for response in responses:
-            update = {**update, **response}
+            for k, v in response.items():
+                # The same module could have results in different responses
+                # i.e. smartlife.iot.common.schedule for Usage and
+                # Schedule, so need to call update(**v) here. If a module is
+                # not supported the response
+                # {'err_code': -1, 'err_msg': 'module not support'}
+                # become top level key/values of the response so check for dict
+                if isinstance(v, dict):
+                    update.setdefault(k, {}).update(**v)
         self._last_update = update
 
         # IOT modules are added as default but could be unsupported post first update

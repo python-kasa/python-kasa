@@ -1,6 +1,6 @@
 [project]
 name = "python-kasa"
-version = "0.7.7"
+version = "0.8.0"
 description = "Python API for TP-Link Kasa and Tapo devices"
 license = {text = "GPL-3.0-or-later"}
 authors = [ { name = "python-kasa developers" }]
@@ -8,7 +8,6 @@ readme = "README.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [
   "asyncclick>=8.1.7",
-  "pydantic>=1.10.15",
   "cryptography>=1.9",
   "aiohttp>=3",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
@@ -26,7 +25,13 @@ classifiers = [
 
 [project.optional-dependencies]
 speedups = ["orjson>=3.9.1", "kasa-crypt>=0.2.0"]
-docs = ["sphinx~=5.0", "sphinx_rtd_theme~=2.0", "sphinxcontrib-programoutput~=0.0", "myst-parser", "docutils>=0.17"]
+docs = [
+    "sphinx_rtd_theme~=2.0",
+    "sphinxcontrib-programoutput~=0.0",
+    "myst-parser",
+    "docutils>=0.17",
+    "sphinx>=7.4.7",
+]
 shell = ["ptpython", "rich"]
 
 [project.urls]
@@ -108,7 +113,9 @@ markers = [
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 timeout = 10
-addopts = "--disable-socket --allow-unix-socket"
+# dist=loadgroup enables grouping of tests into single worker.
+# required as caplog doesn't play nicely with multiple workers.
+addopts = "--disable-socket --allow-unix-socket --dist=loadgroup"
 
 [tool.doc8]
 paths = ["docs"]

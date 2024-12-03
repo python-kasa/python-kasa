@@ -262,6 +262,8 @@ class SmartRequest:
         """Get energy usage."""
         return [
             SmartRequest("get_energy_usage"),
+            SmartRequest("get_emeter_data"),
+            SmartRequest("get_emeter_vgain_igain"),
             SmartRequest.get_raw_request("get_electricity_price_config"),
         ]
 
@@ -423,4 +425,28 @@ COMPONENT_REQUESTS = {
     "dimmer_calibration": [],
     "fan_control": [],
     "overheat_protection": [],
+    # Vacuum components
+    "clean": [
+        SmartRequest.get_raw_request("getCleanRecords"),
+        SmartRequest.get_raw_request("getVacStatus"),
+    ],
+    "battery": [SmartRequest.get_raw_request("getBatteryInfo")],
+    "consumables": [SmartRequest.get_raw_request("getConsumablesInfo")],
+    "direction_control": [],
+    "button_and_led": [],
+    "speaker": [
+        SmartRequest.get_raw_request("getSupportVoiceLanguage"),
+        SmartRequest.get_raw_request("getCurrentVoiceLanguage"),
+    ],
+    "map": [
+        SmartRequest.get_raw_request("getMapInfo"),
+        SmartRequest.get_raw_request("getMapData"),
+    ],
+    "auto_change_map": [SmartRequest.get_raw_request("getAutoChangeMap")],
+    "dust_bucket": [SmartRequest.get_raw_request("getAutoDustCollection")],
+    "mop": [SmartRequest.get_raw_request("getMopState")],
+    "do_not_disturb": [SmartRequest.get_raw_request("getDoNotDisturb")],
+    "charge_pose_clean": [],
+    "continue_breakpoint_sweep": [],
+    "goto_point": [],
 }

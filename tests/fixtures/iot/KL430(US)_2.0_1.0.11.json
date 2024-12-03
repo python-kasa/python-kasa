@@ -1,0 +1,141 @@
+{
+    "smartlife.iot.common.cloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "#MASKED_NAME#"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": [
+                {
+                    "fwLocation": 0,
+                    "fwReleaseDate": "2024-06-28",
+                    "fwReleaseLog": "Modifications and Bug Fixes:\n1. Enhanced device stability.\n2. Fixed the problem that Color Painting doesn't work properly in some cases.\n3. Fixed some minor bugs.",
+                    "fwReleaseLogUrl": "undefined yet",
+                    "fwTitle": "Hi, a new firmware with bug fixes is available for your product.",
+                    "fwType": 1,
+                    "fwUrl": "http://download.tplinkcloud.com/firmware/KLM430v2_FCC_KL430_1.0.12_Build_240227_Rel.160022_2024-02-27_16.01.59_1719559326313.bin",
+                    "fwVer": "1.0.12 Build 240227 Rel.160022"
+                }
+            ]
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 600,
+            "total_wh": 0
+        }
+    },
+    "smartlife.iot.common.schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 0,
+            "err_code": 0,
+            "rule_list": [],
+            "version": 2
+        }
+    },
+    "smartlife.iot.lightStrip": {
+        "get_default_behavior": {
+            "err_code": 0,
+            "hard_on": {
+                "mode": "last_status"
+            },
+            "soft_on": {
+                "mode": "last_status"
+            }
+        },
+        "get_light_details": {
+            "color_rendering_index": 80,
+            "err_code": 0,
+            "incandescent_equivalent": 60,
+            "lamp_beam_angle": 180,
+            "max_lumens": 800,
+            "max_voltage": 120,
+            "min_voltage": 100,
+            "wattage": 10
+        },
+        "get_light_state": {
+            "dft_on_state": {
+                "groups": [
+                    [
+                        0,
+                        15,
+                        0,
+                        0,
+                        100,
+                        3842
+                    ]
+                ],
+                "mode": "normal"
+            },
+            "err_code": 0,
+            "length": 16,
+            "on_off": 0,
+            "transition": 500
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "LEF": 1,
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "length": 16,
+            "light_state": {
+                "dft_on_state": {
+                    "brightness": 100,
+                    "color_temp": 3842,
+                    "hue": 0,
+                    "mode": "normal",
+                    "saturation": 0
+                },
+                "on_off": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 100,
+                "custom": 0,
+                "enable": 0,
+                "id": "bCTItKETDFfrKANolgldxfgOakaarARs",
+                "name": "Flicker"
+            },
+            "longitude_i": 0,
+            "mic_mac": "E8:48:B8:00:00:00",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL430(US)",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [],
+            "rssi": -35,
+            "status": "new",
+            "sw_ver": "1.0.11 Build 220812 Rel.153345"
+        }
+    }
+}

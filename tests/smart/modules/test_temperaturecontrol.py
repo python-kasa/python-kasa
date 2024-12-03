@@ -137,6 +137,7 @@ async def test_thermostat_mode(dev, mode, states, frost_protection):
         ),
     ],
 )
+@pytest.mark.xdist_group(name="caplog")
 async def test_thermostat_mode_warnings(dev, mode, states, msg, caplog):
     """Test thermostat modes that should log a warning."""
     temp_module: TemperatureControl = dev.modules["TemperatureControl"]

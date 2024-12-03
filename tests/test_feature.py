@@ -127,6 +127,7 @@ async def test_feature_action(mocker):
     mock_call_action.assert_called()
 
 
+@pytest.mark.xdist_group(name="caplog")
 async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture):
     """Test the choice feature type."""
     dummy_feature.type = Feature.Type.Choice
@@ -160,12 +161,14 @@ async def test_precision_hint(dummy_feature, precision_hint):
 
 async def test_feature_setters(dev: Device, mocker: MockerFixture):
     """Test that all feature setters query something."""
+    # setters that do not call set on the device itself.
+    internal_setters = {"pan_step", "tilt_step"}
 
     async def _test_feature(feat, query_mock):
         if feat.attribute_setter is None:
             return
 
-        expecting_call = True
+        expecting_call = feat.id not in internal_setters
 
         if feat.type == Feature.Type.Number:
             await feat.set_value(feat.minimum_value)

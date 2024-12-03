@@ -2,7 +2,7 @@ import json
 import os
 import re
 from datetime import datetime
-from unittest.mock import ANY
+from unittest.mock import ANY, PropertyMock, patch
 from zoneinfo import ZoneInfo
 
 import asyncclick as click
@@ -34,16 +34,18 @@ from kasa.cli.light import (
     brightness,
     effect,
     hsv,
+    presets,
+    presets_modify,
     temperature,
 )
 from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
 from kasa.cli.time import time
-from kasa.cli.usage import emeter, energy
+from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
 from kasa.discover import Discover, DiscoveryResult
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
-from kasa.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 from .conftest import (
     device_smart,
@@ -179,7 +181,7 @@ async def test_state(dev, turn_on, runner):
 
 @turn_on
 async def test_toggle(dev, turn_on, runner):
-    if isinstance(dev, SmartCamera) and dev.device_type == DeviceType.Hub:
+    if isinstance(dev, SmartCamDevice) and dev.device_type == DeviceType.Hub:
         pytest.skip(reason="Hub cannot toggle state")
 
     await handle_turn_on(dev, turn_on)
@@ -212,7 +214,7 @@ async def test_raw_command(dev, mocker, runner):
     update = mocker.patch.object(dev, "update")
     from kasa.smart import SmartDevice
 
-    if isinstance(dev, SmartCamera):
+    if isinstance(dev, SmartCamDevice):
         params = ["na", "getDeviceInfo"]
     elif isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
@@ -430,38 +432,45 @@ async def test_time_set(dev: Device, mocker, runner):
 
 
 async def test_emeter(dev: Device, mocker, runner):
-    res = await runner.invoke(emeter, obj=dev)
+    mocker.patch("kasa.Discover.discover_single", return_value=dev)
+    base_cmd = ["--host", "dummy", "energy"]
+    res = await runner.invoke(cli, base_cmd, obj=dev)
     if not (energy := dev.modules.get(Module.Energy)):
         assert "Device has no energy module." in res.output
         return
 
-    assert "== Emeter ==" in res.output
+    assert "== Energy ==" in res.output
 
     if dev.device_type is not DeviceType.Strip:
-        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
+        res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
-        res = await runner.invoke(emeter, ["--name", "mock"], obj=dev)
+        res = await runner.invoke(cli, [*base_cmd, "--name", "mock"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
 
     if dev.device_type is DeviceType.Strip and len(dev.children) > 0:
         child_energy = dev.children[0].modules.get(Module.Energy)
         assert child_energy
-        realtime_emeter = mocker.patch.object(child_energy, "get_status")
-        realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
 
-        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
-        assert "Voltage: 122.066 V" in res.output
-        realtime_emeter.assert_called()
-        assert realtime_emeter.call_count == 1
+        with patch.object(
+            type(child_energy), "status", new_callable=PropertyMock
+        ) as child_status:
+            child_status.return_value = EmeterStatus({"voltage_mv": 122066})
 
-        res = await runner.invoke(emeter, ["--name", dev.children[0].alias], obj=dev)
-        assert "Voltage: 122.066 V" in res.output
-        assert realtime_emeter.call_count == 2
+            res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
+            assert "Voltage: 122.066 V" in res.output
+            child_status.assert_called()
+            assert child_status.call_count == 1
+
+            res = await runner.invoke(
+                cli, [*base_cmd, "--name", dev.children[0].alias], obj=dev
+            )
+            assert "Voltage: 122.066 V" in res.output
+            assert child_status.call_count == 2
 
     if isinstance(dev, IotDevice):
         monthly = mocker.patch.object(energy, "get_monthly_stats")
         monthly.return_value = {1: 1234}
-    res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
+    res = await runner.invoke(cli, [*base_cmd, "--year", "1900"], obj=dev)
     if not isinstance(dev, IotDevice):
         assert "Device does not support historical statistics" in res.output
         return
@@ -472,7 +481,7 @@ async def test_emeter(dev: Device, mocker, runner):
     if isinstance(dev, IotDevice):
         daily = mocker.patch.object(energy, "get_daily_stats")
         daily.return_value = {1: 1234}
-    res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
+    res = await runner.invoke(cli, [*base_cmd, "--month", "1900-12"], obj=dev)
     if not isinstance(dev, IotDevice):
         assert "Device has no historical statistics" in res.output
         return
@@ -575,6 +584,50 @@ async def test_light_effect(dev: Device, runner: CliRunner):
     assert res.exit_code == 2
 
 
+async def test_light_preset(dev: Device, runner: CliRunner):
+    res = await runner.invoke(presets, obj=dev)
+    if not (light_preset := dev.modules.get(Module.LightPreset)):
+        assert "Device does not support light presets" in res.output
+        return
+
+    if len(light_preset.preset_states_list) == 0:
+        pytest.skip(
+            "Some fixtures do not have presets and"
+            " the api doesn'tsupport creating them"
+        )
+    # Start off with a known state
+    first_name = light_preset.preset_list[1]
+    await light_preset.set_preset(first_name)
+    await dev.update()
+    assert light_preset.preset == first_name
+
+    res = await runner.invoke(presets, obj=dev)
+    assert "Brightness" in res.output
+    assert res.exit_code == 0
+
+    res = await runner.invoke(
+        presets_modify,
+        [
+            "0",
+            "--brightness",
+            "12",
+        ],
+        obj=dev,
+    )
+    await dev.update()
+    assert light_preset.preset_states_list[0].brightness == 12
+
+    res = await runner.invoke(
+        presets_modify,
+        [
+            "0",
+        ],
+        obj=dev,
+    )
+    await dev.update()
+    assert "Need to supply at least one option to modify." in res.output
+
+
 async def test_led(dev: Device, runner: CliRunner):
     res = await runner.invoke(led, obj=dev)
     if not (led_module := dev.modules.get(Module.Led)):
@@ -639,6 +692,8 @@ async def test_credentials(discovery_mock, mocker, runner):
             dr.device_type,
             "--encrypt-type",
             dr.mgt_encrypt_schm.encrypt_type,
+            "--login-version",
+            dr.mgt_encrypt_schm.lv or 1,
         ],
     )
     assert res.exit_code == 0
@@ -871,7 +926,7 @@ async def test_type_param(device_type, mocker, runner):
 
     mocker.patch("kasa.cli.device.state", new=_state)
     if device_type == "camera":
-        expected_type = SmartCamera
+        expected_type = SmartCamDevice
     elif device_type == "smart":
         expected_type = SmartDevice
     else:

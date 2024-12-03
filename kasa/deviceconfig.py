@@ -17,9 +17,10 @@ None
 >>> config_dict = device.config.to_dict()
 >>> # DeviceConfig.to_dict() can be used to store for later
 >>> print(config_dict)
-{'host': '127.0.0.3', 'timeout': 5, 'credentials': Credentials(), 'connection_type'\
-: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'https': False, \
-'login_version': 2}, 'uses_http': True}
+{'host': '127.0.0.3', 'timeout': 5, 'credentials': {'username': 'user@example.com', \
+'password': 'great_password'}, 'connection_type'\
+: {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2, \
+'https': False}, 'uses_http': True}
 
 >>> later_device = await Device.connect(config=Device.Config.from_dict(config_dict))
 >>> print(later_device.alias)  # Alias is available as connect() calls update()
@@ -27,15 +28,20 @@ Living Room Bulb
 
 """
 
-#  Module cannot use from __future__ import annotations until migrated to mashumaru
-#  as dataclass.fields() will not resolve the type.
+from __future__ import annotations
+
 import logging
-from dataclasses import asdict, dataclass, field, fields, is_dataclass
+from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, TypedDict
+from typing import TYPE_CHECKING, TypedDict
+
+from aiohttp import ClientSession
+from mashumaro import field_options, pass_through
+from mashumaro.config import BaseConfig
 
 from .credentials import Credentials
 from .exceptions import KasaException
+from .json import DataClassJSONMixin
 
 if TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -72,47 +78,20 @@ class DeviceFamily(Enum):
     SmartTapoHub = "SMART.TAPOHUB"
     SmartKasaHub = "SMART.KASAHUB"
     SmartIpCamera = "SMART.IPCAMERA"
+    SmartTapoRobovac = "SMART.TAPOROBOVAC"
 
 
-def _dataclass_from_dict(klass: Any, in_val: dict) -> Any:
-    if is_dataclass(klass):
-        fieldtypes = {f.name: f.type for f in fields(klass)}
-        val = {}
-        for dict_key in in_val:
-            if dict_key in fieldtypes:
-                if hasattr(fieldtypes[dict_key], "from_dict"):
-                    val[dict_key] = fieldtypes[dict_key].from_dict(in_val[dict_key])  # type: ignore[union-attr]
-                else:
-                    val[dict_key] = _dataclass_from_dict(
-                        fieldtypes[dict_key], in_val[dict_key]
-                    )
-            else:
-                raise KasaException(
-                    f"Cannot create dataclass from dict, unknown key: {dict_key}"
-                )
-        return klass(**val)  # type: ignore[operator]
-    else:
-        return in_val
+class _DeviceConfigBaseMixin(DataClassJSONMixin):
+    """Base class for serialization mixin."""
 
+    class Config(BaseConfig):
+        """Serialization config."""
 
-def _dataclass_to_dict(in_val: Any) -> dict:
-    fieldtypes = {f.name: f.type for f in fields(in_val) if f.compare}
-    out_val = {}
-    for field_name in fieldtypes:
-        val = getattr(in_val, field_name)
-        if val is None:
-            continue
-        elif hasattr(val, "to_dict"):
-            out_val[field_name] = val.to_dict()
-        elif is_dataclass(fieldtypes[field_name]):
-            out_val[field_name] = asdict(val)
-        else:
-            out_val[field_name] = val
-    return out_val
+        omit_none = True
 
 
 @dataclass
-class DeviceConnectionParameters:
+class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     """Class to hold the the parameters determining connection type."""
 
     device_family: DeviceFamily
@@ -126,7 +105,7 @@ class DeviceConnectionParameters:
         encryption_type: str,
         login_version: int | None = None,
         https: bool | None = None,
-    ) -> "DeviceConnectionParameters":
+    ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:
             if https is None:
@@ -143,39 +122,9 @@ class DeviceConnectionParameters:
                 + f"{encryption_type}.{login_version}"
             ) from ex
 
-    @staticmethod
-    def from_dict(connection_type_dict: dict[str, Any]) -> "DeviceConnectionParameters":
-        """Return connection parameters from dict."""
-        if (
-            isinstance(connection_type_dict, dict)
-            and (device_family := connection_type_dict.get("device_family"))
-            and (encryption_type := connection_type_dict.get("encryption_type"))
-        ):
-            if login_version := connection_type_dict.get("login_version"):
-                login_version = int(login_version)  # type: ignore[assignment]
-            return DeviceConnectionParameters.from_values(
-                device_family,
-                encryption_type,
-                login_version,  # type: ignore[arg-type]
-                connection_type_dict.get("https", False),
-            )
-
-        raise KasaException(f"Invalid connection type data for {connection_type_dict}")
-
-    def to_dict(self) -> dict[str, str | int | bool]:
-        """Convert connection params to dict."""
-        result: dict[str, str | int] = {
-            "device_family": self.device_family.value,
-            "encryption_type": self.encryption_type.value,
-            "https": self.https,
-        }
-        if self.login_version:
-            result["login_version"] = self.login_version
-        return result
-
 
 @dataclass
-class DeviceConfig:
+class DeviceConfig(_DeviceConfigBaseMixin):
     """Class to represent paramaters that determine how to connect to devices."""
 
     DEFAULT_TIMEOUT = 5
@@ -203,9 +152,12 @@ class DeviceConfig:
     #: in order to determine whether they should pass a custom http client if desired.
     uses_http: bool = False
 
-    # compare=False will be excluded from the serialization and object comparison.
     #: Set a custom http_client for the device to use.
-    http_client: Optional["ClientSession"] = field(default=None, compare=False)
+    http_client: ClientSession | None = field(
+        default=None,
+        compare=False,
+        metadata=field_options(serialize="omit", deserialize=pass_through),
+    )
 
     aes_keys: KeyPairDict | None = None
 
@@ -215,22 +167,27 @@ class DeviceConfig:
                 DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
             )
 
-    def to_dict(
+    def to_dict_control_credentials(
         self,
         *,
         credentials_hash: str | None = None,
         exclude_credentials: bool = False,
     ) -> dict[str, dict[str, str]]:
-        """Convert device config to dict."""
-        if credentials_hash is not None or exclude_credentials:
-            self.credentials = None
-        if credentials_hash:
-            self.credentials_hash = credentials_hash
-        return _dataclass_to_dict(self)
+        """Convert deviceconfig to dict controlling how to serialize credentials.
 
-    @staticmethod
-    def from_dict(config_dict: dict[str, dict[str, str]]) -> "DeviceConfig":
-        """Return device config from dict."""
-        if isinstance(config_dict, dict):
-            return _dataclass_from_dict(DeviceConfig, config_dict)
-        raise KasaException(f"Invalid device config data: {config_dict}")
+        If credentials_hash is provided credentials will be None.
+        If credentials_hash is '' credentials_hash and credentials will be None.
+        exclude credentials controls whether to include credentials.
+        The defaults are the same as calling to_dict().
+        """
+        if credentials_hash is None:
+            if not exclude_credentials:
+                return self.to_dict()
+            else:
+                return replace(self, credentials=None).to_dict()
+
+        return replace(
+            self,
+            credentials_hash=credentials_hash if credentials_hash else None,
+            credentials=None,
+        ).to_dict()

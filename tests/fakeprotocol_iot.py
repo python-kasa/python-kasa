@@ -125,6 +125,7 @@ CLOUD_MODULE = {
         "username": "",
         "server": "devs.tplinkcloud.com",
         "binded": 0,
+        "err_code": 0,
         "cld_connection": 0,
         "illegalType": -1,
         "stopConnect": -1,
@@ -135,6 +136,34 @@ CLOUD_MODULE = {
     }
 }
 
+SCHEDULE_MODULE = {
+    "get_next_action": {
+        "action": 1,
+        "err_code": 0,
+        "id": "0794F4729DB271627D1CF35A9A854030",
+        "schd_time": 68927,
+        "type": 2,
+    },
+    "get_rules": {
+        "enable": 1,
+        "err_code": 0,
+        "rule_list": [
+            {
+                "eact": -1,
+                "enable": 1,
+                "id": "8AA75A50A8440B17941D192BD9E01FFA",
+                "name": "name",
+                "repeat": 1,
+                "sact": 1,
+                "smin": 1027,
+                "soffset": 0,
+                "stime_opt": 2,
+                "wday": [1, 1, 1, 1, 1, 1, 1],
+            },
+        ],
+        "version": 2,
+    },
+}
 
 AMBIENT_MODULE = {
     "get_current_brt": {"value": 26, "err_code": 0},
@@ -175,6 +204,23 @@ MOTION_MODULE = {
     }
 }
 
+LIGHT_DETAILS = {
+    "color_rendering_index": 80,
+    "err_code": 0,
+    "incandescent_equivalent": 60,
+    "lamp_beam_angle": 150,
+    "max_lumens": 800,
+    "max_voltage": 120,
+    "min_voltage": 110,
+    "wattage": 10,
+}
+
+DEFAULT_BEHAVIOR = {
+    "err_code": 0,
+    "hard_on": {"mode": "circadian"},
+    "soft_on": {"mode": "last_status"},
+}
+
 
 class FakeIotProtocol(IotProtocol):
     def __init__(self, info, fixture_name=None, *, verbatim=False):
@@ -213,8 +259,9 @@ class FakeIotTransport(BaseTransport):
         for target in info:
             if target != "discovery_result":
                 for cmd in info[target]:
-                    # print("initializing tgt %s cmd %s" % (target, cmd))
-                    proto[target][cmd] = info[target][cmd]
+                    # Use setdefault in case the fixture has modules not yet
+                    # part of the baseproto.
+                    proto.setdefault(target, {})[cmd] = info[target][cmd]
 
         # if we have emeter support, we need to add the missing pieces
         for module in ["emeter", "smartlife.iot.common.emeter"]:
@@ -397,6 +444,8 @@ class FakeIotTransport(BaseTransport):
         },
         "smartlife.iot.smartbulb.lightingservice": {
             "get_light_state": light_state,
+            "get_light_details": LIGHT_DETAILS,
+            "get_default_behavior": DEFAULT_BEHAVIOR,
             "transition_light_state": transition_light_state,
             "set_preferred_state": set_preferred_state,
         },
@@ -407,6 +456,8 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.lightStrip": {
             "set_light_state": transition_light_state,
             "get_light_state": light_state,
+            "get_light_details": LIGHT_DETAILS,
+            "get_default_behavior": DEFAULT_BEHAVIOR,
             "set_preferred_state": set_preferred_state,
         },
         "smartlife.iot.common.system": {
@@ -427,6 +478,8 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.PIR": MOTION_MODULE,
         "cnCloud": CLOUD_MODULE,
         "smartlife.iot.common.cloud": CLOUD_MODULE,
+        "schedule": SCHEDULE_MODULE,
+        "smartlife.iot.common.schedule": SCHEDULE_MODULE,
     }
 
     async def send(self, request, port=9999):

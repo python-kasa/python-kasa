@@ -36,6 +36,7 @@ from kasa.exceptions import (
 )
 from kasa.feature import Feature
 from kasa.interfaces.light import HSV, ColorTempRange, Light, LightState
+from kasa.interfaces.thermostat import Thermostat, ThermostatState
 from kasa.module import Module
 from kasa.protocols import BaseProtocol, IotProtocol, SmartProtocol
 from kasa.protocols.iotprotocol import _deprecated_TPLinkSmartHomeProtocol  # noqa: F401
@@ -72,6 +73,8 @@ __all__ = [
     "DeviceConnectionParameters",
     "DeviceEncryptionType",
     "DeviceFamily",
+    "ThermostatState",
+    "Thermostat",
 ]
 
 from . import iot
@@ -97,28 +100,29 @@ deprecated_classes = {
     "DeviceFamilyType": DeviceFamily,
 }
 
+if not TYPE_CHECKING:
 
-def __getattr__(name: str) -> Any:
-    if name in deprecated_names:
-        warn(f"{name} is deprecated", DeprecationWarning, stacklevel=2)
-        return globals()[f"_deprecated_{name}"]
-    if name in deprecated_smart_devices:
-        new_class = deprecated_smart_devices[name]
-        package_name = ".".join(new_class.__module__.split(".")[:-1])
-        warn(
-            f"{name} is deprecated, use {new_class.__name__} "
-            + f"from package {package_name} instead or use Discover.discover_single()"
-            + " and Device.connect() to support new protocols",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return new_class
-    if name in deprecated_classes:
-        new_class = deprecated_classes[name]  # type: ignore[assignment]
-        msg = f"{name} is deprecated, use {new_class.__name__} instead"
-        warn(msg, DeprecationWarning, stacklevel=2)
-        return new_class
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    def __getattr__(name: str) -> Any:
+        if name in deprecated_names:
+            warn(f"{name} is deprecated", DeprecationWarning, stacklevel=2)
+            return globals()[f"_deprecated_{name}"]
+        if name in deprecated_smart_devices:
+            new_class = deprecated_smart_devices[name]
+            package_name = ".".join(new_class.__module__.split(".")[:-1])
+            warn(
+                f"{name} is deprecated, use {new_class.__name__} from "
+                + f"package {package_name} instead or use Discover.discover_single()"
+                + " and Device.connect() to support new protocols",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return new_class
+        if name in deprecated_classes:
+            new_class = deprecated_classes[name]  # type: ignore[assignment]
+            msg = f"{name} is deprecated, use {new_class.__name__} instead"
+            warn(msg, DeprecationWarning, stacklevel=2)
+            return new_class
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 if TYPE_CHECKING:

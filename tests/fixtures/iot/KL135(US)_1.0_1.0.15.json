@@ -1,0 +1,140 @@
+{
+    "smartlife.iot.common.cloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "#MASKED_NAME#"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": []
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 10800,
+            "total_wh": 48
+        }
+    },
+    "smartlife.iot.common.schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 0,
+            "err_code": 0,
+            "rule_list": [],
+            "version": 2
+        }
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_default_behavior": {
+            "err_code": 0,
+            "hard_on": {
+                "mode": "last_status"
+            },
+            "re_power_type": "always_on",
+            "soft_on": {
+                "mode": "last_status"
+            }
+        },
+        "get_light_details": {
+            "color_rendering_index": 90,
+            "err_code": 0,
+            "incandescent_equivalent": 60,
+            "lamp_beam_angle": 220,
+            "max_lumens": 800,
+            "max_voltage": 120,
+            "min_voltage": 100,
+            "wattage": 10
+        },
+        "get_light_state": {
+            "brightness": 100,
+            "color_temp": 2700,
+            "err_code": 0,
+            "hue": 0,
+            "mode": "normal",
+            "on_off": 1,
+            "saturation": 0
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Smart Wi-Fi LED Bulb with Color Changing",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 1,
+            "latitude_i": 0,
+            "light_state": {
+                "brightness": 100,
+                "color_temp": 2700,
+                "hue": 0,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "longitude_i": 0,
+            "mic_mac": "54AF97000000",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL135(US)",
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 2700,
+                    "hue": 0,
+                    "index": 0,
+                    "saturation": 0
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 0,
+                    "index": 1,
+                    "saturation": 100
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 120,
+                    "index": 2,
+                    "saturation": 100
+                },
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 240,
+                    "index": 3,
+                    "saturation": 100
+                }
+            ],
+            "rssi": -69,
+            "status": "new",
+            "sw_ver": "1.0.15 Build 240429 Rel.154143"
+        }
+    }
+}

@@ -13,7 +13,7 @@ import pytest
 from kasa.device_type import DeviceType
 from kasa.iot import IotDevice
 from kasa.smart.smartdevice import SmartDevice
-from kasa.smartcamera.smartcamera import SmartCamera
+from kasa.smartcam import SmartCamDevice
 
 
 class FixtureInfo(NamedTuple):
@@ -35,7 +35,7 @@ FixtureInfo.__eq__ = lambda x, y: hash(x) == hash(y)  # type: ignore[method-assi
 SUPPORTED_IOT_DEVICES = [
     (device, "IOT")
     for device in glob.glob(
-        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/*.json"
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/iot/*.json"
     )
 ]
 
@@ -53,10 +53,10 @@ SUPPORTED_SMART_CHILD_DEVICES = [
     )
 ]
 
-SUPPORTED_SMARTCAMERA_DEVICES = [
-    (device, "SMARTCAMERA")
+SUPPORTED_SMARTCAM_DEVICES = [
+    (device, "SMARTCAM")
     for device in glob.glob(
-        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/smartcamera/*.json"
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/smartcam/*.json"
     )
 ]
 
@@ -64,7 +64,7 @@ SUPPORTED_DEVICES = (
     SUPPORTED_IOT_DEVICES
     + SUPPORTED_SMART_DEVICES
     + SUPPORTED_SMART_CHILD_DEVICES
-    + SUPPORTED_SMARTCAMERA_DEVICES
+    + SUPPORTED_SMARTCAM_DEVICES
 )
 
 
@@ -179,14 +179,14 @@ def filter_fixtures(
                 IotDevice._get_device_type_from_sys_info(fixture_data.data)
                 in device_type
             )
-        elif fixture_data.protocol == "SMARTCAMERA":
+        elif fixture_data.protocol == "SMARTCAM":
             info = fixture_data.data["getDeviceInfo"]["device_info"]["basic_info"]
-            return SmartCamera._get_device_type_from_sysinfo(info) in device_type
+            return SmartCamDevice._get_device_type_from_sysinfo(info) in device_type
         return False
 
     filtered = []
     if protocol_filter is None:
-        protocol_filter = {"IOT", "SMART", "SMARTCAMERA"}
+        protocol_filter = {"IOT", "SMART", "SMARTCAM"}
     for fixture_data in fixture_list:
         if data_root_filter and data_root_filter not in fixture_data.data:
             continue
@@ -207,10 +207,6 @@ def filter_fixtures(
 
         filtered.append(fixture_data)
 
-    if desc:
-        print(f"# {desc}")
-        for value in filtered:
-            print(f"\t{value.name}")
     filtered.sort()
     return filtered
 
