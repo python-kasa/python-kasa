@@ -85,8 +85,9 @@ async def list(ctx):
     async def print_discovered(dev: Device):
         cparams = dev.config.connection_type
         infostr = (
-            f"{dev.host:<15} {cparams.device_family.value:<20} "
-            f"{cparams.encryption_type.value:<7}"
+            f"{dev.host:<15} {dev.model:<9} {cparams.device_family.value:<20} "
+            f"{cparams.encryption_type.value:<7} {cparams.https:<5} "
+            f"{cparams.login_version or '-':<3}"
         )
         async with sem:
             try:
@@ -100,7 +101,10 @@ async def list(ctx):
         if host := unsupported_exception.host:
             echo(f"{host:<15} UNSUPPORTED DEVICE")
 
-    echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}")
+    echo(
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
     return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
 
 
