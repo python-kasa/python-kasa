@@ -43,7 +43,7 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         async def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and (
+            if not self._last_update and (
                 self._sys_info is None or f.__name__ not in self._sys_info
             ):
                 raise KasaException("You need to await update() to access the data")
@@ -54,7 +54,7 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and (
+            if not self._last_update and (
                 self._sys_info is None or f.__name__ not in self._sys_info
             ):
                 raise KasaException("You need to await update() to access the data")
@@ -102,7 +102,7 @@ class IotDevice(Device):
         >>> dev.alias
         Bedroom Lamp Plug
         >>> dev.model
-        HS110(EU)
+        HS110
         >>> dev.rssi
         -71
         >>> dev.mac
@@ -300,7 +300,7 @@ class IotDevice(Device):
         # If this is the initial update, check only for the sysinfo
         # This is necessary as some devices crash on unexpected modules
         # See #105, #120, #161
-        if self._last_update is None:
+        if not self._last_update:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             response = await self.protocol.query(req)
             self._last_update = response
@@ -442,7 +442,9 @@ class IotDevice(Device):
             # This allows setting of some info properties directly
             # from partial discovery info that will then be found
             # by the requires_update decorator
-            self._set_sys_info(info)
+            discovery_model = info["device_model"]
+            no_region_model, _, _ = discovery_model.partition("(")
+            self._set_sys_info({**info, "model": no_region_model})
 
     def _set_sys_info(self, sys_info: dict[str, Any]) -> None:
         """Set sys_info."""
@@ -461,18 +463,13 @@ class IotDevice(Device):
         """
         return self._sys_info  # type: ignore
 
-    @property  # type: ignore
-    @requires_update
-    def model(self) -> str:
-        """Return device model."""
-        sys_info = self._sys_info
-        return str(sys_info["model"])
-
     @property
     @requires_update
-    def _model_region(self) -> str:
-        """Return device full model name and region."""
-        return self.model
+    def model(self) -> str:
+        """Returns the device model."""
+        if self._last_update:
+            return self._device_info.short_name
+        return self._sys_info["model"]
 
     @property  # type: ignore
     def alias(self) -> str | None:

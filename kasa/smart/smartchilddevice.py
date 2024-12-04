@@ -6,6 +6,7 @@ import logging
 import time
 from typing import Any
 
+from ..device import _DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
@@ -48,6 +49,20 @@ class SmartChildDevice(SmartDevice):
         self._parent = parent
         self._update_internal_state(info)
         self._components = component_info
+
+    @property
+    def _device_info(self) -> _DeviceInfo:
+        """Return device info."""
+        components = [
+            {"id": id, "ver_code": ver} for id, ver in self._components.items()
+        ]
+        return self._get_device_info(
+            {
+                "get_device_info": self._info,
+                "component_nego": {"component_list": components},
+            },
+            None,
+        )
 
     async def update(self, update_children: bool = True) -> None:
         """Update child module info.

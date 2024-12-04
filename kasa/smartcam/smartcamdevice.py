@@ -243,8 +243,8 @@ class SmartCamDevice(SmartDevice):
     def hw_info(self) -> dict:
         """Return hardware info for the device."""
         return {
-            "sw_ver": self._info.get("hw_ver"),
-            "hw_ver": self._info.get("fw_ver"),
+            "sw_ver": self._info.get("fw_ver"),
+            "hw_ver": self._info.get("hw_ver"),
             "mac": self._info.get("mac"),
             "type": self._info.get("type"),
             "hwId": self._info.get("hwId"),
