@@ -136,9 +136,29 @@ class Alarm(SmartModule):
         src = self._device.sys_info["in_alarm_source"]
         return src if src else None
 
-    async def play(self) -> dict:
-        """Play alarm."""
-        return await self.call("play_alarm")
+    async def play(
+        self,
+        *,
+        duration: int | None = None,
+        volume: Literal["low", "normal", "high"] | None,
+        sound: str | None = None,
+    ) -> dict:
+        """Play alarm.
+
+        The optional *duration*, *volume*, and *sound* to override the device settings.
+        *volume* can be set to 'low', 'normal', or 'high'.
+        *duration* is in seconds.
+        See *alarm_sounds* for the list of sounds available for the device.
+        """
+        params: dict[str, str | int] = {}
+        if duration is not None:
+            params["alarm_duration"] = duration
+        if volume is not None:
+            params["alarm_volume"] = volume
+        if sound is not None:
+            params["alarm_type"] = sound
+
+        return await self.call("play_alarm", params)
 
     async def stop(self) -> dict:
         """Stop alarm."""
