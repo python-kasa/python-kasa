@@ -19,10 +19,12 @@ async def test_working(mocker):
         "post",
         side_effect=post_custom_return(200, KASACAM_RESPONSE_ENCRYPTED),
     )
-    # Expected response
-    # '{"timezone": "UTC-05:00", "area": "America/New_York", "epoch_sec": 1690832800}'
     response = await transport_no_creds.send(KASACAM_REQUEST_PLAINTEXT)
-    assert response["epoch_sec"] == 1690832800
+    assert response == {
+        "timezone": "UTC-05:00",
+        "area": "America/New_York",
+        "epoch_sec": 1690832800,
+    }
 
 
 async def test_credentials_hash(mocker):
