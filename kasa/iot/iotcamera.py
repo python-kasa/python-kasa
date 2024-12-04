@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, tzinfo
-from typing import Any
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
@@ -36,11 +35,6 @@ class IotCamera(IotDevice):
     def timezone(self) -> tzinfo:
         """Get the camera's timezone."""
         return None  # type: ignore
-
-    @staticmethod
-    def extract_sys_info(info: dict[str, Any]) -> dict[str, Any]:
-        """Return the system info structure."""
-        return info.get("system", {}).get("get_sysinfo", {}).get("system", {})
 
     @property  # type: ignore
     def is_on(self) -> bool:
