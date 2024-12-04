@@ -27,20 +27,34 @@ async def test_working(mocker):
 
 async def test_credentials_hash(mocker):
     # Test without credentials input
+    out_headers_no_creds = {}
     transport_no_creds = LinkieTransportV2(config=DeviceConfig("127.0.0.1"))
     mocker.patch.object(
-        transport_no_creds._http_client, "post", side_effect=post_assert_auth_header
+        transport_no_creds._http_client,
+        "post",
+        side_effect=create_post_get_auth_header(out_headers_no_creds),
     )
     await transport_no_creds.send(KASACAM_REQUEST_PLAINTEXT)
+    assert (
+        out_headers_no_creds["Authorization"]
+        == f"Basic {_generate_kascam_basic_auth()}"
+    )
 
     # Test with credentials input
+    out_headers_with_creds = {}
     transport_with_creds = LinkieTransportV2(
         config=DeviceConfig("127.0.0.1", credentials=Credentials("Admin", "password"))
     )
     mocker.patch.object(
-        transport_with_creds._http_client, "post", side_effect=post_assert_auth_header
+        transport_with_creds._http_client,
+        "post",
+        side_effect=create_post_get_auth_header(out_headers_with_creds),
     )
     await transport_with_creds.send(KASACAM_REQUEST_PLAINTEXT)
+    assert (
+        out_headers_with_creds["Authorization"]
+        == f"Basic {_generate_kascam_basic_auth()}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -70,9 +84,17 @@ def _generate_kascam_basic_auth():
     return base64.b64encode(creds_combined.encode()).decode()
 
 
-async def post_assert_auth_header(*_, headers, **__):
-    assert headers["Authorization"] == f"Basic {_generate_kascam_basic_auth()}"
-    return (200, KASACAM_RESPONSE_ENCRYPTED)
+def create_post_get_auth_header(out_headers: dict):
+    """Place the Authorization header inside `out_headers`.
+
+    Then, return a method that can be used to override Httpclient.post.
+    """
+
+    async def post_get_auth_header(*_, headers, **__):
+        out_headers["Authorization"] = headers.get("Authorization")
+        return (200, KASACAM_RESPONSE_ENCRYPTED)
+
+    return post_get_auth_header
 
 
 def post_custom_return(ret_code: int, ret_data: bytes):
