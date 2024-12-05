@@ -130,6 +130,8 @@ new_discovery = parametrize_discovery(
     "new discovery", data_root_filter="discovery_result"
 )
 
+smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMART"})
+
 
 @pytest.fixture(
     params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
