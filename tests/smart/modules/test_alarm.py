@@ -54,6 +54,15 @@ async def test_play(dev: SmartDevice, kwargs, request_params, mocker: MockerFixt
 
     call_spy.assert_called_with("play_alarm", request_params)
 
+    with pytest.raises(ValueError, match="Invalid duration"):
+        await alarm.play(duration=-1)
+
+    with pytest.raises(ValueError, match="Invalid sound"):
+        await alarm.play(sound="unknown")
+
+    with pytest.raises(ValueError, match="Invalid volume"):
+        await alarm.play(volume="unknown")  # type: ignore[arg-type]
+
 
 @alarm
 async def test_stop(dev: SmartDevice, mocker: MockerFixture):
