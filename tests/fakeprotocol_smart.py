@@ -121,11 +121,9 @@ class FakeSmartTransport(BaseTransport):
         "get_alarm_configure": (
             "alarm",
             {
-                "get_alarm_configure": {
-                    "duration": 10,
-                    "type": "Doorbell Ring 2",
-                    "volume": "low",
-                }
+                "duration": 10,
+                "type": "Doorbell Ring 2",
+                "volume": "low",
             },
         ),
         "get_support_alarm_type_list": (
