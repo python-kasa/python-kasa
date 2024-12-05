@@ -110,26 +110,6 @@ def _generate_kascam_basic_auth():
     return base64.b64encode(creds_combined.encode()).decode()
 
 
-def post_custom_return(ret_code: int, ret_data: bytes):
-    async def _post(*_, **__):
-        return (ret_code, ret_data)
-
-    return _post
-
-
-def create_post_get_auth_header(out_headers: dict):
-    """Place the Authorization header inside `out_headers`.
-
-    Then, return a method that can be used to override Httpclient.post.
-    """
-
-    async def post_get_auth_header(*_, headers, **__):
-        out_headers["Authorization"] = headers.get("Authorization")
-        return (200, KASACAM_RESPONSE_ENCRYPTED)
-
-    return post_get_auth_header
-
-
 class MockLinkieDevice:
     """Based on MockSslDevice."""
 
