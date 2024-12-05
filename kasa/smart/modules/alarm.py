@@ -81,8 +81,7 @@ class Alarm(SmartModule):
                 attribute_setter="set_alarm_duration",
                 category=Feature.Category.Config,
                 type=Feature.Type.Number,
-                # TODO: needs testing the duration limits.
-                range_getter=lambda: (1, 60),
+                range_getter=lambda: (1, 10 * 60),
             )
         )
         self._add_feature(
@@ -116,6 +115,7 @@ class Alarm(SmartModule):
 
         See *alarm_sounds* for list of available sounds.
         """
+        self._check_sound(sound)
         payload = self.data["get_alarm_configure"].copy()
         payload["type"] = sound
         return await self.call("set_alarm_configure", payload)
@@ -132,6 +132,7 @@ class Alarm(SmartModule):
 
     async def set_alarm_volume(self, volume: Literal["low", "normal", "high"]) -> dict:
         """Set alarm volume."""
+        self._check_volume(volume)
         payload = self.data["get_alarm_configure"].copy()
         payload["volume"] = volume
         return await self.call("set_alarm_configure", payload)
@@ -143,6 +144,7 @@ class Alarm(SmartModule):
 
     async def set_alarm_duration(self, duration: int) -> dict:
         """Set alarm duration."""
+        self._check_duration(duration)
         payload = self.data["get_alarm_configure"].copy()
         payload["duration"] = duration
         return await self.call("set_alarm_configure", payload)
@@ -173,11 +175,17 @@ class Alarm(SmartModule):
         See *alarm_sounds* for the list of sounds available for the device.
         """
         params: dict[str, str | int] = {}
+
         if duration is not None:
+            self._check_duration(duration)
             params["alarm_duration"] = duration
+
         if volume is not None:
+            self._check_volume(volume)
             params["alarm_volume"] = volume
+
         if sound is not None:
+            self._check_sound(sound)
             params["alarm_type"] = sound
 
         return await self.call("play_alarm", params)
@@ -185,3 +193,18 @@ class Alarm(SmartModule):
     async def stop(self) -> dict:
         """Stop alarm."""
         return await self.call("stop_alarm")
+
+    def _check_volume(self, volume: str) -> None:
+        """Raise an exception on invalid volume."""
+        if volume not in ["low", "normal", "high"]:
+            raise ValueError(f"Invalid volume {volume} [low, normal, high]")
+
+    def _check_duration(self, duration: int) -> None:
+        """Raise an exception on invalid duration."""
+        if duration < 1 or duration > 10 * 60:
+            raise ValueError(f"Invalid duration {duration} (wanted: 1-600)")
+
+    def _check_sound(self, sound: str) -> None:
+        """Raise an exception on invalid sound."""
+        if sound not in self.alarm_sounds:
+            raise ValueError(f"Invalid sound {sound} [{self.alarm_sounds}]")
