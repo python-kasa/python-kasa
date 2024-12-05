@@ -802,6 +802,8 @@ class SmartDevice(Device):
             return DeviceType.Sensor
         if "ENERGY" in device_type:
             return DeviceType.Thermostat
+        if "ROBOVAC" in device_type:
+            return DeviceType.Vacuum
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
 

@@ -115,6 +115,10 @@ def scrub(res):
         "encrypt_info",
         "local_ip",
         "username",
+        # vacuum
+        "board_sn",
+        "custom_sn",
+        "location",
     ]
 
     for k, v in res.items():
@@ -153,10 +157,18 @@ def scrub(res):
                     v = base64.b64encode(b"#MASKED_SSID#").decode()
                 elif k in ["nickname"]:
                     v = base64.b64encode(b"#MASKED_NAME#").decode()
-                elif k in ["alias", "device_alias", "device_name", "username"]:
+                elif k in [
+                    "alias",
+                    "device_alias",
+                    "device_name",
+                    "username",
+                    "location",
+                ]:
                     v = "#MASKED_NAME#"
                 elif isinstance(res[k], int):
                     v = 0
+                elif k in ["map_data"]:  #
+                    v = "#SCRUBBED_MAPDATA#"
                 elif k in ["device_id", "dev_id"] and "SCRUBBED" in v:
                     pass  # already scrubbed
                 elif k == ["device_id", "dev_id"] and len(v) > 40:

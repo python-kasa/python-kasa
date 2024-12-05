@@ -230,10 +230,12 @@ def _echo_discovery_info(discovery_info) -> None:
     _conditional_echo("Supports IOT Cloud", dr.is_support_iot_cloud)
     _conditional_echo("OBD Src", dr.owner)
     _conditional_echo("Factory Default", dr.factory_default)
-    _conditional_echo("Encrypt Type", dr.mgt_encrypt_schm.encrypt_type)
     _conditional_echo("Encrypt Type", dr.encrypt_type)
-    _conditional_echo("Supports HTTPS", dr.mgt_encrypt_schm.is_support_https)
-    _conditional_echo("HTTP Port", dr.mgt_encrypt_schm.http_port)
+    if mgt_encrypt_schm := dr.mgt_encrypt_schm:
+        _conditional_echo("Encrypt Type", mgt_encrypt_schm.encrypt_type)
+        _conditional_echo("Supports HTTPS", mgt_encrypt_schm.is_support_https)
+        _conditional_echo("HTTP Port", mgt_encrypt_schm.http_port)
+        _conditional_echo("Login version", mgt_encrypt_schm.lv)
     _conditional_echo("Encrypt info", pf(dr.encrypt_info) if dr.encrypt_info else None)
     _conditional_echo("Decrypted", pf(dr.decrypted_data) if dr.decrypted_data else None)
 
