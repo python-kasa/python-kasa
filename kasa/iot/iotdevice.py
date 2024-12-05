@@ -70,7 +70,7 @@ def _parse_features(features: str) -> set[str]:
     return set(features.split(":"))
 
 
-def extract_sys_info(info: dict[str, Any]) -> dict[str, Any]:
+def _extract_sys_info(info: dict[str, Any]) -> dict[str, Any]:
     """Return the system info structure."""
     sysinfo_default = info.get("system", {}).get("get_sysinfo", {})
     sysinfo_nest = sysinfo_default.get("system", {})
@@ -314,14 +314,14 @@ class IotDevice(Device):
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             response = await self.protocol.query(req)
             self._last_update = response
-            self._set_sys_info(extract_sys_info(response))
+            self._set_sys_info(_extract_sys_info(response))
 
         if not self._modules:
             await self._initialize_modules()
 
         await self._modular_update(req)
 
-        self._set_sys_info(extract_sys_info(self._last_update))
+        self._set_sys_info(_extract_sys_info(self._last_update))
         for module in self._modules.values():
             await module._post_update_hook()
 
@@ -721,7 +721,7 @@ class IotDevice(Device):
         if "system" not in info or "get_sysinfo" not in info["system"]:
             raise KasaException("No 'system' or 'get_sysinfo' in response")
 
-        sysinfo: dict[str, Any] = extract_sys_info(info)
+        sysinfo: dict[str, Any] = _extract_sys_info(info)
         type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
         if type_ is None:
             raise KasaException("Unable to find the device type field!")
@@ -750,7 +750,7 @@ class IotDevice(Device):
         info: dict[str, Any], discovery_info: dict[str, Any] | None
     ) -> _DeviceInfo:
         """Get model information for a device."""
-        sys_info = extract_sys_info(info)
+        sys_info = _extract_sys_info(info)
 
         # Get model and region info
         region = None
