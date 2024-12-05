@@ -7,6 +7,8 @@ from typing import Literal
 from ...feature import Feature
 from ..smartmodule import SmartModule
 
+DURATION_MAX = 10 * 60
+
 
 class Alarm(SmartModule):
     """Implementation of alarm module."""
@@ -81,7 +83,7 @@ class Alarm(SmartModule):
                 attribute_setter="set_alarm_duration",
                 category=Feature.Category.Config,
                 type=Feature.Type.Number,
-                range_getter=lambda: (1, 10 * 60),
+                range_getter=lambda: (1, DURATION_MAX),
             )
         )
         self._add_feature(
@@ -201,7 +203,7 @@ class Alarm(SmartModule):
 
     def _check_duration(self, duration: int) -> None:
         """Raise an exception on invalid duration."""
-        if duration < 1 or duration > 10 * 60:
+        if duration < 1 or duration > DURATION_MAX:
             raise ValueError(f"Invalid duration {duration} available: 1-600")
 
     def _check_sound(self, sound: str) -> None:
