@@ -41,7 +41,9 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
     [
         pytest.param({"volume": "low"}, {"alarm_volume": "low"}, id="volume"),
         pytest.param({"duration": 1}, {"alarm_duration": 1}, id="duration"),
-        pytest.param({"sound": "Alarm 1"}, {"alarm_type": "Alarm 1"}, id="sound"),
+        pytest.param(
+            {"sound": "Alarm 1"}, {"alarm_type": "Doorbell Ring 1"}, id="sound"
+        ),
     ],
 )
 async def test_play(dev: SmartDevice, kwargs, request_params, mocker: MockerFixture):
@@ -67,7 +69,9 @@ async def test_stop(dev: SmartDevice, mocker: MockerFixture):
 @pytest.mark.parametrize(
     ("method", "value", "target_key"),
     [
-        pytest.param("set_alarm_sound", "Alarm 1", "type", id="set_alarm_sound"),
+        pytest.param(
+            "set_alarm_sound", "Doorbell Ring 1", "type", id="set_alarm_sound"
+        ),
         pytest.param("set_alarm_volume", "low", "volume", id="set_alarm_volume"),
         pytest.param("set_alarm_duration", 10, "duration", id="set_alarm_duration"),
     ],

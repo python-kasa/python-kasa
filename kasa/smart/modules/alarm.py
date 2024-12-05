@@ -197,14 +197,14 @@ class Alarm(SmartModule):
     def _check_volume(self, volume: str) -> None:
         """Raise an exception on invalid volume."""
         if volume not in ["low", "normal", "high"]:
-            raise ValueError(f"Invalid volume {volume} [low, normal, high]")
+            raise ValueError(f"Invalid volume {volume} available: low, normal, high")
 
     def _check_duration(self, duration: int) -> None:
         """Raise an exception on invalid duration."""
         if duration < 1 or duration > 10 * 60:
-            raise ValueError(f"Invalid duration {duration} (wanted: 1-600)")
+            raise ValueError(f"Invalid duration {duration} available: 1-600")
 
     def _check_sound(self, sound: str) -> None:
         """Raise an exception on invalid sound."""
         if sound not in self.alarm_sounds:
-            raise ValueError(f"Invalid sound {sound} [{self.alarm_sounds}]")
+            raise ValueError(f"Invalid sound {sound} available: {self.alarm_sounds}")
