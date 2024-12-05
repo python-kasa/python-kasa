@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-from freezegun.api import FrozenDateTimeFactory
 
 from kasa import Credentials, Device, DeviceType, Module, StreamResolution
 
-from ..conftest import camera_smartcam, device_smartcam, hub_smartcam
+from ...conftest import camera_smartcam, device_smartcam
 
 
 @device_smartcam
@@ -86,39 +84,11 @@ async def test_stream_rtsp_url(dev: Device):
     assert url is None
 
 
-@device_smartcam
-async def test_alias(dev):
-    test_alias = "TEST1234"
-    original = dev.alias
+@camera_smartcam
+async def test_onvif_url(dev: Device):
+    """Test the onvif url."""
+    camera_module = dev.modules.get(Module.Camera)
+    assert camera_module
 
-    assert isinstance(original, str)
-    await dev.set_alias(test_alias)
-    await dev.update()
-    assert dev.alias == test_alias
-
-    await dev.set_alias(original)
-    await dev.update()
-    assert dev.alias == original
-
-
-@hub_smartcam
-async def test_hub(dev):
-    assert dev.children
-    for child in dev.children:
-        assert "Cloud" in child.modules
-        assert child.modules["Cloud"].data
-        assert child.alias
-        await child.update()
-        assert "Time" not in child.modules
-        assert child.time
-
-
-@device_smartcam
-async def test_device_time(dev: Device, freezer: FrozenDateTimeFactory):
-    """Test a child device gets the time from it's parent module."""
-    fallback_time = datetime.now(UTC).astimezone().replace(microsecond=0)
-    assert dev.time != fallback_time
-    module = dev.modules[Module.Time]
-    await module.set_time(fallback_time)
-    await dev.update()
-    assert dev.time == fallback_time
+    url = camera_module.onvif_url()
+    assert url == "http://127.0.0.123:2020/onvif/device_service"
