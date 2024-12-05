@@ -150,6 +150,9 @@ class Module(ABC):
         "ChildProtection"
     )
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+    PowerProtection: Final[ModuleName[smart.PowerProtection]] = ModuleName(
+        "PowerProtection"
+    )
 
     # SMARTCAM only modules
     Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")
