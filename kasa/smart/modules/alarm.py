@@ -21,10 +21,7 @@ class Alarm(SmartModule):
         }
 
     def _initialize_features(self) -> None:
-        """Initialize features.
-
-        This is implemented as some features depend on device responses.
-        """
+        """Initialize features."""
         device = self._device
         self._add_feature(
             Feature(
@@ -72,6 +69,20 @@ class Alarm(SmartModule):
                 category=Feature.Category.Config,
                 type=Feature.Type.Choice,
                 choices_getter=lambda: ["low", "normal", "high"],
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                id="alarm_duration",
+                name="Alarm duration",
+                container=self,
+                attribute_getter="alarm_duration",
+                attribute_setter="set_alarm_duration",
+                category=Feature.Category.Config,
+                type=Feature.Type.Number,
+                # TODO: needs testing the duration limits.
+                range_getter=lambda: (1, 60),
             )
         )
         self._add_feature(
@@ -126,6 +137,17 @@ class Alarm(SmartModule):
         return await self.call("set_alarm_configure", payload)
 
     @property
+    def alarm_duration(self) -> int:
+        """Return alarm duration."""
+        return self.data["get_alarm_configure"]["duration"]
+
+    async def set_alarm_duration(self, duration: int) -> dict:
+        """Set alarm duration."""
+        payload = self.data["get_alarm_configure"].copy()
+        payload["duration"] = duration
+        return await self.call("set_alarm_configure", payload)
+
+    @property
     def active(self) -> bool:
         """Return true if alarm is active."""
         return self._device.sys_info["in_alarm"]
@@ -140,7 +162,7 @@ class Alarm(SmartModule):
         self,
         *,
         duration: int | None = None,
-        volume: Literal["low", "normal", "high"] | None,
+        volume: Literal["low", "normal", "high"] | None = None,
         sound: str | None = None,
     ) -> dict:
         """Play alarm.
