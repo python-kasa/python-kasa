@@ -96,3 +96,10 @@ class PowerProtection(SmartModule):
             "protection_power": threshold,
         }
         return await self.call("set_protection_power", params)
+
+    async def _check_supported(self) -> bool:
+        """Return True if module is supported.
+
+        This is needed, as strips like P304M report the status only for children.
+        """
+        return "power_protection_status" in self._device.sys_info

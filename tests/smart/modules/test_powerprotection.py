@@ -22,7 +22,7 @@ def _skip_on_unavailable(dev: SmartDevice):
 @pytest.mark.parametrize(
     ("feature", "prop_name", "type"),
     [
-        ("overloaded", "overloaded", bool | None),
+        ("overloaded", "overloaded", bool),
         ("power_protection_enabled", "enabled", bool),
         ("power_protection_threshold", "protection_threshold", int),
     ],
