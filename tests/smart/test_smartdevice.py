@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import time
 from typing import Any, cast
@@ -11,7 +12,7 @@ import pytest
 from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 
-from kasa import Device, KasaException, Module
+from kasa import Device, DeviceType, KasaException, Module
 from kasa.exceptions import DeviceError, SmartErrorCode
 from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart import SmartDevice
@@ -54,14 +55,28 @@ async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
 
 
 @smart_discovery
-async def test_repr_no_update(discovery_mock):
+async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFixture):
+    """Test device type and repr when device not updated."""
     dev = SmartDevice(DISCOVERY_MOCK_IP)
+    assert dev.device_type is DeviceType.Unknown
     assert repr(dev) == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - update() needed>"
-    dev.update_from_discover_info(discovery_mock.discovery_data["result"])
+
+    discovery_result = copy.deepcopy(discovery_mock.discovery_data["result"])
+    dev.update_from_discover_info(discovery_result)
+    assert dev.device_type is DeviceType.Unknown
     assert (
         repr(dev)
         == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - None (None) - update() needed>"
     )
+    discovery_result["device_type"] = "SMART.FOOBAR"
+    dev.update_from_discover_info(discovery_result)
+    dev._components = {"dummy": 1}
+    assert dev.device_type is DeviceType.Plug
+    assert (
+        repr(dev)
+        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None (None) - update() needed>"
+    )
+    assert "Unknown device type, falling back to plug" in caplog.text
 
 
 @device_smart
