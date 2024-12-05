@@ -765,8 +765,9 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
-        if not self._components or not (
-            type_str := self._info.get("type", self._info.get("device_type"))
+        if (
+            not (type_str := self._info.get("type", self._info.get("device_type")))
+            or not self._components
         ):
             # no update or discovery info
             return self._device_type

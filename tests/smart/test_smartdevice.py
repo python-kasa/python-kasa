@@ -18,9 +18,11 @@ from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
 from tests.conftest import (
+    DISCOVERY_MOCK_IP,
     device_smart,
     get_device_for_fixture_protocol,
     get_parent_and_child_modules,
+    smart_discovery,
 )
 from tests.device_fixtures import variable_temp_smart
 
@@ -49,6 +51,17 @@ async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
     mocker.patch.object(dev.protocol, "query", return_value=mock_response)
     with pytest.raises(KasaException, match=msg):
         await dev.update()
+
+
+@smart_discovery
+async def test_repr_no_update(discovery_mock):
+    dev = SmartDevice(DISCOVERY_MOCK_IP)
+    assert repr(dev) == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - update() needed>"
+    dev.update_from_discover_info(discovery_mock.discovery_data["result"])
+    assert (
+        repr(dev)
+        == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - None (None) - update() needed>"
+    )
 
 
 @device_smart
