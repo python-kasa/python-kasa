@@ -683,10 +683,14 @@ class Discover:
         device = device_class(config.host, config=config)
         sys_info = extract_sys_info(info)
         device_type = sys_info.get("mic_type", sys_info.get("type"))
+        login_version = (
+            sys_info.get("stream_version") if device_type == "IOT.IPCAMERA" else None
+        )
         config.connection_type = DeviceConnectionParameters.from_values(
             device_family=device_type,
             encryption_type=DeviceEncryptionType.Xor.value,
             https=device_type == "IOT.IPCAMERA",
+            login_version=login_version,
         )
         device.protocol = get_protocol(config)  # type: ignore[assignment]
         device.update_from_discover_info(info)

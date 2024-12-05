@@ -201,7 +201,7 @@ def get_protocol(
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
-        "IOT.XOR.HTTPS": (IotProtocol, LinkieTransportV2),
+        "IOT.XOR.HTTPS.2": (IotProtocol, LinkieTransportV2),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.AES.2": (SmartProtocol, AesTransport),
         "SMART.KLAP.2": (SmartProtocol, KlapTransportV2),
