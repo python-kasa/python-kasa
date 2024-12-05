@@ -42,7 +42,7 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
         pytest.param({"volume": "low"}, {"alarm_volume": "low"}, id="volume"),
         pytest.param({"duration": 1}, {"alarm_duration": 1}, id="duration"),
         pytest.param(
-            {"sound": "Alarm 1"}, {"alarm_type": "Doorbell Ring 1"}, id="sound"
+            {"sound": "Doorbell Ring 1"}, {"alarm_type": "Doorbell Ring 1"}, id="sound"
         ),
     ],
 )
