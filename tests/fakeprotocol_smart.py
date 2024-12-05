@@ -544,7 +544,7 @@ class FakeSmartTransport(BaseTransport):
                     self.fixture_name, set()
                 ).add(method)
             return retval
-        elif method in ["set_qs_info", "fw_download"]:
+        elif method in ["set_qs_info", "fw_download", "play_alarm", "stop_alarm"]:
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
             self._set_dynamic_light_effect(info, params)
