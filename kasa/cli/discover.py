@@ -14,8 +14,9 @@ from kasa import (
     Discover,
     UnsupportedDeviceError,
 )
-from kasa.discover import ConnectAttempt, DiscoveryResult
+from kasa.discover import ConnectAttempt, DiscoveryResult, JsonDiscovered
 
+from ..json import dumps as json_dumps
 from .common import echo, error
 
 
@@ -78,6 +79,18 @@ async def detail(ctx):
 
 @discover.command()
 @click.pass_context
+async def raw(ctx):
+    """Return raw discovery data returned from devices."""
+
+    def print_raw(discovered: JsonDiscovered):
+        output = {"ip": discovered.ip, "discovery_result": discovered.raw}
+        echo(json_dumps(output, indent=True))
+
+    return await _discover(ctx, print_raw=print_raw, do_echo=False)
+
+
+@discover.command()
+@click.pass_context
 async def list(ctx):
     """List devices in the network in a table using udp broadcasts."""
     sem = asyncio.Semaphore()
@@ -101,10 +114,17 @@ async def list(ctx):
             echo(f"{host:<15} UNSUPPORTED DEVICE")
 
     echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}")
-    return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
+    return await _discover(
+        ctx,
+        print_discovered=print_discovered,
+        print_unsupported=print_unsupported,
+        do_echo=False,
+    )
 
 
-async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
+async def _discover(
+    ctx, *, print_discovered=None, print_unsupported=None, print_raw=None, do_echo=True
+):
     params = ctx.parent.parent.params
     target = params["target"]
     username = params["username"]
@@ -125,6 +145,7 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
             timeout=timeout,
             discovery_timeout=discovery_timeout,
             on_unsupported=print_unsupported,
+            on_json_discovered=print_raw,
         )
     if do_echo:
         echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
@@ -136,6 +157,7 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
         port=port,
         timeout=timeout,
         credentials=credentials,
+        on_json_discovered=print_raw,
     )
 
     for device in discovered_devices.values():
