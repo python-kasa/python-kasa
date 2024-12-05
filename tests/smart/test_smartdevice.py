@@ -17,12 +17,12 @@ from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
-
-from .conftest import (
+from tests.conftest import (
     device_smart,
     get_device_for_fixture_protocol,
     get_parent_and_child_modules,
 )
+from tests.device_fixtures import variable_temp_smart
 
 
 @device_smart
@@ -435,3 +435,10 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
     ):
         await new_dev.update()
         assert new_dev.is_cloud_connected is False
+
+
+@variable_temp_smart
+async def test_smart_temp_range(dev: Device):
+    light = dev.modules.get(Module.Light)
+    assert light
+    assert light.valid_temperature_range

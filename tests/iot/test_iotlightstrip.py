@@ -3,8 +3,7 @@ import pytest
 from kasa import DeviceType, Module
 from kasa.iot import IotLightStrip
 from kasa.iot.modules import LightEffect
-
-from .conftest import lightstrip_iot
+from tests.conftest import lightstrip_iot
 
 
 @lightstrip_iot
