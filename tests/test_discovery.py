@@ -390,9 +390,7 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
     device_class = Discover._get_device_class(discovery_data)
     device = device_class("127.0.0.1")
     discover_info = DiscoveryResult.from_dict(discovery_data["result"])
-    # discover_dump = discover_info.to_dict()
-    # model, _, _ = discover_dump["device_model"].partition("(")
-    # discover_dump["model"] = model
+
     device.update_from_discover_info(discovery_data["result"])
 
     assert device.mac == discover_info.mac.replace("-", ":")
