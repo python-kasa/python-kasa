@@ -1,24 +1,31 @@
 import base64
+from unittest.mock import ANY
 
+import aiohttp
 import pytest
+from yarl import URL
 
 from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException
+from kasa.httpclient import HttpClient
+from kasa.json import dumps as json_dumps
 from kasa.transports.linkietransport import LinkieTransportV2
 
 KASACAM_REQUEST_PLAINTEXT = '{"smartlife.cam.ipcamera.dateTime":{"get_status":{}}}'
 KASACAM_RESPONSE_ENCRYPTED = "0PKG74LnnfKc+dvhw5bCgaycqZOjk7Gdv96syaiKsJLTvtupwKPC7aPGse632KrB48/tiPiX9JzDsNW2lK6fqZCgmKuZoZGh3A=="
 KASACAM_RESPONSE_ERROR = '{"smartlife.cam.ipcamera.cloud": {"get_inf": {"err_code": -10008, "err_msg": "Unsupported API call."}}}'
+KASA_DEFAULT_CREDENTIALS_HASH = "YWRtaW46MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM="
 
 
 async def test_working(mocker):
-    transport_no_creds = LinkieTransportV2(config=DeviceConfig("127.0.0.1"))
+    host = "127.0.0.1"
+    mock_linkie_device = MockLinkieDevice(host)
     mocker.patch.object(
-        transport_no_creds._http_client,
-        "post",
-        side_effect=post_custom_return(200, KASACAM_RESPONSE_ENCRYPTED),
+        aiohttp.ClientSession, "post", side_effect=mock_linkie_device.post
     )
+    transport_no_creds = LinkieTransportV2(config=DeviceConfig(host))
+
     response = await transport_no_creds.send(KASACAM_REQUEST_PLAINTEXT)
     assert response == {
         "timezone": "UTC-05:00",
@@ -29,33 +36,49 @@ async def test_working(mocker):
 
 async def test_credentials_hash(mocker):
     # Test without credentials input
-    out_headers_no_creds = {}
-    transport_no_creds = LinkieTransportV2(config=DeviceConfig("127.0.0.1"))
-    mocker.patch.object(
-        transport_no_creds._http_client,
-        "post",
-        side_effect=create_post_get_auth_header(out_headers_no_creds),
+
+    host = "127.0.0.1"
+    mock_linkie_device = MockLinkieDevice(host)
+    mock_post = mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_linkie_device.post
     )
+    transport_no_creds = LinkieTransportV2(config=DeviceConfig(host))
     await transport_no_creds.send(KASACAM_REQUEST_PLAINTEXT)
-    assert (
-        out_headers_no_creds["Authorization"]
-        == f"Basic {_generate_kascam_basic_auth()}"
+    mock_post.assert_called_once_with(
+        URL(f"https://{host}:10443/data/LINKIE2.json"),
+        params=None,
+        data=ANY,
+        json=None,
+        timeout=ANY,
+        cookies=None,
+        headers={
+            "Authorization": "Basic " + _generate_kascam_basic_auth(),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        ssl=ANY,
     )
 
+    assert transport_no_creds.credentials_hash == KASA_DEFAULT_CREDENTIALS_HASH
     # Test with credentials input
-    out_headers_with_creds = {}
+
     transport_with_creds = LinkieTransportV2(
-        config=DeviceConfig("127.0.0.1", credentials=Credentials("Admin", "password"))
+        config=DeviceConfig(host, credentials=Credentials("Admin", "password"))
     )
-    mocker.patch.object(
-        transport_with_creds._http_client,
-        "post",
-        side_effect=create_post_get_auth_header(out_headers_with_creds),
-    )
+    mock_post.reset_mock()
+
     await transport_with_creds.send(KASACAM_REQUEST_PLAINTEXT)
-    assert (
-        out_headers_with_creds["Authorization"]
-        == f"Basic {_generate_kascam_basic_auth()}"
+    mock_post.assert_called_once_with(
+        URL(f"https://{host}:10443/data/LINKIE2.json"),
+        params=None,
+        data=ANY,
+        json=None,
+        timeout=ANY,
+        cookies=None,
+        headers={
+            "Authorization": "Basic " + _generate_kascam_basic_auth(),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        ssl=ANY,
     )
 
 
@@ -68,22 +91,30 @@ async def test_credentials_hash(mocker):
     ],
 )
 async def test_exceptions(mocker, return_status, return_data, expected):
-    transport = LinkieTransportV2(config=DeviceConfig("127.0.0.1"))
-    mocker.patch.object(
-        transport._http_client,
-        "post",
-        side_effect=post_custom_return(return_status, return_data),
+    host = "127.0.0.1"
+    transport = LinkieTransportV2(config=DeviceConfig(host))
+    mock_linkie_device = MockLinkieDevice(
+        host, status_code=return_status, response=return_data
     )
-    with pytest.raises(KasaException) as ex:
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_linkie_device.post
+    )
+
+    with pytest.raises(KasaException, match=expected):
         await transport.send(KASACAM_REQUEST_PLAINTEXT)
-    # Unpack original error from Retryable
-    assert expected in str(ex.value.__context__)
 
 
 def _generate_kascam_basic_auth():
     creds = get_default_credentials(DEFAULT_CREDENTIALS["KASACAMERA"])
     creds_combined = f"{creds.username}:{creds.password}"
     return base64.b64encode(creds_combined.encode()).decode()
+
+
+def post_custom_return(ret_code: int, ret_data: bytes):
+    async def _post(*_, **__):
+        return (ret_code, ret_data)
+
+    return _post
 
 
 def create_post_get_auth_header(out_headers: dict):
@@ -99,8 +130,32 @@ def create_post_get_auth_header(out_headers: dict):
     return post_get_auth_header
 
 
-def post_custom_return(ret_code: int, ret_data: bytes):
-    async def _post(*_, **__):
-        return (ret_code, ret_data)
+class MockLinkieDevice:
+    """Based on MockSslDevice."""
 
-    return _post
+    class _mock_response:
+        def __init__(self, status, request: dict):
+            self.status = status
+            self._json = request
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_t, exc_v, exc_tb):
+            pass
+
+        async def read(self):
+            if isinstance(self._json, dict):
+                return json_dumps(self._json).encode()
+            return self._json
+
+    def __init__(self, host, *, status_code=200, response=KASACAM_RESPONSE_ENCRYPTED):
+        self.host = host
+        self.http_client = HttpClient(DeviceConfig(self.host))
+        self.status_code = status_code
+        self.response = response
+
+    async def post(
+        self, url: URL, *, headers=None, params=None, json=None, data=None, **__
+    ):
+        return self._mock_response(self.status_code, self.response)
