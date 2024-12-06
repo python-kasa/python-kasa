@@ -200,6 +200,7 @@ class SmartCamDevice(SmartDevice):
             "mac": basic_info["mac"],
             "hwId": basic_info.get("hw_id"),
             "oem_id": basic_info["oem_id"],
+            "device_id": basic_info["dev_id"],
         }
 
     @property

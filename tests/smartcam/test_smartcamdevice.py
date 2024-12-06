@@ -24,6 +24,12 @@ async def test_state(dev: Device):
 
 
 @device_smartcam
+async def test_device_id(dev: Device):
+    """Test all devices have a device id."""
+    assert dev.device_id
+
+
+@device_smartcam
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
