@@ -12,6 +12,7 @@ from .deviceconfig import DeviceConfig
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import (
     IotBulb,
+    IotCamera,
     IotDevice,
     IotDimmer,
     IotLightStrip,
@@ -32,6 +33,7 @@ from .transports import (
     BaseTransport,
     KlapTransport,
     KlapTransportV2,
+    LinkieTransportV2,
     SslTransport,
     XorTransport,
 )
@@ -138,6 +140,7 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
         DeviceType.Strip: IotStrip,
         DeviceType.WallSwitch: IotWallSwitch,
         DeviceType.LightStrip: IotLightStrip,
+        DeviceType.Camera: IotCamera,
     }
     return TYPE_TO_CLASS[IotDevice._get_device_type_from_sys_info(sysinfo)]
 
@@ -159,6 +162,7 @@ def get_device_class_from_family(
         "SMART.TAPOROBOVAC": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
+        "IOT.IPCAMERA": IotCamera,
     }
     lookup_key = f"{device_type}{'.HTTPS' if https else ''}"
     if (
@@ -197,6 +201,7 @@ def get_protocol(
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
+        "IOT.XOR.HTTPS.2": (IotProtocol, LinkieTransportV2),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.AES.2": (SmartProtocol, AesTransport),
         "SMART.KLAP.2": (SmartProtocol, KlapTransportV2),
