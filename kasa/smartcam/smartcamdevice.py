@@ -68,7 +68,14 @@ class SmartCamDevice(SmartDevice):
             self._last_update, "getChildDeviceList", {}
         ):
             for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+                child_id = info["device_id"]
+                if child_id not in self._children:
+                    _LOGGER.debug(
+                        "Skipping child update for %s, probably unsupported device",
+                        child_id,
+                    )
+                    continue
+                self._children[child_id]._update_internal_state(info)
 
     async def _initialize_smart_child(
         self, info: dict, child_components: dict
