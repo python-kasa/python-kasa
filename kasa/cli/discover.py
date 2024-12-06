@@ -64,7 +64,9 @@ async def detail(ctx):
                 await ctx.parent.invoke(state)
             echo()
 
-    discovered = await _discover(ctx, print_discovered, print_unsupported)
+    discovered = await _discover(
+        ctx, print_discovered=print_discovered, print_unsupported=print_unsupported
+    )
     if ctx.parent.parent.params["host"]:
         return discovered
 

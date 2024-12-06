@@ -731,6 +731,7 @@ async def test_without_device_type(dev, mocker, runner):
         timeout=5,
         discovery_timeout=7,
         on_unsupported=ANY,
+        on_json_discovered=ANY,
     )
 
 

@@ -786,7 +786,9 @@ class Discover:
                 Discover._decrypt_discovery_data(discovery_result)
             except Exception:
                 _LOGGER.exception(
-                    "Unable to decrypt discovery data %s: %s", config.host, data
+                    "Unable to decrypt discovery data %s: %s",
+                    config.host,
+                    redact_data(info, NEW_DISCOVERY_REDACTORS),
                 )
 
         type_ = discovery_result.device_type
