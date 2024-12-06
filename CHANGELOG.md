@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.1](https://github.com/python-kasa/python-kasa/tree/0.8.1) (2024-12-06)
+
+This patch release fixes some issues with newly supported smartcam devices.
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.8.0...0.8.1)
+
+**Fixed bugs:**
+
+- Fix update errors on hubs with unsupported children [\#1344](https://github.com/python-kasa/python-kasa/pull/1344) (@sdb9696)
+- Fix smartcam missing device id [\#1343](https://github.com/python-kasa/python-kasa/pull/1343) (@sdb9696)
+
 ## [0.8.0](https://github.com/python-kasa/python-kasa/tree/0.8.0) (2024-11-26)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.7...0.8.0)
