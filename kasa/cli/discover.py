@@ -80,12 +80,22 @@ async def detail(ctx):
 
 
 @discover.command()
+@click.option(
+    "--redact/--no-redact",
+    default=False,
+    is_flag=True,
+    type=bool,
+    help="Set flag to redact sensitive data from raw output.",
+)
 @click.pass_context
-async def raw(ctx):
+async def raw(ctx, redact: bool):
     """Return raw discovery data returned from devices."""
 
     def print_raw(discovered: JsonDiscovered):
-        output = {"ip": discovered.ip, "discovery_result": discovered.raw}
+        raw = discovered.raw
+        if redact:
+            raw = discovered.redactor(raw)
+        output = {"ip": discovered.ip, "discovery_result": raw}
         echo(json_dumps(output, indent=True))
 
     return await _discover(ctx, print_raw=print_raw, do_echo=False)

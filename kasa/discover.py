@@ -152,6 +152,7 @@ class JsonDiscovered(NamedTuple):
 
     ip: str
     raw: dict
+    redactor: Callable[[dict], dict]
 
 
 OnDiscoveredCallable = Callable[[Device], Coroutine]
@@ -167,6 +168,8 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "master_device_id": lambda x: "REDACTED_" + x[9::],
     "group_id": lambda x: "REDACTED_" + x[9::],
     "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
+    "key": lambda x: "REDACTED",
+    "data": lambda x: "REDACTED",
 }
 
 
@@ -341,15 +344,21 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             if port == self.discovery_port:
                 json_func = Discover._get_discovery_json_legacy
                 device_func = Discover._get_device_instance_legacy
+                redactors = IOT_REDACTORS
             elif port == Discover.DISCOVERY_PORT_2:
                 config.uses_http = True
                 json_func = Discover._get_discovery_json
                 device_func = Discover._get_device_instance
+                redactors = NEW_DISCOVERY_REDACTORS
             else:
                 return
             info = json_func(data, ip)
             if self.on_json_discovered:
-                self.on_json_discovered(JsonDiscovered(ip=ip, raw=info))
+                self.on_json_discovered(
+                    JsonDiscovered(
+                        ip=ip, raw=info, redactor=lambda x: redact_data(x, redactors)
+                    )
+                )
             device = device_func(info, config)
         except UnsupportedDeviceError as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
