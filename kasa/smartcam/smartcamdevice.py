@@ -74,8 +74,8 @@ class SmartCamDevice(SmartDevice):
                         "Skipping child update for %s, probably unsupported device",
                         child_id,
                     )
-                    continue  # child smartcams not supported
-                self._children[info["device_id"]]._update_internal_state(info)
+                    continue
+                self._children[child_id]._update_internal_state(info)
 
     async def _initialize_smart_child(
         self, info: dict, child_components: dict
