@@ -19,6 +19,7 @@ KASA_DEFAULT_CREDENTIALS_HASH = "YWRtaW46MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDF
 
 
 async def test_working(mocker):
+    """No errors with an expected request/response."""
     host = "127.0.0.1"
     mock_linkie_device = MockLinkieDevice(host)
     mocker.patch.object(
@@ -35,6 +36,7 @@ async def test_working(mocker):
 
 
 async def test_credentials_hash(mocker):
+    """Ensure the default credentials are always passed as Basic Auth."""
     # Test without credentials input
 
     host = "127.0.0.1"
@@ -91,6 +93,7 @@ async def test_credentials_hash(mocker):
     ],
 )
 async def test_exceptions(mocker, return_status, return_data, expected):
+    """Test a variety of possible responses from the device."""
     host = "127.0.0.1"
     transport = LinkieTransportV2(config=DeviceConfig(host))
     mock_linkie_device = MockLinkieDevice(
