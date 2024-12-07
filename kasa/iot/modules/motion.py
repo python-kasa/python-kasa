@@ -124,7 +124,7 @@ class Motion(IotModule):
                 name="Motion Sensor Range",
                 icon="mdi:motion-sensor",
                 attribute_getter="range",
-                attribute_setter="_set_range_cli",
+                attribute_setter="_set_range_from_str",
                 type=Feature.Type.Choice,
                 choices_getter="ranges",
                 category=Feature.Category.Config,
@@ -336,7 +336,7 @@ class Motion(IotModule):
             )
         return Range[value]
 
-    async def _set_range_cli(self, input: str) -> dict:
+    async def _set_range_from_str(self, input: str) -> dict:
         value = self._parse_range_value(input)
         return await self.set_range(range=value)
 

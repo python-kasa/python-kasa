@@ -1,6 +1,7 @@
+import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Module
+from kasa import KasaException, Module
 from kasa.iot import IotDimmer
 from kasa.iot.modules.motion import Motion, Range
 
@@ -43,6 +44,33 @@ async def test_motion_range(dev: IotDimmer, mocker: MockerFixture):
             "set_trigger_sens",
             {"index": range.value},
         )
+
+
+@dimmer_iot
+async def test_motion_range_from_string(dev: IotDimmer, mocker: MockerFixture):
+    motion: Motion = dev.modules[Module.IotMotion]
+    query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
+
+    ranges_good = {
+        "near": Range.Near,
+        "MID": Range.Mid,
+        "fAr": Range.Far,
+        " Custom   ": Range.Custom,
+    }
+    for range_str, range in ranges_good.items():
+        await motion._set_range_from_str(range_str)
+        query_helper.assert_called_with(
+            "smartlife.iot.PIR",
+            "set_trigger_sens",
+            {"index": range.value},
+        )
+
+    query_helper = mocker.patch("kasa.iot.IotDimmer._query_helper")
+    ranges_bad = ["near1", "MD", "F\nAR", "Custom Near", '"FAR"', "'FAR'"]
+    for range_str in ranges_bad:
+        with pytest.raises(KasaException):
+            await motion._set_range_from_str(range_str)
+        query_helper.assert_not_called()
 
 
 @dimmer_iot

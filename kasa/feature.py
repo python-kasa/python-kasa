@@ -280,7 +280,7 @@ class Feature:
 
         if self.type == Feature.Type.Choice:
             if not isinstance(choices, list):
-                _LOGGER.critical(
+                _LOGGER.error(
                     "Choices are not properly defined for %s (%s). Type: <%s> Value: %s",  # noqa: E501
                     self.name,
                     self.id,
