@@ -16,6 +16,7 @@ import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import (
     IotBulb,
+    IotCamera,
     IotDevice,
     IotDimmer,
     IotLightStrip,
@@ -53,6 +54,11 @@ def _get_subclasses(of_class):
 device_classes = pytest.mark.parametrize(
     "device_class_name_obj", _get_subclasses(Device), ids=lambda t: t[0]
 )
+
+
+async def test_device_id(dev: Device):
+    """Test all devices have a device id."""
+    assert dev.device_id
 
 
 async def test_alias(dev):
@@ -113,6 +119,7 @@ async def test_device_class_repr(device_class_name_obj):
         IotStrip: DeviceType.Strip,
         IotWallSwitch: DeviceType.WallSwitch,
         IotLightStrip: DeviceType.LightStrip,
+        IotCamera: DeviceType.Camera,
         SmartChildDevice: DeviceType.Unknown,
         SmartDevice: DeviceType.Unknown,
         SmartCamDevice: DeviceType.Camera,
