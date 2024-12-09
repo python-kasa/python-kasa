@@ -124,7 +124,7 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.iot.iotdevice import IotDevice
+from kasa.iot.iotdevice import IotDevice, _extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -725,12 +725,17 @@ class Discover:
 
         device_class = cast(type[IotDevice], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
-        sys_info = info["system"]["get_sysinfo"]
-        if device_type := sys_info.get("mic_type", sys_info.get("type")):
-            config.connection_type = DeviceConnectionParameters.from_values(
-                device_family=device_type,
-                encryption_type=DeviceEncryptionType.Xor.value,
-            )
+        sys_info = _extract_sys_info(info)
+        device_type = sys_info.get("mic_type", sys_info.get("type"))
+        login_version = (
+            sys_info.get("stream_version") if device_type == "IOT.IPCAMERA" else None
+        )
+        config.connection_type = DeviceConnectionParameters.from_values(
+            device_family=device_type,
+            encryption_type=DeviceEncryptionType.Xor.value,
+            https=device_type == "IOT.IPCAMERA",
+            login_version=login_version,
+        )
         device.protocol = get_protocol(config)  # type: ignore[assignment]
         device.update_from_discover_info(info)
         return device

@@ -20,6 +20,7 @@ from kasa.discover import (
     DiscoveredRaw,
     DiscoveryResult,
 )
+from kasa.iot.iotdevice import _extract_sys_info
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
 from kasa.protocols.protocol import redact_data
 
@@ -247,8 +248,8 @@ def _echo_discovery_info(discovery_info) -> None:
     if discovery_info is None:
         return
 
-    if "system" in discovery_info and "get_sysinfo" in discovery_info["system"]:
-        _echo_dictionary(discovery_info["system"]["get_sysinfo"])
+    if sysinfo := _extract_sys_info(discovery_info):
+        _echo_dictionary(sysinfo)
         return
 
     try:
