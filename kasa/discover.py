@@ -177,6 +177,7 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "group_id": lambda x: "REDACTED_" + x[9::],
     "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
     "encrypt_info": lambda x: {**x, "key": "", "data": ""},
+    "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
 }
 
 

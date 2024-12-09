@@ -38,7 +38,7 @@ from kasa import (
 )
 from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
-from kasa.discover import DiscoveryResult, JsonDiscovered
+from kasa.discover import NEW_DISCOVERY_REDACTORS, DiscoveredRaw, DiscoveryResult
 from kasa.exceptions import SmartErrorCode
 from kasa.protocols import IotProtocol
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
@@ -65,14 +65,6 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 _LOGGER = logging.getLogger(__name__)
 
 
-DUMP_DEVINFO_REDACTORS = {
-    "device_id": lambda v: re.sub(r"\w", "0", v),
-    "oem_id": lambda v: re.sub(r"\w", "0", v),
-    "deviceId": lambda v: re.sub(r"\w", "0", v),
-    "oemId": lambda v: re.sub(r"\w", "0", v),
-}
-
-
 def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
     """Wrap the redactors for  dump_devinfo.
 
@@ -86,6 +78,8 @@ def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
                 return lambda x: "**SCRUBBED**"
 
             def _scrub(x: Any) -> Any:
+                if key in {"ip", "local_ip"}:
+                    return "127.0.0.123"
                 # Already scrubbed by dump_devinfo
                 if isinstance(x, str) and "SCRUBBED" in x:
                     return x
@@ -256,9 +250,8 @@ async def cli(
 
     raw_discovery = {}
 
-    def capture_raw(discovered: JsonDiscovered):
-        raw = discovered.redactor(discovered.raw)
-        raw_discovery[discovered.ip] = raw
+    def capture_raw(discovered: DiscoveredRaw):
+        raw_discovery[discovered["meta"]["ip"]] = discovered["discovery_response"]
 
     credentials = Credentials(username=username, password=password)
     if host is not None:
@@ -312,7 +305,7 @@ async def cli(
                 credentials=credentials,
                 port=port,
                 discovery_timeout=discovery_timeout,
-                on_json_discovered=capture_raw,
+                on_discovered_raw=capture_raw,
             )
             discovery_info = raw_discovery[device.host]
             await handle_device(
@@ -339,7 +332,7 @@ async def cli(
                 dev.protocol,
                 discovery_info=discovery_info,
                 batch_size=batch_size,
-                on_json_discovered=capture_raw,
+                on_discovered_raw=capture_raw,
             )
 
 
@@ -426,7 +419,9 @@ async def get_legacy_fixture(
                 child["id"] = f"SCRUBBED_CHILD_DEVICE_ID_{index + 1}"
 
     if discovery_info and not discovery_info.get("system"):
-        final["discovery_result"] = discovery_info
+        final["discovery_result"] = redact_data(
+            discovery_info, _wrap_redactors(NEW_DISCOVERY_REDACTORS)
+        )
 
     click.echo(f"Got {len(successes)} successes")
     click.echo(click.style("## device info file ##", bold=True))
@@ -941,7 +936,9 @@ async def get_smart_fixtures(
     final = redact_data(final, _wrap_redactors(SMART_REDACTORS))
     discovery_result = None
     if discovery_info:
-        final["discovery_result"] = discovery_info
+        final["discovery_result"] = redact_data(
+            discovery_info, _wrap_redactors(NEW_DISCOVERY_REDACTORS)
+        )
         discovery_result = discovery_info["result"]
 
     click.echo(f"Got {len(successes)} successes")

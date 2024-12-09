@@ -56,11 +56,13 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "mfi_setup_id": lambda x: re.sub(r"\w", "0", x),
     "mfi_token_token": lambda x: re.sub(r"\w", "0", x),
     "mfi_token_uuid": lambda x: re.sub(r"\w", "0", x),
+    "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
     # smartcam
     "dev_id": lambda x: "REDACTED_" + x[9::],
     "device_name": lambda x: "#MASKED_NAME#" if x else "",
     "device_alias": lambda x: "#MASKED_NAME#" if x else "",
     "connect_ssid": lambda x: "#MASKED_SSID#" if x else "",
+    "local_ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
     # robovac
     "board_sn": lambda _: "000000000000",
     "custom_sn": lambda _: "000000000000",
