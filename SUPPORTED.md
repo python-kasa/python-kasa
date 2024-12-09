@@ -97,6 +97,8 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 - **KP405**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
   - Hardware: 1.0 (US) / Firmware: 1.0.6
+- **KS200**
+  - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **KS200M**
   - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 1.0 (US) / Firmware: 1.0.11
@@ -192,6 +194,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
 - **P115**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
+  - Hardware: 1.0 (US) / Firmware: 1.1.3
 - **P125M**
   - Hardware: 1.0 (US) / Firmware: 1.1.0
 - **P135**
