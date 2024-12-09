@@ -25,6 +25,7 @@ def get_default_credentials(tuple: tuple[str, str]) -> Credentials:
 
 DEFAULT_CREDENTIALS = {
     "KASA": ("a2FzYUB0cC1saW5rLm5ldA==", "a2FzYVNldHVw"),
+    "KASACAMERA": ("YWRtaW4=", "MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM="),
     "TAPO": ("dGVzdEB0cC1saW5rLm5ldA==", "dGVzdA=="),
     "TAPOCAMERA": ("YWRtaW4=", "YWRtaW4="),
 }
