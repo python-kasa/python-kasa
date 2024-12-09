@@ -14,7 +14,14 @@ from kasa import (
     Discover,
     UnsupportedDeviceError,
 )
-from kasa.discover import ConnectAttempt, DiscoveryResult, JsonDiscovered
+from kasa.discover import (
+    NEW_DISCOVERY_REDACTORS,
+    ConnectAttempt,
+    DiscoveredRaw,
+    DiscoveryResult,
+)
+from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
+from kasa.protocols.protocol import redact_data
 
 from ..json import dumps as json_dumps
 from .common import echo, error
@@ -91,12 +98,17 @@ async def detail(ctx):
 async def raw(ctx, redact: bool):
     """Return raw discovery data returned from devices."""
 
-    def print_raw(discovered: JsonDiscovered):
-        raw = discovered.raw
+    def print_raw(discovered: DiscoveredRaw):
         if redact:
-            raw = discovered.redactor(raw)
-        output = {"ip": discovered.ip, "discovery_result": raw}
-        echo(json_dumps(output, indent=True))
+            redactors = (
+                NEW_DISCOVERY_REDACTORS
+                if discovered["meta"]["port"] == Discover.DISCOVERY_PORT_2
+                else IOT_REDACTORS
+            )
+            discovered["discovery_response"] = redact_data(
+                discovered["discovery_response"], redactors
+            )
+        echo(json_dumps(discovered, indent=True))
 
     return await _discover(ctx, print_raw=print_raw, do_echo=False)
 
@@ -157,7 +169,7 @@ async def _discover(
             timeout=timeout,
             discovery_timeout=discovery_timeout,
             on_unsupported=print_unsupported,
-            on_json_discovered=print_raw,
+            on_discovered_raw=print_raw,
         )
     if do_echo:
         echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
@@ -169,7 +181,7 @@ async def _discover(
         port=port,
         timeout=timeout,
         credentials=credentials,
-        on_json_discovered=print_raw,
+        on_discovered_raw=print_raw,
     )
 
     for device in discovered_devices.values():

@@ -99,6 +99,7 @@ from typing import (
     Annotated,
     Any,
     NamedTuple,
+    TypedDict,
     cast,
 )
 
@@ -147,29 +148,35 @@ class ConnectAttempt(NamedTuple):
     device: type
 
 
-class JsonDiscovered(NamedTuple):
-    """Try to connect attempt."""
+class DiscoveredMeta(TypedDict):
+    """Meta info about discovery response."""
 
     ip: str
-    raw: dict
-    redactor: Callable[[dict], dict]
+    port: int
+
+
+class DiscoveredRaw(TypedDict):
+    """Try to connect attempt."""
+
+    meta: DiscoveredMeta
+    discovery_response: dict
 
 
 OnDiscoveredCallable = Callable[[Device], Coroutine]
-OnJsonDiscoveredCallable = Callable[[JsonDiscovered], None]
+OnDiscoveredRawCallable = Callable[[DiscoveredRaw], None]
 OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Coroutine]
 OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
 DeviceDict = dict[str, Device]
 
 NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
+    "device_name": lambda x: "#MASKED_NAME#" if x else "",
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
     "master_device_id": lambda x: "REDACTED_" + x[9::],
     "group_id": lambda x: "REDACTED_" + x[9::],
     "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
-    "key": lambda x: "REDACTED",
-    "data": lambda x: "REDACTED",
+    "encrypt_info": lambda x: {**x, "key": "", "data": ""},
 }
 
 
@@ -227,12 +234,12 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self,
         *,
         on_discovered: OnDiscoveredCallable | None = None,
+        on_discovered_raw: OnDiscoveredRawCallable | None = None,
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         discovery_timeout: int = 5,
         interface: str | None = None,
         on_unsupported: OnUnsupportedCallable | None = None,
-        on_json_discovered: OnJsonDiscoveredCallable | None = None,
         port: int | None = None,
         credentials: Credentials | None = None,
         timeout: int | None = None,
@@ -252,7 +259,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.unsupported_device_exceptions: dict = {}
         self.invalid_device_exceptions: dict = {}
         self.on_unsupported = on_unsupported
-        self.on_json_discovered = on_json_discovered
+        self.on_discovered_raw = on_discovered_raw
         self.credentials = credentials
         self.timeout = timeout
         self.discovery_timeout = discovery_timeout
@@ -344,20 +351,19 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             if port == self.discovery_port:
                 json_func = Discover._get_discovery_json_legacy
                 device_func = Discover._get_device_instance_legacy
-                redactors = IOT_REDACTORS
             elif port == Discover.DISCOVERY_PORT_2:
                 config.uses_http = True
                 json_func = Discover._get_discovery_json
                 device_func = Discover._get_device_instance
-                redactors = NEW_DISCOVERY_REDACTORS
             else:
                 return
             info = json_func(data, ip)
-            if self.on_json_discovered:
-                self.on_json_discovered(
-                    JsonDiscovered(
-                        ip=ip, raw=info, redactor=lambda x: redact_data(x, redactors)
-                    )
+            if self.on_discovered_raw is not None:
+                self.on_discovered_raw(
+                    {
+                        "discovery_response": info,
+                        "meta": {"ip": ip, "port": port},
+                    }
                 )
             device = device_func(info, config)
         except UnsupportedDeviceError as udex:
@@ -416,11 +422,11 @@ class Discover:
         *,
         target: str = "255.255.255.255",
         on_discovered: OnDiscoveredCallable | None = None,
+        on_discovered_raw: OnDiscoveredRawCallable | None = None,
         discovery_timeout: int = 5,
         discovery_packets: int = 3,
         interface: str | None = None,
         on_unsupported: OnUnsupportedCallable | None = None,
-        on_json_discovered: OnJsonDiscoveredCallable | None = None,
         credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,
@@ -447,12 +453,12 @@ class Discover:
         :param target: The target address where to send the broadcast discovery
          queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
+        :param on_discovered_raw: Optional callback once discovered json is loaded
+            before any attempt to deserialize it and create devices
         :param discovery_timeout: Seconds to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets to broadcast
         :param interface: Bind to specific interface
         :param on_unsupported: Optional callback when unsupported devices are discovered
-        :param on_json_discovered: Optional callback once discovered json is loaded
-            before any attempt to deserialize it and create devices
         :param credentials: Credentials for devices that require authentication.
             username and password are ignored if provided.
         :param username: Username for devices that require authentication
@@ -471,7 +477,7 @@ class Discover:
                 discovery_packets=discovery_packets,
                 interface=interface,
                 on_unsupported=on_unsupported,
-                on_json_discovered=on_json_discovered,
+                on_discovered_raw=on_discovered_raw,
                 credentials=credentials,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
@@ -505,7 +511,7 @@ class Discover:
         credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,
-        on_json_discovered: OnJsonDiscoveredCallable | None = None,
+        on_discovered_raw: OnDiscoveredRawCallable | None = None,
         on_unsupported: OnUnsupportedCallable | None = None,
     ) -> Device | None:
         """Discover a single device by the given IP address.
@@ -523,7 +529,7 @@ class Discover:
             username and password are ignored if provided.
         :param username: Username for devices that require authentication
         :param password: Password for devices that require authentication
-        :param on_json_discovered: Optional callback once discovered json is loaded
+        :param on_discovered_raw: Optional callback once discovered json is loaded
             before any attempt to deserialize it and create devices
         :param on_unsupported: Optional callback when unsupported devices are discovered
         :rtype: SmartDevice
@@ -562,7 +568,7 @@ class Discover:
                 credentials=credentials,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
-                on_json_discovered=on_json_discovered,
+                on_discovered_raw=on_discovered_raw,
             ),
             local_addr=("0.0.0.0", 0),  # noqa: S104
         )

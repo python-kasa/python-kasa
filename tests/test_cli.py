@@ -130,7 +130,9 @@ async def test_list_devices(discovery_mock, runner):
 async def test_discover_raw(discovery_mock, runner, mocker):
     """Test that device update is called on main."""
     wrapped = redact_data
-    with patch("kasa.discover.redact_data", side_effect=wrapped) as redact_spy:
+    with patch(
+        "kasa.protocols.protocol.redact_data", side_effect=wrapped
+    ) as redact_spy:
         res = await runner.invoke(
             cli,
             ["--username", "foo", "--password", "bar", "discover", "raw"],
@@ -139,8 +141,8 @@ async def test_discover_raw(discovery_mock, runner, mocker):
         assert res.exit_code == 0
 
         expected = {
-            "ip": "127.0.0.123",
-            "discovery_result": discovery_mock.discovery_data,
+            "discovery_response": discovery_mock.discovery_data,
+            "meta": {"ip": "127.0.0.123", "port": 20002},
         }
         assert res.output == json_dumps(expected, indent=True) + "\n"
 
@@ -152,11 +154,6 @@ async def test_discover_raw(discovery_mock, runner, mocker):
             catch_exceptions=False,
         )
         assert res.exit_code == 0
-
-        expected = {
-            "ip": "127.0.0.123",
-            "discovery_result": discovery_mock.discovery_data,
-        }
 
         redact_spy.assert_called()
 
@@ -766,7 +763,7 @@ async def test_without_device_type(dev, mocker, runner):
         timeout=5,
         discovery_timeout=7,
         on_unsupported=ANY,
-        on_json_discovered=ANY,
+        on_discovered_raw=ANY,
     )
 
 
