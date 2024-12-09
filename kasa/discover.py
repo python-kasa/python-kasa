@@ -163,13 +163,13 @@ DeviceDict = dict[str, Device]
 
 NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
+    "device_name": lambda x: "#MASKED_NAME#" if x else "",
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
     "master_device_id": lambda x: "REDACTED_" + x[9::],
     "group_id": lambda x: "REDACTED_" + x[9::],
     "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
-    "key": lambda x: "REDACTED",
-    "data": lambda x: "REDACTED",
+    "encrypt_info": lambda x: {**x, "key": "", "data": ""},
 }
 
 

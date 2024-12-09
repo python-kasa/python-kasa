@@ -10,8 +10,6 @@ and finally execute a query to query all of them at once.
 
 from __future__ import annotations
 
-import base64
-import collections.abc
 import dataclasses
 import json
 import logging
@@ -19,6 +17,7 @@ import re
 import sys
 import traceback
 from collections import defaultdict, namedtuple
+from collections.abc import Callable
 from pathlib import Path
 from pprint import pprint
 from typing import Any
@@ -39,13 +38,16 @@ from kasa import (
 )
 from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
-from kasa.discover import DiscoveryResult
+from kasa.discover import DiscoveryResult, JsonDiscovered
 from kasa.exceptions import SmartErrorCode
 from kasa.protocols import IotProtocol
+from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
+from kasa.protocols.protocol import redact_data
 from kasa.protocols.smartcamprotocol import (
     SmartCamProtocol,
     _ChildCameraProtocolWrapper,
 )
+from kasa.protocols.smartprotocol import REDACTORS as SMART_REDACTORS
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcam import SmartCamDevice
@@ -63,6 +65,42 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 _LOGGER = logging.getLogger(__name__)
 
 
+DUMP_DEVINFO_REDACTORS = {
+    "device_id": lambda v: re.sub(r"\w", "0", v),
+    "oem_id": lambda v: re.sub(r"\w", "0", v),
+    "deviceId": lambda v: re.sub(r"\w", "0", v),
+    "oemId": lambda v: re.sub(r"\w", "0", v),
+}
+
+
+def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
+    """Wrap the redactors for  dump_devinfo.
+
+    Will replace all partial REDACT_ values with zeros.
+    If the data item is already scrubbed by dump_devinfo will leave as-is.
+    """
+
+    def _wrap(key: str) -> Any:
+        def _wrapped(redactor: Callable[[Any], Any] | None) -> Any | None:
+            if redactor is None:
+                return lambda x: "**SCRUBBED**"
+
+            def _scrub(x: Any) -> Any:
+                # Already scrubbed by dump_devinfo
+                if isinstance(x, str) and "SCRUBBED" in x:
+                    return x
+                default = redactor(x)
+                if isinstance(default, str) and "REDACT" in default:
+                    return re.sub(r"\w", "0", x)
+                return default
+
+            return _scrub
+
+        return _wrapped(redactors[key])
+
+    return {key: _wrap(key) for key in redactors}
+
+
 @dataclasses.dataclass
 class SmartCall:
     """Class for smart and smartcam calls."""
@@ -72,115 +110,6 @@ class SmartCall:
     should_succeed: bool
     child_device_id: str
     supports_multiple: bool = True
-
-
-def scrub(res):
-    """Remove identifiers from the given dict."""
-    keys_to_scrub = [
-        "deviceId",
-        "fwId",
-        "hwId",
-        "oemId",
-        "mac",
-        "mic_mac",
-        "latitude_i",
-        "longitude_i",
-        "latitude",
-        "longitude",
-        "la",  # lat on ks240
-        "lo",  # lon on ks240
-        "owner",
-        "device_id",
-        "ip",
-        "ssid",
-        "hw_id",
-        "fw_id",
-        "oem_id",
-        "nickname",
-        "alias",
-        "bssid",
-        "channel",
-        "original_device_id",  # for child devices on strips
-        "parent_device_id",  # for hub children
-        "setup_code",  # matter
-        "setup_payload",  # matter
-        "mfi_setup_code",  # mfi_ for homekit
-        "mfi_setup_id",
-        "mfi_token_token",
-        "mfi_token_uuid",
-        "dev_id",
-        "device_name",
-        "device_alias",
-        "connect_ssid",
-        "encrypt_info",
-        "local_ip",
-        "username",
-        # vacuum
-        "board_sn",
-        "custom_sn",
-        "location",
-    ]
-
-    for k, v in res.items():
-        if isinstance(v, collections.abc.Mapping):
-            if k == "encrypt_info":
-                if "data" in v:
-                    v["data"] = ""
-                if "key" in v:
-                    v["key"] = ""
-            else:
-                res[k] = scrub(res.get(k))
-        elif (
-            isinstance(v, list)
-            and len(v) > 0
-            and isinstance(v[0], collections.abc.Mapping)
-        ):
-            res[k] = [scrub(vi) for vi in v]
-        else:
-            if k in keys_to_scrub:
-                if k in ["mac", "mic_mac"]:
-                    # Some macs have : or - as a separator and others do not
-                    if len(v) == 12:
-                        v = f"{v[:6]}000000"
-                    else:
-                        delim = ":" if ":" in v else "-"
-                        rest = delim.join(
-                            format(s, "02x") for s in bytes.fromhex("000000")
-                        )
-                        v = f"{v[:8]}{delim}{rest}"
-                elif k in ["latitude", "latitude_i", "longitude", "longitude_i"]:
-                    v = 0
-                elif k in ["ip", "local_ip"]:
-                    v = "127.0.0.123"
-                elif k in ["ssid"]:
-                    # Need a valid base64 value here
-                    v = base64.b64encode(b"#MASKED_SSID#").decode()
-                elif k in ["nickname"]:
-                    v = base64.b64encode(b"#MASKED_NAME#").decode()
-                elif k in [
-                    "alias",
-                    "device_alias",
-                    "device_name",
-                    "username",
-                    "location",
-                ]:
-                    v = "#MASKED_NAME#"
-                elif isinstance(res[k], int):
-                    v = 0
-                elif k in ["map_data"]:  #
-                    v = "#SCRUBBED_MAPDATA#"
-                elif k in ["device_id", "dev_id"] and "SCRUBBED" in v:
-                    pass  # already scrubbed
-                elif k == ["device_id", "dev_id"] and len(v) > 40:
-                    # retain the last two chars when scrubbing child ids
-                    end = v[-2:]
-                    v = re.sub(r"\w", "0", v)
-                    v = v[:40] + end
-                else:
-                    v = re.sub(r"\w", "0", v)
-
-            res[k] = v
-    return res
 
 
 def default_to_regular(d):
@@ -209,7 +138,7 @@ async def handle_device(
     for fixture_result in fixture_results:
         save_filename = Path(basedir) / fixture_result.folder / fixture_result.filename
 
-        pprint(scrub(fixture_result.data))
+        pprint(fixture_result.data)
         if autosave:
             save = "y"
         else:
@@ -325,6 +254,12 @@ async def cli(
     if debug:
         logging.basicConfig(level=logging.DEBUG)
 
+    raw_discovery = {}
+
+    def capture_raw(discovered: JsonDiscovered):
+        raw = discovered.redactor(discovered.raw)
+        raw_discovery[discovered.ip] = raw
+
     credentials = Credentials(username=username, password=password)
     if host is not None:
         if discovery_info:
@@ -377,12 +312,14 @@ async def cli(
                 credentials=credentials,
                 port=port,
                 discovery_timeout=discovery_timeout,
+                on_json_discovered=capture_raw,
             )
+            discovery_info = raw_discovery[device.host]
             await handle_device(
                 basedir,
                 autosave,
                 device.protocol,
-                discovery_info=device._discovery_info,
+                discovery_info=discovery_info,
                 batch_size=batch_size,
             )
     else:
@@ -395,17 +332,19 @@ async def cli(
         )
         click.echo(f"Detected {len(devices)} devices")
         for dev in devices.values():
+            discovery_info = raw_discovery[dev.host]
             await handle_device(
                 basedir,
                 autosave,
                 dev.protocol,
-                discovery_info=dev._discovery_info,
+                discovery_info=discovery_info,
                 batch_size=batch_size,
+                on_json_discovered=capture_raw,
             )
 
 
 async def get_legacy_fixture(
-    protocol: IotProtocol, *, discovery_info: dict[str, Any] | None
+    protocol: IotProtocol, *, discovery_info: dict[str, dict[str, Any]] | None
 ) -> FixtureResult:
     """Get fixture for legacy IOT style protocol."""
     items = [
@@ -475,11 +414,19 @@ async def get_legacy_fixture(
         _echo_error(f"Unable to query all successes at once: {ex}")
     finally:
         await protocol.close()
+
+    final = redact_data(final, _wrap_redactors(IOT_REDACTORS))
+
+    # Scrub the child device ids
+    if children := final.get("system", {}).get("get_sysinfo", {}).get("children"):
+        for index, child in enumerate(children):
+            if "id" not in child:
+                _LOGGER.error("Could not find a device for the child device: %s", child)
+            else:
+                child["id"] = f"SCRUBBED_CHILD_DEVICE_ID_{index + 1}"
+
     if discovery_info and not discovery_info.get("system"):
-        # Need to recreate a DiscoverResult here because we don't want the aliases
-        # in the fixture, we want the actual field names as returned by the device.
-        dr = DiscoveryResult.from_dict(discovery_info)
-        final["discovery_result"] = dr.to_dict()
+        final["discovery_result"] = discovery_info
 
     click.echo(f"Got {len(successes)} successes")
     click.echo(click.style("## device info file ##", bold=True))
@@ -867,7 +814,10 @@ def get_smart_child_fixture(response):
 
 
 async def get_smart_fixtures(
-    protocol: SmartProtocol, *, discovery_info: dict[str, Any] | None, batch_size: int
+    protocol: SmartProtocol,
+    *,
+    discovery_info: dict[str, dict[str, Any]] | None,
+    batch_size: int,
 ) -> list[FixtureResult]:
     """Get fixture for new TAPO style protocol."""
     if isinstance(protocol, SmartCamProtocol):
@@ -988,22 +938,22 @@ async def get_smart_fixtures(
                 continue
             _LOGGER.error("Could not find a device for the child device: %s", child)
 
-    # Need to recreate a DiscoverResult here because we don't want the aliases
-    # in the fixture, we want the actual field names as returned by the device.
+    final = redact_data(final, _wrap_redactors(SMART_REDACTORS))
+    discovery_result = None
     if discovery_info:
-        dr = DiscoveryResult.from_dict(discovery_info)  # type: ignore
-        final["discovery_result"] = dr.to_dict()
+        final["discovery_result"] = discovery_info
+        discovery_result = discovery_info["result"]
 
     click.echo(f"Got {len(successes)} successes")
     click.echo(click.style("## device info file ##", bold=True))
 
     if "get_device_info" in final:
         # smart protocol
-        model_info = SmartDevice._get_device_info(final, discovery_info)
+        model_info = SmartDevice._get_device_info(final, discovery_result)
         copy_folder = SMART_FOLDER
     else:
         # smart camera protocol
-        model_info = SmartCamDevice._get_device_info(final, discovery_info)
+        model_info = SmartCamDevice._get_device_info(final, discovery_result)
         copy_folder = SMARTCAM_FOLDER
     hw_version = model_info.hardware_version
     sw_version = model_info.firmware_version

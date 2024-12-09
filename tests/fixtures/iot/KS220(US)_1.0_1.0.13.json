@@ -11,7 +11,7 @@
             "stopConnect": 0,
             "tcspInfo": "",
             "tcspStatus": 1,
-            "username": "#MASKED_NAME#"
+            "username": "user@example.com"
         },
         "get_intl_fw_list": {
             "err_code": 0,
