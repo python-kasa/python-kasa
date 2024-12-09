@@ -142,7 +142,7 @@ async def test_discover_raw(discovery_mock, runner, mocker):
 
         expected = {
             "discovery_response": discovery_mock.discovery_data,
-            "meta": {"ip": "127.0.0.123", "port": 20002},
+            "meta": {"ip": "127.0.0.123", "port": discovery_mock.discovery_port},
         }
         assert res.output == json_dumps(expected, indent=True) + "\n"
 
