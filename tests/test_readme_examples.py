@@ -22,6 +22,9 @@ def test_bulb_examples(mocker):
 def test_smartdevice_examples(mocker):
     """Use HS110 for emeter examples."""
     p = asyncio.run(get_device_for_fixture_protocol("HS110(EU)_1.0_1.2.5.json", "IOT"))
+    asyncio.run(p.set_alias("Bedroom Lamp Plug"))
+    asyncio.run(p.update())
+
     mocker.patch("kasa.iot.iotdevice.IotDevice", return_value=p)
     mocker.patch("kasa.iot.iotdevice.IotDevice.update")
     res = xdoctest.doctest_module("kasa.iot.iotdevice", "all")
@@ -31,7 +34,8 @@ def test_smartdevice_examples(mocker):
 def test_plug_examples(mocker):
     """Test plug examples."""
     p = asyncio.run(get_device_for_fixture_protocol("HS110(EU)_1.0_1.2.5.json", "IOT"))
-    # p = await get_device_for_fixture_protocol("HS110(EU)_1.0_1.2.5.json", "IOT")
+    asyncio.run(p.set_alias("Bedroom Lamp Plug"))
+    asyncio.run(p.update())
     mocker.patch("kasa.iot.iotplug.IotPlug", return_value=p)
     mocker.patch("kasa.iot.iotplug.IotPlug.update")
     res = xdoctest.doctest_module("kasa.iot.iotplug", "all")
@@ -41,6 +45,8 @@ def test_plug_examples(mocker):
 def test_strip_examples(mocker):
     """Test strip examples."""
     p = asyncio.run(get_device_for_fixture_protocol("KP303(UK)_1.0_1.0.3.json", "IOT"))
+    asyncio.run(p.set_alias("Bedroom Power Strip"))
+    asyncio.run(p.update())
     mocker.patch("kasa.iot.iotstrip.IotStrip", return_value=p)
     mocker.patch("kasa.iot.iotstrip.IotStrip.update")
     res = xdoctest.doctest_module("kasa.iot.iotstrip", "all")
@@ -59,6 +65,8 @@ def test_dimmer_examples(mocker):
 def test_lightstrip_examples(mocker):
     """Test lightstrip examples."""
     p = asyncio.run(get_device_for_fixture_protocol("KL430(US)_1.0_1.0.10.json", "IOT"))
+    asyncio.run(p.set_alias("Bedroom Lightstrip"))
+    asyncio.run(p.update())
     mocker.patch("kasa.iot.iotlightstrip.IotLightStrip", return_value=p)
     mocker.patch("kasa.iot.iotlightstrip.IotLightStrip.update")
     res = xdoctest.doctest_module("kasa.iot.iotlightstrip", "all")
@@ -154,4 +162,19 @@ async def readmes_mock(mocker):
         "127.0.0.4": get_fixture_info("KL430(US)_1.0_1.0.10.json", "IOT"),  # Lightstrip
         "127.0.0.5": get_fixture_info("HS220(US)_1.0_1.5.7.json", "IOT"),  # Dimmer
     }
+    fixture_infos["127.0.0.1"].data["system"]["get_sysinfo"]["alias"] = (
+        "Bedroom Power Strip"
+    )
+    fixture_infos["127.0.0.2"].data["system"]["get_sysinfo"]["alias"] = (
+        "Bedroom Lamp Plug"
+    )
+    fixture_infos["127.0.0.3"].data["get_device_info"]["nickname"] = (
+        "TGl2aW5nIFJvb20gQnVsYg=="  # Living Room Bulb
+    )
+    fixture_infos["127.0.0.4"].data["system"]["get_sysinfo"]["alias"] = (
+        "Bedroom Lightstrip"
+    )
+    fixture_infos["127.0.0.5"].data["system"]["get_sysinfo"]["alias"] = (
+        "Living Room Dimmer Switch"
+    )
     return patch_discovery(fixture_infos, mocker)

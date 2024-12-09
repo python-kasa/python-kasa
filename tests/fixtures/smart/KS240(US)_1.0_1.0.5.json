@@ -282,7 +282,7 @@
                 "avatar": "switch_ks240",
                 "bind_count": 1,
                 "category": "kasa.switch.outlet.sub-fan",
-                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
                 "device_on": true,
                 "fan_sleep_mode_on": false,
                 "fan_speed_level": 1,
@@ -320,7 +320,7 @@
                     ],
                     "type": "last_states"
                 },
-                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "device_on": false,
                 "fade_off_time": 1,
                 "fade_on_time": 1,
