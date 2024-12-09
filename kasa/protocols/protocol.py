@@ -68,7 +68,7 @@ def mask_mac(mac: str) -> str:
     """Return mac address with last two octects blanked."""
     if len(mac) == 12:
         return f"{mac[:6]}000000"
-    delim = ":" if ":" in mac else "-" if len(mac) > 12 else ""
+    delim = ":" if ":" in mac else "-"
     rest = delim.join(format(s, "02x") for s in bytes.fromhex("000000"))
     return f"{mac[:8]}{delim}{rest}"
 
