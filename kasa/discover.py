@@ -168,6 +168,12 @@ OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Coroutine]
 OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
 DeviceDict = dict[str, Device]
 
+DECRYPTED_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+    "connect_ssid": lambda x: "#MASKED_SSID#" if x else "",
+    "device_id": lambda x: "REDACTED_" + x[9::],
+    "owner": lambda x: "REDACTED_" + x[9::],
+}
+
 NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
     "device_name": lambda x: "#MASKED_NAME#" if x else "",
@@ -178,6 +184,7 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
     "encrypt_info": lambda x: {**x, "key": "", "data": ""},
     "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
+    "decrypted_data": lambda x: redact_data(x, DECRYPTED_REDACTORS),
 }
 
 
@@ -743,6 +750,7 @@ class Discover:
 
     @staticmethod
     def _decrypt_discovery_data(discovery_result: DiscoveryResult) -> None:
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         if TYPE_CHECKING:
             assert discovery_result.encrypt_info
             assert _AesDiscoveryQuery.keypair
@@ -758,7 +766,19 @@ class Discover:
         session = AesEncyptionSession(key, iv)
         decrypted_data = session.decrypt(encrypted_data)
 
-        discovery_result.decrypted_data = json_loads(decrypted_data)
+        result = json_loads(decrypted_data)
+        if debug_enabled:
+            data = (
+                redact_data(result, DECRYPTED_REDACTORS)
+                if Discover._redact_data
+                else result
+            )
+            _LOGGER.debug(
+                "Decrypted encrypt_info for %s: %s",
+                discovery_result.ip,
+                pf(data),
+            )
+        discovery_result.decrypted_data = result
 
     @staticmethod
     def _get_discovery_json(data: bytes, ip: str) -> dict:

@@ -139,7 +139,8 @@ smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMA
 )
 async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
-    fixture_info: FixtureInfo = request.param
+    fi: FixtureInfo = request.param
+    fixture_info = FixtureInfo(fi.name, fi.protocol, copy.deepcopy(fi.data))
     return patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
 
 

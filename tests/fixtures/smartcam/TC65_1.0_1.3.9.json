@@ -3,7 +3,7 @@
         "error_code": 0,
         "result": {
             "decrypted_data": {
-                "connect_ssid": "0000000",
+                "connect_ssid": "#MASKED_SSID#",
                 "connect_type": "wireless",
                 "device_id": "0000000000000000000000000000000000000000",
                 "http_port": 443,

@@ -38,7 +38,11 @@ from kasa import (
 )
 from kasa.device_factory import get_protocol
 from kasa.deviceconfig import DeviceEncryptionType, DeviceFamily
-from kasa.discover import NEW_DISCOVERY_REDACTORS, DiscoveredRaw, DiscoveryResult
+from kasa.discover import (
+    NEW_DISCOVERY_REDACTORS,
+    DiscoveredRaw,
+    DiscoveryResult,
+)
 from kasa.exceptions import SmartErrorCode
 from kasa.protocols import IotProtocol
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
@@ -77,6 +81,14 @@ def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
             if redactor is None:
                 return lambda x: "**SCRUBBED**"
 
+            def _redact_to_zeros(x: Any) -> Any:
+                if isinstance(x, str) and "REDACT" in x:
+                    return re.sub(r"\w", "0", x)
+                if isinstance(x, dict):
+                    for k, v in x.items():
+                        x[k] = _redact_to_zeros(v)
+                return x
+
             def _scrub(x: Any) -> Any:
                 if key in {"ip", "local_ip"}:
                     return "127.0.0.123"
@@ -84,9 +96,7 @@ def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
                 if isinstance(x, str) and "SCRUBBED" in x:
                     return x
                 default = redactor(x)
-                if isinstance(default, str) and "REDACT" in default:
-                    return re.sub(r"\w", "0", x)
-                return default
+                return _redact_to_zeros(default)
 
             return _scrub
 
@@ -308,6 +318,8 @@ async def cli(
                 on_discovered_raw=capture_raw,
             )
             discovery_info = raw_discovery[device.host]
+            if decrypted_data := device._discovery_info.get("decrypted_data"):
+                discovery_info["decrypted_data"] = decrypted_data
             await handle_device(
                 basedir,
                 autosave,
@@ -326,6 +338,9 @@ async def cli(
         click.echo(f"Detected {len(devices)} devices")
         for dev in devices.values():
             discovery_info = raw_discovery[dev.host]
+            if decrypted_data := dev._discovery_info.get("decrypted_data"):
+                discovery_info["decrypted_data"] = decrypted_data
+
             await handle_device(
                 basedir,
                 autosave,
