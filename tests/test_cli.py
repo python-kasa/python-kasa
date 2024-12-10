@@ -128,34 +128,33 @@ async def test_list_devices(discovery_mock, runner):
 
 
 async def test_discover_raw(discovery_mock, runner, mocker):
-    """Test that device update is called on main."""
-    wrapped = redact_data
-    with patch(
-        "kasa.protocols.protocol.redact_data", side_effect=wrapped
-    ) as redact_spy:
-        res = await runner.invoke(
-            cli,
-            ["--username", "foo", "--password", "bar", "discover", "raw"],
-            catch_exceptions=False,
-        )
-        assert res.exit_code == 0
+    """Test the discover raw command."""
+    redact_spy = mocker.patch(
+        "kasa.protocols.protocol.redact_data", side_effect=redact_data
+    )
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
 
-        expected = {
-            "discovery_response": discovery_mock.discovery_data,
-            "meta": {"ip": "127.0.0.123", "port": discovery_mock.discovery_port},
-        }
-        assert res.output == json_dumps(expected, indent=True) + "\n"
+    expected = {
+        "discovery_response": discovery_mock.discovery_data,
+        "meta": {"ip": "127.0.0.123", "port": discovery_mock.discovery_port},
+    }
+    assert res.output == json_dumps(expected, indent=True) + "\n"
 
-        redact_spy.assert_not_called()
+    redact_spy.assert_not_called()
 
-        res = await runner.invoke(
-            cli,
-            ["--username", "foo", "--password", "bar", "discover", "raw", "--redact"],
-            catch_exceptions=False,
-        )
-        assert res.exit_code == 0
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw", "--redact"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
 
-        redact_spy.assert_called()
+    redact_spy.assert_called()
 
 
 @new_discovery
