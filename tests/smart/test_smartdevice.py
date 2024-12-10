@@ -62,11 +62,14 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
     assert repr(dev) == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - update() needed>"
 
     discovery_result = copy.deepcopy(discovery_mock.discovery_data["result"])
+
+    disco_model = discovery_result["device_model"]
+    short_model, _, _ = disco_model.partition("(")
     dev.update_from_discover_info(discovery_result)
     assert dev.device_type is DeviceType.Unknown
     assert (
         repr(dev)
-        == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - None (None) - update() needed>"
+        == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
     )
     discovery_result["device_type"] = "SMART.FOOBAR"
     dev.update_from_discover_info(discovery_result)
@@ -74,7 +77,7 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
     assert dev.device_type is DeviceType.Plug
     assert (
         repr(dev)
-        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None (None) - update() needed>"
+        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
     )
     assert "Unknown device type, falling back to plug" in caplog.text
 
