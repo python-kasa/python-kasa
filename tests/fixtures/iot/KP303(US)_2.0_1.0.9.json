@@ -6,7 +6,7 @@
             "children": [
                 {
                     "alias": "#MASKED_NAME#",
-                    "id": "800639AA097730E58235162FCDA301CE1F038F9101",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
                     },
@@ -15,7 +15,7 @@
                 },
                 {
                     "alias": "#MASKED_NAME#",
-                    "id": "800639AA097730E58235162FCDA301CE1F038F9102",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
                     },
@@ -24,7 +24,7 @@
                 },
                 {
                     "alias": "#MASKED_NAME#",
-                    "id": "800639AA097730E58235162FCDA301CE1F038F9100",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_3",
                     "next_action": {
                         "type": -1
                     },

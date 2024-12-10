@@ -104,21 +104,24 @@
         ]
     },
     "discovery_result": {
-        "device_id": "00000000000000000000000000000000",
-        "device_model": "KS240(US)",
-        "device_type": "SMART.KASASWITCH",
-        "factory_default": false,
-        "ip": "127.0.0.123",
-        "is_support_iot_cloud": true,
-        "mac": "F0-A7-31-00-00-00",
-        "mgt_encrypt_schm": {
-            "encrypt_type": "AES",
-            "http_port": 80,
-            "is_support_https": false,
-            "lv": 2
-        },
-        "obd_src": "tplink",
-        "owner": "00000000000000000000000000000000"
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "KS240(US)",
+            "device_type": "SMART.KASASWITCH",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "F0-A7-31-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "AES",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000"
+        }
     },
     "get_auto_update_info": {
         "enable": false,
@@ -206,7 +209,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000001"
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1"
             },
             {
                 "component_list": [
@@ -267,7 +270,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000000"
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2"
             }
         ],
         "start_index": 0,
@@ -279,7 +282,7 @@
                 "avatar": "switch_ks240",
                 "bind_count": 1,
                 "category": "kasa.switch.outlet.sub-fan",
-                "device_id": "000000000000000000000000000000000000000000",
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
                 "device_on": true,
                 "fan_sleep_mode_on": false,
                 "fan_speed_level": 1,
@@ -317,7 +320,7 @@
                     ],
                     "type": "last_states"
                 },
-                "device_id": "000000000000000000000000000000000000000001",
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "device_on": false,
                 "fade_off_time": 1,
                 "fade_on_time": 1,

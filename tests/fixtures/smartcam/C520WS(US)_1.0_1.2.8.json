@@ -7,13 +7,13 @@
                 "connect_type": "wireless",
                 "device_id": "0000000000000000000000000000000000000000",
                 "http_port": 443,
-                "last_alarm_time": "1729264456",
-                "last_alarm_type": "motion",
+                "last_alarm_time": "0",
+                "last_alarm_type": "",
                 "owner": "00000000000000000000000000000000",
                 "sd_status": "offline"
             },
             "device_id": "00000000000000000000000000000000",
-            "device_model": "C210",
+            "device_model": "C520WS",
             "device_name": "#MASKED_NAME#",
             "device_type": "SMART.IPCAMERA",
             "encrypt_info": {
@@ -25,11 +25,12 @@
                 "3"
             ],
             "factory_default": false,
-            "firmware_version": "1.4.2 Build 240829 Rel.54953n",
-            "hardware_version": "2.0",
+            "firmware_version": "1.2.8 Build 240606 Rel.39146n",
+            "hardware_version": "1.0",
             "ip": "127.0.0.123",
+            "isResetWiFi": false,
             "is_support_iot_cloud": true,
-            "mac": "40-AE-30-00-00-00",
+            "mac": "F0-A7-31-00-00-00",
             "mgt_encrypt_schm": {
                 "is_support_https": true
             }
@@ -41,7 +42,7 @@
                 "alarm_duration_support": "1",
                 "alarm_volume_support": "1",
                 "alert_event_type_support": "1",
-                "usr_def_audio_alarm_max_num": "15",
+                "usr_def_audio_alarm_max_num": "5",
                 "usr_def_audio_alarm_support": "1",
                 "usr_def_audio_max_duration": "15",
                 "usr_def_audio_type": "0",
@@ -76,7 +77,8 @@
             "alert_type": {
                 "alert_type_list": [
                     "Siren",
-                    "Tone"
+                    "Emergency",
+                    "Red Alert"
                 ]
             }
         }
@@ -94,7 +96,7 @@
                 },
                 {
                     "name": "system",
-                    "version": 3
+                    "version": 4
                 },
                 {
                     "name": "led",
@@ -102,7 +104,7 @@
                 },
                 {
                     "name": "playback",
-                    "version": 6
+                    "version": 3
                 },
                 {
                     "name": "detection",
@@ -110,7 +112,7 @@
                 },
                 {
                     "name": "alert",
-                    "version": 1
+                    "version": 2
                 },
                 {
                     "name": "firmware",
@@ -125,12 +127,12 @@
                     "version": 1
                 },
                 {
-                    "name": "video",
-                    "version": 2
-                },
-                {
                     "name": "ptz",
                     "version": 1
+                },
+                {
+                    "name": "video",
+                    "version": 2
                 },
                 {
                     "name": "lensMask",
@@ -158,7 +160,7 @@
                 },
                 {
                     "name": "audio",
-                    "version": 2
+                    "version": 3
                 },
                 {
                     "name": "diagnose",
@@ -169,12 +171,24 @@
                     "version": 3
                 },
                 {
+                    "name": "linecrossingDetection",
+                    "version": 2
+                },
+                {
                     "name": "deviceShare",
                     "version": 1
                 },
                 {
                     "name": "tamperDetection",
                     "version": 1
+                },
+                {
+                    "name": "patrol",
+                    "version": 1
+                },
+                {
+                    "name": "nightVisionMode",
+                    "version": 3
                 },
                 {
                     "name": "tapoCare",
@@ -189,10 +203,6 @@
                     "version": 1
                 },
                 {
-                    "name": "babyCryDetection",
-                    "version": 1
-                },
-                {
                     "name": "personDetection",
                     "version": 2
                 },
@@ -201,15 +211,23 @@
                     "version": 1
                 },
                 {
-                    "name": "nvmp",
+                    "name": "vehicleDetection",
                     "version": 1
                 },
                 {
-                    "name": "detectionRegion",
-                    "version": 2
+                    "name": "petDetection",
+                    "version": 1
                 },
                 {
-                    "name": "iotCloud",
+                    "name": "whiteLamp",
+                    "version": 1
+                },
+                {
+                    "name": "markerBox",
+                    "version": 1
+                },
+                {
+                    "name": "nvmp",
                     "version": 1
                 },
                 {
@@ -217,11 +235,19 @@
                     "version": 1
                 },
                 {
+                    "name": "iotCloud",
+                    "version": 1
+                },
+                {
                     "name": "recordDownload",
                     "version": 1
                 },
                 {
-                    "name": "staticIp",
+                    "name": "smartTrack",
+                    "version": 1
+                },
+                {
+                    "name": "detectionRegion",
                     "version": 2
                 }
             ]
@@ -236,23 +262,14 @@
                 "encode_type": "G711alaw",
                 "input_device_type": "MicIn",
                 "mute": "off",
-                "noise_cancelling": "on",
+                "noise_cancelling": "off",
                 "sampling_rate": "8",
-                "volume": "100"
+                "volume": "81"
             },
             "speaker": {
                 "mute": "off",
                 "output_device_type": "SpeakerOut",
                 "volume": "100"
-            }
-        }
-    },
-    "getBCDConfig": {
-        "sound_detection": {
-            "bcd": {
-                "digital_sensitivity": "50",
-                "enabled": "off",
-                "sensitivity": "medium"
             }
         }
     },
@@ -266,21 +283,21 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-10-24 12:49:09",
-                "seconds_from_1970": 1729770549
+                "local_time": "2024-12-02 13:12:15",
+                "seconds_from_1970": 1733163135
             }
         }
     },
     "getConnectionType": {
         "link_type": "wifi",
-        "rssi": "3",
-        "rssiValue": -62,
+        "rssi": "4",
+        "rssiValue": -47,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
         "motion_detection": {
             "motion_det": {
-                "digital_sensitivity": "50",
+                "digital_sensitivity": "60",
                 "enabled": "on",
                 "non_vehicle_enabled": "off",
                 "people_enabled": "off",
@@ -292,12 +309,12 @@
     "getDeviceInfo": {
         "device_info": {
             "basic_info": {
-                "avatar": "Home",
+                "avatar": "camera c520ws",
                 "barcode": "",
                 "dev_id": "0000000000000000000000000000000000000000",
                 "device_alias": "#MASKED_NAME#",
-                "device_info": "C210 2.0 IPC",
-                "device_model": "C210",
+                "device_info": "C520WS 1.0 IPC",
+                "device_model": "C520WS",
                 "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.IPCAMERA",
                 "features": 3,
@@ -305,23 +322,23 @@
                 "has_set_location_info": 1,
                 "hw_desc": "00000000000000000000000000000000",
                 "hw_id": "00000000000000000000000000000000",
-                "hw_version": "2.0",
+                "hw_version": "1.0",
                 "is_cal": true,
                 "latitude": 0,
                 "longitude": 0,
-                "mac": "40-AE-30-00-00-00",
+                "mac": "F0-A7-31-00-00-00",
                 "manufacturer_name": "TP-LINK",
                 "mobile_access": "0",
                 "oem_id": "00000000000000000000000000000000",
-                "region": "EU",
-                "sw_version": "1.4.2 Build 240829 Rel.54953n"
+                "region": "US",
+                "sw_version": "1.2.8 Build 240606 Rel.39146n"
             }
         }
     },
     "getFirmwareAutoUpgradeConfig": {
         "auto_upgrade": {
             "common": {
-                "enabled": "on",
+                "enabled": "off",
                 "random_range": "120",
                 "time": "03:00"
             }
@@ -338,8 +355,8 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "1729264456",
-                "last_alarm_type": "motion"
+                "last_alarm_time": "0",
+                "last_alarm_type": ""
             }
         }
     },
@@ -362,7 +379,7 @@
                 "high_light_compensation": "off",
                 "inf_delay": "5",
                 "inf_end_time": "21600",
-                "inf_sensitivity": "1",
+                "inf_sensitivity": "4",
                 "inf_sensitivity_day2night": "1400",
                 "inf_sensitivity_night2day": "9100",
                 "inf_start_time": "64800",
@@ -381,8 +398,8 @@
                 "saturation": "50",
                 "sharpness": "50",
                 "shutter": "1/25",
-                "smartir": "off",
-                "smartir_level": "100",
+                "smartir": "auto_ir",
+                "smartir_level": "0",
                 "smartwtl": "auto_wtl",
                 "smartwtl_digital_level": "100",
                 "smartwtl_level": "5",
@@ -421,7 +438,7 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
+                "wtl_intensity_level": "50",
                 "wtl_manual_start_flag": "off"
             }
         }
@@ -459,7 +476,7 @@
                 "high_light_compensation": "off",
                 "inf_delay": "5",
                 "inf_end_time": "21600",
-                "inf_sensitivity": "1",
+                "inf_sensitivity": "4",
                 "inf_sensitivity_day2night": "1400",
                 "inf_sensitivity_night2day": "9100",
                 "inf_start_time": "64800",
@@ -478,8 +495,8 @@
                 "saturation": "50",
                 "sharpness": "50",
                 "shutter": "1/25",
-                "smartir": "off",
-                "smartir_level": "100",
+                "smartir": "auto_ir",
+                "smartir_level": "0",
                 "smartwtl": "auto_wtl",
                 "smartwtl_digital_level": "100",
                 "smartwtl_level": "5",
@@ -510,7 +527,7 @@
     "getMsgPushConfig": {
         "msg_push": {
             "chn1_msg_push_info": {
-                "notification_enabled": "on",
+                "notification_enabled": "off",
                 "rich_notification_enabled": "off"
             }
         }
@@ -519,10 +536,13 @@
         "image_capability": {
             "supplement_lamp": {
                 "night_vision_mode_range": [
-                    "inf_night_vision"
+                    "inf_night_vision",
+                    "wtl_night_vision",
+                    "md_night_vision"
                 ],
                 "supplement_lamp_type": [
-                    "infrared_lamp"
+                    "infrared_lamp",
+                    "white_lamp"
                 ]
             }
         }
@@ -549,7 +569,7 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
+                "wtl_intensity_level": "50",
                 "wtl_manual_start_flag": "off"
             }
         }
@@ -558,19 +578,52 @@
         "people_detection": {
             "detection": {
                 "enabled": "on",
-                "sensitivity": "50"
+                "sensitivity": "60"
+            }
+        }
+    },
+    "getPetDetectionConfig": {
+        "pet_detection": {
+            "detection": {
+                "enabled": "off",
+                "sensitivity": "60"
             }
         }
     },
     "getPresetConfig": {
         "preset": {
             "preset": {
-                "id": [],
-                "name": [],
-                "position_pan": [],
-                "position_tilt": [],
+                "id": [
+                    "1",
+                    "2",
+                    "3",
+                    "4"
+                ],
+                "name": [
+                    "Doorbell",
+                    "Packages",
+                    "Street",
+                    "Arm"
+                ],
+                "position_pan": [
+                    "-0.328380",
+                    "0.010401",
+                    "0.010401",
+                    "0.066865"
+                ],
+                "position_tilt": [
+                    "-0.062500",
+                    "0.828125",
+                    "-0.285156",
+                    "0.160156"
+                ],
                 "position_zoom": [],
-                "read_only": []
+                "read_only": [
+                    "0",
+                    "0",
+                    "0",
+                    "0"
+                ]
             }
         }
     },
@@ -610,7 +663,7 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
+                "wtl_intensity_level": "50",
                 "wtl_manual_start_flag": "off"
             }
         }
@@ -678,9 +731,17 @@
     "getTimezone": {
         "system": {
             "basic": {
-                "timezone": "UTC-00:00",
-                "timing_mode": "ntp",
-                "zone_id": "Europe/Berlin"
+                "timezone": "UTC-05:00",
+                "timing_mode": "manual",
+                "zone_id": "America/New_York"
+            }
+        }
+    },
+    "getVehicleDetectionConfig": {
+        "vehicle_detection": {
+            "detection": {
+                "enabled": "off",
+                "sensitivity": "60"
             }
         }
     },
@@ -695,8 +756,9 @@
                     "256",
                     "512",
                     "1024",
-                    "1382",
-                    "2048"
+                    "1536",
+                    "2048",
+                    "2560"
                 ],
                 "change_fps_support": "1",
                 "encode_types": [
@@ -715,7 +777,7 @@
                     "5"
                 ],
                 "resolutions": [
-                    "2304*1296",
+                    "2560*1440",
                     "1920*1080",
                     "1280*720"
                 ]
@@ -725,14 +787,14 @@
     "getVideoQualities": {
         "video": {
             "main": {
-                "bitrate": "1382",
+                "bitrate": "2560",
                 "bitrate_type": "vbr",
-                "default_bitrate": "1382",
+                "default_bitrate": "2560",
                 "encode_type": "H264",
                 "frame_rate": "65551",
                 "name": "VideoEncoder_1",
                 "quality": "3",
-                "resolution": "1920*1080",
+                "resolution": "2560*1440",
                 "smart_codec": "off"
             }
         }
@@ -759,7 +821,7 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
+                "wtl_intensity_level": "50",
                 "wtl_manual_start_flag": "off"
             }
         }
@@ -782,8 +844,7 @@
                     "mute": "1",
                     "noise_cancelling": "1",
                     "sampling_rate": [
-                        "8",
-                        "16"
+                        "8"
                     ],
                     "volume": "1"
                 },
@@ -815,9 +876,9 @@
                     "encode_type": "G711alaw",
                     "input_device_type": "MicIn",
                     "mute": "off",
-                    "noise_cancelling": "on",
+                    "noise_cancelling": "off",
                     "sampling_rate": "8",
-                    "volume": "100"
+                    "volume": "81"
                 },
                 "speaker": {
                     "mute": "off",
@@ -845,13 +906,14 @@
                     "ai_enhance_range": [
                         "traditional_enhance"
                     ],
-                    "ai_firmware_upgrade": "0",
                     "alarm_out_num": "0",
                     "app_version": "1.0.0",
                     "audio": [
                         "speaker",
                         "microphone"
                     ],
+                    "audio_alarm_clock": "1",
+                    "audio_lib": "1",
                     "auth_encrypt": "1",
                     "auto_ip_configurable": "1",
                     "backlight_coexistence": "1",
@@ -860,12 +922,11 @@
                     "cloud_storage_version": "1.0",
                     "config_recovery": [
                         "audio_config",
-                        "OSD",
                         "image",
+                        "OSD",
                         "video"
                     ],
                     "custom_area_compensation": "1",
-                    "custom_auto_mode_exposure_level": "1",
                     "daynight_subdivision": "1",
                     "device_share": [
                         "preview",
@@ -874,6 +935,8 @@
                         "cloud_storage",
                         "motor"
                     ],
+                    "diagnose": "1",
+                    "diagnose_capability": "1",
                     "download": [
                         "video"
                     ],
@@ -881,7 +944,7 @@
                         "motion",
                         "tamper"
                     ],
-                    "force_iframe_support": "1",
+                    "gb28181": "1",
                     "greeter": "1.0",
                     "http_system_state_audio_support": "1",
                     "image_capability": "1",
@@ -889,36 +952,33 @@
                         "supplement_lamp",
                         "expose"
                     ],
-                    "ir_led_pwm_control": "1",
                     "led": "1",
                     "lens_mask": "1",
                     "linkage_capability": "1",
                     "local_storage": "1",
                     "media_encrypt": "1",
-                    "motor": "0",
-                    "msg_alarm": "1",
                     "msg_alarm_list": [
                         "sound",
                         "light"
                     ],
                     "msg_push": "1",
                     "multi_user": "0",
-                    "multicast": "0",
                     "network": [
-                        "wifi"
+                        "wifi",
+                        "ethernet"
                     ],
                     "osd_capability": "1",
                     "ota_upgrade": "1",
                     "p2p_support_versions": [
-                        "1.1"
+                        "2.0"
                     ],
-                    "personalized_audio_alarm": "0",
                     "playback": [
                         "local",
                         "p2p",
                         "relay"
                     ],
                     "playback_scale": "1",
+                    "playback_version": "1.1",
                     "preview": [
                         "local",
                         "p2p",
@@ -932,7 +992,7 @@
                         "motion"
                     ],
                     "relay_support_versions": [
-                        "1.3"
+                        "2.0"
                     ],
                     "remote_upgrade": "1",
                     "reonboarding": "1",
@@ -941,23 +1001,27 @@
                     "smart_msg_push_capability": "1",
                     "ssl_cer_version": "1.0",
                     "storage_api_version": "2.2",
-                    "storage_capability": "1",
                     "stream_max_sessions": "10",
                     "streaming_support_versions": [
-                        "1.0"
+                        "2.0"
                     ],
                     "tapo_care_version": "1.0.0",
                     "target_track": "1",
                     "timing_reboot": "1",
+                    "tums": "1",
+                    "tums_config": "1",
+                    "tums_msg_push": "1",
                     "verification_change_password": "1",
                     "video_codec": [
-                        "h264"
+                        "h264",
+                        "h265"
                     ],
                     "video_detection_digital_sensitivity": "1",
+                    "video_message": "1",
                     "wide_range_inf_sensitivity": "1",
-                    "wifi_cascade_connection": "1",
+                    "wifi_cascade_connection": "0",
                     "wifi_connection_info": "1",
-                    "wireless_hotspot": "1"
+                    "wireless_hotspot": "0"
                 }
             }
         }

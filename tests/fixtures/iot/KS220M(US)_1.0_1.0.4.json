@@ -78,7 +78,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Garage Entryway Lights",
+            "alias": "#MASKED_NAME#",
             "brightness": 100,
             "dev_name": "Wi-Fi Smart Dimmer with sensor",
             "deviceId": "0000000000000000000000000000000000000000",

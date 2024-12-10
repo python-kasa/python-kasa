@@ -1,12 +1,12 @@
 {
     "system": {
         "get_sysinfo": {
-            "alias": "TP-LINK_Smart Plug_C2D6",
+            "alias": "#MASKED_NAME#",
             "child_num": 2,
             "children": [
                 {
                     "alias": "One ",
-                    "id": "80066788DFFFD572D9F2E4A5A6847669213E039F00",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
                     },
@@ -15,7 +15,7 @@
                 },
                 {
                     "alias": "Two ",
-                    "id": "80066788DFFFD572D9F2E4A5A6847669213E039F01",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
                     },

@@ -15,7 +15,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Porch Lights",
+            "alias": "#MASKED_NAME#",
             "brightness": 50,
             "dev_name": "Kasa Smart Wi-Fi Outdoor Plug-In Dimmer",
             "deviceId": "0000000000000000000000000000000000000000",

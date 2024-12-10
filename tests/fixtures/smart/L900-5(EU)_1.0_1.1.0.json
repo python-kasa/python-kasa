@@ -108,21 +108,24 @@
         ]
     },
     "discovery_result": {
-        "device_id": "00000000000000000000000000000000",
-        "device_model": "L900-5(EU)",
-        "device_type": "SMART.TAPOBULB",
-        "factory_default": false,
-        "ip": "127.0.0.123",
-        "is_support_iot_cloud": true,
-        "mac": "A8-42-A1-00-00-00",
-        "mgt_encrypt_schm": {
-            "encrypt_type": "KLAP",
-            "http_port": 80,
-            "is_support_https": false,
-            "lv": 2
-        },
-        "obd_src": "tplink",
-        "owner": "00000000000000000000000000000000"
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "L900-5(EU)",
+            "device_type": "SMART.TAPOBULB",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "A8-42-A1-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000"
+        }
     },
     "get_antitheft_rules": {
         "antitheft_rule_max_count": 1,
