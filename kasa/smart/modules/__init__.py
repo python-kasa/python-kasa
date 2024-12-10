@@ -24,6 +24,7 @@ from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
 from .motionsensor import MotionSensor
+from .powerprotection import PowerProtection
 from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
@@ -64,4 +65,5 @@ __all__ = [
     "FrostProtection",
     "Thermostat",
     "SmartLightEffect",
+    "PowerProtection",
 ]
