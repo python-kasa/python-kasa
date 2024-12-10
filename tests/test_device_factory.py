@@ -13,9 +13,13 @@ import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
+    BaseProtocol,
     Credentials,
     Discover,
+    IotProtocol,
     KasaException,
+    SmartCamProtocol,
+    SmartProtocol,
 )
 from kasa.device_factory import (
     Device,
@@ -33,6 +37,16 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.transports import (
+    AesTransport,
+    BaseTransport,
+    KlapTransport,
+    KlapTransportV2,
+    LinkieTransportV2,
+    SslAesTransport,
+    SslTransport,
+    XorTransport,
+)
 
 from .conftest import DISCOVERY_MOCK_IP
 
@@ -203,3 +217,74 @@ async def test_device_class_from_unknown_family(caplog):
     with caplog.at_level(logging.DEBUG):
         assert get_device_class_from_family(dummy_name, https=False) == SmartDevice
     assert f"Unknown SMART device with {dummy_name}" in caplog.text
+
+
+# Aliases to make the test params more readable
+CP = DeviceConnectionParameters
+DF = DeviceFamily
+ET = DeviceEncryptionType
+
+
+@pytest.mark.parametrize(
+    ("conn_params", "expected_protocol", "expected_transport"),
+    [
+        pytest.param(
+            CP(DF.SmartIpCamera, ET.Aes, https=True),
+            SmartCamProtocol,
+            SslAesTransport,
+            id="smartcam",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoHub, ET.Aes, https=True),
+            SmartCamProtocol,
+            SslAesTransport,
+            id="smartcam-hub",
+        ),
+        pytest.param(
+            CP(DF.IotIpCamera, ET.Aes, https=True),
+            IotProtocol,
+            LinkieTransportV2,
+            id="kasacam",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoRobovac, ET.Aes, https=True),
+            SmartProtocol,
+            SslTransport,
+            id="robovac",
+        ),
+        pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Klap, https=False),
+            IotProtocol,
+            KlapTransport,
+            id="iot-klap",
+        ),
+        pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Xor, https=False),
+            IotProtocol,
+            XorTransport,
+            id="iot-xor",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoPlug, ET.Aes, https=False),
+            SmartProtocol,
+            AesTransport,
+            id="smart-aes",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoPlug, ET.Klap, https=False),
+            SmartProtocol,
+            KlapTransportV2,
+            id="smart-klap",
+        ),
+    ],
+)
+async def test_get_protocol(
+    conn_params: DeviceConnectionParameters,
+    expected_protocol: type[BaseProtocol],
+    expected_transport: type[BaseTransport],
+):
+    """Test get_protocol returns the right protocol."""
+    config = DeviceConfig("127.0.0.1", connection_type=conn_params)
+    protocol = get_protocol(config)
+    assert isinstance(protocol, expected_protocol)
+    assert isinstance(protocol._transport, expected_transport)

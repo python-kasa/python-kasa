@@ -48,6 +48,10 @@ def _sha256_hash(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest().upper()  # noqa: S324
 
 
+def _sha1_hash(payload: bytes) -> str:
+    return hashlib.sha1(payload).hexdigest().upper()  # noqa: S324
+
+
 class TransportState(Enum):
     """Enum for AES state."""
 
@@ -107,11 +111,10 @@ class SslAesTransport(BaseTransport):
         self._app_url = URL(f"https://{self._host_port}")
         self._token_url: URL | None = None
         self._ssl_context: ssl.SSLContext | None = None
-        ref = str(self._token_url) if self._token_url else str(self._app_url)
         self._headers = {
             **self.COMMON_HEADERS,
-            "Host": self._host_port,
-            "Referer": ref,
+            "Host": self._host,
+            "Referer": f"https://{self._host}",
         }
         self._seq: int | None = None
         self._pwd_hash: str | None = None
@@ -125,6 +128,7 @@ class SslAesTransport(BaseTransport):
             self._password = ch["pwd"]
             self._username = ch["un"]
         self._local_nonce: str | None = None
+        self._send_secure = True
 
         _LOGGER.debug("Created AES transport for %s", self._host)
 
@@ -194,6 +198,10 @@ class SslAesTransport(BaseTransport):
         else:
             url = self._app_url
 
+        _LOGGER.debug(
+            "Sending secure passthrough from %s",
+            self._host,
+        )
         encrypted_payload = self._encryption_session.encrypt(request.encode())  # type: ignore
         passthrough_request = {
             "method": "securePassthrough",
@@ -254,6 +262,37 @@ class SslAesTransport(BaseTransport):
                 ) from ex
         return ret_val  # type: ignore[return-value]
 
+    async def send_unencrypted(self, request: str) -> dict[str, Any]:
+        """Send encrypted message as passthrough."""
+        if self._state is TransportState.ESTABLISHED and self._token_url:
+            url = self._token_url
+        else:
+            url = self._app_url
+
+        _LOGGER.debug(
+            "Sending unencrypted from %s",
+            self._host,
+        )
+
+        status_code, resp_dict = await self._http_client.post(
+            url,
+            json=request,
+            headers=self._headers,
+            ssl=await self._get_ssl_context(),
+        )
+
+        if status_code != 200:
+            raise KasaException(
+                f"{self._host} responded with an unexpected "
+                + f"status code {status_code}"
+            )
+
+        self._handle_response_error_code(resp_dict, "Error sending message")
+
+        if TYPE_CHECKING:
+            resp_dict = cast(dict[str, Any], resp_dict)
+        return resp_dict
+
     @staticmethod
     def generate_confirm_hash(
         local_nonce: str, server_nonce: str, pwd_hash: str
@@ -302,8 +341,52 @@ class SslAesTransport(BaseTransport):
 
     async def perform_handshake(self) -> None:
         """Perform the handshake."""
-        local_nonce, server_nonce, pwd_hash = await self.perform_handshake1()
-        await self.perform_handshake2(local_nonce, server_nonce, pwd_hash)
+        result = await self.perform_handshake1()
+        if result:
+            local_nonce, server_nonce, pwd_hash = result
+            await self.perform_handshake2(local_nonce, server_nonce, pwd_hash)
+
+    async def try_perform_login(self) -> bool:
+        """Perform the md5 login."""
+        _LOGGER.debug("Performing insecure login ...")
+
+        pwd_hash = _md5_hash(self._pwd_to_hash().encode())
+        username = self._username
+        body = {
+            "method": "login",
+            "params": {
+                "hashed": True,
+                "password": pwd_hash,
+                "username": username,
+            },
+        }
+
+        http_client = self._http_client
+        status_code, resp_dict = await http_client.post(
+            self._app_url,
+            json=body,
+            headers=self._headers,
+            ssl=await self._get_ssl_context(),
+        )
+        if status_code != 200:
+            raise KasaException(
+                f"{self._host} responded with an unexpected "
+                + f"status code {status_code} to handshake2"
+            )
+        resp_dict = cast(dict, resp_dict)
+        if resp_dict.get("error_code") == 0 and (
+            stok := resp_dict.get("result", {}).get("stok")
+        ):
+            _LOGGER.debug(
+                "Succesfully logged in to %s with less secure passthrough", self._host
+            )
+            self._send_secure = False
+            self._token_url = URL(f"{str(self._app_url)}/stok={stok}/ds")
+            self._pwd_hash = pwd_hash
+            return True
+
+        _LOGGER.debug("Unable to log in to %s with less secure login", self._host)
+        return False
 
     async def perform_handshake2(
         self, local_nonce: str, server_nonce: str, pwd_hash: str
@@ -355,12 +438,41 @@ class SslAesTransport(BaseTransport):
         self._state = TransportState.ESTABLISHED
         _LOGGER.debug("Handshake2 complete ...")
 
-    async def perform_handshake1(self) -> tuple[str, str, str]:
+    def _pwd_to_hash(self) -> str:
+        """Return the password to hash."""
+        if self._credentials and self._credentials != Credentials():
+            return self._credentials.password
+
+        if self._username and self._password:
+            return self._password
+
+        return self._default_credentials.password
+
+    async def perform_handshake1(self) -> tuple[str, str, str] | None:
         """Perform the handshake1."""
         resp_dict = None
         if self._username:
             local_nonce = secrets.token_bytes(8).hex().upper()
             resp_dict = await self.try_send_handshake1(self._username, local_nonce)
+
+        if (
+            resp_dict
+            and (error_code := self._get_response_error(resp_dict))
+            is SmartErrorCode.SESSION_EXPIRED
+            and (
+                encrypt_type := resp_dict.get("result", {})
+                .get("data", {})
+                .get("encrypt_type")
+            )
+            and (encrypt_type != ["3"])
+        ):
+            _LOGGER.debug(
+                "Received encrypt_type %s for %s, trying less secure login",
+                encrypt_type,
+                self._host,
+            )
+            if await self.try_perform_login():
+                return None
 
         # Try the default username. If it fails raise the original error_code
         if (
@@ -369,6 +481,7 @@ class SslAesTransport(BaseTransport):
             is not SmartErrorCode.INVALID_NONCE
             or "nonce" not in resp_dict["result"].get("data", {})
         ):
+            _LOGGER.debug("Trying default credentials to %s", self._host)
             local_nonce = secrets.token_bytes(8).hex().upper()
             default_resp_dict = await self.try_send_handshake1(
                 self._default_credentials.username, local_nonce
@@ -378,7 +491,7 @@ class SslAesTransport(BaseTransport):
             ) is SmartErrorCode.INVALID_NONCE and "nonce" in default_resp_dict[
                 "result"
             ].get("data", {}):
-                _LOGGER.debug("Connected to {self._host} with default username")
+                _LOGGER.debug("Connected to %s with default username", self._host)
                 self._username = self._default_credentials.username
                 error_code = default_error_code
                 resp_dict = default_resp_dict
@@ -397,12 +510,8 @@ class SslAesTransport(BaseTransport):
 
         server_nonce = resp_dict["result"]["data"]["nonce"]
         device_confirm = resp_dict["result"]["data"]["device_confirm"]
-        if self._credentials and self._credentials != Credentials():
-            pwd_hash = _sha256_hash(self._credentials.password.encode())
-        elif self._username and self._password:
-            pwd_hash = _sha256_hash(self._password.encode())
-        else:
-            pwd_hash = _sha256_hash(self._default_credentials.password.encode())
+
+        pwd_hash = _sha256_hash(self._pwd_to_hash().encode())
 
         expected_confirm_sha256 = self.generate_confirm_hash(
             local_nonce, server_nonce, pwd_hash
@@ -414,7 +523,9 @@ class SslAesTransport(BaseTransport):
         if TYPE_CHECKING:
             assert self._credentials
             assert self._credentials.password
-        pwd_hash = _md5_hash(self._credentials.password.encode())
+
+        pwd_hash = _md5_hash(self._pwd_to_hash().encode())
+
         expected_confirm_md5 = self.generate_confirm_hash(
             local_nonce, server_nonce, pwd_hash
         )
@@ -422,8 +533,17 @@ class SslAesTransport(BaseTransport):
             _LOGGER.debug("Credentials match")
             return local_nonce, server_nonce, pwd_hash
 
+        for val in {"admin", "tpadmin", "slprealtek"}:
+            for func in {_sha256_hash, _md5_hash, _sha1_hash, lambda x: x.decode()}:
+                pwd_hash = func(val.encode())
+                ec = self.generate_confirm_hash(local_nonce, server_nonce, pwd_hash)
+                if device_confirm == ec:
+                    _LOGGER.debug("Credentials match with %s %s", val, func.__name__)
+                    return local_nonce, server_nonce, pwd_hash
+
         msg = f"Server response doesn't match our challenge on ip {self._host}"
         _LOGGER.debug(msg)
+
         raise AuthenticationError(msg)
 
     async def try_send_handshake1(self, username: str, local_nonce: str) -> dict:
@@ -462,7 +582,10 @@ class SslAesTransport(BaseTransport):
         if self._state is TransportState.HANDSHAKE_REQUIRED:
             await self.perform_handshake()
 
-        return await self.send_secure_passthrough(request)
+        if self._send_secure:
+            return await self.send_secure_passthrough(request)
+
+        return await self.send_unencrypted(request)
 
     async def close(self) -> None:
         """Close the http client and reset internal state."""
