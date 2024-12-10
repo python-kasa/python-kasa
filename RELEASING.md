@@ -283,9 +283,12 @@ git rebase upstream/master
 git checkout -b janitor/merge_patch
 git fetch upstream patch
 git merge upstream/patch --no-commit
+# If there are any merge conflicts run the following command which will simply make master win
+# Do not run it if there are no conflicts as it will end up checking out upstream/master
 git diff --name-only --diff-filter=U | xargs git checkout upstream/master
+# Check the diff is as expected
 git diff --staged
-# The only diff should be the version in pyproject.toml and CHANGELOG.md
+# The only diff should be the version in pyproject.toml and uv.lock, and CHANGELOG.md
 # unless a change made on patch that was not part of a cherry-pick commit
 # If there are any other unexpected diffs `git checkout upstream/master [thefilename]`
 git commit -m "Merge patch into local master" -S
