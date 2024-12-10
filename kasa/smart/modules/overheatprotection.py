@@ -9,7 +9,7 @@ from ..smartmodule import SmartModule
 class OverheatProtection(SmartModule):
     """Implementation for overheat_protection."""
 
-    REQUIRED_KEY_ON_PARENT = ["overheated", "overheat_status"]
+    SYSINFO_LOOKUP_KEYS = ["overheated", "overheat_status"]
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""

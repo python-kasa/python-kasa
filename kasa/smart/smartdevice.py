@@ -320,17 +320,6 @@ class SmartDevice(Device):
                 responses[meth] = SmartErrorCode.INTERNAL_QUERY_ERROR
         return responses
 
-    def _required_key_on_parent(self, mod: type[SmartModule]) -> bool:
-        """Return True if the device sysinfo contains a required key."""
-        required_key = mod.REQUIRED_KEY_ON_PARENT
-        if required_key is None:
-            return False
-
-        if isinstance(required_key, str):
-            required_key = [required_key]
-
-        return any(self.sys_info.get(key) is not None for key in required_key)
-
     async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""
         from .smartmodule import SmartModule
@@ -353,8 +342,8 @@ class SmartDevice(Device):
             ) or mod.__name__ in child_modules_to_skip:
                 continue
             required_component = cast(str, mod.REQUIRED_COMPONENT)
-            if required_component in self._components or self._required_key_on_parent(
-                mod
+            if required_component in self._components or any(
+                self.sys_info.get(key) is not None for key in mod.SYSINFO_LOOKUP_KEYS
             ):
                 _LOGGER.debug(
                     "Device %s, found required %s, adding %s to modules.",
