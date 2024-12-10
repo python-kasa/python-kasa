@@ -167,7 +167,14 @@ class SmartDevice(Device):
             self._last_update, "get_child_device_list", {}
         ):
             for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+                child_id = info["device_id"]
+                if child_id not in self._children:
+                    _LOGGER.debug(
+                        "Skipping child update for %s, probably unsupported device",
+                        child_id,
+                    )
+                    continue
+                self._children[child_id]._update_internal_state(info)
 
     def _update_internal_info(self, info_resp: dict) -> None:
         """Update the internal device info."""
@@ -751,10 +758,11 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
-        # Fallback to device_type (from disco info)
-        type_str = self._info.get("type", self._info.get("device_type"))
-
-        if not type_str:  # no update or discovery info
+        if (
+            not (type_str := self._info.get("type", self._info.get("device_type")))
+            or not self._components
+        ):
+            # no update or discovery info
             return self._device_type
 
         self._device_type = self._get_device_type_from_components(

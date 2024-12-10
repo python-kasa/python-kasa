@@ -98,6 +98,7 @@ PLUGS = {
 SWITCHES_IOT = {
     "HS200",
     "HS210",
+    "KS200",
     "KS200M",
 }
 SWITCHES_SMART = {
