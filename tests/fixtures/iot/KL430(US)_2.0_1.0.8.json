@@ -10,7 +10,7 @@
         "get_sysinfo": {
             "LEF": 1,
             "active_mode": "none",
-            "alias": "89 strip",
+            "alias": "#MASKED_NAME#",
             "ctrl_protocols": {
                 "name": "Linkie",
                 "version": "1.0"

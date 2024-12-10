@@ -23,7 +23,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "schedule",
-            "alias": "Bedroom Lightstrip",
+            "alias": "#MASKED_NAME#",
             "ctrl_protocols": {
                 "name": "Linkie",
                 "version": "1.0"

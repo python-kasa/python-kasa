@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
+import re
 import time
 import uuid
 from collections.abc import Callable
@@ -45,15 +46,27 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "original_device_id": lambda x: "REDACTED_" + x[9::],  # Strip children
     "nickname": lambda x: "I01BU0tFRF9OQU1FIw==" if x else "",
     "mac": mask_mac,
-    "ssid": lambda x: "I01BU0tFRF9TU0lEIw=" if x else "",
+    "ssid": lambda x: "I01BU0tFRF9TU0lEIw==" if x else "",
     "bssid": lambda _: "000000000000",
+    "channel": lambda _: 0,
     "oem_id": lambda x: "REDACTED_" + x[9::],
-    "setup_code": None,  # matter
-    "setup_payload": None,  # matter
-    "mfi_setup_code": None,  # mfi_ for homekit
-    "mfi_setup_id": None,
-    "mfi_token_token": None,
-    "mfi_token_uuid": None,
+    "setup_code": lambda x: re.sub(r"\w", "0", x),  # matter
+    "setup_payload": lambda x: re.sub(r"\w", "0", x),  # matter
+    "mfi_setup_code": lambda x: re.sub(r"\w", "0", x),  # mfi_ for homekit
+    "mfi_setup_id": lambda x: re.sub(r"\w", "0", x),
+    "mfi_token_token": lambda x: re.sub(r"\w", "0", x),
+    "mfi_token_uuid": lambda x: re.sub(r"\w", "0", x),
+    "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
+    # smartcam
+    "dev_id": lambda x: "REDACTED_" + x[9::],
+    "device_name": lambda x: "#MASKED_NAME#" if x else "",
+    "device_alias": lambda x: "#MASKED_NAME#" if x else "",
+    "local_ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
+    # robovac
+    "board_sn": lambda _: "000000000000",
+    "custom_sn": lambda _: "000000000000",
+    "location": lambda x: "#MASKED_NAME#" if x else "",
+    "map_data": lambda x: "#SCRUBBED_MAPDATA#" if x else "",
 }
 
 

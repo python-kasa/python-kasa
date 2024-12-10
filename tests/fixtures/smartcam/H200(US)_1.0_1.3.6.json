@@ -1,34 +1,37 @@
 {
     "discovery_result": {
-        "decrypted_data": {
-            "connect_ssid": "",
-            "connect_type": "wired",
-            "device_id": "0000000000000000000000000000000000000000",
-            "http_port": 443,
-            "owner": "00000000000000000000000000000000",
-            "sd_status": "offline"
-        },
-        "device_id": "00000000000000000000000000000000",
-        "device_model": "H200",
-        "device_name": "#MASKED_NAME#",
-        "device_type": "SMART.TAPOHUB",
-        "encrypt_info": {
-            "data": "",
-            "key": "",
-            "sym_schm": "AES"
-        },
-        "encrypt_type": [
-            "3"
-        ],
-        "factory_default": false,
-        "firmware_version": "1.3.6 Build 20240829 rel.71119",
-        "hardware_version": "1.0",
-        "ip": "127.0.0.123",
-        "isResetWiFi": false,
-        "is_support_iot_cloud": true,
-        "mac": "24-2F-D0-00-00-00",
-        "mgt_encrypt_schm": {
-            "is_support_https": true
+        "error_code": 0,
+        "result": {
+            "decrypted_data": {
+                "connect_ssid": "",
+                "connect_type": "wired",
+                "device_id": "0000000000000000000000000000000000000000",
+                "http_port": 443,
+                "owner": "00000000000000000000000000000000",
+                "sd_status": "offline"
+            },
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "H200",
+            "device_name": "#MASKED_NAME#",
+            "device_type": "SMART.TAPOHUB",
+            "encrypt_info": {
+                "data": "",
+                "key": "",
+                "sym_schm": "AES"
+            },
+            "encrypt_type": [
+                "3"
+            ],
+            "factory_default": false,
+            "firmware_version": "1.3.6 Build 20240829 rel.71119",
+            "hardware_version": "1.0",
+            "ip": "127.0.0.123",
+            "isResetWiFi": false,
+            "is_support_iot_cloud": true,
+            "mac": "24-2F-D0-00-00-00",
+            "mgt_encrypt_schm": {
+                "is_support_https": true
+            }
         }
     },
     "getAlertConfig": {},

@@ -1,12 +1,12 @@
 {
     "system": {
         "get_sysinfo": {
-            "alias": "Bedroom Power Strip",
+            "alias": "#MASKED_NAME#",
             "child_num": 3,
             "children": [
                 {
                     "alias": "Plug 1",
-                    "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7700",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
                     },
@@ -15,7 +15,7 @@
                 },
                 {
                     "alias": "Plug 2",
-                    "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7701",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
                     },
@@ -24,7 +24,7 @@
                 },
                 {
                     "alias": "Plug 3",
-                    "id": "8006E9854025B67C3F9D99BA1E66223D1C9A8A7702",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_3",
                     "next_action": {
                         "type": -1
                     },

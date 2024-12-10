@@ -21,7 +21,7 @@
         "get_sysinfo": {
             "abnormal_detect": 1,
             "active_mode": "none",
-            "alias": "Garage Light",
+            "alias": "#MASKED_NAME#",
             "dev_name": "Smart Wi-Fi 3-Way Light Switch",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,

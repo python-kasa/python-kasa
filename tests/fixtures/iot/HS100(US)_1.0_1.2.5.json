@@ -18,7 +18,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "schedule",
-            "alias": "Unused 3",
+            "alias": "#MASKED_NAME#",
             "dev_name": "Wi-Fi Smart Plug",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,

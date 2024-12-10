@@ -32,7 +32,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "TP-LINK_Smart Bulb_9179",
+            "alias": "#MASKED_NAME#",
             "ctrl_protocols": {
                 "name": "Linkie",
                 "version": "1.0"
@@ -60,7 +60,7 @@
                 "on_off": 0
             },
             "longitude_i": 0,
-            "mic_mac": "74DA88C89179",
+            "mic_mac": "74DA88000000",
             "mic_type": "IOT.SMARTBULB",
             "model": "KL60(UN)",
             "oemId": "00000000000000000000000000000000",

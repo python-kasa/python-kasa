@@ -28,7 +28,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Living Room Dimmer Switch",
+            "alias": "#MASKED_NAME#",
             "brightness": 25,
             "dev_name": "Smart Wi-Fi Dimmer",
             "deviceId": "000000000000000000000000000000000000000",
@@ -38,9 +38,9 @@
             "hwId": "00000000000000000000000000000000",
             "hw_ver": "1.0",
             "icon_hash": "",
-            "latitude_i": 11.6210,
+            "latitude_i": 0,
             "led_off": 0,
-            "longitude_i": 42.2074,
+            "longitude_i": 0,
             "mac": "00:00:00:00:00:00",
             "mic_type": "IOT.SMARTPLUGSWITCH",
             "model": "HS220(US)",

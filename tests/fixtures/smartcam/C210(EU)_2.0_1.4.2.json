@@ -1,35 +1,38 @@
 {
     "discovery_result": {
-        "decrypted_data": {
-            "connect_ssid": "0000000000",
-            "connect_type": "wireless",
-            "device_id": "0000000000000000000000000000000000000000",
-            "http_port": 443,
-            "last_alarm_time": "1729264456",
-            "last_alarm_type": "motion",
-            "owner": "00000000000000000000000000000000",
-            "sd_status": "offline"
-        },
-        "device_id": "00000000000000000000000000000000",
-        "device_model": "C210",
-        "device_name": "#MASKED_NAME#",
-        "device_type": "SMART.IPCAMERA",
-        "encrypt_info": {
-            "data": "",
-            "key": "",
-            "sym_schm": "AES"
-        },
-        "encrypt_type": [
-            "3"
-        ],
-        "factory_default": false,
-        "firmware_version": "1.4.2 Build 240829 Rel.54953n",
-        "hardware_version": "2.0",
-        "ip": "127.0.0.123",
-        "is_support_iot_cloud": true,
-        "mac": "40-AE-30-00-00-00",
-        "mgt_encrypt_schm": {
-            "is_support_https": true
+        "error_code": 0,
+        "result": {
+            "decrypted_data": {
+                "connect_ssid": "#MASKED_SSID#",
+                "connect_type": "wireless",
+                "device_id": "0000000000000000000000000000000000000000",
+                "http_port": 443,
+                "last_alarm_time": "1729264456",
+                "last_alarm_type": "motion",
+                "owner": "00000000000000000000000000000000",
+                "sd_status": "offline"
+            },
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "C210",
+            "device_name": "#MASKED_NAME#",
+            "device_type": "SMART.IPCAMERA",
+            "encrypt_info": {
+                "data": "",
+                "key": "",
+                "sym_schm": "AES"
+            },
+            "encrypt_type": [
+                "3"
+            ],
+            "factory_default": false,
+            "firmware_version": "1.4.2 Build 240829 Rel.54953n",
+            "hardware_version": "2.0",
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "40-AE-30-00-00-00",
+            "mgt_encrypt_schm": {
+                "is_support_https": true
+            }
         }
     },
     "getAlertConfig": {

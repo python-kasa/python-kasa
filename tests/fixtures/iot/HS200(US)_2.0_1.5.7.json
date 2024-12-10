@@ -20,7 +20,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Master Bedroom Fan",
+            "alias": "#MASKED_NAME#",
             "dev_name": "Smart Wi-Fi Light Switch",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,

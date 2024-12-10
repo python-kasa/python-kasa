@@ -20,7 +20,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "KL135 Bulb",
+            "alias": "#MASKED_NAME#",
             "ctrl_protocols": {
                 "name": "Linkie",
                 "version": "1.0"
