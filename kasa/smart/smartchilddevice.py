@@ -53,14 +53,16 @@ class SmartChildDevice(SmartDevice):
 
     @property
     def _device_info(self) -> _DeviceInfo:
-        """Return device info."""
-        components = [
-            {"id": id, "ver_code": ver} for id, ver in self._components.items()
-        ]
+        """Return device info.
+
+        Child device does not have it info and components in _last_update so
+        this overrides the base implementation to call _get_device_info with
+        info and components combined as they would be in _last_update.
+        """
         return self._get_device_info(
             {
                 "get_device_info": self._info,
-                "component_nego": {"component_list": components},
+                "component_nego": self._components_raw,
             },
             None,
         )
