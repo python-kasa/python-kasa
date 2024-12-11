@@ -333,7 +333,10 @@ async def cli(
             f" {target}. Use --target to override."
         )
         devices = await Discover.discover(
-            target=target, credentials=credentials, discovery_timeout=discovery_timeout
+            target=target,
+            credentials=credentials,
+            discovery_timeout=discovery_timeout,
+            on_discovered_raw=capture_raw,
         )
         click.echo(f"Detected {len(devices)} devices")
         for dev in devices.values():
@@ -347,7 +350,6 @@ async def cli(
                 dev.protocol,
                 discovery_info=discovery_info,
                 batch_size=batch_size,
-                on_discovered_raw=capture_raw,
             )
 
 
