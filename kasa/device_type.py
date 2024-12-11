@@ -21,6 +21,7 @@ class DeviceType(Enum):
     Hub = "hub"
     Fan = "fan"
     Thermostat = "thermostat"
+    Vacuum = "vacuum"
     Unknown = "unknown"
 
     @staticmethod

@@ -449,6 +449,17 @@ class FakeSmartTransport(BaseTransport):
         info["get_preset_rules"]["states"][params["index"]] = params["state"]
         return {"error_code": 0}
 
+    def _set_temperature_unit(self, info, params):
+        """Set or remove values as per the device behaviour."""
+        unit = params["temp_unit"]
+        if unit not in {"celsius", "fahrenheit"}:
+            raise ValueError(f"Invalid value for temperature unit {unit}")
+        if "temp_unit" not in info["get_device_info"]:
+            return {"error_code": SmartErrorCode.UNKNOWN_METHOD_ERROR}
+        else:
+            info["get_device_info"]["temp_unit"] = unit
+            return {"error_code": 0}
+
     def _update_sysinfo_key(self, info: dict, key: str, value: str) -> dict:
         """Update a single key in the main system info.
 
@@ -551,6 +562,8 @@ class FakeSmartTransport(BaseTransport):
             return self._set_preset_rules(info, params)
         elif method == "edit_preset_rules":
             return self._edit_preset_rules(info, params)
+        elif method == "set_temperature_unit":
+            return self._set_temperature_unit(info, params)
         elif method == "set_on_off_gradually_info":
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":

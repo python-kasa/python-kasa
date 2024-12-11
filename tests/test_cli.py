@@ -2,7 +2,7 @@ import json
 import os
 import re
 from datetime import datetime
-from unittest.mock import ANY
+from unittest.mock import ANY, PropertyMock, patch
 from zoneinfo import ZoneInfo
 
 import asyncclick as click
@@ -40,10 +40,11 @@ from kasa.cli.light import (
 )
 from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_command
 from kasa.cli.time import time
-from kasa.cli.usage import emeter, energy
+from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
-from kasa.discover import Discover, DiscoveryResult
+from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
+from kasa.json import dumps as json_dumps
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
 
@@ -124,6 +125,36 @@ async def test_list_devices(discovery_mock, runner):
     row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7}"
     assert header in res.output
     assert row in res.output
+
+
+async def test_discover_raw(discovery_mock, runner, mocker):
+    """Test the discover raw command."""
+    redact_spy = mocker.patch(
+        "kasa.protocols.protocol.redact_data", side_effect=redact_data
+    )
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+
+    expected = {
+        "discovery_response": discovery_mock.discovery_data,
+        "meta": {"ip": "127.0.0.123", "port": discovery_mock.discovery_port},
+    }
+    assert res.output == json_dumps(expected, indent=True) + "\n"
+
+    redact_spy.assert_not_called()
+
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw", "--redact"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+
+    redact_spy.assert_called()
 
 
 @new_discovery
@@ -432,38 +463,45 @@ async def test_time_set(dev: Device, mocker, runner):
 
 
 async def test_emeter(dev: Device, mocker, runner):
-    res = await runner.invoke(emeter, obj=dev)
+    mocker.patch("kasa.Discover.discover_single", return_value=dev)
+    base_cmd = ["--host", "dummy", "energy"]
+    res = await runner.invoke(cli, base_cmd, obj=dev)
     if not (energy := dev.modules.get(Module.Energy)):
         assert "Device has no energy module." in res.output
         return
 
-    assert "== Emeter ==" in res.output
+    assert "== Energy ==" in res.output
 
     if dev.device_type is not DeviceType.Strip:
-        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
+        res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
-        res = await runner.invoke(emeter, ["--name", "mock"], obj=dev)
+        res = await runner.invoke(cli, [*base_cmd, "--name", "mock"], obj=dev)
         assert f"Device: {dev.host} does not have children" in res.output
 
     if dev.device_type is DeviceType.Strip and len(dev.children) > 0:
         child_energy = dev.children[0].modules.get(Module.Energy)
         assert child_energy
-        realtime_emeter = mocker.patch.object(child_energy, "get_status")
-        realtime_emeter.return_value = EmeterStatus({"voltage_mv": 122066})
 
-        res = await runner.invoke(emeter, ["--index", "0"], obj=dev)
-        assert "Voltage: 122.066 V" in res.output
-        realtime_emeter.assert_called()
-        assert realtime_emeter.call_count == 1
+        with patch.object(
+            type(child_energy), "status", new_callable=PropertyMock
+        ) as child_status:
+            child_status.return_value = EmeterStatus({"voltage_mv": 122066})
 
-        res = await runner.invoke(emeter, ["--name", dev.children[0].alias], obj=dev)
-        assert "Voltage: 122.066 V" in res.output
-        assert realtime_emeter.call_count == 2
+            res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
+            assert "Voltage: 122.066 V" in res.output
+            child_status.assert_called()
+            assert child_status.call_count == 1
+
+            res = await runner.invoke(
+                cli, [*base_cmd, "--name", dev.children[0].alias], obj=dev
+            )
+            assert "Voltage: 122.066 V" in res.output
+            assert child_status.call_count == 2
 
     if isinstance(dev, IotDevice):
         monthly = mocker.patch.object(energy, "get_monthly_stats")
         monthly.return_value = {1: 1234}
-    res = await runner.invoke(emeter, ["--year", "1900"], obj=dev)
+    res = await runner.invoke(cli, [*base_cmd, "--year", "1900"], obj=dev)
     if not isinstance(dev, IotDevice):
         assert "Device does not support historical statistics" in res.output
         return
@@ -474,7 +512,7 @@ async def test_emeter(dev: Device, mocker, runner):
     if isinstance(dev, IotDevice):
         daily = mocker.patch.object(energy, "get_daily_stats")
         daily.return_value = {1: 1234}
-    res = await runner.invoke(emeter, ["--month", "1900-12"], obj=dev)
+    res = await runner.invoke(cli, [*base_cmd, "--month", "1900-12"], obj=dev)
     if not isinstance(dev, IotDevice):
         assert "Device has no historical statistics" in res.output
         return
@@ -685,6 +723,8 @@ async def test_credentials(discovery_mock, mocker, runner):
             dr.device_type,
             "--encrypt-type",
             dr.mgt_encrypt_schm.encrypt_type,
+            "--login-version",
+            dr.mgt_encrypt_schm.lv or 1,
         ],
     )
     assert res.exit_code == 0
@@ -722,6 +762,7 @@ async def test_without_device_type(dev, mocker, runner):
         timeout=5,
         discovery_timeout=7,
         on_unsupported=ANY,
+        on_discovered_raw=ANY,
     )
 
 

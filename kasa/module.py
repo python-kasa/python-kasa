@@ -14,9 +14,17 @@ Light, AutoOff, Firmware etc.
 >>> print(dev.alias)
 Living Room Bulb
 
-To see whether a device supports functionality check for the existence of the module:
+To see whether a device supports a group of functionality
+check for the existence of the module:
 
 >>> if light := dev.modules.get("Light"):
+>>>     print(light.brightness)
+100
+
+To see whether a device supports specific functionality, you can check whether the
+module has that feature:
+
+>>> if light.has_feature("hsv"):
 >>>     print(light.hsv)
 HSV(hue=0, saturation=100, value=100)
 
@@ -70,6 +78,9 @@ ModuleT = TypeVar("ModuleT", bound="Module")
 class FeatureAttribute:
     """Class for annotating attributes bound to feature."""
 
+    def __repr__(self) -> str:
+        return "FeatureAttribute"
+
 
 class Module(ABC):
     """Base class implemention for all modules.
@@ -85,6 +96,7 @@ class Module(ABC):
     Led: Final[ModuleName[interfaces.Led]] = ModuleName("Led")
     Light: Final[ModuleName[interfaces.Light]] = ModuleName("Light")
     LightPreset: Final[ModuleName[interfaces.LightPreset]] = ModuleName("LightPreset")
+    Thermostat: Final[ModuleName[interfaces.Thermostat]] = ModuleName("Thermostat")
     Time: Final[ModuleName[interfaces.Time]] = ModuleName("Time")
 
     # IOT only Modules

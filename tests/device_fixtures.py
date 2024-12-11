@@ -98,6 +98,7 @@ PLUGS = {
 SWITCHES_IOT = {
     "HS200",
     "HS210",
+    "KS200",
     "KS200M",
 }
 SWITCHES_SMART = {
@@ -216,6 +217,9 @@ no_emeter = parametrize(
     "no emeter",
     model_filter=ALL_DEVICES - WITH_EMETER,
     protocol_filter={"SMART", "IOT"},
+)
+has_emeter_smart = parametrize(
+    "has emeter smart", model_filter=WITH_EMETER_SMART, protocol_filter={"SMART"}
 )
 has_emeter_iot = parametrize(
     "has emeter iot", model_filter=WITH_EMETER_IOT, protocol_filter={"IOT"}

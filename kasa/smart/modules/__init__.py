@@ -24,9 +24,11 @@ from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
 from .motionsensor import MotionSensor
+from .overheatprotection import OverheatProtection
 from .reportmode import ReportMode
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
+from .thermostat import Thermostat
 from .time import Time
 from .triggerlogs import TriggerLogs
 from .waterleaksensor import WaterleakSensor
@@ -61,5 +63,7 @@ __all__ = [
     "MotionSensor",
     "TriggerLogs",
     "FrostProtection",
+    "Thermostat",
     "SmartLightEffect",
+    "OverheatProtection",
 ]

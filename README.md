@@ -182,29 +182,29 @@ The following devices have been tested and confirmed as working. If your device 
 <!--SUPPORTED_START-->
 ### Supported Kasa devices
 
-- **Plugs**: EP10, EP25<sup>\*</sup>, HS100<sup>\*\*</sup>, HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M<sup>\*</sup>, KP401
-- **Power Strips**: EP40, EP40M<sup>\*</sup>, HS107, HS300, KP200, KP303, KP400
-- **Wall Switches**: ES20M, HS200<sup>\*\*</sup>, HS210, HS220<sup>\*\*</sup>, KP405, KS200M, KS205<sup>\*</sup>, KS220, KS220M, KS225<sup>\*</sup>, KS230, KS240<sup>\*</sup>
+- **Plugs**: EP10, EP25[^1], HS100[^2], HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M[^1], KP401
+- **Power Strips**: EP40, EP40M[^1], HS107, HS300, KP200, KP303, KP400
+- **Wall Switches**: ES20M, HS200[^2], HS210, HS220[^2], KP405, KS200, KS200M, KS205[^1], KS220, KS220M, KS225[^1], KS230, KS240[^1]
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB110
 - **Light Strips**: KL400L5, KL420L5, KL430
-- **Hubs**: KH100<sup>\*</sup>
-- **Hub-Connected Devices<sup>\*\*\*</sup>**: KE100<sup>\*</sup>
+- **Hubs**: KH100[^1]
+- **Hub-Connected Devices[^3]**: KE100[^1]
 
-### Supported Tapo<sup>\*</sup> devices
+### Supported Tapo[^1] devices
 
 - **Plugs**: P100, P110, P110M, P115, P125M, P135, TP15
 - **Power Strips**: P300, P304M, TP25
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
-- **Cameras**: C210, TC65
+- **Cameras**: C210, C520WS, TC65
 - **Hubs**: H100, H200
-- **Hub-Connected Devices<sup>\*\*\*</sup>**: S200B, S200D, T100, T110, T300, T310, T315
+- **Hub-Connected Devices[^3]**: S200B, S200D, T100, T110, T300, T310, T315
 
 <!--SUPPORTED_END-->
-<sup>\*</sup>&nbsp;&nbsp; Model requires authentication<br>
-<sup>\*\*</sup>&nbsp; Newer versions require authentication<br>
-<sup>\*\*\*</sup> Devices may work across TAPO/KASA branded hubs
+[^1]: Model requires authentication
+[^2]: Newer versions require authentication
+[^3]: Devices may work across TAPO/KASA branded hubs
 
 See [supported devices in our documentation](SUPPORTED.md) for more detailed information about tested hardware and software versions.
 
@@ -227,6 +227,7 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 ### Other related projects
 
 * [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
+  * [Home Assistant integration](https://github.com/JurajNyiri/HomeAssistant-Tapo-Control)
 * [Tapo P100 (Tapo plugs, Tapo bulbs)](https://github.com/fishbigger/TapoP100)
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
 * [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)

@@ -24,6 +24,7 @@ from .modules import (
     DeviceModule,
     Firmware,
     Light,
+    Thermostat,
     Time,
 )
 from .smartmodule import SmartModule
@@ -166,7 +167,14 @@ class SmartDevice(Device):
             self._last_update, "get_child_device_list", {}
         ):
             for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+                child_id = info["device_id"]
+                if child_id not in self._children:
+                    _LOGGER.debug(
+                        "Skipping child update for %s, probably unsupported device",
+                        child_id,
+                    )
+                    continue
+                self._children[child_id]._update_internal_state(info)
 
     def _update_internal_info(self, info_resp: dict) -> None:
         """Update the internal device info."""
@@ -341,9 +349,8 @@ class SmartDevice(Device):
             ) or mod.__name__ in child_modules_to_skip:
                 continue
             required_component = cast(str, mod.REQUIRED_COMPONENT)
-            if required_component in self._components or (
-                mod.REQUIRED_KEY_ON_PARENT
-                and self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
+            if required_component in self._components or any(
+                self.sys_info.get(key) is not None for key in mod.SYSINFO_LOOKUP_KEYS
             ):
                 _LOGGER.debug(
                     "Device %s, found required %s, adding %s to modules.",
@@ -361,6 +368,11 @@ class SmartDevice(Device):
             or Module.ColorTemperature in self._modules
         ):
             self._modules[Light.__name__] = Light(self, "light")
+        if (
+            Module.TemperatureControl in self._modules
+            and Module.TemperatureSensor in self._modules
+        ):
+            self._modules[Thermostat.__name__] = Thermostat(self, "thermostat")
 
     async def _initialize_features(self) -> None:
         """Initialize device features."""
@@ -424,19 +436,6 @@ class SmartDevice(Device):
                     icon="mdi:wifi",
                     category=Feature.Category.Debug,
                     type=Feature.Type.Sensor,
-                )
-            )
-
-        if "overheated" in self._info:
-            self._add_feature(
-                Feature(
-                    self,
-                    id="overheated",
-                    name="Overheated",
-                    attribute_getter=lambda x: x._info["overheated"],
-                    icon="mdi:heat-wave",
-                    type=Feature.Type.BinarySensor,
-                    category=Feature.Category.Info,
                 )
             )
 
@@ -759,10 +758,11 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
-        # Fallback to device_type (from disco info)
-        type_str = self._info.get("type", self._info.get("device_type"))
-
-        if not type_str:  # no update or discovery info
+        if (
+            not (type_str := self._info.get("type", self._info.get("device_type")))
+            or not self._components
+        ):
+            # no update or discovery info
             return self._device_type
 
         self._device_type = self._get_device_type_from_components(
@@ -796,6 +796,8 @@ class SmartDevice(Device):
             return DeviceType.Sensor
         if "ENERGY" in device_type:
             return DeviceType.Thermostat
+        if "ROBOVAC" in device_type:
+            return DeviceType.Vacuum
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
 

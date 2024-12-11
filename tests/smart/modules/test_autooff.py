@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 from datetime import datetime
 
 import pytest
@@ -24,10 +23,6 @@ autooff = parametrize(
         ("auto_off_minutes", "delay", int),
         ("auto_off_at", "auto_off_at", datetime | None),
     ],
-)
-@pytest.mark.skipif(
-    sys.version_info < (3, 10),
-    reason="Subscripted generics cannot be used with class and instance checks",
 )
 async def test_autooff_features(
     dev: SmartDevice, feature: str, prop_name: str, type: type

@@ -22,6 +22,29 @@ class DiscoveryResponse(TypedDict):
     error_code: int
 
 
+UNSUPPORTED_HOMEWIFISYSTEM = {
+    "error_code": 0,
+    "result": {
+        "channel_2g": "10",
+        "channel_5g": "44",
+        "device_id": "REDACTED_51f72a752213a6c45203530",
+        "device_model": "X20",
+        "device_type": "HOMEWIFISYSTEM",
+        "factory_default": False,
+        "group_id": "REDACTED_07d902da02fa9beab8a64",
+        "group_name": "I01BU0tFRF9TU0lEIw==",  # '#MASKED_SSID#'
+        "hardware_version": "3.0",
+        "ip": "192.168.1.192",
+        "mac": "24:2F:D0:00:00:00",
+        "master_device_id": "REDACTED_51f72a752213a6c45203530",
+        "need_account_digest": True,
+        "owner": "REDACTED_341c020d7e8bda184e56a90",
+        "role": "master",
+        "tmp_port": [20001],
+    },
+}
+
+
 def _make_unsupported(
     device_family,
     encrypt_type,
@@ -75,13 +98,14 @@ UNSUPPORTED_DEVICES = {
     "unable_to_parse": _make_unsupported(
         "SMART.TAPOBULB",
         "FOO",
-        omit_keys={"mgt_encrypt_schm": None},
+        omit_keys={"device_id": None},
     ),
     "invalidinstance": _make_unsupported(
         "IOT.SMARTPLUGSWITCH",
         "KLAP",
         https=True,
     ),
+    "homewifi": UNSUPPORTED_HOMEWIFISYSTEM,
 }
 
 
@@ -105,6 +129,8 @@ def parametrize_discovery(
 new_discovery = parametrize_discovery(
     "new discovery", data_root_filter="discovery_result"
 )
+
+smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMART"})
 
 
 @pytest.fixture(

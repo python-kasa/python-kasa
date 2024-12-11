@@ -69,6 +69,7 @@ class DeviceFamily(Enum):
 
     IotSmartPlugSwitch = "IOT.SMARTPLUGSWITCH"
     IotSmartBulb = "IOT.SMARTBULB"
+    IotIpCamera = "IOT.IPCAMERA"
     SmartKasaPlug = "SMART.KASAPLUG"
     SmartKasaSwitch = "SMART.KASASWITCH"
     SmartTapoPlug = "SMART.TAPOPLUG"
@@ -77,6 +78,7 @@ class DeviceFamily(Enum):
     SmartTapoHub = "SMART.TAPOHUB"
     SmartKasaHub = "SMART.KASAHUB"
     SmartIpCamera = "SMART.IPCAMERA"
+    SmartTapoRobovac = "SMART.TAPOROBOVAC"
 
 
 class _DeviceConfigBaseMixin(DataClassJSONMixin):
