@@ -80,14 +80,17 @@ This can be done using the {attr}`~kasa.Device.internal_state` property.
 ## Modules and Features
 
 The functionality provided by all {class}`~kasa.Device` instances is (mostly) done inside separate modules.
-While the individual device-type specific classes provide an easy access for the most import features,
-you can also access individual modules through {attr}`kasa.Device.modules`.
-You can get the list of supported modules for a given device instance using {attr}`~kasa.Device.supported_modules`.
+While the device class provides easy access for most device related attributes,
+for components of functionality like `light` and `camera` you can access the module through {attr}`kasa.Device.modules`.
+The module names are handily available as constants on {class}`~kasa.Module` and will return type aware values from the collection.
 
-```{note}
-If you only need some module-specific information,
-you can call the wanted method on the module to avoid using {meth}`~kasa.Device.update`.
-```
+Features represent individual pieces of functionality within a module like brightness, hsv and temperature within a light module.
+They allow for instrospection and can be accessed through {attr}`kasa.Device.features`.
+Attributes can be accessed via a `Feature` or a module attribute depending on the use case.
+Modules tend to provide richer functionality but using the features does not require an understanding of the module api.
+
+:::{include} featureattributes.md
+:::
 
 (topics-protocols-and-transports)=
 ## Protocols and Transports
@@ -137,96 +140,3 @@ The base exception for all library errors is {class}`KasaException <kasa.excepti
 - If the library encounters and unsupported deviceit raises an {class}`UnsupportedDeviceError <kasa.exceptions.UnsupportedDeviceError>`.
 - If the device fails to respond within a timeout the library raises a {class}`TimeoutError <kasa.exceptions.TimeoutError>`.
 - All other failures will raise the base {class}`KasaException <kasa.exceptions.KasaException>` class.
-
-<!-- Commenting out this section keeps git seeing the change as a rename.
-
-API documentation for modules and features
-******************************************
-
-.. autoclass:: kasa.Module
-    :noindex:
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. automodule:: kasa.interfaces
-    :noindex:
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.Feature
-    :noindex:
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-
-
-API documentation for protocols and transports
-**********************************************
-
-.. autoclass:: kasa.protocols.BaseProtocol
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.protocols.IotProtocol
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.protocols.SmartProtocol
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.transports.BaseTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.transports.XorTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.transports.KlapTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.transports.KlapTransportV2
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-.. autoclass:: kasa.transports.AesTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-
-API documentation for errors and exceptions
-*******************************************
-
-.. autoclass:: kasa.exceptions.KasaException
-    :members:
-    :undoc-members:
-
-.. autoclass:: kasa.exceptions.DeviceError
-    :members:
-    :undoc-members:
-
-.. autoclass:: kasa.exceptions.AuthenticationError
-    :members:
-    :undoc-members:
-
-.. autoclass:: kasa.exceptions.UnsupportedDeviceError
-    :members:
-    :undoc-members:
-
-.. autoclass:: kasa.exceptions.TimeoutError
-    :members:
-    :undoc-members:
-
--->
