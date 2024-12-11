@@ -148,6 +148,15 @@ class SmartModule(Module):
         return await self._device._query_helper(method, params)
 
     @property
+    def optional_response_keys(self) -> list[str]:
+        """Return optional response keys for the module.
+
+        Defaults to no keys. Overriding this and providing keys will remove
+        instead of raise on error.
+        """
+        return []
+
+    @property
     def data(self) -> dict[str, Any]:
         """Return response data for the module.
 
@@ -179,12 +188,20 @@ class SmartModule(Module):
 
         filtered_data = {k: v for k, v in dev._last_update.items() if k in q_keys}
 
+        remove_keys: list[str] = []
         for data_item in filtered_data:
             if isinstance(filtered_data[data_item], SmartErrorCode):
-                raise DeviceError(
-                    f"{data_item} for {self.name}", error_code=filtered_data[data_item]
-                )
-        if len(filtered_data) == 1:
+                if data_item in self.optional_response_keys:
+                    remove_keys.append(data_item)
+                else:
+                    raise DeviceError(
+                        f"{data_item} for {self.name}",
+                        error_code=filtered_data[data_item],
+                    )
+        for key in remove_keys:
+            filtered_data.pop(key)
+
+        if len(filtered_data) == 1 and not remove_keys:
             return next(iter(filtered_data.values()))
 
         return filtered_data
