@@ -31,6 +31,7 @@ from .temperaturesensor import TemperatureSensor
 from .thermostat import Thermostat
 from .time import Time
 from .triggerlogs import TriggerLogs
+from .vacuumrecords import VacuumRecords
 from .waterleaksensor import WaterleakSensor
 
 __all__ = [
@@ -64,6 +65,7 @@ __all__ = [
     "TriggerLogs",
     "FrostProtection",
     "Thermostat",
+    "VacuumRecords",
     "SmartLightEffect",
     "OverheatProtection",
 ]
