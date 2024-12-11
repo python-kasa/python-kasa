@@ -435,7 +435,7 @@ async def get_device_for_fixture(
 
     discovery_data = None
     if "discovery_result" in fixture_data.data:
-        discovery_data = fixture_data.data["discovery_result"]
+        discovery_data = fixture_data.data["discovery_result"]["result"]
     elif "system" in fixture_data.data:
         discovery_data = {
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}

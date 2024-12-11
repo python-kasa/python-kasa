@@ -29,11 +29,13 @@ async def test_fixture_names(fixture_info: FixtureInfo):
     """Test that device info gets the right fixture names."""
     if fixture_info.protocol in {"SMARTCAM"}:
         device_info = SmartCamDevice._get_device_info(
-            fixture_info.data, fixture_info.data.get("discovery_result")
+            fixture_info.data,
+            fixture_info.data.get("discovery_result", {}).get("result"),
         )
     elif fixture_info.protocol in {"SMART"}:
         device_info = SmartDevice._get_device_info(
-            fixture_info.data, fixture_info.data.get("discovery_result")
+            fixture_info.data,
+            fixture_info.data.get("discovery_result", {}).get("result"),
         )
     elif fixture_info.protocol in {"SMART.CHILD"}:
         device_info = SmartDevice._get_device_info(fixture_info.data, None)

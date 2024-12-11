@@ -1126,7 +1126,7 @@ async def test_feature_set_child(mocker, runner):
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
     get_child_device = mocker.spy(dummy_device, "get_child_device")
 
-    child_id = "000000000000000000000000000000000000000001"
+    child_id = "SCRUBBED_CHILD_DEVICE_ID_1"
 
     res = await runner.invoke(
         cli,

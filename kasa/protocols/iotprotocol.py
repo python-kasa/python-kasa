@@ -25,19 +25,35 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _mask_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def mask_child(child: dict[str, Any], index: int) -> dict[str, Any]:
+        result = {
+            **child,
+            "id": f"SCRUBBED_CHILD_DEVICE_ID_{index+1}",
+        }
+        # Will leave empty aliases as blank
+        if child.get("alias"):
+            result["alias"] = f"#MASKED_NAME# {index + 1}"
+        return result
+
+    return [mask_child(child, index) for index, child in enumerate(children)]
+
+
 REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "latitude": lambda x: 0,
     "longitude": lambda x: 0,
     "latitude_i": lambda x: 0,
     "longitude_i": lambda x: 0,
     "deviceId": lambda x: "REDACTED_" + x[9::],
-    "id": lambda x: "REDACTED_" + x[9::],
+    "children": _mask_children,
     "alias": lambda x: "#MASKED_NAME#" if x else "",
     "mac": mask_mac,
     "mic_mac": mask_mac,
     "ssid": lambda x: "#MASKED_SSID#" if x else "",
     "oemId": lambda x: "REDACTED_" + x[9::],
     "username": lambda _: "user@example.com",  # cnCloud
+    "hwId": lambda x: "REDACTED_" + x[9::],
 }
 
 
