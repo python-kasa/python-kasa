@@ -26,7 +26,7 @@
             "child_num": 6,
             "children": [
                 {
-                    "alias": "Office Monitor 1",
+                    "alias": "#MASKED_NAME# 1",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
@@ -35,7 +35,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Office Monitor 2",
+                    "alias": "#MASKED_NAME# 2",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
@@ -44,7 +44,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Office Monitor 3",
+                    "alias": "#MASKED_NAME# 3",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_3",
                     "next_action": {
                         "type": -1
@@ -53,7 +53,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Office Laptop Dock",
+                    "alias": "#MASKED_NAME# 4",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_4",
                     "next_action": {
                         "type": -1
@@ -62,7 +62,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Office Desk Light",
+                    "alias": "#MASKED_NAME# 5",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_5",
                     "next_action": {
                         "type": -1
@@ -71,7 +71,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Laptop",
+                    "alias": "#MASKED_NAME# 6",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_6",
                     "next_action": {
                         "type": -1

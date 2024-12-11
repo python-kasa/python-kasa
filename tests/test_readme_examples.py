@@ -42,13 +42,8 @@ def test_plug_examples(mocker):
     assert not res["failed"]
 
 
-def test_strip_examples(mocker):
+def test_strip_examples(readmes_mock):
     """Test strip examples."""
-    p = asyncio.run(get_device_for_fixture_protocol("KP303(UK)_1.0_1.0.3.json", "IOT"))
-    asyncio.run(p.set_alias("Bedroom Power Strip"))
-    asyncio.run(p.update())
-    mocker.patch("kasa.iot.iotstrip.IotStrip", return_value=p)
-    mocker.patch("kasa.iot.iotstrip.IotStrip.update")
     res = xdoctest.doctest_module("kasa.iot.iotstrip", "all")
     assert not res["failed"]
 
@@ -165,6 +160,10 @@ async def readmes_mock(mocker):
     fixture_infos["127.0.0.1"].data["system"]["get_sysinfo"]["alias"] = (
         "Bedroom Power Strip"
     )
+    for index, child in enumerate(
+        fixture_infos["127.0.0.1"].data["system"]["get_sysinfo"]["children"]
+    ):
+        child["alias"] = f"Plug {index + 1}"
     fixture_infos["127.0.0.2"].data["system"]["get_sysinfo"]["alias"] = (
         "Bedroom Lamp Plug"
     )

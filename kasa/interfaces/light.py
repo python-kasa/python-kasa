@@ -8,8 +8,8 @@
 >>>     password="great_password"
 >>> )
 >>> await dev.update()
->>> print(dev.host)
-127.0.0.3
+>>> print(dev.alias)
+Living Room Bulb
 
 Lights, like any other supported devices, can be turned on and off:
 

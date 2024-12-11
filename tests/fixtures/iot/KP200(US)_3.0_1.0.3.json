@@ -5,7 +5,7 @@
             "child_num": 2,
             "children": [
                 {
-                    "alias": "One ",
+                    "alias": "#MASKED_NAME# 1",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
@@ -14,7 +14,7 @@
                     "state": 1
                 },
                 {
-                    "alias": "Two ",
+                    "alias": "#MASKED_NAME# 2",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1

@@ -21,7 +21,7 @@
             "child_num": 2,
             "children": [
                 {
-                    "alias": "Rope",
+                    "alias": "#MASKED_NAME# 1",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "action": 1,
@@ -32,7 +32,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Plug 2",
+                    "alias": "#MASKED_NAME# 2",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1

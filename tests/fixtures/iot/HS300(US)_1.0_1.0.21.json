@@ -14,7 +14,7 @@
             "child_num": 6,
             "children": [
                 {
-                    "alias": "Home CameraPC",
+                    "alias": "#MASKED_NAME# 1",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
@@ -23,7 +23,7 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Firewalla",
+                    "alias": "#MASKED_NAME# 2",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
@@ -32,7 +32,7 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Cox modem",
+                    "alias": "#MASKED_NAME# 3",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_3",
                     "next_action": {
                         "type": -1
@@ -41,7 +41,7 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home rpi3-2",
+                    "alias": "#MASKED_NAME# 4",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_4",
                     "next_action": {
                         "type": -1
@@ -50,7 +50,7 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Camera Switch",
+                    "alias": "#MASKED_NAME# 5",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_5",
                     "next_action": {
                         "type": -1
@@ -59,7 +59,7 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Network Switch",
+                    "alias": "#MASKED_NAME# 6",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_6",
                     "next_action": {
                         "type": -1

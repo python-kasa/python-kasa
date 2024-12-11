@@ -15,7 +15,7 @@
             "child_num": 6,
             "children": [
                 {
-                    "alias": "Plug 1",
+                    "alias": "#MASKED_NAME# 1",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
@@ -24,7 +24,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Plug 2",
+                    "alias": "#MASKED_NAME# 2",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
@@ -33,7 +33,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Plug 3",
+                    "alias": "#MASKED_NAME# 3",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_3",
                     "next_action": {
                         "type": -1
@@ -42,7 +42,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Plug 4",
+                    "alias": "#MASKED_NAME# 4",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_4",
                     "next_action": {
                         "type": -1
@@ -51,7 +51,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Plug 5",
+                    "alias": "#MASKED_NAME# 5",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_5",
                     "next_action": {
                         "type": -1
@@ -60,7 +60,7 @@
                     "state": 0
                 },
                 {
-                    "alias": "Plug 6",
+                    "alias": "#MASKED_NAME# 6",
                     "id": "SCRUBBED_CHILD_DEVICE_ID_6",
                     "next_action": {
                         "type": -1
