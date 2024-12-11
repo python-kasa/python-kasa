@@ -469,7 +469,9 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
 async def test_smart_temp_range(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
-    assert light.valid_temperature_range
+    color_temp_feat = light.get_feature("color_temp")
+    assert color_temp_feat
+    assert color_temp_feat.range
 
 
 @device_smart

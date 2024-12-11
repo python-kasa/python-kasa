@@ -96,13 +96,18 @@ class LightPreset(SmartModule, LightPresetInterface):
         """Return current preset name."""
         light = self._device.modules[SmartModule.Light]
         brightness = light.brightness
-        color_temp = light.color_temp if light.is_variable_color_temp else None
-        h, s = (light.hsv.hue, light.hsv.saturation) if light.is_color else (None, None)
+        color_temp = light.color_temp if light.has_feature("color_temp") else None
+        h, s = (
+            (light.hsv.hue, light.hsv.saturation)
+            if light.has_feature("hsv")
+            else (None, None)
+        )
         for preset_name, preset in self._presets.items():
             if (
                 preset.brightness == brightness
                 and (
-                    preset.color_temp == color_temp or not light.is_variable_color_temp
+                    preset.color_temp == color_temp
+                    or not light.has_feature("color_temp")
                 )
                 and preset.hue == h
                 and preset.saturation == s
@@ -117,7 +122,7 @@ class LightPreset(SmartModule, LightPresetInterface):
         """Set a light preset for the device."""
         light = self._device.modules[SmartModule.Light]
         if preset_name == self.PRESET_NOT_SET:
-            if light.is_color:
+            if light.has_feature("hsv"):
                 preset = LightState(hue=0, saturation=0, brightness=100)
             else:
                 preset = LightState(brightness=100)
