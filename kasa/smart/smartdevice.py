@@ -7,7 +7,7 @@ import logging
 import time
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from ..device import Device, WifiNetwork, _DeviceInfo
 from ..device_type import DeviceType
@@ -40,6 +40,8 @@ _LOGGER = logging.getLogger(__name__)
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
+ComponentsRaw: TypeAlias = dict[str, list[dict[str, int | str]]]
+
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
@@ -61,7 +63,7 @@ class SmartDevice(Device):
         )
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
-        self._components_raw: dict[str, Any] | None = None
+        self._components_raw: ComponentsRaw | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
         self._modules: dict[str | ModuleName[Module], SmartModule] = {}
@@ -82,10 +84,8 @@ class SmartDevice(Device):
         self.internal_state.update(resp)
 
         children = self.internal_state["get_child_device_list"]["child_device_list"]
-        children_components = {
-            child["device_id"]: {
-                comp["id"]: int(comp["ver_code"]) for comp in child["component_list"]
-            }
+        children_components_raw = {
+            child["device_id"]: child
             for child in self.internal_state["get_child_device_component_list"][
                 "child_component_list"
             ]
@@ -96,7 +96,7 @@ class SmartDevice(Device):
             child_info["device_id"]: await SmartChildDevice.create(
                 parent=self,
                 child_info=child_info,
-                child_components=children_components[child_info["device_id"]],
+                child_components_raw=children_components_raw[child_info["device_id"]],
             )
             for child_info in children
         }
@@ -131,6 +131,13 @@ class SmartDevice(Device):
             f"{request} not found in {responses} for device {self.host}"
         )
 
+    @staticmethod
+    def _parse_components(components_raw: ComponentsRaw) -> dict[str, int]:
+        return {
+            str(comp["id"]): int(comp["ver_code"])
+            for comp in components_raw["component_list"]
+        }
+
     async def _negotiate(self) -> None:
         """Perform initialization.
 
@@ -151,12 +158,9 @@ class SmartDevice(Device):
         self._info = self._try_get_response(resp, "get_device_info")
 
         # Create our internal presentation of available components
-        self._components_raw = cast(dict, resp["component_nego"])
+        self._components_raw = cast(ComponentsRaw, resp["component_nego"])
 
-        self._components = {
-            comp["id"]: int(comp["ver_code"])
-            for comp in self._components_raw["component_list"]
-        }
+        self._components = self._parse_components(self._components_raw)
 
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
