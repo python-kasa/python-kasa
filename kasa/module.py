@@ -51,6 +51,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from functools import cache
 from typing import (
     TYPE_CHECKING,
     Final,
@@ -232,7 +233,7 @@ def _is_bound_feature(attribute: property | Callable) -> bool:
     return False
 
 
-# @cache
+@cache
 def _get_bound_feature(
     module: Module, attribute: str | property | Callable
 ) -> Feature | None:
