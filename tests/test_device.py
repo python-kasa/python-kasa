@@ -86,7 +86,11 @@ async def test_device_class_ctors(device_class_name_obj):
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy"},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)
@@ -106,7 +110,11 @@ async def test_device_class_repr(device_class_name_obj):
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy"},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)

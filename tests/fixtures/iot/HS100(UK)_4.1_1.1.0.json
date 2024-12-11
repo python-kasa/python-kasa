@@ -1,18 +1,21 @@
 {
     "discovery_result": {
-        "device_id": "00000000000000000000000000000000",
-        "device_model": "HS100(UK)",
-        "device_type": "IOT.SMARTPLUGSWITCH",
-        "factory_default": true,
-        "hw_ver": "4.1",
-        "ip": "127.0.0.123",
-        "mac": "CC-32-E5-00-00-00",
-        "mgt_encrypt_schm": {
-            "encrypt_type": "KLAP",
-            "http_port": 80,
-            "is_support_https": false
-        },
-        "owner": "00000000000000000000000000000000"
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "HS100(UK)",
+            "device_type": "IOT.SMARTPLUGSWITCH",
+            "factory_default": true,
+            "hw_ver": "4.1",
+            "ip": "127.0.0.123",
+            "mac": "CC-32-E5-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false
+            },
+            "owner": "00000000000000000000000000000000"
+        }
     },
     "system": {
         "get_sysinfo": {

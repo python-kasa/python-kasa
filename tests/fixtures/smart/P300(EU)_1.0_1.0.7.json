@@ -84,21 +84,24 @@
         ]
     },
     "discovery_result": {
-        "device_id": "00000000000000000000000000000000",
-        "device_model": "P300(EU)",
-        "device_type": "SMART.TAPOPLUG",
-        "factory_default": false,
-        "ip": "127.0.0.123",
-        "is_support_iot_cloud": true,
-        "mac": "78-8C-B5-00-00-00",
-        "mgt_encrypt_schm": {
-            "encrypt_type": "AES",
-            "http_port": 80,
-            "is_support_https": false,
-            "lv": 2
-        },
-        "obd_src": "tplink",
-        "owner": "00000000000000000000000000000000"
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "P300(EU)",
+            "device_type": "SMART.TAPOPLUG",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "78-8C-B5-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "AES",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000"
+        }
     },
     "get_auto_update_info": {
         "enable": true,
@@ -170,7 +173,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000001"
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1"
             },
             {
                 "component_list": [
@@ -235,7 +238,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000002"
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2"
             },
             {
                 "component_list": [
@@ -300,7 +303,7 @@
                         "ver_code": 1
                     }
                 ],
-                "device_id": "000000000000000000000000000000000000000003"
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_3"
             }
         ],
         "start_index": 0,
@@ -315,7 +318,7 @@
                 "default_states": {
                     "type": "last_states"
                 },
-                "device_id": "000000000000000000000000000000000000000001",
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "device_on": true,
                 "fw_id": "00000000000000000000000000000000",
                 "fw_ver": "1.0.7 Build 220715 Rel.200458",
@@ -329,7 +332,7 @@
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
                 "on_time": 366,
-                "original_device_id": "8022852468EC205A8178C7CBE81FC119213BC020",
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 1,
                 "region": "Europe/Berlin",
@@ -344,7 +347,7 @@
                 "default_states": {
                     "type": "last_states"
                 },
-                "device_id": "000000000000000000000000000000000000000002",
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
                 "device_on": true,
                 "fw_id": "00000000000000000000000000000000",
                 "fw_ver": "1.0.7 Build 220715 Rel.200458",
@@ -358,7 +361,7 @@
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
                 "on_time": 366,
-                "original_device_id": "8022852468EC205A8178C7CBE81FC119213BC020",
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 2,
                 "region": "Europe/Berlin",
@@ -373,7 +376,7 @@
                 "default_states": {
                     "type": "last_states"
                 },
-                "device_id": "000000000000000000000000000000000000000003",
+                "device_id": "SCRUBBED_CHILD_DEVICE_ID_3",
                 "device_on": true,
                 "fw_id": "00000000000000000000000000000000",
                 "fw_ver": "1.0.7 Build 220715 Rel.200458",
@@ -387,7 +390,7 @@
                 "nickname": "I01BU0tFRF9OQU1FIw==",
                 "oem_id": "00000000000000000000000000000000",
                 "on_time": 366,
-                "original_device_id": "8022852468EC205A8178C7CBE81FC119213BC020",
+                "original_device_id": "0000000000000000000000000000000000000000",
                 "overheat_status": "normal",
                 "position": 3,
                 "region": "Europe/Berlin",

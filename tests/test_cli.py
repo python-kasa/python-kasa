@@ -42,8 +42,9 @@ from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_co
 from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
-from kasa.discover import Discover, DiscoveryResult
+from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
+from kasa.json import dumps as json_dumps
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
 
@@ -124,6 +125,36 @@ async def test_list_devices(discovery_mock, runner):
     row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7}"
     assert header in res.output
     assert row in res.output
+
+
+async def test_discover_raw(discovery_mock, runner, mocker):
+    """Test the discover raw command."""
+    redact_spy = mocker.patch(
+        "kasa.protocols.protocol.redact_data", side_effect=redact_data
+    )
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+
+    expected = {
+        "discovery_response": discovery_mock.discovery_data,
+        "meta": {"ip": "127.0.0.123", "port": discovery_mock.discovery_port},
+    }
+    assert res.output == json_dumps(expected, indent=True) + "\n"
+
+    redact_spy.assert_not_called()
+
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw", "--redact"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+
+    redact_spy.assert_called()
 
 
 @new_discovery
@@ -731,6 +762,7 @@ async def test_without_device_type(dev, mocker, runner):
         timeout=5,
         discovery_timeout=7,
         on_unsupported=ANY,
+        on_discovered_raw=ANY,
     )
 
 
@@ -1094,7 +1126,7 @@ async def test_feature_set_child(mocker, runner):
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
     get_child_device = mocker.spy(dummy_device, "get_child_device")
 
-    child_id = "000000000000000000000000000000000000000001"
+    child_id = "SCRUBBED_CHILD_DEVICE_ID_1"
 
     res = await runner.invoke(
         cli,

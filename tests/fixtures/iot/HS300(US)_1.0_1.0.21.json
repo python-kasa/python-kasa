@@ -10,12 +10,12 @@
     },
     "system": {
         "get_sysinfo": {
-            "alias": "TP-LINK_Power Strip_2CA9",
+            "alias": "#MASKED_NAME#",
             "child_num": 6,
             "children": [
                 {
-                    "alias": "Home CameraPC",
-                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED00",
+                    "alias": "#MASKED_NAME# 1",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
                     },
@@ -23,8 +23,8 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Firewalla",
-                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED01",
+                    "alias": "#MASKED_NAME# 2",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
                     },
@@ -32,8 +32,8 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Cox modem",
-                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED02",
+                    "alias": "#MASKED_NAME# 3",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_3",
                     "next_action": {
                         "type": -1
                     },
@@ -41,8 +41,8 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home rpi3-2",
-                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED03",
+                    "alias": "#MASKED_NAME# 4",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_4",
                     "next_action": {
                         "type": -1
                     },
@@ -50,8 +50,8 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Camera Switch",
-                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED05",
+                    "alias": "#MASKED_NAME# 5",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_5",
                     "next_action": {
                         "type": -1
                     },
@@ -59,8 +59,8 @@
                     "state": 1
                 },
                 {
-                    "alias": "Home Network Switch",
-                    "id": "800623145DFF1AA096363EFD161C2E661A9D8DED04",
+                    "alias": "#MASKED_NAME# 6",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_6",
                     "next_action": {
                         "type": -1
                     },
