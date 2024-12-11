@@ -349,9 +349,8 @@ class SmartDevice(Device):
             ) or mod.__name__ in child_modules_to_skip:
                 continue
             required_component = cast(str, mod.REQUIRED_COMPONENT)
-            if required_component in self._components or (
-                mod.REQUIRED_KEY_ON_PARENT
-                and self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
+            if required_component in self._components or any(
+                self.sys_info.get(key) is not None for key in mod.SYSINFO_LOOKUP_KEYS
             ):
                 _LOGGER.debug(
                     "Device %s, found required %s, adding %s to modules.",
@@ -437,19 +436,6 @@ class SmartDevice(Device):
                     icon="mdi:wifi",
                     category=Feature.Category.Debug,
                     type=Feature.Type.Sensor,
-                )
-            )
-
-        if "overheated" in self._info:
-            self._add_feature(
-                Feature(
-                    self,
-                    id="overheated",
-                    name="Overheated",
-                    attribute_getter=lambda x: x._info["overheated"],
-                    icon="mdi:heat-wave",
-                    type=Feature.Type.BinarySensor,
-                    category=Feature.Category.Info,
                 )
             )
 
