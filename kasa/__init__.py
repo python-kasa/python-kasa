@@ -40,6 +40,7 @@ from kasa.interfaces.thermostat import Thermostat, ThermostatState
 from kasa.module import Module
 from kasa.protocols import BaseProtocol, IotProtocol, SmartProtocol
 from kasa.protocols.iotprotocol import _deprecated_TPLinkSmartHomeProtocol  # noqa: F401
+from kasa.smartcam.modules.camera import StreamResolution
 from kasa.transports import BaseTransport
 
 __version__ = version("python-kasa")
@@ -75,6 +76,7 @@ __all__ = [
     "DeviceFamily",
     "ThermostatState",
     "Thermostat",
+    "StreamResolution",
 ]
 
 from . import iot

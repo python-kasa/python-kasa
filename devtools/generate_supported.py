@@ -205,7 +205,7 @@ def _get_supported_devices(
             fixture_data = json.load(f)
 
         model_info = device_cls._get_device_info(
-            fixture_data, fixture_data.get("discovery_result")
+            fixture_data, fixture_data.get("discovery_result", {}).get("result")
         )
 
         supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[model_info.device_type]

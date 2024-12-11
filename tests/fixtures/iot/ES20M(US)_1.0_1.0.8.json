@@ -78,7 +78,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Test ES20M",
+            "alias": "#MASKED_NAME#",
             "brightness": 35,
             "dev_name": "Wi-Fi Smart Dimmer with sensor",
             "deviceId": "0000000000000000000000000000000000000000",

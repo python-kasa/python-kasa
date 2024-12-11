@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from ..device import _DeviceInfo
 from ..device_type import DeviceType
 from ..module import Module
 from ..protocols.smartcamprotocol import _ChildCameraProtocolWrapper
 from ..smart import SmartChildDevice, SmartDevice
+from ..smart.smartdevice import ComponentsRaw
 from .modules import ChildDevice, DeviceModule
 from .smartcammodule import SmartCamModule
 
@@ -68,10 +69,17 @@ class SmartCamDevice(SmartDevice):
             self._last_update, "getChildDeviceList", {}
         ):
             for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+                child_id = info["device_id"]
+                if child_id not in self._children:
+                    _LOGGER.debug(
+                        "Skipping child update for %s, probably unsupported device",
+                        child_id,
+                    )
+                    continue
+                self._children[child_id]._update_internal_state(info)
 
     async def _initialize_smart_child(
-        self, info: dict, child_components: dict
+        self, info: dict, child_components_raw: ComponentsRaw
     ) -> SmartDevice:
         """Initialize a smart child device attached to a smartcam device."""
         child_id = info["device_id"]
@@ -86,7 +94,7 @@ class SmartCamDevice(SmartDevice):
         return await SmartChildDevice.create(
             parent=self,
             child_info=info,
-            child_components=child_components,
+            child_components_raw=child_components_raw,
             protocol=child_protocol,
             last_update=initial_response,
         )
@@ -101,17 +109,8 @@ class SmartCamDevice(SmartDevice):
         self.internal_state.update(resp)
 
         smart_children_components = {
-            child["device_id"]: {
-                comp["id"]: int(comp["ver_code"]) for comp in component_list
-            }
+            child["device_id"]: child
             for child in resp["getChildDeviceComponentList"]["child_component_list"]
-            if (component_list := child.get("component_list"))
-            # Child camera devices will have a different component schema so only
-            # extract smart values.
-            and (first_comp := next(iter(component_list), None))
-            and isinstance(first_comp, dict)
-            and "id" in first_comp
-            and "ver_code" in first_comp
         }
         children = {}
         for info in resp["getChildDeviceList"]["child_device_list"]:
@@ -165,6 +164,13 @@ class SmartCamDevice(SmartDevice):
 
         return res
 
+    @staticmethod
+    def _parse_components(components_raw: ComponentsRaw) -> dict[str, int]:
+        return {
+            str(comp["name"]): int(comp["version"])
+            for comp in components_raw["app_component_list"]
+        }
+
     async def _negotiate(self) -> None:
         """Perform initialization.
 
@@ -179,12 +185,10 @@ class SmartCamDevice(SmartDevice):
         self._last_update.update(resp)
         self._update_internal_info(resp)
 
-        self._components = {
-            comp["name"]: int(comp["version"])
-            for comp in resp["getAppComponentList"]["app_component"][
-                "app_component_list"
-            ]
-        }
+        self._components_raw = cast(
+            ComponentsRaw, resp["getAppComponentList"]["app_component"]
+        )
+        self._components = self._parse_components(self._components_raw)
 
         if "childControl" in self._components and not self.children:
             await self._initialize_children()
@@ -200,6 +204,7 @@ class SmartCamDevice(SmartDevice):
             "mac": basic_info["mac"],
             "hwId": basic_info.get("hw_id"),
             "oem_id": basic_info["oem_id"],
+            "device_id": basic_info["dev_id"],
         }
 
     @property

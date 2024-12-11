@@ -1,6 +1,7 @@
 """Package for supporting legacy kasa devices."""
 
 from .iotbulb import IotBulb
+from .iotcamera import IotCamera
 from .iotdevice import IotDevice
 from .iotdimmer import IotDimmer
 from .iotlightstrip import IotLightStrip
@@ -15,4 +16,5 @@ __all__ = [
     "IotDimmer",
     "IotLightStrip",
     "IotWallSwitch",
+    "IotCamera",
 ]

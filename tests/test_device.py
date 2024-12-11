@@ -16,6 +16,7 @@ import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import (
     IotBulb,
+    IotCamera,
     IotDevice,
     IotDimmer,
     IotLightStrip,
@@ -55,6 +56,11 @@ device_classes = pytest.mark.parametrize(
 )
 
 
+async def test_device_id(dev: Device):
+    """Test all devices have a device id."""
+    assert dev.device_id
+
+
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
@@ -80,7 +86,11 @@ async def test_device_class_ctors(device_class_name_obj):
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy"},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)
@@ -100,7 +110,11 @@ async def test_device_class_repr(device_class_name_obj):
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy"},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)
@@ -113,6 +127,7 @@ async def test_device_class_repr(device_class_name_obj):
         IotStrip: DeviceType.Strip,
         IotWallSwitch: DeviceType.WallSwitch,
         IotLightStrip: DeviceType.LightStrip,
+        IotCamera: DeviceType.Camera,
         SmartChildDevice: DeviceType.Unknown,
         SmartDevice: DeviceType.Unknown,
         SmartCamDevice: DeviceType.Camera,

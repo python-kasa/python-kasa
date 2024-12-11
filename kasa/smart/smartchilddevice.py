@@ -10,7 +10,7 @@ from ..device import _DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
-from .smartdevice import SmartDevice
+from .smartdevice import ComponentsRaw, SmartDevice
 from .smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class SmartChildDevice(SmartDevice):
         self,
         parent: SmartDevice,
         info: dict,
-        component_info: dict,
+        component_info_raw: ComponentsRaw,
         *,
         config: DeviceConfig | None = None,
         protocol: SmartProtocol | None = None,
@@ -48,7 +48,8 @@ class SmartChildDevice(SmartDevice):
         super().__init__(parent.host, config=parent.config, protocol=_protocol)
         self._parent = parent
         self._update_internal_state(info)
-        self._components = component_info
+        self._components_raw = component_info_raw
+        self._components = self._parse_components(self._components_raw)
 
     @property
     def _device_info(self) -> _DeviceInfo:
@@ -99,7 +100,7 @@ class SmartChildDevice(SmartDevice):
         cls,
         parent: SmartDevice,
         child_info: dict,
-        child_components: dict,
+        child_components_raw: ComponentsRaw,
         protocol: SmartProtocol | None = None,
         *,
         last_update: dict | None = None,
@@ -112,7 +113,7 @@ class SmartChildDevice(SmartDevice):
         derived from the parent.
         """
         child: SmartChildDevice = cls(
-            parent, child_info, child_components, protocol=protocol
+            parent, child_info, child_components_raw, protocol=protocol
         )
         if last_update:
             child._last_update = last_update

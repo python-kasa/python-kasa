@@ -145,7 +145,9 @@ async def test_child_device_type_unknown(caplog):
             super().__init__(
                 SmartDevice("127.0.0.1"),
                 {"device_id": "1", "category": "foobar"},
-                {"device", 1},
+                {
+                    "component_list": [{"id": "device", "ver_code": 1}],
+                },
             )
 
     assert DummyDevice().device_type is DeviceType.Unknown

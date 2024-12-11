@@ -11,7 +11,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "schedule",
-            "alias": "Home Google WiFi HS110",
+            "alias": "#MASKED_NAME#",
             "dev_name": "Wi-Fi Smart Plug With Energy Monitoring",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,

@@ -473,3 +473,61 @@ async def test_smart_temp_range(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
     assert light.valid_temperature_range
+
+
+@device_smart
+async def test_initialize_modules_sysinfo_lookup_keys(
+    dev: SmartDevice, mocker: MockerFixture
+):
+    """Test that matching modules using SYSINFO_LOOKUP_KEYS are initialized correctly."""
+
+    class AvailableKey(SmartModule):
+        SYSINFO_LOOKUP_KEYS = ["device_id"]
+
+    class NonExistingKey(SmartModule):
+        SYSINFO_LOOKUP_KEYS = ["this_does_not_exist"]
+
+    # The __init_subclass__ hook in smartmodule checks the path,
+    # so we have to manually add these for testing.
+    mocker.patch.dict(
+        "kasa.smart.smartmodule.SmartModule.REGISTERED_MODULES",
+        {
+            AvailableKey._module_name(): AvailableKey,
+            NonExistingKey._module_name(): NonExistingKey,
+        },
+    )
+
+    # We have an already initialized device, so we try to initialize the modules again
+    await dev._initialize_modules()
+
+    assert "AvailableKey" in dev.modules
+    assert "NonExistingKey" not in dev.modules
+
+
+@device_smart
+async def test_initialize_modules_required_component(
+    dev: SmartDevice, mocker: MockerFixture
+):
+    """Test that matching modules using REQUIRED_COMPONENT are initialized correctly."""
+
+    class AvailableComponent(SmartModule):
+        REQUIRED_COMPONENT = "device"
+
+    class NonExistingComponent(SmartModule):
+        REQUIRED_COMPONENT = "this_does_not_exist"
+
+    # The __init_subclass__ hook in smartmodule checks the path,
+    # so we have to manually add these for testing.
+    mocker.patch.dict(
+        "kasa.smart.smartmodule.SmartModule.REGISTERED_MODULES",
+        {
+            AvailableComponent._module_name(): AvailableComponent,
+            NonExistingComponent._module_name(): NonExistingComponent,
+        },
+    )
+
+    # We have an already initialized device, so we try to initialize the modules again
+    await dev._initialize_modules()
+
+    assert "AvailableComponent" in dev.modules
+    assert "NonExistingComponent" not in dev.modules
