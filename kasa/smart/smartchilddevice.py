@@ -85,7 +85,7 @@ class SmartChildDevice(SmartDevice):
         cls,
         parent: SmartDevice,
         child_info: dict,
-        child_components_raw: dict,
+        child_components_raw: ComponentsRaw,
         protocol: SmartProtocol | None = None,
         *,
         last_update: dict | None = None,
