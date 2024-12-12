@@ -15,6 +15,7 @@ class HomeKit(SmartModule):
     Currently only adds a feature to indicate the device supports homekit.
     """
 
+    # Rename/Remove NAME when implementing common interface
     NAME = "SmartHomeKit"
     QUERY_GETTER_NAME: str = "get_homekit_info"
     REQUIRED_COMPONENT = "homekit"

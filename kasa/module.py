@@ -152,7 +152,6 @@ class Module(ABC):
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
     HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("SmartHomeKit")
-    Matter: Final[ModuleName[smart.Matter]] = ModuleName("SmartMatter")
 
     # SMARTCAM only modules
     Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")

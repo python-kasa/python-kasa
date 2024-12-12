@@ -24,7 +24,6 @@ from .lighteffect import LightEffect
 from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
-from .matter import Matter
 from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
 from .reportmode import ReportMode
@@ -68,6 +67,5 @@ __all__ = [
     "Thermostat",
     "SmartLightEffect",
     "OverheatProtection",
-    "Matter",
     "HomeKit",
 ]

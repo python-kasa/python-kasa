@@ -14,6 +14,8 @@ class HomeKit(SmartCamModule):
     Currently only useful to check if device supports homekit.
     """
 
+    # Rename/Remove NAME when implementing common interface
+    NAME = "SmartHomeKit"
     REQUIRED_COMPONENT = "homekit"
 
     @property
