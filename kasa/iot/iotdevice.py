@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 from warnings import warn
 
-from ..device import Device, WifiNetwork, _DeviceInfo
+from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
@@ -478,7 +478,7 @@ class IotDevice(Device):
     def model(self) -> str:
         """Returns the device model."""
         if self._last_update:
-            return self._device_info.short_name
+            return self.device_info.short_name
         return self._sys_info["model"]
 
     @property  # type: ignore
@@ -745,7 +745,7 @@ class IotDevice(Device):
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get model information for a device."""
         sys_info = _extract_sys_info(info)
 
@@ -763,7 +763,7 @@ class IotDevice(Device):
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         auth = bool(discovery_info and ("mgt_encrypt_schm" in discovery_info))
 
-        return _DeviceInfo(
+        return DeviceInfo(
             short_name=long_name,
             long_name=long_name,
             brand="kasa",

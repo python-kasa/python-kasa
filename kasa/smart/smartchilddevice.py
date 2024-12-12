@@ -6,7 +6,7 @@ import logging
 import time
 from typing import Any
 
-from ..device import _DeviceInfo
+from ..device import DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
@@ -52,7 +52,7 @@ class SmartChildDevice(SmartDevice):
         self._components = self._parse_components(self._components_raw)
 
     @property
-    def _device_info(self) -> _DeviceInfo:
+    def device_info(self) -> DeviceInfo:
         """Return device info.
 
         Child device does not have it info and components in _last_update so

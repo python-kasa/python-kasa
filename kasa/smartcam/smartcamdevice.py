@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, cast
 
-from ..device import _DeviceInfo
+from ..device import DeviceInfo
 from ..device_type import DeviceType
 from ..module import Module
 from ..protocols.smartcamprotocol import _ChildCameraProtocolWrapper
@@ -37,7 +37,7 @@ class SmartCamDevice(SmartDevice):
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get model information for a device."""
         basic_info = info["getDeviceInfo"]["device_info"]["basic_info"]
         short_name = basic_info["device_model"]
@@ -45,7 +45,7 @@ class SmartCamDevice(SmartDevice):
         device_type = SmartCamDevice._get_device_type_from_sysinfo(basic_info)
         fw_version_full = basic_info["sw_version"]
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
-        return _DeviceInfo(
+        return DeviceInfo(
             short_name=basic_info["device_model"],
             long_name=long_name,
             brand="tapo",

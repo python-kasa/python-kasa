@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from ..device import Device, WifiNetwork, _DeviceInfo
+from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
@@ -498,7 +498,7 @@ class SmartDevice(Device):
         """Returns the device model."""
         # If update hasn't been called self._device_info can't be used
         if self._last_update:
-            return self._device_info.short_name
+            return self.device_info.short_name
 
         disco_model = str(self._info.get("device_model"))
         long_name, _, _ = disco_model.partition("(")
@@ -802,7 +802,7 @@ class SmartDevice(Device):
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get model information for a device."""
         di = info["get_device_info"]
         components = [comp["id"] for comp in info["component_nego"]["component_list"]]
@@ -831,7 +831,7 @@ class SmartDevice(Device):
         # Brand inferred from SMART.KASAPLUG/SMART.TAPOPLUG etc.
         brand = devicetype[:4].lower()
 
-        return _DeviceInfo(
+        return DeviceInfo(
             short_name=short_name,
             long_name=long_name,
             brand=brand,

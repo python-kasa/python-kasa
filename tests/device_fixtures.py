@@ -473,7 +473,7 @@ def get_nearest_fixture_to_ip(dev):
     assert protocol_fixtures, "Unknown device type"
 
     # This will get the best fixture with a match on model region
-    if (di := dev._device_info) and (
+    if (di := dev.device_info) and (
         model_region_fixtures := filter_fixtures(
             "",
             model_filter={di.long_name + (f"({di.region})" if di.region else "")},

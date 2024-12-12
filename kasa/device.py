@@ -151,7 +151,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class _DeviceInfo:
+class DeviceInfo:
     """Device Model Information."""
 
     short_name: str
@@ -336,10 +336,10 @@ class Device(ABC):
     @property
     def region(self) -> str | None:
         """Returns the device region."""
-        return self._device_info.region
+        return self.device_info.region
 
     @property
-    def _device_info(self) -> _DeviceInfo:
+    def device_info(self) -> DeviceInfo:
         """Return device info."""
         return self._get_device_info(self._last_update, self._discovery_info)
 
@@ -347,7 +347,7 @@ class Device(ABC):
     @abstractmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get device info."""
 
     @property
