@@ -1,7 +1,4 @@
-"""Implementation of matter module.
-
-Only function is to indicate matter Support
-"""
+"""Implementation of matter module."""
 
 from __future__ import annotations
 
@@ -10,10 +7,7 @@ from ..smartmodule import SmartModule
 
 
 class Matter(SmartModule):
-    """Implementation of matter module.
-
-    Currently only adds a feature to indicate the device supports matter.
-    """
+    """Implementation of matter module."""
 
     QUERY_GETTER_NAME: str = "get_matter_setup_info"
     REQUIRED_COMPONENT = "matter"
