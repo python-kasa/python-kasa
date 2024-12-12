@@ -15,7 +15,6 @@ class Matter(SmartModule):
     Currently only adds a feature to indicate the device supports matter.
     """
 
-    NAME = "SmartMatter"
     QUERY_GETTER_NAME: str = "get_matter_setup_info"
     REQUIRED_COMPONENT = "matter"
 

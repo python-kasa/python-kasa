@@ -15,7 +15,6 @@ class Matter(SmartCamModule):
     Currently only adds a feature to indicate the device supports matter.
     """
 
-    NAME = "SmartMatter"
     QUERY_GETTER_NAME = "getMatterSetupInfo"
     QUERY_MODULE_NAME = "matter"
     REQUIRED_COMPONENT = "matter"

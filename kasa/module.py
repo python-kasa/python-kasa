@@ -151,7 +151,7 @@ class Module(ABC):
     )
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
 
-    Matter: Final[ModuleName[smart.Matter]] = ModuleName("SmartMatter")
+    Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")
 
     # SMARTCAM only modules
     Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")
