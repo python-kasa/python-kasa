@@ -23,13 +23,13 @@ Get the light module to interact:
 
 >>> light = dev.modules[Module.Light]
 
-You can use the ``is_``-prefixed properties to check for supported features:
+You can use the ``has_feature()`` method to check for supported features:
 
->>> light.is_dimmable
+>>> light.has_feature("brightness")
 True
->>> light.is_color
+>>> light.has_feature("hsv")
 True
->>> light.is_variable_color_temp
+>>> light.has_feature("color_temp")
 True
 
 All known bulbs support changing the brightness:
@@ -43,8 +43,9 @@ All known bulbs support changing the brightness:
 
 Bulbs supporting color temperature can be queried for the supported range:
 
->>> light.valid_temperature_range
-ColorTempRange(min=2500, max=6500)
+>>> if color_temp_feature := light.get_feature("color_temp"):
+>>>     print(f"{color_temp_feature.minimum_value}, {color_temp_feature.maximum_value}")
+2500, 6500
 >>> await light.set_color_temp(3000)
 >>> await dev.update()
 >>> light.color_temp

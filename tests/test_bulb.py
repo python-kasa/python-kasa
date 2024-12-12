@@ -25,7 +25,7 @@ async def test_hsv(dev: Device, turn_on):
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
-    assert light.is_color
+    assert light.has_feature("hsv")
 
     hue, saturation, brightness = light.hsv
     assert 0 <= hue <= 360
@@ -106,7 +106,7 @@ async def test_invalid_hsv(
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
-    assert light.is_color
+    assert light.has_feature("hsv")
     with pytest.raises(exception_cls, match=error):
         await light.set_hsv(hue, sat, brightness)
 
@@ -124,7 +124,7 @@ async def test_color_state_information(dev: Device):
 async def test_hsv_on_non_color(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
-    assert not light.is_color
+    assert not light.has_feature("hsv")
 
     with pytest.raises(KasaException):
         await light.set_hsv(0, 0, 0)
@@ -172,9 +172,6 @@ async def test_non_variable_temp(dev: Device):
     assert light
     with pytest.raises(KasaException):
         await light.set_color_temp(2700)
-
-    with pytest.raises(KasaException):
-        print(light.valid_temperature_range)
 
     with pytest.raises(KasaException):
         print(light.color_temp)
