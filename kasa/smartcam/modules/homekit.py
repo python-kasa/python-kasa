@@ -1,7 +1,4 @@
-"""Implementation of homekit module.
-
-Currently only useful to check if device supports homekit.
-"""
+"""Implementation of homekit module."""
 
 from __future__ import annotations
 
@@ -9,13 +6,8 @@ from ..smartcammodule import SmartCamModule
 
 
 class HomeKit(SmartCamModule):
-    """Implementation of homekit module.
+    """Implementation of homekit module."""
 
-    Currently only useful to check if device supports homekit.
-    """
-
-    # Rename/Remove NAME when implementing common interface
-    NAME = "SmartHomeKit"
     REQUIRED_COMPONENT = "homekit"
 
     @property
