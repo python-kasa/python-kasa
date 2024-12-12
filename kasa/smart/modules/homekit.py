@@ -15,6 +15,8 @@ class HomeKit(SmartModule):
     Currently only adds a feature to indicate the device supports homekit.
     """
 
+    NAME = "SmartHomeKit"
+    QUERY_GETTER_NAME: str = "get_homekit_info"
     REQUIRED_COMPONENT = "homekit"
 
     def _initialize_features(self) -> None:
@@ -22,11 +24,16 @@ class HomeKit(SmartModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="homekit_device",
-                name="Homekit device",
+                id="homekit_setup_code",
+                name="Homekit setup code",
                 container=self,
-                attribute_getter=lambda _: True,
-                type=Feature.Type.BinarySensor,
+                attribute_getter=lambda x: x.info["mfi_setup_code"],
+                type=Feature.Type.Sensor,
                 category=Feature.Category.Debug,
             )
         )
+
+    @property
+    def info(self) -> dict[str, str]:
+        """Homekit mfi setup info."""
+        return self.data

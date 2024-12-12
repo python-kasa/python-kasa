@@ -114,6 +114,15 @@ class FakeSmartTransport(BaseTransport):
                 "type": 0,
             },
         ),
+        "get_homekit_info": (
+            "homekit",
+            {
+                "mfi_setup_code": "000-00-000",
+                "mfi_setup_id": "0000",
+                "mfi_token_token": "000000000000000000000000000000000",
+                "mfi_token_uuid": "00000000-0000-0000-0000-000000000000",
+            },
+        ),
         "get_auto_update_info": (
             "firmware",
             {"enable": True, "random_range": 120, "time": 180},
