@@ -223,6 +223,7 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 
 * [Home Assistant](https://www.home-assistant.io/integrations/tplink/)
 * [MQTT access to TP-Link devices, using python-kasa](https://github.com/flavio-fernandes/mqtt2kasa)
+* [Homebridge Kasa Python Plug-In](https://github.com/ZeliardM/homebridge-kasa-python)
 
 ### Other related projects
 
