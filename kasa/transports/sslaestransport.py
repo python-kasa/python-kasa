@@ -609,6 +609,8 @@ class SslAesTransport(BaseTransport):
                 _sha256_hash32,
                 lambda x: x.decode(),
             }:
+                if not val:
+                    continue
                 pwd_hash = func(val.encode())
                 ec = self.generate_confirm_hash(local_nonce, server_nonce, pwd_hash)
                 if device_confirm == ec:
