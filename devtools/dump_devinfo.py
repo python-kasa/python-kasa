@@ -68,6 +68,10 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
 _LOGGER = logging.getLogger(__name__)
 
+SMART_SINGLE_ONLY_CALLS = {
+    "getConnectStatus",
+}
+
 
 def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
     """Wrap the redactors for  dump_devinfo.
@@ -233,6 +237,12 @@ async def handle_device(
     type=bool,
     help="Set flag if the device encryption uses https.",
 )
+@click.option(
+    "--timeout",
+    required=False,
+    default=15,
+    help="Timeout for queries.",
+)
 @click.option("--port", help="Port override", type=int)
 async def cli(
     host,
@@ -250,6 +260,7 @@ async def cli(
     device_family,
     login_version,
     port,
+    timeout,
 ):
     """Generate devinfo files for devices.
 
@@ -280,6 +291,7 @@ async def cli(
                 connection_type=connection_type,
                 port_override=port,
                 credentials=credentials,
+                timeout=timeout,
             )
             device = await Device.connect(config=dc)
             await handle_device(
@@ -301,6 +313,7 @@ async def cli(
                 port_override=port,
                 credentials=credentials,
                 connection_type=ctype,
+                timeout=timeout,
             )
             if protocol := get_protocol(config):
                 await handle_device(basedir, autosave, protocol, batch_size=batch_size)
@@ -315,11 +328,12 @@ async def cli(
                 credentials=credentials,
                 port=port,
                 discovery_timeout=discovery_timeout,
+                timeout=timeout,
                 on_discovered_raw=capture_raw,
             )
             discovery_info = raw_discovery[device.host]
             if decrypted_data := device._discovery_info.get("decrypted_data"):
-                discovery_info["decrypted_data"] = decrypted_data
+                discovery_info["result"]["decrypted_data"] = decrypted_data
             await handle_device(
                 basedir,
                 autosave,
@@ -336,13 +350,14 @@ async def cli(
             target=target,
             credentials=credentials,
             discovery_timeout=discovery_timeout,
+            timeout=timeout,
             on_discovered_raw=capture_raw,
         )
         click.echo(f"Detected {len(devices)} devices")
         for dev in devices.values():
             discovery_info = raw_discovery[dev.host]
             if decrypted_data := dev._discovery_info.get("decrypted_data"):
-                discovery_info["decrypted_data"] = decrypted_data
+                discovery_info["result"]["decrypted_data"] = decrypted_data
 
             await handle_device(
                 basedir,
@@ -591,7 +606,11 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 request=request,
                 should_succeed=True,
                 child_device_id="",
-                supports_multiple=(method != "get"),
+                supports_multiple=(
+                    method != "get"
+                    and method[:3] == "get"
+                    and method not in SMART_SINGLE_ONLY_CALLS
+                ),
             )
         )
 
@@ -925,6 +944,7 @@ async def get_smart_fixtures(
             and (child_model := response["get_device_info"].get("model"))
             and child_model != parent_model
         ):
+            response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
             fixture_results.append(get_smart_child_fixture(response))
         else:
             cd = final.setdefault("child_devices", {})
@@ -940,13 +960,16 @@ async def get_smart_fixtures(
             child["device_id"] = scrubbed_device_ids[device_id]
 
     # Scrub the device ids in the parent for the smart camera protocol
-    if gc := final.get("getChildDeviceList"):
-        for child in gc["child_device_list"]:
+    if gc := final.get("getChildDeviceComponentList"):
+        for child in gc["child_component_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_device_ids[device_id]
+        for child in final["getChildDeviceList"]["child_device_list"]:
             if device_id := child.get("device_id"):
                 child["device_id"] = scrubbed_device_ids[device_id]
                 continue
-            if device_id := child.get("dev_id"):
-                child["dev_id"] = scrubbed_device_ids[device_id]
+            elif dev_id := child.get("dev_id"):
+                child["dev_id"] = scrubbed_device_ids[dev_id]
                 continue
             _LOGGER.error("Could not find a device for the child device: %s", child)
 
