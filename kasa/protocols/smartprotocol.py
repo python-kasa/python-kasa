@@ -246,14 +246,18 @@ class SmartProtocol(BaseProtocol):
 
             responses = response_step["result"]["responses"]
             for response in responses:
-                # smartcam devices sometimes do not populate method if there's
-                # only one item in the request
-                if (
-                    not (method := response.get("method"))
-                    and "result" in response
-                    and len(requests) == 1
-                ):
-                    method = next(iter(requests))
+                # some smartcam devices calls do not populate the method key
+                # which we can only handle if there's a single request.
+                if not (method := response.get("method")):
+                    if len(requests) == 1:
+                        method = next(iter(requests))
+                    else:
+                        _LOGGER.debug(
+                            "No method key in response for %s, skipping: %s",
+                            self._host,
+                            response,
+                        )
+                        continue
 
                 self._handle_response_error_code(
                     response, method, raise_on_error=raise_on_error
