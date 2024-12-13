@@ -1,6 +1,6 @@
 Some modules have attributes that may not be supported by the device.
 These attributes will be annotated with a `FeatureAttribute` return type.
-i.e.
+For example:
 
 ```py
     @property
