@@ -246,7 +246,15 @@ class SmartProtocol(BaseProtocol):
 
             responses = response_step["result"]["responses"]
             for response in responses:
-                method = response["method"]
+                # smartcam devices sometimes do not populate method if there's
+                # only one item in the request
+                if (
+                    not (method := response.get("method"))
+                    and "result" in response
+                    and len(requests) == 1
+                ):
+                    method = next(iter(requests))
+
                 self._handle_response_error_code(
                     response, method, raise_on_error=raise_on_error
                 )
