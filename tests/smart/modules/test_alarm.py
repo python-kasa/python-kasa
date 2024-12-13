@@ -40,6 +40,7 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
     ("kwargs", "request_params"),
     [
         pytest.param({"volume": "low"}, {"alarm_volume": "low"}, id="volume"),
+        pytest.param({"volume": 0}, {"alarm_volume": "mute"}, id="volume-integer"),
         pytest.param({"duration": 1}, {"alarm_duration": 1}, id="duration"),
         pytest.param(
             {"sound": "Doorbell Ring 1"}, {"alarm_type": "Doorbell Ring 1"}, id="sound"
@@ -62,6 +63,9 @@ async def test_play(dev: SmartDevice, kwargs, request_params, mocker: MockerFixt
 
     with pytest.raises(ValueError, match="Invalid volume"):
         await alarm.play(volume="unknown")  # type: ignore[arg-type]
+
+    with pytest.raises(ValueError, match="Invalid volume"):
+        await alarm.play(volume=-1)
 
 
 @alarm

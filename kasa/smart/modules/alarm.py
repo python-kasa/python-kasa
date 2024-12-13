@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Annotated, Literal, TypeAlias
 
 from ...feature import Feature
+from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
 
 DURATION_MAX = 10 * 60
+
+AlarmVolume: TypeAlias = Literal["mute", "low", "normal", "high"]
 
 
 class Alarm(SmartModule):
@@ -70,7 +73,7 @@ class Alarm(SmartModule):
                 attribute_setter="set_alarm_volume",
                 category=Feature.Category.Config,
                 type=Feature.Type.Choice,
-                choices_getter=lambda: ["low", "normal", "high"],
+                choices_getter=lambda: ["mute", "low", "normal", "high"],
             )
         )
         self._add_feature(
@@ -108,11 +111,11 @@ class Alarm(SmartModule):
         )
 
     @property
-    def alarm_sound(self) -> str:
+    def alarm_sound(self) -> Annotated[str, FeatureAttribute()]:
         """Return current alarm sound."""
         return self.data["get_alarm_configure"]["type"]
 
-    async def set_alarm_sound(self, sound: str) -> dict:
+    async def set_alarm_sound(self, sound: str) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm sound.
 
         See *alarm_sounds* for list of available sounds.
@@ -128,23 +131,27 @@ class Alarm(SmartModule):
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
     @property
-    def alarm_volume(self) -> Literal["low", "normal", "high"]:
+    def alarm_volume(self) -> Annotated[AlarmVolume, FeatureAttribute()]:
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
 
-    async def set_alarm_volume(self, volume: Literal["low", "normal", "high"]) -> dict:
+    async def set_alarm_volume(
+        self, volume: AlarmVolume | int
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm volume."""
-        self._check_volume(volume)
+        self._check_and_convert_volume(volume)
         payload = self.data["get_alarm_configure"].copy()
         payload["volume"] = volume
         return await self.call("set_alarm_configure", payload)
 
     @property
-    def alarm_duration(self) -> int:
+    def alarm_duration(self) -> Annotated[int, FeatureAttribute()]:
         """Return alarm duration."""
         return self.data["get_alarm_configure"]["duration"]
 
-    async def set_alarm_duration(self, duration: int) -> dict:
+    async def set_alarm_duration(
+        self, duration: int
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm duration."""
         self._check_duration(duration)
         payload = self.data["get_alarm_configure"].copy()
@@ -166,13 +173,13 @@ class Alarm(SmartModule):
         self,
         *,
         duration: int | None = None,
-        volume: Literal["low", "normal", "high"] | None = None,
+        volume: int | AlarmVolume | None = None,
         sound: str | None = None,
     ) -> dict:
         """Play alarm.
 
         The optional *duration*, *volume*, and *sound* to override the device settings.
-        *volume* can be set to 'low', 'normal', or 'high'.
+        *volume* can be set to 'mute', 'low', 'normal', or 'high'.
         *duration* is in seconds.
         See *alarm_sounds* for the list of sounds available for the device.
         """
@@ -183,8 +190,8 @@ class Alarm(SmartModule):
             params["alarm_duration"] = duration
 
         if volume is not None:
-            self._check_volume(volume)
-            params["alarm_volume"] = volume
+            target_volume = self._check_and_convert_volume(volume)
+            params["alarm_volume"] = target_volume
 
         if sound is not None:
             self._check_sound(sound)
@@ -196,10 +203,27 @@ class Alarm(SmartModule):
         """Stop alarm."""
         return await self.call("stop_alarm")
 
-    def _check_volume(self, volume: str) -> None:
+    def _check_and_convert_volume(self, volume: str | int) -> str:
         """Raise an exception on invalid volume."""
-        if volume not in ["low", "normal", "high"]:
-            raise ValueError(f"Invalid volume {volume} available: low, normal, high")
+        volume_int_to_str = {
+            0: "mute",
+            1: "low",
+            2: "normal",
+            3: "high",
+        }
+        if isinstance(volume, int):
+            volume = volume_int_to_str.get(volume, "invalid")
+
+        if TYPE_CHECKING:
+            assert isinstance(volume, str)
+
+        if volume not in volume_int_to_str.values():
+            raise ValueError(
+                f"Invalid volume {volume} "
+                f"available: {volume_int_to_str.keys()}, {volume_int_to_str.values()}"
+            )
+
+        return volume
 
     def _check_duration(self, duration: int) -> None:
         """Raise an exception on invalid duration."""
