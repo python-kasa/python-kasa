@@ -10,7 +10,7 @@ import secrets
 import ssl
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, cast
-
+import uuid
 from yarl import URL
 
 from ..credentials import DEFAULT_CREDENTIALS, Credentials, get_default_credentials
@@ -78,7 +78,8 @@ class SslAesTransport(BaseTransport):
         "Accept": "application/json",
         "Connection": "close",
         "Accept-Encoding": "gzip, deflate",
-        "User-Agent": "Tapo CameraClient Android",
+#        "User-Agent": "Tapo CameraClient Android",
+        "User-Agent": _md5_hash(uuid.uuid4().bytes)
     }
     CIPHERS = ":".join(
         [
