@@ -370,9 +370,9 @@ class SslAesTransport(BaseTransport):
             local_nonce, server_nonce, pwd_hash = result
             await self.perform_handshake2(local_nonce, server_nonce, pwd_hash)
 
-    async def try_perform_login(self) -> bool:
+    async def try_perform_less_secure_login(self) -> bool:
         """Perform the md5 login."""
-        _LOGGER.debug("Performing insecure login ...")
+        _LOGGER.debug("Performing less secure login ...")
 
         pwd = self._pwd_to_hash()
         pwd_hash = _md5_hash(pwd.encode())
@@ -497,7 +497,7 @@ class SslAesTransport(BaseTransport):
         if (
             resp_dict
             and self._is_less_secure_login(resp_dict)
-            and await self.try_perform_login()
+            and await self.try_perform_less_secure_login()
         ):
             return None
 
@@ -526,7 +526,7 @@ class SslAesTransport(BaseTransport):
             # Otherwise could be less secure login
             elif (
                 self._is_less_secure_login(default_resp_dict)
-                and await self.try_perform_login()
+                and await self.try_perform_less_secure_login()
             ):
                 return None
 
