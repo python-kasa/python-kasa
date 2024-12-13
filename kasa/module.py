@@ -21,6 +21,9 @@ check for the existence of the module:
 >>>     print(light.brightness)
 100
 
+.. include:: ../featureattributes.md
+   :parser: myst_parser.sphinx_
+
 To see whether a device supports specific functionality, you can check whether the
 module has that feature:
 
