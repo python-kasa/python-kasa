@@ -8,7 +8,6 @@ import hashlib
 import logging
 import secrets
 import ssl
-import uuid
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, cast
 
@@ -492,8 +491,8 @@ class SslAesTransport(BaseTransport):
     async def perform_handshake1(self) -> tuple[str, str, str] | None:
         """Perform the handshake1."""
         resp_dict = None
+        local_nonce = secrets.token_bytes(8).hex().upper()
         if self._username:
-            local_nonce = secrets.token_bytes(8).hex().upper()
             resp_dict = await self.try_send_handshake1(self._username, local_nonce)
 
         if (
