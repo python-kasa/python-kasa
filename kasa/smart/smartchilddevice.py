@@ -6,6 +6,7 @@ import logging
 import time
 from typing import Any
 
+from ..device import DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
@@ -49,6 +50,22 @@ class SmartChildDevice(SmartDevice):
         self._update_internal_state(info)
         self._components_raw = component_info_raw
         self._components = self._parse_components(self._components_raw)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info.
+
+        Child device does not have it info and components in _last_update so
+        this overrides the base implementation to call _get_device_info with
+        info and components combined as they would be in _last_update.
+        """
+        return self._get_device_info(
+            {
+                "get_device_info": self._info,
+                "component_nego": self._components_raw,
+            },
+            None,
+        )
 
     async def update(self, update_children: bool = True) -> None:
         """Update child module info.

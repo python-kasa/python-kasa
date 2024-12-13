@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from ..device import Device, WifiNetwork, _DeviceInfo
+from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
@@ -69,7 +69,6 @@ class SmartDevice(Device):
         self._modules: dict[str | ModuleName[Module], SmartModule] = {}
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
-        self._last_update = {}
         self._last_update_time: float | None = None
         self._on_since: datetime | None = None
         self._info: dict[str, Any] = {}
@@ -497,18 +496,13 @@ class SmartDevice(Device):
     @property
     def model(self) -> str:
         """Returns the device model."""
-        return str(self._info.get("model"))
+        # If update hasn't been called self._device_info can't be used
+        if self._last_update:
+            return self.device_info.short_name
 
-    @property
-    def _model_region(self) -> str:
-        """Return device full model name and region."""
-        if (disco := self._discovery_info) and (
-            disco_model := disco.get("device_model")
-        ):
-            return disco_model
-        # Some devices have the region in the specs element.
-        region = f"({specs})" if (specs := self._info.get("specs")) else ""
-        return f"{self.model}{region}"
+        disco_model = str(self._info.get("device_model"))
+        long_name, _, _ = disco_model.partition("(")
+        return long_name
 
     @property
     def alias(self) -> str | None:
@@ -808,7 +802,7 @@ class SmartDevice(Device):
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get model information for a device."""
         di = info["get_device_info"]
         components = [comp["id"] for comp in info["component_nego"]["component_list"]]
@@ -837,7 +831,7 @@ class SmartDevice(Device):
         # Brand inferred from SMART.KASAPLUG/SMART.TAPOPLUG etc.
         brand = devicetype[:4].lower()
 
-        return _DeviceInfo(
+        return DeviceInfo(
             short_name=short_name,
             long_name=long_name,
             brand=brand,
