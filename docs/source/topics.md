@@ -81,7 +81,7 @@ This can be done using the {attr}`~kasa.Device.internal_state` property.
 
 The functionality provided by all {class}`~kasa.Device` instances is (mostly) done inside separate modules.
 While the device class provides easy access for most device related attributes,
-for components of functionality like `light` and `camera` you can access the module through {attr}`kasa.Device.modules`.
+for components like `light` and `camera` you can access the module through {attr}`kasa.Device.modules`.
 The module names are handily available as constants on {class}`~kasa.Module` and will return type aware values from the collection.
 
 Features represent individual pieces of functionality within a module like brightness, hsv and temperature within a light module.
