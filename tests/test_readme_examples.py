@@ -19,7 +19,7 @@ def test_bulb_examples(mocker):
     assert not res["failed"]
 
 
-def test_smartdevice_examples(mocker):
+def test_iotdevice_examples(mocker):
     """Use HS110 for emeter examples."""
     p = asyncio.run(get_device_for_fixture_protocol("HS110(EU)_1.0_1.2.5.json", "IOT"))
     asyncio.run(p.set_alias("Bedroom Lamp Plug"))
