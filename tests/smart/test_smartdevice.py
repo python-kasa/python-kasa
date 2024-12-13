@@ -530,3 +530,16 @@ async def test_initialize_modules_required_component(
 
     assert "AvailableComponent" in dev.modules
     assert "NonExistingComponent" not in dev.modules
+
+
+async def test_smartmodule_query():
+    """Test that a module that doesn't set QUERY_GETTER_NAME has empty query."""
+
+    class DummyModule(SmartModule):
+        pass
+
+    dummy_device = await get_device_for_fixture_protocol(
+        "KS240(US)_1.0_1.0.5.json", "SMART"
+    )
+    mod = DummyModule(dummy_device, "dummy")
+    assert mod.query() == {}

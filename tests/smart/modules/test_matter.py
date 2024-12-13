@@ -3,7 +3,9 @@ from kasa.smart import SmartDevice
 
 from ...device_fixtures import parametrize
 
-matter = parametrize("has matter", component_filter="matter", protocol_filter={"SMART"})
+matter = parametrize(
+    "has matter", component_filter="matter", protocol_filter={"SMART", "SMARTCAM"}
+)
 
 
 @matter
