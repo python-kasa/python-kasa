@@ -25,6 +25,17 @@ class Matter(SmartModule):
                 category=Feature.Category.Debug,
             )
         )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="matter_setup_payload",
+                name="Matter setup payload",
+                container=self,
+                attribute_getter=lambda x: x.info["setup_payload"],
+                type=Feature.Type.Sensor,
+                category=Feature.Category.Debug,
+            )
+        )
 
     @property
     def info(self) -> dict[str, str]:

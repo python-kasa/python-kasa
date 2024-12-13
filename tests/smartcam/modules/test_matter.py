@@ -14,3 +14,7 @@ async def test_info(dev: SmartDevice):
     matter = dev.modules.get(Module.Matter)
     assert matter
     assert matter.info
+    setup_code = dev.features.get("matter_setup_code")
+    assert setup_code
+    setup_payload = dev.features.get("matter_setup_payload")
+    assert setup_payload
