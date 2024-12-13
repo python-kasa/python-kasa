@@ -21,8 +21,6 @@ class SmartCamModule(SmartModule):
 
     SmartCamAlarm: Final[ModuleName[modules.Alarm]] = ModuleName("SmartCamAlarm")
 
-    #: Query to execute during the main update cycle
-    QUERY_GETTER_NAME: str
     #: Module name to be queried
     QUERY_MODULE_NAME: str
     #: Section name or names to be queried
@@ -37,6 +35,8 @@ class SmartCamModule(SmartModule):
 
         Default implementation uses the raw query getter w/o parameters.
         """
+        if not self.QUERY_GETTER_NAME:
+            return {}
         section_names = (
             {"name": self.QUERY_SECTION_NAMES} if self.QUERY_SECTION_NAMES else {}
         )
@@ -86,7 +86,8 @@ class SmartCamModule(SmartModule):
                     f" for '{self._module}'"
                 )
 
-            return query_resp.get(self.QUERY_MODULE_NAME)
+            # Some calls return the data under the module, others not
+            return query_resp.get(self.QUERY_MODULE_NAME, query_resp)
         else:
             found = {key: val for key, val in dev._last_update.items() if key in q}
             for key in q:

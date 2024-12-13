@@ -57,7 +57,7 @@ class SmartModule(Module):
     #: Module is initialized, if any of the given keys exists in the sysinfo
     SYSINFO_LOOKUP_KEYS: list[str] = []
     #: Query to execute during the main update cycle
-    QUERY_GETTER_NAME: str
+    QUERY_GETTER_NAME: str = ""
 
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
@@ -138,7 +138,9 @@ class SmartModule(Module):
 
         Default implementation uses the raw query getter w/o parameters.
         """
-        return {self.QUERY_GETTER_NAME: None}
+        if self.QUERY_GETTER_NAME:
+            return {self.QUERY_GETTER_NAME: None}
+        return {}
 
     async def call(self, method: str, params: dict | None = None) -> dict:
         """Call a method.
