@@ -8,6 +8,7 @@ import hashlib
 import logging
 import secrets
 import ssl
+import uuid
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, cast
 
@@ -120,7 +121,7 @@ class SslAesTransport(BaseTransport):
         self._headers = {
             **self.COMMON_HEADERS,
             "Host": self._host,
-            "Referer": f"https://{self._host_port}",
+            "Referer": f"https://{self._host_port}?id={_md5_hash(uuid.uuid4().bytes)}",
         }
         self._seq: int | None = None
         self._pwd_hash: str | None = None
