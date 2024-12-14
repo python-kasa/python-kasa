@@ -82,7 +82,6 @@ include = [
 [tool.hatch.build.targets.wheel]
 include = [
   "/kasa",
-  "/devtools",
 ]
 
 [tool.coverage.run]
