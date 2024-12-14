@@ -50,6 +50,8 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "bssid": lambda _: "000000000000",
     "channel": lambda _: 0,
     "oem_id": lambda x: "REDACTED_" + x[9::],
+    "hw_id": lambda x: "REDACTED_" + x[9::],
+    "fw_id": lambda x: "REDACTED_" + x[9::],
     "setup_code": lambda x: re.sub(r"\w", "0", x),  # matter
     "setup_payload": lambda x: re.sub(r"\w", "0", x),  # matter
     "mfi_setup_code": lambda x: re.sub(r"\w", "0", x),  # mfi_ for homekit
