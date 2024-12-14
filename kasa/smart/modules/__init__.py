@@ -16,6 +16,7 @@ from .energy import Energy
 from .fan import Fan
 from .firmware import Firmware
 from .frostprotection import FrostProtection
+from .homekit import HomeKit
 from .humiditysensor import HumiditySensor
 from .led import Led
 from .light import Light
@@ -67,5 +68,6 @@ __all__ = [
     "Thermostat",
     "SmartLightEffect",
     "OverheatProtection",
+    "HomeKit",
     "Matter",
 ]
