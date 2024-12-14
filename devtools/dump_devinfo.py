@@ -57,12 +57,19 @@ from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcam import SmartCamDevice
 
 Call = namedtuple("Call", "module method")
-FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
+FixtureResult = namedtuple("FixtureResult", "filename, folder, data, protocol_suffix")
 
 SMART_FOLDER = "tests/fixtures/smart/"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child/"
 IOT_FOLDER = "tests/fixtures/iot/"
+
+SMART_PROTOCOL_SUFFIX = "SMART"
+SMARTCAM_SUFFIX = "SMARTCAM"
+SMART_CHILD_SUFFIX = "SMART.CHILD"
+IOT_SUFFIX = "IOT"
+
+NO_GIT_FIXTURE_FOLDER = "kasa-fixtures"
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
@@ -144,7 +151,17 @@ async def handle_device(
         ]
 
     for fixture_result in fixture_results:
-        save_filename = Path(basedir) / fixture_result.folder / fixture_result.filename
+        save_folder = Path(basedir) / fixture_result.folder
+        if save_folder.exists():
+            save_filename = save_folder / f"{fixture_result.filename}.json"
+        else:
+            # If being run without git clone
+            save_folder = Path(basedir) / NO_GIT_FIXTURE_FOLDER
+            save_folder.mkdir(exist_ok=True)
+            save_filename = (
+                save_folder
+                / f"{fixture_result.filename}-{fixture_result.protocol_suffix}.json"
+            )
 
         pprint(fixture_result.data)
         if autosave:
@@ -463,9 +480,14 @@ async def get_legacy_fixture(
     hw_version = sysinfo["hw_ver"]
     sw_version = sysinfo["sw_ver"]
     sw_version = sw_version.split(" ", maxsplit=1)[0]
-    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    save_filename = f"{model}_{hw_version}_{sw_version}"
     copy_folder = IOT_FOLDER
-    return FixtureResult(filename=save_filename, folder=copy_folder, data=final)
+    return FixtureResult(
+        filename=save_filename,
+        folder=copy_folder,
+        data=final,
+        protocol_suffix=IOT_SUFFIX,
+    )
 
 
 def _echo_error(msg: str):
@@ -838,9 +860,12 @@ def get_smart_child_fixture(response):
     model = model_info.long_name
     if model_info.region is not None:
         model = f"{model}({model_info.region})"
-    save_filename = f"{model}_{hw_version}_{fw_version}.json"
+    save_filename = f"{model}_{hw_version}_{fw_version}"
     return FixtureResult(
-        filename=save_filename, folder=SMART_CHILD_FOLDER, data=response
+        filename=save_filename,
+        folder=SMART_CHILD_FOLDER,
+        data=response,
+        protocol_suffix=SMART_CHILD_SUFFIX,
     )
 
 
@@ -988,20 +1013,28 @@ async def get_smart_fixtures(
         # smart protocol
         model_info = SmartDevice._get_device_info(final, discovery_result)
         copy_folder = SMART_FOLDER
+        protocol_suffix = SMART_PROTOCOL_SUFFIX
     else:
         # smart camera protocol
         model_info = SmartCamDevice._get_device_info(final, discovery_result)
         copy_folder = SMARTCAM_FOLDER
+        protocol_suffix = SMARTCAM_SUFFIX
     hw_version = model_info.hardware_version
     sw_version = model_info.firmware_version
     model = model_info.long_name
     if model_info.region is not None:
         model = f"{model}({model_info.region})"
 
-    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    save_filename = f"{model}_{hw_version}_{sw_version}"
 
     fixture_results.insert(
-        0, FixtureResult(filename=save_filename, folder=copy_folder, data=final)
+        0,
+        FixtureResult(
+            filename=save_filename,
+            folder=copy_folder,
+            data=final,
+            protocol_suffix=protocol_suffix,
+        ),
     )
     return fixture_results
 
