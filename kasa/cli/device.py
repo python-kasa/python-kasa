@@ -41,8 +41,14 @@ async def state(ctx, dev: Device):
     echo(f"Device state: {dev.is_on}")
 
     echo(f"Time:         {dev.time} (tz: {dev.timezone})")
-    echo(f"Hardware:     {dev.hw_info['hw_ver']}")
-    echo(f"Software:     {dev.hw_info['sw_ver']}")
+    echo(
+        f"Hardware:     {dev.device_info.hardware_version}"
+        f"{' (' + dev.region + ')' if dev.region else ''}"
+    )
+    echo(
+        f"Firmware:     {dev.device_info.firmware_version}"
+        f" {dev.device_info.firmware_build}"
+    )
     echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
     if verbose:
         echo(f"Location:     {dev.location}")

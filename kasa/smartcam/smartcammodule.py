@@ -86,7 +86,8 @@ class SmartCamModule(SmartModule):
                     f" for '{self._module}'"
                 )
 
-            return query_resp.get(self.QUERY_MODULE_NAME)
+            # Some calls return the data under the module, others not
+            return query_resp.get(self.QUERY_MODULE_NAME, query_resp)
         else:
             found = {key: val for key, val in dev._last_update.items() if key in q}
             for key in q:

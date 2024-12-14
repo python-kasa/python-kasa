@@ -160,6 +160,13 @@ class FakeSmartTransport(BaseTransport):
             "energy_monitoring",
             {"igain": 10861, "vgain": 118657},
         ),
+        "get_matter_setup_info": (
+            "matter",
+            {
+                "setup_code": "00000000000",
+                "setup_payload": "00:0000000-0000.00.000",
+            },
+        ),
     }
 
     async def send(self, request: str):
