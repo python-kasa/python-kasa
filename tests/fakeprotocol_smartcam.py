@@ -34,6 +34,7 @@ class FakeSmartCamTransport(BaseTransport):
         list_return_size=10,
         is_child=False,
         verbatim=False,
+        components_not_included=False,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -59,12 +60,16 @@ class FakeSmartCamTransport(BaseTransport):
         # self.child_protocols = self._get_child_protocols()
         self.list_return_size = list_return_size
 
-        self.components = {
-            comp["name"]: comp["version"]
-            for comp in self.info["getAppComponentList"]["app_component"][
-                "app_component_list"
-            ]
-        }
+        # Setting this flag allows tests to create dummy transports without
+        # full fixture info for testing specific cases like list handling etc
+        self.components_not_included = (components_not_included,)
+        if not components_not_included:
+            self.components = {
+                comp["name"]: comp["version"]
+                for comp in self.info["getAppComponentList"]["app_component"][
+                    "app_component_list"
+                ]
+            }
 
     @property
     def default_port(self):
