@@ -21,6 +21,9 @@ check for the existence of the module:
 >>>     print(light.brightness)
 100
 
+.. include:: ../featureattributes.md
+   :parser: myst_parser.sphinx_
+
 To see whether a device supports specific functionality, you can check whether the
 module has that feature:
 
@@ -150,6 +153,9 @@ class Module(ABC):
         "ChildProtection"
     )
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+
+    HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("HomeKit")
+    Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")
 
     # SMARTCAM only modules
     Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")

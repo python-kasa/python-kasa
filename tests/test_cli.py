@@ -12,6 +12,7 @@ from pytest_mock import MockerFixture
 
 from kasa import (
     AuthenticationError,
+    ColorTempRange,
     Credentials,
     Device,
     DeviceError,
@@ -523,7 +524,9 @@ async def test_emeter(dev: Device, mocker, runner):
 
 async def test_brightness(dev: Device, runner):
     res = await runner.invoke(brightness, obj=dev)
-    if not (light := dev.modules.get(Module.Light)) or not light.is_dimmable:
+    if not (light := dev.modules.get(Module.Light)) or not light.has_feature(
+        "brightness"
+    ):
         assert "This device does not support brightness." in res.output
         return
 
@@ -540,13 +543,16 @@ async def test_brightness(dev: Device, runner):
 
 async def test_color_temperature(dev: Device, runner):
     res = await runner.invoke(temperature, obj=dev)
-    if not (light := dev.modules.get(Module.Light)) or not light.is_variable_color_temp:
+    if not (light := dev.modules.get(Module.Light)) or not (
+        color_temp_feat := light.get_feature("color_temp")
+    ):
         assert "Device does not support color temperature" in res.output
         return
 
     res = await runner.invoke(temperature, obj=dev)
     assert f"Color temperature: {light.color_temp}" in res.output
-    valid_range = light.valid_temperature_range
+    valid_range = color_temp_feat.range
+    assert isinstance(valid_range, ColorTempRange)
     assert f"(min: {valid_range.min}, max: {valid_range.max})" in res.output
 
     val = int((valid_range.min + valid_range.max) / 2)
@@ -572,7 +578,7 @@ async def test_color_temperature(dev: Device, runner):
 
 async def test_color_hsv(dev: Device, runner: CliRunner):
     res = await runner.invoke(hsv, obj=dev)
-    if not (light := dev.modules.get(Module.Light)) or not light.is_color:
+    if not (light := dev.modules.get(Module.Light)) or not light.has_feature("hsv"):
         assert "Device does not support colors" in res.output
         return
 

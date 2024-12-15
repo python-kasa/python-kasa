@@ -22,7 +22,7 @@ Discovery returns a dict of {ip: discovered devices}:
 >>>
 >>> found_devices = await Discover.discover()
 >>> [dev.model for dev in found_devices.values()]
-['KP303(UK)', 'HS110(EU)', 'L530E', 'KL430(US)', 'HS220(US)']
+['KP303', 'HS110', 'L530E', 'KL430', 'HS220']
 
 You can pass username and password for devices requiring authentication
 
@@ -65,17 +65,17 @@ It is also possible to pass a coroutine to be executed for each found device:
 >>>     print(f"Discovered {dev.alias} (model: {dev.model})")
 >>>
 >>> devices = await Discover.discover(on_discovered=print_dev_info, credentials=creds)
-Discovered Bedroom Power Strip (model: KP303(UK))
-Discovered Bedroom Lamp Plug (model: HS110(EU))
+Discovered Bedroom Power Strip (model: KP303)
+Discovered Bedroom Lamp Plug (model: HS110)
 Discovered Living Room Bulb (model: L530)
-Discovered Bedroom Lightstrip (model: KL430(US))
-Discovered Living Room Dimmer Switch (model: HS220(US))
+Discovered Bedroom Lightstrip (model: KL430)
+Discovered Living Room Dimmer Switch (model: HS220)
 
 Discovering a single device returns a kasa.Device object.
 
 >>> device = await Discover.discover_single("127.0.0.1", credentials=creds)
 >>> device.model
-'KP303(UK)'
+'KP303'
 
 """
 

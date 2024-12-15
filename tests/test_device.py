@@ -280,19 +280,19 @@ async def test_deprecated_light_attributes(dev: Device):
     await _test_attribute(dev, "is_color", bool(light), "Light")
     await _test_attribute(dev, "is_variable_color_temp", bool(light), "Light")
 
-    exc = KasaException if light and not light.is_dimmable else None
+    exc = KasaException if light and not light.has_feature("brightness") else None
     await _test_attribute(dev, "brightness", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_brightness", bool(light), "Light", 50, will_raise=exc
     )
 
-    exc = KasaException if light and not light.is_color else None
+    exc = KasaException if light and not light.has_feature("hsv") else None
     await _test_attribute(dev, "hsv", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_hsv", bool(light), "Light", 50, 50, 50, will_raise=exc
     )
 
-    exc = KasaException if light and not light.is_variable_color_temp else None
+    exc = KasaException if light and not light.has_feature("color_temp") else None
     await _test_attribute(dev, "color_temp", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_color_temp", bool(light), "Light", 2700, will_raise=exc
