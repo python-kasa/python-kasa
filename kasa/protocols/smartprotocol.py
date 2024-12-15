@@ -71,7 +71,7 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
 
 # Queries that are known not to work properly when sent as a
 # multiRequest. They will not return the `method` key.
-DO_NOT_SEND_AS_MULTI_REQUEST = {
+FORCE_SINGLE_REQUEST = {
     "getConnectStatus",
     "scanApList",
 }
@@ -186,7 +186,7 @@ class SmartProtocol(BaseProtocol):
         multi_requests = [
             {"method": method, "params": params} if params else {"method": method}
             for method, params in requests.items()
-            if method not in DO_NOT_SEND_AS_MULTI_REQUEST
+            if method not in FORCE_SINGLE_REQUEST
         ]
 
         end = len(multi_requests)
