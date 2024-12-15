@@ -213,7 +213,7 @@
                 "category": "subg.trigger.button",
                 "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "fw_ver": "1.11.0 Build 230821 Rel.113553",
-                "hw_id": "9A1EB033BE24834E2A7A6A4E4CF405E8",
+                "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
                 "jamming_rssi": -119,
                 "jamming_signal_level": 1,
@@ -246,8 +246,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "1984-10-21 23:07:50",
-                "seconds_from_1970": 467244470
+                "local_time": "1984-10-21 23:48:23",
+                "seconds_from_1970": 467246903
             }
         }
     },
@@ -276,7 +276,7 @@
                 "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.TAPOHUB",
                 "has_set_location_info": 1,
-                "hw_id": "99A36151C79A3A5D72823C98BC0FDA5F",
+                "hw_id": "00000000000000000000000000000000",
                 "hw_version": "1.0",
                 "latitude": 0,
                 "longitude": 0,
@@ -299,7 +299,7 @@
                 "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.TAPOHUB",
                 "has_set_location_info": 1,
-                "hw_id": "99A36151C79A3A5D72823C98BC0FDA5F",
+                "hw_id": "00000000000000000000000000000000",
                 "hw_version": "1.0",
                 "latitude": 0,
                 "longitude": 0,
@@ -416,80 +416,59 @@
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
                         "auth": 0,
                         "bssid": "000000000000",
                         "encryption": 0,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 4,
-                        "bssid": "000000000000",
-                        "encryption": 3,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 3,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 3,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
                         "rssi": 2,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 3,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 3,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {

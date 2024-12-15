@@ -267,8 +267,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-12-15 11:09:14",
-                "seconds_from_1970": 1734260954
+                "local_time": "2024-12-15 11:28:40",
+                "seconds_from_1970": 1734262120
             }
         }
     },
@@ -282,7 +282,7 @@
     "getConnectionType": {
         "link_type": "wifi",
         "rssi": "3",
-        "rssiValue": -60,
+        "rssiValue": -61,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -312,7 +312,7 @@
                 "ffs": false,
                 "has_set_location_info": 1,
                 "hw_desc": "00000000000000000000000000000000",
-                "hw_id": "5FAAA6EC6A1A74A8B50B0C3302FB26FD",
+                "hw_id": "00000000000000000000000000000000",
                 "hw_version": "2.0",
                 "is_cal": true,
                 "latitude": 0,
@@ -989,17 +989,10 @@
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
-                        "auth": 0,
-                        "bssid": "000000000000",
-                        "encryption": 0,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
                         "auth": 4,
                         "bssid": "000000000000",
                         "encryption": 3,
-                        "rssi": 1,
+                        "rssi": 0,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     }
                 ],
