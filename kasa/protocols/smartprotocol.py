@@ -69,6 +69,13 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "map_data": lambda x: "#SCRUBBED_MAPDATA#" if x else "",
 }
 
+# Queries that are known not to work properly when sent as a
+# multiRequest. They will not return the `method` key.
+FORCE_SINGLE_REQUEST = {
+    "getConnectStatus",
+    "scanApList",
+}
+
 
 class SmartProtocol(BaseProtocol):
     """Class for the new TPLink SMART protocol."""
@@ -89,6 +96,7 @@ class SmartProtocol(BaseProtocol):
             self._transport._config.batch_size or self.DEFAULT_MULTI_REQUEST_BATCH_SIZE
         )
         self._redact_data = True
+        self._method_missing_logged = False
 
     def get_smart_request(self, method: str, params: dict | None = None) -> str:
         """Get a request message as a string."""
@@ -178,6 +186,7 @@ class SmartProtocol(BaseProtocol):
         multi_requests = [
             {"method": method, "params": params} if params else {"method": method}
             for method, params in requests.items()
+            if method not in FORCE_SINGLE_REQUEST
         ]
 
         end = len(multi_requests)
@@ -246,7 +255,20 @@ class SmartProtocol(BaseProtocol):
 
             responses = response_step["result"]["responses"]
             for response in responses:
-                method = response["method"]
+                # some smartcam devices calls do not populate the method key
+                # these should be defined in DO_NOT_SEND_AS_MULTI_REQUEST.
+                if not (method := response.get("method")):
+                    if not self._method_missing_logged:
+                        # Avoid spamming the logs
+                        self._method_missing_logged = True
+                        _LOGGER.error(
+                            "No method key in response for %s, skipping: %s",
+                            self._host,
+                            response_step,
+                        )
+                    # These will end up being queried individually
+                    continue
+
                 self._handle_response_error_code(
                     response, method, raise_on_error=raise_on_error
                 )
@@ -255,7 +277,9 @@ class SmartProtocol(BaseProtocol):
                     result, method, retry_count=retry_count
                 )
                 multi_result[method] = result
-        # Multi requests don't continue after errors so requery any missing
+
+        # Multi requests don't continue after errors so requery any missing.
+        # Will also query individually any DO_NOT_SEND_AS_MULTI_REQUEST.
         for method, params in requests.items():
             if method not in multi_result:
                 resp = await self._transport.send(
