@@ -34,6 +34,7 @@ class FakeSmartCamTransport(BaseTransport):
         list_return_size=10,
         is_child=False,
         verbatim=False,
+        components_not_included=False,
     ):
         super().__init__(
             config=DeviceConfig(
@@ -44,6 +45,7 @@ class FakeSmartCamTransport(BaseTransport):
                 ),
             ),
         )
+
         self.fixture_name = fixture_name
         # When True verbatim will bypass any extra processing of missing
         # methods and is used to test the fixture creation itself.
@@ -57,6 +59,17 @@ class FakeSmartCamTransport(BaseTransport):
             self.info = info
         # self.child_protocols = self._get_child_protocols()
         self.list_return_size = list_return_size
+
+        # Setting this flag allows tests to create dummy transports without
+        # full fixture info for testing specific cases like list handling etc
+        self.components_not_included = (components_not_included,)
+        if not components_not_included:
+            self.components = {
+                comp["name"]: comp["version"]
+                for comp in self.info["getAppComponentList"]["app_component"][
+                    "app_component_list"
+                ]
+            }
 
     @property
     def default_port(self):
@@ -112,6 +125,15 @@ class FakeSmartCamTransport(BaseTransport):
             info = info[key]
         info[set_keys[-1]] = value
 
+    FIXTURE_MISSING_MAP = {
+        "getMatterSetupInfo": (
+            "matter",
+            {
+                "setup_code": "00000000000",
+                "setup_payload": "00:0000000-0000.00.000",
+            },
+        )
+    }
     # Setters for when there's not a simple mapping of setters to getters
     SETTERS = {
         ("system", "sys", "dev_alias"): [
@@ -217,8 +239,17 @@ class FakeSmartCamTransport(BaseTransport):
                         start_index : start_index + self.list_return_size
                     ]
                 return {"result": result, "error_code": 0}
-            else:
-                return {"error_code": -1}
+            if (
+                # FIXTURE_MISSING is for service calls not in place when
+                # SMART fixtures started to be generated
+                missing_result := self.FIXTURE_MISSING_MAP.get(method)
+            ) and missing_result[0] in self.components:
+                # Copy to info so it will work with update methods
+                info[method] = copy.deepcopy(missing_result[1])
+                result = copy.deepcopy(info[method])
+                return {"result": result, "error_code": 0}
+
+            return {"error_code": -1}
         return {"error_code": -1}
 
     async def close(self) -> None:
