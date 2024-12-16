@@ -5,6 +5,9 @@ The following devices have been tested and confirmed as working. If your device 
 > [!NOTE]
 > The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
 
+> [!NOTE]
+> Some firmware versions of Tapo Cameras will not authenticate unless you enable "Tapo Lab" > "Third-Party Compatibility" in the native Tapo app.
+> Alternatively, you can factory reset and then prevent the device from accessing the internet.
 
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
