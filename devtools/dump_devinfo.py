@@ -75,10 +75,6 @@ ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
 _LOGGER = logging.getLogger(__name__)
 
-SMART_SINGLE_ONLY_CALLS = {
-    "getConnectStatus",
-}
-
 
 def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
     """Wrap the redactors for  dump_devinfo.
@@ -628,11 +624,7 @@ async def get_smart_camera_test_calls(protocol: SmartProtocol):
                 request=request,
                 should_succeed=True,
                 child_device_id="",
-                supports_multiple=(
-                    method != "get"
-                    and method[:3] == "get"
-                    and method not in SMART_SINGLE_ONLY_CALLS
-                ),
+                supports_multiple=(method != "get"),
             )
         )
 
