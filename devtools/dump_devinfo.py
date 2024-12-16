@@ -329,7 +329,7 @@ async def cli(
             )
             discovery_info = raw_discovery[device.host]
             if decrypted_data := device._discovery_info.get("decrypted_data"):
-                discovery_info["decrypted_data"] = decrypted_data
+                discovery_info["result"]["decrypted_data"] = decrypted_data
             await handle_device(
                 basedir,
                 autosave,
@@ -353,7 +353,7 @@ async def cli(
         for dev in devices.values():
             discovery_info = raw_discovery[dev.host]
             if decrypted_data := dev._discovery_info.get("decrypted_data"):
-                discovery_info["decrypted_data"] = decrypted_data
+                discovery_info["result"]["decrypted_data"] = decrypted_data
 
             await handle_device(
                 basedir,
@@ -936,6 +936,7 @@ async def get_smart_fixtures(
             and (child_model := response["get_device_info"].get("model"))
             and child_model != parent_model
         ):
+            response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
             fixture_results.append(get_smart_child_fixture(response))
         else:
             cd = final.setdefault("child_devices", {})
@@ -951,13 +952,16 @@ async def get_smart_fixtures(
             child["device_id"] = scrubbed_device_ids[device_id]
 
     # Scrub the device ids in the parent for the smart camera protocol
-    if gc := final.get("getChildDeviceList"):
-        for child in gc["child_device_list"]:
+    if gc := final.get("getChildDeviceComponentList"):
+        for child in gc["child_component_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_device_ids[device_id]
+        for child in final["getChildDeviceList"]["child_device_list"]:
             if device_id := child.get("device_id"):
                 child["device_id"] = scrubbed_device_ids[device_id]
                 continue
-            if device_id := child.get("dev_id"):
-                child["dev_id"] = scrubbed_device_ids[device_id]
+            elif dev_id := child.get("dev_id"):
+                child["dev_id"] = scrubbed_device_ids[dev_id]
                 continue
             _LOGGER.error("Could not find a device for the child device: %s", child)
 
