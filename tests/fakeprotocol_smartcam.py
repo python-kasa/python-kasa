@@ -221,35 +221,38 @@ class FakeSmartCamTransport(BaseTransport):
                 return {**result, "error_code": 0}
             else:
                 return {"error_code": -1}
-        elif method[:3] == "get":
+
+        if method in info:
             params = request_dict.get("params")
-            if method in info:
-                result = copy.deepcopy(info[method])
-                if "start_index" in result and "sum" in result:
-                    list_key = next(
-                        iter([key for key in result if isinstance(result[key], list)])
-                    )
-                    start_index = (
-                        start_index
-                        if (params and (start_index := params.get("start_index")))
-                        else 0
-                    )
+            result = copy.deepcopy(info[method])
+            if "start_index" in result and "sum" in result:
+                list_key = next(
+                    iter([key for key in result if isinstance(result[key], list)])
+                )
+                start_index = (
+                    start_index
+                    if (params and (start_index := params.get("start_index")))
+                    else 0
+                )
 
-                    result[list_key] = result[list_key][
-                        start_index : start_index + self.list_return_size
-                    ]
-                return {"result": result, "error_code": 0}
-            if (
-                # FIXTURE_MISSING is for service calls not in place when
-                # SMART fixtures started to be generated
-                missing_result := self.FIXTURE_MISSING_MAP.get(method)
-            ) and missing_result[0] in self.components:
-                # Copy to info so it will work with update methods
-                info[method] = copy.deepcopy(missing_result[1])
-                result = copy.deepcopy(info[method])
-                return {"result": result, "error_code": 0}
+                result[list_key] = result[list_key][
+                    start_index : start_index + self.list_return_size
+                ]
+            return {"result": result, "error_code": 0}
 
+        if self.verbatim:
             return {"error_code": -1}
+
+        if (
+            # FIXTURE_MISSING is for service calls not in place when
+            # SMART fixtures started to be generated
+            missing_result := self.FIXTURE_MISSING_MAP.get(method)
+        ) and missing_result[0] in self.components:
+            # Copy to info so it will work with update methods
+            info[method] = copy.deepcopy(missing_result[1])
+            result = copy.deepcopy(info[method])
+            return {"result": result, "error_code": 0}
+
         return {"error_code": -1}
 
     async def close(self) -> None:

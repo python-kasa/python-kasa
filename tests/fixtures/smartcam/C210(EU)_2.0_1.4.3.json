@@ -7,8 +7,8 @@
                 "connect_type": "wireless",
                 "device_id": "0000000000000000000000000000000000000000",
                 "http_port": 443,
-                "last_alarm_time": "0",
-                "last_alarm_type": "",
+                "last_alarm_time": "1733422805",
+                "last_alarm_type": "motion",
                 "owner": "00000000000000000000000000000000",
                 "sd_status": "offline"
             },
@@ -32,7 +32,8 @@
             "mac": "40-AE-30-00-00-00",
             "mgt_encrypt_schm": {
                 "is_support_https": true
-            }
+            },
+            "protocol_version": 1
         }
     },
     "getAlertConfig": {
@@ -266,15 +267,22 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-11-01 13:58:50",
-                "seconds_from_1970": 1730469530
+                "local_time": "2024-12-15 11:28:40",
+                "seconds_from_1970": 1734262120
+            }
+        }
+    },
+    "getConnectStatus": {
+        "onboarding": {
+            "get_connect_status": {
+                "status": 0
             }
         }
     },
     "getConnectionType": {
         "link_type": "wifi",
         "rssi": "3",
-        "rssiValue": -57,
+        "rssiValue": -61,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -321,7 +329,7 @@
     "getFirmwareAutoUpgradeConfig": {
         "auto_upgrade": {
             "common": {
-                "enabled": "on",
+                "enabled": "off",
                 "random_range": "120",
                 "time": "03:00"
             }
@@ -338,8 +346,8 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "0",
-                "last_alarm_type": ""
+                "last_alarm_time": "1733422805",
+                "last_alarm_type": "motion"
             }
         }
     },
@@ -959,6 +967,36 @@
                     "wifi_connection_info": "1",
                     "wireless_hotspot": "1"
                 }
+            }
+        }
+    },
+    "scanApList": {
+        "onboarding": {
+            "scan": {
+                "ap_list": [
+                    {
+                        "auth": 4,
+                        "bssid": "000000000000",
+                        "encryption": 3,
+                        "rssi": 2,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 4,
+                        "bssid": "000000000000",
+                        "encryption": 3,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 4,
+                        "bssid": "000000000000",
+                        "encryption": 3,
+                        "rssi": 0,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    }
+                ],
+                "wpa3_supported": "false"
             }
         }
     }
