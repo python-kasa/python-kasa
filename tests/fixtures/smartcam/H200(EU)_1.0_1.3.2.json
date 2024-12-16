@@ -26,7 +26,6 @@
             "firmware_version": "1.3.2 Build 20240424 rel.75425",
             "hardware_version": "1.0",
             "ip": "127.0.0.123",
-            "isResetWiFi": false,
             "is_support_iot_cloud": true,
             "mac": "A8-6E-84-00-00-00",
             "mgt_encrypt_schm": {
@@ -213,9 +212,9 @@
                 "category": "subg.trigger.button",
                 "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "fw_ver": "1.11.0 Build 230821 Rel.113553",
-                "hw_id": "9A1EB033BE24834E2A7A6A4E4CF405E8",
+                "hw_id": "00000000000000000000000000000000",
                 "hw_ver": "1.0",
-                "jamming_rssi": -110,
+                "jamming_rssi": -108,
                 "jamming_signal_level": 2,
                 "lastOnboardingTimestamp": 1714016798,
                 "mac": "202351000000",
@@ -225,7 +224,7 @@
                 "parent_device_id": "0000000000000000000000000000000000000000",
                 "region": "Europe/London",
                 "report_interval": 16,
-                "rssi": -56,
+                "rssi": -66,
                 "signal_level": 3,
                 "specs": "EU",
                 "status": "online",
@@ -246,19 +245,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-12-13 18:34:09",
-                "seconds_from_1970": 1734114849
-            }
-        }
-    },
-    "getConnectStatus": {
-        "getConnectStatus": {
-            "onboarding": {
-                "get_connect_status": {
-                    "current_ssid": "",
-                    "err_code": 0,
-                    "status": 0
-                }
+                "local_time": "2024-11-01 13:56:27",
+                "seconds_from_1970": 1730469387
             }
         }
     },
@@ -278,7 +266,7 @@
                 "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.TAPOHUB",
                 "has_set_location_info": 1,
-                "hw_id": "99A36151C79A3A5D72823C98BC0FDA5F",
+                "hw_id": "00000000000000000000000000000000",
                 "hw_version": "1.0",
                 "latitude": 0,
                 "longitude": 0,
@@ -301,7 +289,7 @@
                 "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.TAPOHUB",
                 "has_set_location_info": 1,
-                "hw_id": "99A36151C79A3A5D72823C98BC0FDA5F",
+                "hw_id": "00000000000000000000000000000000",
                 "hw_version": "1.0",
                 "latitude": 0,
                 "longitude": 0,
@@ -341,10 +329,6 @@
             }
         }
     },
-    "getMatterSetupInfo": {
-        "setup_code": "00000000000",
-        "setup_payload": "00:000000-000000000000"
-    },
     "getMediaEncrypt": {
         "cet": {
             "media_encrypt": {
@@ -369,7 +353,7 @@
     "getSirenConfig": {
         "duration": 300,
         "siren_type": "Doorbell Ring 1",
-        "volume": "1"
+        "volume": "6"
     },
     "getSirenStatus": {
         "status": "off",
@@ -403,122 +387,6 @@
             "basic": {
                 "timezone": "UTC+00:00",
                 "zone_id": "Europe/London"
-            }
-        }
-    },
-    "scanApList": {
-        "scanApList": {
-            "onboarding": {
-                "scan": {
-                    "ap_list": [
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 2,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 1,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 1,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 0,
-                            "bssid": "000000000000",
-                            "encryption": 0,
-                            "rssi": 1,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 1,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 0,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 3,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 3,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 4,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 0,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 0,
-                            "bssid": "000000000000",
-                            "encryption": 0,
-                            "rssi": 0,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 0,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 1,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 4,
-                            "bssid": "000000000000",
-                            "encryption": 3,
-                            "rssi": 2,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 1,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        },
-                        {
-                            "auth": 3,
-                            "bssid": "000000000000",
-                            "encryption": 2,
-                            "rssi": 1,
-                            "ssid": "I01BU0tFRF9TU0lEIw=="
-                        }
-                    ],
-                    "wpa3_supported": "false"
-                }
             }
         }
     }
