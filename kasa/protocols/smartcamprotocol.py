@@ -19,7 +19,7 @@ from ..transports.sslaestransport import (
     SMART_RETRYABLE_ERRORS,
     SmartErrorCode,
 )
-from . import SmartProtocol
+from .smartprotocol import SmartProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
