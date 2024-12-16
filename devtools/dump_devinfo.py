@@ -233,6 +233,12 @@ async def handle_device(
     type=bool,
     help="Set flag if the device encryption uses https.",
 )
+@click.option(
+    "--timeout",
+    required=False,
+    default=15,
+    help="Timeout for queries.",
+)
 @click.option("--port", help="Port override", type=int)
 async def cli(
     host,
@@ -250,6 +256,7 @@ async def cli(
     device_family,
     login_version,
     port,
+    timeout,
 ):
     """Generate devinfo files for devices.
 
@@ -280,6 +287,7 @@ async def cli(
                 connection_type=connection_type,
                 port_override=port,
                 credentials=credentials,
+                timeout=timeout,
             )
             device = await Device.connect(config=dc)
             await handle_device(
@@ -301,6 +309,7 @@ async def cli(
                 port_override=port,
                 credentials=credentials,
                 connection_type=ctype,
+                timeout=timeout,
             )
             if protocol := get_protocol(config):
                 await handle_device(basedir, autosave, protocol, batch_size=batch_size)
@@ -315,6 +324,7 @@ async def cli(
                 credentials=credentials,
                 port=port,
                 discovery_timeout=discovery_timeout,
+                timeout=timeout,
                 on_discovered_raw=capture_raw,
             )
             discovery_info = raw_discovery[device.host]
@@ -336,6 +346,7 @@ async def cli(
             target=target,
             credentials=credentials,
             discovery_timeout=discovery_timeout,
+            timeout=timeout,
             on_discovered_raw=capture_raw,
         )
         click.echo(f"Detected {len(devices)} devices")
