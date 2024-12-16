@@ -68,7 +68,6 @@ class SslAesTransport(BaseTransport):
         "Content-Type": "application/json; charset=UTF-8",
         "requestByApp": "true",
         "Accept": "application/json",
-        "Connection": "close",
         "Accept-Encoding": "gzip, deflate",
         "User-Agent": "Tapo CameraClient Android",
     }
