@@ -847,12 +847,10 @@ class Discover:
             ):
                 encrypt_type = encrypt_info.sym_schm
 
-            if (
-                not (login_version := encrypt_schm.lv)
-                and (et := discovery_result.encrypt_type)
-                and et == ["3"]
+            if not (login_version := encrypt_schm.lv) and (
+                et := discovery_result.encrypt_type
             ):
-                login_version = 2
+                login_version = max([int(i) for i in et])
 
             if not encrypt_type:
                 raise UnsupportedDeviceError(
