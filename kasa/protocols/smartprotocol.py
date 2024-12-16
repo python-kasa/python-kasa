@@ -50,6 +50,8 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "bssid": lambda _: "000000000000",
     "channel": lambda _: 0,
     "oem_id": lambda x: "REDACTED_" + x[9::],
+    "hw_id": lambda x: "REDACTED_" + x[9::],
+    "fw_id": lambda x: "REDACTED_" + x[9::],
     "setup_code": lambda x: re.sub(r"\w", "0", x),  # matter
     "setup_payload": lambda x: re.sub(r"\w", "0", x),  # matter
     "mfi_setup_code": lambda x: re.sub(r"\w", "0", x),  # mfi_ for homekit
@@ -183,17 +185,17 @@ class SmartProtocol(BaseProtocol):
         multi_result: dict[str, Any] = {}
         smart_method = "multipleRequest"
 
+        end = len(requests)
+        # The SmartCamProtocol sends requests with a length 1 as a
+        # multipleRequest. The SmartProtocol doesn't so will never
+        # raise_on_error
+        raise_on_error = end == 1
+
         multi_requests = [
             {"method": method, "params": params} if params else {"method": method}
             for method, params in requests.items()
             if method not in FORCE_SINGLE_REQUEST
         ]
-
-        end = len(multi_requests)
-        # The SmartCamProtocol sends requests with a length 1 as a
-        # multipleRequest. The SmartProtocol doesn't so will never
-        # raise_on_error
-        raise_on_error = end == 1
 
         # Break the requests down as there can be a size limit
         step = self._multi_request_batch_size
@@ -285,7 +287,9 @@ class SmartProtocol(BaseProtocol):
                 resp = await self._transport.send(
                     self.get_smart_request(method, params)
                 )
-                self._handle_response_error_code(resp, method, raise_on_error=False)
+                self._handle_response_error_code(
+                    resp, method, raise_on_error=raise_on_error
+                )
                 multi_result[method] = resp.get("result")
         return multi_result
 
