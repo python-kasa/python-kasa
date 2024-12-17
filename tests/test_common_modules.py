@@ -198,7 +198,7 @@ async def test_light_color_temp(dev: Device):
 
     light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
-    if not light.is_variable_color_temp:
+    if not light.has_feature("color_temp"):
         pytest.skip(
             "Some smart light strips have color_temperature"
             " component but min and max are the same"

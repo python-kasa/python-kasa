@@ -13,8 +13,7 @@ Living Room Bulb
 
 Light effects are accessed via the LightPreset module. To list available presets
 
->>> if dev.modules[Module.Light].has_effects:
->>>     light_effect = dev.modules[Module.LightEffect]
+>>> light_effect = dev.modules[Module.LightEffect]
 >>> light_effect.effect_list
 ['Off', 'Party', 'Relax']
 

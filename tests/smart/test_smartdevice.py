@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import time
 from typing import Any, cast
@@ -11,16 +12,18 @@ import pytest
 from freezegun.api import FrozenDateTimeFactory
 from pytest_mock import MockerFixture
 
-from kasa import Device, KasaException, Module
+from kasa import Device, DeviceType, KasaException, Module
 from kasa.exceptions import DeviceError, SmartErrorCode
 from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
 from tests.conftest import (
+    DISCOVERY_MOCK_IP,
     device_smart,
     get_device_for_fixture_protocol,
     get_parent_and_child_modules,
+    smart_discovery,
 )
 from tests.device_fixtures import variable_temp_smart
 
@@ -49,6 +52,34 @@ async def test_update_no_device_info(dev: SmartDevice, mocker: MockerFixture):
     mocker.patch.object(dev.protocol, "query", return_value=mock_response)
     with pytest.raises(KasaException, match=msg):
         await dev.update()
+
+
+@smart_discovery
+async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFixture):
+    """Test device type and repr when device not updated."""
+    dev = SmartDevice(DISCOVERY_MOCK_IP)
+    assert dev.device_type is DeviceType.Unknown
+    assert repr(dev) == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - update() needed>"
+
+    discovery_result = copy.deepcopy(discovery_mock.discovery_data["result"])
+
+    disco_model = discovery_result["device_model"]
+    short_model, _, _ = disco_model.partition("(")
+    dev.update_from_discover_info(discovery_result)
+    assert dev.device_type is DeviceType.Unknown
+    assert (
+        repr(dev)
+        == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
+    )
+    discovery_result["device_type"] = "SMART.FOOBAR"
+    dev.update_from_discover_info(discovery_result)
+    dev._components = {"dummy": 1}
+    assert dev.device_type is DeviceType.Plug
+    assert (
+        repr(dev)
+        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
+    )
+    assert "Unknown device type, falling back to plug" in caplog.text
 
 
 @device_smart
@@ -441,4 +472,77 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
 async def test_smart_temp_range(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
-    assert light.valid_temperature_range
+    color_temp_feat = light.get_feature("color_temp")
+    assert color_temp_feat
+    assert color_temp_feat.range
+
+
+@device_smart
+async def test_initialize_modules_sysinfo_lookup_keys(
+    dev: SmartDevice, mocker: MockerFixture
+):
+    """Test that matching modules using SYSINFO_LOOKUP_KEYS are initialized correctly."""
+
+    class AvailableKey(SmartModule):
+        SYSINFO_LOOKUP_KEYS = ["device_id"]
+
+    class NonExistingKey(SmartModule):
+        SYSINFO_LOOKUP_KEYS = ["this_does_not_exist"]
+
+    # The __init_subclass__ hook in smartmodule checks the path,
+    # so we have to manually add these for testing.
+    mocker.patch.dict(
+        "kasa.smart.smartmodule.SmartModule.REGISTERED_MODULES",
+        {
+            AvailableKey._module_name(): AvailableKey,
+            NonExistingKey._module_name(): NonExistingKey,
+        },
+    )
+
+    # We have an already initialized device, so we try to initialize the modules again
+    await dev._initialize_modules()
+
+    assert "AvailableKey" in dev.modules
+    assert "NonExistingKey" not in dev.modules
+
+
+@device_smart
+async def test_initialize_modules_required_component(
+    dev: SmartDevice, mocker: MockerFixture
+):
+    """Test that matching modules using REQUIRED_COMPONENT are initialized correctly."""
+
+    class AvailableComponent(SmartModule):
+        REQUIRED_COMPONENT = "device"
+
+    class NonExistingComponent(SmartModule):
+        REQUIRED_COMPONENT = "this_does_not_exist"
+
+    # The __init_subclass__ hook in smartmodule checks the path,
+    # so we have to manually add these for testing.
+    mocker.patch.dict(
+        "kasa.smart.smartmodule.SmartModule.REGISTERED_MODULES",
+        {
+            AvailableComponent._module_name(): AvailableComponent,
+            NonExistingComponent._module_name(): NonExistingComponent,
+        },
+    )
+
+    # We have an already initialized device, so we try to initialize the modules again
+    await dev._initialize_modules()
+
+    assert "AvailableComponent" in dev.modules
+    assert "NonExistingComponent" not in dev.modules
+
+
+async def test_smartmodule_query():
+    """Test that a module that doesn't set QUERY_GETTER_NAME has empty query."""
+
+    class DummyModule(SmartModule):
+        pass
+
+    dummy_device = await get_device_for_fixture_protocol(
+        "KS240(US)_1.0_1.0.5.json", "SMART"
+    )
+    mod = DummyModule(dummy_device, "dummy")
+    assert mod.query() == {}

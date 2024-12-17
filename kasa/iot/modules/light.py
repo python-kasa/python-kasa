@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Annotated, cast
 
 from ...device_type import DeviceType
 from ...exceptions import KasaException
 from ...feature import Feature
 from ...interfaces.light import HSV, ColorTempRange, LightState
 from ...interfaces.light import Light as LightInterface
+from ...module import FeatureAttribute
 from ..iotmodule import IotModule
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ class Light(IotModule, LightInterface):
         super()._initialize_features()
         device = self._device
 
-        if self._device._is_dimmable:
+        if device._is_dimmable:
             self._add_feature(
                 Feature(
                     device,
@@ -46,7 +47,7 @@ class Light(IotModule, LightInterface):
                     category=Feature.Category.Primary,
                 )
             )
-        if self._device._is_variable_color_temp:
+        if device._is_variable_color_temp:
             self._add_feature(
                 Feature(
                     device=device,
@@ -60,7 +61,7 @@ class Light(IotModule, LightInterface):
                     type=Feature.Type.Number,
                 )
             )
-        if self._device._is_color:
+        if device._is_color:
             self._add_feature(
                 Feature(
                     device=device,
@@ -95,13 +96,13 @@ class Light(IotModule, LightInterface):
         return self._device._is_dimmable
 
     @property  # type: ignore
-    def brightness(self) -> int:
+    def brightness(self) -> Annotated[int, FeatureAttribute()]:
         """Return the current brightness in percentage."""
         return self._device._brightness
 
     async def set_brightness(
         self, brightness: int, *, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the brightness in percentage. A value of 0 will turn off the light.
 
         :param int brightness: brightness in percent
@@ -133,7 +134,7 @@ class Light(IotModule, LightInterface):
         return bulb._has_effects
 
     @property
-    def hsv(self) -> HSV:
+    def hsv(self) -> Annotated[HSV, FeatureAttribute()]:
         """Return the current HSV state of the bulb.
 
         :return: hue, saturation and value (degrees, %, %)
@@ -149,7 +150,7 @@ class Light(IotModule, LightInterface):
         value: int | None = None,
         *,
         transition: int | None = None,
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set new HSV.
 
         Note, transition is not supported and will be ignored.
@@ -176,7 +177,7 @@ class Light(IotModule, LightInterface):
         return bulb._valid_temperature_range
 
     @property
-    def color_temp(self) -> int:
+    def color_temp(self) -> Annotated[int, FeatureAttribute()]:
         """Whether the bulb supports color temperature changes."""
         if (
             bulb := self._get_bulb_device()
@@ -186,7 +187,7 @@ class Light(IotModule, LightInterface):
 
     async def set_color_temp(
         self, temp: int, *, brightness: int | None = None, transition: int | None = None
-    ) -> dict:
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set the color temperature of the device in kelvin.
 
         Note, transition is not supported and will be ignored.
@@ -242,17 +243,18 @@ class Light(IotModule, LightInterface):
         return self._light_state
 
     async def _post_update_hook(self) -> None:
-        if self._device.is_on is False:
+        device = self._device
+        if device.is_on is False:
             state = LightState(light_on=False)
         else:
             state = LightState(light_on=True)
-            if self.is_dimmable:
+            if device._is_dimmable:
                 state.brightness = self.brightness
-            if self.is_color:
+            if device._is_color:
                 hsv = self.hsv
                 state.hue = hsv.hue
                 state.saturation = hsv.saturation
-            if self.is_variable_color_temp:
+            if device._is_variable_color_temp:
                 state.color_temp = self.color_temp
         self._light_state = state
 

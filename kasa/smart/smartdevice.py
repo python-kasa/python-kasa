@@ -7,9 +7,9 @@ import logging
 import time
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
-from ..device import Device, WifiNetwork, _DeviceInfo
+from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import AuthenticationError, DeviceError, KasaException, SmartErrorCode
@@ -40,6 +40,8 @@ _LOGGER = logging.getLogger(__name__)
 # same issue, homekit perhaps?
 NON_HUB_PARENT_ONLY_MODULES = [DeviceModule, Time, Firmware, Cloud]
 
+ComponentsRaw: TypeAlias = dict[str, list[dict[str, int | str]]]
+
 
 # Device must go last as the other interfaces also inherit Device
 # and python needs a consistent method resolution order.
@@ -61,13 +63,12 @@ class SmartDevice(Device):
         )
         super().__init__(host=host, config=config, protocol=_protocol)
         self.protocol: SmartProtocol
-        self._components_raw: dict[str, Any] | None = None
+        self._components_raw: ComponentsRaw | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
         self._modules: dict[str | ModuleName[Module], SmartModule] = {}
         self._parent: SmartDevice | None = None
         self._children: Mapping[str, SmartDevice] = {}
-        self._last_update = {}
         self._last_update_time: float | None = None
         self._on_since: datetime | None = None
         self._info: dict[str, Any] = {}
@@ -82,10 +83,8 @@ class SmartDevice(Device):
         self.internal_state.update(resp)
 
         children = self.internal_state["get_child_device_list"]["child_device_list"]
-        children_components = {
-            child["device_id"]: {
-                comp["id"]: int(comp["ver_code"]) for comp in child["component_list"]
-            }
+        children_components_raw = {
+            child["device_id"]: child
             for child in self.internal_state["get_child_device_component_list"][
                 "child_component_list"
             ]
@@ -96,7 +95,7 @@ class SmartDevice(Device):
             child_info["device_id"]: await SmartChildDevice.create(
                 parent=self,
                 child_info=child_info,
-                child_components=children_components[child_info["device_id"]],
+                child_components_raw=children_components_raw[child_info["device_id"]],
             )
             for child_info in children
         }
@@ -131,6 +130,13 @@ class SmartDevice(Device):
             f"{request} not found in {responses} for device {self.host}"
         )
 
+    @staticmethod
+    def _parse_components(components_raw: ComponentsRaw) -> dict[str, int]:
+        return {
+            str(comp["id"]): int(comp["ver_code"])
+            for comp in components_raw["component_list"]
+        }
+
     async def _negotiate(self) -> None:
         """Perform initialization.
 
@@ -151,12 +157,9 @@ class SmartDevice(Device):
         self._info = self._try_get_response(resp, "get_device_info")
 
         # Create our internal presentation of available components
-        self._components_raw = cast(dict, resp["component_nego"])
+        self._components_raw = cast(ComponentsRaw, resp["component_nego"])
 
-        self._components = {
-            comp["id"]: int(comp["ver_code"])
-            for comp in self._components_raw["component_list"]
-        }
+        self._components = self._parse_components(self._components_raw)
 
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
@@ -167,7 +170,14 @@ class SmartDevice(Device):
             self._last_update, "get_child_device_list", {}
         ):
             for info in child_info["child_device_list"]:
-                self._children[info["device_id"]]._update_internal_state(info)
+                child_id = info["device_id"]
+                if child_id not in self._children:
+                    _LOGGER.debug(
+                        "Skipping child update for %s, probably unsupported device",
+                        child_id,
+                    )
+                    continue
+                self._children[child_id]._update_internal_state(info)
 
     def _update_internal_info(self, info_resp: dict) -> None:
         """Update the internal device info."""
@@ -342,9 +352,8 @@ class SmartDevice(Device):
             ) or mod.__name__ in child_modules_to_skip:
                 continue
             required_component = cast(str, mod.REQUIRED_COMPONENT)
-            if required_component in self._components or (
-                mod.REQUIRED_KEY_ON_PARENT
-                and self.sys_info.get(mod.REQUIRED_KEY_ON_PARENT) is not None
+            if required_component in self._components or any(
+                self.sys_info.get(key) is not None for key in mod.SYSINFO_LOOKUP_KEYS
             ):
                 _LOGGER.debug(
                     "Device %s, found required %s, adding %s to modules.",
@@ -433,19 +442,6 @@ class SmartDevice(Device):
                 )
             )
 
-        if "overheated" in self._info:
-            self._add_feature(
-                Feature(
-                    self,
-                    id="overheated",
-                    name="Overheated",
-                    attribute_getter=lambda x: x._info["overheated"],
-                    icon="mdi:heat-wave",
-                    type=Feature.Type.BinarySensor,
-                    category=Feature.Category.Info,
-                )
-            )
-
         # We check for the key available, and not for the property truthiness,
         # as the value is falsy when the device is off.
         if "on_time" in self._info:
@@ -500,18 +496,13 @@ class SmartDevice(Device):
     @property
     def model(self) -> str:
         """Returns the device model."""
-        return str(self._info.get("model"))
+        # If update hasn't been called self._device_info can't be used
+        if self._last_update:
+            return self.device_info.short_name
 
-    @property
-    def _model_region(self) -> str:
-        """Return device full model name and region."""
-        if (disco := self._discovery_info) and (
-            disco_model := disco.get("device_model")
-        ):
-            return disco_model
-        # Some devices have the region in the specs element.
-        region = f"({specs})" if (specs := self._info.get("specs")) else ""
-        return f"{self.model}{region}"
+        disco_model = str(self._info.get("device_model"))
+        long_name, _, _ = disco_model.partition("(")
+        return long_name
 
     @property
     def alias(self) -> str | None:
@@ -765,10 +756,11 @@ class SmartDevice(Device):
         if self._device_type is not DeviceType.Unknown:
             return self._device_type
 
-        # Fallback to device_type (from disco info)
-        type_str = self._info.get("type", self._info.get("device_type"))
-
-        if not type_str:  # no update or discovery info
+        if (
+            not (type_str := self._info.get("type", self._info.get("device_type")))
+            or not self._components
+        ):
+            # no update or discovery info
             return self._device_type
 
         self._device_type = self._get_device_type_from_components(
@@ -810,7 +802,7 @@ class SmartDevice(Device):
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get model information for a device."""
         di = info["get_device_info"]
         components = [comp["id"] for comp in info["component_nego"]["component_list"]]
@@ -839,7 +831,7 @@ class SmartDevice(Device):
         # Brand inferred from SMART.KASAPLUG/SMART.TAPOPLUG etc.
         brand = devicetype[:4].lower()
 
-        return _DeviceInfo(
+        return DeviceInfo(
             short_name=short_name,
             long_name=long_name,
             brand=brand,

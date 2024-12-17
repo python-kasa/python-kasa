@@ -13,11 +13,13 @@
 
 ## Device
 
+% N.B. Credentials clashes with autodoc
 
 ```{eval-rst}
 .. autoclass:: Device
     :members:
     :undoc-members:
+    :exclude-members: Credentials
 ```
 
 
@@ -28,7 +30,6 @@
 .. autoclass:: Credentials
     :members:
     :undoc-members:
-    :noindex:
 ```
 
 
@@ -61,15 +62,11 @@
 
 ```{eval-rst}
 .. autoclass:: Module
-    :noindex:
     :members:
-    :inherited-members:
-    :undoc-members:
 ```
 
 ```{eval-rst}
 .. autoclass:: Feature
-    :noindex:
     :members:
     :inherited-members:
     :undoc-members:
@@ -77,7 +74,6 @@
 
 ```{eval-rst}
 .. automodule:: kasa.interfaces
-    :noindex:
     :members:
     :inherited-members:
     :undoc-members:
@@ -85,63 +81,28 @@
 
 ## Protocols and transports
 
+
 ```{eval-rst}
-.. autoclass:: kasa.protocols.BaseProtocol
+.. automodule:: kasa.protocols
     :members:
-    :inherited-members:
+    :imported-members:
     :undoc-members:
+    :exclude-members: SmartErrorCode
+    :no-index:
 ```
 
 ```{eval-rst}
-.. autoclass:: kasa.protocols.IotProtocol
+.. automodule:: kasa.transports
     :members:
-    :inherited-members:
+    :imported-members:
     :undoc-members:
+    :no-index:
 ```
 
-```{eval-rst}
-.. autoclass:: kasa.protocols.SmartProtocol
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
-
-```{eval-rst}
-.. autoclass:: kasa.transports.BaseTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
-
-```{eval-rst}
-.. autoclass:: kasa.transports.XorTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
-
-```{eval-rst}
-.. autoclass:: kasa.transports.KlapTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
-
-```{eval-rst}
-.. autoclass:: kasa.transports.KlapTransportV2
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
-
-```{eval-rst}
-.. autoclass:: kasa.transports.AesTransport
-    :members:
-    :inherited-members:
-    :undoc-members:
-```
 
 ## Errors and exceptions
+
+
 
 ```{eval-rst}
 .. autoclass:: kasa.exceptions.KasaException
@@ -171,3 +132,4 @@
 .. autoclass:: kasa.exceptions.TimeoutError
     :members:
     :undoc-members:
+```

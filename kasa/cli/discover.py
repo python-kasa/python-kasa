@@ -14,8 +14,17 @@ from kasa import (
     Discover,
     UnsupportedDeviceError,
 )
-from kasa.discover import ConnectAttempt, DiscoveryResult
+from kasa.discover import (
+    NEW_DISCOVERY_REDACTORS,
+    ConnectAttempt,
+    DiscoveredRaw,
+    DiscoveryResult,
+)
+from kasa.iot.iotdevice import _extract_sys_info
+from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
+from kasa.protocols.protocol import redact_data
 
+from ..json import dumps as json_dumps
 from .common import echo, error
 
 
@@ -63,7 +72,9 @@ async def detail(ctx):
                 await ctx.parent.invoke(state)
             echo()
 
-    discovered = await _discover(ctx, print_discovered, print_unsupported)
+    discovered = await _discover(
+        ctx, print_discovered=print_discovered, print_unsupported=print_unsupported
+    )
     if ctx.parent.parent.params["host"]:
         return discovered
 
@@ -74,6 +85,33 @@ async def detail(ctx):
         echo(f"Found {len(auth_failed)} devices that failed to authenticate")
 
     return discovered
+
+
+@discover.command()
+@click.option(
+    "--redact/--no-redact",
+    default=False,
+    is_flag=True,
+    type=bool,
+    help="Set flag to redact sensitive data from raw output.",
+)
+@click.pass_context
+async def raw(ctx, redact: bool):
+    """Return raw discovery data returned from devices."""
+
+    def print_raw(discovered: DiscoveredRaw):
+        if redact:
+            redactors = (
+                NEW_DISCOVERY_REDACTORS
+                if discovered["meta"]["port"] == Discover.DISCOVERY_PORT_2
+                else IOT_REDACTORS
+            )
+            discovered["discovery_response"] = redact_data(
+                discovered["discovery_response"], redactors
+            )
+        echo(json_dumps(discovered, indent=True))
+
+    return await _discover(ctx, print_raw=print_raw, do_echo=False)
 
 
 @discover.command()
@@ -105,10 +143,17 @@ async def list(ctx):
         f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
         f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
     )
-    return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
+    return await _discover(
+        ctx,
+        print_discovered=print_discovered,
+        print_unsupported=print_unsupported,
+        do_echo=False,
+    )
 
 
-async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
+async def _discover(
+    ctx, *, print_discovered=None, print_unsupported=None, print_raw=None, do_echo=True
+):
     params = ctx.parent.parent.params
     target = params["target"]
     username = params["username"]
@@ -129,6 +174,7 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
             timeout=timeout,
             discovery_timeout=discovery_timeout,
             on_unsupported=print_unsupported,
+            on_discovered_raw=print_raw,
         )
     if do_echo:
         echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
@@ -140,6 +186,7 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
         port=port,
         timeout=timeout,
         credentials=credentials,
+        on_discovered_raw=print_raw,
     )
 
     for device in discovered_devices.values():
@@ -205,8 +252,8 @@ def _echo_discovery_info(discovery_info) -> None:
     if discovery_info is None:
         return
 
-    if "system" in discovery_info and "get_sysinfo" in discovery_info["system"]:
-        _echo_dictionary(discovery_info["system"]["get_sysinfo"])
+    if sysinfo := _extract_sys_info(discovery_info):
+        _echo_dictionary(sysinfo)
         return
 
     try:

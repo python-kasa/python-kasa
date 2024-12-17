@@ -5,6 +5,9 @@ The following devices have been tested and confirmed as working. If your device 
 > [!NOTE]
 > The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
 
+> [!NOTE]
+> Some firmware versions of Tapo Cameras will not authenticate unless you enable "Tapo Lab" > "Third-Party Compatibility" in the native Tapo app.
+> Alternatively, you can factory reset and then prevent the device from accessing the internet.
 
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
@@ -97,6 +100,8 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 - **KP405**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
   - Hardware: 1.0 (US) / Firmware: 1.0.6
+- **KS200**
+  - Hardware: 1.0 (US) / Firmware: 1.0.8
 - **KS200M**
   - Hardware: 1.0 (US) / Firmware: 1.0.10
   - Hardware: 1.0 (US) / Firmware: 1.0.11
@@ -192,6 +197,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
 - **P115**
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
+  - Hardware: 1.0 (US) / Firmware: 1.1.3
 - **P125M**
   - Hardware: 1.0 (US) / Firmware: 1.1.0
 - **P135**
@@ -252,9 +258,13 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Cameras
 
+- **C100**
+  - Hardware: 4.0 / Firmware: 1.3.14
 - **C210**
   - Hardware: 2.0 (EU) / Firmware: 1.4.2
   - Hardware: 2.0 (EU) / Firmware: 1.4.3
+- **C520WS**
+  - Hardware: 1.0 (US) / Firmware: 1.2.8
 - **TC65**
   - Hardware: 1.0 / Firmware: 1.3.9
 

@@ -1,12 +1,12 @@
 {
     "system": {
         "get_sysinfo": {
-            "alias": "TP-LINK_Smart Plug_DC2A",
+            "alias": "#MASKED_NAME#",
             "child_num": 2,
             "children": [
                 {
-                    "alias": "Anc ",
-                    "id": "8006B8E953CC4149E2B13AA27E0D18EF1DCFBF3400",
+                    "alias": "#MASKED_NAME# 1",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
                     },
@@ -14,8 +14,8 @@
                     "state": 1
                 },
                 {
-                    "alias": "Plug 2",
-                    "id": "8006B8E953CC4149E2B13AA27E0D18EF1DCFBF3401",
+                    "alias": "#MASKED_NAME# 2",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
                     },

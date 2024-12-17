@@ -130,6 +130,8 @@ new_discovery = parametrize_discovery(
     "new discovery", data_root_filter="discovery_result"
 )
 
+smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMART"})
+
 
 @pytest.fixture(
     params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
@@ -137,7 +139,8 @@ new_discovery = parametrize_discovery(
 )
 async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
-    fixture_info: FixtureInfo = request.param
+    fi: FixtureInfo = request.param
+    fixture_info = FixtureInfo(fi.name, fi.protocol, copy.deepcopy(fi.data))
     return patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
 
 
@@ -168,8 +171,8 @@ def create_discovery_mock(ip: str, fixture_data: dict):
                 )
 
     if "discovery_result" in fixture_data:
-        discovery_data = {"result": fixture_data["discovery_result"].copy()}
-        discovery_result = fixture_data["discovery_result"]
+        discovery_data = fixture_data["discovery_result"].copy()
+        discovery_result = fixture_data["discovery_result"]["result"]
         device_type = discovery_result["device_type"]
         encrypt_type = discovery_result["mgt_encrypt_schm"].get(
             "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
@@ -303,7 +306,7 @@ def discovery_data(request, mocker):
     mocker.patch("kasa.IotProtocol.query", return_value=fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=fixture_data)
     if "discovery_result" in fixture_data:
-        return {"result": fixture_data["discovery_result"]}
+        return fixture_data["discovery_result"].copy()
     else:
         return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
 

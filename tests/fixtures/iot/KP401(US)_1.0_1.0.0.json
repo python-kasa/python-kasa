@@ -2,7 +2,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Kp401",
+            "alias": "#MASKED_NAME#",
             "dev_name": "Smart Outdoor Plug",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,

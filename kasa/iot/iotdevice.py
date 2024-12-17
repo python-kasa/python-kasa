@@ -22,7 +22,7 @@ from datetime import datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, cast
 from warnings import warn
 
-from ..device import Device, WifiNetwork, _DeviceInfo
+from ..device import Device, DeviceInfo, WifiNetwork
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..exceptions import KasaException
@@ -43,7 +43,7 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         async def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and (
+            if not self._last_update and (
                 self._sys_info is None or f.__name__ not in self._sys_info
             ):
                 raise KasaException("You need to await update() to access the data")
@@ -54,7 +54,7 @@ def requires_update(f: Callable) -> Any:
         @functools.wraps(f)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             self = args[0]
-            if self._last_update is None and (
+            if not self._last_update and (
                 self._sys_info is None or f.__name__ not in self._sys_info
             ):
                 raise KasaException("You need to await update() to access the data")
@@ -68,6 +68,16 @@ def requires_update(f: Callable) -> Any:
 def _parse_features(features: str) -> set[str]:
     """Parse features string."""
     return set(features.split(":"))
+
+
+def _extract_sys_info(info: dict[str, Any]) -> dict[str, Any]:
+    """Return the system info structure."""
+    sysinfo_default = info.get("system", {}).get("get_sysinfo", {})
+    sysinfo_nest = sysinfo_default.get("system", {})
+
+    if len(sysinfo_nest) > len(sysinfo_default) and isinstance(sysinfo_nest, dict):
+        return sysinfo_nest
+    return sysinfo_default
 
 
 class IotDevice(Device):
@@ -102,7 +112,7 @@ class IotDevice(Device):
         >>> dev.alias
         Bedroom Lamp Plug
         >>> dev.model
-        HS110(EU)
+        HS110
         >>> dev.rssi
         -71
         >>> dev.mac
@@ -300,18 +310,18 @@ class IotDevice(Device):
         # If this is the initial update, check only for the sysinfo
         # This is necessary as some devices crash on unexpected modules
         # See #105, #120, #161
-        if self._last_update is None:
+        if not self._last_update:
             _LOGGER.debug("Performing the initial update to obtain sysinfo")
             response = await self.protocol.query(req)
             self._last_update = response
-            self._set_sys_info(response["system"]["get_sysinfo"])
+            self._set_sys_info(_extract_sys_info(response))
 
         if not self._modules:
             await self._initialize_modules()
 
         await self._modular_update(req)
 
-        self._set_sys_info(self._last_update["system"]["get_sysinfo"])
+        self._set_sys_info(_extract_sys_info(self._last_update))
         for module in self._modules.values():
             await module._post_update_hook()
 
@@ -442,7 +452,9 @@ class IotDevice(Device):
             # This allows setting of some info properties directly
             # from partial discovery info that will then be found
             # by the requires_update decorator
-            self._set_sys_info(info)
+            discovery_model = info["device_model"]
+            no_region_model, _, _ = discovery_model.partition("(")
+            self._set_sys_info({**info, "model": no_region_model})
 
     def _set_sys_info(self, sys_info: dict[str, Any]) -> None:
         """Set sys_info."""
@@ -461,18 +473,13 @@ class IotDevice(Device):
         """
         return self._sys_info  # type: ignore
 
-    @property  # type: ignore
-    @requires_update
-    def model(self) -> str:
-        """Return device model."""
-        sys_info = self._sys_info
-        return str(sys_info["model"])
-
     @property
     @requires_update
-    def _model_region(self) -> str:
-        """Return device full model name and region."""
-        return self.model
+    def model(self) -> str:
+        """Returns the device model."""
+        if self._last_update:
+            return self.device_info.short_name
+        return self._sys_info["model"]
 
     @property  # type: ignore
     def alias(self) -> str | None:
@@ -705,10 +712,13 @@ class IotDevice(Device):
     @staticmethod
     def _get_device_type_from_sys_info(info: dict[str, Any]) -> DeviceType:
         """Find SmartDevice subclass for device described by passed data."""
+        if "system" in info.get("system", {}).get("get_sysinfo", {}):
+            return DeviceType.Camera
+
         if "system" not in info or "get_sysinfo" not in info["system"]:
             raise KasaException("No 'system' or 'get_sysinfo' in response")
 
-        sysinfo: dict[str, Any] = info["system"]["get_sysinfo"]
+        sysinfo: dict[str, Any] = _extract_sys_info(info)
         type_: str | None = sysinfo.get("type", sysinfo.get("mic_type"))
         if type_ is None:
             raise KasaException("Unable to find the device type field!")
@@ -728,15 +738,16 @@ class IotDevice(Device):
                 return DeviceType.LightStrip
 
             return DeviceType.Bulb
+
         _LOGGER.warning("Unknown device type %s, falling back to plug", type_)
         return DeviceType.Plug
 
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get model information for a device."""
-        sys_info = info["system"]["get_sysinfo"]
+        sys_info = _extract_sys_info(info)
 
         # Get model and region info
         region = None
@@ -752,7 +763,7 @@ class IotDevice(Device):
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         auth = bool(discovery_info and ("mgt_encrypt_schm" in discovery_info))
 
-        return _DeviceInfo(
+        return DeviceInfo(
             short_name=long_name,
             long_name=long_name,
             brand="kasa",
