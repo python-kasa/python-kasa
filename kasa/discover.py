@@ -850,6 +850,8 @@ class Discover:
             if not (login_version := encrypt_schm.lv) and (
                 et := discovery_result.encrypt_type
             ):
+                # Known encrypt types are ["1","2"] and ["3"]
+                # Reuse the login_version attribute to pass the max to transport
                 login_version = max([int(i) for i in et])
 
             if not encrypt_type:

@@ -179,7 +179,12 @@ def get_device_class_from_family(
 def get_protocol(
     config: DeviceConfig,
 ) -> BaseProtocol | None:
-    """Return the protocol from the connection name."""
+    """Return the protocol from the connection name.
+
+    For cameras and vacuums the device family is a simple mapping to
+    the protocol/transport. For other device types the transport varies
+    based on the discovery information.
+    """
     ctype = config.connection_type
     protocol_name = ctype.device_family.value.split(".")[0]
 
@@ -207,8 +212,8 @@ def get_protocol(
         "IOT.KLAP": (IotProtocol, KlapTransport),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
-        # Still require a lookup for SslAesTransport as H200 has a type of
-        # SMART.TAPOHUB.
+        # H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
+        # https to distuingish from SmartProtocol devices
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
