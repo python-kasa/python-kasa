@@ -134,6 +134,11 @@ class SmartCamDevice(SmartDevice):
             if (
                 mod.REQUIRED_COMPONENT
                 and mod.REQUIRED_COMPONENT not in self._components
+                # Always add Camera module to cameras
+                and (
+                    mod._module_name() != Module.Camera
+                    or self._device_type is not DeviceType.Camera
+                )
             ):
                 continue
             module = mod(self, mod._module_name())
