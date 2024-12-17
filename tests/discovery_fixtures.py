@@ -161,6 +161,17 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         port_override: int | None = None
 
         @property
+        def model(self) -> str:
+            dd = self.discovery_data
+            model_region = (
+                dd["result"]["device_model"]
+                if self.discovery_port == 20002
+                else dd["system"]["get_sysinfo"]["model"]
+            )
+            model, _, _ = model_region.partition("(")
+            return model
+
+        @property
         def _datagram(self) -> bytes:
             if self.default_port == 9999:
                 return XorEncryption.encrypt(json_dumps(self.discovery_data))[4:]
@@ -178,7 +189,10 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
         )
 
-        login_version = discovery_result["mgt_encrypt_schm"].get("lv")
+        if not (login_version := discovery_result["mgt_encrypt_schm"].get("lv")) and (
+            et := discovery_result.get("encrypt_type")
+        ):
+            login_version = max([int(i) for i in et])
         https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
         dm = _DiscoveryMock(
             ip,
