@@ -132,6 +132,10 @@ async def list(ctx):
                 await dev.update()
             except AuthenticationError:
                 echo(f"{infostr} - Authentication failed")
+            except TimeoutError:
+                echo(f"{infostr} - Timed out")
+            except Exception as ex:
+                echo(f"{infostr} - Error: {ex}")
             else:
                 echo(f"{infostr} {dev.alias}")
 
