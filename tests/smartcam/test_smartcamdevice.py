@@ -17,10 +17,20 @@ async def test_state(dev: Device):
     if dev.device_type is DeviceType.Hub:
         pytest.skip("Hubs cannot be switched on and off")
 
-    state = dev.is_on
-    await dev.set_state(not state)
+    if Module.LensMask in dev.modules:
+        state = dev.is_on
+        await dev.set_state(not state)
+        await dev.update()
+        assert dev.is_on is not state
+
+        dev.modules.pop(Module.LensMask)  # type: ignore[attr-defined]
+
+    # Test with no lens mask module. Device is always on.
+    assert dev.is_on is True
+    res = await dev.set_state(False)
+    assert res == {}
     await dev.update()
-    assert dev.is_on is not state
+    assert dev.is_on is True
 
 
 @device_smartcam
