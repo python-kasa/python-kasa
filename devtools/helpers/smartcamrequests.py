@@ -60,4 +60,7 @@ SMARTCAM_REQUESTS: list[dict] = [
     {"get": {"motor": {"name": ["capability"]}}},
     {"get": {"audio_capability": {"name": ["device_speaker", "device_microphone"]}}},
     {"get": {"audio_config": {"name": ["speaker", "microphone"]}}},
+    {"getMatterSetupInfo": {"matter": {}}},
+    {"getConnectStatus": {"onboarding": {"get_connect_status": {}}}},
+    {"scanApList": {"onboarding": {"scan": {}}}},
 ]

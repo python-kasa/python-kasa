@@ -2,6 +2,7 @@
 
 from .iotprotocol import IotProtocol
 from .protocol import BaseProtocol
+from .smartcamprotocol import SmartCamProtocol
 from .smartprotocol import SmartErrorCode, SmartProtocol
 
 __all__ = [
@@ -9,4 +10,5 @@ __all__ = [
     "IotProtocol",
     "SmartErrorCode",
     "SmartProtocol",
+    "SmartCamProtocol",
 ]

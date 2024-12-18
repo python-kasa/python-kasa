@@ -57,12 +57,19 @@ from kasa.smart import SmartChildDevice, SmartDevice
 from kasa.smartcam import SmartCamDevice
 
 Call = namedtuple("Call", "module method")
-FixtureResult = namedtuple("FixtureResult", "filename, folder, data")
+FixtureResult = namedtuple("FixtureResult", "filename, folder, data, protocol_suffix")
 
 SMART_FOLDER = "tests/fixtures/smart/"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child/"
 IOT_FOLDER = "tests/fixtures/iot/"
+
+SMART_PROTOCOL_SUFFIX = "SMART"
+SMARTCAM_SUFFIX = "SMARTCAM"
+SMART_CHILD_SUFFIX = "SMART.CHILD"
+IOT_SUFFIX = "IOT"
+
+NO_GIT_FIXTURE_FOLDER = "kasa-fixtures"
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
 
@@ -140,7 +147,17 @@ async def handle_device(
         ]
 
     for fixture_result in fixture_results:
-        save_filename = Path(basedir) / fixture_result.folder / fixture_result.filename
+        save_folder = Path(basedir) / fixture_result.folder
+        if save_folder.exists():
+            save_filename = save_folder / f"{fixture_result.filename}.json"
+        else:
+            # If being run without git clone
+            save_folder = Path(basedir) / NO_GIT_FIXTURE_FOLDER
+            save_folder.mkdir(exist_ok=True)
+            save_filename = (
+                save_folder
+                / f"{fixture_result.filename}-{fixture_result.protocol_suffix}.json"
+            )
 
         pprint(fixture_result.data)
         if autosave:
@@ -233,6 +250,12 @@ async def handle_device(
     type=bool,
     help="Set flag if the device encryption uses https.",
 )
+@click.option(
+    "--timeout",
+    required=False,
+    default=15,
+    help="Timeout for queries.",
+)
 @click.option("--port", help="Port override", type=int)
 async def cli(
     host,
@@ -250,6 +273,7 @@ async def cli(
     device_family,
     login_version,
     port,
+    timeout,
 ):
     """Generate devinfo files for devices.
 
@@ -280,6 +304,7 @@ async def cli(
                 connection_type=connection_type,
                 port_override=port,
                 credentials=credentials,
+                timeout=timeout,
             )
             device = await Device.connect(config=dc)
             await handle_device(
@@ -301,6 +326,7 @@ async def cli(
                 port_override=port,
                 credentials=credentials,
                 connection_type=ctype,
+                timeout=timeout,
             )
             if protocol := get_protocol(config):
                 await handle_device(basedir, autosave, protocol, batch_size=batch_size)
@@ -315,11 +341,12 @@ async def cli(
                 credentials=credentials,
                 port=port,
                 discovery_timeout=discovery_timeout,
+                timeout=timeout,
                 on_discovered_raw=capture_raw,
             )
             discovery_info = raw_discovery[device.host]
             if decrypted_data := device._discovery_info.get("decrypted_data"):
-                discovery_info["decrypted_data"] = decrypted_data
+                discovery_info["result"]["decrypted_data"] = decrypted_data
             await handle_device(
                 basedir,
                 autosave,
@@ -336,13 +363,14 @@ async def cli(
             target=target,
             credentials=credentials,
             discovery_timeout=discovery_timeout,
+            timeout=timeout,
             on_discovered_raw=capture_raw,
         )
         click.echo(f"Detected {len(devices)} devices")
         for dev in devices.values():
             discovery_info = raw_discovery[dev.host]
             if decrypted_data := dev._discovery_info.get("decrypted_data"):
-                discovery_info["decrypted_data"] = decrypted_data
+                discovery_info["result"]["decrypted_data"] = decrypted_data
 
             await handle_device(
                 basedir,
@@ -448,9 +476,14 @@ async def get_legacy_fixture(
     hw_version = sysinfo["hw_ver"]
     sw_version = sysinfo["sw_ver"]
     sw_version = sw_version.split(" ", maxsplit=1)[0]
-    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    save_filename = f"{model}_{hw_version}_{sw_version}"
     copy_folder = IOT_FOLDER
-    return FixtureResult(filename=save_filename, folder=copy_folder, data=final)
+    return FixtureResult(
+        filename=save_filename,
+        folder=copy_folder,
+        data=final,
+        protocol_suffix=IOT_SUFFIX,
+    )
 
 
 def _echo_error(msg: str):
@@ -819,9 +852,12 @@ def get_smart_child_fixture(response):
     model = model_info.long_name
     if model_info.region is not None:
         model = f"{model}({model_info.region})"
-    save_filename = f"{model}_{hw_version}_{fw_version}.json"
+    save_filename = f"{model}_{hw_version}_{fw_version}"
     return FixtureResult(
-        filename=save_filename, folder=SMART_CHILD_FOLDER, data=response
+        filename=save_filename,
+        folder=SMART_CHILD_FOLDER,
+        data=response,
+        protocol_suffix=SMART_CHILD_SUFFIX,
     )
 
 
@@ -925,6 +961,7 @@ async def get_smart_fixtures(
             and (child_model := response["get_device_info"].get("model"))
             and child_model != parent_model
         ):
+            response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
             fixture_results.append(get_smart_child_fixture(response))
         else:
             cd = final.setdefault("child_devices", {})
@@ -940,13 +977,16 @@ async def get_smart_fixtures(
             child["device_id"] = scrubbed_device_ids[device_id]
 
     # Scrub the device ids in the parent for the smart camera protocol
-    if gc := final.get("getChildDeviceList"):
-        for child in gc["child_device_list"]:
+    if gc := final.get("getChildDeviceComponentList"):
+        for child in gc["child_component_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_device_ids[device_id]
+        for child in final["getChildDeviceList"]["child_device_list"]:
             if device_id := child.get("device_id"):
                 child["device_id"] = scrubbed_device_ids[device_id]
                 continue
-            if device_id := child.get("dev_id"):
-                child["dev_id"] = scrubbed_device_ids[device_id]
+            elif dev_id := child.get("dev_id"):
+                child["dev_id"] = scrubbed_device_ids[dev_id]
                 continue
             _LOGGER.error("Could not find a device for the child device: %s", child)
 
@@ -965,20 +1005,28 @@ async def get_smart_fixtures(
         # smart protocol
         model_info = SmartDevice._get_device_info(final, discovery_result)
         copy_folder = SMART_FOLDER
+        protocol_suffix = SMART_PROTOCOL_SUFFIX
     else:
         # smart camera protocol
         model_info = SmartCamDevice._get_device_info(final, discovery_result)
         copy_folder = SMARTCAM_FOLDER
+        protocol_suffix = SMARTCAM_SUFFIX
     hw_version = model_info.hardware_version
     sw_version = model_info.firmware_version
     model = model_info.long_name
     if model_info.region is not None:
         model = f"{model}({model_info.region})"
 
-    save_filename = f"{model}_{hw_version}_{sw_version}.json"
+    save_filename = f"{model}_{hw_version}_{sw_version}"
 
     fixture_results.insert(
-        0, FixtureResult(filename=save_filename, folder=copy_folder, data=final)
+        0,
+        FixtureResult(
+            filename=save_filename,
+            folder=copy_folder,
+            data=final,
+            protocol_suffix=protocol_suffix,
+        ),
     )
     return fixture_results
 
