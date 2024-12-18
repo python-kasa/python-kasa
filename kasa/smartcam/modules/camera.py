@@ -39,6 +39,7 @@ class Camera(SmartCamModule):
                     self._device,
                     id="state",
                     name="State",
+                    container=self,
                     attribute_getter="is_on",
                     attribute_setter="set_state",
                     type=Feature.Type.Switch,
