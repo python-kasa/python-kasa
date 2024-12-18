@@ -7,7 +7,7 @@
                 "connect_type": "wireless",
                 "device_id": "0000000000000000000000000000000000000000",
                 "http_port": 443,
-                "last_alarm_time": "1734178624",
+                "last_alarm_time": "1734490369",
                 "last_alarm_type": "motion",
                 "owner": "00000000000000000000000000000000",
                 "sd_status": "normal"
@@ -266,15 +266,22 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-12-14 22:43:14",
-                "seconds_from_1970": 1734180194
+                "local_time": "2024-12-18 12:59:13",
+                "seconds_from_1970": 1734490753
+            }
+        }
+    },
+    "getConnectStatus": {
+        "onboarding": {
+            "get_connect_status": {
+                "status": 0
             }
         }
     },
     "getConnectionType": {
         "link_type": "wifi",
         "rssi": "2",
-        "rssiValue": -66,
+        "rssiValue": -63,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -318,6 +325,15 @@
             }
         }
     },
+    "getFirmwareAutoUpgradeConfig": {
+        "auto_upgrade": {
+            "common": {
+                "enabled": "on",
+                "random_range": "120",
+                "time": "03:00"
+            }
+        }
+    },
     "getFirmwareUpdateStatus": {
         "cloud_config": {
             "upgrade_status": {
@@ -329,7 +345,7 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "1734178624",
+                "last_alarm_time": "1734490369",
                 "last_alarm_type": "motion"
             }
         }
@@ -627,7 +643,7 @@
                         "picture_total_space_accurate": "0B",
                         "record_duration": "0",
                         "record_free_duration": "0",
-                        "record_start_time": "1733259662",
+                        "record_start_time": "1733281333",
                         "rw_attr": "rw",
                         "status": "normal",
                         "total_space": "118.8GB",
@@ -950,6 +966,99 @@
                     "wifi_connection_info": "1",
                     "wireless_hotspot": "0"
                 }
+            }
+        }
+    },
+    "scanApList": {
+        "onboarding": {
+            "scan": {
+                "ap_list": [
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 2,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 0,
+                        "bssid": "000000000000",
+                        "encryption": 0,
+                        "rssi": 2,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 0,
+                        "bssid": "000000000000",
+                        "encryption": 0,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 1,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 0,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 5,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 0,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 0,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 0,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 2,
+                        "rssi": 0,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    }
+                ],
+                "wpa3_supported": "false"
             }
         }
     }
