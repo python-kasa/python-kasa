@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Motion(SmartCamModule):
-    """Implementation of lens mask module."""
+    """Implementation of motion detection module."""
 
     REQUIRED_COMPONENT = "detection"
 

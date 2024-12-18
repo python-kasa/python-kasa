@@ -71,6 +71,7 @@ def _legacy_type_to_class(_type: str) -> Any:
         "device": None,
         "feature": None,
         "light": None,
+        "listen": None,
         "wifi": None,
         "time": None,
         "schedule": None,
@@ -252,9 +253,7 @@ async def cli(
     if target != DEFAULT_TARGET and host:
         error("--target is not a valid option for single host discovery")
 
-    logging_config: dict[str, Any] = {
-        "level": logging.DEBUG if debug > 0 else logging.INFO
-    }
+    logging_config: dict[str, Any] = {"level": logging.WARNING}
     try:
         from rich.logging import RichHandler
 
@@ -269,6 +268,7 @@ async def cli(
     # The configuration should be converted to use dictConfig,
     # but this keeps mypy happy for now
     logging.basicConfig(**logging_config)  # type: ignore
+    logging.getLogger("kasa").setLevel(logging.DEBUG if debug > 0 else logging.INFO)
 
     if ctx.invoked_subcommand == "discover":
         return
