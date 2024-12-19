@@ -498,7 +498,7 @@ class Discover:
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
             await protocol.wait_for_discovery_to_complete()
-        except KasaException as ex:
+        except (KasaException, asyncio.CancelledError) as ex:
             for device in protocol.discovered_devices.values():
                 await device.protocol.close()
             raise ex
