@@ -355,7 +355,7 @@ async def test_update_module_query_errors(
             if mod.name == "Energy":
                 emod = cast(Energy, mod)
                 with pytest.raises(KasaException, match="Module update error"):
-                    assert emod.current_consumption is not None
+                    assert emod.status is not None
         else:
             assert mod.disabled is False
             assert mod._error_count == 0
@@ -363,7 +363,7 @@ async def test_update_module_query_errors(
             # Test one of the raise_if_update_error doesn't raise
             if mod.name == "Energy":
                 emod = cast(Energy, mod)
-                assert emod.current_consumption is not None
+                assert emod.status is not None
 
 
 async def test_get_modules():
