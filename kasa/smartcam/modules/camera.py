@@ -39,6 +39,7 @@ class Camera(SmartCamModule):
                     self._device,
                     id="state",
                     name="State",
+                    container=self,
                     attribute_getter="is_on",
                     attribute_setter="set_state",
                     type=Feature.Type.Switch,
@@ -50,7 +51,7 @@ class Camera(SmartCamModule):
     def is_on(self) -> bool:
         """Return the device on state."""
         if lens_mask := self._device.modules.get(Module.LensMask):
-            return lens_mask.state
+            return not lens_mask.enabled
         return True
 
     async def set_state(self, on: bool) -> Annotated[dict, FeatureAttribute()]:
@@ -60,7 +61,7 @@ class Camera(SmartCamModule):
         """
         if lens_mask := self._device.modules.get(Module.LensMask):
             # Turning off enables the privacy mask which is why value is reversed.
-            return await lens_mask.set_state(not on)
+            return await lens_mask.set_enabled(not on)
         return {}
 
     def _get_credentials(self) -> Credentials | None:
