@@ -197,16 +197,27 @@ class SslAesTransport(BaseTransport):
             )
         return self._ssl_context
 
+    async def _get_host_ip(self) -> str:
+        def get_ip() -> str:
+            #  From https://stackoverflow.com/a/28950776
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0)
+            try:
+                # doesn't even have to be reachable
+                s.connect(("10.254.254.254", 1))
+                ip = s.getsockname()[0]
+            except Exception:
+                ip = "127.0.0.1"
+            finally:
+                s.close()
+            return ip
+
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, get_ip)
+
     async def _get_headers(self) -> dict:
         if not self._headers:
-            loop = asyncio.get_event_loop()
-            adrrinfo = await loop.getaddrinfo(
-                socket.gethostname(), 0, type=socket.SOCK_DGRAM, family=socket.AF_INET
-            )
-            # getaddrinfo returns a list of 5 tuples with the following structure:
-            # (family, type, proto, canonname, sockaddr)
-            # where sockaddr is 2 tuple (ip, port).
-            this_ip = adrrinfo[0][4][0]
+            this_ip = await self._get_host_ip()
             self._headers = {
                 **self.COMMON_HEADERS,
                 "Referer": f"https://{this_ip}",
