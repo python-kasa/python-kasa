@@ -6,6 +6,7 @@ from .childdevice import ChildDevice
 from .device import DeviceModule
 from .homekit import HomeKit
 from .led import Led
+from .lensmask import LensMask
 from .matter import Matter
 from .pantilt import PanTilt
 from .time import Time
@@ -20,4 +21,5 @@ __all__ = [
     "Time",
     "HomeKit",
     "Matter",
+    "LensMask",
 ]
