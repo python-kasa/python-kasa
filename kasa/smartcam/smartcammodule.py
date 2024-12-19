@@ -20,6 +20,18 @@ class SmartCamModule(SmartModule):
     """Base class for SMARTCAM modules."""
 
     SmartCamAlarm: Final[ModuleName[modules.Alarm]] = ModuleName("SmartCamAlarm")
+    SmartCamMotionDetection: Final[ModuleName[modules.MotionDetection]] = ModuleName(
+        "MotionDetection"
+    )
+    SmartCamPersonDetection: Final[ModuleName[modules.PersonDetection]] = ModuleName(
+        "PersonDetection"
+    )
+    SmartCamTamperDetection: Final[ModuleName[modules.TamperDetection]] = ModuleName(
+        "TamperDetection"
+    )
+    SmartCamBabyCryDetection: Final[ModuleName[modules.BabyCryDetection]] = ModuleName(
+        "BabyCryDetection"
+    )
 
     #: Module name to be queried
     QUERY_MODULE_NAME: str

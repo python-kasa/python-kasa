@@ -10,8 +10,8 @@ from ..smartcammodule import SmartCamModule
 _LOGGER = logging.getLogger(__name__)
 
 
-class Motion(SmartCamModule):
-    """Implementation of lens mask module."""
+class MotionDetection(SmartCamModule):
+    """Implementation of motion detection module."""
 
     REQUIRED_COMPONENT = "detection"
 
@@ -36,12 +36,12 @@ class Motion(SmartCamModule):
 
     @property
     def enabled(self) -> bool:
-        """Return the lens mask state."""
+        """Return the motion detection enabled state."""
         return self.data["motion_det"]["enabled"] == "on"
 
-    async def set_enabled(self, state: bool) -> dict:
-        """Set the lens mask state."""
-        params = {"enabled": "on" if state else "off"}
+    async def set_enabled(self, enable: bool) -> dict:
+        """Set the motion detection enabled state."""
+        params = {"enabled": "on" if enable else "off"}
         return await self._device._query_setter_helper(
-            "setLensMaskConfig", self.QUERY_MODULE_NAME, "motion_det", params
+            "setDetectionConfig", self.QUERY_MODULE_NAME, "motion_det", params
         )
