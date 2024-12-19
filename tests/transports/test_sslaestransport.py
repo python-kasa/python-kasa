@@ -27,7 +27,8 @@ from kasa.transports.sslaestransport import (
 )
 
 # Transport tests are not designed for real devices
-pytestmark = [pytest.mark.requires_dummy]
+# SslAesTransport use a socket to get it's own ip address
+pytestmark = [pytest.mark.requires_dummy, pytest.mark.enable_socket]
 
 MOCK_ADMIN_USER = get_default_credentials(DEFAULT_CREDENTIALS["TAPOCAMERA"]).username
 MOCK_PWD = "correct_pwd"  # noqa: S105
