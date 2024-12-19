@@ -185,6 +185,7 @@ class SmartCamDevice(SmartDevice):
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
             "getAppComponentList": {"app_component": {"name": "app_component_list"}},
+            "getConnectionType": {"network": {"get_connection_type": {}}},
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
@@ -261,3 +262,8 @@ class SmartCamDevice(SmartDevice):
             "dev_name": self.alias,
             "oemId": self._info.get("oem_id"),
         }
+
+    @property
+    def rssi(self) -> int | None:
+        """Return the device id."""
+        return self.modules[SmartCamModule.SmartCamDeviceModule].rssi

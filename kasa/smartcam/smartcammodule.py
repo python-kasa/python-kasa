@@ -21,6 +21,10 @@ class SmartCamModule(SmartModule):
 
     SmartCamAlarm: Final[ModuleName[modules.Alarm]] = ModuleName("SmartCamAlarm")
 
+    SmartCamDeviceModule: Final[ModuleName[modules.DeviceModule]] = ModuleName(
+        "devicemodule"
+    )
+
     #: Module name to be queried
     QUERY_MODULE_NAME: str
     #: Section name or names to be queried
