@@ -24,8 +24,8 @@ class PersonDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="person_detection_enabled",
-                name="Person detection enabled",
+                id="person_detection",
+                name="Person detection",
                 container=self,
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",

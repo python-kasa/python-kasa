@@ -24,8 +24,8 @@ class MotionDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="motion_detection_enabled",
-                name="Motion detection enabled",
+                id="motion_detection",
+                name="Motion detection",
                 container=self,
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",

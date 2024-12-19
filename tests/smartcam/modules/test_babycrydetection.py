@@ -20,7 +20,7 @@ async def test_babycrydetection(dev: Device):
     babycry = dev.modules.get(SmartCamModule.SmartCamBabyCryDetection)
     assert babycry
 
-    bcde_feat = dev.features.get("baby_cry_detection_enabled")
+    bcde_feat = dev.features.get("baby_cry_detection")
     assert bcde_feat
 
     original_enabled = babycry.enabled

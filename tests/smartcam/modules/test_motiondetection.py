@@ -18,7 +18,7 @@ async def test_motiondetection(dev: Device):
     motion = dev.modules.get(SmartCamModule.SmartCamMotionDetection)
     assert motion
 
-    mde_feat = dev.features.get("motion_detection_enabled")
+    mde_feat = dev.features.get("motion_detection")
     assert mde_feat
 
     original_enabled = motion.enabled

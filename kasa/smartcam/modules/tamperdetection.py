@@ -24,8 +24,8 @@ class TamperDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="tamper_detection_enabled",
-                name="Tamper detection enabled",
+                id="tamper_detection",
+                name="Tamper detection",
                 container=self,
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",

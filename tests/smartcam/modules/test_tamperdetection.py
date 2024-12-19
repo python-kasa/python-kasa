@@ -20,7 +20,7 @@ async def test_tamperdetection(dev: Device):
     tamper = dev.modules.get(SmartCamModule.SmartCamTamperDetection)
     assert tamper
 
-    tde_feat = dev.features.get("tamper_detection_enabled")
+    tde_feat = dev.features.get("tamper_detection")
     assert tde_feat
 
     original_enabled = tamper.enabled

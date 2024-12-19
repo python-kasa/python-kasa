@@ -20,7 +20,7 @@ async def test_persondetection(dev: Device):
     person = dev.modules.get(SmartCamModule.SmartCamPersonDetection)
     assert person
 
-    pde_feat = dev.features.get("person_detection_enabled")
+    pde_feat = dev.features.get("person_detection")
     assert pde_feat
 
     original_enabled = person.enabled

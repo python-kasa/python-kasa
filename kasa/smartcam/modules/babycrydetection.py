@@ -24,8 +24,8 @@ class BabyCryDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="baby_cry_detection_enabled",
-                name="Baby cry detection enabled",
+                id="baby_cry_detection",
+                name="Baby cry detection",
                 container=self,
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",
