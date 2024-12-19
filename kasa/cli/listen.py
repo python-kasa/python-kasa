@@ -10,6 +10,7 @@ from kasa import (
     Credentials,
     Device,
 )
+from kasa.eventtype import EventType
 
 from .common import echo, error, pass_dev_or_child
 
@@ -35,8 +36,38 @@ async def aioinput(string: str):
     envvar="KASA_CAMERA_PASSWORD",
     help="Camera account password to use to authenticate to device.",
 )
+@click.option(
+    "--listen-port",
+    default=None,
+    required=False,
+    envvar="KASA_LISTEN_PORT",
+    help="Port to listen on for onvif notifications.",
+)
+@click.option(
+    "--listen-ip",
+    default=None,
+    required=False,
+    envvar="KASA_LISTEN_IP",
+    help="Ip address to listen on for onvif notifications.",
+)
+@click.option(
+    "-et",
+    "--event-types",
+    default=None,
+    required=False,
+    multiple=True,
+    type=click.Choice([et for et in EventType], case_sensitive=False),
+    help="Event types to listen to.",
+)
 @pass_dev_or_child
-async def listen(dev: Device, cam_username: str, cam_password: str) -> None:
+async def listen(
+    dev: Device,
+    cam_username: str,
+    cam_password: str,
+    listen_port: int | None,
+    listen_ip: str | None,
+    event_types: list[EventType] | None,
+) -> None:
     """Commands to control light settings."""
     try:
         import onvif  # type: ignore[import-untyped] # noqa: F401
@@ -53,7 +84,13 @@ async def listen(dev: Device, cam_username: str, cam_password: str) -> None:
         echo(f"Device {dev.host} received event {event}")
 
     creds = Credentials(cam_username, cam_password)
-    await listen.listen(on_event, creds)
+    await listen.listen(
+        on_event,
+        creds,
+        listen_ip=listen_ip,
+        listen_port=listen_port,
+        event_types=event_types,
+    )
 
     await aioinput("Listening, press enter to cancel\n")
 

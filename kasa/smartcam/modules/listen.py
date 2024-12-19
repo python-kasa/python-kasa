@@ -6,9 +6,10 @@ import asyncio
 import logging
 import os
 import socket
-from collections.abc import Callable
+import sys
+import uuid
+from collections.abc import Callable, Iterable
 from datetime import timedelta
-from enum import StrEnum, auto
 from subprocess import check_output
 
 import onvif  # type: ignore[import-untyped]
@@ -16,18 +17,12 @@ from aiohttp import web
 from onvif.managers import NotificationManager  # type: ignore[import-untyped]
 
 from ...credentials import Credentials
+from ...eventtype import EventType
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
 
-
-class EventType(StrEnum):
-    """Listen event types."""
-
-    MOTION_DETECTED = auto()
-    PERSON_DETECTED = auto()
-    TAMPER_DETECTED = auto()
-    BABY_CRY_DETECTED = auto()
+DEFAULT_LISTEN_PORT = 28002
 
 
 TOPIC_EVENT_TYPE = {
@@ -42,10 +37,11 @@ class Listen(SmartCamModule):
 
     manager: NotificationManager
     callback: Callable[[EventType], None]
-    topics: set[EventType] | None
+    event_types: Iterable[EventType] | None
     listening = False
     site: web.TCPSite
     runner: web.AppRunner
+    instance_id: str
 
     async def _invoke_callback(self, event: EventType) -> None:
         self.callback(event)
@@ -55,7 +51,7 @@ class Listen(SmartCamModule):
         result = self.manager.process(content)
         for msg in result.NotificationMessage:
             if (event := TOPIC_EVENT_TYPE.get(msg.Topic._value_1)) and (
-                not self.topics or event in self.topics
+                not self.event_types or event in self.event_types
             ):
                 asyncio.create_task(self._invoke_callback(event))
         return web.Response()
@@ -65,15 +61,21 @@ class Listen(SmartCamModule):
         callback: Callable[[EventType], None],
         camera_credentials: Credentials,
         *,
-        topics: set[EventType] | None = None,
+        event_types: Iterable[EventType] | None = None,
         listen_ip: str | None = None,
+        listen_port: int | None = None,
     ) -> None:
         """Start listening for events."""
         self.callback = callback
-        self.topics = topics
+        self.event_types = event_types
+        self.instance_id = str(uuid.uuid4())
+
+        if listen_port is None:
+            listen_port = DEFAULT_LISTEN_PORT
 
         def subscription_lost() -> None:
-            pass
+            _LOGGER.debug("Notification subscription lost for %s", self._device.host)
+            asyncio.create_task(self.stop())
 
         wsdl = f"{os.path.dirname(onvif.__file__)}/wsdl/"
 
@@ -86,7 +88,7 @@ class Listen(SmartCamModule):
         )
         await mycam.update_xaddrs()
 
-        address = await self._start_server(listen_ip)
+        address = await self._start_server(listen_ip, listen_port)
 
         self.manager = await mycam.create_notification_manager(
             address=address,
@@ -100,40 +102,53 @@ class Listen(SmartCamModule):
     async def stop(self) -> None:
         """Stop the listener."""
         if not self.listening:
+            _LOGGER.debug("Listener for %s already stopped", self._device.host)
             return
+
+        _LOGGER.debug("Stopping listener for %s", self._device.host)
         self.listening = False
         await self.site.stop()
         await self.runner.shutdown()
 
-    async def _get_host_port(self, listen_ip: str | None) -> tuple[str, int]:
-        def _create_socket(listen_ip: str | None) -> tuple[str, int]:
-            if not listen_ip:
+    async def _get_host_ip(self) -> str:
+        def _get_host() -> str:
+            if sys.platform == "win32":
+                return socket.gethostbyname(socket.gethostname())
+            else:
                 res = check_output(["hostname", "-I"])  # noqa: S603, S607
                 listen_ip, _, _ = res.decode().partition(" ")
-
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.bind((listen_ip, 0))
-            port = sock.getsockname()[1]
-            sock.close()
-            return listen_ip, port
+                return listen_ip
 
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, _create_socket, listen_ip)
+        return await loop.run_in_executor(None, _get_host)
 
-    async def _start_server(self, listen_ip: str | None) -> str:
+    async def _start_server(self, listen_ip: str | None, listen_port: int) -> str:
         app = web.Application()
-        app.add_routes([web.post("/", self._handle_event)])
+        app.add_routes(
+            [web.post(f"/{self._device.host}/{self.instance_id}/", self._handle_event)]
+        )
 
         self.runner = web.AppRunner(app)
         await self.runner.setup()
 
-        listen_ip, port = await self._get_host_port(listen_ip)
+        if not listen_ip:
+            listen_ip = await self._get_host_ip()
 
-        self.site = web.TCPSite(self.runner, listen_ip, port)
-        await self.site.start()
+        self.site = web.TCPSite(self.runner, listen_ip, listen_port)
+        try:
+            await self.site.start()
+        except Exception:
+            _LOGGER.exception(
+                "Error trying to start listener for %s: ", self._device.host
+            )
 
         _LOGGER.debug(
-            "Listen handler for %s running on %s:%s", self._device.host, listen_ip, port
+            "Listen handler for %s running on %s:%s",
+            self._device.host,
+            listen_ip,
+            listen_port,
         )
 
-        return f"http://{listen_ip}:{port}"
+        return (
+            f"http://{listen_ip}:{listen_port}/{self._device.host}/{self.instance_id}/"
+        )
