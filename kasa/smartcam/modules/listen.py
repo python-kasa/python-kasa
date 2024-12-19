@@ -41,6 +41,16 @@ class Listen(SmartCamModule):
     site: web.TCPSite
     runner: web.AppRunner
     instance_id: str
+    path: str
+    _listening_address: str | None = None
+
+    @property
+    def listening_address(self) -> str | None:
+        """Address the listener is receiving onvif notifications on.
+
+        Or None if not listening.
+        """
+        return self._listening_address
 
     async def _invoke_callback(self, event: EventType) -> None:
         self.callback(event)
@@ -49,8 +59,15 @@ class Listen(SmartCamModule):
         content = await request.read()
         result = self.manager.process(content)
         for msg in result.NotificationMessage:
+            _LOGGER.debug(
+                "Received notification message for %s: %s",
+                self._device.host,
+                msg,
+            )
             if (event := TOPIC_EVENT_TYPE.get(msg.Topic._value_1)) and (
-                not self.event_types or event in self.event_types
+                (not self.event_types or event in self.event_types)
+                and (simple_items := msg.Message._value_1.Data.SimpleItem)
+                and simple_items[0].Value == "true"
             ):
                 asyncio.create_task(self._invoke_callback(event))
         return web.Response()
@@ -68,6 +85,7 @@ class Listen(SmartCamModule):
         self.callback = callback
         self.event_types = event_types
         self.instance_id = str(uuid.uuid4())
+        self.path = f"/{self._device.host}/{self.instance_id}/"
 
         if listen_port is None:
             listen_port = DEFAULT_LISTEN_PORT
@@ -87,14 +105,15 @@ class Listen(SmartCamModule):
         )
         await mycam.update_xaddrs()
 
-        address = await self._start_server(listen_ip, listen_port)
+        host_port = await self._start_server(listen_ip, listen_port)
 
         self.manager = await mycam.create_notification_manager(
-            address=address,
+            address=host_port + self.path,
             interval=timedelta(minutes=10),
             subscription_lost_callback=subscription_lost,
         )
 
+        self._listening_address = host_port
         self.listening = True
         _LOGGER.debug("Listener started for %s", self._device.host)
 
@@ -106,6 +125,7 @@ class Listen(SmartCamModule):
 
         _LOGGER.debug("Stopping listener for %s", self._device.host)
         self.listening = False
+        self._listening_address = None
         await self.site.stop()
         await self.runner.shutdown()
 
@@ -127,9 +147,7 @@ class Listen(SmartCamModule):
 
     async def _start_server(self, listen_ip: str | None, listen_port: int) -> str:
         app = web.Application()
-        app.add_routes(
-            [web.post(f"/{self._device.host}/{self.instance_id}/", self._handle_event)]
-        )
+        app.add_routes([web.post(self.path, self._handle_event)])
 
         self.runner = web.AppRunner(app)
         await self.runner.setup()
@@ -159,6 +177,4 @@ class Listen(SmartCamModule):
             listen_port,
         )
 
-        return (
-            f"http://{listen_ip}:{listen_port}/{self._device.host}/{self.instance_id}/"
-        )
+        return f"http://{listen_ip}:{listen_port}"
