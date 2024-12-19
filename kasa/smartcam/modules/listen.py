@@ -6,11 +6,9 @@ import asyncio
 import logging
 import os
 import socket
-import sys
 import uuid
 from collections.abc import Callable, Iterable
 from datetime import timedelta
-from subprocess import check_output
 
 import onvif  # type: ignore[import-untyped]
 from aiohttp import web
@@ -18,6 +16,7 @@ from onvif.managers import NotificationManager  # type: ignore[import-untyped]
 
 from ...credentials import Credentials
 from ...eventtype import EventType
+from ...exceptions import KasaException
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -111,16 +110,20 @@ class Listen(SmartCamModule):
         await self.runner.shutdown()
 
     async def _get_host_ip(self) -> str:
-        def _get_host() -> str:
-            if sys.platform == "win32":
-                return socket.gethostbyname(socket.gethostname())
-            else:
-                res = check_output(["hostname", "-I"])  # noqa: S603, S607
-                listen_ip, _, _ = res.decode().partition(" ")
-                return listen_ip
+        def get_ip() -> str:
+            #  From https://stackoverflow.com/a/28950776
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0)
+            try:
+                # doesn't even have to be reachable
+                s.connect(("10.254.254.254", 1))
+                ip = s.getsockname()[0]
+            finally:
+                s.close()
+            return ip
 
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, _get_host)
+        return await loop.run_in_executor(None, get_ip)
 
     async def _start_server(self, listen_ip: str | None, listen_port: int) -> str:
         app = web.Application()
@@ -132,7 +135,14 @@ class Listen(SmartCamModule):
         await self.runner.setup()
 
         if not listen_ip:
-            listen_ip = await self._get_host_ip()
+            try:
+                listen_ip = await self._get_host_ip()
+            except Exception as ex:
+                raise KasaException(
+                    "Unable to determine listen ip starting "
+                    f"listener for {self._device.host}",
+                    ex,
+                ) from ex
 
         self.site = web.TCPSite(self.runner, listen_ip, listen_port)
         try:
