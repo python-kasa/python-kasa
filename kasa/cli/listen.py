@@ -1,7 +1,7 @@
-"""Module for cli light control commands."""
+"""Module for cli listen commands."""
 
 import asyncio
-import sys
+from contextlib import suppress
 from typing import cast
 
 import asyncclick as click
@@ -15,12 +15,12 @@ from kasa.eventtype import EventType
 from .common import echo, error, pass_dev_or_child
 
 
-async def aioinput(string: str):
+async def wait_on_keyboard_interrupt(msg: str):
     """Non loop blocking get input."""
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, lambda s=string: sys.stdout.write(s + " "))  # type: ignore[misc]
+    echo(msg + ", press Ctrl-C to cancel\n")
 
-    return await loop.run_in_executor(None, sys.stdin.readline)
+    with suppress(asyncio.CancelledError):
+        await asyncio.Event().wait()
 
 
 @click.command()
@@ -68,15 +68,15 @@ async def listen(
     listen_ip: str | None,
     event_types: list[EventType] | None,
 ) -> None:
-    """Commands to control light settings."""
+    """Listen for events like motion, triggers or alarms."""
     try:
         import onvif  # type: ignore[import-untyped] # noqa: F401
     except ImportError:
-        error("python-kasa must be installed with [onvif] extra for listen.")
+        error("python-kasa must be installed with onvif extra for listen.")
 
-    from kasa.smartcam.modules.listen import EventType, Listen
+    from kasa.smartcam.modules.onviflisten import OnvifListen
 
-    listen: Listen = cast(Listen, dev.modules.get(Listen._module_name()))
+    listen: OnvifListen = cast(OnvifListen, dev.modules.get(OnvifListen._module_name()))
     if not listen:
         error(f"Device {dev.host} does not support listening for events.")
 
@@ -92,7 +92,9 @@ async def listen(
         event_types=event_types,
     )
 
-    await aioinput("Listening, press enter to cancel\n")
+    msg = f"Listening for events on {listen.listening_address}"
 
-    echo("Stopping listener")
+    await wait_on_keyboard_interrupt(msg)
+
+    echo("\nStopping listener")
     await listen.stop()

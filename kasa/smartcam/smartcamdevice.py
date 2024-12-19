@@ -133,9 +133,11 @@ class SmartCamDevice(SmartDevice):
             import onvif  # type: ignore[import-untyped] # noqa: F401
         except ImportError:
             return
-        from .modules.listen import Listen
+        from .modules.onviflisten import OnvifListen
 
-        self._modules[Listen._module_name()] = Listen(self, Listen._module_name())
+        self._modules[OnvifListen._module_name()] = OnvifListen(
+            self, OnvifListen._module_name()
+        )
 
     async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""

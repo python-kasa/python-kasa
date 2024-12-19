@@ -20,6 +20,8 @@ from ...exceptions import KasaException
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
+logging.getLogger("aiohttp").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 DEFAULT_LISTEN_PORT = 28002
 
@@ -31,7 +33,7 @@ TOPIC_EVENT_TYPE = {
 }
 
 
-class Listen(SmartCamModule):
+class OnvifListen(SmartCamModule):
     """Implementation of lens mask module."""
 
     manager: NotificationManager
