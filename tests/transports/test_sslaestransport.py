@@ -15,6 +15,7 @@ from kasa.credentials import DEFAULT_CREDENTIALS, Credentials, get_default_crede
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import (
     AuthenticationError,
+    DeviceError,
     KasaException,
     SmartErrorCode,
 )
@@ -200,6 +201,22 @@ async def test_unencrypted_response(mocker, caplog):
     )
 
 
+async def test_device_blocked_response(mocker):
+    host = "127.0.0.1"
+    mock_ssl_aes_device = MockSslAesDevice(host, device_blocked=True)
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    transport = SslAesTransport(
+        config=DeviceConfig(host, credentials=Credentials(MOCK_USER, MOCK_PWD))
+    )
+    msg = "Device blocked for 1685 seconds"
+
+    with pytest.raises(DeviceError, match=msg):
+        await transport.perform_handshake()
+
+
 async def test_port_override():
     """Test that port override sets the app_url."""
     host = "127.0.0.1"
@@ -235,6 +252,11 @@ class MockSslAesDevice:
         },
     }
 
+    DEVICE_BLOCKED_RESP = {
+        "data": {"code": SmartErrorCode.DEVICE_BLOCKED.value, "sec_left": 1685},
+        "error_code": SmartErrorCode.SESSION_EXPIRED.value,
+    }
+
     class _mock_response:
         def __init__(self, status, request: dict):
             self.status = status
@@ -263,6 +285,7 @@ class MockSslAesDevice:
         send_error_code=0,
         secure_passthrough_error_code=0,
         digest_password_fail=False,
+        device_blocked=False,
     ):
         self.host = host
         self.http_client = HttpClient(DeviceConfig(self.host))
@@ -277,6 +300,7 @@ class MockSslAesDevice:
         self.do_not_encrypt_response = do_not_encrypt_response
         self.want_default_username = want_default_username
         self.digest_password_fail = digest_password_fail
+        self.device_blocked = device_blocked
 
     async def post(self, url: URL, params=None, json=None, data=None, *_, **__):
         if data:
@@ -302,6 +326,9 @@ class MockSslAesDevice:
     async def _return_handshake1_response(self, url: URL, request: dict[str, Any]):
         request_nonce = request["params"].get("cnonce")
         request_username = request["params"].get("username")
+
+        if self.device_blocked:
+            return self._mock_response(self.status_code, self.DEVICE_BLOCKED_RESP)
 
         if (self.want_default_username and request_username != MOCK_ADMIN_USER) or (
             not self.want_default_username and request_username != MOCK_USER
