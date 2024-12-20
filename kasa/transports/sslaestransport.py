@@ -8,6 +8,7 @@ import hashlib
 import logging
 import secrets
 import ssl
+from contextlib import suppress
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, cast
 
@@ -229,6 +230,31 @@ class SslAesTransport(BaseTransport):
             ssl=await self._get_ssl_context(),
         )
 
+        if TYPE_CHECKING:
+            assert self._encryption_session is not None
+
+        # Devices can respond with 500 if another session is created from
+        # the same host. Decryption may not succeed after that
+        if status_code == 500:
+            msg = (
+                f"Device {self._host} replied with status 500 after handshake, "
+                f"response: "
+            )
+            decrypted = None
+            if isinstance(resp_dict, dict) and (
+                response := resp_dict.get("result", {}).get("response")
+            ):
+                with suppress(Exception):
+                    decrypted = self._encryption_session.decrypt(response.encode())
+
+            if decrypted:
+                msg += decrypted
+            else:
+                msg += str(resp_dict)
+
+            _LOGGER.debug(msg)
+            raise _RetryableError(msg)
+
         if status_code != 200:
             raise KasaException(
                 f"{self._host} responded with an unexpected "
@@ -241,7 +267,6 @@ class SslAesTransport(BaseTransport):
 
         if TYPE_CHECKING:
             resp_dict = cast(dict[str, Any], resp_dict)
-            assert self._encryption_session is not None
 
         if "result" in resp_dict and "response" in resp_dict["result"]:
             raw_response: str = resp_dict["result"]["response"]
