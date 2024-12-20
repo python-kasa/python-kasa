@@ -417,7 +417,7 @@ class SslAesTransport(BaseTransport):
                 msg = "Device blocked" + (
                     f" for {sec_left} seconds" if sec_left else ""
                 )
-                raise DeviceError(msg)
+                raise DeviceError(msg, error_code=SmartErrorCode.DEVICE_BLOCKED)
 
             raise AuthenticationError(f"Error trying handshake1: {resp_dict}")
 
