@@ -34,8 +34,8 @@ class Energy(SmartModule, EnergyInterface):
 
     @property
     @raise_if_update_error
-    def current_consumption(self) -> float | None:
-        """Current power in watts."""
+    def power(self) -> float | None:
+        """Current power draw in Watts."""
         if (power := self.energy.get("current_power")) is not None or (
             power := self.data.get("get_emeter_data", {}).get("power_mw")
         ) is not None:
@@ -105,14 +105,14 @@ class Energy(SmartModule, EnergyInterface):
     def current(self) -> float | None:
         """Return the current in A."""
         ma = self.data.get("get_emeter_data", {}).get("current_ma")
-        return ma / 1000 if ma else None
+        return ma / 1000 if ma is not None else None
 
     @property
     @raise_if_update_error
     def voltage(self) -> float | None:
         """Get the current voltage in V."""
         mv = self.data.get("get_emeter_data", {}).get("voltage_mv")
-        return mv / 1000 if mv else None
+        return mv / 1000 if mv is not None else None
 
     async def _deprecated_get_realtime(self) -> EmeterStatus:
         """Retrieve current energy readings."""
