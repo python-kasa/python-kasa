@@ -160,6 +160,19 @@ class SslAesTransport(BaseTransport):
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
         return error_code
 
+    def _get_response_inner_error(self, resp_dict: Any) -> SmartErrorCode | None:
+        error_code_raw = resp_dict.get("data", {}).get("code")
+        if error_code_raw is None:
+            return None
+        try:
+            error_code = SmartErrorCode.from_int(error_code_raw)
+        except ValueError:
+            _LOGGER.warning(
+                "Device %s received unknown error code: %s", self._host, error_code_raw
+            )
+            error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+        return error_code
+
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
         error_code = self._get_response_error(resp_dict)
         if error_code is SmartErrorCode.SUCCESS:
@@ -383,13 +396,29 @@ class SslAesTransport(BaseTransport):
                 error_code = default_error_code
                 resp_dict = default_resp_dict
 
+        # If the default login worked it's ok not to provide credentials but if
+        # it didn't raise auth error here.
         if not self._username:
             raise AuthenticationError(
                 f"Credentials must be supplied to connect to {self._host}"
             )
+
+        # Device responds with INVALID_NONCE and a "nonce" to indicate ready
+        # for secure login. Otherwise error.
         if error_code is not SmartErrorCode.INVALID_NONCE or (
-            resp_dict and "nonce" not in resp_dict["result"].get("data", {})
+            resp_dict and "nonce" not in resp_dict.get("result", {}).get("data", {})
         ):
+            if (
+                resp_dict
+                and self._get_response_inner_error(resp_dict)
+                is SmartErrorCode.DEVICE_BLOCKED
+            ):
+                sec_left = resp_dict.get("data", {}).get("sec_left")
+                msg = "Device blocked" + (
+                    f" for {sec_left} seconds" if sec_left else ""
+                )
+                raise DeviceError(msg, error_code=SmartErrorCode.DEVICE_BLOCKED)
+
             raise AuthenticationError(f"Error trying handshake1: {resp_dict}")
 
         if TYPE_CHECKING:
