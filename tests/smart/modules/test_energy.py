@@ -1,4 +1,5 @@
 import copy
+import logging
 from contextlib import nullcontext as does_not_raise
 from unittest.mock import patch
 
@@ -28,7 +29,12 @@ async def test_supported(dev: SmartDevice):
 
 
 @has_emeter_smart
-async def test_get_energy_usage_error(dev: SmartDevice):
+async def test_get_energy_usage_error(
+    dev: SmartDevice, caplog: pytest.LogCaptureFixture
+):
+    """Test errors on get_energy_usage."""
+    caplog.set_level(logging.DEBUG)
+
     energy_module = dev.modules.get(Module.Energy)
     if not energy_module:
         pytest.skip(f"Energy module not supported for {dev}.")
@@ -69,9 +75,17 @@ async def test_get_energy_usage_error(dev: SmartDevice):
     assert energy_module.consumption_today is None
     assert energy_module.consumption_this_month is None
 
+    msg = (
+        f"Removed key get_energy_usage from response for device {dev.host}"
+        " as it returned error: JSON_DECODE_FAIL_ERROR"
+    )
+    if version > 1:
+        assert msg in caplog.text
+
     # Now test with no get_emeter_data
     # This may not be valid scenario but we have a fallback to get_current_power
     # just in case that should be tested.
+    caplog.clear()
     resp = copy.deepcopy(last_update)
 
     if cp := resp.get("get_current_power"):
@@ -90,3 +104,6 @@ async def test_get_energy_usage_error(dev: SmartDevice):
         assert "get_energy_usage" not in energy_module.data
 
     assert energy_module.current_consumption == expected_current_consumption
+
+    # message should only be logged once
+    assert msg not in caplog.text

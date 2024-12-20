@@ -72,6 +72,7 @@ class SmartModule(Module):
         self._last_update_time: float | None = None
         self._last_update_error: KasaException | None = None
         self._error_count = 0
+        self._logged_remove_keys: list[str] = []
 
     def __init_subclass__(cls, **kwargs) -> None:
         # We only want to register submodules in a modules package so that
@@ -200,7 +201,18 @@ class SmartModule(Module):
                         f"{data_item} for {self.name}",
                         error_code=filtered_data[data_item],
                     )
+
         for key in remove_keys:
+            if key not in self._logged_remove_keys:
+                self._logged_remove_keys.append(key)
+                _LOGGER.debug(
+                    "Removed key %s from response for device %s as it returned "
+                    "error: %s. This message will only be logged once per key.",
+                    key,
+                    self._device.host,
+                    filtered_data[key],
+                )
+
             filtered_data.pop(key)
 
         if len(filtered_data) == 1 and not remove_keys:
