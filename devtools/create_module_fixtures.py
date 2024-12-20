@@ -6,18 +6,20 @@ This script can be used to create fixture files for individual modules.
 import asyncio
 import json
 from pathlib import Path
+from typing import cast
 
 import typer
 
-from kasa import Discover, SmartDevice
+from kasa import Discover
+from kasa.iot import IotDevice
 
 app = typer.Typer()
 
 
-def create_fixtures(dev: SmartDevice, outputdir: Path):
+def create_fixtures(dev: IotDevice, outputdir: Path):
     """Iterate over supported modules and create version-specific fixture files."""
     for name, module in dev.modules.items():
-        module_dir = outputdir / name
+        module_dir = outputdir / str(name)
         if not module_dir.exists():
             module_dir.mkdir(exist_ok=True, parents=True)
 
@@ -43,13 +45,14 @@ def create_module_fixtures(
     """Create module fixtures for given host/network."""
     devs = []
     if host is not None:
-        dev: SmartDevice = asyncio.run(Discover.discover_single(host))
+        dev: IotDevice = cast(IotDevice, asyncio.run(Discover.discover_single(host)))
         devs.append(dev)
     else:
         if network is None:
             network = "255.255.255.255"
         devs = asyncio.run(Discover.discover(target=network)).values()
         for dev in devs:
+            dev = cast(IotDevice, dev)
             asyncio.run(dev.update())
 
     for dev in devs:

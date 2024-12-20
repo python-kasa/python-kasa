@@ -1,0 +1,86 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "err_code": -10008,
+            "err_msg": "Unsupported API call."
+        }
+    },
+    "smartlife.iot.LAS": {
+        "get_current_brt": {
+            "err_code": -10008,
+            "err_msg": "Unsupported API call."
+        }
+    },
+    "smartlife.iot.PIR": {
+        "get_config": {
+            "err_code": -10008,
+            "err_msg": "Unsupported API call."
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": -10008,
+            "err_msg": "Unsupported API call."
+        }
+    },
+    "smartlife.iot.dimmer": {
+        "get_dimmer_parameters": {
+            "err_code": -10008,
+            "err_msg": "Unsupported API call."
+        }
+    },
+    "smartlife.iot.smartbulb.lightingservice": {
+        "get_light_state": {
+            "err_code": -10008,
+            "err_msg": "Unsupported API call."
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "err_code": 0,
+            "system": {
+                "a_type": 2,
+                "alias": "#MASKED_NAME#",
+                "bind_status": false,
+                "c_opt": [
+                    0,
+                    1
+                ],
+                "camera_switch": "on",
+                "dev_name": "Kasa Spot, 24/7 Recording",
+                "deviceId": "0000000000000000000000000000000000000000",
+                "f_list": [
+                    1,
+                    2
+                ],
+                "hwId": "00000000000000000000000000000000",
+                "hw_ver": "4.0",
+                "is_cal": 1,
+                "last_activity_timestamp": 0,
+                "latitude": 0,
+                "led_status": "on",
+                "longitude": 0,
+                "mac": "74:FE:CE:00:00:00",
+                "mic_mac": "74FECE000000",
+                "model": "EC60(US)",
+                "new_feature": [
+                    2,
+                    3,
+                    4,
+                    5,
+                    7,
+                    9
+                ],
+                "oemId": "00000000000000000000000000000000",
+                "resolution": "720P",
+                "rssi": -28,
+                "status": "new",
+                "stream_version": 2,
+                "sw_ver": "2.3.22 Build 20230731 rel.69808",
+                "system_time": 1690827820,
+                "type": "IOT.IPCAMERA",
+                "updating": false
+            }
+        }
+    }
+}

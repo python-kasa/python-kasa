@@ -1,6 +1,7 @@
 """Original implementation of the TP-Link Smart Home protocol."""
+
 import struct
-from typing import Generator
+from collections.abc import Generator
 
 
 class OriginalTPLinkSmartHomeProtocol:

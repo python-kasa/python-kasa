@@ -1,0 +1,54 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "alias": "#MASKED_NAME#",
+            "child_num": 3,
+            "children": [
+                {
+                    "alias": "#MASKED_NAME# 1",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 79701,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME# 2",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 79700,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 3",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_3",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 1484408,
+                    "state": 0
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "latitude_i": 0,
+            "led_off": 1,
+            "longitude_i": 0,
+            "mac": "1C:3B:F3:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP303(UK)",
+            "ntc_state": 0,
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -68,
+            "status": "new",
+            "sw_ver": "1.0.3 Build 191105 Rel.113122",
+            "updating": 0
+        }
+    }
+}

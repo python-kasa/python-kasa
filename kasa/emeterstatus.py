@@ -1,6 +1,8 @@
 """Module for emeter container."""
+
+from __future__ import annotations
+
 import logging
-from typing import Optional
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ class EmeterStatus(dict):
     """
 
     @property
-    def voltage(self) -> Optional[float]:
+    def voltage(self) -> float | None:
         """Return voltage in V."""
         try:
             return self["voltage"]
@@ -24,7 +26,7 @@ class EmeterStatus(dict):
             return None
 
     @property
-    def power(self) -> Optional[float]:
+    def power(self) -> float | None:
         """Return power in W."""
         try:
             return self["power"]
@@ -32,7 +34,7 @@ class EmeterStatus(dict):
             return None
 
     @property
-    def current(self) -> Optional[float]:
+    def current(self) -> float | None:
         """Return current in A."""
         try:
             return self["current"]
@@ -40,20 +42,20 @@ class EmeterStatus(dict):
             return None
 
     @property
-    def total(self) -> Optional[float]:
+    def total(self) -> float | None:
         """Return total in kWh."""
         try:
             return self["total"]
         except ValueError:
             return None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"<EmeterStatus power={self.power} voltage={self.voltage}"
             f" current={self.current} total={self.total}>"
         )
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: str) -> float | None:
         """Return value in wanted units."""
         valid_keys = [
             "voltage_mv",
@@ -79,8 +81,11 @@ class EmeterStatus(dict):
                 return super().__getitem__(item[: item.find("_")]) * 1000
             else:  # downscale
                 for i in super().keys():  # noqa: SIM118
-                    if i.startswith(item):
-                        return self.__getitem__(i) / 1000
+                    if (
+                        i.startswith(item)
+                        and (value := self.__getitem__(i)) is not None
+                    ):
+                        return value / 1000
 
-                _LOGGER.debug(f"Unable to find value for '{item}'")
+                _LOGGER.debug("Unable to find value for '%s'", item)
                 return None

@@ -1,0 +1,155 @@
+{
+    "cnCloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": [
+                {
+                    "fwLocation": 0,
+                    "fwReleaseDate": "2024-06-19",
+                    "fwReleaseLog": "Modifications and Bug Fixes:\n1. Added \"Hold on\" feature, now you can quickly double-click the switch to keep it on without being affected by the Smart Control rules.\n2. Fixed a bug where Motion & Dark rules could still be triggered under bright light conditions.\n3. Fixed some minor bugs.",
+                    "fwReleaseLogUrl": "undefined yet",
+                    "fwTitle": "Hi, a new firmware with bug fixes and performance improvement is available for your KS200M.",
+                    "fwType": 2,
+                    "fwUrl": "http://download.tplinkcloud.com/firmware/KS200M_FCC_1.0.12_Build_240507_Rel.143458_2024-05-07_14.37.42_1718767325443.bin",
+                    "fwVer": "1.0.12 Build 240507 Rel.143458"
+                }
+            ]
+        }
+    },
+    "schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 1,
+            "err_code": 0,
+            "rule_list": [],
+            "version": 2
+        }
+    },
+    "smartlife.iot.LAS": {
+        "get_adc_value": {
+            "err_code": 0,
+            "type": 2,
+            "value": 0
+        },
+        "get_config": {
+            "devs": [
+                {
+                    "dark_index": 0,
+                    "enable": 1,
+                    "hw_id": 0,
+                    "level_array": [
+                        {
+                            "adc": 390,
+                            "name": "cloudy",
+                            "value": 15
+                        },
+                        {
+                            "adc": 300,
+                            "name": "overcast",
+                            "value": 12
+                        },
+                        {
+                            "adc": 222,
+                            "name": "dawn",
+                            "value": 9
+                        },
+                        {
+                            "adc": 222,
+                            "name": "twilight",
+                            "value": 9
+                        },
+                        {
+                            "adc": 111,
+                            "name": "total darkness",
+                            "value": 4
+                        },
+                        {
+                            "adc": 2400,
+                            "name": "custom",
+                            "value": 97
+                        }
+                    ],
+                    "max_adc": 2450,
+                    "min_adc": 0
+                }
+            ],
+            "err_code": 0,
+            "ver": "1.0"
+        },
+        "get_current_brt": {
+            "err_code": 0,
+            "value": 0
+        },
+        "get_dark_status": {
+            "bDark": 1,
+            "err_code": 0
+        }
+    },
+    "smartlife.iot.PIR": {
+        "get_adc_value": {
+            "err_code": 0,
+            "value": 2025
+        },
+        "get_config": {
+            "array": [
+                80,
+                50,
+                20,
+                0
+            ],
+            "cold_time": 15000,
+            "enable": 1,
+            "err_code": 0,
+            "max_adc": 4095,
+            "min_adc": 0,
+            "trigger_index": 2,
+            "version": "1.0"
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Smart Light Switch with PIR",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "54:AF:97:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KS200M(US)",
+            "next_action": {
+                "type": -1
+            },
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -38,
+            "status": "new",
+            "sw_ver": "1.0.10 Build 221019 Rel.194527",
+            "updating": 0
+        }
+    }
+}

@@ -6,6 +6,9 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3"
+  jobs:
+    pre_build:
+      - python -m sphinx -b linkcheck docs/source/ $READTHEDOCS_OUTPUT/linkcheck
 
 python:
   install:

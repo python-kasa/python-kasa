@@ -1,0 +1,536 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "schedule",
+                "ver_code": 2
+            },
+            {
+                "id": "countdown",
+                "ver_code": 2
+            },
+            {
+                "id": "antitheft",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "led",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "default_states",
+                "ver_code": 1
+            },
+            {
+                "id": "auto_off",
+                "ver_code": 2
+            },
+            {
+                "id": "energy_monitoring",
+                "ver_code": 2
+            },
+            {
+                "id": "power_protection",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            },
+            {
+                "id": "current_protection",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "KP125M(US)",
+            "device_type": "SMART.KASAPLUG",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "78-8C-B5-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000"
+        }
+    },
+    "get_antitheft_rules": {
+        "antitheft_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_auto_off_config": {
+        "delay_min": 120,
+        "enable": false
+    },
+    "get_auto_update_info": {
+        "enable": true,
+        "random_range": 120,
+        "time": 180
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_countdown_rules": {
+        "countdown_rule_max_count": 1,
+        "enable": false,
+        "rule_list": []
+    },
+    "get_current_power": {
+        "current_power": 1
+    },
+    "get_device_info": {
+        "auto_off_remain_time": 0,
+        "auto_off_status": "off",
+        "avatar": "egg_boiler",
+        "default_states": {
+            "state": {},
+            "type": "last_states"
+        },
+        "device_id": "0000000000000000000000000000000000000000",
+        "device_on": true,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.2.3 Build 240624 Rel.154806",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "en_US",
+        "latitude": 0,
+        "longitude": 0,
+        "mac": "78-8C-B5-00-00-00",
+        "model": "KP125M",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "on_time": 936394,
+        "overcurrent_status": "normal",
+        "overheat_status": "normal",
+        "power_protection_status": "normal",
+        "region": "America/Denver",
+        "rssi": -50,
+        "signal_level": 2,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": -420,
+        "type": "SMART.KASAPLUG"
+    },
+    "get_device_time": {
+        "region": "America/Denver",
+        "time_diff": -420,
+        "timestamp": 1732069933
+    },
+    "get_device_usage": {
+        "power_usage": {
+            "past30": 971,
+            "past7": 442,
+            "today": 20
+        },
+        "saved_power": {
+            "past30": 14896,
+            "past7": 9370,
+            "today": 1152
+        },
+        "time_usage": {
+            "past30": 15867,
+            "past7": 9812,
+            "today": 1172
+        }
+    },
+    "get_electricity_price_config": {
+        "constant_price": 0,
+        "time_of_use_config": {
+            "summer": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            },
+            "winter": {
+                "midpeak": 0,
+                "offpeak": 0,
+                "onpeak": 0,
+                "period": [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                "weekday_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ],
+                "weekend_config": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1
+                ]
+            }
+        },
+        "type": "constant"
+    },
+    "get_emeter_data": {
+        "current_ma": 33,
+        "energy_wh": 971,
+        "power_mw": 1003,
+        "voltage_mv": 121215
+    },
+    "get_emeter_vgain_igain": {
+        "igain": 10861,
+        "vgain": 118657
+    },
+    "get_energy_usage": {
+        "current_power": 1003,
+        "electricity_charge": [
+            0,
+            0,
+            0
+        ],
+        "local_time": "2024-11-19 19:32:14",
+        "month_energy": 971,
+        "month_runtime": 15867,
+        "today_energy": 20,
+        "today_runtime": 1172
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.2.3 Build 240624 Rel.154806",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_led_info": {
+        "bri_config": {
+            "bri_type": "overall",
+            "overall_bri": 50
+        },
+        "led_rule": "always",
+        "led_status": true,
+        "night_mode": {
+            "end_time": 420,
+            "night_mode_type": "custom",
+            "start_time": 1320
+        }
+    },
+    "get_matter_setup_info": {
+        "setup_code": "00000000000",
+        "setup_payload": "00:000000000000-000000"
+    },
+    "get_max_power": {
+        "max_power": 1542
+    },
+    "get_next_event": {},
+    "get_protection_power": {
+        "enabled": false,
+        "protection_power": 0
+    },
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 0,
+                "key_type": "none",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "bssid": "000000000000",
+                "channel": 0,
+                "cipher_type": 2,
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 12,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "matter",
+                "ver_code": 2
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "KP125M",
+            "device_type": "SMART.KASAPLUG",
+            "is_klap": true
+        }
+    }
+}

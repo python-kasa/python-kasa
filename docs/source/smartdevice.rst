@@ -1,7 +1,7 @@
-.. py:module:: kasa
+.. py:currentmodule:: kasa
 
-Common API
-==========
+Base Device
+===========
 
 .. contents:: Contents
    :local:
@@ -13,7 +13,7 @@ The basic functionalities of all supported devices are accessible using the comm
 
 The property accesses use the data obtained before by awaiting :func:`SmartDevice.update()`.
 The values are cached until the next update call. In practice this means that property accesses do no I/O and are dependent, while I/O producing methods need to be awaited.
-See :ref:`library_design` for more detailed information.
+See :ref:`topics-update-cycle` for more detailed information.
 
 .. note::
     The device instances share the communication socket in background to optimize I/O accesses.
@@ -26,7 +26,7 @@ These methods will return the device response, which can be useful for some use 
 
 Errors are raised as :class:`SmartDeviceException` instances for the library user to handle.
 
-Simple example script showing some functionality for legacy devices:
+Simple example script showing some functionality:
 
 .. code-block:: python
 
@@ -44,31 +44,6 @@ Simple example script showing some functionality for legacy devices:
 
     if __name__ == "__main__":
         asyncio.run(main())
-
-If you are connecting to a newer KASA or TAPO device you can get the device via discovery or
-connect directly with :class:`DeviceConfig`:
-
-.. code-block:: python
-
-    import asyncio
-    from kasa import Discover, Credentials
-
-    async def main():
-        device = await Discover.discover_single(
-            "127.0.0.1",
-            credentials=Credentials("myusername", "mypassword"),
-            discovery_timeout=10
-        )
-
-        config = device.config # DeviceConfig.to_dict() can be used to store for later
-
-        # To connect directly later without discovery
-
-        later_device = await SmartDevice.connect(config=config)
-
-        await later_device.update()
-
-        print(later_device.alias)  # Print out the alias
 
 If you want to perform updates in a loop, you need to make sure that the device accesses are done in the same event loop:
 
@@ -91,22 +66,6 @@ If you want to perform updates in a loop, you need to make sure that the device 
 Refer to device type specific classes for more examples:
 :class:`SmartPlug`, :class:`SmartBulb`, :class:`SmartStrip`,
 :class:`SmartDimmer`, :class:`SmartLightStrip`.
-
-DeviceConfig class
-******************
-
-The :class:`DeviceConfig` class can be used to initialise devices with parameters to allow them to be connected to without using
-discovery.
-This is required for newer KASA and TAPO devices that use different protocols for communication and will not respond
-on port 9999 but instead use different encryption protocols over http port 80.
-Currently there are three known types of encryption for TP-Link devices and two different protocols.
-Devices with automatic firmware updates enabled may update to newer versions of the encryption without separate notice,
-so discovery can be helpful to determine the correct config.
-
-To connect directly pass a :class:`DeviceConfig` object to :meth:`SmartDevice.connect()`.
-
-A :class:`DeviceConfig` can be constucted manually if you know the :attr:`DeviceConfig.connection_type` values for the device or
-alternatively the config can be retrieved from :attr:`SmartDevice.config` post discovery and then re-used.
 
 Energy Consumption and Usage Statistics
 ***************************************
@@ -142,27 +101,5 @@ API documentation
 *****************
 
 .. autoclass:: SmartDevice
-    :members:
-    :undoc-members:
-
-.. autoclass:: DeviceConfig
-    :members:
-    :inherited-members:
-    :undoc-members:
-    :member-order: bysource
-
-.. autoclass:: Credentials
-    :members:
-    :undoc-members:
-
-.. autoclass:: SmartDeviceException
-    :members:
-    :undoc-members:
-
-.. autoclass:: AuthenticationException
-    :members:
-    :undoc-members:
-
-.. autoclass:: UnsupportedDeviceException
     :members:
     :undoc-members:

@@ -51,6 +51,26 @@ You can provision your device without any extra apps by using the ``kasa wifi`` 
 
 As with all other commands, you can also pass ``--help`` to both ``join`` and ``scan`` commands to see the available options.
 
+.. note::
+
+    For devices requiring authentication, the device-stored credentials can be changed using
+    the ``update-credentials`` commands, for example, to match with other cloud-connected devices.
+    However, note that communications with devices provisioned using this method will stop working
+    when connected to the cloud.
+
+.. note::
+
+    Some commands do not work if the device time is out-of-sync.
+    You can use ``kasa time sync`` command to set the device time from the system where the command is run.
+
+.. warning::
+
+    At least some devices (e.g., Tapo lights L530 and L900) are known to have a watchdog that reboots them every 10 minutes if they are unable to connect to the cloud.
+    Although the communications are done locally, this will make these devices unavailable for a minute every time the device restarts.
+    This does not affect other devices to our current knowledge, but you have been warned.
+
+
+
 ``kasa --help``
 ***************
 

@@ -1,0 +1,28 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "schedule",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Wi-Fi Smart Plug",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "fwId": "00000000000000000000000000000000",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude": 0,
+            "led_off": 0,
+            "longitude": 0,
+            "mac": "70:4F:57:00:00:00",
+            "model": "HS100(UK)",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -59,
+            "sw_ver": "1.2.6 Build 200727 Rel.120236",
+            "type": "IOT.SMARTPLUGSWITCH",
+            "updating": 0
+        }
+    }
+}

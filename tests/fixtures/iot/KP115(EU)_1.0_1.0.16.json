@@ -1,0 +1,42 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 296,
+            "err_code": 0,
+            "power_mw": 63499,
+            "total_wh": 12068,
+            "voltage_mv": 230577
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Smart Wi-Fi Plug Mini",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 1,
+            "longitude_i": 0,
+            "mac": "C0:06:C3:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP115(EU)",
+            "next_action": {
+                "type": -1
+            },
+            "ntc_state": 0,
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 2078998,
+            "relay_state": 1,
+            "rssi": -49,
+            "status": "new",
+            "sw_ver": "1.0.16 Build 210205 Rel.163735",
+            "updating": 0
+        }
+    }
+}

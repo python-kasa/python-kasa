@@ -1,0 +1,33 @@
+{
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Smart Wi-Fi Plug",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "D8:47:32:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP105(UK)",
+            "next_action": {
+                "type": -1
+            },
+            "ntc_state": 0,
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 0,
+            "relay_state": 0,
+            "rssi": -67,
+            "status": "configured",
+            "sw_ver": "1.0.7 Build 210506 Rel.153510",
+            "updating": 0
+        }
+    }
+}

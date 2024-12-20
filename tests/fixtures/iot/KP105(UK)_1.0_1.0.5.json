@@ -1,0 +1,111 @@
+{
+    "cnCloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 0,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": -7,
+            "err_msg": "unknown error"
+        }
+    },
+    "schedule": {
+        "get_next_action": {
+            "action": 1,
+            "err_code": 0,
+            "id": "0794F4729DB271627D1CF35A9A854030",
+            "schd_time": 68927,
+            "type": 2
+        },
+        "get_rules": {
+            "enable": 1,
+            "err_code": 0,
+            "rule_list": [
+                {
+                    "eact": -1,
+                    "enable": 1,
+                    "id": "8AA75A50A8440B17941D192BD9E01FFA",
+                    "name": "name",
+                    "repeat": 1,
+                    "sact": 1,
+                    "smin": 1027,
+                    "soffset": 0,
+                    "stime_opt": 2,
+                    "wday": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                {
+                    "eact": -1,
+                    "enable": 1,
+                    "id": "9F62073CF69D8645173412283AD63A2C",
+                    "name": "name",
+                    "repeat": 1,
+                    "sact": 0,
+                    "smin": 504,
+                    "soffset": 0,
+                    "stime_opt": 1,
+                    "wday": [
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        1
+                    ]
+                }
+            ],
+            "version": 2
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "count_down",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Smart Wi-Fi Plug",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "D8:47:32:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "KP105(UK)",
+            "next_action": {
+                "action": 1,
+                "id": "0794F4729DB271627D1CF35A9A854030",
+                "schd_sec": 68927,
+                "type": 2
+            },
+            "ntc_state": 0,
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 7138,
+            "relay_state": 1,
+            "rssi": -77,
+            "status": "configured",
+            "sw_ver": "1.0.5 Build 191209 Rel.094735",
+            "updating": 0
+        }
+    }
+}

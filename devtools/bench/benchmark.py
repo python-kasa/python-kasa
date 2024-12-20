@@ -5,8 +5,9 @@ import timeit
 
 import orjson
 from kasa_crypt import decrypt, encrypt
-from utils.data import REQUEST, WIRE_RESPONSE
-from utils.original import OriginalTPLinkSmartHomeProtocol
+
+from devtools.bench.utils.data import REQUEST, WIRE_RESPONSE
+from devtools.bench.utils.original import OriginalTPLinkSmartHomeProtocol
 
 
 def original_request_response() -> None:

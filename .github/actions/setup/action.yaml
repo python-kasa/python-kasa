@@ -1,0 +1,49 @@
+---
+name: Setup Environment
+description: Install uv, configure the system python, and the package dependencies
+
+inputs:
+  uv-install-options:
+    default: ""
+  uv-version:
+    default: 0.4.16
+  python-version:
+    required: true
+  cache-pre-commit:
+    default: false
+  cache-version:
+    default: "v0.1"
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+
+    - name: "Setup python"
+      uses: "actions/setup-python@v5"
+      id: setup-python
+      with:
+        python-version: "${{ inputs.python-version }}"
+        allow-prereleases: true
+
+    - name: "Install project"
+      shell: bash
+      run: |
+        uv sync ${{ inputs.uv-install-options }}
+
+    - name: Read pre-commit version
+      if: inputs.cache-pre-commit == 'true'
+      id: pre-commit-version
+      shell: bash
+      run: >-
+        echo "pre-commit-version=$(uv run pre-commit -V | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v4
+      if: inputs.cache-pre-commit == 'true'
+      name: Pre-commit cache
+      with:
+        path: ~/.cache/pre-commit/
+        key: cache-${{ inputs.cache-version }}-${{ runner.os }}-${{ runner.arch }}-pre-commit-${{ steps.pre-commit-version.outputs.pre-commit-version }}-python-${{ inputs.python-version }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}

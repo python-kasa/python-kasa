@@ -1,0 +1,90 @@
+{
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 0,
+            "err_code": 0,
+            "power_mw": 0,
+            "slot_id": 0,
+            "total_wh": 0,
+            "voltage_mv": 121302
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "#MASKED_NAME#",
+            "child_num": 6,
+            "children": [
+                {
+                    "alias": "#MASKED_NAME# 1",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 2",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 3",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_3",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 4",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_4",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 5",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_5",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 6",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_6",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "00:00:00:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS300(US)",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -55,
+            "status": "new",
+            "sw_ver": "1.0.3 Build 201203 Rel.165457",
+            "updating": 0
+        }
+    }
+}
