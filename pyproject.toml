@@ -42,7 +42,6 @@ shell = ["ptpython", "rich"]
 
 [project.scripts]
 kasa = "kasa.cli.__main__:cli"
-dump_devinfo = "devtools.dump_devinfo:cli"
 
 [tool.uv]
 dev-dependencies = [
@@ -82,7 +81,6 @@ include = [
 [tool.hatch.build.targets.wheel]
 include = [
   "/kasa",
-  "/devtools",
 ]
 
 [tool.coverage.run]
