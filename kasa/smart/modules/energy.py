@@ -40,6 +40,7 @@ class Energy(SmartModule, EnergyInterface):
             self._current_consumption = power / 1_000
         # Fallback if get_energy_usage does not provide current_power,
         # which can happen on some newer devices (e.g. P304M).
+        # This may not be valid scenario as it pre-dates trying get_emeter_data
         elif (
             power := self.data.get("get_current_power", {}).get("current_power")
         ) is not None:

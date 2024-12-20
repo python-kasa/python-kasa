@@ -48,7 +48,8 @@ async def test_get_energy_usage_error(dev: SmartDevice):
     assert energy_module.consumption_today is not None
     assert energy_module.consumption_this_month is not None
 
-    resp = copy.deepcopy(dev._last_update)
+    last_update = copy.deepcopy(dev._last_update)
+    resp = copy.deepcopy(last_update)
 
     if ed := resp.get("get_emeter_data"):
         ed["power_mw"] = 2002
@@ -56,6 +57,8 @@ async def test_get_energy_usage_error(dev: SmartDevice):
         cp["current_power"] = 2.002
     resp["get_energy_usage"] = SmartErrorCode.JSON_DECODE_FAIL_ERROR
 
+    # version 1 only has get_energy_usage so module should raise an error if
+    # version 1 and get_energy_usage is in error
     with patch.object(dev.protocol, "query", return_value=resp):
         await dev.update()
 
@@ -65,3 +68,25 @@ async def test_get_energy_usage_error(dev: SmartDevice):
     assert energy_module.current_consumption == expected_current_consumption
     assert energy_module.consumption_today is None
     assert energy_module.consumption_this_month is None
+
+    # Now test with no get_emeter_data
+    # This may not be valid scenario but we have a fallback to get_current_power
+    # just in case that should be tested.
+    resp = copy.deepcopy(last_update)
+
+    if cp := resp.get("get_current_power"):
+        cp["current_power"] = 2.002
+    resp["get_energy_usage"] = SmartErrorCode.JSON_DECODE_FAIL_ERROR
+
+    # Remove get_emeter_data from the response and from the device which will
+    # remember it otherwise.
+    resp.pop("get_emeter_data", None)
+    dev._last_update.pop("get_emeter_data", None)
+
+    with patch.object(dev.protocol, "query", return_value=resp):
+        await dev.update()
+
+    with expected_raise:
+        assert "get_energy_usage" not in energy_module.data
+
+    assert energy_module.current_consumption == expected_current_consumption
