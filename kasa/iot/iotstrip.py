@@ -162,13 +162,15 @@ class IotStrip(IotDevice):
     async def turn_on(self, **kwargs) -> dict:
         """Turn the strip on."""
         for plug in self.children:
-            await plug.turn_on()
+            if plug.is_off:
+                await plug.turn_on()
         return {}
 
     async def turn_off(self, **kwargs) -> dict:
         """Turn the strip off."""
         for plug in self.children:
-            await plug.turn_off()
+            if plug.is_on:
+                await plug.turn_off()
         return {}
 
     @property  # type: ignore
