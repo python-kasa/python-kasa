@@ -240,16 +240,15 @@ class SslAesTransport(BaseTransport):
                 f"Device {self._host} replied with status 500 after handshake, "
                 f"response: "
             )
+            decrypted = None
             if isinstance(resp_dict, dict) and (
                 response := resp_dict.get("result", {}).get("response")
             ):
-                decrypted = None
                 with suppress(Exception):
                     decrypted = self._encryption_session.decrypt(response.encode())
-                if decrypted:
-                    msg += decrypted
-                else:
-                    msg += str(resp_dict)
+
+            if decrypted:
+                msg += decrypted
             else:
                 msg += str(resp_dict)
 
