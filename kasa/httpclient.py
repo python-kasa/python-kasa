@@ -117,6 +117,21 @@ class HttpClient:
                     response_data = await resp.read()
                     if return_json:
                         response_data = json_loads(response_data.decode())
+                else:
+                    response_data = await resp.read()
+                    _LOGGER.debug(
+                        "Device %s received status code %s with response %s",
+                        self._config.host,
+                        resp.status,
+                        str(response_data),
+                    )
+                    if response_data and return_json:
+                        try:
+                            response_data = json_loads(response_data.decode())
+                        except Exception:
+                            _LOGGER.debug(
+                                "Device %s response could not be parsed as json"
+                            )
 
         except (aiohttp.ServerDisconnectedError, aiohttp.ClientOSError) as ex:
             if not self._wait_between_requests:
