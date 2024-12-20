@@ -253,6 +253,6 @@ def CatchAllExceptions(cls):
                 asyncio.run(self.main(*args, **kwargs))
             except KeyboardInterrupt:
                 click.echo(gettext("\nAborted!"), file=sys.stderr)
-                sys.exit(0)
+                sys.exit(1)
 
     return _CommandCls
