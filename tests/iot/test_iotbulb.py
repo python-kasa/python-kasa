@@ -91,7 +91,9 @@ async def test_unknown_temp_range(dev: IotBulb, monkeypatch, caplog):
     monkeypatch.setitem(dev._sys_info, "model", "unknown bulb")
     light = dev.modules.get(Module.Light)
     assert light
-    assert light.valid_temperature_range == (2700, 5000)
+    color_temp_feat = light.get_feature("color_temp")
+    assert color_temp_feat
+    assert color_temp_feat.range == (2700, 5000)
     assert "Unknown color temperature range, fallback to 2700-5000" in caplog.text
 
 

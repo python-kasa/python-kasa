@@ -29,7 +29,7 @@ All devices provide several informational properties:
 >>> dev.alias
 Bedroom Lamp Plug
 >>> dev.model
-HS110(EU)
+HS110
 >>> dev.rssi
 -71
 >>> dev.mac
@@ -151,7 +151,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class _DeviceInfo:
+class DeviceInfo:
     """Device Model Information."""
 
     short_name: str
@@ -208,7 +208,7 @@ class Device(ABC):
         self.protocol: BaseProtocol = protocol or IotProtocol(
             transport=XorTransport(config=config or DeviceConfig(host=host)),
         )
-        self._last_update: Any = None
+        self._last_update: dict[str, Any] = {}
         _LOGGER.debug("Initializing %s of type %s", host, type(self))
         self._device_type = DeviceType.Unknown
         # TODO: typing Any is just as using dict | None would require separate
@@ -334,9 +334,21 @@ class Device(ABC):
         """Returns the device model."""
 
     @property
+    def region(self) -> str | None:
+        """Returns the device region."""
+        return self.device_info.region
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return self._get_device_info(self._last_update, self._discovery_info)
+
+    @staticmethod
     @abstractmethod
-    def _model_region(self) -> str:
-        """Return device full model name and region."""
+    def _get_device_info(
+        info: dict[str, Any], discovery_info: dict[str, Any] | None
+    ) -> DeviceInfo:
+        """Get device info."""
 
     @property
     @abstractmethod

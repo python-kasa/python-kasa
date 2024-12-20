@@ -145,12 +145,21 @@ def filter_fixtures(
     def _component_match(
         fixture_data: FixtureInfo, component_filter: str | ComponentFilter
     ):
-        if (component_nego := fixture_data.data.get("component_nego")) is None:
+        components = {}
+        if component_nego := fixture_data.data.get("component_nego"):
+            components = {
+                component["id"]: component["ver_code"]
+                for component in component_nego["component_list"]
+            }
+        if get_app_component_list := fixture_data.data.get("getAppComponentList"):
+            components = {
+                component["name"]: component["version"]
+                for component in get_app_component_list["app_component"][
+                    "app_component_list"
+                ]
+            }
+        if not components:
             return False
-        components = {
-            component["id"]: component["ver_code"]
-            for component in component_nego["component_list"]
-        }
         if isinstance(component_filter, str):
             return component_filter in components
         else:

@@ -24,7 +24,6 @@ State (state): True
 Signal Level (signal_level): 2
 RSSI (rssi): -52
 SSID (ssid): #MASKED_SSID#
-Overheated (overheated): False
 Reboot (reboot): <Action>
 Brightness (brightness): 100
 Cloud connection (cloud_connection): True
@@ -39,6 +38,7 @@ Light effect (light_effect): Off
 Light preset (light_preset): Not set
 Smooth transition on (smooth_transition_on): 2
 Smooth transition off (smooth_transition_off): 2
+Overheated (overheated): False
 Device time (device_time): 2024-02-23 02:40:15+01:00
 
 To see whether a device supports a feature, check for the existence of it:

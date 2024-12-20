@@ -11,7 +11,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Test plug",
+            "alias": "#MASKED_NAME#",
             "dev_name": "Smart Wi-Fi Plug Mini",
             "deviceId": "0000000000000000000000000000000000000000",
             "err_code": 0,

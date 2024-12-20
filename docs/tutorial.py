@@ -40,7 +40,7 @@ Different groups of functionality are supported by modules which you can access 
 key from :class:`~kasa.Module`.
 
 Modules will only be available on the device if they are supported but some individual features of a module may not be available for your device.
-You can check the availability using ``is_``-prefixed properties like `is_color`.
+You can check the availability using ``has_feature()`` method.
 
 >>> from kasa import Module
 >>> Module.Light in dev.modules
@@ -52,9 +52,9 @@ True
 >>> await dev.update()
 >>> light.brightness
 50
->>> light.is_color
+>>> light.has_feature("hsv")
 True
->>> if light.is_color:
+>>> if light.has_feature("hsv"):
 >>>     print(light.hsv)
 HSV(hue=0, saturation=100, value=50)
 
@@ -91,5 +91,5 @@ False
 True
 >>> for feat in dev.features.values():
 >>>     print(f"{feat.name}: {feat.value}")
-Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nOverheated: False\nReboot: <Action>\nBrightness: 50\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: None\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: None\nCheck latest firmware: <Action>\nLight effect: Party\nLight preset: Light preset 1\nSmooth transition on: 2\nSmooth transition off: 2\nDevice time: 2024-02-23 02:40:15+01:00
+Device ID: 0000000000000000000000000000000000000000\nState: True\nSignal Level: 2\nRSSI: -52\nSSID: #MASKED_SSID#\nReboot: <Action>\nBrightness: 50\nCloud connection: True\nHSV: HSV(hue=0, saturation=100, value=50)\nColor temperature: 2700\nAuto update enabled: True\nUpdate available: None\nCurrent firmware version: 1.1.6 Build 240130 Rel.173828\nAvailable firmware version: None\nCheck latest firmware: <Action>\nLight effect: Party\nLight preset: Light preset 1\nSmooth transition on: 2\nSmooth transition off: 2\nOverheated: False\nDevice time: 2024-02-23 02:40:15+01:00
 """

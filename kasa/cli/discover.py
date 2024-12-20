@@ -14,8 +14,17 @@ from kasa import (
     Discover,
     UnsupportedDeviceError,
 )
-from kasa.discover import ConnectAttempt, DiscoveryResult
+from kasa.discover import (
+    NEW_DISCOVERY_REDACTORS,
+    ConnectAttempt,
+    DiscoveredRaw,
+    DiscoveryResult,
+)
+from kasa.iot.iotdevice import _extract_sys_info
+from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
+from kasa.protocols.protocol import redact_data
 
+from ..json import dumps as json_dumps
 from .common import echo, error
 
 
@@ -63,7 +72,9 @@ async def detail(ctx):
                 await ctx.parent.invoke(state)
             echo()
 
-    discovered = await _discover(ctx, print_discovered, print_unsupported)
+    discovered = await _discover(
+        ctx, print_discovered=print_discovered, print_unsupported=print_unsupported
+    )
     if ctx.parent.parent.params["host"]:
         return discovered
 
@@ -77,6 +88,33 @@ async def detail(ctx):
 
 
 @discover.command()
+@click.option(
+    "--redact/--no-redact",
+    default=False,
+    is_flag=True,
+    type=bool,
+    help="Set flag to redact sensitive data from raw output.",
+)
+@click.pass_context
+async def raw(ctx, redact: bool):
+    """Return raw discovery data returned from devices."""
+
+    def print_raw(discovered: DiscoveredRaw):
+        if redact:
+            redactors = (
+                NEW_DISCOVERY_REDACTORS
+                if discovered["meta"]["port"] == Discover.DISCOVERY_PORT_2
+                else IOT_REDACTORS
+            )
+            discovered["discovery_response"] = redact_data(
+                discovered["discovery_response"], redactors
+            )
+        echo(json_dumps(discovered, indent=True))
+
+    return await _discover(ctx, print_raw=print_raw, do_echo=False)
+
+
+@discover.command()
 @click.pass_context
 async def list(ctx):
     """List devices in the network in a table using udp broadcasts."""
@@ -85,14 +123,19 @@ async def list(ctx):
     async def print_discovered(dev: Device):
         cparams = dev.config.connection_type
         infostr = (
-            f"{dev.host:<15} {cparams.device_family.value:<20} "
-            f"{cparams.encryption_type.value:<7}"
+            f"{dev.host:<15} {dev.model:<9} {cparams.device_family.value:<20} "
+            f"{cparams.encryption_type.value:<7} {cparams.https:<5} "
+            f"{cparams.login_version or '-':<3}"
         )
         async with sem:
             try:
                 await dev.update()
             except AuthenticationError:
                 echo(f"{infostr} - Authentication failed")
+            except TimeoutError:
+                echo(f"{infostr} - Timed out")
+            except Exception as ex:
+                echo(f"{infostr} - Error: {ex}")
             else:
                 echo(f"{infostr} {dev.alias}")
 
@@ -100,11 +143,21 @@ async def list(ctx):
         if host := unsupported_exception.host:
             echo(f"{host:<15} UNSUPPORTED DEVICE")
 
-    echo(f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}")
-    return await _discover(ctx, print_discovered, print_unsupported, do_echo=False)
+    echo(
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
+    return await _discover(
+        ctx,
+        print_discovered=print_discovered,
+        print_unsupported=print_unsupported,
+        do_echo=False,
+    )
 
 
-async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
+async def _discover(
+    ctx, *, print_discovered=None, print_unsupported=None, print_raw=None, do_echo=True
+):
     params = ctx.parent.parent.params
     target = params["target"]
     username = params["username"]
@@ -125,6 +178,7 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
             timeout=timeout,
             discovery_timeout=discovery_timeout,
             on_unsupported=print_unsupported,
+            on_discovered_raw=print_raw,
         )
     if do_echo:
         echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
@@ -136,6 +190,7 @@ async def _discover(ctx, print_discovered, print_unsupported, *, do_echo=True):
         port=port,
         timeout=timeout,
         credentials=credentials,
+        on_discovered_raw=print_raw,
     )
 
     for device in discovered_devices.values():
@@ -201,8 +256,8 @@ def _echo_discovery_info(discovery_info) -> None:
     if discovery_info is None:
         return
 
-    if "system" in discovery_info and "get_sysinfo" in discovery_info["system"]:
-        _echo_dictionary(discovery_info["system"]["get_sysinfo"])
+    if sysinfo := _extract_sys_info(discovery_info):
+        _echo_dictionary(sysinfo)
         return
 
     try:
@@ -230,10 +285,12 @@ def _echo_discovery_info(discovery_info) -> None:
     _conditional_echo("Supports IOT Cloud", dr.is_support_iot_cloud)
     _conditional_echo("OBD Src", dr.owner)
     _conditional_echo("Factory Default", dr.factory_default)
-    _conditional_echo("Encrypt Type", dr.mgt_encrypt_schm.encrypt_type)
     _conditional_echo("Encrypt Type", dr.encrypt_type)
-    _conditional_echo("Supports HTTPS", dr.mgt_encrypt_schm.is_support_https)
-    _conditional_echo("HTTP Port", dr.mgt_encrypt_schm.http_port)
+    if mgt_encrypt_schm := dr.mgt_encrypt_schm:
+        _conditional_echo("Encrypt Type", mgt_encrypt_schm.encrypt_type)
+        _conditional_echo("Supports HTTPS", mgt_encrypt_schm.is_support_https)
+        _conditional_echo("HTTP Port", mgt_encrypt_schm.http_port)
+        _conditional_echo("Login version", mgt_encrypt_schm.lv)
     _conditional_echo("Encrypt info", pf(dr.encrypt_info) if dr.encrypt_info else None)
     _conditional_echo("Decrypted", pf(dr.decrypted_data) if dr.decrypted_data else None)
 

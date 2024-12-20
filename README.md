@@ -178,13 +178,17 @@ The following devices have been tested and confirmed as working. If your device 
 > [!NOTE]
 > The hub attached Tapo buttons S200B and S200D do not currently support alerting when the button is pressed.
 
+> [!NOTE]
+> Some firmware versions of Tapo Cameras will not authenticate unless you enable "Tapo Lab" > "Third-Party Compatibility" in the native Tapo app.
+> Alternatively, you can factory reset and then prevent the device from accessing the internet.
+
 <!--Do not edit text inside the SUPPORTED section below -->
 <!--SUPPORTED_START-->
 ### Supported Kasa devices
 
 - **Plugs**: EP10, EP25[^1], HS100[^2], HS103, HS105, HS110, KP100, KP105, KP115, KP125, KP125M[^1], KP401
 - **Power Strips**: EP40, EP40M[^1], HS107, HS300, KP200, KP303, KP400
-- **Wall Switches**: ES20M, HS200[^2], HS210, HS220[^2], KP405, KS200M, KS205[^1], KS220, KS220M, KS225[^1], KS230, KS240[^1]
+- **Wall Switches**: ES20M, HS200[^2], HS210, HS220[^2], KP405, KS200, KS200M, KS205[^1], KS220, KS220M, KS225[^1], KS230, KS240[^1]
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB110
 - **Light Strips**: KL400L5, KL420L5, KL430
 - **Hubs**: KH100[^1]
@@ -197,7 +201,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
-- **Cameras**: C210, TC65
+- **Cameras**: C100, C210, C325WB, C520WS, TC65, TC70
 - **Hubs**: H100, H200
 - **Hub-Connected Devices[^3]**: S200B, S200D, T100, T110, T300, T310, T315
 
@@ -223,10 +227,12 @@ See [supported devices in our documentation](SUPPORTED.md) for more detailed inf
 
 * [Home Assistant](https://www.home-assistant.io/integrations/tplink/)
 * [MQTT access to TP-Link devices, using python-kasa](https://github.com/flavio-fernandes/mqtt2kasa)
+* [Homebridge Kasa Python Plug-In](https://github.com/ZeliardM/homebridge-kasa-python)
 
 ### Other related projects
 
 * [PyTapo - Python library for communication with Tapo Cameras](https://github.com/JurajNyiri/pytapo)
+  * [Home Assistant integration](https://github.com/JurajNyiri/HomeAssistant-Tapo-Control)
 * [Tapo P100 (Tapo plugs, Tapo bulbs)](https://github.com/fishbigger/TapoP100)
   * [Home Assistant integration](https://github.com/fishbigger/HomeAssistant-Tapo-P100-Control)
 * [plugp100, another tapo library](https://github.com/petretiandrea/plugp100)

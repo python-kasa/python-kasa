@@ -55,7 +55,7 @@ class Light(SmartModule, LightInterface):
 
         :return: White temperature range in Kelvin (minimum, maximum)
         """
-        if not self.is_variable_color_temp:
+        if Module.ColorTemperature not in self._device.modules:
             raise KasaException("Color temperature not supported")
 
         return self._device.modules[Module.ColorTemperature].valid_temperature_range
@@ -66,7 +66,7 @@ class Light(SmartModule, LightInterface):
 
         :return: hue, saturation and value (degrees, %, %)
         """
-        if not self.is_color:
+        if Module.Color not in self._device.modules:
             raise KasaException("Bulb does not support color.")
 
         return self._device.modules[Module.Color].hsv
@@ -74,7 +74,7 @@ class Light(SmartModule, LightInterface):
     @property
     def color_temp(self) -> Annotated[int, FeatureAttribute()]:
         """Whether the bulb supports color temperature changes."""
-        if not self.is_variable_color_temp:
+        if Module.ColorTemperature not in self._device.modules:
             raise KasaException("Bulb does not support colortemp.")
 
         return self._device.modules[Module.ColorTemperature].color_temp
@@ -82,7 +82,7 @@ class Light(SmartModule, LightInterface):
     @property
     def brightness(self) -> Annotated[int, FeatureAttribute()]:
         """Return the current brightness in percentage."""
-        if not self.is_dimmable:  # pragma: no cover
+        if Module.Brightness not in self._device.modules:
             raise KasaException("Bulb is not dimmable.")
 
         return self._device.modules[Module.Brightness].brightness
@@ -104,7 +104,7 @@ class Light(SmartModule, LightInterface):
         :param int value: value between 1 and 100
         :param int transition: transition in milliseconds.
         """
-        if not self.is_color:
+        if Module.Color not in self._device.modules:
             raise KasaException("Bulb does not support color.")
 
         return await self._device.modules[Module.Color].set_hsv(hue, saturation, value)
@@ -119,7 +119,7 @@ class Light(SmartModule, LightInterface):
         :param int temp: The new color temperature, in Kelvin
         :param int transition: transition in milliseconds.
         """
-        if not self.is_variable_color_temp:
+        if Module.ColorTemperature not in self._device.modules:
             raise KasaException("Bulb does not support colortemp.")
         return await self._device.modules[Module.ColorTemperature].set_color_temp(
             temp, brightness=brightness
@@ -135,7 +135,7 @@ class Light(SmartModule, LightInterface):
         :param int brightness: brightness in percent
         :param int transition: transition in milliseconds.
         """
-        if not self.is_dimmable:  # pragma: no cover
+        if Module.Brightness not in self._device.modules:
             raise KasaException("Bulb is not dimmable.")
 
         return await self._device.modules[Module.Brightness].set_brightness(brightness)
@@ -167,16 +167,17 @@ class Light(SmartModule, LightInterface):
         return self._light_state
 
     async def _post_update_hook(self) -> None:
-        if self._device.is_on is False:
+        device = self._device
+        if device.is_on is False:
             state = LightState(light_on=False)
         else:
             state = LightState(light_on=True)
-            if self.is_dimmable:
+            if Module.Brightness in device.modules:
                 state.brightness = self.brightness
-            if self.is_color:
+            if Module.Color in device.modules:
                 hsv = self.hsv
                 state.hue = hsv.hue
                 state.saturation = hsv.saturation
-            if self.is_variable_color_temp:
+            if Module.ColorTemperature in device.modules:
                 state.color_temp = self.color_temp
         self._light_state = state
