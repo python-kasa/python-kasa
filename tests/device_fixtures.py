@@ -79,8 +79,6 @@ PLUGS_IOT = {
     "KP125",
     "KP401",
 }
-# P135 supports dimming, but its not currently support
-# by the library
 PLUGS_SMART = {
     "P100",
     "P110",
@@ -111,8 +109,8 @@ SWITCHES_SMART = {
     "S505D",
 }
 SWITCHES = {*SWITCHES_IOT, *SWITCHES_SMART}
-STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40", "P210M"}
-STRIPS_SMART = {"P300", "P304M", "TP25", "EP40M"}
+STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
+STRIPS_SMART = {"P300", "P304M", "TP25", "EP40M", "P210M", "P306"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220", "KS220M", "KS230", "KP405"}
