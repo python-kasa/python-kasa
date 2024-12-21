@@ -8,7 +8,7 @@
 
 - Improvements to Tapo camera support:
   - C100, C225, C325WB, C520WS and TC70 now supported.
-  - Support for motion, person, tamper and baby cry detection.
+  - Support for motion, person, tamper, and baby cry detection.
 - Initial support for Tapo robovacs.
 - API extended with `FeatureAttributes` for consumers to test for [supported features](https://python-kasa.readthedocs.io/en/stable/topics.html#modules-and-features).
 - Experimental support for Kasa cameras[^1]
