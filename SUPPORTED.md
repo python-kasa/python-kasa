@@ -207,6 +207,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Power Strips
 
+- **P210M**
+  - Hardware: 1.0 (US) / Firmware: 1.0.3
 - **P300**
   - Hardware: 1.0 (EU) / Firmware: 1.0.13
   - Hardware: 1.0 (EU) / Firmware: 1.0.15
