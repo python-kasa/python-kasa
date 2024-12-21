@@ -90,6 +90,9 @@ PLUGS_SMART = {
     "EP25",
     "P125M",
     "TP15",
+    "P210M",
+    "P306",
+    "P135",
 }
 PLUGS = {
     *PLUGS_IOT,
