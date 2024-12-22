@@ -122,8 +122,15 @@ async def test_list_devices(discovery_mock, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
-    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7}"
+    header = (
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
+    row = (
+        f"{discovery_mock.ip:<15} {discovery_mock.model:<9} {discovery_mock.device_type:<20} "
+        f"{discovery_mock.encrypt_type:<7} {discovery_mock.https:<5} "
+        f"{discovery_mock.login_version or '-':<3}"
+    )
     assert header in res.output
     assert row in res.output
 
@@ -158,14 +165,26 @@ async def test_discover_raw(discovery_mock, runner, mocker):
     redact_spy.assert_called()
 
 
+@pytest.mark.parametrize(
+    ("exception", "expected"),
+    [
+        pytest.param(
+            AuthenticationError("Failed to authenticate"),
+            "Authentication failed",
+            id="auth",
+        ),
+        pytest.param(TimeoutError(), "Timed out", id="timeout"),
+        pytest.param(Exception("Foobar"), "Error: Foobar", id="other-error"),
+    ],
+)
 @new_discovery
-async def test_list_auth_failed(discovery_mock, mocker, runner):
+async def test_list_update_failed(discovery_mock, mocker, runner, exception, expected):
     """Test that device update is called on main."""
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
     mocker.patch.object(
         device_class,
         "update",
-        side_effect=AuthenticationError("Failed to authenticate"),
+        side_effect=exception,
     )
     res = await runner.invoke(
         cli,
@@ -173,10 +192,17 @@ async def test_list_auth_failed(discovery_mock, mocker, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
-    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7} - Authentication failed"
-    assert header in res.output
-    assert row in res.output
+    header = (
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
+    row = (
+        f"{discovery_mock.ip:<15} {discovery_mock.model:<9} {discovery_mock.device_type:<20} "
+        f"{discovery_mock.encrypt_type:<7} {discovery_mock.https:<5} "
+        f"{discovery_mock.login_version or '-':<3} - {expected}"
+    )
+    assert header in res.output.replace("\n", "")
+    assert row in res.output.replace("\n", "")
 
 
 async def test_list_unsupported(unsupported_device_info, runner):
@@ -187,7 +213,10 @@ async def test_list_unsupported(unsupported_device_info, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
+    header = (
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
     row = f"{'127.0.0.1':<15} UNSUPPORTED DEVICE"
     assert header in res.output
     assert row in res.output
@@ -239,7 +268,8 @@ async def test_alias(dev, runner):
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
 
-    await dev.set_alias(old_alias)
+    # If alias is None set it back to empty string
+    await dev.set_alias(old_alias or "")
 
 
 async def test_raw_command(dev, mocker, runner):

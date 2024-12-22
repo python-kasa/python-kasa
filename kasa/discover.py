@@ -498,7 +498,7 @@ class Discover:
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
             await protocol.wait_for_discovery_to_complete()
-        except KasaException as ex:
+        except (KasaException, asyncio.CancelledError) as ex:
             for device in protocol.discovered_devices.values():
                 await device.protocol.close()
             raise ex
@@ -847,12 +847,12 @@ class Discover:
             ):
                 encrypt_type = encrypt_info.sym_schm
 
-            if (
-                not (login_version := encrypt_schm.lv)
-                and (et := discovery_result.encrypt_type)
-                and et == ["3"]
+            if not (login_version := encrypt_schm.lv) and (
+                et := discovery_result.encrypt_type
             ):
-                login_version = 2
+                # Known encrypt types are ["1","2"] and ["3"]
+                # Reuse the login_version attribute to pass the max to transport
+                login_version = max([int(i) for i in et])
 
             if not encrypt_type:
                 raise UnsupportedDeviceError(

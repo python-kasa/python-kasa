@@ -202,17 +202,22 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (US) / Firmware: 1.1.0
 - **P135**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
+  - Hardware: 1.0 (US) / Firmware: 1.2.0
 - **TP15**
   - Hardware: 1.0 (US) / Firmware: 1.0.3
 
 ### Power Strips
 
+- **P210M**
+  - Hardware: 1.0 (US) / Firmware: 1.0.3
 - **P300**
   - Hardware: 1.0 (EU) / Firmware: 1.0.13
   - Hardware: 1.0 (EU) / Firmware: 1.0.15
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
 - **P304M**
   - Hardware: 1.0 (UK) / Firmware: 1.0.3
+- **P306**
+  - Hardware: 1.0 (US) / Firmware: 1.1.2
 - **TP25**
   - Hardware: 1.0 (US) / Firmware: 1.0.2
 
@@ -258,13 +263,21 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Cameras
 
+- **C100**
+  - Hardware: 4.0 / Firmware: 1.3.14
 - **C210**
   - Hardware: 2.0 (EU) / Firmware: 1.4.2
   - Hardware: 2.0 (EU) / Firmware: 1.4.3
+- **C225**
+  - Hardware: 2.0 (US) / Firmware: 1.0.11
+- **C325WB**
+  - Hardware: 1.0 (EU) / Firmware: 1.1.17
 - **C520WS**
   - Hardware: 1.0 (US) / Firmware: 1.2.8
 - **TC65**
   - Hardware: 1.0 / Firmware: 1.3.9
+- **TC70**
+  - Hardware: 3.0 / Firmware: 1.3.11
 
 ### Hubs
 
