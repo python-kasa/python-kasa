@@ -40,7 +40,7 @@ Different groups of functionality are supported by modules which you can access 
 key from :class:`~kasa.Module`.
 
 Modules will only be available on the device if they are supported but some individual features of a module may not be available for your device.
-You can check the availability using ``is_``-prefixed properties like `is_color`.
+You can check the availability using ``has_feature()`` method.
 
 >>> from kasa import Module
 >>> Module.Light in dev.modules

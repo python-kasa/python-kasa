@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
-from ..device import _DeviceInfo
+from ..device import DeviceInfo
 from ..device_type import DeviceType
 from ..module import Module
 from ..protocols.smartcamprotocol import _ChildCameraProtocolWrapper
 from ..smart import SmartChildDevice, SmartDevice
+from ..smart.smartdevice import ComponentsRaw
 from .modules import ChildDevice, DeviceModule
 from .smartcammodule import SmartCamModule
 
@@ -36,7 +37,7 @@ class SmartCamDevice(SmartDevice):
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
-    ) -> _DeviceInfo:
+    ) -> DeviceInfo:
         """Get model information for a device."""
         basic_info = info["getDeviceInfo"]["device_info"]["basic_info"]
         short_name = basic_info["device_model"]
@@ -44,7 +45,7 @@ class SmartCamDevice(SmartDevice):
         device_type = SmartCamDevice._get_device_type_from_sysinfo(basic_info)
         fw_version_full = basic_info["sw_version"]
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
-        return _DeviceInfo(
+        return DeviceInfo(
             short_name=basic_info["device_model"],
             long_name=long_name,
             brand="tapo",
@@ -78,7 +79,7 @@ class SmartCamDevice(SmartDevice):
                 self._children[child_id]._update_internal_state(info)
 
     async def _initialize_smart_child(
-        self, info: dict, child_components: dict
+        self, info: dict, child_components_raw: ComponentsRaw
     ) -> SmartDevice:
         """Initialize a smart child device attached to a smartcam device."""
         child_id = info["device_id"]
@@ -93,7 +94,7 @@ class SmartCamDevice(SmartDevice):
         return await SmartChildDevice.create(
             parent=self,
             child_info=info,
-            child_components=child_components,
+            child_components_raw=child_components_raw,
             protocol=child_protocol,
             last_update=initial_response,
         )
@@ -108,17 +109,8 @@ class SmartCamDevice(SmartDevice):
         self.internal_state.update(resp)
 
         smart_children_components = {
-            child["device_id"]: {
-                comp["id"]: int(comp["ver_code"]) for comp in component_list
-            }
+            child["device_id"]: child
             for child in resp["getChildDeviceComponentList"]["child_component_list"]
-            if (component_list := child.get("component_list"))
-            # Child camera devices will have a different component schema so only
-            # extract smart values.
-            and (first_comp := next(iter(component_list), None))
-            and isinstance(first_comp, dict)
-            and "id" in first_comp
-            and "ver_code" in first_comp
         }
         children = {}
         for info in resp["getChildDeviceList"]["child_device_list"]:
@@ -142,6 +134,11 @@ class SmartCamDevice(SmartDevice):
             if (
                 mod.REQUIRED_COMPONENT
                 and mod.REQUIRED_COMPONENT not in self._components
+                # Always add Camera module to cameras
+                and (
+                    mod._module_name() != Module.Camera
+                    or self._device_type is not DeviceType.Camera
+                )
             ):
                 continue
             module = mod(self, mod._module_name())
@@ -172,6 +169,13 @@ class SmartCamDevice(SmartDevice):
 
         return res
 
+    @staticmethod
+    def _parse_components(components_raw: ComponentsRaw) -> dict[str, int]:
+        return {
+            str(comp["name"]): int(comp["version"])
+            for comp in components_raw["app_component_list"]
+        }
+
     async def _negotiate(self) -> None:
         """Perform initialization.
 
@@ -181,17 +185,16 @@ class SmartCamDevice(SmartDevice):
         initial_query = {
             "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
             "getAppComponentList": {"app_component": {"name": "app_component_list"}},
+            "getConnectionType": {"network": {"get_connection_type": {}}},
         }
         resp = await self.protocol.query(initial_query)
         self._last_update.update(resp)
         self._update_internal_info(resp)
 
-        self._components = {
-            comp["name"]: int(comp["version"])
-            for comp in resp["getAppComponentList"]["app_component"][
-                "app_component_list"
-            ]
-        }
+        self._components_raw = cast(
+            ComponentsRaw, resp["getAppComponentList"]["app_component"]
+        )
+        self._components = self._parse_components(self._components_raw)
 
         if "childControl" in self._components and not self.children:
             await self._initialize_children()
@@ -251,11 +254,16 @@ class SmartCamDevice(SmartDevice):
     def hw_info(self) -> dict:
         """Return hardware info for the device."""
         return {
-            "sw_ver": self._info.get("hw_ver"),
-            "hw_ver": self._info.get("fw_ver"),
+            "sw_ver": self._info.get("fw_ver"),
+            "hw_ver": self._info.get("hw_ver"),
             "mac": self._info.get("mac"),
             "type": self._info.get("type"),
             "hwId": self._info.get("hwId"),
             "dev_name": self.alias,
             "oemId": self._info.get("oem_id"),
         }
+
+    @property
+    def rssi(self) -> int | None:
+        """Return the device id."""
+        return self.modules[SmartCamModule.SmartCamDeviceModule].rssi

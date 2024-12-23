@@ -79,8 +79,6 @@ PLUGS_IOT = {
     "KP125",
     "KP401",
 }
-# P135 supports dimming, but its not currently support
-# by the library
 PLUGS_SMART = {
     "P100",
     "P110",
@@ -112,7 +110,7 @@ SWITCHES_SMART = {
 }
 SWITCHES = {*SWITCHES_IOT, *SWITCHES_SMART}
 STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
-STRIPS_SMART = {"P300", "P304M", "TP25", "EP40M"}
+STRIPS_SMART = {"P300", "P304M", "TP25", "EP40M", "P210M", "P306"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220", "KS220M", "KS230", "KP405"}
@@ -435,7 +433,7 @@ async def get_device_for_fixture(
 
     discovery_data = None
     if "discovery_result" in fixture_data.data:
-        discovery_data = fixture_data.data["discovery_result"]
+        discovery_data = fixture_data.data["discovery_result"]["result"]
     elif "system" in fixture_data.data:
         discovery_data = {
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
@@ -473,8 +471,12 @@ def get_nearest_fixture_to_ip(dev):
     assert protocol_fixtures, "Unknown device type"
 
     # This will get the best fixture with a match on model region
-    if model_region_fixtures := filter_fixtures(
-        "", model_filter={dev._model_region}, fixture_list=protocol_fixtures
+    if (di := dev.device_info) and (
+        model_region_fixtures := filter_fixtures(
+            "",
+            model_filter={di.long_name + (f"({di.region})" if di.region else "")},
+            fixture_list=protocol_fixtures,
+        )
     ):
         return next(iter(model_region_fixtures))
 

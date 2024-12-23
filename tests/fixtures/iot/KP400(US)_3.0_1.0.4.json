@@ -5,8 +5,8 @@
             "child_num": 2,
             "children": [
                 {
-                    "alias": "#MASKED_NAME#",
-                    "id": "8006521377E30159055A751347B5A5E321A8D0A100",
+                    "alias": "#MASKED_NAME# 1",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
                     "next_action": {
                         "type": -1
                     },
@@ -14,8 +14,8 @@
                     "state": 0
                 },
                 {
-                    "alias": "#MASKED_NAME#",
-                    "id": "8006521377E30159055A751347B5A5E321A8D0A101",
+                    "alias": "#MASKED_NAME# 2",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
                     "next_action": {
                         "type": -1
                     },

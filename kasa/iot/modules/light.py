@@ -207,17 +207,18 @@ class Light(IotModule, LightInterface):
         return self._light_state
 
     async def _post_update_hook(self) -> None:
-        if self._device.is_on is False:
+        device = self._device
+        if device.is_on is False:
             state = LightState(light_on=False)
         else:
             state = LightState(light_on=True)
-            if self._device._is_dimmable:
+            if device._is_dimmable:
                 state.brightness = self.brightness
-            if self._device._is_color:
+            if device._is_color:
                 hsv = self.hsv
                 state.hue = hsv.hue
                 state.saturation = hsv.saturation
-            if self._device._is_variable_color_temp:
+            if device._is_variable_color_temp:
                 state.color_temp = self.color_temp
         self._light_state = state
 

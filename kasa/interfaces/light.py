@@ -23,7 +23,7 @@ Get the light module to interact:
 
 >>> light = dev.modules[Module.Light]
 
-You can use the ``is_``-prefixed properties to check for supported features:
+You can use the ``has_feature()`` method to check for supported features:
 
 >>> light.has_feature("brightness")
 True

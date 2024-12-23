@@ -62,11 +62,14 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
     assert repr(dev) == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - update() needed>"
 
     discovery_result = copy.deepcopy(discovery_mock.discovery_data["result"])
+
+    disco_model = discovery_result["device_model"]
+    short_model, _, _ = disco_model.partition("(")
     dev.update_from_discover_info(discovery_result)
     assert dev.device_type is DeviceType.Unknown
     assert (
         repr(dev)
-        == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - None (None) - update() needed>"
+        == f"<DeviceType.Unknown at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
     )
     discovery_result["device_type"] = "SMART.FOOBAR"
     dev.update_from_discover_info(discovery_result)
@@ -74,7 +77,7 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
     assert dev.device_type is DeviceType.Plug
     assert (
         repr(dev)
-        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None (None) - update() needed>"
+        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
     )
     assert "Unknown device type, falling back to plug" in caplog.text
 
@@ -352,7 +355,7 @@ async def test_update_module_query_errors(
             if mod.name == "Energy":
                 emod = cast(Energy, mod)
                 with pytest.raises(KasaException, match="Module update error"):
-                    assert emod.current_consumption is not None
+                    assert emod.status is not None
         else:
             assert mod.disabled is False
             assert mod._error_count == 0
@@ -360,7 +363,7 @@ async def test_update_module_query_errors(
             # Test one of the raise_if_update_error doesn't raise
             if mod.name == "Energy":
                 emod = cast(Energy, mod)
-                assert emod.current_consumption is not None
+                assert emod.status is not None
 
 
 async def test_get_modules():
@@ -469,7 +472,9 @@ async def test_smartdevice_cloud_connection(dev: SmartDevice, mocker: MockerFixt
 async def test_smart_temp_range(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
-    assert light.valid_temperature_range
+    color_temp_feat = light.get_feature("color_temp")
+    assert color_temp_feat
+    assert color_temp_feat.range
 
 
 @device_smart
@@ -528,3 +533,16 @@ async def test_initialize_modules_required_component(
 
     assert "AvailableComponent" in dev.modules
     assert "NonExistingComponent" not in dev.modules
+
+
+async def test_smartmodule_query():
+    """Test that a module that doesn't set QUERY_GETTER_NAME has empty query."""
+
+    class DummyModule(SmartModule):
+        pass
+
+    dummy_device = await get_device_for_fixture_protocol(
+        "KS240(US)_1.0_1.0.5.json", "SMART"
+    )
+    mod = DummyModule(dummy_device, "dummy")
+    assert mod.query() == {}

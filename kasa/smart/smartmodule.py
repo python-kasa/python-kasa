@@ -57,7 +57,7 @@ class SmartModule(Module):
     #: Module is initialized, if any of the given keys exists in the sysinfo
     SYSINFO_LOOKUP_KEYS: list[str] = []
     #: Query to execute during the main update cycle
-    QUERY_GETTER_NAME: str
+    QUERY_GETTER_NAME: str = ""
 
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
@@ -72,6 +72,7 @@ class SmartModule(Module):
         self._last_update_time: float | None = None
         self._last_update_error: KasaException | None = None
         self._error_count = 0
+        self._logged_remove_keys: list[str] = []
 
     def __init_subclass__(cls, **kwargs) -> None:
         # We only want to register submodules in a modules package so that
@@ -138,7 +139,9 @@ class SmartModule(Module):
 
         Default implementation uses the raw query getter w/o parameters.
         """
-        return {self.QUERY_GETTER_NAME: None}
+        if self.QUERY_GETTER_NAME:
+            return {self.QUERY_GETTER_NAME: None}
+        return {}
 
     async def call(self, method: str, params: dict | None = None) -> dict:
         """Call a method.
@@ -146,6 +149,15 @@ class SmartModule(Module):
         Just a helper method.
         """
         return await self._device._query_helper(method, params)
+
+    @property
+    def optional_response_keys(self) -> list[str]:
+        """Return optional response keys for the module.
+
+        Defaults to no keys. Overriding this and providing keys will remove
+        instead of raise on error.
+        """
+        return []
 
     @property
     def data(self) -> dict[str, Any]:
@@ -179,12 +191,31 @@ class SmartModule(Module):
 
         filtered_data = {k: v for k, v in dev._last_update.items() if k in q_keys}
 
+        remove_keys: list[str] = []
         for data_item in filtered_data:
             if isinstance(filtered_data[data_item], SmartErrorCode):
-                raise DeviceError(
-                    f"{data_item} for {self.name}", error_code=filtered_data[data_item]
+                if data_item in self.optional_response_keys:
+                    remove_keys.append(data_item)
+                else:
+                    raise DeviceError(
+                        f"{data_item} for {self.name}",
+                        error_code=filtered_data[data_item],
+                    )
+
+        for key in remove_keys:
+            if key not in self._logged_remove_keys:
+                self._logged_remove_keys.append(key)
+                _LOGGER.debug(
+                    "Removed key %s from response for device %s as it returned "
+                    "error: %s. This message will only be logged once per key.",
+                    key,
+                    self._device.host,
+                    filtered_data[key],
                 )
-        if len(filtered_data) == 1:
+
+            filtered_data.pop(key)
+
+        if len(filtered_data) == 1 and not remove_keys:
             return next(iter(filtered_data.values()))
 
         return filtered_data

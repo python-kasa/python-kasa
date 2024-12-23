@@ -65,12 +65,13 @@ async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
 
-    assert isinstance(original, str)
+    assert isinstance(original, str | None)
     await dev.set_alias(test_alias)
     await dev.update()
     assert dev.alias == test_alias
 
-    await dev.set_alias(original)
+    # If alias is None set it back to empty string
+    await dev.set_alias(original or "")
     await dev.update()
     assert dev.alias == original
 
@@ -86,7 +87,11 @@ async def test_device_class_ctors(device_class_name_obj):
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy"},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)
@@ -106,7 +111,11 @@ async def test_device_class_repr(device_class_name_obj):
     if issubclass(klass, SmartChildDevice):
         parent = SmartDevice(host, config=config)
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy"},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)
@@ -272,19 +281,19 @@ async def test_deprecated_light_attributes(dev: Device):
     await _test_attribute(dev, "is_color", bool(light), "Light")
     await _test_attribute(dev, "is_variable_color_temp", bool(light), "Light")
 
-    exc = KasaException if light and not light.is_dimmable else None
+    exc = KasaException if light and not light.has_feature("brightness") else None
     await _test_attribute(dev, "brightness", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_brightness", bool(light), "Light", 50, will_raise=exc
     )
 
-    exc = KasaException if light and not light.is_color else None
+    exc = KasaException if light and not light.has_feature("hsv") else None
     await _test_attribute(dev, "hsv", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_hsv", bool(light), "Light", 50, 50, 50, will_raise=exc
     )
 
-    exc = KasaException if light and not light.is_variable_color_temp else None
+    exc = KasaException if light and not light.has_feature("color_temp") else None
     await _test_attribute(dev, "color_temp", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_color_temp", bool(light), "Light", 2700, will_raise=exc

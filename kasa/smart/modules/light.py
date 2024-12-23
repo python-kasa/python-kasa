@@ -136,16 +136,17 @@ class Light(SmartModule, LightInterface):
         return self._light_state
 
     async def _post_update_hook(self) -> None:
-        if self._device.is_on is False:
+        device = self._device
+        if device.is_on is False:
             state = LightState(light_on=False)
         else:
             state = LightState(light_on=True)
-            if Module.Brightness in self._device.modules:
+            if Module.Brightness in device.modules:
                 state.brightness = self.brightness
-            if Module.Color in self._device.modules:
+            if Module.Color in device.modules:
                 hsv = self.hsv
                 state.hue = hsv.hue
                 state.saturation = hsv.saturation
-            if Module.ColorTemperature in self._device.modules:
+            if Module.ColorTemperature in device.modules:
                 state.color_temp = self.color_temp
         self._light_state = state

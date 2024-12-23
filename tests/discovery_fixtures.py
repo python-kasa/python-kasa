@@ -139,7 +139,8 @@ smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMA
 )
 async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
-    fixture_info: FixtureInfo = request.param
+    fi: FixtureInfo = request.param
+    fixture_info = FixtureInfo(fi.name, fi.protocol, copy.deepcopy(fi.data))
     return patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
 
 
@@ -160,6 +161,17 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         port_override: int | None = None
 
         @property
+        def model(self) -> str:
+            dd = self.discovery_data
+            model_region = (
+                dd["result"]["device_model"]
+                if self.discovery_port == 20002
+                else dd["system"]["get_sysinfo"]["model"]
+            )
+            model, _, _ = model_region.partition("(")
+            return model
+
+        @property
         def _datagram(self) -> bytes:
             if self.default_port == 9999:
                 return XorEncryption.encrypt(json_dumps(self.discovery_data))[4:]
@@ -170,14 +182,17 @@ def create_discovery_mock(ip: str, fixture_data: dict):
                 )
 
     if "discovery_result" in fixture_data:
-        discovery_data = {"result": fixture_data["discovery_result"].copy()}
-        discovery_result = fixture_data["discovery_result"]
+        discovery_data = fixture_data["discovery_result"].copy()
+        discovery_result = fixture_data["discovery_result"]["result"]
         device_type = discovery_result["device_type"]
         encrypt_type = discovery_result["mgt_encrypt_schm"].get(
             "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
         )
 
-        login_version = discovery_result["mgt_encrypt_schm"].get("lv")
+        if not (login_version := discovery_result["mgt_encrypt_schm"].get("lv")) and (
+            et := discovery_result.get("encrypt_type")
+        ):
+            login_version = max([int(i) for i in et])
         https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
         dm = _DiscoveryMock(
             ip,
@@ -305,7 +320,7 @@ def discovery_data(request, mocker):
     mocker.patch("kasa.IotProtocol.query", return_value=fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=fixture_data)
     if "discovery_result" in fixture_data:
-        return {"result": fixture_data["discovery_result"]}
+        return fixture_data["discovery_result"].copy()
     else:
         return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
 

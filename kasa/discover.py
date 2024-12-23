@@ -22,7 +22,7 @@ Discovery returns a dict of {ip: discovered devices}:
 >>>
 >>> found_devices = await Discover.discover()
 >>> [dev.model for dev in found_devices.values()]
-['KP303(UK)', 'HS110(EU)', 'L530E', 'KL430(US)', 'HS220(US)']
+['KP303', 'HS110', 'L530E', 'KL430', 'HS220']
 
 You can pass username and password for devices requiring authentication
 
@@ -65,17 +65,17 @@ It is also possible to pass a coroutine to be executed for each found device:
 >>>     print(f"Discovered {dev.alias} (model: {dev.model})")
 >>>
 >>> devices = await Discover.discover(on_discovered=print_dev_info, credentials=creds)
-Discovered Bedroom Power Strip (model: KP303(UK))
-Discovered Bedroom Lamp Plug (model: HS110(EU))
+Discovered Bedroom Power Strip (model: KP303)
+Discovered Bedroom Lamp Plug (model: HS110)
 Discovered Living Room Bulb (model: L530)
-Discovered Bedroom Lightstrip (model: KL430(US))
-Discovered Living Room Dimmer Switch (model: HS220(US))
+Discovered Bedroom Lightstrip (model: KL430)
+Discovered Living Room Dimmer Switch (model: HS220)
 
 Discovering a single device returns a kasa.Device object.
 
 >>> device = await Discover.discover_single("127.0.0.1", credentials=creds)
 >>> device.model
-'KP303(UK)'
+'KP303'
 
 """
 
@@ -168,6 +168,12 @@ OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Coroutine]
 OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
 DeviceDict = dict[str, Device]
 
+DECRYPTED_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+    "connect_ssid": lambda x: "#MASKED_SSID#" if x else "",
+    "device_id": lambda x: "REDACTED_" + x[9::],
+    "owner": lambda x: "REDACTED_" + x[9::],
+}
+
 NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
     "device_name": lambda x: "#MASKED_NAME#" if x else "",
@@ -177,6 +183,8 @@ NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "group_id": lambda x: "REDACTED_" + x[9::],
     "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
     "encrypt_info": lambda x: {**x, "key": "", "data": ""},
+    "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
+    "decrypted_data": lambda x: redact_data(x, DECRYPTED_REDACTORS),
 }
 
 
@@ -490,7 +498,7 @@ class Discover:
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
             await protocol.wait_for_discovery_to_complete()
-        except KasaException as ex:
+        except (KasaException, asyncio.CancelledError) as ex:
             for device in protocol.discovered_devices.values():
                 await device.protocol.close()
             raise ex
@@ -742,6 +750,7 @@ class Discover:
 
     @staticmethod
     def _decrypt_discovery_data(discovery_result: DiscoveryResult) -> None:
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         if TYPE_CHECKING:
             assert discovery_result.encrypt_info
             assert _AesDiscoveryQuery.keypair
@@ -757,7 +766,19 @@ class Discover:
         session = AesEncyptionSession(key, iv)
         decrypted_data = session.decrypt(encrypted_data)
 
-        discovery_result.decrypted_data = json_loads(decrypted_data)
+        result = json_loads(decrypted_data)
+        if debug_enabled:
+            data = (
+                redact_data(result, DECRYPTED_REDACTORS)
+                if Discover._redact_data
+                else result
+            )
+            _LOGGER.debug(
+                "Decrypted encrypt_info for %s: %s",
+                discovery_result.ip,
+                pf(data),
+            )
+        discovery_result.decrypted_data = result
 
     @staticmethod
     def _get_discovery_json(data: bytes, ip: str) -> dict:
@@ -826,12 +847,12 @@ class Discover:
             ):
                 encrypt_type = encrypt_info.sym_schm
 
-            if (
-                not (login_version := encrypt_schm.lv)
-                and (et := discovery_result.encrypt_type)
-                and et == ["3"]
+            if not (login_version := encrypt_schm.lv) and (
+                et := discovery_result.encrypt_type
             ):
-                login_version = 2
+                # Known encrypt types are ["1","2"] and ["3"]
+                # Reuse the login_version attribute to pass the max to transport
+                login_version = max([int(i) for i in et])
 
             if not encrypt_type:
                 raise UnsupportedDeviceError(
