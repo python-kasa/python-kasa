@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import sys
 from collections.abc import Callable
 from contextlib import contextmanager
 from functools import singledispatch, update_wrapper, wraps
+from gettext import gettext
 from typing import TYPE_CHECKING, Any, Final
 
 import asyncclick as click
@@ -237,5 +239,20 @@ def CatchAllExceptions(cls):
                 return await super().invoke(ctx)
             except Exception as exc:
                 _handle_exception(self._debug, exc)
+
+        def __call__(self, *args, **kwargs):
+            """Run the coroutine in the event loop and print any exceptions.
+
+            python click catches KeyboardInterrupt in main, raises Abort()
+            and does sys.exit. asyncclick doesn't properly handle a coroutine
+            receiving CancelledError on a KeyboardInterrupt, so we catch the
+            KeyboardInterrupt here once asyncio.run has re-raised it. This
+            avoids large stacktraces when a user presses Ctrl-C.
+            """
+            try:
+                asyncio.run(self.main(*args, **kwargs))
+            except KeyboardInterrupt:
+                click.echo(gettext("\nAborted!"), file=sys.stderr)
+                sys.exit(1)
 
     return _CommandCls
