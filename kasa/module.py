@@ -160,7 +160,9 @@ class Module(ABC):
     # SMARTCAM only modules
     Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")
     LensMask: Final[ModuleName[smartcam.LensMask]] = ModuleName("LensMask")
-    Motion: Final[ModuleName[smartcam.Motion]] = ModuleName("Motion")
+    MotionDetection: Final[ModuleName[smartcam.MotionDetection]] = ModuleName(
+        "MotionDetection"
+    )
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device

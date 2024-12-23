@@ -197,11 +197,11 @@ The following devices have been tested and confirmed as working. If your device 
 ### Supported Tapo[^1] devices
 
 - **Plugs**: P100, P110, P110M, P115, P125M, P135, TP15
-- **Power Strips**: P300, P304M, TP25
+- **Power Strips**: P210M, P300, P304M, P306, TP25
 - **Wall Switches**: S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
-- **Cameras**: C100, C210, C325WB, C520WS, TC65, TC70
+- **Cameras**: C100, C210, C225, C325WB, C520WS, TC65, TC70
 - **Hubs**: H100, H200
 - **Hub-Connected Devices[^3]**: S200B, S200D, T100, T110, T300, T310, T315
 

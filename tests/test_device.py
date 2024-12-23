@@ -65,12 +65,13 @@ async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
 
-    assert isinstance(original, str)
+    assert isinstance(original, str | None)
     await dev.set_alias(test_alias)
     await dev.update()
     assert dev.alias == test_alias
 
-    await dev.set_alias(original)
+    # If alias is None set it back to empty string
+    await dev.set_alias(original or "")
     await dev.update()
     assert dev.alias == original
 
