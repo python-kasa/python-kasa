@@ -8,6 +8,7 @@ import hashlib
 import logging
 import secrets
 import ssl
+from contextlib import suppress
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, cast
 
@@ -161,6 +162,19 @@ class SslAesTransport(BaseTransport):
             error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
         return error_code
 
+    def _get_response_inner_error(self, resp_dict: Any) -> SmartErrorCode | None:
+        error_code_raw = resp_dict.get("data", {}).get("code")
+        if error_code_raw is None:
+            return None
+        try:
+            error_code = SmartErrorCode.from_int(error_code_raw)
+        except ValueError:
+            _LOGGER.warning(
+                "Device %s received unknown error code: %s", self._host, error_code_raw
+            )
+            error_code = SmartErrorCode.INTERNAL_UNKNOWN_ERROR
+        return error_code
+
     def _handle_response_error_code(self, resp_dict: Any, msg: str) -> None:
         error_code = self._get_response_error(resp_dict)
         if error_code is SmartErrorCode.SUCCESS:
@@ -221,6 +235,31 @@ class SslAesTransport(BaseTransport):
             ssl=await self._get_ssl_context(),
         )
 
+        if TYPE_CHECKING:
+            assert self._encryption_session is not None
+
+        # Devices can respond with 500 if another session is created from
+        # the same host. Decryption may not succeed after that
+        if status_code == 500:
+            msg = (
+                f"Device {self._host} replied with status 500 after handshake, "
+                f"response: "
+            )
+            decrypted = None
+            if isinstance(resp_dict, dict) and (
+                response := resp_dict.get("result", {}).get("response")
+            ):
+                with suppress(Exception):
+                    decrypted = self._encryption_session.decrypt(response.encode())
+
+            if decrypted:
+                msg += decrypted
+            else:
+                msg += str(resp_dict)
+
+            _LOGGER.debug(msg)
+            raise _RetryableError(msg)
+
         if status_code != 200:
             raise KasaException(
                 f"{self._host} responded with an unexpected "
@@ -233,7 +272,6 @@ class SslAesTransport(BaseTransport):
 
         if TYPE_CHECKING:
             resp_dict = cast(dict[str, Any], resp_dict)
-            assert self._encryption_session is not None
 
         if "result" in resp_dict and "response" in resp_dict["result"]:
             raw_response: str = resp_dict["result"]["response"]
@@ -503,16 +541,30 @@ class SslAesTransport(BaseTransport):
             ):
                 return None
 
+        # If the default login worked it's ok not to provide credentials but if
+        # it didn't raise auth error here.
         if not self._username:
             raise AuthenticationError(
                 f"Credentials must be supplied to connect to {self._host}"
             )
+
+        # Device responds with INVALID_NONCE and a "nonce" to indicate ready
+        # for secure login. Otherwise error.
         if error_code is not SmartErrorCode.INVALID_NONCE or (
-            resp_dict and "nonce" not in resp_dict["result"].get("data", {})
+            resp_dict and "nonce" not in resp_dict.get("result", {}).get("data", {})
         ):
-            raise AuthenticationError(
-                f"Error trying handshake1 for {self._host}: {resp_dict}"
-            )
+            if (
+                resp_dict
+                and self._get_response_inner_error(resp_dict)
+                is SmartErrorCode.DEVICE_BLOCKED
+            ):
+                sec_left = resp_dict.get("data", {}).get("sec_left")
+                msg = "Device blocked" + (
+                    f" for {sec_left} seconds" if sec_left else ""
+                )
+                raise DeviceError(msg, error_code=SmartErrorCode.DEVICE_BLOCKED)
+
+            raise AuthenticationError(f"Error trying handshake1: {resp_dict}")
 
         if TYPE_CHECKING:
             resp_dict = cast(dict[str, Any], resp_dict)

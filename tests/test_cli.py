@@ -268,7 +268,8 @@ async def test_alias(dev, runner):
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
 
-    await dev.set_alias(old_alias)
+    # If alias is None set it back to empty string
+    await dev.set_alias(old_alias or "")
 
 
 async def test_raw_command(dev, mocker, runner):
