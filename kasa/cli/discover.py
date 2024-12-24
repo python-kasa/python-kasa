@@ -73,7 +73,9 @@ async def detail(ctx):
             echo()
 
     discovered = await _discover(
-        ctx, print_discovered=print_discovered, print_unsupported=print_unsupported
+        ctx.parent.parent,
+        print_discovered=print_discovered,
+        print_unsupported=print_unsupported,
     )
     if ctx.parent.parent.params["host"]:
         return discovered
@@ -111,7 +113,7 @@ async def raw(ctx, redact: bool):
             )
         echo(json_dumps(discovered, indent=True))
 
-    return await _discover(ctx, print_raw=print_raw, do_echo=False)
+    return await _discover(ctx.parent.parent, print_raw=print_raw, do_echo=False)
 
 
 @discover.command()
@@ -148,7 +150,7 @@ async def list(ctx):
         f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
     )
     return await _discover(
-        ctx,
+        ctx.parent.parent,
         print_discovered=print_discovered,
         print_unsupported=print_unsupported,
         do_echo=False,
@@ -156,9 +158,14 @@ async def list(ctx):
 
 
 async def _discover(
-    ctx, *, print_discovered=None, print_unsupported=None, print_raw=None, do_echo=True
+    root_ctx,
+    *,
+    print_discovered=None,
+    print_unsupported=None,
+    print_raw=None,
+    do_echo=True,
 ):
-    params = ctx.parent.parent.params
+    params = root_ctx.params
     target = params["target"]
     username = params["username"]
     password = params["password"]

@@ -96,6 +96,10 @@ class HSV(NamedTuple):
     saturation: int
     value: int
 
+    def to_dict(self) -> dict:
+        """Return dict represenation."""
+        return {"hue": self.hue, "saturation": self.saturation, "value": self.value}
+
 
 class Light(Module, ABC):
     """Base class for TP-Link Light."""
