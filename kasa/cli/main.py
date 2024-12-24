@@ -76,6 +76,7 @@ def _legacy_type_to_class(_type: str) -> Any:
         "schedule": None,
         "usage": None,
         "energy": "usage",
+        "rest": None,
         # device commands runnnable at top level
         "state": "device",
         "on": "device",
@@ -270,7 +271,7 @@ async def cli(
     # but this keeps mypy happy for now
     logging.basicConfig(**logging_config)  # type: ignore
 
-    if ctx.invoked_subcommand == "discover":
+    if ctx.invoked_subcommand in {"discover", "rest"}:
         return
 
     if alias is not None and host is not None:
