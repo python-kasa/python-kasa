@@ -214,7 +214,7 @@ def _get_supported_devices(
         smodel = stype.setdefault(model_info.long_name, [])
         smodel.append(
             SupportedVersion(
-                region=model_info.region,
+                region=model_info.region if model_info.region else "",
                 hw=model_info.hardware_version,
                 fw=model_info.firmware_version,
                 auth=model_info.requires_auth,
