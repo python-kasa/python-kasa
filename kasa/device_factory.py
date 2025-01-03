@@ -159,7 +159,7 @@ def get_device_class_from_family(
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
         "SMART.IPCAMERA.HTTPS": SmartCamDevice,
-        "SMART.TAPOROBOVAC": SmartDevice,
+        "SMART.TAPOROBOVAC.HTTPS": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
         "IOT.IPCAMERA": IotCamera,
