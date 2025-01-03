@@ -77,7 +77,7 @@ def idgenerator(paramtuple: FixtureInfo):
         return None
 
 
-def get_fixture_info() -> list[FixtureInfo]:
+def get_fixture_infos() -> list[FixtureInfo]:
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_data = []
     for file, protocol in SUPPORTED_DEVICES:
@@ -99,7 +99,7 @@ def get_fixture_info() -> list[FixtureInfo]:
     return fixture_data
 
 
-FIXTURE_DATA: list[FixtureInfo] = get_fixture_info()
+FIXTURE_DATA: list[FixtureInfo] = get_fixture_infos()
 
 
 def filter_fixtures(
