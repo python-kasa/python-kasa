@@ -83,8 +83,7 @@ async def test_smartcam_fixtures(fixture_info: FixtureInfo):
     """Test that smartcam fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamDevice)
-    # if dev.children:
-    #    pytest.skip("Test not currently implemented for devices with children.")
+
     created_fixtures = await get_smart_fixtures(
         dev.protocol,
         discovery_info=fixture_info.data.get("discovery_result"),

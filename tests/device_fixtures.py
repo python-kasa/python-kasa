@@ -325,7 +325,7 @@ device_smartcam = parametrize("devices smartcam", protocol_filter={"SMARTCAM"})
 camera_smartcam = parametrize(
     "camera smartcam",
     device_type_filter=[DeviceType.Camera],
-    protocol_filter={"SMARTCAM"},
+    protocol_filter={"SMARTCAM", "SMARTCAM.CHILD"},
 )
 hub_smartcam = parametrize(
     "hub smartcam",
