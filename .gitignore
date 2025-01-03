@@ -28,3 +28,6 @@ venv
 
 /build
 docs/build
+
+# self-signed certs
+self-signed
