@@ -305,10 +305,7 @@ class SslAesTransport(BaseTransport):
 
     async def send_unencrypted(self, request: str) -> dict[str, Any]:
         """Send encrypted message as passthrough."""
-        if self._state is TransportState.ESTABLISHED and self._token_url:
-            url = self._token_url
-        else:
-            url = self._app_url
+        url = cast(URL, self._token_url)
 
         _LOGGER.debug(
             "Sending unencrypted from %s",
@@ -325,7 +322,7 @@ class SslAesTransport(BaseTransport):
         if status_code != 200:
             raise KasaException(
                 f"{self._host} responded with an unexpected "
-                + f"status code {status_code}"
+                + f"status code {status_code} to unencrypted send"
             )
 
         self._handle_response_error_code(resp_dict, "Error sending message")

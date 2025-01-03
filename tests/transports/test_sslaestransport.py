@@ -232,6 +232,97 @@ async def test_unencrypted_passthrough(mocker, caplog, want_default):
     )
 
 
+@pytest.mark.parametrize(("want_default"), [True, False])
+@pytest.mark.xdist_group(name="caplog")
+async def test_unencrypted_passthrough_errors(mocker, caplog, want_default):
+    host = "127.0.0.1"
+    request = {
+        "method": "getDeviceInfo",
+        "params": None,
+    }
+    transport = SslAesTransport(
+        config=DeviceConfig(host, credentials=Credentials(MOCK_USER, MOCK_PWD))
+    )
+    caplog.set_level(logging.DEBUG)
+
+    # Test bad password
+    mock_ssl_aes_device = MockSslAesDevice(
+        host,
+        unencrypted_passthrough=True,
+        want_default_username=want_default,
+        digest_password_fail=True,
+    )
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    msg = f"Unable to log in to {host} with less secure login"
+    with pytest.raises(AuthenticationError):
+        await transport.send(json_dumps(request))
+
+    assert msg in caplog.text
+
+    # Test bad status code in handshake
+    mock_ssl_aes_device = MockSslAesDevice(
+        host,
+        unencrypted_passthrough=True,
+        want_default_username=want_default,
+        status_code=401,
+    )
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    msg = f"{host} responded with an unexpected " f"status code 401 to handshake1"
+    with pytest.raises(KasaException, match=msg):
+        await transport.send(json_dumps(request))
+
+    # Test bad status code in login
+    mock_ssl_aes_device = MockSslAesDevice(
+        host,
+        unencrypted_passthrough=True,
+        want_default_username=want_default,
+        status_code_list=[200, 401],
+    )
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    msg = f"{host} responded with an unexpected " f"status code 401 to login"
+    with pytest.raises(KasaException, match=msg):
+        await transport.send(json_dumps(request))
+
+    # Test bad status code in send
+    mock_ssl_aes_device = MockSslAesDevice(
+        host,
+        unencrypted_passthrough=True,
+        want_default_username=want_default,
+        status_code_list=[200, 200, 401],
+    )
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    msg = f"{host} responded with an unexpected " f"status code 401 to unencrypted send"
+    with pytest.raises(KasaException, match=msg):
+        await transport.send(json_dumps(request))
+
+    # Test error code in send response
+    mock_ssl_aes_device = MockSslAesDevice(
+        host,
+        unencrypted_passthrough=True,
+        want_default_username=want_default,
+        send_error_code=SmartErrorCode.BAD_USERNAME.value,
+    )
+    mocker.patch.object(
+        aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
+    )
+
+    msg = f"Error sending message: {host}:"
+    with pytest.raises(KasaException, match=msg):
+        await transport.send(json_dumps(request))
+
+
 async def test_device_blocked_response(mocker):
     host = "127.0.0.1"
     mock_ssl_aes_device = MockSslAesDevice(host, device_blocked=True)
@@ -357,18 +448,6 @@ class MockSslAesDevice:
         },
     }
 
-    UNENCRYPTED_PASSTHROUGH_BAD_LOGIN_RESPONSE = {
-        "error_code": -40401,
-        "result": {
-            "data": {
-                "code": -40411,
-                "encrypt_type": ["1", "2"],
-                "key": "Someb64keyWithUnknownPurpose",
-                "nonce": "MixedCaseAlphaNumericWithUnknownPurpose",
-            }
-        },
-    }
-
     UNENCRYPTED_PASSTHROUGH_GOOD_LOGIN_RESPONSE = {
         "error_code": 0,
         "result": {"stok": MOCK_UNENCRYPTED_PASSTHROUGH_STOK, "user_group": "root"},
@@ -395,6 +474,7 @@ class MockSslAesDevice:
         host,
         *,
         status_code=200,
+        status_code_list=None,
         want_default_username: bool = False,
         do_not_encrypt_response=False,
         send_response=None,
@@ -413,6 +493,7 @@ class MockSslAesDevice:
 
         # test behaviour attributes
         self.status_code = status_code
+        self.status_code_list = status_code_list if status_code_list else []
         self.send_error_code = send_error_code
         self.secure_passthrough_error_code = secure_passthrough_error_code
         self.do_not_encrypt_response = do_not_encrypt_response
@@ -422,6 +503,11 @@ class MockSslAesDevice:
         self.unencrypted_passthrough = unencrypted_passthrough
 
         self._next_responses: list[dict | bytes] = []
+
+    def _get_status_code(self):
+        if self.status_code_list:
+            return self.status_code_list.pop(0)
+        return self.status_code
 
     async def post(self, url: URL, params=None, json=None, data=None, *_, **__):
         if data:
@@ -481,7 +567,7 @@ class MockSslAesDevice:
 
         if self.unencrypted_passthrough:
             return self._mock_response(
-                self.status_code, self.UNENCRYPTED_PASSTHROUGH_HANDSHAKE_RESP
+                self._get_status_code(), self.UNENCRYPTED_PASSTHROUGH_HANDSHAKE_RESP
             )
 
         resp = {
@@ -496,7 +582,7 @@ class MockSslAesDevice:
                 }
             },
         }
-        return self._mock_response(self.status_code, resp)
+        return self._mock_response(self._get_status_code(), resp)
 
     async def _return_unencrypted_passthrough_login_response(
         self, url: URL, request: dict[str, Any]
@@ -507,17 +593,17 @@ class MockSslAesDevice:
             not self.want_default_username and request_username != MOCK_USER
         ):
             return self._mock_response(
-                self.status_code, self.UNENCRYPTED_PASSTHROUGH_BAD_LOGIN_RESPONSE
+                self._get_status_code(), self.UNENCRYPTED_PASSTHROUGH_BAD_USER_RESP
             )
 
         expected_pwd = _md5_hash(MOCK_PWD.encode())
         if request_password != expected_pwd or self.digest_password_fail:
             return self._mock_response(
-                self.status_code, self.UNENCRYPTED_PASSTHROUGH_HANDSHAKE_RESP
+                self._get_status_code(), self.UNENCRYPTED_PASSTHROUGH_HANDSHAKE_RESP
             )
 
         return self._mock_response(
-            self.status_code, self.UNENCRYPTED_PASSTHROUGH_GOOD_LOGIN_RESPONSE
+            self._get_status_code(), self.UNENCRYPTED_PASSTHROUGH_GOOD_LOGIN_RESPONSE
         )
 
     async def _return_handshake2_response(self, url: URL, request: dict[str, Any]):
@@ -526,14 +612,14 @@ class MockSslAesDevice:
         if (self.want_default_username and request_username != MOCK_ADMIN_USER) or (
             not self.want_default_username and request_username != MOCK_USER
         ):
-            return self._mock_response(self.status_code, self.BAD_USER_RESP)
+            return self._mock_response(self._get_status_code(), self.BAD_USER_RESP)
 
         request_password = request["params"].get("digest_passwd")
         expected_pwd = SslAesTransport.generate_digest_password(
             request_nonce, self.server_nonce, _sha256_hash(MOCK_PWD.encode())
         )
         if request_password != expected_pwd or self.digest_password_fail:
-            return self._mock_response(self.status_code, self.BAD_PWD_RESP)
+            return self._mock_response(self._get_status_code(), self.BAD_PWD_RESP)
 
         lsk = SslAesTransport.generate_encryption_token(
             "lsk", request_nonce, self.server_nonce, _sha256_hash(MOCK_PWD.encode())
@@ -546,7 +632,7 @@ class MockSslAesDevice:
             "error_code": 0,
             "result": {"stok": MOCK_STOCK, "user_group": "root", "start_seq": 100},
         }
-        return self._mock_response(self.status_code, resp)
+        return self._mock_response(self._get_status_code(), resp)
 
     async def _return_secure_passthrough_response(self, url: URL, json: dict[str, Any]):
         encrypted_request = json["params"]["request"]
@@ -580,11 +666,11 @@ class MockSslAesDevice:
             "result": {"response": response.decode()},
             "error_code": self.secure_passthrough_error_code,
         }
-        return self._mock_response(self.status_code, result)
+        return self._mock_response(self._get_status_code(), result)
 
     async def _return_send_response(self, url: URL, json: dict[str, Any]):
         result = {"result": {"method": None}, "error_code": self.send_error_code}
-        return self._mock_response(self.status_code, result)
+        return self._mock_response(self._get_status_code(), result)
 
     def put_next_response(self, request: dict | bytes) -> None:
         self._next_responses.append(request)
