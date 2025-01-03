@@ -6,10 +6,9 @@ import logging
 import time
 from typing import Any
 
-from . import EncryptType
 from .device import Device
 from .device_type import DeviceType
-from .deviceconfig import DeviceConfig, DeviceFamily
+from .deviceconfig import DeviceConfig, DeviceEncryptionType, DeviceFamily
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import (
     IotBulb,
@@ -199,7 +198,7 @@ def get_protocol(
     # Older FW used a different transport
     if (
         ctype.device_family is DeviceFamily.SmartTapoRobovac
-        and ctype.encryption_type is EncryptType.Aes
+        and ctype.encryption_type is DeviceEncryptionType.Aes
     ):
         return SmartProtocol(transport=SslTransport(config=config))
 
