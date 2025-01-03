@@ -215,7 +215,7 @@ class Vacuum(SmartModule):
 
     async def set_fan_speed_preset(self, speed: str) -> dict:
         """Set fan speed preset."""
-        name_to_value = {x.name.lower(): x.value for x in FanSpeed}
+        name_to_value = {x.name: x.value for x in FanSpeed}
         if speed not in name_to_value:
             raise ValueError("Invalid fan speed %s, available %s", speed, name_to_value)
         return await self.call(
