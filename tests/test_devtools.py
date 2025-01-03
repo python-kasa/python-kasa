@@ -1,5 +1,7 @@
 """Module for dump_devinfo tests."""
 
+import copy
+
 import pytest
 
 from devtools.dump_devinfo import get_legacy_fixture, get_smart_fixtures
@@ -11,6 +13,7 @@ from kasa.smartcam import SmartCamDevice
 from .conftest import (
     FixtureInfo,
     get_device_for_fixture,
+    get_fixture_info,
     parametrize,
 )
 
@@ -64,21 +67,49 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
     assert fixture_info.data == fixture_result.data
 
 
+def _normalize_child_device_ids(info: dict):
+    if dev_info := info.get("get_device_info"):
+        dev_info["device_id"] = "SCRUBBED"
+    elif (
+        dev_info := info.get("getDeviceInfo", {})
+        .get("device_info", {})
+        .get("basic_info")
+    ):
+        dev_info["dev_id"] = "SCRUBBED"
+
+
 @smartcam_fixtures
 async def test_smartcam_fixtures(fixture_info: FixtureInfo):
     """Test that smartcam fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamDevice)
-    if dev.children:
-        pytest.skip("Test not currently implemented for devices with children.")
-    fixtures = await get_smart_fixtures(
+    # if dev.children:
+    #    pytest.skip("Test not currently implemented for devices with children.")
+    created_fixtures = await get_smart_fixtures(
         dev.protocol,
         discovery_info=fixture_info.data.get("discovery_result"),
         batch_size=5,
     )
-    fixture_result = fixtures[0]
+    fixture_result = created_fixtures.pop(0)
 
     assert fixture_info.data == fixture_result.data
+
+    for created_child_fixture in created_fixtures:
+        child_fixture_info = get_fixture_info(
+            created_child_fixture.filename + ".json",
+            created_child_fixture.protocol_suffix,
+        )
+
+        assert child_fixture_info
+
+        _normalize_child_device_ids(created_child_fixture.data)
+
+        saved_fixture_data = copy.deepcopy(child_fixture_info.data)
+        _normalize_child_device_ids(saved_fixture_data)
+        saved_fixture_data = {
+            key: val for key, val in saved_fixture_data.items() if val != -1001
+        }
+        assert saved_fixture_data == created_child_fixture.data
 
 
 @iot_fixtures

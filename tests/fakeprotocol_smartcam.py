@@ -53,11 +53,11 @@ class FakeSmartCamTransport(BaseTransport):
         if not is_child:
             self.info = copy.deepcopy(info)
             self.child_protocols = FakeSmartTransport._get_child_protocols(
-                self.info, self.fixture_name, "getChildDeviceList"
+                self.info, self.fixture_name, "getChildDeviceList", self.verbatim
             )
         else:
             self.info = info
-        # self.child_protocols = self._get_child_protocols()
+
         self.list_return_size = list_return_size
 
         # Setting this flag allows tests to create dummy transports without
