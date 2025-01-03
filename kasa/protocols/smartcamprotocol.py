@@ -239,11 +239,15 @@ class _ChildCameraProtocolWrapper(SmartProtocol):
 
         responses = response["multipleRequest"]["responses"]
         response_dict = {}
+
+        # Raise errors for single calls
+        raise_on_error = len(requests) == 1
+
         for index_id, response in enumerate(responses):
             response_data = response["result"]["response_data"]
             method = methods[index_id]
             self._handle_response_error_code(
-                response_data, method, raise_on_error=False
+                response_data, method, raise_on_error=raise_on_error
             )
             response_dict[method] = response_data.get("result")
 
