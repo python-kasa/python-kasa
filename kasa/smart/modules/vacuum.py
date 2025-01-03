@@ -154,6 +154,10 @@ class Vacuum(SmartModule):
         try:
             self._error_code = ErrorCode(error)
         except ValueError:
+            _LOGGER.debug(
+                "Unknown error code, please create an issue describing the error: %s",
+                error,
+            )
             self._error_code = ErrorCode.Unknown
 
     def query(self) -> dict:
