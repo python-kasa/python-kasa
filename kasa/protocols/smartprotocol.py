@@ -180,7 +180,9 @@ class SmartProtocol(BaseProtocol):
         # make mypy happy, this should never be reached..
         raise KasaException("Query reached somehow to unreachable")
 
-    async def _execute_multiple_query(self, requests: dict, retry_count: int) -> dict:
+    async def _execute_multiple_query(
+        self, requests: dict, retry_count: int, iterate_list_pages: bool
+    ) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         multi_result: dict[str, Any] = {}
         smart_method = "multipleRequest"
@@ -275,9 +277,10 @@ class SmartProtocol(BaseProtocol):
                     response, method, raise_on_error=raise_on_error
                 )
                 result = response.get("result", None)
-                await self._handle_response_lists(
-                    result, method, retry_count=retry_count
-                )
+                if iterate_list_pages and result:
+                    await self._handle_response_lists(
+                        result, method, retry_count=retry_count
+                    )
                 multi_result[method] = result
 
         # Multi requests don't continue after errors so requery any missing.
@@ -303,7 +306,9 @@ class SmartProtocol(BaseProtocol):
                 smart_method = next(iter(request))
                 smart_params = request[smart_method]
             else:
-                return await self._execute_multiple_query(request, retry_count)
+                return await self._execute_multiple_query(
+                    request, retry_count, iterate_list_pages
+                )
         else:
             smart_method = request
             smart_params = None
@@ -334,6 +339,9 @@ class SmartProtocol(BaseProtocol):
             )
         return {smart_method: result}
 
+    def _get_list_request(self, method: str, start_index: int) -> dict:
+        return {method: {"start_index": start_index}}
+
     async def _handle_response_lists(
         self, response_result: dict[str, Any], method: str, retry_count: int
     ) -> None:
@@ -355,8 +363,9 @@ class SmartProtocol(BaseProtocol):
             )
         )
         while (list_length := len(response_result[response_list_name])) < list_sum:
+            request = self._get_list_request(method, list_length)
             response = await self._execute_query(
-                {method: {"start_index": list_length}},
+                request,
                 retry_count=retry_count,
                 iterate_list_pages=False,
             )

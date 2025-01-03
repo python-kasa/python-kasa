@@ -49,10 +49,11 @@ class SingleRequest:
 class SmartCamProtocol(SmartProtocol):
     """Class for SmartCam Protocol."""
 
-    async def _handle_response_lists(
-        self, response_result: dict[str, Any], method: str, retry_count: int
-    ) -> None:
-        pass
+    def _get_list_request(self, method: str, start_index: int) -> dict:
+        if method in {"getChildDeviceList", "getChildDeviceComponentList"}:
+            return {method: {"childControl": {"start_index": start_index}}}
+
+        return {method: {"start_index": start_index}}
 
     def _handle_response_error_code(
         self, resp_dict: dict, method: str, raise_on_error: bool = True
@@ -147,7 +148,9 @@ class SmartCamProtocol(SmartProtocol):
             if len(request) == 1 and method in {"get", "set", "do", "multipleRequest"}:
                 single_request = self._get_smart_camera_single_request(request)
             else:
-                return await self._execute_multiple_query(request, retry_count)
+                return await self._execute_multiple_query(
+                    request, retry_count, iterate_list_pages
+                )
         else:
             single_request = self._make_smart_camera_single_request(request)
 
