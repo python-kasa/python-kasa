@@ -142,7 +142,7 @@ class Vacuum(SmartModule):
         """Set error code after update."""
         errors = self._vac_status.get("err_status")
         if errors is None:
-            self._error = ErrorCode.Ok
+            self._error_code = ErrorCode.Ok
             return
 
         if len(errors) > 1:
@@ -152,9 +152,9 @@ class Vacuum(SmartModule):
 
         error = errors.pop(0)
         try:
-            self._error = ErrorCode(error)
+            self._error_code = ErrorCode(error)
         except ValueError:
-            self._error = ErrorCode.Unknown
+            self._error_code = ErrorCode.Unknown
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -206,7 +206,7 @@ class Vacuum(SmartModule):
     @property
     def error(self) -> ErrorCode:
         """Return error."""
-        return self._error
+        return self._error_code
 
     @property
     def fan_speed_preset(self) -> str:
