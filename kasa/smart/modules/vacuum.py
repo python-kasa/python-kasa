@@ -10,7 +10,7 @@ from ...feature import Feature
 from ..smartmodule import SmartModule
 
 if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
+    pass
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,6 +29,14 @@ class Status(IntEnum):
     Unknown = 101
 
 
+class ErrorCode(IntEnum):
+    """Error codes for vacuum."""
+
+    Ok = 0
+    DustBinRemoved = 14
+    Unknown = -1000
+
+
 class FanSpeed(IntEnum):
     """Fan speed level."""
 
@@ -42,12 +50,13 @@ class Vacuum(SmartModule):
     """Implementation of vacuum support."""
 
     REQUIRED_COMPONENT = "clean"
+    _error_code = ErrorCode.Ok
 
-    def __init__(self, device: SmartDevice, module: str) -> None:
-        super().__init__(device, module)
+    def _initialize_features(self) -> None:
+        """Initialize features."""
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="vacuum_return_home",
                 name="Return home",
                 container=self,
@@ -58,7 +67,7 @@ class Vacuum(SmartModule):
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="vacuum_start",
                 name="Start cleaning",
                 container=self,
@@ -69,7 +78,7 @@ class Vacuum(SmartModule):
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="vacuum_pause",
                 name="Pause",
                 container=self,
@@ -80,12 +89,23 @@ class Vacuum(SmartModule):
         )
         self._add_feature(
             Feature(
-                device,
+                self._device,
                 id="vacuum_status",
                 name="Vacuum status",
                 container=self,
                 attribute_getter="status",
                 category=Feature.Category.Primary,
+                type=Feature.Type.Sensor,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="vacuum_error",
+                name="Error",
+                container=self,
+                attribute_getter="error",
+                category=Feature.Category.Info,
                 type=Feature.Type.Sensor,
             )
         )
@@ -117,6 +137,24 @@ class Vacuum(SmartModule):
                 type=Feature.Type.Choice,
             )
         )
+
+    async def _post_update_hook(self) -> None:
+        """Set error code after update."""
+        errors = self._vac_status.get("err_status")
+        if errors is None:
+            self._error = ErrorCode.Ok
+            return
+
+        if len(errors) > 1:
+            _LOGGER.warning(
+                "Multiple error codes, using the first one only: %s", errors
+            )
+
+        error = errors.pop(0)
+        try:
+            self._error = ErrorCode(error)
+        except ValueError:
+            self._error = ErrorCode.Unknown
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -166,6 +204,11 @@ class Vacuum(SmartModule):
         return await self.call("setSwitchCharge", {"switch_charge": enabled})
 
     @property
+    def error(self) -> ErrorCode:
+        """Return error."""
+        return self._error
+
+    @property
     def fan_speed_preset(self) -> str:
         """Return fan speed preset."""
         return FanSpeed(self.data["getCleanAttr"]["suction"]).name
@@ -192,7 +235,7 @@ class Vacuum(SmartModule):
     @property
     def status(self) -> Status:
         """Return current status."""
-        if self._vac_status.get("err_status"):
+        if self._error_code is not ErrorCode.Ok:
             return Status.Error
 
         status_code = self._vac_status["status"]
