@@ -160,7 +160,7 @@ class Vacuum(SmartModule):
         try:
             self._error_code = ErrorCode(error)
         except ValueError:
-            _LOGGER.debug(
+            _LOGGER.warning(
                 "Unknown error code, please create an issue describing the error: %s",
                 error,
             )
