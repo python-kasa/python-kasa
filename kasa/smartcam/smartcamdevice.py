@@ -63,6 +63,13 @@ class SmartCamDevice(SmartDevice):
         info = self._try_get_response(info_resp, "getDeviceInfo")
         self._info = self._map_info(info["device_info"])
 
+    def _update_internal_state(self, info: dict[str, Any]) -> None:
+        """Update the internal info state.
+
+        This is used by the parent to push updates to its children.
+        """
+        self._info = self._map_info(info)
+
     def _update_children_info(self) -> None:
         """Update the internal child device info from the parent info."""
         if child_info := self._try_get_response(
@@ -99,6 +106,27 @@ class SmartCamDevice(SmartDevice):
             last_update=initial_response,
         )
 
+    async def _initialize_smartcam_child(
+        self, info: dict, child_components_raw: ComponentsRaw
+    ) -> SmartDevice:
+        """Initialize a smart child device attached to a smartcam device."""
+        child_id = info["device_id"]
+        child_protocol = _ChildCameraProtocolWrapper(child_id, self.protocol)
+
+        last_update = {"getDeviceInfo": {"device_info": {"basic_info": info}}}
+        app_component_list = {
+            "app_component_list": child_components_raw["component_list"]
+        }
+        from .smartcamchild import SmartCamChild
+
+        return await SmartCamChild.create(
+            parent=self,
+            child_info=info,
+            child_components_raw=app_component_list,
+            protocol=child_protocol,
+            last_update=last_update,
+        )
+
     async def _initialize_children(self) -> None:
         """Initialize children for hubs."""
         child_info_query = {
@@ -113,7 +141,10 @@ class SmartCamDevice(SmartDevice):
             for child in resp["getChildDeviceComponentList"]["child_component_list"]
         }
         children = {}
+        from .smartcamchild import SmartCamChild
+
         for info in resp["getChildDeviceList"]["child_device_list"]:
+            # Smart
             if (
                 (category := info.get("category"))
                 and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
@@ -121,6 +152,17 @@ class SmartCamDevice(SmartDevice):
                 and (child_components := smart_children_components.get(child_id))
             ):
                 children[child_id] = await self._initialize_smart_child(
+                    info, child_components
+                )
+            # Smartcam
+            elif (
+                (category := info.get("category"))
+                and (child_id := info.get("device_id"))
+                and (device_family := info.get("device_type"))
+                and (category, device_family) in SmartCamChild.CHILD_DEVICE_TYPE_MAP
+                and (child_components := smart_children_components.get(child_id))
+            ):
+                children[child_id] = await self._initialize_smartcam_child(
                     info, child_components
                 )
             else:

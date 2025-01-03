@@ -286,9 +286,12 @@ class FakeSmartTransport(BaseTransport):
                 child_fixture["getDeviceInfo"]["device_info"]["basic_info"][
                     "dev_id"
                 ] = device_id
-                found_child_fixture_infos.append(
-                    child_fixture["getDeviceInfo"]["device_info"]["basic_info"]
-                )
+
+                # We copy the child device info to the parent list for
+                # smart children in order for updates to work. This does not
+                # work with smartcam children so we add the original child info
+                # so it doesn't get overwritten if smar children are present
+                found_child_fixture_infos.append(child_info)
                 child_protocols[device_id] = FakeSmartCamProtocol(
                     child_fixture, fixture_info_tuple.name, is_child=True
                 )
@@ -298,7 +301,8 @@ class FakeSmartTransport(BaseTransport):
                     stacklevel=2,
                 )
         # Replace parent child infos with the infos from the child fixtures so
-        # that updates update both
+        # that updates update both.
+        # This doesn't work for smartcam children as they have different schemas
         if not verbatim and child_infos and found_child_fixture_infos:
             parent_fixture_info[child_devices_key]["child_device_list"] = (
                 found_child_fixture_infos

@@ -9,7 +9,8 @@ from typing import Any
 from ..device import DeviceInfo
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
-from ..protocols.smartcamprotocol import SmartCamProtocol, _ChildCameraProtocolWrapper
+from ..protocols.smartcamprotocol import _ChildCameraProtocolWrapper
+from ..protocols.smartprotocol import SmartProtocol
 from ..smart.smartdevice import ComponentsRaw, SmartDevice
 from ..smart.smartmodule import SmartModule
 from .smartcamdevice import SmartCamDevice
@@ -36,7 +37,7 @@ class SmartCamChild(SmartCamDevice):
         component_info_raw: ComponentsRaw,
         *,
         config: DeviceConfig | None = None,
-        protocol: SmartCamProtocol | None = None,
+        protocol: SmartProtocol | None = None,
     ) -> None:
         self._id = info["device_id"]
         _protocol = protocol or _ChildCameraProtocolWrapper(self._id, parent.protocol)
@@ -60,6 +61,19 @@ class SmartCamChild(SmartCamDevice):
             },
             None,
         )
+
+    def _map_info(self, device_info: dict) -> dict:
+        return {
+            "model": device_info["device_model"],
+            "device_type": device_info["device_type"],
+            "alias": device_info["alias"],
+            "fw_ver": device_info["sw_ver"],
+            "hw_ver": device_info["hw_ver"],
+            "mac": device_info["mac"],
+            "hwId": device_info.get("hw_id"),
+            "oem_id": device_info["oem_id"],
+            "device_id": device_info["device_id"],
+        }
 
     @staticmethod
     def _get_device_info(
@@ -122,7 +136,7 @@ class SmartCamChild(SmartCamDevice):
         parent: SmartCamDevice,
         child_info: dict,
         child_components_raw: ComponentsRaw,
-        protocol: SmartCamProtocol | None = None,
+        protocol: SmartProtocol | None = None,
         *,
         last_update: dict | None = None,
     ) -> SmartDevice:
