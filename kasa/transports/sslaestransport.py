@@ -603,7 +603,10 @@ class SslAesTransport(BaseTransport):
             _LOGGER.debug("Credentials match")
             return local_nonce, server_nonce, pwd_hash
 
-        msg = f"Server response doesn't match our challenge on ip {self._host}"
+        msg = (
+            f"Device response did not match our challenge on ip {self._host}, "
+            f"check that your e-mail and password (both case-sensitive) are correct. "
+        )
         _LOGGER.debug(msg)
 
         raise AuthenticationError(msg)

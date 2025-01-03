@@ -214,8 +214,8 @@ class KlapTransport(BaseTransport):
 
             if default_credentials_seed_auth_hash == server_hash:
                 _LOGGER.debug(
-                    "Server response doesn't match our expected hash on ip %s, "
-                    "but an authentication with %s default credentials matched",
+                    "Device response did not match our expected hash on ip %s,"
+                    "but an authentication with %s default credentials worked",
                     self._host,
                     key,
                 )
@@ -235,13 +235,16 @@ class KlapTransport(BaseTransport):
 
             if blank_seed_auth_hash == server_hash:
                 _LOGGER.debug(
-                    "Server response doesn't match our expected hash on ip %s, "
-                    "but an authentication with blank credentials matched",
+                    "Device response did not match our expected hash on ip %s, "
+                    "but an authentication with blank credentials worked",
                     self._host,
                 )
                 return local_seed, remote_seed, self._blank_auth_hash  # type: ignore
 
-        msg = f"Server response doesn't match our challenge on ip {self._host}"
+        msg = (
+            f"Device response did not match our challenge on ip {self._host}, "
+            f"check that your e-mail and password (both case-sensitive) are correct. "
+        )
         _LOGGER.debug(msg)
         raise AuthenticationError(msg)
 
