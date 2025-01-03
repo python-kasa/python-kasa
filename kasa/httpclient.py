@@ -114,6 +114,7 @@ class HttpClient:
             )
             async with resp:
                 response_data = await resp.read()
+                _LOGGER.debug("Device responded with %s", response_data)
 
             if resp.status == 200:
                 if return_json:
