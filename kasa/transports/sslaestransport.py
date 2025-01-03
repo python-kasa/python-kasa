@@ -308,7 +308,7 @@ class SslAesTransport(BaseTransport):
         url = cast(URL, self._token_url)
 
         _LOGGER.debug(
-            "Sending unencrypted from %s",
+            "Sending unencrypted to %s",
             self._host,
         )
 
@@ -386,7 +386,7 @@ class SslAesTransport(BaseTransport):
 
     async def try_perform_less_secure_login(self, username: str, password: str) -> bool:
         """Perform the md5 login."""
-        _LOGGER.debug("Performing less secure login ...")
+        _LOGGER.debug("Performing less secure login...")
 
         pwd_hash = _md5_hash(password.encode())
         body = {
@@ -398,8 +398,7 @@ class SslAesTransport(BaseTransport):
             },
         }
 
-        http_client = self._http_client
-        status_code, resp_dict = await http_client.post(
+        status_code, resp_dict = await self._http_client.post(
             self._app_url,
             json=body,
             headers=self._headers,
