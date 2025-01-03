@@ -60,11 +60,19 @@ SUPPORTED_SMARTCAM_DEVICES = [
     )
 ]
 
+SUPPORTED_SMARTCAM_CHILD_DEVICES = [
+    (device, "SMARTCAM.CHILD")
+    for device in glob.glob(
+        os.path.dirname(os.path.abspath(__file__)) + "/fixtures/smartcam/child/*.json"
+    )
+]
+
 SUPPORTED_DEVICES = (
     SUPPORTED_IOT_DEVICES
     + SUPPORTED_SMART_DEVICES
     + SUPPORTED_SMART_CHILD_DEVICES
     + SUPPORTED_SMARTCAM_DEVICES
+    + SUPPORTED_SMARTCAM_CHILD_DEVICES
 )
 
 
@@ -77,19 +85,13 @@ def idgenerator(paramtuple: FixtureInfo):
         return None
 
 
-def get_fixture_info() -> list[FixtureInfo]:
+def get_fixture_infos() -> list[FixtureInfo]:
     """Return raw discovery file contents as JSON. Used for discovery tests."""
     fixture_data = []
     for file, protocol in SUPPORTED_DEVICES:
         p = Path(file)
-        folder = Path(__file__).parent / "fixtures"
-        if protocol == "SMART":
-            folder = folder / "smart"
-        if protocol == "SMART.CHILD":
-            folder = folder / "smart/child"
-        p = folder / file
 
-        with open(p) as f:
+        with open(file) as f:
             data = json.load(f)
 
         fixture_name = p.name
@@ -99,7 +101,7 @@ def get_fixture_info() -> list[FixtureInfo]:
     return fixture_data
 
 
-FIXTURE_DATA: list[FixtureInfo] = get_fixture_info()
+FIXTURE_DATA: list[FixtureInfo] = get_fixture_infos()
 
 
 def filter_fixtures(
@@ -188,7 +190,7 @@ def filter_fixtures(
                 IotDevice._get_device_type_from_sys_info(fixture_data.data)
                 in device_type
             )
-        elif fixture_data.protocol == "SMARTCAM":
+        elif fixture_data.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
             info = fixture_data.data["getDeviceInfo"]["device_info"]["basic_info"]
             return SmartCamDevice._get_device_type_from_sysinfo(info) in device_type
         return False

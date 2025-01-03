@@ -54,7 +54,8 @@ from kasa.protocols.smartcamprotocol import (
 from kasa.protocols.smartprotocol import REDACTORS as SMART_REDACTORS
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartChildDevice, SmartDevice
-from kasa.smartcam import SmartCamDevice
+from kasa.smartcam import SmartCamChild, SmartCamDevice
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 
 Call = namedtuple("Call", "module method")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data, protocol_suffix")
@@ -62,11 +63,13 @@ FixtureResult = namedtuple("FixtureResult", "filename, folder, data, protocol_su
 SMART_FOLDER = "tests/fixtures/smart/"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child/"
+SMARTCAM_CHILD_FOLDER = "tests/fixtures/smartcam/child/"
 IOT_FOLDER = "tests/fixtures/iot/"
 
 SMART_PROTOCOL_SUFFIX = "SMART"
 SMARTCAM_SUFFIX = "SMARTCAM"
 SMART_CHILD_SUFFIX = "SMART.CHILD"
+SMARTCAM_CHILD_SUFFIX = "SMARTCAM.CHILD"
 IOT_SUFFIX = "IOT"
 
 NO_GIT_FIXTURE_FOLDER = "kasa-fixtures"
@@ -844,9 +847,8 @@ async def get_smart_test_calls(protocol: SmartProtocol):
     return test_calls, successes
 
 
-def get_smart_child_fixture(response):
+def get_smart_child_fixture(response, model_info, folder, suffix):
     """Get a seperate fixture for the child device."""
-    model_info = SmartDevice._get_device_info(response, None)
     hw_version = model_info.hardware_version
     fw_version = model_info.firmware_version
     model = model_info.long_name
@@ -855,9 +857,9 @@ def get_smart_child_fixture(response):
     save_filename = f"{model}_{hw_version}_{fw_version}"
     return FixtureResult(
         filename=save_filename,
-        folder=SMART_CHILD_FOLDER,
+        folder=folder,
         data=response,
-        protocol_suffix=SMART_CHILD_SUFFIX,
+        protocol_suffix=suffix,
     )
 
 
@@ -932,6 +934,16 @@ async def get_smart_fixtures(
         protocol, device_requests[""], "All successes", batch_size, child_device_id=""
     )
     fixture_results = []
+
+    # smart cam child devices provide more information in getChildDeviceList on the
+    # parent than they return when queried directly for getDeviceInfo so we will store
+    # it in the child fixture
+    if smart_cam_child_list := final.get("getChildDeviceList"):
+        child_infos_on_parent = {
+            info["device_id"]: info
+            for info in smart_cam_child_list["child_device_list"]
+        }
+
     for child_device_id, requests in device_requests.items():
         if child_device_id == "":
             continue
@@ -955,14 +967,35 @@ async def get_smart_fixtures(
             ]
         else:
             raise KasaException("Cannot determine parent device model.")
+
         if (
-            "component_nego" in response
-            and "get_device_info" in response
-            and (child_model := response["get_device_info"].get("model"))
-            and child_model != parent_model
-        ):
+            child_model := response.get("get_device_info", {}).get("model")
+        ) and child_model != parent_model:
             response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
-            fixture_results.append(get_smart_child_fixture(response))
+            model_info = SmartDevice._get_device_info(response, None)
+            fixture_results.append(
+                get_smart_child_fixture(
+                    response, model_info, SMART_CHILD_FOLDER, SMART_CHILD_SUFFIX
+                )
+            )
+
+        elif (
+            child_model := response.get("getDeviceInfo", {})
+            .get("device_info", {})
+            .get("basic_info", {})
+            .get("device_model")
+        ) and child_model != parent_model:
+            response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
+            # There is more info in the childDeviceList on the parent
+            # particularly the region is needed here.
+            child_info_from_parent = child_infos_on_parent[child_device_id]
+            response[CHILD_INFO_FROM_PARENT] = child_info_from_parent
+            model_info = SmartCamChild._get_device_info(response, None)
+            fixture_results.append(
+                get_smart_child_fixture(
+                    response, model_info, SMARTCAM_CHILD_FOLDER, SMARTCAM_CHILD_SUFFIX
+                )
+            )
         else:
             cd = final.setdefault("child_devices", {})
             cd[scrubbed] = response

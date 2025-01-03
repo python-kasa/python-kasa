@@ -10,7 +10,13 @@ import pytest
 
 from kasa import Credentials, Device, DeviceType, Module, StreamResolution
 
-from ...conftest import camera_smartcam, device_smartcam
+from ...conftest import device_smartcam, parametrize
+
+not_child_camera_smartcam = parametrize(
+    "not child camera smartcam",
+    device_type_filter=[DeviceType.Camera],
+    protocol_filter={"SMARTCAM"},
+)
 
 
 @device_smartcam
@@ -24,7 +30,7 @@ async def test_state(dev: Device):
     assert dev.is_on is not state
 
 
-@camera_smartcam
+@not_child_camera_smartcam
 async def test_stream_rtsp_url(dev: Device):
     camera_module = dev.modules.get(Module.Camera)
     assert camera_module
@@ -84,7 +90,7 @@ async def test_stream_rtsp_url(dev: Device):
     assert url is None
 
 
-@camera_smartcam
+@not_child_camera_smartcam
 async def test_onvif_url(dev: Device):
     """Test the onvif url."""
     camera_module = dev.modules.get(Module.Camera)

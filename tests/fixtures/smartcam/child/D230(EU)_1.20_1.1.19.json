@@ -1,0 +1,525 @@
+{
+    "child_info_from_parent": {
+        "alias": "tapobell",
+        "anti_theft_status": 0,
+        "avatar": "camera d210",
+        "battery_charging": "NO",
+        "battery_installed": 1,
+        "battery_percent": 91,
+        "battery_temperature": 9,
+        "battery_voltage": 4079,
+        "cam_uptime": 4381,
+        "category": "camera",
+        "dev_name": "Tapo Smart Doorbell",
+        "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
+        "device_model": "D230",
+        "device_name": "#MASKED_NAME#",
+        "device_type": "SMART.TAPODOORBELL",
+        "ext_addr": "F0090D32A6370000",
+        "firmware_status": "OK",
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.20",
+        "ipaddr": "172.23.30.2",
+        "led_status": "off",
+        "low_battery": false,
+        "mac": "F0:09:0D:00:00:00",
+        "oem_id": "00000000000000000000000000000000",
+        "onboarding_timestamp": 1732920657,
+        "online": true,
+        "parent_device_id": "0000000000000000000000000000000000000000",
+        "power": "BATTERY",
+        "power_save_mode": "off",
+        "power_save_status": "off",
+        "region": "EU",
+        "rssi": -41,
+        "short_addr": 0,
+        "status": "configured",
+        "subg_cam_rssi": 0,
+        "subg_hub_rssi": 0,
+        "sw_ver": "1.1.19 Build 20241011 rel.67020",
+        "system_time": 1735083918,
+        "updating": false,
+        "uptime": 2153284
+    },
+    "getAppComponentList": {
+        "app_component": {
+            "app_component_list": [
+                {
+                    "name": "sdCard",
+                    "version": 2
+                },
+                {
+                    "name": "timezone",
+                    "version": 1
+                },
+                {
+                    "name": "batCamSystem",
+                    "version": 1
+                },
+                {
+                    "name": "led",
+                    "version": 1
+                },
+                {
+                    "name": "playback",
+                    "version": 3
+                },
+                {
+                    "name": "detection",
+                    "version": 3
+                },
+                {
+                    "name": "firmware",
+                    "version": 1
+                },
+                {
+                    "name": "video",
+                    "version": 3
+                },
+                {
+                    "name": "lensMask",
+                    "version": 2
+                },
+                {
+                    "name": "lightFrequency",
+                    "version": 2
+                },
+                {
+                    "name": "dayNightMode",
+                    "version": 2
+                },
+                {
+                    "name": "nightVisionMode",
+                    "version": 3
+                },
+                {
+                    "name": "batCamOsd",
+                    "version": 1
+                },
+                {
+                    "name": "record",
+                    "version": 1
+                },
+                {
+                    "name": "audio",
+                    "version": 3
+                },
+                {
+                    "name": "personDetection",
+                    "version": 2
+                },
+                {
+                    "name": "vehicleDetection",
+                    "version": 1
+                },
+                {
+                    "name": "petDetection",
+                    "version": 1
+                },
+                {
+                    "name": "msgPush",
+                    "version": 3
+                },
+                {
+                    "name": "deviceShare",
+                    "version": 1
+                },
+                {
+                    "name": "tapoCare",
+                    "version": 1
+                },
+                {
+                    "name": "pir",
+                    "version": 1
+                },
+                {
+                    "name": "battery",
+                    "version": 3
+                },
+                {
+                    "name": "clips",
+                    "version": 1
+                },
+                {
+                    "name": "batCamRelay",
+                    "version": 1
+                },
+                {
+                    "name": "batCamP2p",
+                    "version": 1
+                },
+                {
+                    "name": "needSubscriptionServiceList",
+                    "version": 1
+                },
+                {
+                    "name": "iotCloud",
+                    "version": 1
+                },
+                {
+                    "name": "blockZone",
+                    "version": 1
+                },
+                {
+                    "name": "whiteLamp",
+                    "version": 1
+                },
+                {
+                    "name": "infLamp",
+                    "version": 1
+                },
+                {
+                    "name": "packageDetection",
+                    "version": 3
+                },
+                {
+                    "name": "wakeUp",
+                    "version": 1
+                },
+                {
+                    "name": "ring",
+                    "version": 1
+                },
+                {
+                    "name": "antiTheft",
+                    "version": 3
+                },
+                {
+                    "name": "quickResponse",
+                    "version": 2
+                },
+                {
+                    "name": "doorbellNightVision",
+                    "version": 1
+                },
+                {
+                    "name": "dataDownload",
+                    "version": 1
+                },
+                {
+                    "name": "detectionRegion",
+                    "version": 2
+                },
+                {
+                    "name": "streamGrab",
+                    "version": 1
+                },
+                {
+                    "name": "recordDownload",
+                    "version": 1
+                },
+                {
+                    "name": "batCamPreRelay",
+                    "version": 1
+                },
+                {
+                    "name": "batCamStatistics",
+                    "version": 1
+                },
+                {
+                    "name": "batCamNodeRelay",
+                    "version": 1
+                },
+                {
+                    "name": "batCamRtsp",
+                    "version": 2
+                }
+            ]
+        }
+    },
+    "getAudioConfig": {
+        "audio_config": {
+            "microphone": {
+                "channels": "1",
+                "encode_type": "G711ulaw",
+                "sampling_rate": "8",
+                "volume": "58"
+            },
+            "microphone_algo": {
+                "aec": "on",
+                "hs": "off",
+                "ns": "off",
+                "sys_aec": "on"
+            },
+            "record_audio": {
+                "enabled": "on"
+            },
+            "speaker": {
+                "volume": "80"
+            },
+            "speaker_algo": {
+                "hs": "off",
+                "ns": "off"
+            }
+        }
+    },
+    "getCircularRecordingConfig": {
+        "harddisk_manage": {
+            "harddisk": {
+                "loop": "on"
+            }
+        }
+    },
+    "getClockStatus": {
+        "system": {
+            "clock_status": {
+                "local_time": "2024-12-25 00:45:23",
+                "seconds_from_1970": 1735083923
+            }
+        }
+    },
+    "getDetectionConfig": {
+        "motion_detection": {
+            "motion_det": {
+                "digital_sensitivity": "30",
+                "enabled": "on",
+                "sensitivity": "low"
+            },
+            "region_info": []
+        }
+    },
+    "getDeviceInfo": {
+        "device_info": {
+            "basic_info": {
+                "a_type": 3,
+                "anti_theft_status": 0,
+                "avatar": "camera d210",
+                "battery_charging": "NO",
+                "battery_overheated": false,
+                "battery_percent": 91,
+                "c_opt": [
+                    0,
+                    1
+                ],
+                "camera_switch": "on",
+                "dev_id": "0000000000000000000000000000000000000000",
+                "device_alias": "#MASKED_NAME#",
+                "device_model": "D230",
+                "device_name": "#MASKED_NAME#",
+                "device_type": "SMART.TAPODOORBELL",
+                "firmware_status": "OK",
+                "hw_version": "1.20",
+                "last_activity_timestamp": 1735051284,
+                "led_status": "off",
+                "low_battery": false,
+                "mac": "F0-09-0D-00-00-00",
+                "oem_id": "00000000000000000000000000000000",
+                "online": true,
+                "parent_device_id": "0000000000000000000000000000000000000000",
+                "parent_link_type": "ethernet",
+                "power": "BATTERY",
+                "power_save_mode": "off",
+                "resolution": "2560*1920",
+                "rssi": -41,
+                "status": "configured",
+                "sw_version": "1.1.19 Build 20241011 rel.67020",
+                "system_time": 1735083920,
+                "updating": false
+            }
+        }
+    },
+    "getFirmwareUpdateStatus": {
+        "cloud_config": {
+            "upgrade_status": {
+                "lastUpgradingSuccess": true,
+                "state": "normal"
+            }
+        }
+    },
+    "getLastAlarmInfo": {
+        "system": {
+            "last_alarm_info": {
+                "last_alarm_time": "1735051284",
+                "last_alarm_type": "motion"
+            }
+        }
+    },
+    "getLdc": {
+        "image": {
+            "switch": {
+                "ldc": "off"
+            }
+        }
+    },
+    "getLedStatus": {
+        "led": {
+            "config": {
+                "enabled": "off"
+            }
+        }
+    },
+    "getLensMaskConfig": {
+        "lens_mask": {
+            "lens_mask_info": {
+                "enabled": "off"
+            }
+        }
+    },
+    "getLightFrequencyInfo": {
+        "image": {
+            "common": {
+                "light_freq_mode": "50"
+            }
+        }
+    },
+    "getLightTypeList": {
+        "light_type_list": [
+            "flicker"
+        ]
+    },
+    "getMediaEncrypt": {
+        "cet": {
+            "media_encrypt": {
+                "enabled": "on"
+            }
+        }
+    },
+    "getMsgPushConfig": {
+        "msg_push": {
+            "chn1_msg_push_info": {
+                "notification_enabled": "on",
+                "rich_notification_enabled": "off"
+            }
+        }
+    },
+    "getNightVisionCapability": {
+        "image_capability": {
+            "supplement_lamp": {
+                "night_vision_mode_range": [
+                    "inf_night_vision",
+                    "wtl_night_vision",
+                    "dbl_night_vision"
+                ],
+                "supplement_lamp_type": [
+                    "infrared_lamp",
+                    "white_lamp"
+                ]
+            }
+        }
+    },
+    "getNightVisionModeConfig": {
+        "image": {
+            "switch": {
+                "night_vision_mode": "dbl_night_vision"
+            }
+        }
+    },
+    "getPersonDetectionConfig": {
+        "people_detection": {
+            "detection": {
+                "enabled": "on",
+                "sensitivity": "60"
+            }
+        }
+    },
+    "getPetDetectionConfig": {
+        "pet_detection": {
+            "detection": {
+                "enabled": "off",
+                "sensitivity": "60"
+            }
+        }
+    },
+    "getRecordPlan": {
+        "record_plan": {
+            "chn1_channel": {
+                "enabled": "on",
+                "friday": "[\"0000-2400:2\"]",
+                "monday": "[\"0000-2400:2\"]",
+                "saturday": "[\"0000-2400:2\"]",
+                "sunday": "[\"0000-2400:2\"]",
+                "thursday": "[\"0000-2400:2\"]",
+                "tuesday": "[\"0000-2400:2\"]",
+                "wednesday": "[\"0000-2400:2\"]"
+            }
+        }
+    },
+    "getRotationStatus": {
+        "image": {
+            "switch": {
+                "flip_type": "off"
+            }
+        }
+    },
+    "getSdCardStatus": {
+        "harddisk_manage": {
+            "hd_info": [
+                {
+                    "hd_info_1": {
+                        "detect_status": "offline",
+                        "disk_name": "1",
+                        "loop_record_status": "1",
+                        "status": "offline"
+                    }
+                }
+            ]
+        }
+    },
+    "getTimezone": {
+        "system": {
+            "basic": {
+                "timezone": "UTC+01:00",
+                "timing_mode": "ntp",
+                "zone_id": "Europe/Amsterdam"
+            }
+        }
+    },
+    "getVehicleDetectionConfig": {
+        "vehicle_detection": {
+            "detection": {
+                "enabled": "off",
+                "sensitivity": "60"
+            }
+        }
+    },
+    "getVideoCapability": {
+        "video_capability": {
+            "main": {
+                "bitrate_types": [
+                    "vbr"
+                ],
+                "bitrates": [
+                    "1457"
+                ],
+                "change_fps_support": "0",
+                "encode_types": [
+                    "H264"
+                ],
+                "frame_rates": [
+                    65551
+                ],
+                "minor_stream_support": "1",
+                "qualities": [
+                    "5"
+                ],
+                "resolutions": [
+                    "2560*1920"
+                ]
+            }
+        }
+    },
+    "getVideoQualities": {
+        "video": {
+            "main": {
+                "bitrate": "1943",
+                "bitrate_type": "vbr",
+                "encode_type": "H264",
+                "frame_rate": "65551",
+                "quality": "5",
+                "resolution": "2560*1920"
+            }
+        }
+    },
+    "getWhitelampConfig": {
+        "image": {
+            "switch": {
+                "wtl_force_time": "300",
+                "wtl_intensity_level": "5"
+            }
+        }
+    },
+    "getWhitelampStatus": {
+        "rest_time": 0,
+        "status": 0
+    }
+}
