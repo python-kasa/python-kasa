@@ -163,7 +163,13 @@ class SslAesTransport(BaseTransport):
         return error_code
 
     def _get_response_inner_error(self, resp_dict: Any) -> SmartErrorCode | None:
+        # Device blocked errors have 'data' element at the root level, other inner
+        # errors are inside 'result'
         error_code_raw = resp_dict.get("data", {}).get("code")
+
+        if error_code_raw is None:
+            error_code_raw = resp_dict.get("result", {}).get("data", {}).get("code")
+
         if error_code_raw is None:
             return None
         try:
@@ -381,18 +387,17 @@ class SslAesTransport(BaseTransport):
             local_nonce, server_nonce, pwd_hash = result
             await self.perform_handshake2(local_nonce, server_nonce, pwd_hash)
 
-    async def try_perform_less_secure_login(self) -> bool:
+    async def try_perform_less_secure_login(self, username: str, password: str) -> bool:
         """Perform the md5 login."""
         _LOGGER.debug("Performing less secure login ...")
 
-        pwd = self._pwd_to_hash()
-        pwd_hash = _md5_hash(pwd.encode())
+        pwd_hash = _md5_hash(password.encode())
         body = {
             "method": "login",
             "params": {
                 "hashed": True,
                 "password": pwd_hash,
-                "username": self._username,
+                "username": username,
             },
         }
 
@@ -508,8 +513,13 @@ class SslAesTransport(BaseTransport):
         if (
             resp_dict
             and self._is_less_secure_login(resp_dict)
-            and await self.try_perform_less_secure_login()
+            and self._get_response_inner_error(resp_dict)
+            is not SmartErrorCode.BAD_USERNAME
+            and await self.try_perform_less_secure_login(
+                cast(str, self._username), self._pwd_to_hash()
+            )
         ):
+            self._state = TransportState.ESTABLISHED
             return None
 
         # Try the default username. If it fails raise the original error_code
@@ -535,10 +545,13 @@ class SslAesTransport(BaseTransport):
                 error_code = default_error_code
                 resp_dict = default_resp_dict
             # Otherwise could be less secure login
-            elif (
-                self._is_less_secure_login(default_resp_dict)
-                and await self.try_perform_less_secure_login()
+            elif self._is_less_secure_login(
+                default_resp_dict
+            ) and await self.try_perform_less_secure_login(
+                self._default_credentials.username, self._pwd_to_hash()
             ):
+                self._username = self._default_credentials.username
+                self._state = TransportState.ESTABLISHED
                 return None
 
         # If the default login worked it's ok not to provide credentials but if
