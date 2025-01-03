@@ -33,7 +33,13 @@ class ErrorCode(IntEnum):
     """Error codes for vacuum."""
 
     Ok = 0
+    MainBrushStuck = 3
+    WheelBlocked = 4
     DustBinRemoved = 14
+    UnableToMove = 15
+    LidarBlocked = 16
+    UnableToFindDock = 21
+
     Unknown = -1000
 
 
