@@ -112,7 +112,7 @@ class Vacuum(SmartModule):
                 attribute_getter="fan_speed_preset",
                 attribute_setter="set_fan_speed_preset",
                 icon="mdi:fan",
-                choices_getter=lambda: list([str(speed) for speed in FanSpeed]),
+                choices_getter=lambda: list(FanSpeed.__members__),
                 category=Feature.Category.Primary,
                 type=Feature.Type.Choice,
             )
