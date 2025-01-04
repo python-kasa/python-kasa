@@ -10,6 +10,7 @@ from kasa.exceptions import (
     KasaException,
     SmartErrorCode,
 )
+from kasa.protocols.smartcamprotocol import SmartCamProtocol
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 
@@ -364,6 +365,46 @@ async def test_smart_protocol_lists_multiple_request(mocker, list_sum, batch_siz
         get_child_fixtures=False,
     )
     protocol = SmartProtocol(transport=ft)
+    query_spy = mocker.spy(protocol, "_execute_query")
+    resp = await protocol.query(request)
+    expected_count = 1 + 2 * (
+        int(list_sum / batch_size) + (0 if list_sum % batch_size else -1)
+    )
+    assert query_spy.call_count == expected_count
+    assert resp == response
+
+
+@pytest.mark.parametrize("list_sum", [5, 10, 30])
+@pytest.mark.parametrize("batch_size", [1, 2, 3, 50])
+async def test_smartcam_protocol_list_request(mocker, list_sum, batch_size):
+    """Test smartcam protocol list handling for lists."""
+    child_list = [{"foo": i} for i in range(list_sum)]
+
+    response = {
+        "getChildDeviceList": {
+            "child_device_list": child_list,
+            "start_index": 0,
+            "sum": list_sum,
+        },
+        "getChildDeviceComponentList": {
+            "child_component_list": child_list,
+            "start_index": 0,
+            "sum": list_sum,
+        },
+    }
+    request = {
+        "getChildDeviceList": {"childControl": {"start_index": 0}},
+        "getChildDeviceComponentList": {"childControl": {"start_index": 0}},
+    }
+
+    ft = FakeSmartCamTransport(
+        response,
+        "foobar",
+        list_return_size=batch_size,
+        components_not_included=True,
+        get_child_fixtures=False,
+    )
+    protocol = SmartCamProtocol(transport=ft)
     query_spy = mocker.spy(protocol, "_execute_query")
     resp = await protocol.query(request)
     expected_count = 1 + 2 * (

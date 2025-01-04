@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pprint import pformat as pf
-from typing import Any
+from typing import Any, cast
 
 from ..exceptions import (
     AuthenticationError,
@@ -49,11 +49,13 @@ class SingleRequest:
 class SmartCamProtocol(SmartProtocol):
     """Class for SmartCam Protocol."""
 
-    def _get_list_request(self, method: str, start_index: int) -> dict:
-        if method in {"getChildDeviceList", "getChildDeviceComponentList"}:
-            return {method: {"childControl": {"start_index": start_index}}}
-
-        return {method: {"start_index": start_index}}
+    def _get_list_request(
+        self, method: str, params: dict | None, start_index: int
+    ) -> dict:
+        # All smartcam requests have params
+        params = cast(dict, params)
+        module_name = next(iter(params))
+        return {method: {module_name: {"start_index": start_index}}}
 
     def _handle_response_error_code(
         self, resp_dict: dict, method: str, raise_on_error: bool = True

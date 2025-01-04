@@ -277,9 +277,10 @@ class SmartProtocol(BaseProtocol):
                     response, method, raise_on_error=raise_on_error
                 )
                 result = response.get("result", None)
+                request_params = rp if (rp := requests.get(method)) else None
                 if iterate_list_pages and result:
                     await self._handle_response_lists(
-                        result, method, retry_count=retry_count
+                        result, method, request_params, retry_count=retry_count
                     )
                 multi_result[method] = result
 
@@ -335,15 +336,21 @@ class SmartProtocol(BaseProtocol):
         result = response_data.get("result")
         if iterate_list_pages and result:
             await self._handle_response_lists(
-                result, smart_method, retry_count=retry_count
+                result, smart_method, smart_params, retry_count=retry_count
             )
         return {smart_method: result}
 
-    def _get_list_request(self, method: str, start_index: int) -> dict:
+    def _get_list_request(
+        self, method: str, params: dict | None, start_index: int
+    ) -> dict:
         return {method: {"start_index": start_index}}
 
     async def _handle_response_lists(
-        self, response_result: dict[str, Any], method: str, retry_count: int
+        self,
+        response_result: dict[str, Any],
+        method: str,
+        params: dict | None,
+        retry_count: int,
     ) -> None:
         if (
             response_result is None
@@ -363,7 +370,7 @@ class SmartProtocol(BaseProtocol):
             )
         )
         while (list_length := len(response_result[response_list_name])) < list_sum:
-            request = self._get_list_request(method, list_length)
+            request = self._get_list_request(method, params, list_length)
             response = await self._execute_query(
                 request,
                 retry_count=retry_count,
