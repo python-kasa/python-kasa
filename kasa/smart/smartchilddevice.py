@@ -24,6 +24,7 @@ class SmartChildDevice(SmartDevice):
 
     CHILD_DEVICE_TYPE_MAP = {
         "plug.powerstrip.sub-plug": DeviceType.Plug,
+        "subg.plugswitch.switch": DeviceType.WallSwitch,
         "subg.trigger.contact-sensor": DeviceType.Sensor,
         "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
         "subg.trigger.water-leak-sensor": DeviceType.Sensor,
