@@ -53,6 +53,7 @@ async def test_hub(dev):
     assert dev.children
     for child in dev.children:
         assert child.modules
+        assert child.device_info
 
         assert child.alias
         await child.update()

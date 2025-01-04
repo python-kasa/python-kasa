@@ -57,7 +57,7 @@ class SmartCamChild(SmartCamDevice):
         """
         return self._get_device_info(
             {
-                CHILD_INFO_FROM_PARENT: {self._info},
+                CHILD_INFO_FROM_PARENT: self._info,
             },
             None,
         )
@@ -83,9 +83,9 @@ class SmartCamChild(SmartCamDevice):
         if not (cifp := info.get(CHILD_INFO_FROM_PARENT)):
             return SmartCamDevice._get_device_info(info, discovery_info)
 
-        model = cifp["device_model"]
+        model = cifp["model"]
         device_type = SmartCamDevice._get_device_type_from_sysinfo(cifp)
-        fw_version_full = cifp["sw_ver"]
+        fw_version_full = cifp["fw_ver"]
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         return DeviceInfo(
             short_name=model,
