@@ -183,7 +183,7 @@ class SmartDevice(Device):
         """Update the internal device info."""
         self._info = self._try_get_response(info_resp, "get_device_info")
 
-    async def update(self, update_children: bool = False) -> None:
+    async def update(self, update_children: bool = True) -> None:
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
@@ -203,11 +203,10 @@ class SmartDevice(Device):
 
         self._update_children_info()
         # Call child update which will only update module calls, info is updated
-        # from get_child_device_list. update_children only affects hub devices, other
-        # devices will always update children to prevent errors on module access.
+        # from get_child_device_list.
         # This needs to go after updating the internal state of the children so that
         # child modules have access to their sysinfo.
-        if update_children or self.device_type != DeviceType.Hub:
+        if update_children:
             for child in self._children.values():
                 if TYPE_CHECKING:
                     assert isinstance(child, SmartChildDevice)
