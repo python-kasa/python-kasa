@@ -13,6 +13,7 @@ from .color import Color
 from .colortemperature import ColorTemperature
 from .contactsensor import ContactSensor
 from .devicemodule import DeviceModule
+from .dustbin import Dustbin
 from .energy import Energy
 from .fan import Fan
 from .firmware import Firmware
@@ -72,4 +73,5 @@ __all__ = [
     "OverheatProtection",
     "HomeKit",
     "Matter",
+    "Dustbin",
 ]
