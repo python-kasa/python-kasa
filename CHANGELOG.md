@@ -7,6 +7,7 @@
 **Release summary:**
 
 - Support for hub-attached wall switches S210 and S220
+- Support for older firmware on Tapo cameras
 - Bugfixes and improvements
 
 **Implemented enhancements:**
