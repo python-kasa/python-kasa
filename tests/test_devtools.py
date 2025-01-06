@@ -68,6 +68,11 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
 
 
 def _normalize_child_device_ids(info: dict):
+    """Scrubbed child device ids in hubs may not match ids in child fixtures.
+
+    Different hub fixtures could create the same child fixture so we scrub
+    them again for the purpose of the test.
+    """
     if dev_info := info.get("get_device_info"):
         dev_info["device_id"] = "SCRUBBED"
     elif (
@@ -83,8 +88,7 @@ async def test_smartcam_fixtures(fixture_info: FixtureInfo):
     """Test that smartcam fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamDevice)
-    # if dev.children:
-    #    pytest.skip("Test not currently implemented for devices with children.")
+
     created_fixtures = await get_smart_fixtures(
         dev.protocol,
         discovery_info=fixture_info.data.get("discovery_result"),
