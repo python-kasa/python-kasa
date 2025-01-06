@@ -73,6 +73,7 @@ class Dustbin(SmartModule):
         return {
             "getSwitchDustCollection": {},  # NOTE: untested
             "getAutoDustCollection": {},
+            "getDustCollectionInfo": {},
         }
 
     @property
