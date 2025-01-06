@@ -43,6 +43,7 @@ class SmartCamChild(SmartCamDevice):
         _protocol = protocol or _ChildCameraProtocolWrapper(self._id, parent.protocol)
         super().__init__(parent.host, config=parent.config, protocol=_protocol)
         self._parent = parent
+        self._child_info_from_parent: dict = {}
         self._update_internal_state(info)
         self._components_raw = component_info_raw
         self._components = self._parse_components(self._components_raw)
@@ -57,12 +58,12 @@ class SmartCamChild(SmartCamDevice):
         """
         return self._get_device_info(
             {
-                CHILD_INFO_FROM_PARENT: self._info,
+                CHILD_INFO_FROM_PARENT: self._child_info_from_parent,
             },
             None,
         )
 
-    def _map_info(self, device_info: dict) -> dict:
+    def _map_child_info_from_parent(self, device_info: dict) -> dict:
         return {
             "model": device_info["device_model"],
             "device_type": device_info["device_type"],
@@ -75,6 +76,19 @@ class SmartCamChild(SmartCamDevice):
             "device_id": device_info["device_id"],
         }
 
+    def _update_internal_state(self, info: dict[str, Any]) -> None:
+        """Update the internal info state.
+
+        This is used by the parent to push updates to its children.
+        """
+        # smartcam children have info with different keys to their own
+        # getDeviceInfo queries
+        self._child_info_from_parent = info
+
+        # self._info will have the values normalized across smart and smartcam
+        # devices
+        self._info = self._map_child_info_from_parent(info)
+
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None
@@ -83,9 +97,9 @@ class SmartCamChild(SmartCamDevice):
         if not (cifp := info.get(CHILD_INFO_FROM_PARENT)):
             return SmartCamDevice._get_device_info(info, discovery_info)
 
-        model = cifp["model"]
+        model = cifp["device_model"]
         device_type = SmartCamDevice._get_device_type_from_sysinfo(cifp)
-        fw_version_full = cifp["fw_ver"]
+        fw_version_full = cifp["sw_ver"]
         firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
         return DeviceInfo(
             short_name=model,
