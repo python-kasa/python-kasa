@@ -25,6 +25,7 @@ class Status(IntEnum):
     Charging = 5
     Charged = 6
     Paused = 7
+    Undocked = 8
     Error = 100
     Unknown = 101
 
@@ -35,6 +36,7 @@ class ErrorCode(IntEnum):
     Ok = 0
     MainBrushStuck = 3
     WheelBlocked = 4
+    Undocked = 8
     DustBinRemoved = 14
     UnableToMove = 15
     LidarBlocked = 16
