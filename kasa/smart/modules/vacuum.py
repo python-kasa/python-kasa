@@ -36,7 +36,6 @@ class ErrorCode(IntEnum):
     Ok = 0
     MainBrushStuck = 3
     WheelBlocked = 4
-    Undocked = 8
     DustBinRemoved = 14
     UnableToMove = 15
     LidarBlocked = 16
