@@ -295,6 +295,8 @@ class Feature:
         if self.precision_hint is not None and isinstance(value, float):
             value = round(value, self.precision_hint)
 
+        if isinstance(value, Enum):
+            value = repr(value)
         s = f"{self.name} ({self.id}): {value}"
         if self.unit is not None:
             s += f" {self.unit}"
