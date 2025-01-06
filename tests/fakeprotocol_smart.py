@@ -172,6 +172,14 @@ class FakeSmartTransport(BaseTransport):
     }
 
     def _missing_result(self, method):
+        """Check the FIXTURE_MISSING_MAP for responses.
+
+        Fixtures generated prior to a query being supported by dump_devinfo
+        do not have the response so this method checks whether the component
+        is supported and fills in the missing response.
+        If the first value of the lookup value is a tuple it will also check
+        the version, i.e. (component_name, component_version).
+        """
         if not (missing := self.FIXTURE_MISSING_MAP.get(method)):
             return None
         condition = missing[0]
