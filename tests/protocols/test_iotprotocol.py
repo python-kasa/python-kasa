@@ -16,7 +16,7 @@ import pytest
 from kasa.credentials import Credentials
 from kasa.device import Device
 from kasa.deviceconfig import DeviceConfig
-from kasa.exceptions import KasaException, _RetryableError
+from kasa.exceptions import KasaException, TimeoutError
 from kasa.iot import IotDevice
 from kasa.protocols.iotprotocol import IotProtocol, _deprecated_TPLinkSmartHomeProtocol
 from kasa.protocols.protocol import (
@@ -444,7 +444,7 @@ async def test_protocol_handles_timeout_failure_during_write(
     protocol = protocol_class(transport=transport_class(config=config))
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(
-        _RetryableError,
+        TimeoutError,
         match="Timeout after 5 seconds sending request to the device 127.0.0.1:9999: Simulated timeout",
     ):
         await protocol.query({})
@@ -490,7 +490,7 @@ async def test_protocol_handles_timeout_failure_during_connection(
 
     mocker.patch("asyncio.open_connection", side_effect=aio_mock_writer)
     with pytest.raises(
-        _RetryableError,
+        TimeoutError,
         match="Timeout after 5 seconds connecting to the device: 127.0.0.1:9999: Simulated timeout",
     ):
         await protocol.query({})
