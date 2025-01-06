@@ -283,7 +283,7 @@ def _echo_discovery_info(discovery_info) -> None:
     _conditional_echo("HW Ver", dr.hw_ver)
     _conditional_echo("HW Ver", dr.hardware_version)
     _conditional_echo("Supports IOT Cloud", dr.is_support_iot_cloud)
-    _conditional_echo("OBD Src", dr.owner)
+    _conditional_echo("OBD Src", dr.obd_src)
     _conditional_echo("Factory Default", dr.factory_default)
     _conditional_echo("Encrypt Type", dr.encrypt_type)
     if mgt_encrypt_schm := dr.mgt_encrypt_schm:

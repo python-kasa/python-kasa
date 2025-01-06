@@ -98,12 +98,26 @@ class IotProtocol(BaseProtocol):
                 )
                 raise auex
             except _RetryableError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a retryable error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)
                     raise ex
                 continue
             except TimeoutError as ex:
+                if retry == 0:
+                    _LOGGER.debug(
+                        "Device %s got a timeout error, will retry %s times: %s",
+                        self._host,
+                        retry_count,
+                        ex,
+                    )
                 await self._transport.reset()
                 if retry >= retry_count:
                     _LOGGER.debug("Giving up on %s after %s retries", self._host, retry)

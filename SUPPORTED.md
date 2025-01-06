@@ -224,6 +224,10 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Wall Switches
 
+- **S210**
+  - Hardware: 1.0 (EU) / Firmware: 1.9.0
+- **S220**
+  - Hardware: 1.0 (EU) / Firmware: 1.9.0
 - **S500D**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
 - **S505**
