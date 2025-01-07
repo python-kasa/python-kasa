@@ -47,7 +47,7 @@ from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
 from kasa.json import dumps as json_dumps
 from kasa.smart import SmartDevice
-from kasa.smartcam import SmartCamChild, SmartCamDevice
+from kasa.smartcam import SmartCamDevice
 
 from .conftest import (
     device_smart,
@@ -1272,9 +1272,6 @@ async def test_cli_child_commands(
 
         # Test values and updates
 
-        if isinstance(dev.children[0], SmartCamChild):
-            # Child updates not yet implemented in test framework
-            return
         res = await runner.invoke(alias, ["foo", "--child", child_device_id], obj=dev)
         assert "Alias set to: foo" in res.output
         assert res.exit_code == 0

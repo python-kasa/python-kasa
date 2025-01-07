@@ -6,6 +6,7 @@ from typing import Any
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.protocols.smartcamprotocol import SmartCamProtocol
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 from kasa.transports.basetransport import BaseTransport
 
 from .fakeprotocol_smart import FakeSmartTransport
@@ -125,9 +126,25 @@ class FakeSmartCamTransport(BaseTransport):
 
     @staticmethod
     def _get_param_set_value(info: dict, set_keys: list[str], value):
+        cifp = info.get(CHILD_INFO_FROM_PARENT)
+
         for key in set_keys[:-1]:
             info = info[key]
         info[set_keys[-1]] = value
+
+        if (
+            cifp
+            and set_keys[0] == "getDeviceInfo"
+            and (
+                child_info_parent_key
+                := FakeSmartCamTransport.CHILD_INFO_SETTER_MAP.get(set_keys[-1])
+            )
+        ):
+            cifp[child_info_parent_key] = value
+
+    CHILD_INFO_SETTER_MAP = {
+        "device_alias": "alias",
+    }
 
     FIXTURE_MISSING_MAP = {
         "getMatterSetupInfo": (

@@ -8,6 +8,7 @@ from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartChildDevice
 from kasa.smartcam import SmartCamChild
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 from kasa.transports.basetransport import BaseTransport
 
 
@@ -286,12 +287,10 @@ class FakeSmartTransport(BaseTransport):
                 child_fixture["getDeviceInfo"]["device_info"]["basic_info"][
                     "dev_id"
                 ] = device_id
-
-                # We copy the child device info to the parent list for
-                # smart children in order for updates to work. This does not
-                # work with smartcam children so we add the original child info
-                # so it doesn't get overwritten if smar children are present
-                found_child_fixture_infos.append(child_info)
+                child_fixture[CHILD_INFO_FROM_PARENT]["device_id"] = device_id
+                # We copy the child device info to the parent getChildDeviceInfo
+                # list for smartcam children in order for updates to work.
+                found_child_fixture_infos.append(child_fixture[CHILD_INFO_FROM_PARENT])
                 child_protocols[device_id] = FakeSmartCamProtocol(
                     child_fixture, fixture_info_tuple.name, is_child=True
                 )
