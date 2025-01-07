@@ -12,6 +12,7 @@ from .color import Color
 from .colortemperature import ColorTemperature
 from .contactsensor import ContactSensor
 from .devicemodule import DeviceModule
+from .doubleclick import DoubleClick
 from .energy import Energy
 from .fan import Fan
 from .firmware import Firmware
@@ -42,6 +43,7 @@ __all__ = [
     "DeviceModule",
     "ChildDevice",
     "BatterySensor",
+    "DoubleClick",
     "HumiditySensor",
     "TemperatureSensor",
     "TemperatureControl",

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable, Coroutine
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Concatenate, Final, ParamSpec, TypeVar
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
-from ..module import Module
+from ..module import Module, ModuleName
 
 if TYPE_CHECKING:
+    from . import modules
     from .smartdevice import SmartDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,6 +51,8 @@ def raise_if_update_error(func: Callable[[_T], _R]) -> Callable[[_T], _R]:
 
 class SmartModule(Module):
     """Base class for SMART modules."""
+
+    SmartDoubleClick: Final[ModuleName[modules.DoubleClick]] = ModuleName("DoubleClick")
 
     NAME: str
     #: Module is initialized, if the given component is available
