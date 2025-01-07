@@ -203,10 +203,11 @@ class SmartDevice(Device):
 
         self._update_children_info()
         # Call child update which will only update module calls, info is updated
-        # from get_child_device_list.
+        # from get_child_device_list. update_children only affects hub devices, other
+        # devices will always update children to prevent errors on module access.
         # This needs to go after updating the internal state of the children so that
         # child modules have access to their sysinfo.
-        if update_children:
+        if first_update or update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 if TYPE_CHECKING:
                     assert isinstance(child, SmartChildDevice)
