@@ -1,26 +1,26 @@
 {
     "child_info_from_parent": {
-        "alias": "tapobell",
+        "alias": "#MASKED_NAME#",
         "anti_theft_status": 0,
         "avatar": "camera d210",
         "battery_charging": "NO",
         "battery_installed": 1,
-        "battery_percent": 91,
-        "battery_temperature": 9,
-        "battery_voltage": 4079,
-        "cam_uptime": 4381,
+        "battery_percent": 90,
+        "battery_temperature": 5,
+        "battery_voltage": 4073,
+        "cam_uptime": 5420,
         "category": "camera",
         "dev_name": "Tapo Smart Doorbell",
         "device_id": "SCRUBBED_CHILD_DEVICE_ID_1",
         "device_model": "D230",
-        "device_name": "#MASKED_NAME#",
+        "device_name": "D230 1.20",
         "device_type": "SMART.TAPODOORBELL",
-        "ext_addr": "F0090D32A6370000",
+        "ext_addr": "0000000000000000",
         "firmware_status": "OK",
         "hw_id": "00000000000000000000000000000000",
         "hw_ver": "1.20",
         "ipaddr": "172.23.30.2",
-        "led_status": "off",
+        "led_status": "on",
         "low_battery": false,
         "mac": "F0:09:0D:00:00:00",
         "oem_id": "00000000000000000000000000000000",
@@ -31,15 +31,15 @@
         "power_save_mode": "off",
         "power_save_status": "off",
         "region": "EU",
-        "rssi": -41,
+        "rssi": -43,
         "short_addr": 0,
         "status": "configured",
         "subg_cam_rssi": 0,
         "subg_hub_rssi": 0,
         "sw_ver": "1.1.19 Build 20241011 rel.67020",
-        "system_time": 1735083918,
+        "system_time": 1735996806,
         "updating": false,
-        "uptime": 2153284
+        "uptime": 3062029
     },
     "getAppComponentList": {
         "app_component": {
@@ -263,8 +263,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-12-25 00:45:23",
-                "seconds_from_1970": 1735083923
+                "local_time": "2025-01-04 14:20:10",
+                "seconds_from_1970": 1735996810
             }
         }
     },
@@ -286,21 +286,21 @@
                 "avatar": "camera d210",
                 "battery_charging": "NO",
                 "battery_overheated": false,
-                "battery_percent": 91,
+                "battery_percent": 90,
                 "c_opt": [
                     0,
                     1
                 ],
                 "camera_switch": "on",
-                "dev_id": "0000000000000000000000000000000000000000",
+                "dev_id": "SCRUBBED_CHILD_DEVICE_ID_1",
                 "device_alias": "#MASKED_NAME#",
                 "device_model": "D230",
                 "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.TAPODOORBELL",
                 "firmware_status": "OK",
                 "hw_version": "1.20",
-                "last_activity_timestamp": 1735051284,
-                "led_status": "off",
+                "last_activity_timestamp": 1735996775,
+                "led_status": "on",
                 "low_battery": false,
                 "mac": "F0-09-0D-00-00-00",
                 "oem_id": "00000000000000000000000000000000",
@@ -310,10 +310,10 @@
                 "power": "BATTERY",
                 "power_save_mode": "off",
                 "resolution": "2560*1920",
-                "rssi": -41,
+                "rssi": -43,
                 "status": "configured",
                 "sw_version": "1.1.19 Build 20241011 rel.67020",
-                "system_time": 1735083920,
+                "system_time": 1735996808,
                 "updating": false
             }
         }
@@ -329,7 +329,7 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "1735051284",
+                "last_alarm_time": "1735996775",
                 "last_alarm_type": "motion"
             }
         }
@@ -344,7 +344,7 @@
     "getLedStatus": {
         "led": {
             "config": {
-                "enabled": "off"
+                "enabled": "on"
             }
         }
     },
