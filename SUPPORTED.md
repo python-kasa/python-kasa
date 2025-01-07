@@ -120,6 +120,7 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
   - Hardware: 1.0 (US) / Firmware: 1.1.0[^1]
 - **KS230**
   - Hardware: 1.0 (US) / Firmware: 1.0.14
+  - Hardware: 2.0 (US) / Firmware: 1.0.11
 - **KS240**
   - Hardware: 1.0 (US) / Firmware: 1.0.4[^1]
   - Hardware: 1.0 (US) / Firmware: 1.0.5[^1]
