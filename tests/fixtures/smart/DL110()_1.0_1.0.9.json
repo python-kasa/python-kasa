@@ -1,0 +1,237 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "user_management",
+                "ver_code": 1
+            },
+            {
+                "id": "digital_code",
+                "ver_code": 1
+            },
+            {
+                "id": "battery",
+                "ver_code": 1
+            },
+            {
+                "id": "security_settings",
+                "ver_code": 1
+            },
+            {
+                "id": "lock",
+                "ver_code": 1
+            },
+            {
+                "id": "speaker",
+                "ver_code": 1
+            },
+            {
+                "id": "doorbell",
+                "ver_code": 1
+            },
+            {
+                "id": "lock_status",
+                "ver_code": 1
+            },
+            {
+                "id": "record",
+                "ver_code": 1
+            },
+            {
+                "id": "finger",
+                "ver_code": 1
+            },
+            {
+                "id": "calibration",
+                "ver_code": 1
+            },
+            {
+                "id": "emergency_code",
+                "ver_code": 1
+            }
+        ]
+    },
+    "getBatteryInfo": {
+        "at_low_battery": false,
+        "battery_percentage": 42
+    },
+    "get_device_info": {
+        "at_low_battery": false,
+        "avatar": "",
+        "battery_percentage": 42,
+        "device_id": "0000000000000000000000000000000000000000",
+        "dst_last_update": 1736367967,
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.0.9 Build 240513 Rel.204727",
+        "has_set_location_info": false,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "",
+        "latitude": 0,
+        "lock_status": 1,
+        "longitude": 0,
+        "mac": "D8-44-89-00-00-00",
+        "model": "DL110",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "region": "America/Chicago",
+        "rssi": -23,
+        "signal_level": 3,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "time_diff": -360,
+        "type": "SMART.TAPOLOCK",
+        "wifi_mode_status": 1
+    },
+    "get_device_time": {
+        "region": "America/Chicago",
+        "time_diff": -360,
+        "timestamp": 1736378413
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_begin_time": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.0.9 Build 240513 Rel.204727",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "none",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 12,
+        "wep_supported": false
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "sunrise_sunset",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 2
+            },
+            {
+                "id": "control_child",
+                "ver_code": 2
+            },
+            {
+                "id": "child_device",
+                "ver_code": 2
+            }
+        ],
+        "extra_info": {
+            "device_model": "DL110",
+            "device_type": "SMART.TAPOLOCK"
+        }
+    }
+}

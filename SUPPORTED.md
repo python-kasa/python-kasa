@@ -321,6 +321,11 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.7.0
   - Hardware: 1.0 (US) / Firmware: 1.8.0
 
+### Locks
+
+- **DL110**
+  - Hardware: 1.0 / Firmware: 1.0.9
+
 
 <!--SUPPORTED_END-->
 [^1]: Model requires authentication
