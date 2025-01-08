@@ -48,13 +48,18 @@ class FakeSmartTransport(BaseTransport):
             ),
         )
         self.fixture_name = fixture_name
+
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        self.verbatim = verbatim
+
         # Don't copy the dict if the device is a child so that updates on the
         # child are then still reflected on the parent's lis of child device in
         if not is_child:
             self.info = copy.deepcopy(info)
             if get_child_fixtures:
                 self.child_protocols = self._get_child_protocols(
-                    self.info, self.fixture_name, "get_child_device_list"
+                    self.info, self.fixture_name, "get_child_device_list", self.verbatim
                 )
         else:
             self.info = info
@@ -67,9 +72,6 @@ class FakeSmartTransport(BaseTransport):
         self.warn_fixture_missing_methods = warn_fixture_missing_methods
         self.fix_incomplete_fixture_lists = fix_incomplete_fixture_lists
 
-        # When True verbatim will bypass any extra processing of missing
-        # methods and is used to test the fixture creation itself.
-        self.verbatim = verbatim
         if verbatim:
             self.warn_fixture_missing_methods = False
             self.fix_incomplete_fixture_lists = False
@@ -124,7 +126,7 @@ class FakeSmartTransport(BaseTransport):
             },
         ),
         "get_auto_update_info": (
-            "firmware",
+            ("firmware", 2),
             {"enable": True, "random_range": 120, "time": 180},
         ),
         "get_alarm_configure": (
@@ -169,6 +171,30 @@ class FakeSmartTransport(BaseTransport):
         ),
     }
 
+    def _missing_result(self, method):
+        """Check the FIXTURE_MISSING_MAP for responses.
+
+        Fixtures generated prior to a query being supported by dump_devinfo
+        do not have the response so this method checks whether the component
+        is supported and fills in the missing response.
+        If the first value of the lookup value is a tuple it will also check
+        the version, i.e. (component_name, component_version).
+        """
+        if not (missing := self.FIXTURE_MISSING_MAP.get(method)):
+            return None
+        condition = missing[0]
+        if (
+            isinstance(condition, tuple)
+            and (version := self.components.get(condition[0]))
+            and version >= condition[1]
+        ):
+            return copy.deepcopy(missing[1])
+
+        if condition in self.components:
+            return copy.deepcopy(missing[1])
+
+        return None
+
     async def send(self, request: str):
         request_dict = json_loads(request)
         method = request_dict["method"]
@@ -189,7 +215,7 @@ class FakeSmartTransport(BaseTransport):
 
     @staticmethod
     def _get_child_protocols(
-        parent_fixture_info, parent_fixture_name, child_devices_key
+        parent_fixture_info, parent_fixture_name, child_devices_key, verbatim
     ):
         child_infos = parent_fixture_info.get(child_devices_key, {}).get(
             "child_device_list", []
@@ -251,7 +277,7 @@ class FakeSmartTransport(BaseTransport):
                 )
         # Replace parent child infos with the infos from the child fixtures so
         # that updates update both
-        if child_infos and found_child_fixture_infos:
+        if not verbatim and child_infos and found_child_fixture_infos:
             parent_fixture_info[child_devices_key]["child_device_list"] = (
                 found_child_fixture_infos
             )
@@ -318,13 +344,11 @@ class FakeSmartTransport(BaseTransport):
         elif child_method in child_device_calls:
             result = copy.deepcopy(child_device_calls[child_method])
             return {"result": result, "error_code": 0}
-        elif (
+        elif missing_result := self._missing_result(child_method):
             # FIXTURE_MISSING is for service calls not in place when
             # SMART fixtures started to be generated
-            missing_result := self.FIXTURE_MISSING_MAP.get(child_method)
-        ) and missing_result[0] in self.components:
             # Copy to info so it will work with update methods
-            child_device_calls[child_method] = copy.deepcopy(missing_result[1])
+            child_device_calls[child_method] = missing_result
             result = copy.deepcopy(info[child_method])
             retval = {"result": result, "error_code": 0}
             return retval
@@ -529,13 +553,11 @@ class FakeSmartTransport(BaseTransport):
                     "method": method,
                 }
 
-            if (
+            if missing_result := self._missing_result(method):
                 # FIXTURE_MISSING is for service calls not in place when
                 # SMART fixtures started to be generated
-                missing_result := self.FIXTURE_MISSING_MAP.get(method)
-            ) and missing_result[0] in self.components:
                 # Copy to info so it will work with update methods
-                info[method] = copy.deepcopy(missing_result[1])
+                info[method] = missing_result
                 result = copy.deepcopy(info[method])
                 retval = {"result": result, "error_code": 0}
             elif (
