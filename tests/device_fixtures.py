@@ -328,6 +328,9 @@ sensors_smart = parametrize(
 thermostats_smart = parametrize(
     "thermostats smart", model_filter=THERMOSTATS_SMART, protocol_filter={"SMART.CHILD"}
 )
+locks_smart = parametrize(
+    "locks smart", model_filter=LOCKS_SMART, protocol_filter={"SMART"}
+)
 device_smart = parametrize(
     "devices smart", model_filter=ALL_DEVICES_SMART, protocol_filter={"SMART"}
 )
@@ -361,6 +364,7 @@ def check_categories():
         + hubs_smart.args[1]
         + sensors_smart.args[1]
         + thermostats_smart.args[1]
+        + locks_smart.args[1]
         + camera_smartcam.args[1]
         + hub_smartcam.args[1]
     )
