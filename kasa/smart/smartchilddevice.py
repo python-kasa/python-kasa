@@ -86,7 +86,15 @@ class SmartChildDevice(SmartDevice):
         module_queries: list[SmartModule] = []
         req: dict[str, Any] = {}
         for module in self.modules.values():
-            if module.disabled is False and (mod_query := module.query()):
+            if (
+                module.disabled is False
+                and (mod_query := module.query())
+                and (
+                    not module.update_interval
+                    or not module._last_update_time
+                    or (now - module._last_update_time) >= module.update_interval
+                )
+            ):
                 module_queries.append(module)
                 req.update(mod_query)
         if req:
