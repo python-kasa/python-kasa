@@ -16,9 +16,13 @@ class DeviceModule(SmartCamModule):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
+        if self._device._is_hub_child:
+            # Child devices get their device info updated by the parent device.
+            # and generally don't support connection type as they're not
+            # connected to the network
+            return {}
         q = super().query()
-        if self._device.parent is None:
-            q["getConnectionType"] = {"network": {"get_connection_type": []}}
+        q["getConnectionType"] = {"network": {"get_connection_type": []}}
 
         return q
 
