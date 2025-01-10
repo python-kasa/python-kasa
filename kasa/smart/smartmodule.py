@@ -62,6 +62,8 @@ class SmartModule(Module):
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
     MINIMUM_UPDATE_INTERVAL_SECS = 0
+    MINIMUM_HUB_CHILD_UPDATE_INTERVAL_SECS = 60 * 60 * 24
+
     UPDATE_INTERVAL_AFTER_ERROR_SECS = 30
 
     DISABLE_AFTER_ERROR_COUNT = 10
@@ -107,10 +109,13 @@ class SmartModule(Module):
     @property
     def update_interval(self) -> int:
         """Time to wait between updates."""
-        if self._last_update_error is None:
-            return self.MINIMUM_UPDATE_INTERVAL_SECS
+        if self._last_update_error:
+            return self.UPDATE_INTERVAL_AFTER_ERROR_SECS * self._error_count
 
-        return self.UPDATE_INTERVAL_AFTER_ERROR_SECS * self._error_count
+        if self._device._is_hub_child:
+            return self.MINIMUM_HUB_CHILD_UPDATE_INTERVAL_SECS
+
+        return self.MINIMUM_UPDATE_INTERVAL_SECS
 
     @property
     def disabled(self) -> bool:
