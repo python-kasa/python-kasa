@@ -174,6 +174,14 @@ class FakeSmartTransport(BaseTransport):
     }
 
     def _missing_result(self, method):
+        """Check the FIXTURE_MISSING_MAP for responses.
+
+        Fixtures generated prior to a query being supported by dump_devinfo
+        do not have the response so this method checks whether the component
+        is supported and fills in the missing response.
+        If the first value of the lookup value is a tuple it will also check
+        the version, i.e. (component_name, component_version).
+        """
         if not (missing := self.FIXTURE_MISSING_MAP.get(method)):
             return None
         condition = missing[0]
@@ -300,8 +308,7 @@ class FakeSmartTransport(BaseTransport):
                     stacklevel=2,
                 )
         # Replace parent child infos with the infos from the child fixtures so
-        # that updates update both.
-        # This doesn't work for smartcam children as they have different schemas
+        # that updates update both
         if not verbatim and child_infos and found_child_fixture_infos:
             parent_fixture_info[child_devices_key]["child_device_list"] = (
                 found_child_fixture_infos

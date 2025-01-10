@@ -75,6 +75,11 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
 
 
 def _normalize_child_device_ids(info: dict):
+    """Scrubbed child device ids in hubs may not match ids in child fixtures.
+
+    Different hub fixtures could create the same child fixture so we scrub
+    them again for the purpose of the test.
+    """
     if dev_info := info.get("get_device_info"):
         dev_info["device_id"] = "SCRUBBED"
     elif (
