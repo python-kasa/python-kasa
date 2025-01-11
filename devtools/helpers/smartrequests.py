@@ -118,6 +118,16 @@ class SmartRequest:
         enable: bool
         id: str | None = None
 
+    @dataclass
+    class GetCleanAttrParams(SmartRequestParams):
+        """CleanAttr params.
+
+        Decides which cleaning settings are requested
+        """
+
+        #: type can be global or pose
+        type: str = "global"
+
     @staticmethod
     def get_raw_request(
         method: str, params: SmartRequestParams | None = None
@@ -429,6 +439,7 @@ COMPONENT_REQUESTS = {
     "clean": [
         SmartRequest.get_raw_request("getCleanRecords"),
         SmartRequest.get_raw_request("getVacStatus"),
+        SmartRequest("getCleanAttr", SmartRequest.GetCleanAttrParams()),
     ],
     "battery": [SmartRequest.get_raw_request("getBatteryInfo")],
     "consumables": [SmartRequest.get_raw_request("getConsumablesInfo")],
