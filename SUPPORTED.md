@@ -321,6 +321,11 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.7.0
   - Hardware: 1.0 (US) / Firmware: 1.8.0
 
+### Vacuums
+
+- **RV20 Max Plus**
+  - Hardware: 1.0 (EU) / Firmware: 1.0.7
+
 
 <!--SUPPORTED_END-->
 [^1]: Model requires authentication

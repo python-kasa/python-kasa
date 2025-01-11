@@ -1,0 +1,311 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "clean",
+                "ver_code": 3
+            },
+            {
+                "id": "battery",
+                "ver_code": 1
+            },
+            {
+                "id": "consumables",
+                "ver_code": 2
+            },
+            {
+                "id": "direction_control",
+                "ver_code": 1
+            },
+            {
+                "id": "button_and_led",
+                "ver_code": 1
+            },
+            {
+                "id": "speaker",
+                "ver_code": 3
+            },
+            {
+                "id": "schedule",
+                "ver_code": 3
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "map",
+                "ver_code": 2
+            },
+            {
+                "id": "auto_change_map",
+                "ver_code": -1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "dust_bucket",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "mop",
+                "ver_code": 1
+            },
+            {
+                "id": "do_not_disturb",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "charge_pose_clean",
+                "ver_code": 1
+            },
+            {
+                "id": "continue_breakpoint_sweep",
+                "ver_code": 1
+            },
+            {
+                "id": "goto_point",
+                "ver_code": 1
+            },
+            {
+                "id": "furniture",
+                "ver_code": 1
+            },
+            {
+                "id": "map_cloud_backup",
+                "ver_code": 1
+            },
+            {
+                "id": "dev_log",
+                "ver_code": 1
+            },
+            {
+                "id": "map_lock",
+                "ver_code": 1
+            },
+            {
+                "id": "carpet_area",
+                "ver_code": 1
+            },
+            {
+                "id": "clean_angle",
+                "ver_code": 1
+            },
+            {
+                "id": "clean_percent",
+                "ver_code": 1
+            },
+            {
+                "id": "no_pose_config",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "RV20 Max Plus(EU)",
+            "device_type": "SMART.TAPOROBOVAC",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "B0-19-21-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "AES",
+                "http_port": 4433,
+                "is_support_https": true
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000"
+        }
+    },
+    "getAutoChangeMap": {
+        "auto_change_map": false
+    },
+    "getAutoDustCollection": {
+        "auto_dust_collection": 1
+    },
+    "getBatteryInfo": {
+        "battery_percentage": 75
+    },
+    "getCleanAttr": {"suction": 2, "cistern": 2, "clean_number": 1},
+    "getCleanStatus": {"getCleanStatus": {"clean_status": 0, "is_working": false, "is_mapping": false, "is_relocating": false}},
+    "getCleanRecords": {
+        "lastest_day_record": [
+            0,
+            0,
+            0,
+            0
+        ],
+        "record_list": [],
+        "record_list_num": 0,
+        "total_area": 0,
+        "total_number": 0,
+        "total_time": 0
+    },
+    "getConsumablesInfo": {
+        "charge_contact_time": 0,
+        "edge_brush_time": 0,
+        "filter_time": 0,
+        "main_brush_lid_time": 0,
+        "rag_time": 0,
+        "roll_brush_time": 0,
+        "sensor_time": 0
+    },
+    "getCurrentVoiceLanguage": {
+        "name": "2",
+        "version": 1
+    },
+    "getDoNotDisturb": {
+        "do_not_disturb": true,
+        "e_min": 480,
+        "s_min": 1320
+    },
+    "getMapData": -100000,
+    "getMapInfo": {
+        "auto_change_map": false,
+        "current_map_id": 0,
+        "map_list": [],
+        "map_num": 0,
+        "version": "LDS"
+    },
+    "getMopState": {
+        "mop_state": false
+    },
+    "getVacStatus": {
+        "err_status": [
+            0
+        ],
+        "errorCode_id": [
+            0
+        ],
+        "prompt": [],
+        "promptCode_id": [],
+        "status": 5
+    },
+    "get_device_info": {
+        "auto_pack_ver": "0.0.1.1771",
+        "avatar": "",
+        "board_sn": "000000000000",
+        "custom_sn": "000000000000",
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.0.7 Build 240828 Rel.205951",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "",
+        "latitude": 0,
+        "linux_ver": "V21.198.1708420747",
+        "location": "",
+        "longitude": 0,
+        "mac": "B0-19-21-00-00-00",
+        "mcu_ver": "1.1.2563.5",
+        "model": "RV20 Max Plus",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "region": "Europe/Berlin",
+        "rssi": -59,
+        "signal_level": 2,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "sub_ver": "0.0.1.1771-1.1.34",
+        "time_diff": 60,
+        "total_ver": "1.1.34",
+        "type": "SMART.TAPOROBOVAC"
+    },
+    "get_device_time": {
+        "region": "Europe/Berlin",
+        "time_diff": 60,
+        "timestamp": 1736598518
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": null,
+    "get_next_event": {},
+    "get_schedule_rules": {
+        "enable": false,
+        "rule_list": [],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 0
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 2,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 1,
+        "wep_supported": true
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            }
+        ],
+        "extra_info": {
+            "device_model": "RV20 Max Plus",
+            "device_type": "SMART.TAPOROBOVAC"
+        }
+    }
+}

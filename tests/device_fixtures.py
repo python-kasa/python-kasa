@@ -134,6 +134,8 @@ SENSORS_SMART = {
 }
 THERMOSTATS_SMART = {"KE100"}
 
+VACUUMS_SMART = {"RV20"}
+
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "P110M", "P115", "KP125M", "EP25", "P304M"}
 WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
@@ -151,6 +153,7 @@ ALL_DEVICES_SMART = (
     .union(SENSORS_SMART)
     .union(SWITCHES_SMART)
     .union(THERMOSTATS_SMART)
+    .union(VACUUMS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -342,6 +345,7 @@ hub_smartcam = parametrize(
     device_type_filter=[DeviceType.Hub],
     protocol_filter={"SMARTCAM"},
 )
+vacuum = parametrize("vacuums", device_type_filter=[DeviceType.Vacuum])
 
 
 def check_categories():
@@ -360,6 +364,7 @@ def check_categories():
         + thermostats_smart.args[1]
         + camera_smartcam.args[1]
         + hub_smartcam.args[1]
+        + vacuum.args[1]
     )
     diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
