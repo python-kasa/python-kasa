@@ -19,8 +19,6 @@ class Mode(IntEnum):
     Balanced = 2
     Max = 3
 
-    Unknown = -1000
-
 
 class Dustbin(SmartModule):
     """Implementation of vacuum dustbin."""
@@ -44,8 +42,21 @@ class Dustbin(SmartModule):
         self._add_feature(
             Feature(
                 self._device,
+                id="dustbin_autocollection_enabled",
+                name="Automatic emptying enabled",
+                container=self,
+                attribute_getter="auto_collection",
+                attribute_setter="set_auto_collection",
+                category=Feature.Category.Config,
+                type=Feature.Switch,
+            )
+        )
+
+        self._add_feature(
+            Feature(
+                self._device,
                 id="dustbin_mode",
-                name="Dustbin mode",
+                name="Automatic emptying mode",
                 container=self,
                 attribute_getter="mode",
                 attribute_setter="set_mode",
@@ -73,23 +84,34 @@ class Dustbin(SmartModule):
         )
 
     @property
-    def _auto_empty_settings(self) -> dict:
+    def _settings(self) -> dict:
         """Return auto-empty settings."""
         return self.data["getDustCollectionInfo"]
 
     @property
-    def mode(self) -> Mode:
+    def mode(self) -> str:
         """Return auto-emptying mode."""
-        return Mode(self._auto_empty_settings["dust_collection_mode"])
+        return Mode(self._settings["dust_collection_mode"]).name
 
-    async def set_mode(self, mode: Mode) -> dict:
+    async def set_mode(self, mode: str) -> dict:
         """Set auto-emptying mode."""
-        settings = self._auto_empty_settings.copy()
-        settings["dust_collection_mode"] = mode.value
+        name_to_value = {x.name: x.value for x in Mode}
+        if Mode not in name_to_value:
+            raise ValueError(
+                "Invalid auto/emptying mode speed %s, available %s", mode, name_to_value
+            )
+
+        settings = self._settings.copy()
+        settings["dust_collection_mode"] = mode
         return await self.call("setDustCollectionInfo", settings)
 
-    async def set_auto_emptying(self, on: bool) -> dict:
+    @property
+    def auto_collection(self) -> dict:
+        """Return auto-emptying config."""
+        return self._settings["auto_dust_collection"]
+
+    async def set_auto_collection(self, on: bool) -> dict:
         """Toggle auto-emptying."""
-        settings = self._auto_empty_settings.copy()
+        settings = self._settings.copy()
         settings["auto_dust_collection"] = on
         return await self.call("setDustCollectionInfo", settings)
