@@ -40,17 +40,6 @@ class Dustbin(SmartModule):
                 type=Feature.Action,
             )
         )
-        self._add_feature(
-            Feature(
-                self._device,
-                id="dustbin_emptying",
-                name="Emptying dustbin",
-                container=self,
-                attribute_getter="is_emptying",
-                category=Feature.Category.Debug,
-                type=Feature.BinarySensor,
-            )
-        )
 
         self._add_feature(
             Feature(
@@ -70,15 +59,9 @@ class Dustbin(SmartModule):
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {
-            "getSwitchDustCollection": {},  # NOTE: untested
             "getAutoDustCollection": {},
             "getDustCollectionInfo": {},
         }
-
-    @property
-    def is_emptying(self) -> bool:
-        """Return if emptying."""
-        return self.data["getSwitchDustCollection"]["switch_dust_collection"]
 
     async def start_emptying(self) -> dict:
         """Start emptying the bin."""
