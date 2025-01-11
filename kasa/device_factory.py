@@ -187,6 +187,7 @@ def get_protocol(
     """
     ctype = config.connection_type
     protocol_name = ctype.device_family.value.split(".")[0]
+    _LOGGER.debug("Finding protocol for %s", ctype.device_family)
 
     if ctype.device_family is DeviceFamily.SmartIpCamera:
         return SmartCamProtocol(transport=SslAesTransport(config=config))
