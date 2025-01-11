@@ -219,7 +219,7 @@ class Clean(SmartModule):
     @property
     def fan_speed_preset(self) -> Annotated[str, FeatureAttribute()]:
         """Return fan speed preset."""
-        return FanSpeed(self.data["getCleanAttr"]["suction"]).name
+        return FanSpeed(self._settings["suction"]).name
 
     async def set_fan_speed_preset(
         self, speed: str
@@ -241,6 +241,11 @@ class Clean(SmartModule):
     def _vac_status(self) -> dict:
         """Return vac status container."""
         return self.data["getVacStatus"]
+
+    @property
+    def _settings(self) -> dict:
+        """Return cleaning settings."""
+        return self.data["getCleanAttr"]
 
     @property
     def status(self) -> Status:
