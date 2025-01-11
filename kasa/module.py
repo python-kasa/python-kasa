@@ -162,7 +162,7 @@ class Module(ABC):
     LensMask: Final[ModuleName[smartcam.LensMask]] = ModuleName("LensMask")
 
     # Vacuum modules
-    Vacuum: Final[ModuleName[smart.Vacuum]] = ModuleName("Vacuum")
+    Clean: Final[ModuleName[smart.Clean]] = ModuleName("Clean")
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device

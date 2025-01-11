@@ -1,4 +1,4 @@
-"""Implementation of vacuum."""
+"""Implementation of vacuum clean module."""
 
 from __future__ import annotations
 
@@ -50,8 +50,8 @@ class FanSpeed(IntEnum):
     Max = 4
 
 
-class Vacuum(SmartModule):
-    """Implementation of vacuum support."""
+class Clean(SmartModule):
+    """Implementation of vacuum clean module."""
 
     REQUIRED_COMPONENT = "clean"
     _error_code = ErrorCode.Ok
