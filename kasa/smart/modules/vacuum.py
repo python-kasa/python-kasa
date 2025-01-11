@@ -4,14 +4,11 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import Annotated
 
 from ...feature import Feature
+from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    pass
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -220,11 +217,13 @@ class Vacuum(SmartModule):
         return self._error_code
 
     @property
-    def fan_speed_preset(self) -> str:
+    def fan_speed_preset(self) -> Annotated[str, FeatureAttribute()]:
         """Return fan speed preset."""
         return FanSpeed(self.data["getCleanAttr"]["suction"]).name
 
-    async def set_fan_speed_preset(self, speed: str) -> dict:
+    async def set_fan_speed_preset(
+        self, speed: str
+    ) -> Annotated[dict, FeatureAttribute]:
         """Set fan speed preset."""
         name_to_value = {x.name: x.value for x in FanSpeed}
         if speed not in name_to_value:
