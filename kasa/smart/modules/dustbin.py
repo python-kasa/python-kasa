@@ -47,9 +47,8 @@ class Dustbin(SmartModule):
                 name="Emptying dustbin",
                 container=self,
                 attribute_getter="is_emptying",
-                attribute_setter="set_emptying",
-                category=Feature.Category.Primary,
-                type=Feature.Switch,
+                category=Feature.Category.Debug,
+                type=Feature.BinarySensor,
             )
         )
 
@@ -81,23 +80,14 @@ class Dustbin(SmartModule):
         """Return if emptying."""
         return self.data["getSwitchDustCollection"]["switch_dust_collection"]
 
-    async def set_emptying(self, on: bool) -> dict:
+    async def start_emptying(self) -> dict:
         """Start emptying the bin."""
         return await self.call(
             "setSwitchDustCollection",
             {
-                "switch_dust_collection": on,
+                "switch_dust_collection": True,
             },
         )
-
-    async def start_emptying(self) -> dict:
-        """Start emptying the bin."""
-        return await self.set_emptying(True)
-
-    async def stop_emptying(self) -> dict:
-        """Stop emptying the bin."""
-        # TODO: note, untested for now
-        return await self.set_emptying(False)
 
     @property
     def _auto_empty_settings(self) -> dict:
