@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import Annotated
 
 from ...feature import Feature
+from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
-
-if TYPE_CHECKING:
-    from ..smartdevice import SmartDevice
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,13 +17,13 @@ class VacuumSpeaker(SmartModule):
 
     REQUIRED_COMPONENT = "speaker"
 
-    def __init__(self, device: SmartDevice, module: str) -> None:
-        super().__init__(device, module)
+    def _initialize_features(self) -> None:
+        """Initialize features."""
         self._add_feature(
             Feature(
-                device,
-                id="vacuum_locate",
-                name="Locate vacuum",
+                self._device,
+                id="locate",
+                name="Locate device",
                 container=self,
                 attribute_setter="locate",
                 category=Feature.Category.Primary,
@@ -35,8 +32,8 @@ class VacuumSpeaker(SmartModule):
         )
         self._add_feature(
             Feature(
-                device,
-                id="vacuum_volume",
+                self._device,
+                id="volume",
                 name="Volume",
                 container=self,
                 attribute_getter="volume",
@@ -54,11 +51,11 @@ class VacuumSpeaker(SmartModule):
         }
 
     @property
-    def volume(self) -> str:
+    def volume(self) -> Annotated[str, FeatureAttribute()]:
         """Return volume."""
         return self.data["volume"]
 
-    async def set_volume(self, volume: int) -> dict:
+    async def set_volume(self, volume: int) -> Annotated[dict, FeatureAttribute()]:
         """Set volume."""
         if volume < 0 or volume > 100:
             raise ValueError("Volume must be between 0 and 100")
