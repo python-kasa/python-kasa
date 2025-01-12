@@ -24,7 +24,8 @@ class Status(IntEnum):
     Paused = 7
     Undocked = 8
     Error = 100
-    Unknown = 101
+
+    UnknownInternal = -1000
 
 
 class ErrorCode(IntEnum):
@@ -38,7 +39,7 @@ class ErrorCode(IntEnum):
     LidarBlocked = 16
     UnableToFindDock = 21
 
-    Unknown = -1000
+    UnknownInternal = -1000
 
 
 class FanSpeed(IntEnum):
@@ -162,7 +163,7 @@ class Clean(SmartModule):
                 "Unknown error code, please create an issue describing the error: %s",
                 error,
             )
-            self._error_code = ErrorCode.Unknown
+            self._error_code = ErrorCode.UnknownInternal
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -180,7 +181,6 @@ class Clean(SmartModule):
         if self.status == Status.Paused:
             return await self.resume()
 
-        # TODO: we need to create settings for clean_modes
         return await self.call(
             "setSwitchClean",
             {
@@ -258,4 +258,4 @@ class Clean(SmartModule):
             return Status(status_code)
         except ValueError:
             _LOGGER.warning("Got unknown status code: %s (%s)", status_code, self.data)
-            return Status.Unknown
+            return Status.UnknownInternal
