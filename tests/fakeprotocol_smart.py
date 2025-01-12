@@ -608,7 +608,12 @@ class FakeSmartTransport(BaseTransport):
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"
+            # but do not have a similarly named getter
+            if method in ["setRobotPause", "setSwitchClean", "setSwitchCharge"]:
+                return {"error_code": 0}
+
             info[target_method].update(params)
+
             return {"error_code": 0}
 
     async def close(self) -> None:
