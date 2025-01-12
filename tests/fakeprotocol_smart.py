@@ -608,7 +608,7 @@ class FakeSmartTransport(BaseTransport):
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"
-            # but do not have a similarly named getter
+            # Some vacuum commands do not have a getter
             if method in ["setRobotPause", "setSwitchClean", "setSwitchCharge"]:
                 return {"error_code": 0}
 
