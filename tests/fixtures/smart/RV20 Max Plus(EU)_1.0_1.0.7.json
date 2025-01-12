@@ -192,7 +192,6 @@
         "e_min": 480,
         "s_min": 1320
     },
-    "getMapData": -100000,
     "getMapInfo": {
         "auto_change_map": false,
         "current_map_id": 0,
