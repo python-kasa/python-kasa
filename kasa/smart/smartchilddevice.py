@@ -89,11 +89,7 @@ class SmartChildDevice(SmartDevice):
             if (
                 module.disabled is False
                 and (mod_query := module.query())
-                and (
-                    not module.update_interval
-                    or not module._last_update_time
-                    or (now - module._last_update_time) >= module.update_interval
-                )
+                and module._should_update(now)
             ):
                 module_queries.append(module)
                 req.update(mod_query)

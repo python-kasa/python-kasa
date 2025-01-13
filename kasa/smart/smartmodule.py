@@ -122,6 +122,14 @@ class SmartModule(Module):
         """Return true if the module is disabled due to errors."""
         return self._error_count >= self.DISABLE_AFTER_ERROR_COUNT
 
+    def _should_update(self, update_time: float) -> bool:
+        """Return true if module should update based on delay parameters."""
+        return (
+            not self.update_interval
+            or not self._last_update_time
+            or (update_time - self._last_update_time) >= self.update_interval
+        )
+
     @classmethod
     def _module_name(cls) -> str:
         return getattr(cls, "NAME", cls.__name__)

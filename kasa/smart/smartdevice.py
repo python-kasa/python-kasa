@@ -260,11 +260,7 @@ class SmartDevice(Device):
             if first_update and module.__class__ in self.FIRST_UPDATE_MODULES:
                 module._last_update_time = update_time
                 continue
-            if (
-                not module.update_interval
-                or not module._last_update_time
-                or (update_time - module._last_update_time) >= module.update_interval
-            ):
+            if module._should_update(update_time):
                 module_queries.append(module)
                 req.update(query)
 
