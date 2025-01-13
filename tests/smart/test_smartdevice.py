@@ -257,6 +257,9 @@ async def test_hub_children_update_delays(
     new_dev = type(dev)("127.0.0.1", protocol=dev.protocol)
     module_queries: dict[str, dict[str, dict]] = {}
 
+    # children should always update on first update
+    await new_dev.update(update_children=False)
+
     if TYPE_CHECKING:
         from ..fakeprotocol_smart import FakeSmartTransport
 
@@ -274,6 +277,7 @@ async def test_hub_children_update_delays(
                 if q:
                     queries = module_queries.setdefault(child.device_id, {})
                     queries[cast(str, modname)] = q
+                module._last_update_time = None
 
     module_queries[""] = {
         cast(str, modname): q
@@ -282,9 +286,9 @@ async def test_hub_children_update_delays(
     }
 
     async def _query(request, *args, **kwargs):
-        pass
-        # If this is a childmultipleRequest query return the error wrapped
+        # If this is a child multipleRequest query return the error wrapped
         child_id = None
+        # smart hub
         if (
             (cc := request.get("control_child"))
             and (child_id := cc.get("device_id"))
@@ -295,6 +299,29 @@ async def test_hub_children_update_delays(
             child_protocol = dev.protocol._transport.child_protocols[child_id]
             resp = await _get_child_responses(child_requests, child_protocol)
             return {"control_child": {"responseData": {"result": {"responses": resp}}}}
+        # smartcam hub
+        if (
+            (mr := request.get("multipleRequest"))
+            and (requests := mr.get("requests"))
+            # assumes all requests for the same child
+            and (
+                child_id := next(iter(requests))
+                .get("params", {})
+                .get("childControl", {})
+                .get("device_id")
+            )
+            and (
+                child_requests := [
+                    cc["request_data"]
+                    for req in requests
+                    if (cc := req["params"].get("childControl"))
+                ]
+            )
+        ):
+            child_protocol = dev.protocol._transport.child_protocols[child_id]
+            resp = await _get_child_responses(child_requests, child_protocol)
+            resp = [{"result": {"response_data": resp}} for resp in resp]
+            return {"multipleRequest": {"responses": resp}}
 
         if child_id:  # child single query
             child_protocol = dev.protocol._transport.child_protocols[child_id]
@@ -307,11 +334,10 @@ async def test_hub_children_update_delays(
 
     mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
 
-    # children should always update on first update
-    await new_dev.update(update_children=False)
-
     first_update_time = time.monotonic()
     assert new_dev._last_update_time == first_update_time
+
+    await new_dev.update()
 
     for dev_id, modqueries in module_queries.items():
         check_dev = new_dev._children[dev_id] if dev_id else new_dev
