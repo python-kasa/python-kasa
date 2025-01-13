@@ -676,9 +676,17 @@ class Discover:
         for key, val in candidates.items():
             try:
                 prot, config = val
+                _LOGGER.debug(
+                    "Trying to connect with %s %s", prot.__class__.__name__, config
+                )
                 dev = await _connect(config, prot)
-            except Exception:
-                _LOGGER.debug("Unable to connect with %s", prot)
+            except Exception as ex:
+                _LOGGER.debug(
+                    "Unable to connect with %s %s: %s",
+                    prot.__class__.__name__,
+                    config,
+                    ex,
+                )
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, False)
@@ -686,6 +694,7 @@ class Discover:
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, True)
+                _LOGGER.debug("Found working protocol %s", prot)
                 return dev
             finally:
                 await prot.close()

@@ -62,6 +62,8 @@ class DeviceEncryptionType(Enum):
     Klap = "KLAP"
     Aes = "AES"
     Xor = "XOR"
+    #: Dummy SSL for initializing ssltransport
+    Ssl = "SSL"
 
 
 class DeviceFamily(Enum):
