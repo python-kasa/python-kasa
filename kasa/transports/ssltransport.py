@@ -215,7 +215,7 @@ class SslTransport(BaseTransport):
 
     async def send(self, request: str) -> dict[str, Any]:
         """Send the request."""
-        _LOGGER.info("Going to send %s", request)
+        _LOGGER.debug("Going to send %s", request)
         if self._state is not TransportState.ESTABLISHED or self._session_expired():
             _LOGGER.debug("Transport not established or session expired, logging in")
             await self.perform_login()

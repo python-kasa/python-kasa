@@ -61,8 +61,10 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
     # smartcam
     "dev_id": lambda x: "REDACTED_" + x[9::],
+    "ext_addr": lambda x: "REDACTED_" + x[9::],
     "device_name": lambda x: "#MASKED_NAME#" if x else "",
     "device_alias": lambda x: "#MASKED_NAME#" if x else "",
+    "alias": lambda x: "#MASKED_NAME#" if x else "",  # child info on parent uses alias
     "local_ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
     # robovac
     "board_sn": lambda _: "000000000000",
