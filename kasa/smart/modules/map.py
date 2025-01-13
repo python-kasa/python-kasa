@@ -29,9 +29,9 @@ class MapSummary(DataClassDictMixin):
     rotate_angle: int
     is_saved: bool
     update_time: int
-    global_cleaned: int
     auto_area_flag: bool
-    map_locked: int
+    map_locked: int | None = field(default=None)
+    global_cleaned: int | None = field(default=None)
 
 
 class Maps(SerializationStrategy):
