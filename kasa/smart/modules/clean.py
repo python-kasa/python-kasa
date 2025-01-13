@@ -40,6 +40,7 @@ class ErrorCode(IntEnum):
     UnableToMove = 15
     LidarBlocked = 16
     UnableToFindDock = 21
+    BatteryLow = 22
 
     UnknownInternal = -1000
 
