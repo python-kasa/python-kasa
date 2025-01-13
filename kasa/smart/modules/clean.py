@@ -6,7 +6,6 @@ import logging
 from enum import IntEnum
 from typing import Annotated
 
-from ...exceptions import KasaException
 from ...feature import Feature
 from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
@@ -183,22 +182,15 @@ class Clean(SmartModule):
         if self.status is Status.Paused:
             return await self.resume()
 
-        try:
-            return await self.call(
-                "setSwitchClean",
-                {
-                    "clean_mode": 0,
-                    "clean_on": True,
-                    "clean_order": True,
-                    "force_clean": False,
-                },
-            )
-        except ValueError as ex:
-            if "-3001" in ex.args[0]:
-                msg = "Unable to start cleaning, battery likely too low"
-                raise KasaException(msg) from ex
-
-            raise KasaException("Unable to start cleaning: %s", ex) from ex
+        return await self.call(
+            "setSwitchClean",
+            {
+                "clean_mode": 0,
+                "clean_on": True,
+                "clean_order": True,
+                "force_clean": False,
+            },
+        )
 
     async def pause(self) -> dict:
         """Pause cleaning."""
