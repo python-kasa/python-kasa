@@ -281,8 +281,7 @@ class FakeSmartTransport(BaseTransport):
             elif (
                 (device_id := child_info.get("device_id"))
                 and (category := child_info.get("category"))
-                and (device_family := child_info.get("device_type"))
-                and (category, device_family) in SmartCamChild.CHILD_DEVICE_TYPE_MAP
+                and category in SmartCamChild.CHILD_DEVICE_TYPE_MAP
                 and (
                     fixture_info_tuple := try_get_child_fixture_info(
                         child_info, "SMARTCAM.CHILD"

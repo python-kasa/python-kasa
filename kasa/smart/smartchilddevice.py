@@ -126,9 +126,7 @@ class SmartChildDevice(SmartDevice):
         FIRST_UPDATE_MODULES expected by the update cycle as these cannot be
         derived from the parent.
         """
-        child: SmartChildDevice = cls(
-            parent, child_info, child_components_raw, protocol=protocol
-        )
+        child = cls(parent, child_info, child_components_raw, protocol=protocol)
         if last_update:
             child._last_update = last_update
         await child._initialize_modules()

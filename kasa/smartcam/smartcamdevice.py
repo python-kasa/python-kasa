@@ -158,8 +158,7 @@ class SmartCamDevice(SmartDevice):
             elif (
                 (category := info.get("category"))
                 and (child_id := info.get("device_id"))
-                and (device_family := info.get("device_type"))
-                and (category, device_family) in SmartCamChild.CHILD_DEVICE_TYPE_MAP
+                and category in SmartCamChild.CHILD_DEVICE_TYPE_MAP
                 and (child_components := smart_children_components.get(child_id))
             ):
                 children[child_id] = await self._initialize_smartcam_child(
