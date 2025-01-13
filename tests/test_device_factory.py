@@ -117,7 +117,11 @@ async def test_connect_custom_port(discovery_mock, mocker, custom_port):
         connection_type=ctype,
         credentials=Credentials("dummy_user", "dummy_password"),
     )
-    default_port = 80 if "result" in discovery_data else 9999
+    default_port = (
+        DiscoveryResult.from_dict(discovery_data["result"]).mgt_encrypt_schm.http_port
+        if "result" in discovery_data
+        else 9999
+    )
 
     ctype, _ = _get_connection_type_device_class(discovery_data)
 

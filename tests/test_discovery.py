@@ -136,6 +136,11 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
 
     disco_data = discovery_mock.discovery_data
     device_class = Discover._get_device_class(disco_data)
+    http_port = (
+        DiscoveryResult.from_dict(disco_data["result"]).mgt_encrypt_schm.http_port
+        if "result" in disco_data
+        else None
+    )
 
     # discovery_mock patches protocol query methods so use spy here.
     update_mock = mocker.spy(device_class, "update")
@@ -145,7 +150,11 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     )
     assert issubclass(x.__class__, Device)
     assert x._discovery_info is not None
-    assert x.port == custom_port or x.port == discovery_mock.default_port
+    assert (
+        x.port == custom_port
+        or x.port == discovery_mock.default_port
+        or x.port == http_port
+    )
     # Make sure discovery does not call update()
     assert update_mock.call_count == 0
     if discovery_mock.default_port == 80:
