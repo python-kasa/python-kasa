@@ -146,7 +146,7 @@ class Clean(SmartModule):
     async def _post_update_hook(self) -> None:
         """Set error code after update."""
         errors = self._vac_status.get("err_status")
-        if errors is None:
+        if errors is None or not errors:
             self._error_code = ErrorCode.Ok
             return
 
@@ -178,7 +178,7 @@ class Clean(SmartModule):
         """Start cleaning."""
         # If we are paused, do not restart cleaning
 
-        if self.status == Status.Paused:
+        if self.status is Status.Paused:
             return await self.resume()
 
         return await self.call(

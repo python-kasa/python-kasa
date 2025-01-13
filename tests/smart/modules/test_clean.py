@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -79,8 +81,66 @@ async def test_actions(
     params: dict,
 ):
     """Test the clean actions."""
-    speaker = next(get_parent_and_child_modules(dev, Module.Clean))
-    call = mocker.spy(speaker, "call")
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+    call = mocker.spy(clean, "call")
 
     await dev.features[feature].set_value(value)
     call.assert_called_with(method, params)
+
+
+@pytest.mark.parametrize(
+    ("err_status", "error"),
+    [
+        pytest.param([], ErrorCode.Ok, id="empty error"),
+        pytest.param([0], ErrorCode.Ok, id="no error"),
+        pytest.param([3], ErrorCode.MainBrushStuck, id="known error"),
+        pytest.param([123], ErrorCode.UnknownInternal, id="unknown error"),
+        pytest.param([3, 4], ErrorCode.MainBrushStuck, id="multi-error"),
+    ],
+)
+@clean
+async def test_post_update_hook(dev: SmartDevice, err_status: list, error: ErrorCode):
+    """Test that post update hook sets error states correctly."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+    clean.data["getVacStatus"]["err_status"] = err_status
+
+    await clean._post_update_hook()
+
+    assert clean._error_code is error
+
+    if error is not ErrorCode.Ok:
+        assert clean.status is Status.Error
+
+
+@clean
+async def test_resume(dev: SmartDevice, mocker: MockerFixture):
+    """Test that start calls resume if the state is paused."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    call = mocker.spy(clean, "call")
+    resume = mocker.spy(clean, "resume")
+
+    mocker.patch.object(
+        type(clean),
+        "status",
+        new_callable=mocker.PropertyMock,
+        return_value=Status.Paused,
+    )
+    await clean.start()
+
+    call.assert_called_with("setRobotPause", {"pause": False})
+    resume.assert_awaited()
+
+
+@clean
+async def test_unknown_status(
+    dev: SmartDevice, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+):
+    """Test that unknown status is logged."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    caplog.set_level(logging.DEBUG)
+    clean.data["getVacStatus"]["status"] = 123
+
+    assert clean.status is Status.UnknownInternal
+    assert "Got unknown status code: 123" in caplog.text
