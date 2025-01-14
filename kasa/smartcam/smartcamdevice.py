@@ -144,28 +144,25 @@ class SmartCamDevice(SmartDevice):
         from .smartcamchild import SmartCamChild
 
         for info in resp["getChildDeviceList"]["child_device_list"]:
-            # Smart
             if (
                 (category := info.get("category"))
-                and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
                 and (child_id := info.get("device_id"))
                 and (child_components := smart_children_components.get(child_id))
             ):
-                children[child_id] = await self._initialize_smart_child(
-                    info, child_components
-                )
-            # Smartcam
-            elif (
-                (category := info.get("category"))
-                and (child_id := info.get("device_id"))
-                and category in SmartCamChild.CHILD_DEVICE_TYPE_MAP
-                and (child_components := smart_children_components.get(child_id))
-            ):
-                children[child_id] = await self._initialize_smartcam_child(
-                    info, child_components
-                )
-            else:
-                _LOGGER.debug("Child device type not supported: %s", info)
+                # Smart
+                if category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
+                    children[child_id] = await self._initialize_smart_child(
+                        info, child_components
+                    )
+                    continue
+                # Smartcam
+                if category in SmartCamChild.CHILD_DEVICE_TYPE_MAP:
+                    children[child_id] = await self._initialize_smartcam_child(
+                        info, child_components
+                    )
+                    continue
+
+            _LOGGER.debug("Child device type not supported: %s", info)
 
         self._children = children
 
