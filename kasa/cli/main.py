@@ -22,6 +22,7 @@ from .common import (
     CatchAllExceptions,
     echo,
     error,
+    invoke_subcommand,
     json_formatter_cb,
     pass_dev_or_child,
 )
@@ -295,9 +296,10 @@ async def cli(
         echo("No host name given, trying discovery..")
         from .discover import discover
 
-        return await ctx.invoke(discover)
+        return await invoke_subcommand(discover, ctx)
 
     device_updated = False
+    device_discovered = False
 
     if type is not None and type not in {"smart", "camera"}:
         from kasa.deviceconfig import DeviceConfig
@@ -351,12 +353,14 @@ async def cli(
             return
         echo(f"Found hostname by alias: {dev.host}")
         device_updated = True
-    else:
+    else:  # host will be set
         from .discover import discover
 
-        dev = await ctx.invoke(discover)
-        if not dev:
+        discovered = await invoke_subcommand(discover, ctx)
+        if not discovered:
             error(f"Unable to create device for {host}")
+        dev = discovered[host]
+        device_discovered = True
 
     # Skip update on specific commands, or if device factory,
     # that performs an update was used for the device.
@@ -372,10 +376,13 @@ async def cli(
 
     ctx.obj = await ctx.with_async_resource(async_wrapped_device(dev))
 
-    if ctx.invoked_subcommand is None:
+    # discover command has already invoked state
+    if ctx.invoked_subcommand is None and not device_discovered:
         from .device import state
 
         return await ctx.invoke(state)
+
+    return dev
 
 
 @cli.command()

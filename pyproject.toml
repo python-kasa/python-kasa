@@ -1,6 +1,6 @@
 [project]
 name = "python-kasa"
-version = "0.9.0"
+version = "0.9.1"
 description = "Python API for TP-Link Kasa and Tapo devices"
 license = {text = "GPL-3.0-or-later"}
 authors = [ { name = "python-kasa developers" }]
@@ -112,7 +112,7 @@ markers = [
 ]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-timeout = 10
+#timeout = 10
 # dist=loadgroup enables grouping of tests into single worker.
 # required as caplog doesn't play nicely with multiple workers.
 addopts = "--disable-socket --allow-unix-socket --dist=loadgroup"

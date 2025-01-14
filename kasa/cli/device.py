@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pprint import pformat as pf
+from typing import TYPE_CHECKING
 
 import asyncclick as click
 
@@ -82,6 +83,8 @@ async def state(ctx, dev: Device):
         echo()
         from .discover import _echo_discovery_info
 
+        if TYPE_CHECKING:
+            assert dev._discovery_info
         _echo_discovery_info(dev._discovery_info)
 
     return dev.internal_state

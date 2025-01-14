@@ -7,11 +7,13 @@ from .batterysensor import BatterySensor
 from .brightness import Brightness
 from .childdevice import ChildDevice
 from .childprotection import ChildProtection
+from .clean import Clean
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
 from .contactsensor import ContactSensor
 from .devicemodule import DeviceModule
+from .dustbin import Dustbin
 from .energy import Energy
 from .fan import Fan
 from .firmware import Firmware
@@ -28,6 +30,7 @@ from .matter import Matter
 from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
 from .reportmode import ReportMode
+from .speaker import Speaker
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
 from .thermostat import Thermostat
@@ -66,8 +69,11 @@ __all__ = [
     "TriggerLogs",
     "FrostProtection",
     "Thermostat",
+    "Clean",
     "SmartLightEffect",
     "OverheatProtection",
+    "Speaker",
     "HomeKit",
     "Matter",
+    "Dustbin",
 ]

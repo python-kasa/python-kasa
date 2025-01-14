@@ -7,6 +7,8 @@ import pytest
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartChildDevice
+from kasa.smartcam import SmartCamChild
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 from kasa.transports.basetransport import BaseTransport
 
 
@@ -48,13 +50,18 @@ class FakeSmartTransport(BaseTransport):
             ),
         )
         self.fixture_name = fixture_name
+
+        # When True verbatim will bypass any extra processing of missing
+        # methods and is used to test the fixture creation itself.
+        self.verbatim = verbatim
+
         # Don't copy the dict if the device is a child so that updates on the
         # child are then still reflected on the parent's lis of child device in
         if not is_child:
             self.info = copy.deepcopy(info)
             if get_child_fixtures:
                 self.child_protocols = self._get_child_protocols(
-                    self.info, self.fixture_name, "get_child_device_list"
+                    self.info, self.fixture_name, "get_child_device_list", self.verbatim
                 )
         else:
             self.info = info
@@ -67,9 +74,6 @@ class FakeSmartTransport(BaseTransport):
         self.warn_fixture_missing_methods = warn_fixture_missing_methods
         self.fix_incomplete_fixture_lists = fix_incomplete_fixture_lists
 
-        # When True verbatim will bypass any extra processing of missing
-        # methods and is used to test the fixture creation itself.
-        self.verbatim = verbatim
         if verbatim:
             self.warn_fixture_missing_methods = False
             self.fix_incomplete_fixture_lists = False
@@ -124,7 +128,7 @@ class FakeSmartTransport(BaseTransport):
             },
         ),
         "get_auto_update_info": (
-            "firmware",
+            ("firmware", 2),
             {"enable": True, "random_range": 120, "time": 180},
         ),
         "get_alarm_configure": (
@@ -169,6 +173,30 @@ class FakeSmartTransport(BaseTransport):
         ),
     }
 
+    def _missing_result(self, method):
+        """Check the FIXTURE_MISSING_MAP for responses.
+
+        Fixtures generated prior to a query being supported by dump_devinfo
+        do not have the response so this method checks whether the component
+        is supported and fills in the missing response.
+        If the first value of the lookup value is a tuple it will also check
+        the version, i.e. (component_name, component_version).
+        """
+        if not (missing := self.FIXTURE_MISSING_MAP.get(method)):
+            return None
+        condition = missing[0]
+        if (
+            isinstance(condition, tuple)
+            and (version := self.components.get(condition[0]))
+            and version >= condition[1]
+        ):
+            return copy.deepcopy(missing[1])
+
+        if condition in self.components:
+            return copy.deepcopy(missing[1])
+
+        return None
+
     async def send(self, request: str):
         request_dict = json_loads(request)
         method = request_dict["method"]
@@ -189,7 +217,7 @@ class FakeSmartTransport(BaseTransport):
 
     @staticmethod
     def _get_child_protocols(
-        parent_fixture_info, parent_fixture_name, child_devices_key
+        parent_fixture_info, parent_fixture_name, child_devices_key, verbatim
     ):
         child_infos = parent_fixture_info.get(child_devices_key, {}).get(
             "child_device_list", []
@@ -201,16 +229,20 @@ class FakeSmartTransport(BaseTransport):
         # imported here to avoid circular import
         from .conftest import filter_fixtures
 
-        def try_get_child_fixture_info(child_dev_info):
+        def try_get_child_fixture_info(child_dev_info, protocol):
             hw_version = child_dev_info["hw_ver"]
-            sw_version = child_dev_info["fw_ver"]
+            sw_version = child_dev_info.get("sw_ver", child_dev_info.get("fw_ver"))
             sw_version = sw_version.split(" ")[0]
-            model = child_dev_info["model"]
-            region = child_dev_info.get("specs", "XX")
-            child_fixture_name = f"{model}({region})_{hw_version}_{sw_version}"
+            model = child_dev_info.get("device_model", child_dev_info.get("model"))
+            assert sw_version
+            assert model
+
+            region = child_dev_info.get("specs", child_dev_info.get("region"))
+            region = f"({region})" if region else ""
+            child_fixture_name = f"{model}{region}_{hw_version}_{sw_version}"
             child_fixtures = filter_fixtures(
                 "Child fixture",
-                protocol_filter={"SMART.CHILD"},
+                protocol_filter={protocol},
                 model_filter={child_fixture_name},
             )
             if child_fixtures:
@@ -223,7 +255,9 @@ class FakeSmartTransport(BaseTransport):
                 and (category := child_info.get("category"))
                 and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
             ):
-                if fixture_info_tuple := try_get_child_fixture_info(child_info):
+                if fixture_info_tuple := try_get_child_fixture_info(
+                    child_info, "SMART.CHILD"
+                ):
                     child_fixture = copy.deepcopy(fixture_info_tuple.data)
                     child_fixture["get_device_info"]["device_id"] = device_id
                     found_child_fixture_infos.append(child_fixture["get_device_info"])
@@ -244,14 +278,37 @@ class FakeSmartTransport(BaseTransport):
                     pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
                         parent_fixture_name, set()
                     ).add("child_devices")
+            elif (
+                (device_id := child_info.get("device_id"))
+                and (category := child_info.get("category"))
+                and category in SmartCamChild.CHILD_DEVICE_TYPE_MAP
+                and (
+                    fixture_info_tuple := try_get_child_fixture_info(
+                        child_info, "SMARTCAM.CHILD"
+                    )
+                )
+            ):
+                from .fakeprotocol_smartcam import FakeSmartCamProtocol
+
+                child_fixture = copy.deepcopy(fixture_info_tuple.data)
+                child_fixture["getDeviceInfo"]["device_info"]["basic_info"][
+                    "dev_id"
+                ] = device_id
+                child_fixture[CHILD_INFO_FROM_PARENT]["device_id"] = device_id
+                # We copy the child device info to the parent getChildDeviceInfo
+                # list for smartcam children in order for updates to work.
+                found_child_fixture_infos.append(child_fixture[CHILD_INFO_FROM_PARENT])
+                child_protocols[device_id] = FakeSmartCamProtocol(
+                    child_fixture, fixture_info_tuple.name, is_child=True
+                )
             else:
                 warn(
-                    f"Child is a cameraprotocol which needs to be implemented {child_info}",
+                    f"Child is a protocol which needs to be implemented {child_info}",
                     stacklevel=2,
                 )
         # Replace parent child infos with the infos from the child fixtures so
         # that updates update both
-        if child_infos and found_child_fixture_infos:
+        if not verbatim and child_infos and found_child_fixture_infos:
             parent_fixture_info[child_devices_key]["child_device_list"] = (
                 found_child_fixture_infos
             )
@@ -318,18 +375,16 @@ class FakeSmartTransport(BaseTransport):
         elif child_method in child_device_calls:
             result = copy.deepcopy(child_device_calls[child_method])
             return {"result": result, "error_code": 0}
-        elif (
+        elif missing_result := self._missing_result(child_method):
             # FIXTURE_MISSING is for service calls not in place when
             # SMART fixtures started to be generated
-            missing_result := self.FIXTURE_MISSING_MAP.get(child_method)
-        ) and missing_result[0] in self.components:
             # Copy to info so it will work with update methods
-            child_device_calls[child_method] = copy.deepcopy(missing_result[1])
+            child_device_calls[child_method] = missing_result
             result = copy.deepcopy(info[child_method])
             retval = {"result": result, "error_code": 0}
             return retval
-        elif child_method[:4] == "set_":
-            target_method = f"get_{child_method[4:]}"
+        elif child_method[:3] == "set":
+            target_method = f"get{child_method[3:]}"
             if target_method not in child_device_calls:
                 raise RuntimeError(
                     f"No {target_method} in child info, calling set before get not supported."
@@ -494,7 +549,7 @@ class FakeSmartTransport(BaseTransport):
             return await self._handle_control_child(request_dict["params"])
 
         params = request_dict.get("params", {})
-        if method in {"component_nego", "qs_component_nego"} or method[:4] == "get_":
+        if method in {"component_nego", "qs_component_nego"} or method[:3] == "get":
             if method in info:
                 result = copy.deepcopy(info[method])
                 if result and "start_index" in result and "sum" in result:
@@ -529,13 +584,11 @@ class FakeSmartTransport(BaseTransport):
                     "method": method,
                 }
 
-            if (
+            if missing_result := self._missing_result(method):
                 # FIXTURE_MISSING is for service calls not in place when
                 # SMART fixtures started to be generated
-                missing_result := self.FIXTURE_MISSING_MAP.get(method)
-            ) and missing_result[0] in self.components:
                 # Copy to info so it will work with update methods
-                info[method] = copy.deepcopy(missing_result[1])
+                info[method] = missing_result
                 result = copy.deepcopy(info[method])
                 retval = {"result": result, "error_code": 0}
             elif (
@@ -584,9 +637,22 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
-        elif method[:4] == "set_":
-            target_method = f"get_{method[4:]}"
+        # Vacuum special actions
+        elif method in ["playSelectAudio"]:
+            return {"error_code": 0}
+        elif method[:3] == "set":
+            target_method = f"get{method[3:]}"
+            # Some vacuum commands do not have a getter
+            if method in [
+                "setRobotPause",
+                "setSwitchClean",
+                "setSwitchCharge",
+                "setSwitchDustCollection",
+            ]:
+                return {"error_code": 0}
+
             info[target_method].update(params)
+
             return {"error_code": 0}
 
     async def close(self) -> None:

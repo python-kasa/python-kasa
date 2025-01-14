@@ -8,7 +8,7 @@ from typing import Any
 
 from .device import Device
 from .device_type import DeviceType
-from .deviceconfig import DeviceConfig, DeviceFamily
+from .deviceconfig import DeviceConfig, DeviceEncryptionType, DeviceFamily
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import (
     IotBulb,
@@ -159,7 +159,7 @@ def get_device_class_from_family(
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
         "SMART.IPCAMERA.HTTPS": SmartCamDevice,
-        "SMART.TAPOROBOVAC": SmartDevice,
+        "SMART.TAPOROBOVAC.HTTPS": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
         "IOT.IPCAMERA": IotCamera,
@@ -173,28 +173,39 @@ def get_device_class_from_family(
         _LOGGER.debug("Unknown SMART device with %s, using SmartDevice", device_type)
         cls = SmartDevice
 
+    if cls is not None:
+        _LOGGER.debug("Using %s for %s", cls.__name__, device_type)
+
     return cls
 
 
-def get_protocol(
-    config: DeviceConfig,
-) -> BaseProtocol | None:
-    """Return the protocol from the connection name.
+def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol | None:
+    """Return the protocol from the device config.
 
     For cameras and vacuums the device family is a simple mapping to
     the protocol/transport. For other device types the transport varies
     based on the discovery information.
+
+    :param config: Device config to derive protocol
+    :param strict: Require exact match on encrypt type
     """
     ctype = config.connection_type
     protocol_name = ctype.device_family.value.split(".")[0]
+    _LOGGER.debug("Finding protocol for %s", ctype.device_family)
 
     if ctype.device_family is DeviceFamily.SmartIpCamera:
+        if strict and ctype.encryption_type is not DeviceEncryptionType.Aes:
+            return None
         return SmartCamProtocol(transport=SslAesTransport(config=config))
 
     if ctype.device_family is DeviceFamily.IotIpCamera:
+        if strict and ctype.encryption_type is not DeviceEncryptionType.Xor:
+            return None
         return IotProtocol(transport=LinkieTransportV2(config=config))
 
     if ctype.device_family is DeviceFamily.SmartTapoRobovac:
+        if strict and ctype.encryption_type is not DeviceEncryptionType.Aes:
+            return None
         return SmartProtocol(transport=SslTransport(config=config))
 
     protocol_transport_key = (

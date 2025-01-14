@@ -6,6 +6,7 @@ from typing import Any
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.protocols.smartcamprotocol import SmartCamProtocol
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 from kasa.transports.basetransport import BaseTransport
 
 from .fakeprotocol_smart import FakeSmartTransport
@@ -33,6 +34,7 @@ class FakeSmartCamTransport(BaseTransport):
         *,
         list_return_size=10,
         is_child=False,
+        get_child_fixtures=True,
         verbatim=False,
         components_not_included=False,
     ):
@@ -52,12 +54,15 @@ class FakeSmartCamTransport(BaseTransport):
         self.verbatim = verbatim
         if not is_child:
             self.info = copy.deepcopy(info)
-            self.child_protocols = FakeSmartTransport._get_child_protocols(
-                self.info, self.fixture_name, "getChildDeviceList"
-            )
+            # We don't need to get the child fixtures if testing things like
+            # lists
+            if get_child_fixtures:
+                self.child_protocols = FakeSmartTransport._get_child_protocols(
+                    self.info, self.fixture_name, "getChildDeviceList", self.verbatim
+                )
         else:
             self.info = info
-        # self.child_protocols = self._get_child_protocols()
+
         self.list_return_size = list_return_size
 
         # Setting this flag allows tests to create dummy transports without
@@ -121,9 +126,25 @@ class FakeSmartCamTransport(BaseTransport):
 
     @staticmethod
     def _get_param_set_value(info: dict, set_keys: list[str], value):
+        cifp = info.get(CHILD_INFO_FROM_PARENT)
+
         for key in set_keys[:-1]:
             info = info[key]
         info[set_keys[-1]] = value
+
+        if (
+            cifp
+            and set_keys[0] == "getDeviceInfo"
+            and (
+                child_info_parent_key
+                := FakeSmartCamTransport.CHILD_INFO_SETTER_MAP.get(set_keys[-1])
+            )
+        ):
+            cifp[child_info_parent_key] = value
+
+    CHILD_INFO_SETTER_MAP = {
+        "device_alias": "alias",
+    }
 
     FIXTURE_MISSING_MAP = {
         "getMatterSetupInfo": (
@@ -229,9 +250,16 @@ class FakeSmartCamTransport(BaseTransport):
                 list_key = next(
                     iter([key for key in result if isinstance(result[key], list)])
                 )
+                assert isinstance(params, dict)
+                module_name = next(iter(params))
+
                 start_index = (
                     start_index
-                    if (params and (start_index := params.get("start_index")))
+                    if (
+                        params
+                        and module_name
+                        and (start_index := params[module_name].get("start_index"))
+                    )
                     else 0
                 )
 

@@ -5,6 +5,5 @@
         "device_family": "IOT.SMARTPLUGSWITCH",
         "encryption_type": "XOR",
         "https": false
-    },
-    "uses_http": false
+    }
 }
