@@ -269,7 +269,7 @@ async def test_hub_children_update_delays(
             for modname, module in child._modules.items():
                 if (
                     not (q := module.query())
-                    and modname not in {"DeviceModule", "Light"}
+                    and modname not in {"DeviceModule", "Light", "Battery", "Camera"}
                     and not module.SYSINFO_LOOKUP_KEYS
                 ):
                     q = {f"get_dummy_{modname}": {}}
