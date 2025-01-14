@@ -7,6 +7,7 @@ from .batterysensor import BatterySensor
 from .brightness import Brightness
 from .childdevice import ChildDevice
 from .childprotection import ChildProtection
+from .clean import Clean
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
@@ -66,6 +67,7 @@ __all__ = [
     "TriggerLogs",
     "FrostProtection",
     "Thermostat",
+    "Clean",
     "SmartLightEffect",
     "OverheatProtection",
     "HomeKit",

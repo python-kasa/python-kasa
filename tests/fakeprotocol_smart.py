@@ -383,8 +383,8 @@ class FakeSmartTransport(BaseTransport):
             result = copy.deepcopy(info[child_method])
             retval = {"result": result, "error_code": 0}
             return retval
-        elif child_method[:4] == "set_":
-            target_method = f"get_{child_method[4:]}"
+        elif child_method[:3] == "set":
+            target_method = f"get{child_method[3:]}"
             if target_method not in child_device_calls:
                 raise RuntimeError(
                     f"No {target_method} in child info, calling set before get not supported."
@@ -549,7 +549,7 @@ class FakeSmartTransport(BaseTransport):
             return await self._handle_control_child(request_dict["params"])
 
         params = request_dict.get("params", {})
-        if method in {"component_nego", "qs_component_nego"} or method[:4] == "get_":
+        if method in {"component_nego", "qs_component_nego"} or method[:3] == "get":
             if method in info:
                 result = copy.deepcopy(info[method])
                 if result and "start_index" in result and "sum" in result:
@@ -637,9 +637,14 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
-        elif method[:4] == "set_":
-            target_method = f"get_{method[4:]}"
+        elif method[:3] == "set":
+            target_method = f"get{method[3:]}"
+            # Some vacuum commands do not have a getter
+            if method in ["setRobotPause", "setSwitchClean", "setSwitchCharge"]:
+                return {"error_code": 0}
+
             info[target_method].update(params)
+
             return {"error_code": 0}
 
     async def close(self) -> None:
