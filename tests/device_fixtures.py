@@ -435,6 +435,15 @@ async def get_device_for_fixture(
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
         host="127.0.0.123"
     )
+
+    # smart child devices sometimes check _is_hub_child which needs a parent
+    # of DeviceType.Hub
+    class DummyParent:
+        device_type = DeviceType.Hub
+
+    if fixture_data.protocol in {"SMART.CHILD", "SMARTCAM.CHILD"}:
+        d._parent = DummyParent()
+
     if fixture_data.protocol in {"SMART", "SMART.CHILD"}:
         d.protocol = FakeSmartProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
