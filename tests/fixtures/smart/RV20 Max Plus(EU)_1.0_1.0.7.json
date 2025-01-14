@@ -202,6 +202,10 @@
     "getMopState": {
         "mop_state": false
     },
+    "getDustCollectionInfo": {
+        "auto_dust_collection": true,
+        "dust_collection_mode": 0
+    },
     "getVacStatus": {
         "err_status": [
             0
