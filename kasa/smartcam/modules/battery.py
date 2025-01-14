@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Battery(SmartCamModule):
-    """Implementation of baby cry detection module."""
+    """Implementation of a battery module."""
 
     REQUIRED_COMPONENT = "battery"
 

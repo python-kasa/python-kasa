@@ -246,7 +246,8 @@ class FakeSmartCamTransport(BaseTransport):
         # smartcam child devices do not make requests for getDeviceInfo as they
         # get updated from the parent's query. If this is being called from a
         # child it must be because the fixture has been created directly on the
-        # child device with a dummy parent. In this case return the child
+        # child device with a dummy parent. In this case return the child info
+        # from parent that's inside the fixture.
         if method == "getDeviceInfo" and (cifp := info.get(CHILD_INFO_FROM_PARENT)):
             mapped = SmartCamChild._map_child_info_from_parent(cifp)
             result = {"device_info": {"basic_info": mapped}}
