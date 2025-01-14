@@ -37,15 +37,15 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
 async def test_set_volume(dev: SmartDevice, mocker: MockerFixture):
     """Test speaker settings."""
     speaker = next(get_parent_and_child_modules(dev, Module.Speaker))
+    assert speaker is not None
+
     call = mocker.spy(speaker, "call")
 
     volume = speaker._device.features["volume"]
-    assert speaker.volume == volume.volume
+    assert speaker.volume == volume.value
 
     new_volume = 15
     await speaker.set_volume(new_volume)
-
-    await dev.update()
 
     call.assert_called_with("setVolume", {"volume": new_volume})
 

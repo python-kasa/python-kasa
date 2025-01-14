@@ -187,6 +187,9 @@
         "name": "2",
         "version": 1
     },
+    "getVolume": {
+        "volume": 84
+    },
     "getDoNotDisturb": {
         "do_not_disturb": true,
         "e_min": 480,
