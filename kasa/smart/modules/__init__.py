@@ -30,12 +30,12 @@ from .matter import Matter
 from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
 from .reportmode import ReportMode
+from .speaker import Speaker
 from .temperaturecontrol import TemperatureControl
 from .temperaturesensor import TemperatureSensor
 from .thermostat import Thermostat
 from .time import Time
 from .triggerlogs import TriggerLogs
-from .vacuumspeaker import VacuumSpeaker
 from .waterleaksensor import WaterleakSensor
 
 __all__ = [
@@ -72,7 +72,7 @@ __all__ = [
     "Clean",
     "SmartLightEffect",
     "OverheatProtection",
-    "VacuumSpeaker",
+    "Speaker",
     "HomeKit",
     "Matter",
     "Dustbin",

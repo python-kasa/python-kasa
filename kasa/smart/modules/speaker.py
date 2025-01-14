@@ -12,7 +12,7 @@ from ..smartmodule import SmartModule
 _LOGGER = logging.getLogger(__name__)
 
 
-class VacuumSpeaker(SmartModule):
+class Speaker(SmartModule):
     """Implementation of vacuum speaker."""
 
     REQUIRED_COMPONENT = "speaker"
