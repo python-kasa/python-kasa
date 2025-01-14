@@ -56,6 +56,9 @@ async def test_dustbin_mode(dev: SmartDevice, mocker: MockerFixture):
 
     assert dustbin.mode == new_mode.name
 
+    with pytest.raises(ValueError, match="Invalid auto/emptying mode speed"):
+        await dustbin.set_mode("invalid")
+
 
 @dustbin
 async def test_autocollection(dev: SmartDevice, mocker: MockerFixture):
