@@ -60,4 +60,6 @@ async def test_locate(dev: SmartDevice, mocker: MockerFixture):
     speaker = next(get_parent_and_child_modules(dev, Module.Speaker))
     call = mocker.spy(speaker, "call")
 
+    await speaker.locate()
+
     call.assert_called_with("playSelectAudio", {"audio_type": "seek_me"})
