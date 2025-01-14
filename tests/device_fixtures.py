@@ -441,7 +441,7 @@ async def get_device_for_fixture(
     class DummyParent:
         device_type = DeviceType.Hub
 
-    if fixture_data.protocol in {"SMART.CHILD", "SMARTCAM.CHILD"}:
+    if fixture_data.protocol in {"SMARTCAM.CHILD"}:
         d._parent = DummyParent()
 
     if fixture_data.protocol in {"SMART", "SMART.CHILD"}:
