@@ -637,6 +637,9 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
+        # Vacuum special actions
+        elif method in ["playSelectAudio"]:
+            return {"error_code": 0}
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"
             # Some vacuum commands do not have a getter

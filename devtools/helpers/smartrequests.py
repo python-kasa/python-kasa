@@ -449,6 +449,7 @@ COMPONENT_REQUESTS = {
     "speaker": [
         SmartRequest.get_raw_request("getSupportVoiceLanguage"),
         SmartRequest.get_raw_request("getCurrentVoiceLanguage"),
+        SmartRequest.get_raw_request("getVolume"),
     ],
     "map": [
         SmartRequest.get_raw_request("getMapInfo"),
