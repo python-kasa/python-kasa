@@ -96,7 +96,7 @@ class Dustbin(SmartModule):
     async def set_mode(self, mode: str) -> dict:
         """Set auto-emptying mode."""
         name_to_value = {x.name: x.value for x in Mode}
-        if Mode not in name_to_value:
+        if mode not in name_to_value:
             raise ValueError(
                 "Invalid auto/emptying mode speed %s, available %s", mode, name_to_value
             )

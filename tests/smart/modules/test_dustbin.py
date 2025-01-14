@@ -9,7 +9,7 @@ from kasa.smart import SmartDevice
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
 dustbin = parametrize(
-    "has dustbin", component_filter="dustbin", protocol_filter={"SMART"}
+    "has dustbin", component_filter="dust_bucket", protocol_filter={"SMART"}
 )
 
 
@@ -40,8 +40,8 @@ async def test_dustbin_mode(dev: SmartDevice, mocker: MockerFixture):
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
     call = mocker.spy(dustbin, "call")
 
-    mode_feature = dustbin._device.features["mode"]
-    assert dustbin.mode == mode_feature.mode
+    mode_feature = dustbin._device.features["dustbin_mode"]
+    assert dustbin.mode == mode_feature.value
 
     new_mode = "Max"
     await dustbin.set_mode(new_mode)
@@ -63,7 +63,7 @@ async def test_autocollection(dev: SmartDevice, mocker: MockerFixture):
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
     call = mocker.spy(dustbin, "call")
 
-    auto_collection = dustbin._device.features["auto_collection"]
+    auto_collection = dustbin._device.features["dustbin_autocollection_enabled"]
     assert dustbin.auto_collection == auto_collection.value
 
     params = dustbin._settings.copy()
