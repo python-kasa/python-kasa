@@ -33,6 +33,8 @@ class SmartCamModule(SmartModule):
         "BabyCryDetection"
     )
 
+    SmartCamBattery: Final[ModuleName[modules.Battery]] = ModuleName("Battery")
+
     SmartCamDeviceModule: Final[ModuleName[modules.DeviceModule]] = ModuleName(
         "devicemodule"
     )

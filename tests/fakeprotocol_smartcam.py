@@ -6,7 +6,7 @@ from typing import Any
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.protocols.smartcamprotocol import SmartCamProtocol
-from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT, SmartCamChild
 from kasa.transports.basetransport import BaseTransport
 
 from .fakeprotocol_smart import FakeSmartTransport
@@ -242,6 +242,20 @@ class FakeSmartCamTransport(BaseTransport):
                 return {**result, "error_code": 0}
             else:
                 return {"error_code": -1}
+
+        # smartcam child devices do not make requests for getDeviceInfo as they
+        # get updated from the parent's query. If this is being called from a
+        # child it must be because the fixture has been created directly on the
+        # child device with a dummy parent. In this case return the child info
+        # from parent that's inside the fixture.
+        if (
+            not self.verbatim
+            and method == "getDeviceInfo"
+            and (cifp := info.get(CHILD_INFO_FROM_PARENT))
+        ):
+            mapped = SmartCamChild._map_child_info_from_parent(cifp)
+            result = {"device_info": {"basic_info": mapped}}
+            return {"result": result, "error_code": 0}
 
         if method in info:
             params = request_dict.get("params")

@@ -238,18 +238,17 @@ class SmartCamDevice(SmartDevice):
             await self._initialize_children()
 
     def _map_info(self, device_info: dict) -> dict:
+        """Map the basic keys to the keys used by SmartDevices."""
         basic_info = device_info["basic_info"]
-        return {
-            "model": basic_info["device_model"],
-            "device_type": basic_info["device_type"],
-            "alias": basic_info["device_alias"],
-            "fw_ver": basic_info["sw_version"],
-            "hw_ver": basic_info["hw_version"],
-            "mac": basic_info["mac"],
-            "hwId": basic_info.get("hw_id"),
-            "oem_id": basic_info["oem_id"],
-            "device_id": basic_info["dev_id"],
+        mappings = {
+            "device_model": "model",
+            "device_alias": "alias",
+            "sw_version": "fw_ver",
+            "hw_version": "hw_ver",
+            "hw_id": "hwId",
+            "dev_id": "device_id",
         }
+        return {mappings.get(k, k): v for k, v in basic_info.items()}
 
     @property
     def is_on(self) -> bool:

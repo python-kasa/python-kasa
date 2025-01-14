@@ -262,7 +262,10 @@ class FakeSmartTransport(BaseTransport):
                     child_fixture["get_device_info"]["device_id"] = device_id
                     found_child_fixture_infos.append(child_fixture["get_device_info"])
                     child_protocols[device_id] = FakeSmartProtocol(
-                        child_fixture, fixture_info_tuple.name, is_child=True
+                        child_fixture,
+                        fixture_info_tuple.name,
+                        is_child=True,
+                        verbatim=verbatim,
                     )
                 # Look for fixture inline
                 elif (child_fixtures := parent_fixture_info.get("child_devices")) and (
@@ -273,6 +276,7 @@ class FakeSmartTransport(BaseTransport):
                         child_fixture,
                         f"{parent_fixture_name}-{device_id}",
                         is_child=True,
+                        verbatim=verbatim,
                     )
                 else:
                     pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
@@ -299,7 +303,10 @@ class FakeSmartTransport(BaseTransport):
                 # list for smartcam children in order for updates to work.
                 found_child_fixture_infos.append(child_fixture[CHILD_INFO_FROM_PARENT])
                 child_protocols[device_id] = FakeSmartCamProtocol(
-                    child_fixture, fixture_info_tuple.name, is_child=True
+                    child_fixture,
+                    fixture_info_tuple.name,
+                    is_child=True,
+                    verbatim=verbatim,
                 )
             else:
                 warn(
