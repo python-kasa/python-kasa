@@ -53,6 +53,12 @@ async def test_set_volume(dev: SmartDevice, mocker: MockerFixture):
 
     assert speaker.volume == new_volume
 
+    with pytest.raises(ValueError, match="Volume must be between 0 and 100"):
+        await speaker.set_volume(-10)
+
+    with pytest.raises(ValueError, match="Volume must be between 0 and 100"):
+        await speaker.set_volume(110)
+
 
 @speaker
 async def test_locate(dev: SmartDevice, mocker: MockerFixture):
