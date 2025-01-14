@@ -171,6 +171,12 @@ class FakeSmartTransport(BaseTransport):
                 "setup_payload": "00:0000000-0000.00.000",
             },
         ),
+        "get_double_click_info": (
+            "double_click",
+            {
+                "enable": False,
+            },
+        ),
     }
 
     def _missing_result(self, method):
