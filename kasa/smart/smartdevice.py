@@ -183,7 +183,7 @@ class SmartDevice(Device):
         """Update the internal device info."""
         self._info = self._try_get_response(info_resp, "get_device_info")
 
-    async def update(self, update_children: bool = False) -> None:
+    async def update(self, update_children: bool = True) -> None:
         """Update the device."""
         if self.credentials is None and self.credentials_hash is None:
             raise AuthenticationError("Tapo plug requires authentication.")
@@ -207,7 +207,7 @@ class SmartDevice(Device):
         # devices will always update children to prevent errors on module access.
         # This needs to go after updating the internal state of the children so that
         # child modules have access to their sysinfo.
-        if update_children or self.device_type != DeviceType.Hub:
+        if first_update or update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 if TYPE_CHECKING:
                     assert isinstance(child, SmartChildDevice)
@@ -260,11 +260,7 @@ class SmartDevice(Device):
             if first_update and module.__class__ in self.FIRST_UPDATE_MODULES:
                 module._last_update_time = update_time
                 continue
-            if (
-                not module.update_interval
-                or not module._last_update_time
-                or (update_time - module._last_update_time) >= module.update_interval
-            ):
+            if module._should_update(update_time):
                 module_queries.append(module)
                 req.update(query)
 

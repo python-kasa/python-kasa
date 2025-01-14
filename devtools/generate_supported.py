@@ -13,7 +13,7 @@ from typing import Any, NamedTuple
 from kasa.device_type import DeviceType
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
-from kasa.smartcam import SmartCamDevice
+from kasa.smartcam import SmartCamChild, SmartCamDevice
 
 
 class SupportedVersion(NamedTuple):
@@ -50,6 +50,7 @@ IOT_FOLDER = "tests/fixtures/iot/"
 SMART_FOLDER = "tests/fixtures/smart/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
+SMARTCAM_CHILD_FOLDER = "tests/fixtures/smartcam/child"
 
 
 def generate_supported(args):
@@ -67,6 +68,7 @@ def generate_supported(args):
     _get_supported_devices(supported, SMART_FOLDER, SmartDevice)
     _get_supported_devices(supported, SMART_CHILD_FOLDER, SmartDevice)
     _get_supported_devices(supported, SMARTCAM_FOLDER, SmartCamDevice)
+    _get_supported_devices(supported, SMARTCAM_CHILD_FOLDER, SmartCamChild)
 
     readme_updated = _update_supported_file(
         README_FILENAME, _supported_summary(supported), print_diffs

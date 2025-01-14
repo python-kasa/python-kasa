@@ -4,11 +4,18 @@ import copy
 
 import pytest
 
-from devtools.dump_devinfo import get_legacy_fixture, get_smart_fixtures
+from devtools.dump_devinfo import (
+    _wrap_redactors,
+    get_legacy_fixture,
+    get_smart_fixtures,
+)
 from kasa.iot import IotDevice
 from kasa.protocols import IotProtocol
+from kasa.protocols.protocol import redact_data
+from kasa.protocols.smartprotocol import REDACTORS as SMART_REDACTORS
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 
 from .conftest import (
     FixtureInfo,
@@ -113,6 +120,18 @@ async def test_smartcam_fixtures(fixture_info: FixtureInfo):
         saved_fixture_data = {
             key: val for key, val in saved_fixture_data.items() if val != -1001
         }
+
+        # Remove the child info from parent from the comparison because the
+        # child may have been created by a different parent fixture
+        saved_fixture_data.pop(CHILD_INFO_FROM_PARENT, None)
+        created_cifp = created_child_fixture.data.pop(CHILD_INFO_FROM_PARENT, None)
+
+        # Still check that the created child info from parent was redacted.
+        # only smartcam children generate child_info_from_parent
+        if created_cifp:
+            redacted_cifp = redact_data(created_cifp, _wrap_redactors(SMART_REDACTORS))
+            assert created_cifp == redacted_cifp
+
         assert saved_fixture_data == created_child_fixture.data
 
 

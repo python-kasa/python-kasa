@@ -166,12 +166,10 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
         discovery_mock.login_version,
         discovery_mock.https,
     )
-    uses_http = discovery_mock.default_port == 80
     config = DeviceConfig(
         host=host,
         port_override=custom_port,
         connection_type=ct,
-        uses_http=uses_http,
         credentials=Credentials(),
     )
     assert x.config == config

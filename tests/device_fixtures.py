@@ -338,7 +338,7 @@ device_smartcam = parametrize("devices smartcam", protocol_filter={"SMARTCAM"})
 camera_smartcam = parametrize(
     "camera smartcam",
     device_type_filter=[DeviceType.Camera],
-    protocol_filter={"SMARTCAM"},
+    protocol_filter={"SMARTCAM", "SMARTCAM.CHILD"},
 )
 hub_smartcam = parametrize(
     "hub smartcam",
@@ -382,7 +382,7 @@ check_categories()
 def device_for_fixture_name(model, protocol):
     if protocol in {"SMART", "SMART.CHILD"}:
         return SmartDevice
-    elif protocol == "SMARTCAM":
+    elif protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
         return SmartCamDevice
     else:
         for d in STRIPS_IOT:
@@ -439,7 +439,7 @@ async def get_device_for_fixture(
         d.protocol = FakeSmartProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
-    elif fixture_data.protocol == "SMARTCAM":
+    elif fixture_data.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
         d.protocol = FakeSmartCamProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )

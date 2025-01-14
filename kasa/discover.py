@@ -360,7 +360,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 json_func = Discover._get_discovery_json_legacy
                 device_func = Discover._get_device_instance_legacy
             elif port == Discover.DISCOVERY_PORT_2:
-                config.uses_http = True
                 json_func = Discover._get_discovery_json
                 device_func = Discover._get_device_instance
             else:
@@ -634,6 +633,8 @@ class Discover:
             Device.Family.SmartTapoPlug,
             Device.Family.IotSmartPlugSwitch,
             Device.Family.SmartIpCamera,
+            Device.Family.SmartTapoRobovac,
+            Device.Family.IotIpCamera,
         }
         candidates: dict[
             tuple[type[BaseProtocol], type[BaseTransport], type[Device]],
@@ -663,10 +664,9 @@ class Discover:
                     port_override=port,
                     credentials=credentials,
                     http_client=http_client,
-                    uses_http=encrypt is not Device.EncryptionType.Xor,
                 )
             )
-            and (protocol := get_protocol(config))
+            and (protocol := get_protocol(config, strict=True))
             and (
                 device_class := get_device_class_from_family(
                     device_family.value, https=https, require_exact=True
