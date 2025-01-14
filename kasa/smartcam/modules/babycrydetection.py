@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from ...feature import Feature
+from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ class BabyCryDetection(SmartCamModule):
         """Return the baby cry detection enabled state."""
         return self.data["bcd"]["enabled"] == "on"
 
+    @allow_update_after
     async def set_enabled(self, enable: bool) -> dict:
         """Set the baby cry detection enabled state."""
         params = {"enabled": "on" if enable else "off"}
