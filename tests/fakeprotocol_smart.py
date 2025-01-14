@@ -7,6 +7,8 @@ import pytest
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.exceptions import SmartErrorCode
 from kasa.smart import SmartChildDevice
+from kasa.smartcam import SmartCamChild
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 from kasa.transports.basetransport import BaseTransport
 
 
@@ -227,16 +229,20 @@ class FakeSmartTransport(BaseTransport):
         # imported here to avoid circular import
         from .conftest import filter_fixtures
 
-        def try_get_child_fixture_info(child_dev_info):
+        def try_get_child_fixture_info(child_dev_info, protocol):
             hw_version = child_dev_info["hw_ver"]
-            sw_version = child_dev_info["fw_ver"]
+            sw_version = child_dev_info.get("sw_ver", child_dev_info.get("fw_ver"))
             sw_version = sw_version.split(" ")[0]
-            model = child_dev_info["model"]
-            region = child_dev_info.get("specs", "XX")
-            child_fixture_name = f"{model}({region})_{hw_version}_{sw_version}"
+            model = child_dev_info.get("device_model", child_dev_info.get("model"))
+            assert sw_version
+            assert model
+
+            region = child_dev_info.get("specs", child_dev_info.get("region"))
+            region = f"({region})" if region else ""
+            child_fixture_name = f"{model}{region}_{hw_version}_{sw_version}"
             child_fixtures = filter_fixtures(
                 "Child fixture",
-                protocol_filter={"SMART.CHILD"},
+                protocol_filter={protocol},
                 model_filter={child_fixture_name},
             )
             if child_fixtures:
@@ -249,7 +255,9 @@ class FakeSmartTransport(BaseTransport):
                 and (category := child_info.get("category"))
                 and category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP
             ):
-                if fixture_info_tuple := try_get_child_fixture_info(child_info):
+                if fixture_info_tuple := try_get_child_fixture_info(
+                    child_info, "SMART.CHILD"
+                ):
                     child_fixture = copy.deepcopy(fixture_info_tuple.data)
                     child_fixture["get_device_info"]["device_id"] = device_id
                     found_child_fixture_infos.append(child_fixture["get_device_info"])
@@ -270,9 +278,32 @@ class FakeSmartTransport(BaseTransport):
                     pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
                         parent_fixture_name, set()
                     ).add("child_devices")
+            elif (
+                (device_id := child_info.get("device_id"))
+                and (category := child_info.get("category"))
+                and category in SmartCamChild.CHILD_DEVICE_TYPE_MAP
+                and (
+                    fixture_info_tuple := try_get_child_fixture_info(
+                        child_info, "SMARTCAM.CHILD"
+                    )
+                )
+            ):
+                from .fakeprotocol_smartcam import FakeSmartCamProtocol
+
+                child_fixture = copy.deepcopy(fixture_info_tuple.data)
+                child_fixture["getDeviceInfo"]["device_info"]["basic_info"][
+                    "dev_id"
+                ] = device_id
+                child_fixture[CHILD_INFO_FROM_PARENT]["device_id"] = device_id
+                # We copy the child device info to the parent getChildDeviceInfo
+                # list for smartcam children in order for updates to work.
+                found_child_fixture_infos.append(child_fixture[CHILD_INFO_FROM_PARENT])
+                child_protocols[device_id] = FakeSmartCamProtocol(
+                    child_fixture, fixture_info_tuple.name, is_child=True
+                )
             else:
                 warn(
-                    f"Child is a cameraprotocol which needs to be implemented {child_info}",
+                    f"Child is a protocol which needs to be implemented {child_info}",
                     stacklevel=2,
                 )
         # Replace parent child infos with the infos from the child fixtures so
