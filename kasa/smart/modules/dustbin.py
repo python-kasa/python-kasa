@@ -102,7 +102,7 @@ class Dustbin(SmartModule):
             )
 
         settings = self._settings.copy()
-        settings["dust_collection_mode"] = mode
+        settings["dust_collection_mode"] = name_to_value[mode]
         return await self.call("setDustCollectionInfo", settings)
 
     @property

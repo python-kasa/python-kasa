@@ -5,6 +5,7 @@ from pytest_mock import MockerFixture
 
 from kasa import Module
 from kasa.smart import SmartDevice
+from kasa.smart.modules.dustbin import Mode
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
@@ -43,18 +44,17 @@ async def test_dustbin_mode(dev: SmartDevice, mocker: MockerFixture):
     mode_feature = dustbin._device.features["dustbin_mode"]
     assert dustbin.mode == mode_feature.value
 
-    new_mode = "Max"
-    await dustbin.set_mode(new_mode)
+    new_mode = Mode.Max
+    await dustbin.set_mode(new_mode.name)
 
     params = dustbin._settings.copy()
-    # TODO: fix hardcoding
-    params["dust_colection_mode"] = 4
+    params["dust_collection_mode"] = new_mode.value
 
-    call.assert_called_with("setDustCollectionInfo", {"dust_collection_mode": params})
+    call.assert_called_with("setDustCollectionInfo", params)
 
     await dev.update()
 
-    assert dustbin.mode == new_mode
+    assert dustbin.mode == new_mode.name
 
 
 @dustbin
@@ -66,10 +66,12 @@ async def test_autocollection(dev: SmartDevice, mocker: MockerFixture):
     auto_collection = dustbin._device.features["dustbin_autocollection_enabled"]
     assert dustbin.auto_collection == auto_collection.value
 
+    await auto_collection.set_value(True)
+
     params = dustbin._settings.copy()
     params["auto_dust_collection"] = True
 
-    call.assert_called_with("setDustCollectionInfo", {"dust_collection_mode": params})
+    call.assert_called_with("setDustCollectionInfo", params)
 
     await dev.update()
 
@@ -79,7 +81,9 @@ async def test_autocollection(dev: SmartDevice, mocker: MockerFixture):
 @dustbin
 async def test_empty_dustbin(dev: SmartDevice, mocker: MockerFixture):
     """Test the empty dustbin feature."""
-    speaker = next(get_parent_and_child_modules(dev, Module.Dustbin))
-    call = mocker.spy(speaker, "call")
+    dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
+    call = mocker.spy(dustbin, "call")
+
+    await dustbin.start_emptying()
 
     call.assert_called_with("setSwitchDustCollection", {"switch_dust_collection": True})
