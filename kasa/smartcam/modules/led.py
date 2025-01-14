@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ...interfaces.led import Led as LedInterface
+from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
 
@@ -19,6 +20,7 @@ class Led(SmartCamModule, LedInterface):
         """Return current led status."""
         return self.data["config"]["enabled"] == "on"
 
+    @allow_update_after
     async def set_led(self, enable: bool) -> dict:
         """Set led.
 

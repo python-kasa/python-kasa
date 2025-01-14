@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ...feature import Feature
+from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
 DURATION_MIN = 0
@@ -110,6 +111,7 @@ class Alarm(SmartCamModule):
         """Return current alarm sound."""
         return self.data["getSirenConfig"]["siren_type"]
 
+    @allow_update_after
     async def set_alarm_sound(self, sound: str) -> dict:
         """Set alarm sound.
 
@@ -134,6 +136,7 @@ class Alarm(SmartCamModule):
         """
         return int(self.data["getSirenConfig"]["volume"])
 
+    @allow_update_after
     async def set_alarm_volume(self, volume: int) -> dict:
         """Set alarm volume."""
         if volume < VOLUME_MIN or volume > VOLUME_MAX:
@@ -145,6 +148,7 @@ class Alarm(SmartCamModule):
         """Return alarm duration."""
         return self.data["getSirenConfig"]["duration"]
 
+    @allow_update_after
     async def set_alarm_duration(self, duration: int) -> dict:
         """Set alarm volume."""
         if duration < DURATION_MIN or duration > DURATION_MAX:
