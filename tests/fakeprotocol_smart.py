@@ -640,7 +640,12 @@ class FakeSmartTransport(BaseTransport):
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"
             # Some vacuum commands do not have a getter
-            if method in ["setRobotPause", "setSwitchClean", "setSwitchCharge"]:
+            if method in [
+                "setRobotPause",
+                "setSwitchClean",
+                "setSwitchCharge",
+                "setSwitchDustCollection",
+            ]:
                 return {"error_code": 0}
 
             info[target_method].update(params)

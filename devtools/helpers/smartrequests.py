@@ -455,7 +455,10 @@ COMPONENT_REQUESTS = {
         SmartRequest.get_raw_request("getMapData"),
     ],
     "auto_change_map": [SmartRequest.get_raw_request("getAutoChangeMap")],
-    "dust_bucket": [SmartRequest.get_raw_request("getAutoDustCollection")],
+    "dust_bucket": [
+        SmartRequest.get_raw_request("getAutoDustCollection"),
+        SmartRequest.get_raw_request("getDustCollectionInfo"),
+    ],
     "mop": [SmartRequest.get_raw_request("getMopState")],
     "do_not_disturb": [SmartRequest.get_raw_request("getDoNotDisturb")],
     "charge_pose_clean": [],
