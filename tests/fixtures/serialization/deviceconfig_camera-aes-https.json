@@ -5,6 +5,5 @@
         "device_family": "SMART.IPCAMERA",
         "encryption_type": "AES",
         "https": true
-    },
-    "uses_http": false
+    }
 }

@@ -20,7 +20,7 @@ None
 {'host': '127.0.0.3', 'timeout': 5, 'credentials': {'username': 'user@example.com', \
 'password': 'great_password'}, 'connection_type'\
 : {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2, \
-'https': False}, 'uses_http': True}
+'https': False}}
 
 >>> later_device = await Device.connect(config=Device.Config.from_dict(config_dict))
 >>> print(later_device.alias)  # Alias is available as connect() calls update()
@@ -148,9 +148,12 @@ class DeviceConfig(_DeviceConfigBaseMixin):
             DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
         )
     )
-    #: True if the device uses http.  Consumers should retrieve rather than set this
-    #: in order to determine whether they should pass a custom http client if desired.
-    uses_http: bool = False
+
+    @property
+    def uses_http(self) -> bool:
+        """True if the device uses http."""
+        ctype = self.connection_type
+        return ctype.encryption_type is not DeviceEncryptionType.Xor or ctype.https
 
     #: Set a custom http_client for the device to use.
     http_client: ClientSession | None = field(

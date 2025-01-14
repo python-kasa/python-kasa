@@ -6,6 +6,5 @@
         "encryption_type": "KLAP",
         "https": false,
         "login_version": 2
-    },
-    "uses_http": false
+    }
 }
