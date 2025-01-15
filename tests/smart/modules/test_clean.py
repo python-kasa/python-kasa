@@ -69,6 +69,13 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
             {"suction": 1, "type": "global"},
             id="vacuum_fan_speed",
         ),
+        pytest.param(
+            "clean_count",
+            2,
+            "setCleanAttr",
+            {"clean_number": 2, "type": "global"},
+            id="clean_count",
+        ),
     ],
 )
 @clean

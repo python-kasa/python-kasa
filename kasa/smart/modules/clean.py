@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 from enum import IntEnum
-from typing import Annotated
+from typing import Annotated, Literal
 
 from ...feature import Feature
 from ...module import FeatureAttribute
@@ -160,6 +160,19 @@ class Clean(SmartModule):
         self._add_feature(
             Feature(
                 self._device,
+                id="clean_count",
+                name="Clean count",
+                container=self,
+                attribute_getter="clean_count",
+                attribute_setter="set_clean_count",
+                range_getter=lambda: (1, 3),
+                category=Feature.Category.Config,
+                type=Feature.Type.Number,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
                 id="clean_area",
                 name="Cleaning area",
                 container=self,
@@ -283,9 +296,17 @@ class Clean(SmartModule):
         name_to_value = {x.name: x.value for x in FanSpeed}
         if speed not in name_to_value:
             raise ValueError("Invalid fan speed %s, available %s", speed, name_to_value)
-        return await self.call(
-            "setCleanAttr", {"suction": name_to_value[speed], "type": "global"}
-        )
+        return await self._change_setting("suction", name_to_value[speed])
+
+    async def _change_setting(
+        self, name: str, value: int, *, scope: Literal["global", "pose"] = "global"
+    ) -> dict:
+        """Change device setting."""
+        params = {
+            name: value,
+            "type": scope,
+        }
+        return await self.call("setCleanAttr", params)
 
     @property
     def battery(self) -> int:
@@ -339,3 +360,12 @@ class Clean(SmartModule):
     def clean_progress(self) -> int:
         """Return amount of currently cleaned area."""
         return self._info["clean_percent"]
+
+    @property
+    def clean_count(self) -> Annotated[int, FeatureAttribute()]:
+        """Return number of times to clean."""
+        return self._settings["clean_number"]
+
+    async def set_clean_count(self, count: int) -> Annotated[dict, FeatureAttribute()]:
+        """Set number of times to clean."""
+        return await self._change_setting("clean_number", count)
