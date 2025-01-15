@@ -326,7 +326,7 @@ class Clean(SmartModule):
         return AreaUnit(self.data["getAreaUnit"]["area_unit"])
 
     @property
-    def clean_area(self) -> int:
+    def clean_area(self) -> Annotated[int, FeatureAttribute()]:
         """Return currently cleaned area."""
         return self._info["clean_area"]
 
