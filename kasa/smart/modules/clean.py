@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from enum import Enum, IntEnum
+from enum import IntEnum, StrEnum
 from typing import Annotated, Literal
 
 from ...feature import Feature
@@ -55,7 +55,7 @@ class FanSpeed(IntEnum):
     Max = 4
 
 
-class CarpetCleanMode(Enum):
+class CarpetCleanMode(StrEnum):
     """Carpet clean mode."""
 
     Normal = "normal"
