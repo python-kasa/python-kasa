@@ -120,6 +120,7 @@ class SmartDevice(Device):
 
                 child = await self._try_create_child(info, child_components)
                 if child:
+                    _LOGGER.debug("Created child device %s for %s", child, self.host)
                     changed = True
                     children[child_id] = child
                     continue
@@ -150,7 +151,8 @@ class SmartDevice(Device):
         removed_ids = starting_child_ids - child_ids
         for removed_id in removed_ids:
             changed = True
-            children.pop(removed_id)
+            removed = children.pop(removed_id)
+            _LOGGER.debug("Removed child device %s from %s", removed, self.host)
 
         return changed
 

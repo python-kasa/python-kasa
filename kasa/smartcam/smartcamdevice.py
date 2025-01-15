@@ -121,7 +121,6 @@ class SmartCamDevice(SmartDevice):
         child_id = info["device_id"]
         child_protocol = _ChildCameraProtocolWrapper(child_id, self.protocol)
 
-        # last_update = {"getDeviceInfo": {"device_info": {"basic_info": info}}}
         app_component_list = {
             "app_component_list": child_components_raw["component_list"]
         }
@@ -132,7 +131,6 @@ class SmartCamDevice(SmartDevice):
             child_info=info,
             child_components_raw=app_component_list,
             protocol=child_protocol,
-            # last_update=last_update,
         )
 
     async def _initialize_children(self) -> None:
