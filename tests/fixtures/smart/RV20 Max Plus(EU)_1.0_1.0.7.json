@@ -150,6 +150,9 @@
             "owner": "00000000000000000000000000000000"
         }
     },
+    "getAreaUnit": {
+        "area_unit": 0
+    },
     "getAutoChangeMap": {
         "auto_change_map": false
     },
@@ -159,26 +162,15 @@
     "getBatteryInfo": {
         "battery_percentage": 75
     },
-    "getAreaUnit": {
-        "area_unit": 0
-    },
     "getCleanAttr": {
-        "suction": 2,
         "cistern": 2,
-        "clean_number": 1
+        "clean_number": 1,
+        "suction": 2
     },
     "getCleanInfo": {
-        "clean_time": 5,
         "clean_area": 5,
-        "clean_percent": 1
-    },
-    "getCleanStatus": {
-        "getCleanStatus": {
-            "clean_status": 0,
-            "is_working": false,
-            "is_mapping": false,
-            "is_relocating": false
-        }
+        "clean_percent": 1,
+        "clean_time": 5
     },
     "getCleanRecords": {
         "lastest_day_record": [
@@ -193,6 +185,14 @@
         "total_number": 0,
         "total_time": 0
     },
+    "getCleanStatus": {
+        "getCleanStatus": {
+            "clean_status": 0,
+            "is_mapping": false,
+            "is_relocating": false,
+            "is_working": false
+        }
+    },
     "getConsumablesInfo": {
         "charge_contact_time": 0,
         "edge_brush_time": 0,
@@ -206,13 +206,14 @@
         "name": "2",
         "version": 1
     },
-    "getVolume": {
-        "volume": 84
-    },
     "getDoNotDisturb": {
         "do_not_disturb": true,
         "e_min": 480,
         "s_min": 1320
+    },
+    "getDustCollectionInfo": {
+        "auto_dust_collection": true,
+        "dust_collection_mode": 0
     },
     "getMapInfo": {
         "auto_change_map": false,
@@ -224,10 +225,6 @@
     "getMopState": {
         "mop_state": false
     },
-    "getDustCollectionInfo": {
-        "auto_dust_collection": true,
-        "dust_collection_mode": 0
-    },
     "getVacStatus": {
         "err_status": [
             0
@@ -238,6 +235,9 @@
         "prompt": [],
         "promptCode_id": [],
         "status": 5
+    },
+    "getVolume": {
+        "volume": 84
     },
     "get_device_info": {
         "auto_pack_ver": "0.0.1.1771",
