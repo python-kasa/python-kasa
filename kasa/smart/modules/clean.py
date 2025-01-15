@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from enum import IntEnum
+from enum import Enum, IntEnum
 from typing import Annotated, Literal
 
 from ...feature import Feature
@@ -53,6 +53,13 @@ class FanSpeed(IntEnum):
     Standard = 2
     Turbo = 3
     Max = 4
+
+
+class CarpetCleanMode(Enum):
+    """Carpet clean mode."""
+
+    Normal = "normal"
+    Boost = "boost"
 
 
 class AreaUnit(IntEnum):
@@ -142,7 +149,6 @@ class Clean(SmartModule):
                 type=Feature.Type.Sensor,
             )
         )
-
         self._add_feature(
             Feature(
                 self._device,
@@ -172,6 +178,21 @@ class Clean(SmartModule):
         )
         self._add_feature(
             Feature(
+                self._device,
+                id="carpet_clean_mode",
+                name="Carpet clean mode",
+                container=self,
+                attribute_getter="carpet_clean_mode",
+                attribute_setter="set_carpet_clean_mode",
+                icon="mdi:rug",
+                choices_getter=lambda: list(CarpetCleanMode.__members__),
+                category=Feature.Category.Config,
+                type=Feature.Type.Choice,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
                 self._device,
                 id="clean_area",
                 name="Cleaning area",
@@ -233,6 +254,7 @@ class Clean(SmartModule):
         return {
             "getVacStatus": {},
             "getCleanInfo": {},
+            "getCarpetClean": {},
             "getAreaUnit": {},
             "getBatteryInfo": {},
             "getCleanStatus": {},
@@ -340,6 +362,24 @@ class Clean(SmartModule):
         except ValueError:
             _LOGGER.warning("Got unknown status code: %s (%s)", status_code, self.data)
             return Status.UnknownInternal
+
+    @property
+    def carpet_clean_mode(self) -> Annotated[str, FeatureAttribute()]:
+        """Return carpet clean mode."""
+        return CarpetCleanMode(self.data["getCarpetClean"]["carpet_clean_prefer"]).name
+
+    async def set_carpet_clean_mode(
+        self, mode: str
+    ) -> Annotated[dict, FeatureAttribute()]:
+        """Set carpet clean mode."""
+        name_to_value = {x.name: x.value for x in CarpetCleanMode}
+        if mode not in name_to_value:
+            raise ValueError(
+                "Invalid carpet clean mode %s, available %s", mode, name_to_value
+            )
+        return await self.call(
+            "setCarpetClean", {"carpet_clean_prefer": name_to_value[mode]}
+        )
 
     @property
     def area_unit(self) -> AreaUnit:

@@ -21,6 +21,7 @@ clean = parametrize("clean module", component_filter="clean", protocol_filter={"
         ("vacuum_status", "status", Status),
         ("vacuum_error", "error", ErrorCode),
         ("vacuum_fan_speed", "fan_speed_preset", str),
+        ("carpet_clean_mode", "carpet_clean_mode", str),
         ("battery_level", "battery", int),
     ],
 )
@@ -68,6 +69,13 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
             "setCleanAttr",
             {"suction": 1, "type": "global"},
             id="vacuum_fan_speed",
+        ),
+        pytest.param(
+            "carpet_clean_mode",
+            "Boost",
+            "setCarpetClean",
+            {"carpet_clean_prefer": "boost"},
+            id="carpet_clean_mode",
         ),
         pytest.param(
             "clean_count",
