@@ -437,6 +437,7 @@ COMPONENT_REQUESTS = {
     "overheat_protection": [],
     # Vacuum components
     "clean": [
+        SmartRequest.get_raw_request("getCarpetClean"),
         SmartRequest.get_raw_request("getCleanRecords"),
         SmartRequest.get_raw_request("getVacStatus"),
         SmartRequest.get_raw_request("getAreaUnit"),
