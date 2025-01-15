@@ -70,12 +70,16 @@ class SmartCamDevice(SmartDevice):
         """
         self._info = self._map_info(info)
 
-    async def _update_children_info(self) -> None:
-        """Update the internal child device info from the parent info."""
+    async def _update_children_info(self) -> bool:
+        """Update the internal child device info from the parent info.
+
+        Return true if children added or deleted.
+        """
+        changed = False
         if child_info := self._try_get_response(
             self._last_update, "getChildDeviceList", {}
         ):
-            await self._create_delete_children(
+            changed = await self._create_delete_children(
                 child_info, self._last_update["getChildDeviceComponentList"]
             )
 
@@ -86,6 +90,8 @@ class SmartCamDevice(SmartDevice):
                     continue
 
                 self._children[child_id]._update_internal_state(info)
+
+        return changed
 
     async def _initialize_smart_child(
         self, info: dict, child_components_raw: ComponentsRaw

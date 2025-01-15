@@ -98,7 +98,9 @@ class SmartDevice(Device):
         self,
         child_device_resp: dict[str, list],
         child_device_components_resp: dict[str, list],
-    ) -> None:
+    ) -> bool:
+        """Create and delete children. Return True if children changed."""
+        changed = False
         smart_children_components = {
             child["device_id"]: child
             for child in child_device_components_resp["child_component_list"]
@@ -118,6 +120,7 @@ class SmartDevice(Device):
 
                 child = await self._try_create_child(info, child_components)
                 if child:
+                    changed = True
                     children[child_id] = child
                     continue
 
@@ -146,7 +149,10 @@ class SmartDevice(Device):
 
         removed_ids = starting_child_ids - child_ids
         for removed_id in removed_ids:
+            changed = True
             children.pop(removed_id)
+
+        return changed
 
     @property
     def children(self) -> Sequence[SmartDevice]:
@@ -212,12 +218,16 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    async def _update_children_info(self) -> None:
-        """Update the internal child device info from the parent info."""
+    async def _update_children_info(self) -> bool:
+        """Update the internal child device info from the parent info.
+
+        Return true if children added or deleted.
+        """
+        changed = False
         if child_info := self._try_get_response(
             self._last_update, "get_child_device_list", {}
         ):
-            await self._create_delete_children(
+            changed = await self._create_delete_children(
                 child_info, self._last_update["get_child_device_component_list"]
             )
 
@@ -228,6 +238,8 @@ class SmartDevice(Device):
                     continue
 
                 self._children[child_id]._update_internal_state(info)
+
+        return changed
 
     def _update_internal_info(self, info_resp: dict) -> None:
         """Update the internal device info."""
@@ -251,13 +263,13 @@ class SmartDevice(Device):
 
         resp = await self._modular_update(first_update, now)
 
-        await self._update_children_info()
+        children_changed = await self._update_children_info()
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
         # devices will always update children to prevent errors on module access.
         # This needs to go after updating the internal state of the children so that
         # child modules have access to their sysinfo.
-        if first_update or update_children or self.device_type != DeviceType.Hub:
+        if children_changed or update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 if TYPE_CHECKING:
                     assert isinstance(child, SmartChildDevice)
