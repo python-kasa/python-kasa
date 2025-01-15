@@ -16,6 +16,11 @@ repos:
   - id: check-yaml
   - id: debug-statements
   - id: check-ast
+  - id: pretty-format-json
+    args:
+      - "--autofix"
+      - "--indent=4"
+      - "--no-sort-keys"
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.7.4
