@@ -165,6 +165,7 @@ class Module(ABC):
     Clean: Final[ModuleName[smart.Clean]] = ModuleName("Clean")
     Dustbin: Final[ModuleName[smart.Dustbin]] = ModuleName("Dustbin")
     Speaker: Final[ModuleName[smart.Speaker]] = ModuleName("Speaker")
+    Mop: Final[ModuleName[smart.Mop]] = ModuleName("Mop")
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device

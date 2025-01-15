@@ -27,6 +27,7 @@ from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
 from .matter import Matter
+from .mop import Mop
 from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
 from .reportmode import ReportMode
@@ -76,4 +77,5 @@ __all__ = [
     "HomeKit",
     "Matter",
     "Dustbin",
+    "Mop",
 ]
