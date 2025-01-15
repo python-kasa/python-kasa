@@ -99,7 +99,12 @@ class SmartDevice(Device):
         child_device_resp: dict[str, list],
         child_device_components_resp: dict[str, list],
     ) -> bool:
-        """Create and delete children. Return True if children changed."""
+        """Create and delete children. Return True if children changed.
+
+        Adds newly found children and deletes children that are no longer
+        reported by the device. It will only log once per child_id that
+        can't be created to avoid spamming the logs on every update.
+        """
         changed = False
         smart_children_components = {
             child["device_id"]: child
@@ -107,7 +112,7 @@ class SmartDevice(Device):
         }
         children = self._children
         child_ids: set[str] = set()
-        starting_child_ids = set(self._children.keys())
+        existing_child_ids = set(self._children.keys())
 
         for info in child_device_resp["child_device_list"]:
             if (child_id := info.get("device_id")) and (
@@ -115,7 +120,7 @@ class SmartDevice(Device):
             ):
                 child_ids.add(child_id)
 
-                if child_id in starting_child_ids:
+                if child_id in existing_child_ids:
                     continue
 
                 child = await self._try_create_child(info, child_components)
@@ -142,13 +147,16 @@ class SmartDevice(Device):
                     )
                 continue
 
+            # If we couldn't get a child device id we still only want to
+            # log once to avoid spamming the logs on every update cycle
+            # so store it under an empty string
             if "" not in self._logged_missing_child_ids:
                 self._logged_missing_child_ids.add("")
                 _LOGGER.debug(
                     "Could not find child id for device %s, info: %s", self.host, info
                 )
 
-        removed_ids = starting_child_ids - child_ids
+        removed_ids = existing_child_ids - child_ids
         for removed_id in removed_ids:
             changed = True
             removed = children.pop(removed_id)
