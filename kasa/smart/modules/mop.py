@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import logging
 from enum import IntEnum
+from typing import Annotated
 
 from ...feature import Feature
+from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -73,11 +75,11 @@ class Mop(SmartModule):
         return self.data["getCleanAttr"]
 
     @property
-    def waterlevel(self) -> str:
+    def waterlevel(self) -> Annotated[str, FeatureAttribute()]:
         """Return water level."""
         return Waterlevel(int(self._settings["cistern"])).name
 
-    async def set_waterlevel(self, mode: str) -> dict:
+    async def set_waterlevel(self, mode: str) -> Annotated[dict, FeatureAttribute()]:
         """Set waterlevel mode."""
         name_to_value = {x.name: x.value for x in Waterlevel}
         if mode not in name_to_value:
