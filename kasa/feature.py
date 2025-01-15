@@ -298,8 +298,10 @@ class Feature:
         if isinstance(value, Enum):
             value = repr(value)
         s = f"{self.name} ({self.id}): {value}"
-        if self.unit is not None:
-            s += f" {self.unit}"
+        if (unit := self.unit) is not None:
+            if isinstance(unit, Enum):
+                unit = repr(unit)
+            s += f" {unit}"
 
         if self.type == Feature.Type.Number:
             s += f" (range: {self.minimum_value}-{self.maximum_value})"
