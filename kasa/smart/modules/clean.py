@@ -53,6 +53,7 @@ class FanSpeed(IntEnum):
     Standard = 2
     Turbo = 3
     Max = 4
+    Ultra = 5
 
 
 class AreaUnit(IntEnum):
