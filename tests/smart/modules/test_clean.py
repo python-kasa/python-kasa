@@ -159,3 +159,44 @@ async def test_unknown_status(
 
     assert clean.status is Status.UnknownInternal
     assert "Got unknown status code: 123" in caplog.text
+
+
+@clean
+@pytest.mark.parametrize(
+    ("setting", "value", "exc", "exc_message"),
+    [
+        pytest.param(
+            "vacuum_fan_speed",
+            "invalid speed",
+            ValueError,
+            "Invalid fan speed",
+            id="vacuum_fan_speed",
+        ),
+        pytest.param(
+            "carpet_clean_mode",
+            "invalid mode",
+            ValueError,
+            "Invalid carpet clean mode",
+            id="carpet_clean_mode",
+        ),
+    ],
+)
+async def test_invalid_settings(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    setting: str,
+    value: str,
+    exc: type[Exception],
+    exc_message: str,
+):
+    """Test invalid settings."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    # Not using feature.set_value() as it checks for valid values
+    setter_name = dev.features[setting].attribute_setter
+    assert isinstance(setter_name, str)
+
+    setter = getattr(clean, setter_name)
+
+    with pytest.raises(exc, match=exc_message):
+        await setter(value)
