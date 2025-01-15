@@ -25,7 +25,7 @@ async def vacuum(ctx: click.Context) -> None:
 @pass_dev_or_child
 async def records_group(dev: Device) -> None:
     """Access cleaning records."""
-    if not (rec := dev.modules.get(Module.VacuumRecords)):
+    if not (rec := dev.modules.get(Module.CleanRecords)):
         error("This device does not support records.")
 
     data = rec.parsed_data
@@ -42,7 +42,7 @@ async def records_group(dev: Device) -> None:
 @pass_dev_or_child
 async def records_list(dev: Device) -> None:
     """List all cleaning records."""
-    if not (rec := dev.modules.get(Module.VacuumRecords)):
+    if not (rec := dev.modules.get(Module.CleanRecords)):
         error("This device does not support records.")
 
     data = rec.parsed_data
