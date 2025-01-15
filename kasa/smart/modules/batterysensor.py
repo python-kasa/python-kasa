@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from ... import KasaException
+from ...exceptions import KasaException
 from ...feature import Feature
 from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
