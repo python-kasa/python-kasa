@@ -162,6 +162,9 @@
     "getBatteryInfo": {
         "battery_percentage": 75
     },
+    "getCarpetClean": {
+        "carpet_clean_prefer": "boost"
+    },
     "getCleanAttr": {
         "cistern": 2,
         "clean_number": 1,

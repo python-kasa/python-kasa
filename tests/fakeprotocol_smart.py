@@ -548,6 +548,37 @@ class FakeSmartTransport(BaseTransport):
 
         return {"error_code": 0}
 
+    def get_child_device_queries(self, method, params):
+        return self._get_method_from_info(method, params)
+
+    def _get_method_from_info(self, method, params):
+        result = copy.deepcopy(self.info[method])
+        if result and "start_index" in result and "sum" in result:
+            list_key = next(
+                iter([key for key in result if isinstance(result[key], list)])
+            )
+            start_index = (
+                start_index
+                if (params and (start_index := params.get("start_index")))
+                else 0
+            )
+            # Fixtures generated before _handle_response_lists was implemented
+            # could have incomplete lists.
+            if (
+                len(result[list_key]) < result["sum"]
+                and self.fix_incomplete_fixture_lists
+            ):
+                result["sum"] = len(result[list_key])
+                if self.warn_fixture_missing_methods:
+                    pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
+                        self.fixture_name, set()
+                    ).add(f"{method} (incomplete '{list_key}' list)")
+
+            result[list_key] = result[list_key][
+                start_index : start_index + self.list_return_size
+            ]
+        return {"result": result, "error_code": 0}
+
     async def _send_request(self, request_dict: dict):
         method = request_dict["method"]
 
@@ -557,33 +588,16 @@ class FakeSmartTransport(BaseTransport):
 
         params = request_dict.get("params", {})
         if method in {"component_nego", "qs_component_nego"} or method[:3] == "get":
-            if method in info:
-                result = copy.deepcopy(info[method])
-                if result and "start_index" in result and "sum" in result:
-                    list_key = next(
-                        iter([key for key in result if isinstance(result[key], list)])
-                    )
-                    start_index = (
-                        start_index
-                        if (params and (start_index := params.get("start_index")))
-                        else 0
-                    )
-                    # Fixtures generated before _handle_response_lists was implemented
-                    # could have incomplete lists.
-                    if (
-                        len(result[list_key]) < result["sum"]
-                        and self.fix_incomplete_fixture_lists
-                    ):
-                        result["sum"] = len(result[list_key])
-                        if self.warn_fixture_missing_methods:
-                            pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
-                                self.fixture_name, set()
-                            ).add(f"{method} (incomplete '{list_key}' list)")
+            # These methods are handled in get_child_device_query so it can be
+            # patched for tests to simulate dynamic devices.
+            if (
+                method in ("get_child_device_list", "get_child_device_component_list")
+                and method in info
+            ):
+                return self.get_child_device_queries(method, params)
 
-                    result[list_key] = result[list_key][
-                        start_index : start_index + self.list_return_size
-                    ]
-                return {"result": result, "error_code": 0}
+            if method in info:
+                return self._get_method_from_info(method, params)
 
             if self.verbatim:
                 return {
