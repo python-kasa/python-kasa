@@ -193,7 +193,6 @@ class Clean(SmartModule):
         self._add_feature(
             Feature(
                 self._device,
-                self._device,
                 id="clean_area",
                 name="Cleaning area",
                 container=self,
