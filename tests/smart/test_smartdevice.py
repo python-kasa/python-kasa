@@ -17,6 +17,7 @@ from kasa.exceptions import DeviceError, SmartErrorCode
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
+from kasa.smartcam import SmartCamDevice
 from tests.conftest import (
     DISCOVERY_MOCK_IP,
     device_smart,
@@ -813,6 +814,7 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
 
     first_child_fake_transport = transport.child_protocols[first_child_device_id]
 
+    # Test adding devices
     start_child_count = len(dev.children)
     added_ids = []
     for i in range(1, 3):
@@ -848,6 +850,7 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
     expected_new_length = start_child_count + len(added_ids)
     assert len(dev.children) == expected_new_length
 
+    # Test removing devices
     mock_child_device_info["child_device_list"] = [
         info
         for info in mock_child_device_info["child_device_list"]
@@ -867,8 +870,12 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
     expected_new_length -= 1
     assert len(dev.children) == expected_new_length
 
+    # Test no child devices
+
     mock_child_device_info["child_device_list"] = []
     mock_child_device_components["child_component_list"] = []
+    mock_child_device_info["sum"] = 0
+    mock_child_device_components["sum"] = 0
 
     with patch.object(
         transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
@@ -876,3 +883,108 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
         await dev.update()
 
     assert len(dev.children) == 0
+
+    # Logging tests are only for smartcam hubs as smart hubs do not test categories
+    if not isinstance(dev, SmartCamDevice):
+        return
+
+    # setup
+    mock_child = copy.deepcopy(first_child)
+    mock_components = copy.deepcopy(first_child_components)
+
+    mock_child_device_info["child_device_list"] = [mock_child]
+    mock_child_device_components["child_component_list"] = [mock_components]
+    mock_child_device_info["sum"] = 1
+    mock_child_device_components["sum"] = 1
+
+    # Test can't find matching components
+
+    mock_child["device_id"] = "no_comps_1"
+    mock_components["device_id"] = "no_comps_2"
+
+    caplog.set_level("DEBUG")
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child components for device" in caplog.text
+
+    caplog.clear()
+
+    # Test doesn't log multiple
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child components for device" not in caplog.text
+
+    # Test invalid category
+
+    mock_child["device_id"] = "invalid_cat"
+    mock_components["device_id"] = "invalid_cat"
+    mock_child["category"] = "foobar"
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" in caplog.text
+
+    caplog.clear()
+
+    # Test doesn't log multiple
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" not in caplog.text
+
+    # Test no category
+
+    mock_child["device_id"] = "no_cat"
+    mock_components["device_id"] = "no_cat"
+    mock_child.pop("category")
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" in caplog.text
+
+    # Test only log once
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" not in caplog.text
+
+    # Test no device_id
+
+    mock_child.pop("device_id")
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child id for device" in caplog.text
+
+    # Test only log once
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child id for device" not in caplog.text

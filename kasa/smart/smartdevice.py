@@ -124,8 +124,25 @@ class SmartDevice(Device):
                 if child_id not in self._logged_missing_child_ids:
                     self._logged_missing_child_ids.add(child_id)
                     _LOGGER.debug("Child device type not supported: %s", info)
+                continue
 
-            _LOGGER.debug("Child device type not supported: %s", info)
+            if child_id:
+                if child_id not in self._logged_missing_child_ids:
+                    self._logged_missing_child_ids.add(child_id)
+                    _LOGGER.debug(
+                        "Could not find child components for device %s, "
+                        "child_id %s, components: %s: ",
+                        self.host,
+                        child_id,
+                        smart_children_components,
+                    )
+                continue
+
+            if "" not in self._logged_missing_child_ids:
+                self._logged_missing_child_ids.add("")
+                _LOGGER.debug(
+                    "Could not find child id for device %s, info: %s", self.host, info
+                )
 
         removed_ids = starting_child_ids - child_ids
         for removed_id in removed_ids:
@@ -205,14 +222,9 @@ class SmartDevice(Device):
             )
 
             for info in child_info["child_device_list"]:
-                child_id = info["device_id"]
+                child_id = info.get("device_id")
                 if child_id not in self._children:
-                    if child_id not in self._logged_missing_child_ids:
-                        self._logged_missing_child_ids.add(child_id)
-                        _LOGGER.debug(
-                            "Skipping child update for %s, probably unsupported device",
-                            child_id,
-                        )
+                    # _create_delete_children has already logged a message
                     continue
 
                 self._children[child_id]._update_internal_state(info)
