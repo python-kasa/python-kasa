@@ -38,6 +38,7 @@ Plug 3: False
 True
 """
 
+from ...device_type import DeviceType
 from ..smartmodule import SmartModule
 
 
@@ -46,3 +47,10 @@ class ChildDevice(SmartModule):
 
     REQUIRED_COMPONENT = "child_device"
     QUERY_GETTER_NAME = "get_child_device_list"
+
+    def query(self) -> dict:
+        """Query to execute during the update cycle."""
+        q = super().query()
+        if self._device.device_type is DeviceType.Hub:
+            q["get_child_device_component_list"] = None
+        return q
