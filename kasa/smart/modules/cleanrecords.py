@@ -18,31 +18,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class LatestRecord(DataClassDictMixin):
-    """Stats from last clean."""
-
-    timestamp: datetime
-    clean_time: int
-    clean_area: int
-    error: int  # most likely
-
-
-@dataclass
 class Record(DataClassDictMixin):
-    """Historical cleanup result.
-
-    Example:
-     {
-      "error": 1,
-      "clean_time": 19,
-      "clean_area": 11,
-      "dust_collection": false,
-      "timestamp": 1705156162,
-      "start_type": 1,
-      "task_type": 0,
-      "record_index": 9
-    }
-    """
+    """Historical cleanup result."""
 
     #: Total time cleaned (in minutes)
     clean_time: timedelta = field(
@@ -67,7 +44,7 @@ class Record(DataClassDictMixin):
     error: int = field(default=0)
 
 
-class LatestClean(SerializationStrategy):
+class LastCleanStrategy(SerializationStrategy):
     """Strategy to deserialize list of maps into a dict."""
 
     def deserialize(self, value: list[int]) -> Record:
@@ -83,24 +60,7 @@ class LatestClean(SerializationStrategy):
 
 @dataclass
 class Records(DataClassDictMixin):
-    """Response payload for getCleanRecords.
-
-    Example:
-        {"total_time": 185,
-        "total_area": 149,
-        "total_number": 10,
-        "record_list_num": 10,
-        "lastest_day_record": [
-            1705156162,
-            19,
-            11,
-            1
-        ],
-        "record_list": [
-        <record>,
-        ]
-    }
-    """
+    """Response payload for getCleanRecords."""
 
     total_time: timedelta = field(
         metadata=field_options(lambda x: timedelta(minutes=x))
@@ -109,14 +69,14 @@ class Records(DataClassDictMixin):
     total_count: int = field(metadata=field_options(alias="total_number"))
 
     records: list[Record] = field(metadata=field_options(alias="record_list"))
-    latest_clean: Record = field(
+    last_clean: Record = field(
         metadata=field_options(
-            serialization_strategy=LatestClean(), alias="lastest_day_record"
+            serialization_strategy=LastCleanStrategy(), alias="lastest_day_record"
         )
     )
 
 
-class VacuumRecords(SmartModule):
+class CleanRecords(SmartModule):
     """Implementation of vacuum cleaning records."""
 
     REQUIRED_COMPONENT = "clean_percent"
@@ -199,17 +159,17 @@ class VacuumRecords(SmartModule):
     @property
     def last_clean_area(self) -> int:
         """Return latest cleaning area."""
-        return self._parsed_data.latest_clean.clean_area
+        return self._parsed_data.last_clean.clean_area
 
     @property
     def last_clean_time(self) -> timedelta:
         """Return total cleaning time."""
-        return self._parsed_data.latest_clean.clean_time
+        return self._parsed_data.last_clean.clean_time
 
     @property
     def last_clean_timestamp(self) -> datetime:
         """Return latest cleaning timestamp."""
-        return self._parsed_data.latest_clean.timestamp
+        return self._parsed_data.last_clean.timestamp
 
     @property
     def area_unit(self) -> AreaUnit:

@@ -8,6 +8,7 @@ from .brightness import Brightness
 from .childdevice import ChildDevice
 from .childprotection import ChildProtection
 from .clean import Clean
+from .cleanrecords import CleanRecords
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
@@ -37,7 +38,6 @@ from .temperaturesensor import TemperatureSensor
 from .thermostat import Thermostat
 from .time import Time
 from .triggerlogs import TriggerLogs
-from .vacuumrecords import VacuumRecords
 from .waterleaksensor import WaterleakSensor
 
 __all__ = [
@@ -72,7 +72,7 @@ __all__ = [
     "FrostProtection",
     "Thermostat",
     "Clean",
-    "VacuumRecords",
+    "CleanRecords",
     "SmartLightEffect",
     "OverheatProtection",
     "Speaker",

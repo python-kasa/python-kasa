@@ -29,7 +29,7 @@ async def records_group(dev: Device) -> None:
         error("This device does not support records.")
 
     data = rec.parsed_data
-    latest = data.latest_clean
+    latest = data.last_clean
     click.echo(
         f"Totals: {rec.total_clean_area} {rec.area_unit} in {rec.total_clean_time} "
         f"(cleaned {rec.total_clean_count} times)"
