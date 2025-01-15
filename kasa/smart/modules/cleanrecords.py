@@ -5,12 +5,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import cast
+from typing import Annotated, cast
 
 from mashumaro import DataClassDictMixin, field_options
 from mashumaro.types import SerializationStrategy
 
 from ...feature import Feature
+from ...module import FeatureAttribute
 from ..smartmodule import Module, SmartModule
 from .clean import AreaUnit, Clean
 
@@ -142,7 +143,7 @@ class CleanRecords(SmartModule):
         }
 
     @property
-    def total_clean_area(self) -> int:
+    def total_clean_area(self) -> Annotated[int, FeatureAttribute()]:
         """Return total cleaning area."""
         return self._parsed_data.total_area
 
@@ -157,7 +158,7 @@ class CleanRecords(SmartModule):
         return self._parsed_data.total_count
 
     @property
-    def last_clean_area(self) -> int:
+    def last_clean_area(self) -> Annotated[int, FeatureAttribute()]:
         """Return latest cleaning area."""
         return self._parsed_data.last_clean.clean_area
 
