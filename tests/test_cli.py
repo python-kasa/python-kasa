@@ -419,7 +419,7 @@ async def test_child_pair(dev, mocker: MockerFixture, runner, caplog):
 
     res = await runner.invoke(hub, ["pair"], obj=dev, catch_exceptions=False)
     if cs is None:
-        assert "does not support pairing" in res.output.replace("\n", "")
+        assert "is not a hub" in res.output
         return
 
     mock_pair.assert_awaited()
@@ -441,7 +441,7 @@ async def test_child_unpair(dev, mocker: MockerFixture, runner):
     )
 
     if cs is None:
-        assert "does not support pairing" in res.output.replace("\n", "")
+        assert "is not a hub" in res.output
         return
 
     mock_unpair.assert_awaited()
