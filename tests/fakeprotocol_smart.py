@@ -171,6 +171,16 @@ class FakeSmartTransport(BaseTransport):
                 "setup_payload": "00:0000000-0000.00.000",
             },
         ),
+        # child setup
+        "get_support_child_device_category": (
+            "child_quick_setup",
+            {"device_category_list": [{"category": "subg.trv"}]},
+        ),
+        # no devices found
+        "get_scan_child_device_list": (
+            "child_quick_setup",
+            {"child_device_list": [{"dummy": "response"}], "scan_status": "idle"},
+        ),
     }
 
     def _missing_result(self, method):
@@ -658,8 +668,12 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
-        # Vacuum special actions
-        elif method in ["playSelectAudio"]:
+        # Hub pairing
+        elif method in [
+            "begin_scanning_child_device",
+            "add_child_device_list",
+            "remove_child_device_list",
+        ] or method in ["playSelectAudio"]:
             return {"error_code": 0}
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"

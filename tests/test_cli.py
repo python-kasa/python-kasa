@@ -24,7 +24,6 @@ from kasa import (
 from kasa.cli.device import (
     alias,
     factory_reset,
-    child,
     led,
     reboot,
     state,
@@ -32,6 +31,7 @@ from kasa.cli.device import (
     toggle,
     update_credentials,
 )
+from kasa.cli.hub import hub
 from kasa.cli.light import (
     brightness,
     effect,
@@ -417,7 +417,7 @@ async def test_child_pair(dev, mocker: MockerFixture, runner, caplog):
     if cs is not None:
         mock_pair = mocker.patch.object(cs, "pair")
 
-    res = await runner.invoke(child, ["pair"], obj=dev, catch_exceptions=False)
+    res = await runner.invoke(hub, ["pair"], obj=dev, catch_exceptions=False)
     if cs is None:
         assert "does not support pairing" in res.output.replace("\n", "")
         return
@@ -437,7 +437,7 @@ async def test_child_unpair(dev, mocker: MockerFixture, runner):
         mock_unpair = mocker.patch.object(cs, "unpair")
 
     res = await runner.invoke(
-        child, ["unpair", DUMMY_ID], obj=dev, catch_exceptions=False
+        hub, ["unpair", DUMMY_ID], obj=dev, catch_exceptions=False
     )
 
     if cs is None:

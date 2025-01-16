@@ -5,9 +5,9 @@ import logging
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Feature, Module
-from kasa.smart import SmartDevice
-from kasa.tests.device_fixtures import parametrize
+from kasa import Feature, Module, SmartDevice
+
+from ...device_fixtures import parametrize
 
 childsetup = parametrize(
     "supports pairing", component_filter="child_quick_setup", protocol_filter={"SMART"}

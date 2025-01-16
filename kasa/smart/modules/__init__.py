@@ -7,8 +7,8 @@ from .batterysensor import BatterySensor
 from .brightness import Brightness
 from .childdevice import ChildDevice
 from .childprotection import ChildProtection
-from .clean import Clean
 from .childsetup import ChildSetup
+from .clean import Clean
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
