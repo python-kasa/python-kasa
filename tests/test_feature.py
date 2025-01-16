@@ -189,7 +189,8 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
 
     async def _test_features(dev):
         exceptions = []
-        for feat in dev.features.values():
+        feats = dev.features.copy()
+        for feat in feats.values():
             try:
                 with patch.object(feat.device.protocol, "query") as query:
                     await _test_feature(feat, query)
@@ -201,6 +202,9 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
                 exceptions.append(ex)
 
         return exceptions
+
+    # We mock the device state reset
+    mocker.patch.object(dev, "request_renegotiation")
 
     exceptions = await _test_features(dev)
 

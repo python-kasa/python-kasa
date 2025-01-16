@@ -24,6 +24,7 @@ from kasa import (
 from kasa.cli.device import (
     alias,
     factory_reset,
+    child,
     led,
     reboot,
     state,
@@ -406,6 +407,46 @@ async def test_wifi_join_exception(dev, mocker, runner):
 
     assert res.exit_code != 0
     assert isinstance(res.exception, KasaException)
+
+
+@device_smart
+async def test_child_pair(dev, mocker: MockerFixture, runner, caplog):
+    """Test that pair calls the expected methods."""
+    cs = dev.modules.get(Module.ChildSetup)
+    # Patch if the device supports the module
+    if cs is not None:
+        mock_pair = mocker.patch.object(cs, "pair")
+
+    res = await runner.invoke(child, ["pair"], obj=dev, catch_exceptions=False)
+    if cs is None:
+        assert "does not support pairing" in res.output.replace("\n", "")
+        return
+
+    mock_pair.assert_awaited()
+    assert "Finding new devices for 10 seconds" in res.output
+    assert res.exit_code == 0
+
+
+@device_smart
+async def test_child_unpair(dev, mocker: MockerFixture, runner):
+    """Test that unpair calls the expected method."""
+    DUMMY_ID = "dummy_id"
+    cs = dev.modules.get(Module.ChildSetup)
+    # Patch if the device supports the module
+    if cs is not None:
+        mock_unpair = mocker.patch.object(cs, "unpair")
+
+    res = await runner.invoke(
+        child, ["unpair", DUMMY_ID], obj=dev, catch_exceptions=False
+    )
+
+    if cs is None:
+        assert "does not support pairing" in res.output.replace("\n", "")
+        return
+
+    mock_unpair.assert_awaited()
+    assert f"Unpaired {DUMMY_ID} (if it was paired)" in res.output
+    assert res.exit_code == 0
 
 
 @device_smart

@@ -19,7 +19,7 @@ from ..smartmodule import SmartModule
 _LOGGER = logging.getLogger(__name__)
 
 
-class ChildSetupModule(SmartModule):
+class ChildSetup(SmartModule):
     """Implementation for child device setup."""
 
     REQUIRED_COMPONENT = "child_quick_setup"
@@ -30,6 +30,7 @@ class ChildSetupModule(SmartModule):
         self._add_feature(
             Feature(
                 device,
+                id="pair",
                 name="Pair",
                 container=self,
                 attribute_setter="pair",
