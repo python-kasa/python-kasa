@@ -170,7 +170,7 @@ class CleanRecords(SmartModule):
     @property
     def last_clean_timestamp(self) -> datetime:
         """Return latest cleaning timestamp."""
-        return self._parsed_data.last_clean.timestamp
+        return self._parsed_data.last_clean.timestamp.astimezone(self._device.timezone)
 
     @property
     def area_unit(self) -> AreaUnit:
