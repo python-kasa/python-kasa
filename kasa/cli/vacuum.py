@@ -47,4 +47,7 @@ async def records_list(dev: Device) -> None:
 
     data = rec.parsed_data
     for record in data.records:
-        click.echo(f"* {record}")
+        click.echo(
+            f"* {record.timestamp}: cleaned {record.clean_area} {rec.area_unit}"
+            f" in {record.clean_time}"
+        )
