@@ -472,6 +472,24 @@
         "setup_code": "00000000000",
         "setup_payload": "00:0000000000000000000"
     },
+    "get_scan_child_device_list": {
+        "child_device_list": [
+            {
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "device_id": "REDACTED_1",
+                "device_model": "T315",
+                "name": "REDACTED_1"
+            },
+            {
+                "category": "subg.trigger.contact-sensor",
+                "device_id": "REDACTED_2",
+                "device_model": "T110",
+                "name": "REDACTED_2"
+            }
+        ],
+        "scan_status": "scanning",
+        "scan_wait_time": 28
+    },
     "get_support_alarm_type_list": {
         "alarm_type_list": [
             "Doorbell Ring 1",
