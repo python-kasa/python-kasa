@@ -65,6 +65,7 @@ class SmartDevice(Device):
         self.protocol: SmartProtocol
         self._components_raw: ComponentsRaw | None = None
         self._components: dict[str, int] = {}
+        self._state_information: dict[str, Any] = {}
         self._modules: dict[str | ModuleName[Module], SmartModule] = {}
         self._parent: SmartDevice | None = None
         self._children: dict[str, SmartDevice] = {}
@@ -226,21 +227,6 @@ class SmartDevice(Device):
 
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
-
-    def request_renegotiation(self) -> None:
-        """Request renegotiation on the next update.
-
-        This is used by childsetup to inform about new or removed children.
-        """
-        self._modules.clear()
-        self._features.clear()
-        self._last_update.clear()
-        self._components.clear()
-        if self._components_raw is not None:
-            self._components_raw.clear()
-            self._components_raw = None
-        # we cannot use clear here, as mapping doesn't have it...
-        self._children = {}
 
     async def _update_children_info(self) -> bool:
         """Update the internal child device info from the parent info.
