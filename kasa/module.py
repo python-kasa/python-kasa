@@ -163,6 +163,7 @@ class Module(ABC):
 
     # Vacuum modules
     Clean: Final[ModuleName[smart.Clean]] = ModuleName("Clean")
+    Consumables: Final[ModuleName[smart.Consumables]] = ModuleName("Consumables")
     Dustbin: Final[ModuleName[smart.Dustbin]] = ModuleName("Dustbin")
     Speaker: Final[ModuleName[smart.Speaker]] = ModuleName("Speaker")
     Mop: Final[ModuleName[smart.Mop]] = ModuleName("Mop")

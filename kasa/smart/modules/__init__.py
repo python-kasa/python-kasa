@@ -11,6 +11,7 @@ from .clean import Clean
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
+from .consumables import Consumables
 from .contactsensor import ContactSensor
 from .devicemodule import DeviceModule
 from .dustbin import Dustbin
@@ -37,7 +38,6 @@ from .temperaturesensor import TemperatureSensor
 from .thermostat import Thermostat
 from .time import Time
 from .triggerlogs import TriggerLogs
-from .vacuumconsumables import VacuumConsumables
 from .waterleaksensor import WaterleakSensor
 
 __all__ = [
@@ -72,7 +72,7 @@ __all__ = [
     "FrostProtection",
     "Thermostat",
     "Clean",
-    "VacuumConsumables",
+    "Consumables",
     "SmartLightEffect",
     "OverheatProtection",
     "Speaker",

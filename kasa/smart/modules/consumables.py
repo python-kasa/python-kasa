@@ -27,7 +27,6 @@ class Consumable:
 
 
 CONSUMABLES = [
-    # TODO: there is also main_brush_lid_time
     Consumable(
         "Main brush",
         feature_basename="main_brush",
@@ -54,16 +53,15 @@ CONSUMABLES = [
     ),
     Consumable(
         "Charging contacts",
-        feature_basename="contacts",
+        feature_basename="charging_contacts",
         data_key="charge_contact_time",
         lifetime=timedelta(hours=30),
     ),
-    # unknown data, does not seem to be mop used
-    # Consumable("Rag", key="rag_time", lifetime=timedelta(hours=30))
+    # Unknown keys: main_brush_lid_time, rag_time
 ]
 
 
-class VacuumConsumables(SmartModule):
+class Consumables(SmartModule):
     """Implementation of vacuum consumables."""
 
     REQUIRED_COMPONENT = "consumables"
@@ -92,7 +90,7 @@ class VacuumConsumables(SmartModule):
             self._add_feature(
                 Feature(
                     self._device,
-                    id=f"vacuum_{consumable.feature_basename}_remaining",
+                    id=f"{consumable.feature_basename}_remaining",
                     name=f"{consumable.name} remaining",
                     container=self.data,
                     attribute_getter=lambda container, item=consumable: item.lifetime
@@ -105,13 +103,13 @@ class VacuumConsumables(SmartModule):
             self._add_feature(
                 Feature(
                     self._device,
-                    id=f"vacuum_{consumable.feature_basename}_reset",
-                    name=f"Reset {consumable.name}",
+                    id=f"{consumable.feature_basename}_reset",
+                    name=f"Reset {consumable.name.lower()} consumable",
                     container=self.data,
                     attribute_setter=lambda _, item=consumable: self.reset_consumable(
                         item
                     ),
-                    category=Feature.Category.Info,
+                    category=Feature.Category.Debug,
                     type=Feature.Type.Action,
                 )
             )
