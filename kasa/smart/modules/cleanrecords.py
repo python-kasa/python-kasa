@@ -24,7 +24,7 @@ class Record(DataClassDictMixin):
 
     #: Total time cleaned (in minutes)
     clean_time: timedelta = field(
-        metadata=field_options(lambda x: timedelta(minutes=x))
+        metadata=field_options(deserialize=lambda x: timedelta(minutes=x))
     )
     #: Total area cleaned
     clean_area: int
@@ -64,7 +64,7 @@ class Records(DataClassDictMixin):
     """Response payload for getCleanRecords."""
 
     total_time: timedelta = field(
-        metadata=field_options(lambda x: timedelta(minutes=x))
+        metadata=field_options(deserialize=lambda x: timedelta(minutes=x))
     )
     total_area: int
     total_count: int = field(metadata=field_options(alias="total_number"))
@@ -175,10 +175,21 @@ class CleanRecords(SmartModule):
     @property
     def area_unit(self) -> AreaUnit:
         """Return area unit."""
-        clean = cast(Clean, self._device._modules[Module.Clean])
+        clean = cast(Clean, self._device.modules[Module.Clean])
         return clean.area_unit
 
     @property
     def parsed_data(self) -> Records:
-        """Return parsed records data."""
+        """Return parsed records data.
+
+        This will adjust the timezones before returning the data, as we do not
+        have the timezone information available when _post_update_hook is called.
+        """
+        self._parsed_data.last_clean.timestamp = (
+            self._parsed_data.last_clean.timestamp.astimezone(self._device.timezone)
+        )
+
+        for record in self._parsed_data.records:
+            record.timestamp = record.timestamp.astimezone(self._device.timezone)
+
         return self._parsed_data
