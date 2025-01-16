@@ -76,12 +76,11 @@ class Consumables(SmartModule):
             self._add_feature(
                 Feature(
                     self._device,
-                    id=f"vacuum_{consumable.feature_basename}_used",
+                    id=f"{consumable.feature_basename}_used",
                     name=f"{consumable.name} used",
                     container=self.data,
-                    attribute_getter=lambda container, item=consumable: timedelta(
-                        minutes=container.get(item.data_key)
-                    ),
+                    attribute_getter=lambda _,
+                    item=consumable: self.get_consumable_used(item),
                     category=Feature.Category.Debug,
                     type=Feature.Type.Sensor,
                 )
@@ -93,8 +92,8 @@ class Consumables(SmartModule):
                     id=f"{consumable.feature_basename}_remaining",
                     name=f"{consumable.name} remaining",
                     container=self.data,
-                    attribute_getter=lambda container, item=consumable: item.lifetime
-                    - timedelta(minutes=container.get(item.data_key)),
+                    attribute_getter=lambda _,
+                    item=consumable: self.get_consumable_remaining(item),
                     category=Feature.Category.Info,
                     type=Feature.Type.Sensor,
                 )
@@ -106,13 +105,21 @@ class Consumables(SmartModule):
                     id=f"{consumable.feature_basename}_reset",
                     name=f"Reset {consumable.name.lower()} consumable",
                     container=self.data,
-                    attribute_setter=lambda _, item=consumable: self.reset_consumable(
+                    attribute_setter=lambda item=consumable: self.reset_consumable(
                         item
                     ),
                     category=Feature.Category.Debug,
                     type=Feature.Type.Action,
                 )
             )
+
+    def get_consumable_used(self, consumable: Consumable) -> timedelta:
+        """Get consumable used."""
+        return timedelta(minutes=self.data[consumable.data_key])
+
+    def get_consumable_remaining(self, consumable: Consumable) -> timedelta:
+        """Get consumable remaining."""
+        return consumable.lifetime - timedelta(minutes=self.data[consumable.data_key])
 
     async def reset_consumable(self, consumable: Consumable) -> dict:
         """Reset consumable stats."""
