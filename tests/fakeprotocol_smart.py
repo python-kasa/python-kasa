@@ -659,7 +659,7 @@ class FakeSmartTransport(BaseTransport):
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
         # Vacuum special actions
-        elif method in ["playSelectAudio"]:
+        elif method in ["playSelectAudio", "resetConsumablesTime"]:
             return {"error_code": 0}
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"
