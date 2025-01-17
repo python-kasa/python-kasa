@@ -428,7 +428,7 @@ async def test_hub_pair(dev, mocker: MockerFixture, runner, caplog):
     assert res.exit_code == 0
 
 
-@device_smart
+@hubs_smart
 async def test_hub_unpair(dev, mocker: MockerFixture, runner):
     """Test that unpair calls the expected method."""
     DUMMY_ID = "dummy_id"
