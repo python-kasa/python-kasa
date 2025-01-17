@@ -8,7 +8,7 @@ from ...device_fixtures import parametrize
 childlock = parametrize(
     "has child lock",
     component_filter="button_and_led",
-    protocol_filter={"SMART.CHILD"},
+    protocol_filter={"SMART"},
 )
 
 
