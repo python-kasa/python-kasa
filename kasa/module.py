@@ -152,6 +152,7 @@ class Module(ABC):
     ChildProtection: Final[ModuleName[smart.ChildProtection]] = ModuleName(
         "ChildProtection"
     )
+    ChildLock: Final[ModuleName[smart.ChildLock]] = ModuleName("ChildLock")
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
     ChildSetup: Final[ModuleName[smart.ChildSetup]] = ModuleName("ChildSetup")
 

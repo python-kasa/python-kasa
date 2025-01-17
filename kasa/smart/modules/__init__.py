@@ -6,6 +6,7 @@ from .autooff import AutoOff
 from .batterysensor import BatterySensor
 from .brightness import Brightness
 from .childdevice import ChildDevice
+from .childlock import ChildLock
 from .childprotection import ChildProtection
 from .childsetup import ChildSetup
 from .clean import Clean
@@ -46,6 +47,7 @@ __all__ = [
     "Energy",
     "DeviceModule",
     "ChildDevice",
+    "ChildLock",
     "ChildSetup",
     "BatterySensor",
     "HumiditySensor",

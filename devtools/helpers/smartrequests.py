@@ -448,7 +448,7 @@ COMPONENT_REQUESTS = {
     "battery": [SmartRequest.get_raw_request("getBatteryInfo")],
     "consumables": [SmartRequest.get_raw_request("getConsumablesInfo")],
     "direction_control": [],
-    "button_and_led": [],
+    "button_and_led": [SmartRequest.get_raw_request("getChildLockInfo")],
     "speaker": [
         SmartRequest.get_raw_request("getSupportVoiceLanguage"),
         SmartRequest.get_raw_request("getCurrentVoiceLanguage"),
