@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import logging
 import time
+from collections import OrderedDict
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
@@ -66,7 +67,9 @@ class SmartDevice(Device):
         self._components_raw: ComponentsRaw | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
-        self._modules: dict[str | ModuleName[Module], SmartModule] = {}
+        self._modules: OrderedDict[str | ModuleName[Module], SmartModule] = (
+            OrderedDict()
+        )
         self._parent: SmartDevice | None = None
         self._children: dict[str, SmartDevice] = {}
         self._last_update_time: float | None = None
@@ -444,6 +447,11 @@ class SmartDevice(Device):
             and Module.TemperatureSensor in self._modules
         ):
             self._modules[Thermostat.__name__] = Thermostat(self, "thermostat")
+
+        # We move time to the beginning so other modules can access the
+        # time and timezone after update if required. e.g. cleanrecords
+        if Time.__name__ in self._modules:
+            self._modules.move_to_end(Time.__name__, last=False)
 
     async def _initialize_features(self) -> None:
         """Initialize device features."""

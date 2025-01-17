@@ -25,6 +25,7 @@ Signal Level (signal_level): 2
 RSSI (rssi): -52
 SSID (ssid): #MASKED_SSID#
 Reboot (reboot): <Action>
+Device time (device_time): 2024-02-23 02:40:15+01:00
 Brightness (brightness): 100
 Cloud connection (cloud_connection): True
 HSV (hsv): HSV(hue=0, saturation=100, value=100)
@@ -39,7 +40,6 @@ Light preset (light_preset): Not set
 Smooth transition on (smooth_transition_on): 2
 Smooth transition off (smooth_transition_off): 2
 Overheated (overheated): False
-Device time (device_time): 2024-02-23 02:40:15+01:00
 
 To see whether a device supports a feature, check for the existence of it:
 

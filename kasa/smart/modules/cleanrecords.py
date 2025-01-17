@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, tzinfo
 from typing import Annotated, cast
 
 from mashumaro import DataClassDictMixin, field_options
+from mashumaro.config import ADD_DIALECT_SUPPORT
+from mashumaro.dialect import Dialect
 from mashumaro.types import SerializationStrategy
 
 from ...feature import Feature
@@ -22,6 +24,11 @@ _LOGGER = logging.getLogger(__name__)
 class Record(DataClassDictMixin):
     """Historical cleanup result."""
 
+    class Config:
+        """Configuration class."""
+
+        code_generation_options = [ADD_DIALECT_SUPPORT]
+
     #: Total time cleaned (in minutes)
     clean_time: timedelta = field(
         metadata=field_options(deserialize=lambda x: timedelta(minutes=x))
@@ -29,11 +36,8 @@ class Record(DataClassDictMixin):
     #: Total area cleaned
     clean_area: int
     dust_collection: bool
-    timestamp: datetime = field(
-        metadata=field_options(
-            deserialize=lambda x: datetime.fromtimestamp(x) if x else None
-        )
-    )
+    timestamp: datetime
+
     info_num: int | None = None
     message: int | None = None
     map_id: int | None = None
@@ -45,23 +49,31 @@ class Record(DataClassDictMixin):
     error: int = field(default=0)
 
 
-class LastCleanStrategy(SerializationStrategy):
-    """Strategy to deserialize list of maps into a dict."""
+class _DateTimeSerializationStrategy(SerializationStrategy):
+    def __init__(self, tz: tzinfo) -> None:
+        self.tz = tz
 
-    def deserialize(self, value: list[int]) -> Record:
-        """Deserialize list of maps into a dict."""
-        data = {
-            "timestamp": value[0],
-            "clean_time": value[1],
-            "clean_area": value[2],
-            "dust_collection": value[3],
-        }
-        return Record.from_dict(data)
+    def deserialize(self, value: float) -> datetime:
+        return datetime.fromtimestamp(value, self.tz)
+
+
+def _get_tz_strategy(tz: tzinfo) -> type[Dialect]:
+    """Return a timezone aware de-serialization strategy."""
+
+    class TimezoneDialect(Dialect):
+        serialization_strategy = {datetime: _DateTimeSerializationStrategy(tz)}
+
+    return TimezoneDialect
 
 
 @dataclass
 class Records(DataClassDictMixin):
     """Response payload for getCleanRecords."""
+
+    class Config:
+        """Configuration class."""
+
+        code_generation_options = [ADD_DIALECT_SUPPORT]
 
     total_time: timedelta = field(
         metadata=field_options(deserialize=lambda x: timedelta(minutes=x))
@@ -70,11 +82,18 @@ class Records(DataClassDictMixin):
     total_count: int = field(metadata=field_options(alias="total_number"))
 
     records: list[Record] = field(metadata=field_options(alias="record_list"))
-    last_clean: Record = field(
-        metadata=field_options(
-            serialization_strategy=LastCleanStrategy(), alias="lastest_day_record"
-        )
-    )
+    last_clean: Record = field(metadata=field_options(alias="lastest_day_record"))
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict) -> dict:
+        if ldr := d.get("lastest_day_record"):
+            d["lastest_day_record"] = {
+                "timestamp": ldr[0],
+                "clean_time": ldr[1],
+                "clean_area": ldr[2],
+                "dust_collection": ldr[3],
+            }
+        return d
 
 
 class CleanRecords(SmartModule):
@@ -85,7 +104,9 @@ class CleanRecords(SmartModule):
 
     async def _post_update_hook(self) -> None:
         """Cache parsed data after an update."""
-        self._parsed_data = Records.from_dict(self.data)
+        self._parsed_data = Records.from_dict(
+            self.data, dialect=_get_tz_strategy(self._device.timezone)
+        )
 
     def _initialize_features(self) -> None:
         """Initialize features."""
@@ -170,7 +191,7 @@ class CleanRecords(SmartModule):
     @property
     def last_clean_timestamp(self) -> datetime:
         """Return latest cleaning timestamp."""
-        return self._parsed_data.last_clean.timestamp.astimezone(self._device.timezone)
+        return self._parsed_data.last_clean.timestamp
 
     @property
     def area_unit(self) -> AreaUnit:
@@ -179,17 +200,6 @@ class CleanRecords(SmartModule):
         return clean.area_unit
 
     @property
-    def parsed_data(self) -> Records:
-        """Return parsed records data.
-
-        This will adjust the timezones before returning the data, as we do not
-        have the timezone information available when _post_update_hook is called.
-        """
-        self._parsed_data.last_clean.timestamp = (
-            self._parsed_data.last_clean.timestamp.astimezone(self._device.timezone)
-        )
-
-        for record in self._parsed_data.records:
-            record.timestamp = record.timestamp.astimezone(self._device.timezone)
-
+    def clean_records(self) -> Records:
+        """Return parsed records data."""
         return self._parsed_data
