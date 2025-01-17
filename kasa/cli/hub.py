@@ -4,7 +4,7 @@ import asyncio
 
 import asyncclick as click
 
-from kasa import DeviceType, Module
+from kasa import DeviceType, Module, SmartDevice
 from kasa.smart import SmartChildDevice
 
 from .common import (
@@ -20,13 +20,19 @@ def pretty_category(cat: str):
 
 
 @click.group()
-async def hub():
+@pass_dev
+async def hub(dev: SmartDevice):
     """Commands controlling hub child device pairing."""
+    if dev.device_type is not DeviceType.Hub:
+        error(f"{dev} is not a hub.")
+
+    if dev.modules.get(Module.ChildSetup) is None:
+        error(f"{dev} does not have child setup module.")
 
 
 @hub.command(name="list")
 @pass_dev
-async def hub_list(dev):
+async def hub_list(dev: SmartDevice):
     """List hub paired child devices."""
     for c in dev.children:
         echo(f"{c.device_id}: {c}")
@@ -34,28 +40,24 @@ async def hub_list(dev):
 
 @hub.command(name="supported")
 @pass_dev
-async def hub_supported(dev):
+async def hub_supported(dev: SmartDevice):
     """List supported hub child device categories."""
-    if dev.device_type is not DeviceType.Hub:
-        error(f"{dev} is not a hub.")
+    cs = dev.modules[Module.ChildSetup]
 
-    if (cs := dev.modules.get(Module.ChildSetup)) is None:
-        error(f"{dev} doesn not have child setup module.")
-
-    for cat in await cs.get_supported_device_categories():
-        echo(f"Supports: {cat['category']}")
+    cats = [cat["category"] for cat in await cs.get_supported_device_categories()]
+    for cat in cats:
+        echo(f"Supports: {cat}")
 
 
 @hub.command(name="pair")
 @click.option("--timeout", default=10)
 @pass_dev
-async def hub_pair(dev, timeout):
+async def hub_pair(dev: SmartDevice, timeout: int):
     """Pair all pairable device.
 
     This will pair any child devices currently in pairing mode.
     """
-    if (cs := dev.modules.get(Module.ChildSetup)) is None:
-        error(f"{dev} is not a hub.")
+    cs = dev.modules[Module.ChildSetup]
 
     echo(f"Finding new devices for {timeout} seconds...")
 
@@ -63,10 +65,10 @@ async def hub_pair(dev, timeout):
     if not pair_res:
         echo("No devices found.")
 
-    for dev in pair_res:
+    for child in pair_res:
         echo(
-            f'Paired {dev["name"]} ({dev["device_model"]}, '
-            f'{pretty_category(dev["category"])}) with id {dev["device_id"]}'
+            f'Paired {child["name"]} ({child["device_model"]}, '
+            f'{pretty_category(child["category"])}) with id {child["device_id"]}'
         )
 
 
@@ -75,8 +77,7 @@ async def hub_pair(dev, timeout):
 @pass_dev
 async def hub_unpair(dev, device_id: str):
     """Unpair given device."""
-    if (cs := dev.modules.get(Module.ChildSetup)) is None:
-        error(f"{dev} is not a hub.")
+    cs = dev.modules[Module.ChildSetup]
 
     # Accessing private here, as the property exposes only values
     if device_id not in dev._children:

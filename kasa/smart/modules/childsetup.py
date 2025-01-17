@@ -34,7 +34,7 @@ class ChildSetup(SmartModule):
             )
         )
 
-    async def get_supported_device_categories(self) -> list[str]:
+    async def get_supported_device_categories(self) -> list[dict]:
         """Get supported device categories."""
         categories = await self.call("get_support_child_device_category")
         return categories["get_support_child_device_category"]["device_category_list"]
