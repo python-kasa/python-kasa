@@ -54,6 +54,7 @@ from .conftest import (
     device_smart,
     get_device_for_fixture_protocol,
     handle_turn_on,
+    hubs_smart,
     new_discovery,
     turn_on,
 )
@@ -410,7 +411,7 @@ async def test_wifi_join_exception(dev, mocker, runner):
 
 
 @hubs_smart
-async def test_child_pair(dev, mocker: MockerFixture, runner, caplog):
+async def test_hub_pair(dev, mocker: MockerFixture, runner, caplog):
     """Test that pair calls the expected methods."""
     cs = dev.modules.get(Module.ChildSetup)
     # Patch if the device supports the module
@@ -428,7 +429,7 @@ async def test_child_pair(dev, mocker: MockerFixture, runner, caplog):
 
 
 @device_smart
-async def test_child_unpair(dev, mocker: MockerFixture, runner):
+async def test_hub_unpair(dev, mocker: MockerFixture, runner):
     """Test that unpair calls the expected method."""
     DUMMY_ID = "dummy_id"
     cs = dev.modules.get(Module.ChildSetup)
