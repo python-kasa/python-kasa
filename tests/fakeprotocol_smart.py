@@ -670,10 +670,10 @@ class FakeSmartTransport(BaseTransport):
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
         # actions
         elif method in [
-            "begin_scanning_child_device",  #hub pairing
-            "add_child_device_list",  #hub pairing
-            "remove_child_device_list",  #hub pairing
-            "playSelectAudio",  #vacuum special actions
+            "begin_scanning_child_device",  # hub pairing
+            "add_child_device_list",  # hub pairing
+            "remove_child_device_list",  # hub pairing
+            "playSelectAudio",  # vacuum special actions
         ]:
             return {"error_code": 0}
         elif method[:3] == "set":
