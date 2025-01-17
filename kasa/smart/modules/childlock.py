@@ -7,7 +7,7 @@ from ..smartmodule import SmartModule
 
 
 class ChildLock(SmartModule):
-    """Implementation for child_protection."""
+    """Implementation for child lock."""
 
     REQUIRED_COMPONENT = "button_and_led"
     QUERY_GETTER_NAME = "getChildLockInfo"
@@ -29,9 +29,9 @@ class ChildLock(SmartModule):
 
     @property
     def enabled(self) -> bool:
-        """Return True if child protection is enabled."""
+        """Return True if child lock is enabled."""
         return self.data["child_lock_status"]
 
     async def set_enabled(self, enabled: bool) -> dict:
-        """Set child protection."""
+        """Set child lock."""
         return await self.call("setChildLockInfo", {"child_lock_status": enabled})
