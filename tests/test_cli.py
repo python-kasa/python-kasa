@@ -409,7 +409,7 @@ async def test_wifi_join_exception(dev, mocker, runner):
     assert isinstance(res.exception, KasaException)
 
 
-@device_smart
+@hubs_smart
 async def test_child_pair(dev, mocker: MockerFixture, runner, caplog):
     """Test that pair calls the expected methods."""
     cs = dev.modules.get(Module.ChildSetup)

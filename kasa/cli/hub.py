@@ -18,13 +18,13 @@ def pretty_category(cat: str):
 
 @click.group()
 async def hub():
-    """Commands controling child devices."""
+    """Commands controlling hub child device pairing."""
 
 
 @hub.command(name="list")
 @pass_dev
 async def hub_list(dev):
-    """List children."""
+    """List hub paired child devices."""
     for c in dev.children:
         echo(f"{c.device_id}: {c}")
 
@@ -32,7 +32,7 @@ async def hub_list(dev):
 @hub.command(name="supported")
 @pass_dev
 async def hub_supported(dev):
-    """List supported child device categories."""
+    """List supported hub child device categories."""
     if (cs := dev.modules.get(Module.ChildSetup)) is None:
         echo(f"{dev} is not a hub.")
         return
@@ -45,7 +45,10 @@ async def hub_supported(dev):
 @click.option("--timeout", default=10)
 @pass_dev
 async def hub_pair(dev, timeout):
-    """Pair new device."""
+    """Pair all pairable device.
+    
+    This will pair any child devices currently in pairing mode.
+    """
     if (cs := dev.modules.get(Module.ChildSetup)) is None:
         echo(f"{dev} is not a hub.")
         return
