@@ -537,6 +537,18 @@ class SmartDevice(Device):
             )
         )
 
+        if self.parent is not None and Module.ChildSetup in self.parent.modules:
+            self._add_feature(
+                Feature(
+                    device=self,
+                    id="unpair",
+                    name="Unpair device",
+                    attribute_setter="unpair",
+                    category=Feature.Category.Debug,
+                    type=Feature.Type.Action,
+                )
+            )
+
         for module in self.modules.values():
             module._initialize_features()
             for feat in module._module_features.values():
@@ -815,6 +827,21 @@ class SmartDevice(Device):
         Note, this does not downgrade the firmware.
         """
         await self.protocol.query("device_reset")
+
+    async def unpair(self) -> dict:
+        """Unpair the device from the hub."""
+        if self.parent is None:
+            raise KasaException("Device has no parent")
+
+        if (cs := self.parent.modules.get(Module.ChildSetup)) is None:
+            raise KasaException(
+                "Device is not hub-paired device or "
+                "the parent does not support child setup"
+            )
+
+        _LOGGER.debug("Going to unpair %s", self)
+
+        return await cs.unpair(self.device_id)
 
     @property
     def device_type(self) -> DeviceType:
