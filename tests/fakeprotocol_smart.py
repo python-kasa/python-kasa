@@ -558,6 +558,18 @@ class FakeSmartTransport(BaseTransport):
 
         return {"error_code": 0}
 
+    def _hub_remove_device(self, info, params):
+        """Remove hub device."""
+        items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
+        print(items_to_remove)
+        children = info["get_child_device_list"]["child_device_list"]
+        new_children = [
+            dev for dev in children if dev["device_id"] not in items_to_remove
+        ]
+        info["get_child_device_list"]["child_device_list"] = new_children
+
+        return {"error_code": 0}
+
     def get_child_device_queries(self, method, params):
         return self._get_method_from_info(method, params)
 
@@ -668,6 +680,8 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
+        elif method == "remove_child_device_list":
+            return self._hub_remove_device(info, params)
         # actions
         elif method in [
             "begin_scanning_child_device",  # hub pairing

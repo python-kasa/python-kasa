@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from datetime import datetime
 from unittest.mock import ANY, PropertyMock, patch
@@ -31,7 +30,6 @@ from kasa.cli.device import (
     toggle,
     update_credentials,
 )
-from kasa.cli.hub import hub
 from kasa.cli.light import (
     brightness,
     effect,
@@ -54,7 +52,6 @@ from .conftest import (
     device_smart,
     get_device_for_fixture_protocol,
     handle_turn_on,
-    hubs_smart,
     new_discovery,
     turn_on,
 )
@@ -62,15 +59,6 @@ from .conftest import (
 # The cli tests should be testing the cli logic rather than a physical device
 # so mark the whole file for skipping with real devices.
 pytestmark = [pytest.mark.requires_dummy]
-
-
-@pytest.fixture
-def runner():
-    """Runner fixture that unsets the KASA_ environment variables for tests."""
-    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
-    runner = CliRunner(env=KASA_VARS)
-
-    return runner
 
 
 async def test_help(runner):
@@ -408,46 +396,6 @@ async def test_wifi_join_exception(dev, mocker, runner):
 
     assert res.exit_code != 0
     assert isinstance(res.exception, KasaException)
-
-
-@hubs_smart
-async def test_hub_pair(dev, mocker: MockerFixture, runner, caplog):
-    """Test that pair calls the expected methods."""
-    cs = dev.modules.get(Module.ChildSetup)
-    # Patch if the device supports the module
-    if cs is not None:
-        mock_pair = mocker.patch.object(cs, "pair")
-
-    res = await runner.invoke(hub, ["pair"], obj=dev, catch_exceptions=False)
-    if cs is None:
-        assert "is not a hub" in res.output
-        return
-
-    mock_pair.assert_awaited()
-    assert "Finding new devices for 10 seconds" in res.output
-    assert res.exit_code == 0
-
-
-@hubs_smart
-async def test_hub_unpair(dev, mocker: MockerFixture, runner):
-    """Test that unpair calls the expected method."""
-    DUMMY_ID = "dummy_id"
-    cs = dev.modules.get(Module.ChildSetup)
-    # Patch if the device supports the module
-    if cs is not None:
-        mock_unpair = mocker.patch.object(cs, "unpair")
-
-    res = await runner.invoke(
-        hub, ["unpair", DUMMY_ID], obj=dev, catch_exceptions=False
-    )
-
-    if cs is None:
-        assert "is not a hub" in res.output
-        return
-
-    mock_unpair.assert_awaited()
-    assert f"Unpaired {DUMMY_ID} (if it was paired)" in res.output
-    assert res.exit_code == 0
 
 
 @device_smart
