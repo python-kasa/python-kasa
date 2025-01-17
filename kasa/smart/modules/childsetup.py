@@ -43,15 +43,15 @@ class ChildSetup(SmartModule):
         """Scan for new devices and pair after discovering first new device."""
         await self.call("begin_scanning_child_device")
 
-        _LOGGER.debug("Waiting %s seconds for discovering new devices", timeout)
+        _LOGGER.info("Waiting %s seconds for discovering new devices", timeout)
         await asyncio.sleep(timeout)
         detected = await self._get_detected_devices()
 
         if not detected["child_device_list"]:
-            _LOGGER.debug("No devices found.")
+            _LOGGER.info("No devices found.")
             return []
 
-        _LOGGER.debug(
+        _LOGGER.info(
             "Discovery done, found %s devices: %s",
             len(detected["child_device_list"]),
             detected,
