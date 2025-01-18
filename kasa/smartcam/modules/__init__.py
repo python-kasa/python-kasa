@@ -13,6 +13,7 @@ from .matter import Matter
 from .motiondetection import MotionDetection
 from .pantilt import PanTilt
 from .persondetection import PersonDetection
+from .petdetection import PetDetection
 from .tamperdetection import TamperDetection
 from .time import Time
 
@@ -26,6 +27,7 @@ __all__ = [
     "Led",
     "PanTilt",
     "PersonDetection",
+    "PetDetection",
     "Time",
     "HomeKit",
     "Matter",
