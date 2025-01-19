@@ -561,7 +561,6 @@ class FakeSmartTransport(BaseTransport):
     def _hub_remove_device(self, info, params):
         """Remove hub device."""
         items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
-        print(items_to_remove)
         children = info["get_child_device_list"]["child_device_list"]
         new_children = [
             dev for dev in children if dev["device_id"] not in items_to_remove
