@@ -171,6 +171,16 @@ class FakeSmartTransport(BaseTransport):
                 "setup_payload": "00:0000000-0000.00.000",
             },
         ),
+        # child setup
+        "get_support_child_device_category": (
+            "child_quick_setup",
+            {"device_category_list": [{"category": "subg.trv"}]},
+        ),
+        # no devices found
+        "get_scan_child_device_list": (
+            "child_quick_setup",
+            {"child_device_list": [{"dummy": "response"}], "scan_status": "idle"},
+        ),
     }
 
     def _missing_result(self, method):
@@ -548,6 +558,17 @@ class FakeSmartTransport(BaseTransport):
 
         return {"error_code": 0}
 
+    def _hub_remove_device(self, info, params):
+        """Remove hub device."""
+        items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
+        children = info["get_child_device_list"]["child_device_list"]
+        new_children = [
+            dev for dev in children if dev["device_id"] not in items_to_remove
+        ]
+        info["get_child_device_list"]["child_device_list"] = new_children
+
+        return {"error_code": 0}
+
     def get_child_device_queries(self, method, params):
         return self._get_method_from_info(method, params)
 
@@ -658,8 +679,15 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
-        # Vacuum special actions
-        elif method in ["playSelectAudio"]:
+        elif method == "remove_child_device_list":
+            return self._hub_remove_device(info, params)
+        # actions
+        elif method in [
+            "begin_scanning_child_device",  # hub pairing
+            "add_child_device_list",  # hub pairing
+            "remove_child_device_list",  # hub pairing
+            "playSelectAudio",  # vacuum special actions
+        ]:
             return {"error_code": 0}
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"

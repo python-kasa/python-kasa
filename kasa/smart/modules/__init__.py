@@ -8,6 +8,7 @@ from .brightness import Brightness
 from .childdevice import ChildDevice
 from .childlock import ChildLock
 from .childprotection import ChildProtection
+from .childsetup import ChildSetup
 from .clean import Clean
 from .cloud import Cloud
 from .color import Color
@@ -47,6 +48,7 @@ __all__ = [
     "DeviceModule",
     "ChildDevice",
     "ChildLock",
+    "ChildSetup",
     "BatterySensor",
     "HumiditySensor",
     "TemperatureSensor",
