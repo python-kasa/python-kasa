@@ -10,6 +10,7 @@ from .childlock import ChildLock
 from .childprotection import ChildProtection
 from .childsetup import ChildSetup
 from .clean import Clean
+from .cleanrecords import CleanRecords
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
@@ -75,6 +76,7 @@ __all__ = [
     "FrostProtection",
     "Thermostat",
     "Clean",
+    "CleanRecords",
     "SmartLightEffect",
     "OverheatProtection",
     "Speaker",

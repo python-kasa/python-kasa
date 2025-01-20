@@ -180,16 +180,56 @@
     },
     "getCleanRecords": {
         "lastest_day_record": [
-            0,
-            0,
-            0,
-            0
+            1736797545,
+            25,
+            16,
+            1
         ],
-        "record_list": [],
-        "record_list_num": 0,
-        "total_area": 0,
-        "total_number": 0,
-        "total_time": 0
+        "record_list": [
+            {
+                "clean_area": 17,
+                "clean_time": 27,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 1,
+                "map_id": 1736598799,
+                "message": 1,
+                "record_index": 0,
+                "start_type": 1,
+                "task_type": 0,
+                "timestamp": 1736601522
+            },
+            {
+                "clean_area": 14,
+                "clean_time": 25,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1736598799,
+                "message": 0,
+                "record_index": 1,
+                "start_type": 1,
+                "task_type": 0,
+                "timestamp": 1736684961
+            },
+            {
+                "clean_area": 16,
+                "clean_time": 25,
+                "dust_collection": true,
+                "error": 0,
+                "info_num": 3,
+                "map_id": 1736598799,
+                "message": 0,
+                "record_index": 2,
+                "start_type": 1,
+                "task_type": 0,
+                "timestamp": 1736797545
+            }
+        ],
+        "record_list_num": 3,
+        "total_area": 47,
+        "total_number": 3,
+        "total_time": 77
     },
     "getCleanStatus": {
         "getCleanStatus": {
