@@ -66,4 +66,5 @@ repos:
     language: python
     additional_dependencies: [uv]
     types: [json]
+    require_serial: true
     pass_filenames: false # passing filenames causes the hook to run in batches against all-files
