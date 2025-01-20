@@ -5,6 +5,7 @@ from .babycrydetection import BabyCryDetection
 from .battery import Battery
 from .camera import Camera
 from .childdevice import ChildDevice
+from .childsetup import ChildSetup
 from .device import DeviceModule
 from .homekit import HomeKit
 from .led import Led
@@ -23,6 +24,7 @@ __all__ = [
     "Battery",
     "Camera",
     "ChildDevice",
+    "ChildSetup",
     "DeviceModule",
     "Led",
     "PanTilt",

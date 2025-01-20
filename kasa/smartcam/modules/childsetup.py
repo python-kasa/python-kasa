@@ -1,0 +1,99 @@
+"""Implementation for child device setup.
+
+This module allows pairing and disconnecting child devices.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+
+from ...feature import Feature
+from ..smartcammodule import SmartCamModule
+
+_LOGGER = logging.getLogger(__name__)
+
+
+class ChildSetup(SmartCamModule):
+    """Implementation for child device setup."""
+
+    REQUIRED_COMPONENT = "childQuickSetup"
+    QUERY_GETTER_NAME = "getSupportChildDeviceCategory"
+    QUERY_MODULE_NAME = "childControl"
+    _categories: list[str] = []
+
+    def _initialize_features(self) -> None:
+        """Initialize features."""
+        self._add_feature(
+            Feature(
+                self._device,
+                id="pair",
+                name="Pair",
+                container=self,
+                attribute_setter="pair",
+                category=Feature.Category.Config,
+                type=Feature.Type.Action,
+            )
+        )
+
+    async def _post_update_hook(self) -> None:
+        if not self._categories:
+            self._categories = [
+                cat["category"].replace("ipcamera", "camera")
+                for cat in self.data["device_category_list"]
+            ]
+
+    async def pair(self, *, timeout: int = 10) -> list[dict]:
+        """Scan for new devices and pair after discovering first new device."""
+        await self.call(
+            "startScanChildDevice", {"childControl": {"category": self._categories}}
+        )
+
+        _LOGGER.info("Waiting %s seconds for discovering new devices", timeout)
+
+        await asyncio.sleep(timeout)
+        res = await self.call(
+            "getScanChildDeviceList", {"childControl": {"category": self._categories}}
+        )
+
+        detected_list = res["getScanChildDeviceList"]["child_device_list"]
+        if not detected_list:
+            detected_list = await self.call(
+                "getScanChildDeviceList",
+                {"childControl": {"category": self._categories}},
+            )
+            _LOGGER.info("No devices found.")
+            return []
+
+        _LOGGER.info(
+            "Discovery done, found %s devices: %s",
+            len(detected_list),
+            detected_list,
+        )
+
+        await self.call(
+            "addScanChildDeviceList",
+            {"childControl": {"child_device_list": detected_list}},
+        )
+
+        await self._device.update()
+
+        successes = []
+        for detected in detected_list:
+            device_id = detected["device_id"]
+            if device_id in self._device._children:
+                result = "added"
+                successes.append(detected)
+            else:
+                result = "not added"
+            msg = f"{detected['device_model']} - {device_id} - {result}"
+            _LOGGER.info("Adding child to %s: %s", self._device.host, msg)
+
+        return successes
+
+    async def unpair(self, device_id: str) -> dict:
+        """Remove device from the hub."""
+        _LOGGER.debug("Going to unpair %s from %s", device_id, self)
+
+        payload = {"childControl": {"child_device_list": [{"device_id": device_id}]}}
+        return await self.call("removeChildDeviceList", payload)
