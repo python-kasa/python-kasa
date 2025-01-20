@@ -1,11 +1,19 @@
+# Required for uv-sync hook
+default_install_hook_types:
+  - pre-commit
+  - post-checkout
+  - post-merge
+  - post-rewrite
+
 repos:
 
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
-  rev: 0.4.16
+  rev: 0.5.21
   hooks:
     # Update the uv lockfile
     - id: uv-lock
+    - id: uv-sync
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.6.0
@@ -37,11 +45,14 @@ repos:
 - repo: local
   hooks:
   # Run mypy in the virtual environment so it uses the installed dependencies
-  # for more accurate checking than using the pre-commit mypy mirror
+  # for more accurate checking than using the pre-commit mypy mirror.
+  # Even though pre-commit creates a virtual environment, the uv run command
+  # will ignore it and use the correct .venv environment
   - id: mypy
     name: mypy
-    entry: uv run mypy
-    language: system
+    entry: uv run --all-extras mypy
+    language: python
+    additional_dependencies: [uv]
     types_or: [python, pyi]
     require_serial: true
     exclude: |  # exclude required because --all-files passes py and pyi
@@ -52,6 +63,7 @@ repos:
     name: Generate supported devices
     description: This hook generates the supported device sections of README.md and SUPPORTED.md
     entry: uv run ./devtools/generate_supported.py
-    language: system # Required or pre-commit creates a new venv
+    language: python
+    additional_dependencies: [uv]
     types: [json]
     pass_filenames: false # passing filenames causes the hook to run in batches against all-files
