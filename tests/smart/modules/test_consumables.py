@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 
 from kasa import Module
 from kasa.smart import SmartDevice
-from kasa.smart.modules.consumables import CONSUMABLES
+from kasa.smart.modules.consumables import CONSUMABLE_METAS
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
@@ -18,7 +18,7 @@ consumables = parametrize(
 
 @consumables
 @pytest.mark.parametrize(
-    "consumable_name", [consumable.feature_basename for consumable in CONSUMABLES]
+    "consumable_name", [consumable.id for consumable in CONSUMABLE_METAS]
 )
 @pytest.mark.parametrize("postfix", ["used", "remaining"])
 async def test_features(dev: SmartDevice, consumable_name: str, postfix: str):
@@ -35,7 +35,7 @@ async def test_features(dev: SmartDevice, consumable_name: str, postfix: str):
 @consumables
 @pytest.mark.parametrize(
     ("consumable_name", "data_key"),
-    [(consumable.feature_basename, consumable.data_key) for consumable in CONSUMABLES],
+    [(consumable.id, consumable.data_key) for consumable in CONSUMABLE_METAS],
 )
 async def test_erase(
     dev: SmartDevice, mocker: MockerFixture, consumable_name: str, data_key: str
