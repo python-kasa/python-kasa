@@ -545,6 +545,21 @@ class SmartDevice(Device):
             )
         )
 
+        if self.parent is not None and (
+            cs := self.parent.modules.get(Module.ChildSetup)
+        ):
+            self._add_feature(
+                Feature(
+                    device=self,
+                    id="unpair",
+                    name="Unpair device",
+                    container=cs,
+                    attribute_setter=lambda: cs.unpair(self.device_id),
+                    category=Feature.Category.Debug,
+                    type=Feature.Type.Action,
+                )
+            )
+
         for module in self.modules.values():
             module._initialize_features()
             for feat in module._module_features.values():

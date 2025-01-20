@@ -165,6 +165,9 @@
     "getCarpetClean": {
         "carpet_clean_prefer": "boost"
     },
+    "getChildLockInfo": {
+        "child_lock_status": false
+    },
     "getCleanAttr": {
         "cistern": 2,
         "clean_number": 1,

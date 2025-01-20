@@ -76,6 +76,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .device import Device
+    from .module import Module
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -142,7 +143,7 @@ class Feature:
     #: Callable coroutine or name of the method that allows changing the value
     attribute_setter: str | Callable[..., Coroutine[Any, Any, Any]] | None = None
     #: Container storing the data, this overrides 'device' for getters
-    container: Any = None
+    container: Device | Module | None = None
     #: Icon suggestion
     icon: str | None = None
     #: Attribute containing the name of the unit getter property.

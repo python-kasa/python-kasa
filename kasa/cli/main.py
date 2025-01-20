@@ -94,6 +94,7 @@ def _legacy_type_to_class(_type: str) -> Any:
         "temperature": "light",
         "effect": "light",
         "vacuum": "vacuum",
+        "hub": "hub",
     },
     result_callback=json_formatter_cb,
 )
