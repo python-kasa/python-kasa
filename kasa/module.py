@@ -152,7 +152,9 @@ class Module(ABC):
     ChildProtection: Final[ModuleName[smart.ChildProtection]] = ModuleName(
         "ChildProtection"
     )
+    ChildLock: Final[ModuleName[smart.ChildLock]] = ModuleName("ChildLock")
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+    ChildSetup: Final[ModuleName[smart.ChildSetup]] = ModuleName("ChildSetup")
 
     HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("HomeKit")
     Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")
@@ -167,6 +169,7 @@ class Module(ABC):
     Dustbin: Final[ModuleName[smart.Dustbin]] = ModuleName("Dustbin")
     Speaker: Final[ModuleName[smart.Speaker]] = ModuleName("Speaker")
     Mop: Final[ModuleName[smart.Mop]] = ModuleName("Mop")
+    CleanRecords: Final[ModuleName[smart.CleanRecords]] = ModuleName("CleanRecords")
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device
