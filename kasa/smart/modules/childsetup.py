@@ -63,6 +63,8 @@ class ChildSetup(SmartModule):
 
     async def unpair(self, device_id: str) -> dict:
         """Remove device from the hub."""
+        _LOGGER.debug("Going to unpair %s from %s", device_id, self)
+
         payload = {"child_device_list": [{"device_id": device_id}]}
         return await self.call("remove_child_device_list", payload)
 

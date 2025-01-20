@@ -1004,6 +1004,8 @@ async def test_unpair(dev: SmartDevice, mocker: MockerFixture):
 
     unpair_call = mocker.spy(cs, "unpair")
 
-    await child.unpair()
+    unpair_feat = child.features.get("unpair")
+    assert unpair_feat
+    await unpair_feat.set_value(None)
 
     unpair_call.assert_called_with(child.device_id)
