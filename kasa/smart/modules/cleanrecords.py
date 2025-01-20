@@ -200,6 +200,6 @@ class CleanRecords(SmartModule):
         return clean.area_unit
 
     @property
-    def clean_records(self) -> Records:
+    def parsed_data(self) -> Records:
         """Return parsed records data."""
         return self._parsed_data

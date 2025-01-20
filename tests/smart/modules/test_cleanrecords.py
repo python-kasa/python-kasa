@@ -53,7 +53,7 @@ async def test_timezone(dev: SmartDevice):
     # of utc before the time module is updated.
     assert isinstance(clean_records.last_clean_timestamp.tzinfo, ZoneInfo)
 
-    for record in clean_records.clean_records.records:
+    for record in clean_records.parsed_data.records:
         assert isinstance(record.timestamp, datetime)
         assert record.timestamp.tzinfo
         assert isinstance(record.timestamp.tzinfo, ZoneInfo)
