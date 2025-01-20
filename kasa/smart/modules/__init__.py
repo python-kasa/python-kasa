@@ -14,6 +14,7 @@ from .cleanrecords import CleanRecords
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
+from .consumables import Consumables
 from .contactsensor import ContactSensor
 from .devicemodule import DeviceModule
 from .dustbin import Dustbin
@@ -76,6 +77,7 @@ __all__ = [
     "FrostProtection",
     "Thermostat",
     "Clean",
+    "Consumables",
     "CleanRecords",
     "SmartLightEffect",
     "OverheatProtection",

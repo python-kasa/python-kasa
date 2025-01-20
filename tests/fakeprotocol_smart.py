@@ -687,6 +687,7 @@ class FakeSmartTransport(BaseTransport):
             "add_child_device_list",  # hub pairing
             "remove_child_device_list",  # hub pairing
             "playSelectAudio",  # vacuum special actions
+            "resetConsumablesTime",  # vacuum special actions
         ]:
             return {"error_code": 0}
         elif method[:3] == "set":

@@ -51,3 +51,34 @@ async def records_list(dev: Device) -> None:
             f"* {record.timestamp}: cleaned {record.clean_area} {rec.area_unit}"
             f" in {record.clean_time}"
         )
+
+
+@vacuum.group(invoke_without_command=True, name="consumables")
+@pass_dev_or_child
+@click.pass_context
+async def consumables(ctx: click.Context, dev: Device) -> None:
+    """List device consumables."""
+    if not (cons := dev.modules.get(Module.Consumables)):
+        error("This device does not support consumables.")
+
+    if not ctx.invoked_subcommand:
+        for c in cons.consumables.values():
+            click.echo(f"{c.name} ({c.id}): {c.used} used, {c.remaining} remaining")
+
+
+@consumables.command(name="reset")
+@click.argument("consumable_id", required=True)
+@pass_dev_or_child
+async def reset_consumable(dev: Device, consumable_id: str) -> None:
+    """Reset the consumable used/remaining time."""
+    cons = dev.modules[Module.Consumables]
+
+    if consumable_id not in cons.consumables:
+        error(
+            f"Consumable {consumable_id} not found in "
+            f"device consumables: {', '.join(cons.consumables.keys())}."
+        )
+
+    await cons.reset_consumable(consumable_id)
+
+    click.echo(f"Consumable {consumable_id} reset")
