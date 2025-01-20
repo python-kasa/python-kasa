@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -37,3 +38,22 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
     feat = records._device.features[feature]
     assert feat.value == prop
     assert isinstance(feat.value, type)
+
+
+@cleanrecords
+async def test_timezone(dev: SmartDevice):
+    """Test that timezone is added to timestamps."""
+    clean_records = next(get_parent_and_child_modules(dev, Module.CleanRecords))
+    assert clean_records is not None
+
+    assert isinstance(clean_records.last_clean_timestamp, datetime)
+    assert clean_records.last_clean_timestamp.tzinfo
+
+    # Check for zone info to ensure that this wasn't picking upthe default
+    # of utc before the time module is updated.
+    assert isinstance(clean_records.last_clean_timestamp.tzinfo, ZoneInfo)
+
+    for record in clean_records.clean_records.records:
+        assert isinstance(record.timestamp, datetime)
+        assert record.timestamp.tzinfo
+        assert isinstance(record.timestamp.tzinfo, ZoneInfo)

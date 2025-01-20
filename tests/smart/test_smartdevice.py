@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import logging
 import time
+from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
@@ -100,7 +101,7 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     # As the fixture data is already initialized, we reset the state for testing
     dev._components_raw = None
     dev._components = {}
-    dev._modules = {}
+    dev._modules = OrderedDict()
     dev._features = {}
     dev._children = {}
     dev._last_update = {}
