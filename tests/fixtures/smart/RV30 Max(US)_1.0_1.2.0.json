@@ -1,0 +1,888 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "clean",
+                "ver_code": 3
+            },
+            {
+                "id": "battery",
+                "ver_code": 1
+            },
+            {
+                "id": "consumables",
+                "ver_code": 2
+            },
+            {
+                "id": "direction_control",
+                "ver_code": 1
+            },
+            {
+                "id": "button_and_led",
+                "ver_code": 1
+            },
+            {
+                "id": "speaker",
+                "ver_code": 3
+            },
+            {
+                "id": "schedule",
+                "ver_code": 3
+            },
+            {
+                "id": "wireless",
+                "ver_code": 1
+            },
+            {
+                "id": "map",
+                "ver_code": 2
+            },
+            {
+                "id": "auto_change_map",
+                "ver_code": 2
+            },
+            {
+                "id": "mop",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "do_not_disturb",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "charge_pose_clean",
+                "ver_code": 1
+            },
+            {
+                "id": "continue_breakpoint_sweep",
+                "ver_code": 1
+            },
+            {
+                "id": "goto_point",
+                "ver_code": 1
+            },
+            {
+                "id": "furniture",
+                "ver_code": 1
+            },
+            {
+                "id": "map_cloud_backup",
+                "ver_code": 1
+            },
+            {
+                "id": "dev_log",
+                "ver_code": 1
+            },
+            {
+                "id": "map_lock",
+                "ver_code": 1
+            },
+            {
+                "id": "carpet_area",
+                "ver_code": 1
+            },
+            {
+                "id": "clean_angle",
+                "ver_code": 1
+            },
+            {
+                "id": "clean_percent",
+                "ver_code": 1
+            },
+            {
+                "id": "no_pose_config",
+                "ver_code": 1
+            }
+        ]
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "RV30 Max(US)",
+            "device_type": "SMART.TAPOROBOVAC",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "7C-F1-7E-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "KLAP",
+                "http_port": 4433,
+                "is_support_https": true
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000",
+            "protocol_version": 1
+        }
+    },
+    "getAreaUnit": {
+        "area_unit": 1
+    },
+    "getAutoChangeMap": {
+        "auto_change_map": true
+    },
+    "getBatteryInfo": {
+        "battery_percentage": 100
+    },
+    "getCarpetClean": {
+        "carpet_clean_prefer": "boost"
+    },
+    "getChildLockInfo": {
+        "child_lock_status": false
+    },
+    "getCleanAttr": {
+        "cistern": 1,
+        "clean_number": 1,
+        "suction": 2
+    },
+    "getCleanInfo": {
+        "clean_area": 59,
+        "clean_percent": 100,
+        "clean_time": 56
+    },
+    "getCleanRecords": {
+        "lastest_day_record": [
+            1737387294,
+            56,
+            59,
+            1
+        ],
+        "record_list": [
+            {
+                "clean_area": 59,
+                "clean_time": 57,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 0,
+                "start_type": 4,
+                "task_type": 0,
+                "timestamp": 1737041654
+            },
+            {
+                "clean_area": 39,
+                "clean_time": 58,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 1,
+                "map_id": 1736541042,
+                "message": 0,
+                "record_index": 1,
+                "start_type": 1,
+                "task_type": 0,
+                "timestamp": 1737055944
+            },
+            {
+                "clean_area": 1,
+                "clean_time": 3,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 2,
+                "start_type": 1,
+                "task_type": 4,
+                "timestamp": 1737074472
+            },
+            {
+                "clean_area": 59,
+                "clean_time": 58,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 3,
+                "start_type": 4,
+                "task_type": 0,
+                "timestamp": 1737128195
+            },
+            {
+                "clean_area": 68,
+                "clean_time": 78,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 2,
+                "map_id": 1736541042,
+                "message": 0,
+                "record_index": 4,
+                "start_type": 1,
+                "task_type": 1,
+                "timestamp": 1737216716
+            },
+            {
+                "clean_area": 3,
+                "clean_time": 3,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734742958,
+                "message": 0,
+                "record_index": 5,
+                "start_type": 1,
+                "task_type": 3,
+                "timestamp": 1737300731
+            },
+            {
+                "clean_area": 20,
+                "clean_time": 16,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734742958,
+                "message": 0,
+                "record_index": 6,
+                "start_type": 1,
+                "task_type": 3,
+                "timestamp": 1737304391
+            },
+            {
+                "clean_area": 59,
+                "clean_time": 56,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 7,
+                "start_type": 4,
+                "task_type": 0,
+                "timestamp": 1737387294
+            },
+            {
+                "clean_area": 17,
+                "clean_time": 16,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 8,
+                "start_type": 1,
+                "task_type": 3,
+                "timestamp": 1736707487
+            },
+            {
+                "clean_area": 8,
+                "clean_time": 10,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 9,
+                "start_type": 1,
+                "task_type": 4,
+                "timestamp": 1736708425
+            },
+            {
+                "clean_area": 59,
+                "clean_time": 54,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 10,
+                "start_type": 4,
+                "task_type": 0,
+                "timestamp": 1736782261
+            },
+            {
+                "clean_area": 60,
+                "clean_time": 56,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 11,
+                "start_type": 4,
+                "task_type": 0,
+                "timestamp": 1736868752
+            },
+            {
+                "clean_area": 58,
+                "clean_time": 68,
+                "dust_collection": true,
+                "error": 1,
+                "info_num": 0,
+                "map_id": 1736541042,
+                "message": 0,
+                "record_index": 12,
+                "start_type": 1,
+                "task_type": 1,
+                "timestamp": 1736881428
+            },
+            {
+                "clean_area": 59,
+                "clean_time": 59,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 13,
+                "start_type": 4,
+                "task_type": 0,
+                "timestamp": 1736955682
+            },
+            {
+                "clean_area": 36,
+                "clean_time": 33,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1734727686,
+                "message": 0,
+                "record_index": 14,
+                "start_type": 1,
+                "task_type": 4,
+                "timestamp": 1736960713
+            }
+        ],
+        "record_list_num": 15,
+        "total_area": 2304,
+        "total_number": 85,
+        "total_time": 2510
+    },
+    "getCleanStatus": {
+        "clean_status": 0,
+        "is_mapping": false,
+        "is_relocating": false,
+        "is_working": false
+    },
+    "getConsumablesInfo": {
+        "charge_contact_time": 660,
+        "edge_brush_time": 2743,
+        "filter_time": 287,
+        "main_brush_lid_time": 2462,
+        "rag_time": 0,
+        "roll_brush_time": 2719,
+        "sensor_time": 935
+    },
+    "getCurrentVoiceLanguage": {
+        "name": "bb053ca2c5605a55090fcdb952f3902b",
+        "version": 2
+    },
+    "getDoNotDisturb": {
+        "do_not_disturb": true,
+        "e_min": 480,
+        "s_min": 1320
+    },
+    "getMapData": {
+        "area_list": [
+            {
+                "cistern": 1,
+                "clean_number": 1,
+                "color": 3,
+                "floor_texture": -1,
+                "id": 5,
+                "name": "I01BU0tFRF9OQU1FIwo=",
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "cistern": 1,
+                "clean_number": 1,
+                "color": 4,
+                "floor_texture": -1,
+                "id": 6,
+                "name": "I01BU0tFRF9OQU1FIwo=",
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "cistern": 1,
+                "clean_number": 1,
+                "color": 1,
+                "floor_texture": 0,
+                "id": 2,
+                "name": "I01BU0tFRF9OQU1FIwo=",
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "cistern": 1,
+                "clean_number": 1,
+                "color": 5,
+                "floor_texture": 90,
+                "id": 3,
+                "name": "I01BU0tFRF9OQU1FIwo=",
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "cistern": 1,
+                "clean_number": 1,
+                "color": 2,
+                "floor_texture": -1,
+                "id": 4,
+                "name": "I01BU0tFRF9OQU1FIwo=",
+                "suction": 2,
+                "type": "room"
+            },
+            {
+                "id": 401,
+                "type": "virtual_wall",
+                "vertexs": [
+                    [
+                        4711,
+                        985
+                    ],
+                    [
+                        4717,
+                        -404
+                    ]
+                ]
+            },
+            {
+                "id": 301,
+                "type": "forbid",
+                "vertexs": [
+                    [
+                        3061,
+                        -3027
+                    ],
+                    [
+                        3580,
+                        -3027
+                    ],
+                    [
+                        3580,
+                        -3692
+                    ],
+                    [
+                        3061,
+                        -3692
+                    ]
+                ]
+            },
+            {
+                "id": 402,
+                "type": "virtual_wall",
+                "vertexs": [
+                    [
+                        5302,
+                        6816
+                    ],
+                    [
+                        5304,
+                        4924
+                    ]
+                ]
+            },
+            {
+                "cistern": -1,
+                "clean_number": 1,
+                "id": 501,
+                "suction": -1,
+                "type": "area",
+                "vertexs": [
+                    [
+                        2889,
+                        6241
+                    ],
+                    [
+                        3721,
+                        6241
+                    ],
+                    [
+                        3721,
+                        4919
+                    ],
+                    [
+                        2889,
+                        4919
+                    ]
+                ]
+            },
+            {
+                "carpet_strategy": 11,
+                "id": 101,
+                "type": "carpet_rectangle",
+                "vertexs": [
+                    [
+                        20,
+                        -2012
+                    ],
+                    [
+                        2857,
+                        -2012
+                    ],
+                    [
+                        2857,
+                        -4122
+                    ],
+                    [
+                        20,
+                        -4122
+                    ]
+                ]
+            },
+            {
+                "carpet_strategy": 11,
+                "id": 102,
+                "type": "carpet_rectangle",
+                "vertexs": [
+                    [
+                        1327,
+                        3064
+                    ],
+                    [
+                        2428,
+                        3064
+                    ],
+                    [
+                        2428,
+                        2258
+                    ],
+                    [
+                        1327,
+                        2258
+                    ]
+                ]
+            },
+            {
+                "carpet_strategy": 11,
+                "id": 103,
+                "type": "carpet_rectangle",
+                "vertexs": [
+                    [
+                        4458,
+                        5974
+                    ],
+                    [
+                        5336,
+                        5974
+                    ],
+                    [
+                        5336,
+                        4903
+                    ],
+                    [
+                        4458,
+                        4903
+                    ]
+                ]
+            },
+            {
+                "carpet_strategy": 11,
+                "id": 104,
+                "type": "carpet_rectangle",
+                "vertexs": [
+                    [
+                        -1383,
+                        2730
+                    ],
+                    [
+                        -761,
+                        2730
+                    ],
+                    [
+                        -761,
+                        1587
+                    ],
+                    [
+                        -1383,
+                        1587
+                    ]
+                ]
+            }
+        ],
+        "auto_area_flag": true,
+        "bit_list": {
+            "auto_area": [
+                0,
+                100
+            ],
+            "barrier": 0,
+            "clean": 255,
+            "none": 127
+        },
+        "bitnum": 8,
+        "charge_coor": [
+            65,
+            134,
+            272
+        ],
+        "furniture_list": [],
+        "height": 303,
+        "map_data": "#SCRUBBED_MAPDATA#",
+        "map_hash": "A5D8FA4487CC40312EF58D8123F0A4CC",
+        "map_id": 1734727686,
+        "map_locked": 0,
+        "map_name": "I01BU0tFRF9OQU1FIwo=",
+        "origin_coor": [
+            -33,
+            -108,
+            270
+        ],
+        "path_id": 122,
+        "pix_len": 66660,
+        "pix_lz4len": 6826,
+        "real_charge_coor": [
+            1599,
+            1295,
+            272
+        ],
+        "real_origin_coor": [
+            -1674,
+            -5424,
+            270
+        ],
+        "real_vac_coor": [
+            1599,
+            1076,
+            272
+        ],
+        "resolution": 50,
+        "resolution_unit": "mm",
+        "vac_coor": [
+            65,
+            130,
+            272
+        ],
+        "version": "LDS",
+        "width": 220
+    },
+    "getMapInfo": {
+        "auto_change_map": true,
+        "current_map_id": 1734727686,
+        "map_list": [
+            {
+                "auto_area_flag": true,
+                "global_cleaned": -1,
+                "is_saved": true,
+                "map_id": 1734727686,
+                "map_locked": 0,
+                "map_name": "I01BU0tFRF9OQU1FIwo=",
+                "rotate_angle": 270,
+                "update_time": 1737387285
+            },
+            {
+                "auto_area_flag": true,
+                "global_cleaned": -1,
+                "is_saved": true,
+                "map_id": 1734742958,
+                "map_locked": 0,
+                "map_name": "I01BU0tFRF9OQU1FIwo=",
+                "rotate_angle": 0,
+                "update_time": 1737304392
+            },
+            {
+                "auto_area_flag": true,
+                "global_cleaned": -1,
+                "is_saved": true,
+                "map_id": 1736541042,
+                "map_locked": 0,
+                "map_name": "I01BU0tFRF9OQU1FIwo=",
+                "rotate_angle": 270,
+                "update_time": 1737216718
+            }
+        ],
+        "map_num": 3,
+        "version": "LDS"
+    },
+    "getMopState": {
+        "mop_state": false
+    },
+    "getVacStatus": {
+        "err_status": [
+            0
+        ],
+        "errorCode_id": [
+            1144500830
+        ],
+        "prompt": [],
+        "promptCode_id": [],
+        "status": 6
+    },
+    "getVolume": {
+        "volume": 60
+    },
+    "get_device_info": {
+        "auto_pack_ver": "0.0.131.1852",
+        "avatar": "",
+        "board_sn": "000000000000",
+        "cd": "I01BU0tFRF9CSU5BUlkjCg==",
+        "custom_sn": "000000000000",
+        "device_id": "0000000000000000000000000000000000000000",
+        "fw_id": "00000000000000000000000000000000",
+        "fw_ver": "1.2.0 Build 241219 Rel.163928",
+        "has_set_location_info": true,
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "ip": "127.0.0.123",
+        "lang": "",
+        "latitude": 0,
+        "linux_ver": "V21.198.1708420747",
+        "location": "",
+        "longitude": 0,
+        "mac": "7C-F1-7E-00-00-00",
+        "mcu_ver": "1.1.2724.442",
+        "model": "RV30 Max",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "overheated": false,
+        "product_id": "1794",
+        "region": "America/Chicago",
+        "rssi": -38,
+        "signal_level": 3,
+        "specs": "",
+        "ssid": "I01BU0tFRF9TU0lEIw==",
+        "sub_ver": "0.0.131.1852-1.4.40",
+        "time_diff": -360,
+        "total_ver": "1.4.40",
+        "type": "SMART.TAPOROBOVAC"
+    },
+    "get_device_time": {
+        "region": "America/Chicago",
+        "time_diff": -360,
+        "timestamp": 1737399953
+    },
+    "get_fw_download_state": {
+        "auto_upgrade": false,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_inherit_info": {
+        "inherit_status": true
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.2.0 Build 241219 Rel.163928",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_schedule_rules": {
+        "enable": true,
+        "rule_list": [
+            {
+                "alarm_min": 0,
+                "cancel": false,
+                "clean_attr": {
+                    "cistern": 2,
+                    "clean_mode": 0,
+                    "clean_number": 1,
+                    "clean_order": false,
+                    "suction": 2
+                },
+                "day": 21,
+                "enable": true,
+                "id": "S1",
+                "invalid": 0,
+                "mode": "repeat",
+                "month": 1,
+                "s_min": 515,
+                "start_remind": true,
+                "week_day": 62,
+                "year": 2025
+            }
+        ],
+        "schedule_rule_max_count": 32,
+        "start_index": 0,
+        "sum": 1
+    },
+    "get_wireless_scan_info": {
+        "ap_list": [
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 3,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            },
+            {
+                "key_type": "wpa2_psk",
+                "signal_level": 1,
+                "ssid": "I01BU0tFRF9TU0lEIw=="
+            }
+        ],
+        "start_index": 0,
+        "sum": 5,
+        "wep_supported": true
+    },
+    "qs_component_nego": {
+        "component_list": [
+            {
+                "id": "quick_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "ble_whole_setup",
+                "ver_code": 1
+            },
+            {
+                "id": "inherit",
+                "ver_code": 1
+            }
+        ],
+        "extra_info": {
+            "device_model": "RV30 Max",
+            "device_type": "SMART.TAPOROBOVAC"
+        }
+    }
+}

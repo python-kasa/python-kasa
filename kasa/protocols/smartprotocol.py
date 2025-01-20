@@ -71,6 +71,9 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "custom_sn": lambda _: "000000000000",
     "location": lambda x: "#MASKED_NAME#" if x else "",
     "map_data": lambda x: "#SCRUBBED_MAPDATA#" if x else "",
+    "map_name": lambda x: "I01BU0tFRF9OQU1FIwo=",  # #MASKED_NAME#
+    # unknown robovac binary blob in get_device_info
+    "cd": lambda x: "I01BU0tFRF9CSU5BUlkjCg==",  # #MASKED_BINARY#
 }
 
 # Queries that are known not to work properly when sent as a
