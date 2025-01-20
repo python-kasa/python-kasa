@@ -28,7 +28,7 @@ async def records_group(dev: Device) -> None:
     if not (rec := dev.modules.get(Module.CleanRecords)):
         error("This device does not support records.")
 
-    data = rec.parsed_data
+    data = rec.clean_records
     latest = data.last_clean
     click.echo(
         f"Totals: {rec.total_clean_area} {rec.area_unit} in {rec.total_clean_time} "
@@ -45,7 +45,7 @@ async def records_list(dev: Device) -> None:
     if not (rec := dev.modules.get(Module.CleanRecords)):
         error("This device does not support records.")
 
-    data = rec.parsed_data
+    data = rec.clean_records
     for record in data.records:
         click.echo(
             f"* {record.timestamp}: cleaned {record.clean_area} {rec.area_unit}"
