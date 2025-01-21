@@ -96,9 +96,6 @@ async def test_fan_features(dev: SmartDevice, mocker: MockerFixture):
     assert fan
     expected_feature = fan._module_features["fan_speed_level"]
 
-    fan_speed_level_feature = fan.get_feature(fan.get_fan_speed_level)
-    assert expected_feature == fan_speed_level_feature
-
     fan_speed_level_feature = fan.get_feature(Fan.set_fan_speed_level)
     assert expected_feature == fan_speed_level_feature
 

@@ -191,7 +191,7 @@ class Light(Module, ABC):
             res = self._deprecated_valid_temperature_range()
             msg = (
                 "valid_temperature_range is deprecated, use "
-                "get_feature(self.set_color_temp) minimum_value "
+                'get_feature("color_temp") minimum_value '
                 " and maximum_value instead"
             )
             warn(msg, DeprecationWarning, stacklevel=2)
@@ -199,8 +199,8 @@ class Light(Module, ABC):
 
         if name == "has_effects":
             msg = (
-                "has_effects is deprecated, use Module.LightEffect "
-                "in device.modules instead"
+                "has_effects is deprecated, check `Module.LightEffect "
+                "in device.modules` instead"
             )
             warn(msg, DeprecationWarning, stacklevel=2)
             return Module.LightEffect in self._device.modules

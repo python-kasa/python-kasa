@@ -542,27 +542,27 @@ class Device(ABC):
             "is_dimmable": (
                 Module.Light,
                 lambda c: c.has_feature("brightness"),
-                "light_module.has_feature('brightness')",
+                'light_module.has_feature("brightness")',
             ),
             "is_color": (
                 Module.Light,
                 lambda c: c.has_feature("hsv"),
-                "light_module.has_feature('hsv')",
+                'light_module.has_feature("hsv")',
             ),
             "is_variable_color_temp": (
                 Module.Light,
                 lambda c: c.has_feature("color_temp"),
-                "light_module.has_feature('color_temp')",
+                'light_module.has_feature("color_temp")',
             ),
             "valid_temperature_range": (
                 Module.Light,
                 lambda c: c._deprecated_valid_temperature_range(),
-                "minimum and maximum value of get_feature('color_temp')",
+                'minimum and maximum value of get_feature("color_temp")',
             ),
             "has_effects": (
                 Module.Light,
                 lambda c: Module.LightEffect in c._device.modules,
-                "Module.LightEffect in c._device.modules",
+                "Module.LightEffect in device.modules",
             ),
         }
         if mod_call_msg := vals.get(name):
