@@ -93,6 +93,8 @@ class KlapTransport(BaseTransport):
     """
 
     DEFAULT_PORT: int = 80
+    DEFAULT_HTTPS_PORT: int = 4433
+
     SESSION_COOKIE_NAME = "TP_SESSIONID"
     TIMEOUT_COOKIE_NAME = "TIMEOUT"
     # Copy & paste from sslaestransport
@@ -144,6 +146,13 @@ class KlapTransport(BaseTransport):
     @property
     def default_port(self) -> int:
         """Default port for the transport."""
+        config = self._config
+        if port := config.connection_type.http_port:
+            return port
+
+        if config.connection_type.https:
+            return self.DEFAULT_HTTPS_PORT
+
         return self.DEFAULT_PORT
 
     @property

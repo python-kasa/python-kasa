@@ -637,10 +637,10 @@ class Discover:
             Device.Family.IotIpCamera,
         }
         candidates: dict[
-            tuple[type[BaseProtocol], type[BaseTransport], type[Device]],
+            tuple[type[BaseProtocol], type[BaseTransport], type[Device], bool],
             tuple[BaseProtocol, DeviceConfig],
         ] = {
-            (type(protocol), type(protocol._transport), device_class): (
+            (type(protocol), type(protocol._transport), device_class, https): (
                 protocol,
                 config,
             )
@@ -870,8 +870,9 @@ class Discover:
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
                 encrypt_type,
-                login_version,
-                encrypt_schm.is_support_https,
+                login_version=login_version,
+                https=encrypt_schm.is_support_https,
+                http_port=encrypt_schm.http_port,
             )
         except KasaException as ex:
             raise UnsupportedDeviceError(

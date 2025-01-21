@@ -63,8 +63,9 @@ def _get_connection_type_device_class(discovery_info):
         connection_type = DeviceConnectionParameters.from_values(
             dr.device_type,
             dr.mgt_encrypt_schm.encrypt_type,
-            dr.mgt_encrypt_schm.lv,
-            dr.mgt_encrypt_schm.is_support_https,
+            login_version=dr.mgt_encrypt_schm.lv,
+            https=dr.mgt_encrypt_schm.is_support_https,
+            http_port=dr.mgt_encrypt_schm.http_port,
         )
     else:
         connection_type = DeviceConnectionParameters.from_values(
