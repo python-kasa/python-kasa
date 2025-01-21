@@ -577,8 +577,6 @@ class Device(ABC):
 
     _deprecated_other_attributes = {
         # light attributes
-        "is_color": (Module.Light, ["is_color"]),
-        "is_variable_color_temp": (Module.Light, ["is_variable_color_temp"]),
         "brightness": (Module.Light, ["brightness"]),
         "set_brightness": (Module.Light, ["set_brightness"]),
         "hsv": (Module.Light, ["hsv"]),
