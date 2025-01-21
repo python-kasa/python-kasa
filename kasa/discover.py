@@ -146,6 +146,7 @@ class ConnectAttempt(NamedTuple):
     protocol: type
     transport: type
     device: type
+    https: bool
 
 
 class DiscoveredMeta(TypedDict):
