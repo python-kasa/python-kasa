@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
-from enum import IntEnum
-from typing import Annotated
+from datetime import timedelta
+from enum import IntEnum, StrEnum
+from typing import Annotated, Literal
 
 from ...feature import Feature
 from ...module import FeatureAttribute
@@ -52,6 +53,25 @@ class FanSpeed(IntEnum):
     Standard = 2
     Turbo = 3
     Max = 4
+    Ultra = 5
+
+
+class CarpetCleanMode(StrEnum):
+    """Carpet clean mode."""
+
+    Normal = "normal"
+    Boost = "boost"
+
+
+class AreaUnit(IntEnum):
+    """Area unit."""
+
+    #: Square meter
+    Sqm = 0
+    #: Square feet
+    Sqft = 1
+    #: Taiwanese unit: https://en.wikipedia.org/wiki/Taiwanese_units_of_measurement#Area
+    Ping = 2
 
 
 class Clean(SmartModule):
@@ -130,7 +150,6 @@ class Clean(SmartModule):
                 type=Feature.Type.Sensor,
             )
         )
-
         self._add_feature(
             Feature(
                 self._device,
@@ -143,6 +162,68 @@ class Clean(SmartModule):
                 choices_getter=lambda: list(FanSpeed.__members__),
                 category=Feature.Category.Primary,
                 type=Feature.Type.Choice,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="clean_count",
+                name="Clean count",
+                container=self,
+                attribute_getter="clean_count",
+                attribute_setter="set_clean_count",
+                range_getter=lambda: (1, 3),
+                category=Feature.Category.Config,
+                type=Feature.Type.Number,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="carpet_clean_mode",
+                name="Carpet clean mode",
+                container=self,
+                attribute_getter="carpet_clean_mode",
+                attribute_setter="set_carpet_clean_mode",
+                icon="mdi:rug",
+                choices_getter=lambda: list(CarpetCleanMode.__members__),
+                category=Feature.Category.Config,
+                type=Feature.Type.Choice,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="clean_area",
+                name="Cleaning area",
+                container=self,
+                attribute_getter="clean_area",
+                unit_getter="area_unit",
+                category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="clean_time",
+                name="Cleaning time",
+                container=self,
+                attribute_getter="clean_time",
+                category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
+            )
+        )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="clean_progress",
+                name="Cleaning progress",
+                container=self,
+                attribute_getter="clean_progress",
+                unit_getter=lambda: "%",
+                category=Feature.Category.Info,
+                type=Feature.Type.Sensor,
             )
         )
 
@@ -171,9 +252,12 @@ class Clean(SmartModule):
     def query(self) -> dict:
         """Query to execute during the update cycle."""
         return {
-            "getVacStatus": None,
-            "getBatteryInfo": None,
-            "getCleanStatus": None,
+            "getVacStatus": {},
+            "getCleanInfo": {},
+            "getCarpetClean": {},
+            "getAreaUnit": {},
+            "getBatteryInfo": {},
+            "getCleanStatus": {},
             "getCleanAttr": {"type": "global"},
         }
 
@@ -234,9 +318,17 @@ class Clean(SmartModule):
         name_to_value = {x.name: x.value for x in FanSpeed}
         if speed not in name_to_value:
             raise ValueError("Invalid fan speed %s, available %s", speed, name_to_value)
-        return await self.call(
-            "setCleanAttr", {"suction": name_to_value[speed], "type": "global"}
-        )
+        return await self._change_setting("suction", name_to_value[speed])
+
+    async def _change_setting(
+        self, name: str, value: int, *, scope: Literal["global", "pose"] = "global"
+    ) -> dict:
+        """Change device setting."""
+        params = {
+            name: value,
+            "type": scope,
+        }
+        return await self.call("setCleanAttr", params)
 
     @property
     def battery(self) -> int:
@@ -247,6 +339,11 @@ class Clean(SmartModule):
     def _vac_status(self) -> dict:
         """Return vac status container."""
         return self.data["getVacStatus"]
+
+    @property
+    def _info(self) -> dict:
+        """Return current cleaning info."""
+        return self.data["getCleanInfo"]
 
     @property
     def _settings(self) -> dict:
@@ -265,3 +362,50 @@ class Clean(SmartModule):
         except ValueError:
             _LOGGER.warning("Got unknown status code: %s (%s)", status_code, self.data)
             return Status.UnknownInternal
+
+    @property
+    def carpet_clean_mode(self) -> Annotated[str, FeatureAttribute()]:
+        """Return carpet clean mode."""
+        return CarpetCleanMode(self.data["getCarpetClean"]["carpet_clean_prefer"]).name
+
+    async def set_carpet_clean_mode(
+        self, mode: str
+    ) -> Annotated[dict, FeatureAttribute()]:
+        """Set carpet clean mode."""
+        name_to_value = {x.name: x.value for x in CarpetCleanMode}
+        if mode not in name_to_value:
+            raise ValueError(
+                "Invalid carpet clean mode %s, available %s", mode, name_to_value
+            )
+        return await self.call(
+            "setCarpetClean", {"carpet_clean_prefer": name_to_value[mode]}
+        )
+
+    @property
+    def area_unit(self) -> AreaUnit:
+        """Return area unit."""
+        return AreaUnit(self.data["getAreaUnit"]["area_unit"])
+
+    @property
+    def clean_area(self) -> Annotated[int, FeatureAttribute()]:
+        """Return currently cleaned area."""
+        return self._info["clean_area"]
+
+    @property
+    def clean_time(self) -> timedelta:
+        """Return current cleaning time."""
+        return timedelta(minutes=self._info["clean_time"])
+
+    @property
+    def clean_progress(self) -> int:
+        """Return amount of currently cleaned area."""
+        return self._info["clean_percent"]
+
+    @property
+    def clean_count(self) -> Annotated[int, FeatureAttribute()]:
+        """Return number of times to clean."""
+        return self._settings["clean_number"]
+
+    async def set_clean_count(self, count: int) -> Annotated[dict, FeatureAttribute()]:
+        """Set number of times to clean."""
+        return await self._change_setting("clean_number", count)

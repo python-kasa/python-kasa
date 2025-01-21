@@ -5,7 +5,8 @@ from __future__ import annotations
 import base64
 import logging
 import time
-from collections.abc import Mapping, Sequence
+from collections import OrderedDict
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta, tzinfo
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
@@ -66,12 +67,15 @@ class SmartDevice(Device):
         self._components_raw: ComponentsRaw | None = None
         self._components: dict[str, int] = {}
         self._state_information: dict[str, Any] = {}
-        self._modules: dict[str | ModuleName[Module], SmartModule] = {}
+        self._modules: OrderedDict[str | ModuleName[Module], SmartModule] = (
+            OrderedDict()
+        )
         self._parent: SmartDevice | None = None
-        self._children: Mapping[str, SmartDevice] = {}
+        self._children: dict[str, SmartDevice] = {}
         self._last_update_time: float | None = None
         self._on_since: datetime | None = None
         self._info: dict[str, Any] = {}
+        self._logged_missing_child_ids: set[str] = set()
 
     async def _initialize_children(self) -> None:
         """Initialize children for power strips."""
@@ -82,23 +86,86 @@ class SmartDevice(Device):
         resp = await self.protocol.query(child_info_query)
         self.internal_state.update(resp)
 
-        children = self.internal_state["get_child_device_list"]["child_device_list"]
-        children_components_raw = {
-            child["device_id"]: child
-            for child in self.internal_state["get_child_device_component_list"][
-                "child_component_list"
-            ]
-        }
+    async def _try_create_child(
+        self, info: dict, child_components: dict
+    ) -> SmartDevice | None:
         from .smartchilddevice import SmartChildDevice
 
-        self._children = {
-            child_info["device_id"]: await SmartChildDevice.create(
-                parent=self,
-                child_info=child_info,
-                child_components_raw=children_components_raw[child_info["device_id"]],
-            )
-            for child_info in children
+        return await SmartChildDevice.create(
+            parent=self,
+            child_info=info,
+            child_components_raw=child_components,
+        )
+
+    async def _create_delete_children(
+        self,
+        child_device_resp: dict[str, list],
+        child_device_components_resp: dict[str, list],
+    ) -> bool:
+        """Create and delete children. Return True if children changed.
+
+        Adds newly found children and deletes children that are no longer
+        reported by the device. It will only log once per child_id that
+        can't be created to avoid spamming the logs on every update.
+        """
+        changed = False
+        smart_children_components = {
+            child["device_id"]: child
+            for child in child_device_components_resp["child_component_list"]
         }
+        children = self._children
+        child_ids: set[str] = set()
+        existing_child_ids = set(self._children.keys())
+
+        for info in child_device_resp["child_device_list"]:
+            if (child_id := info.get("device_id")) and (
+                child_components := smart_children_components.get(child_id)
+            ):
+                child_ids.add(child_id)
+
+                if child_id in existing_child_ids:
+                    continue
+
+                child = await self._try_create_child(info, child_components)
+                if child:
+                    _LOGGER.debug("Created child device %s for %s", child, self.host)
+                    changed = True
+                    children[child_id] = child
+                    continue
+
+                if child_id not in self._logged_missing_child_ids:
+                    self._logged_missing_child_ids.add(child_id)
+                    _LOGGER.debug("Child device type not supported: %s", info)
+                continue
+
+            if child_id:
+                if child_id not in self._logged_missing_child_ids:
+                    self._logged_missing_child_ids.add(child_id)
+                    _LOGGER.debug(
+                        "Could not find child components for device %s, "
+                        "child_id %s, components: %s: ",
+                        self.host,
+                        child_id,
+                        smart_children_components,
+                    )
+                continue
+
+            # If we couldn't get a child device id we still only want to
+            # log once to avoid spamming the logs on every update cycle
+            # so store it under an empty string
+            if "" not in self._logged_missing_child_ids:
+                self._logged_missing_child_ids.add("")
+                _LOGGER.debug(
+                    "Could not find child id for device %s, info: %s", self.host, info
+                )
+
+        removed_ids = existing_child_ids - child_ids
+        for removed_id in removed_ids:
+            changed = True
+            removed = children.pop(removed_id)
+            _LOGGER.debug("Removed child device %s from %s", removed, self.host)
+
+        return changed
 
     @property
     def children(self) -> Sequence[SmartDevice]:
@@ -164,20 +231,28 @@ class SmartDevice(Device):
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
 
-    def _update_children_info(self) -> None:
-        """Update the internal child device info from the parent info."""
+    async def _update_children_info(self) -> bool:
+        """Update the internal child device info from the parent info.
+
+        Return true if children added or deleted.
+        """
+        changed = False
         if child_info := self._try_get_response(
             self._last_update, "get_child_device_list", {}
         ):
+            changed = await self._create_delete_children(
+                child_info, self._last_update["get_child_device_component_list"]
+            )
+
             for info in child_info["child_device_list"]:
-                child_id = info["device_id"]
+                child_id = info.get("device_id")
                 if child_id not in self._children:
-                    _LOGGER.debug(
-                        "Skipping child update for %s, probably unsupported device",
-                        child_id,
-                    )
+                    # _create_delete_children has already logged a message
                     continue
+
                 self._children[child_id]._update_internal_state(info)
+
+        return changed
 
     def _update_internal_info(self, info_resp: dict) -> None:
         """Update the internal device info."""
@@ -201,13 +276,13 @@ class SmartDevice(Device):
 
         resp = await self._modular_update(first_update, now)
 
-        self._update_children_info()
+        children_changed = await self._update_children_info()
         # Call child update which will only update module calls, info is updated
         # from get_child_device_list. update_children only affects hub devices, other
         # devices will always update children to prevent errors on module access.
         # This needs to go after updating the internal state of the children so that
         # child modules have access to their sysinfo.
-        if first_update or update_children or self.device_type != DeviceType.Hub:
+        if children_changed or update_children or self.device_type != DeviceType.Hub:
             for child in self._children.values():
                 if TYPE_CHECKING:
                     assert isinstance(child, SmartChildDevice)
@@ -373,6 +448,11 @@ class SmartDevice(Device):
         ):
             self._modules[Thermostat.__name__] = Thermostat(self, "thermostat")
 
+        # We move time to the beginning so other modules can access the
+        # time and timezone after update if required. e.g. cleanrecords
+        if Time.__name__ in self._modules:
+            self._modules.move_to_end(Time.__name__, last=False)
+
     async def _initialize_features(self) -> None:
         """Initialize device features."""
         self._add_feature(
@@ -465,12 +545,25 @@ class SmartDevice(Device):
             )
         )
 
+        if self.parent is not None and (
+            cs := self.parent.modules.get(Module.ChildSetup)
+        ):
+            self._add_feature(
+                Feature(
+                    device=self,
+                    id="unpair",
+                    name="Unpair device",
+                    container=cs,
+                    attribute_setter=lambda: cs.unpair(self.device_id),
+                    category=Feature.Category.Debug,
+                    type=Feature.Type.Action,
+                )
+            )
+
         for module in self.modules.values():
             module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
-        for child in self._children.values():
-            await child._initialize_features()
 
     @property
     def _is_hub_child(self) -> bool:

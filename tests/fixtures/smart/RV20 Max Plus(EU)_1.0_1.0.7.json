@@ -150,6 +150,9 @@
             "owner": "00000000000000000000000000000000"
         }
     },
+    "getAreaUnit": {
+        "area_unit": 0
+    },
     "getAutoChangeMap": {
         "auto_change_map": false
     },
@@ -159,20 +162,82 @@
     "getBatteryInfo": {
         "battery_percentage": 75
     },
-    "getCleanAttr": {"suction": 2, "cistern": 2, "clean_number": 1},
-    "getCleanStatus": {"getCleanStatus": {"clean_status": 0, "is_working": false, "is_mapping": false, "is_relocating": false}},
+    "getCarpetClean": {
+        "carpet_clean_prefer": "boost"
+    },
+    "getChildLockInfo": {
+        "child_lock_status": false
+    },
+    "getCleanAttr": {
+        "cistern": 2,
+        "clean_number": 1,
+        "suction": 2
+    },
+    "getCleanInfo": {
+        "clean_area": 5,
+        "clean_percent": 1,
+        "clean_time": 5
+    },
     "getCleanRecords": {
         "lastest_day_record": [
-            0,
-            0,
-            0,
-            0
+            1736797545,
+            25,
+            16,
+            1
         ],
-        "record_list": [],
-        "record_list_num": 0,
-        "total_area": 0,
-        "total_number": 0,
-        "total_time": 0
+        "record_list": [
+            {
+                "clean_area": 17,
+                "clean_time": 27,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 1,
+                "map_id": 1736598799,
+                "message": 1,
+                "record_index": 0,
+                "start_type": 1,
+                "task_type": 0,
+                "timestamp": 1736601522
+            },
+            {
+                "clean_area": 14,
+                "clean_time": 25,
+                "dust_collection": false,
+                "error": 0,
+                "info_num": 0,
+                "map_id": 1736598799,
+                "message": 0,
+                "record_index": 1,
+                "start_type": 1,
+                "task_type": 0,
+                "timestamp": 1736684961
+            },
+            {
+                "clean_area": 16,
+                "clean_time": 25,
+                "dust_collection": true,
+                "error": 0,
+                "info_num": 3,
+                "map_id": 1736598799,
+                "message": 0,
+                "record_index": 2,
+                "start_type": 1,
+                "task_type": 0,
+                "timestamp": 1736797545
+            }
+        ],
+        "record_list_num": 3,
+        "total_area": 47,
+        "total_number": 3,
+        "total_time": 77
+    },
+    "getCleanStatus": {
+        "getCleanStatus": {
+            "clean_status": 0,
+            "is_mapping": false,
+            "is_relocating": false,
+            "is_working": false
+        }
     },
     "getConsumablesInfo": {
         "charge_contact_time": 0,
@@ -187,13 +252,14 @@
         "name": "2",
         "version": 1
     },
-    "getVolume": {
-        "volume": 84
-    },
     "getDoNotDisturb": {
         "do_not_disturb": true,
         "e_min": 480,
         "s_min": 1320
+    },
+    "getDustCollectionInfo": {
+        "auto_dust_collection": true,
+        "dust_collection_mode": 0
     },
     "getMapInfo": {
         "auto_change_map": false,
@@ -205,10 +271,6 @@
     "getMopState": {
         "mop_state": false
     },
-    "getDustCollectionInfo": {
-        "auto_dust_collection": true,
-        "dust_collection_mode": 0
-    },
     "getVacStatus": {
         "err_status": [
             0
@@ -219,6 +281,9 @@
         "prompt": [],
         "promptCode_id": [],
         "status": 5
+    },
+    "getVolume": {
+        "volume": 84
     },
     "get_device_info": {
         "auto_pack_ver": "0.0.1.1771",

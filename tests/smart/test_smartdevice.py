@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import logging
 import time
+from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
@@ -17,6 +18,7 @@ from kasa.exceptions import DeviceError, SmartErrorCode
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
+from kasa.smartcam import SmartCamDevice
 from tests.conftest import (
     DISCOVERY_MOCK_IP,
     device_smart,
@@ -30,6 +32,9 @@ from tests.device_fixtures import (
     parametrize_combine,
     variable_temp_smart,
 )
+
+from ..fakeprotocol_smart import FakeSmartTransport
+from ..fakeprotocol_smartcam import FakeSmartCamTransport
 
 DUMMY_CHILD_REQUEST_PREFIX = "get_dummy_"
 
@@ -96,7 +101,7 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     # As the fixture data is already initialized, we reset the state for testing
     dev._components_raw = None
     dev._components = {}
-    dev._modules = {}
+    dev._modules = OrderedDict()
     dev._features = {}
     dev._children = {}
     dev._last_update = {}
@@ -148,6 +153,7 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
                 "get_child_device_list": None,
             }
         )
+        await dev.update()
         assert len(dev._children) == dev.internal_state["get_child_device_list"]["sum"]
 
 
@@ -269,7 +275,7 @@ async def test_hub_children_update_delays(
             for modname, module in child._modules.items():
                 if (
                     not (q := module.query())
-                    and modname not in {"DeviceModule", "Light"}
+                    and modname not in {"DeviceModule", "Light", "Battery", "Camera"}
                     and not module.SYSINFO_LOOKUP_KEYS
                 ):
                     q = {f"get_dummy_{modname}": {}}
@@ -488,7 +494,12 @@ async def test_update_module_query_errors(
         if (
             not raise_error
             or "component_nego" in request
-            or "get_child_device_component_list" in request
+            # allow the initial child device query
+            or (
+                "get_child_device_component_list" in request
+                and "get_child_device_list" in request
+                and len(request) == 2
+            )
         ):
             if child_id:  # child single query
                 child_protocol = dev.protocol._transport.child_protocols[child_id]
@@ -763,3 +774,239 @@ async def test_smartmodule_query():
     )
     mod = DummyModule(dummy_device, "dummy")
     assert mod.query() == {}
+
+
+@hub_all
+@pytest.mark.xdist_group(name="caplog")
+@pytest.mark.requires_dummy
+async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
+    """Test dynamic child devices."""
+    if not dev.children:
+        pytest.skip(f"Device {dev.model} does not have children.")
+
+    transport = dev.protocol._transport
+    assert isinstance(transport, FakeSmartCamTransport | FakeSmartTransport)
+
+    lu = dev._last_update
+    assert lu
+    child_device_info = lu.get("getChildDeviceList", lu.get("get_child_device_list"))
+    assert child_device_info
+
+    child_device_components = lu.get(
+        "getChildDeviceComponentList", lu.get("get_child_device_component_list")
+    )
+    assert child_device_components
+
+    mock_child_device_info = copy.deepcopy(child_device_info)
+    mock_child_device_components = copy.deepcopy(child_device_components)
+
+    first_child = child_device_info["child_device_list"][0]
+    first_child_device_id = first_child["device_id"]
+
+    first_child_components = next(
+        iter(
+            [
+                cc
+                for cc in child_device_components["child_component_list"]
+                if cc["device_id"] == first_child_device_id
+            ]
+        )
+    )
+
+    first_child_fake_transport = transport.child_protocols[first_child_device_id]
+
+    # Test adding devices
+    start_child_count = len(dev.children)
+    added_ids = []
+    for i in range(1, 3):
+        new_child = copy.deepcopy(first_child)
+        new_child_components = copy.deepcopy(first_child_components)
+
+        mock_device_id = f"mock_child_device_id_{i}"
+
+        transport.child_protocols[mock_device_id] = first_child_fake_transport
+        new_child["device_id"] = mock_device_id
+        new_child_components["device_id"] = mock_device_id
+
+        added_ids.append(mock_device_id)
+        mock_child_device_info["child_device_list"].append(new_child)
+        mock_child_device_components["child_component_list"].append(
+            new_child_components
+        )
+
+    def mock_get_child_device_queries(method, params):
+        if method in {"getChildDeviceList", "get_child_device_list"}:
+            result = mock_child_device_info
+        if method in {"getChildDeviceComponentList", "get_child_device_component_list"}:
+            result = mock_child_device_components
+        return {"result": result, "error_code": 0}
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    for added_id in added_ids:
+        assert added_id in dev._children
+    expected_new_length = start_child_count + len(added_ids)
+    assert len(dev.children) == expected_new_length
+
+    # Test removing devices
+    mock_child_device_info["child_device_list"] = [
+        info
+        for info in mock_child_device_info["child_device_list"]
+        if info["device_id"] != first_child_device_id
+    ]
+    mock_child_device_components["child_component_list"] = [
+        cc
+        for cc in mock_child_device_components["child_component_list"]
+        if cc["device_id"] != first_child_device_id
+    ]
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    expected_new_length -= 1
+    assert len(dev.children) == expected_new_length
+
+    # Test no child devices
+
+    mock_child_device_info["child_device_list"] = []
+    mock_child_device_components["child_component_list"] = []
+    mock_child_device_info["sum"] = 0
+    mock_child_device_components["sum"] = 0
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert len(dev.children) == 0
+
+    # Logging tests are only for smartcam hubs as smart hubs do not test categories
+    if not isinstance(dev, SmartCamDevice):
+        return
+
+    # setup
+    mock_child = copy.deepcopy(first_child)
+    mock_components = copy.deepcopy(first_child_components)
+
+    mock_child_device_info["child_device_list"] = [mock_child]
+    mock_child_device_components["child_component_list"] = [mock_components]
+    mock_child_device_info["sum"] = 1
+    mock_child_device_components["sum"] = 1
+
+    # Test can't find matching components
+
+    mock_child["device_id"] = "no_comps_1"
+    mock_components["device_id"] = "no_comps_2"
+
+    caplog.set_level("DEBUG")
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child components for device" in caplog.text
+
+    caplog.clear()
+
+    # Test doesn't log multiple
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child components for device" not in caplog.text
+
+    # Test invalid category
+
+    mock_child["device_id"] = "invalid_cat"
+    mock_components["device_id"] = "invalid_cat"
+    mock_child["category"] = "foobar"
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" in caplog.text
+
+    caplog.clear()
+
+    # Test doesn't log multiple
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" not in caplog.text
+
+    # Test no category
+
+    mock_child["device_id"] = "no_cat"
+    mock_components["device_id"] = "no_cat"
+    mock_child.pop("category")
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" in caplog.text
+
+    # Test only log once
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" not in caplog.text
+
+    # Test no device_id
+
+    mock_child.pop("device_id")
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child id for device" in caplog.text
+
+    # Test only log once
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child id for device" not in caplog.text
+
+
+@hubs_smart
+async def test_unpair(dev: SmartDevice, mocker: MockerFixture):
+    """Verify that unpair calls childsetup module."""
+    if not dev.children:
+        pytest.skip("device has no children")
+
+    child = dev.children[0]
+
+    assert child.parent is not None
+    assert Module.ChildSetup in dev.modules
+    cs = dev.modules[Module.ChildSetup]
+
+    unpair_call = mocker.spy(cs, "unpair")
+
+    unpair_feat = child.features.get("unpair")
+    assert unpair_feat
+    await unpair_feat.set_value(None)
+
+    unpair_call.assert_called_with(child.device_id)

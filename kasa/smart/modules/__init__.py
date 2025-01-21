@@ -6,11 +6,15 @@ from .autooff import AutoOff
 from .batterysensor import BatterySensor
 from .brightness import Brightness
 from .childdevice import ChildDevice
+from .childlock import ChildLock
 from .childprotection import ChildProtection
+from .childsetup import ChildSetup
 from .clean import Clean
+from .cleanrecords import CleanRecords
 from .cloud import Cloud
 from .color import Color
 from .colortemperature import ColorTemperature
+from .consumables import Consumables
 from .contactsensor import ContactSensor
 from .devicemodule import DeviceModule
 from .dustbin import Dustbin
@@ -27,6 +31,7 @@ from .lightpreset import LightPreset
 from .lightstripeffect import LightStripEffect
 from .lighttransition import LightTransition
 from .matter import Matter
+from .mop import Mop
 from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
 from .reportmode import ReportMode
@@ -44,6 +49,8 @@ __all__ = [
     "Energy",
     "DeviceModule",
     "ChildDevice",
+    "ChildLock",
+    "ChildSetup",
     "BatterySensor",
     "HumiditySensor",
     "TemperatureSensor",
@@ -70,10 +77,13 @@ __all__ = [
     "FrostProtection",
     "Thermostat",
     "Clean",
+    "Consumables",
+    "CleanRecords",
     "SmartLightEffect",
     "OverheatProtection",
     "Speaker",
     "HomeKit",
     "Matter",
     "Dustbin",
+    "Mop",
 ]

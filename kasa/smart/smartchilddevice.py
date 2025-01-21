@@ -109,6 +109,11 @@ class SmartChildDevice(SmartDevice):
             )
         self._last_update_time = now
 
+        # We can first initialize the features after the first update.
+        # We make here an assumption that every device has at least a single feature.
+        if not self._features:
+            await self._initialize_features()
+
     @classmethod
     async def create(
         cls,

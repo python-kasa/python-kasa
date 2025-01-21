@@ -171,6 +171,16 @@ class FakeSmartTransport(BaseTransport):
                 "setup_payload": "00:0000000-0000.00.000",
             },
         ),
+        # child setup
+        "get_support_child_device_category": (
+            "child_quick_setup",
+            {"device_category_list": [{"category": "subg.trv"}]},
+        ),
+        # no devices found
+        "get_scan_child_device_list": (
+            "child_quick_setup",
+            {"child_device_list": [{"dummy": "response"}], "scan_status": "idle"},
+        ),
     }
 
     def _missing_result(self, method):
@@ -262,7 +272,10 @@ class FakeSmartTransport(BaseTransport):
                     child_fixture["get_device_info"]["device_id"] = device_id
                     found_child_fixture_infos.append(child_fixture["get_device_info"])
                     child_protocols[device_id] = FakeSmartProtocol(
-                        child_fixture, fixture_info_tuple.name, is_child=True
+                        child_fixture,
+                        fixture_info_tuple.name,
+                        is_child=True,
+                        verbatim=verbatim,
                     )
                 # Look for fixture inline
                 elif (child_fixtures := parent_fixture_info.get("child_devices")) and (
@@ -273,6 +286,7 @@ class FakeSmartTransport(BaseTransport):
                         child_fixture,
                         f"{parent_fixture_name}-{device_id}",
                         is_child=True,
+                        verbatim=verbatim,
                     )
                 else:
                     pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
@@ -299,7 +313,10 @@ class FakeSmartTransport(BaseTransport):
                 # list for smartcam children in order for updates to work.
                 found_child_fixture_infos.append(child_fixture[CHILD_INFO_FROM_PARENT])
                 child_protocols[device_id] = FakeSmartCamProtocol(
-                    child_fixture, fixture_info_tuple.name, is_child=True
+                    child_fixture,
+                    fixture_info_tuple.name,
+                    is_child=True,
+                    verbatim=verbatim,
                 )
             else:
                 warn(
@@ -541,6 +558,48 @@ class FakeSmartTransport(BaseTransport):
 
         return {"error_code": 0}
 
+    def _hub_remove_device(self, info, params):
+        """Remove hub device."""
+        items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
+        children = info["get_child_device_list"]["child_device_list"]
+        new_children = [
+            dev for dev in children if dev["device_id"] not in items_to_remove
+        ]
+        info["get_child_device_list"]["child_device_list"] = new_children
+
+        return {"error_code": 0}
+
+    def get_child_device_queries(self, method, params):
+        return self._get_method_from_info(method, params)
+
+    def _get_method_from_info(self, method, params):
+        result = copy.deepcopy(self.info[method])
+        if result and "start_index" in result and "sum" in result:
+            list_key = next(
+                iter([key for key in result if isinstance(result[key], list)])
+            )
+            start_index = (
+                start_index
+                if (params and (start_index := params.get("start_index")))
+                else 0
+            )
+            # Fixtures generated before _handle_response_lists was implemented
+            # could have incomplete lists.
+            if (
+                len(result[list_key]) < result["sum"]
+                and self.fix_incomplete_fixture_lists
+            ):
+                result["sum"] = len(result[list_key])
+                if self.warn_fixture_missing_methods:
+                    pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
+                        self.fixture_name, set()
+                    ).add(f"{method} (incomplete '{list_key}' list)")
+
+            result[list_key] = result[list_key][
+                start_index : start_index + self.list_return_size
+            ]
+        return {"result": result, "error_code": 0}
+
     async def _send_request(self, request_dict: dict):
         method = request_dict["method"]
 
@@ -550,33 +609,16 @@ class FakeSmartTransport(BaseTransport):
 
         params = request_dict.get("params", {})
         if method in {"component_nego", "qs_component_nego"} or method[:3] == "get":
-            if method in info:
-                result = copy.deepcopy(info[method])
-                if result and "start_index" in result and "sum" in result:
-                    list_key = next(
-                        iter([key for key in result if isinstance(result[key], list)])
-                    )
-                    start_index = (
-                        start_index
-                        if (params and (start_index := params.get("start_index")))
-                        else 0
-                    )
-                    # Fixtures generated before _handle_response_lists was implemented
-                    # could have incomplete lists.
-                    if (
-                        len(result[list_key]) < result["sum"]
-                        and self.fix_incomplete_fixture_lists
-                    ):
-                        result["sum"] = len(result[list_key])
-                        if self.warn_fixture_missing_methods:
-                            pytest.fixtures_missing_methods.setdefault(  # type: ignore[attr-defined]
-                                self.fixture_name, set()
-                            ).add(f"{method} (incomplete '{list_key}' list)")
+            # These methods are handled in get_child_device_query so it can be
+            # patched for tests to simulate dynamic devices.
+            if (
+                method in ("get_child_device_list", "get_child_device_component_list")
+                and method in info
+            ):
+                return self.get_child_device_queries(method, params)
 
-                    result[list_key] = result[list_key][
-                        start_index : start_index + self.list_return_size
-                    ]
-                return {"result": result, "error_code": 0}
+            if method in info:
+                return self._get_method_from_info(method, params)
 
             if self.verbatim:
                 return {
@@ -637,8 +679,16 @@ class FakeSmartTransport(BaseTransport):
             return self._set_on_off_gradually_info(info, params)
         elif method == "set_child_protection":
             return self._update_sysinfo_key(info, "child_protection", params["enable"])
-        # Vacuum special actions
-        elif method in ["playSelectAudio"]:
+        elif method == "remove_child_device_list":
+            return self._hub_remove_device(info, params)
+        # actions
+        elif method in [
+            "begin_scanning_child_device",  # hub pairing
+            "add_child_device_list",  # hub pairing
+            "remove_child_device_list",  # hub pairing
+            "playSelectAudio",  # vacuum special actions
+            "resetConsumablesTime",  # vacuum special actions
+        ]:
             return {"error_code": 0}
         elif method[:3] == "set":
             target_method = f"get{method[3:]}"

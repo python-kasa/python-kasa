@@ -63,18 +63,14 @@ class SmartCamChild(SmartChildDevice, SmartCamDevice):
             None,
         )
 
-    def _map_child_info_from_parent(self, device_info: dict) -> dict:
-        return {
-            "model": device_info["device_model"],
-            "device_type": device_info["device_type"],
-            "alias": device_info["alias"],
-            "fw_ver": device_info["sw_ver"],
-            "hw_ver": device_info["hw_ver"],
-            "mac": device_info["mac"],
-            "hwId": device_info.get("hw_id"),
-            "oem_id": device_info["oem_id"],
-            "device_id": device_info["device_id"],
+    @staticmethod
+    def _map_child_info_from_parent(device_info: dict) -> dict:
+        mappings = {
+            "device_model": "model",
+            "sw_ver": "fw_ver",
+            "hw_id": "hwId",
         }
+        return {mappings.get(k, k): v for k, v in device_info.items()}
 
     def _update_internal_state(self, info: dict[str, Any]) -> None:
         """Update the internal info state.

@@ -70,20 +70,28 @@ class SmartCamDevice(SmartDevice):
         """
         self._info = self._map_info(info)
 
-    def _update_children_info(self) -> None:
-        """Update the internal child device info from the parent info."""
+    async def _update_children_info(self) -> bool:
+        """Update the internal child device info from the parent info.
+
+        Return true if children added or deleted.
+        """
+        changed = False
         if child_info := self._try_get_response(
             self._last_update, "getChildDeviceList", {}
         ):
+            changed = await self._create_delete_children(
+                child_info, self._last_update["getChildDeviceComponentList"]
+            )
+
             for info in child_info["child_device_list"]:
-                child_id = info["device_id"]
+                child_id = info.get("device_id")
                 if child_id not in self._children:
-                    _LOGGER.debug(
-                        "Skipping child update for %s, probably unsupported device",
-                        child_id,
-                    )
+                    # _create_delete_children has already logged a message
                     continue
+
                 self._children[child_id]._update_internal_state(info)
+
+        return changed
 
     async def _initialize_smart_child(
         self, info: dict, child_components_raw: ComponentsRaw
@@ -113,7 +121,6 @@ class SmartCamDevice(SmartDevice):
         child_id = info["device_id"]
         child_protocol = _ChildCameraProtocolWrapper(child_id, self.protocol)
 
-        last_update = {"getDeviceInfo": {"device_info": {"basic_info": info}}}
         app_component_list = {
             "app_component_list": child_components_raw["component_list"]
         }
@@ -124,7 +131,6 @@ class SmartCamDevice(SmartDevice):
             child_info=info,
             child_components_raw=app_component_list,
             protocol=child_protocol,
-            last_update=last_update,
         )
 
     async def _initialize_children(self) -> None:
@@ -136,35 +142,22 @@ class SmartCamDevice(SmartDevice):
         resp = await self.protocol.query(child_info_query)
         self.internal_state.update(resp)
 
-        smart_children_components = {
-            child["device_id"]: child
-            for child in resp["getChildDeviceComponentList"]["child_component_list"]
-        }
-        children = {}
+    async def _try_create_child(
+        self, info: dict, child_components: dict
+    ) -> SmartDevice | None:
+        if not (category := info.get("category")):
+            return None
+
+        # Smart
+        if category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
+            return await self._initialize_smart_child(info, child_components)
+        # Smartcam
         from .smartcamchild import SmartCamChild
 
-        for info in resp["getChildDeviceList"]["child_device_list"]:
-            if (
-                (category := info.get("category"))
-                and (child_id := info.get("device_id"))
-                and (child_components := smart_children_components.get(child_id))
-            ):
-                # Smart
-                if category in SmartChildDevice.CHILD_DEVICE_TYPE_MAP:
-                    children[child_id] = await self._initialize_smart_child(
-                        info, child_components
-                    )
-                    continue
-                # Smartcam
-                if category in SmartCamChild.CHILD_DEVICE_TYPE_MAP:
-                    children[child_id] = await self._initialize_smartcam_child(
-                        info, child_components
-                    )
-                    continue
+        if category in SmartCamChild.CHILD_DEVICE_TYPE_MAP:
+            return await self._initialize_smartcam_child(info, child_components)
 
-            _LOGGER.debug("Child device type not supported: %s", info)
-
-        self._children = children
+        return None
 
     async def _initialize_modules(self) -> None:
         """Initialize modules based on component negotiation response."""
@@ -189,9 +182,6 @@ class SmartCamDevice(SmartDevice):
             module._initialize_features()
             for feat in module._module_features.values():
                 self._add_feature(feat)
-
-        for child in self._children.values():
-            await child._initialize_features()
 
     async def _query_setter_helper(
         self, method: str, module: str, section: str, params: dict | None = None
@@ -238,18 +228,17 @@ class SmartCamDevice(SmartDevice):
             await self._initialize_children()
 
     def _map_info(self, device_info: dict) -> dict:
+        """Map the basic keys to the keys used by SmartDevices."""
         basic_info = device_info["basic_info"]
-        return {
-            "model": basic_info["device_model"],
-            "device_type": basic_info["device_type"],
-            "alias": basic_info["device_alias"],
-            "fw_ver": basic_info["sw_version"],
-            "hw_ver": basic_info["hw_version"],
-            "mac": basic_info["mac"],
-            "hwId": basic_info.get("hw_id"),
-            "oem_id": basic_info["oem_id"],
-            "device_id": basic_info["dev_id"],
+        mappings = {
+            "device_model": "model",
+            "device_alias": "alias",
+            "sw_version": "fw_ver",
+            "hw_version": "hw_ver",
+            "hw_id": "hwId",
+            "dev_id": "device_id",
         }
+        return {mappings.get(k, k): v for k, v in basic_info.items()}
 
     @property
     def is_on(self) -> bool:

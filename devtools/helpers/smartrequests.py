@@ -437,15 +437,18 @@ COMPONENT_REQUESTS = {
     "overheat_protection": [],
     # Vacuum components
     "clean": [
+        SmartRequest.get_raw_request("getCarpetClean"),
         SmartRequest.get_raw_request("getCleanRecords"),
         SmartRequest.get_raw_request("getVacStatus"),
+        SmartRequest.get_raw_request("getAreaUnit"),
+        SmartRequest.get_raw_request("getCleanInfo"),
         SmartRequest.get_raw_request("getCleanStatus"),
         SmartRequest("getCleanAttr", SmartRequest.GetCleanAttrParams()),
     ],
     "battery": [SmartRequest.get_raw_request("getBatteryInfo")],
     "consumables": [SmartRequest.get_raw_request("getConsumablesInfo")],
     "direction_control": [],
-    "button_and_led": [],
+    "button_and_led": [SmartRequest.get_raw_request("getChildLockInfo")],
     "speaker": [
         SmartRequest.get_raw_request("getSupportVoiceLanguage"),
         SmartRequest.get_raw_request("getCurrentVoiceLanguage"),

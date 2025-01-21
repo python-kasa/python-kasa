@@ -21,6 +21,7 @@ clean = parametrize("clean module", component_filter="clean", protocol_filter={"
         ("vacuum_status", "status", Status),
         ("vacuum_error", "error", ErrorCode),
         ("vacuum_fan_speed", "fan_speed_preset", str),
+        ("carpet_clean_mode", "carpet_clean_mode", str),
         ("battery_level", "battery", int),
     ],
 )
@@ -68,6 +69,20 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
             "setCleanAttr",
             {"suction": 1, "type": "global"},
             id="vacuum_fan_speed",
+        ),
+        pytest.param(
+            "carpet_clean_mode",
+            "Boost",
+            "setCarpetClean",
+            {"carpet_clean_prefer": "boost"},
+            id="carpet_clean_mode",
+        ),
+        pytest.param(
+            "clean_count",
+            2,
+            "setCleanAttr",
+            {"clean_number": 2, "type": "global"},
+            id="clean_count",
         ),
     ],
 )
@@ -144,3 +159,44 @@ async def test_unknown_status(
 
     assert clean.status is Status.UnknownInternal
     assert "Got unknown status code: 123" in caplog.text
+
+
+@clean
+@pytest.mark.parametrize(
+    ("setting", "value", "exc", "exc_message"),
+    [
+        pytest.param(
+            "vacuum_fan_speed",
+            "invalid speed",
+            ValueError,
+            "Invalid fan speed",
+            id="vacuum_fan_speed",
+        ),
+        pytest.param(
+            "carpet_clean_mode",
+            "invalid mode",
+            ValueError,
+            "Invalid carpet clean mode",
+            id="carpet_clean_mode",
+        ),
+    ],
+)
+async def test_invalid_settings(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    setting: str,
+    value: str,
+    exc: type[Exception],
+    exc_message: str,
+):
+    """Test invalid settings."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    # Not using feature.set_value() as it checks for valid values
+    setter_name = dev.features[setting].attribute_setter
+    assert isinstance(setter_name, str)
+
+    setter = getattr(clean, setter_name)
+
+    with pytest.raises(exc, match=exc_message):
+        await setter(value)
