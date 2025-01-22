@@ -64,9 +64,8 @@ HSV(hue=180, saturation=100, value=80)
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Annotated, Any, NamedTuple
+from typing import TYPE_CHECKING, Annotated, Any, NamedTuple
 from warnings import warn
 
 from ..exceptions import KasaException
@@ -178,36 +177,38 @@ class Light(Module, ABC):
             raise KasaException("Color temperature not supported")
         return ColorTempRange(temp.minimum_value, temp.maximum_value)
 
-    def _deprecated_attributes(self, dep_name: str) -> Callable | None:
-        map: dict[str, Callable] = {
-            "is_color": self.set_hsv,
-            "is_dimmable": self.set_brightness,
-            "is_variable_color_temp": self.set_color_temp,
+    def _deprecated_attributes(self, dep_name: str) -> str | None:
+        map: dict[str, str] = {
+            "is_color": "hsv",
+            "is_dimmable": "brightness",
+            "is_variable_color_temp": "color_temp",
         }
         return map.get(dep_name)
 
-    def __getattr__(self, name: str) -> Any:
-        if name == "valid_temperature_range":
-            res = self._deprecated_valid_temperature_range()
-            msg = (
-                "valid_temperature_range is deprecated, use "
-                'get_feature("color_temp") minimum_value '
-                " and maximum_value instead"
-            )
-            warn(msg, DeprecationWarning, stacklevel=2)
-            return res
+    if not TYPE_CHECKING:
 
-        if name == "has_effects":
-            msg = (
-                "has_effects is deprecated, check `Module.LightEffect "
-                "in device.modules` instead"
-            )
-            warn(msg, DeprecationWarning, stacklevel=2)
-            return Module.LightEffect in self._device.modules
+        def __getattr__(self, name: str) -> Any:
+            if name == "valid_temperature_range":
+                msg = (
+                    "valid_temperature_range is deprecated, use "
+                    'get_feature("color_temp") minimum_value '
+                    " and maximum_value instead"
+                )
+                warn(msg, DeprecationWarning, stacklevel=2)
+                res = self._deprecated_valid_temperature_range()
+                return res
 
-        if attr := self._deprecated_attributes(name):
-            msg = f"{name} is deprecated, use has_feature({attr}) instead"
-            warn(msg, DeprecationWarning, stacklevel=2)
-            return self.has_feature(attr)
+            if name == "has_effects":
+                msg = (
+                    "has_effects is deprecated, check `Module.LightEffect "
+                    "in device.modules` instead"
+                )
+                warn(msg, DeprecationWarning, stacklevel=2)
+                return Module.LightEffect in self._device.modules
 
-        raise AttributeError(f"Energy module has no attribute {name!r}")
+            if attr := self._deprecated_attributes(name):
+                msg = f'{name} is deprecated, use has_feature("{attr}") instead'
+                warn(msg, DeprecationWarning, stacklevel=2)
+                return self.has_feature(attr)
+
+            raise AttributeError(f"Energy module has no attribute {name!r}")
