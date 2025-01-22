@@ -117,6 +117,10 @@ async def test_actions(
 async def test_post_update_hook(dev: SmartDevice, err_status: list, error: ErrorCode):
     """Test that post update hook sets error states correctly."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
+    assert clean
+
+    # _post_update_hook will pop an item off the status list so create a copy.
+    err_status = [e for e in err_status]
     clean.data["getVacStatus"]["err_status"] = err_status
 
     await clean._post_update_hook()

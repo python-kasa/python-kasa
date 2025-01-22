@@ -1308,11 +1308,11 @@ async def test_discover_config(dev: Device, mocker, runner):
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ failed",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ failed",
         res.output.replace("\n", ""),
     )
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ succeeded",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ succeeded",
         res.output.replace("\n", ""),
     )
 

@@ -94,6 +94,8 @@ class SslTransport(BaseTransport):
     @property
     def default_port(self) -> int:
         """Default port for the transport."""
+        if port := self._config.connection_type.http_port:
+            return port
         return self.DEFAULT_PORT
 
     @property
