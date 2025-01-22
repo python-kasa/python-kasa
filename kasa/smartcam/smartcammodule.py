@@ -26,6 +26,9 @@ class SmartCamModule(SmartModule):
     SmartCamPersonDetection: Final[ModuleName[modules.PersonDetection]] = ModuleName(
         "PersonDetection"
     )
+    SmartCamPetDetection: Final[ModuleName[modules.PetDetection]] = ModuleName(
+        "PetDetection"
+    )
     SmartCamTamperDetection: Final[ModuleName[modules.TamperDetection]] = ModuleName(
         "TamperDetection"
     )

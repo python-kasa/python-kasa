@@ -300,7 +300,9 @@ async def cli(
             connection_type = DeviceConnectionParameters.from_values(
                 dr.device_type,
                 dr.mgt_encrypt_schm.encrypt_type,
-                dr.mgt_encrypt_schm.lv,
+                login_version=dr.mgt_encrypt_schm.lv,
+                https=dr.mgt_encrypt_schm.is_support_https,
+                http_port=dr.mgt_encrypt_schm.http_port,
             )
             dc = DeviceConfig(
                 host=host,

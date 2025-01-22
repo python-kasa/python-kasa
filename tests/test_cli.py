@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from datetime import datetime
 from unittest.mock import ANY, PropertyMock, patch
@@ -60,15 +59,6 @@ from .conftest import (
 # The cli tests should be testing the cli logic rather than a physical device
 # so mark the whole file for skipping with real devices.
 pytestmark = [pytest.mark.requires_dummy]
-
-
-@pytest.fixture
-def runner():
-    """Runner fixture that unsets the KASA_ environment variables for tests."""
-    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
-    runner = CliRunner(env=KASA_VARS)
-
-    return runner
 
 
 async def test_help(runner):
@@ -1318,11 +1308,11 @@ async def test_discover_config(dev: Device, mocker, runner):
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ failed",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ failed",
         res.output.replace("\n", ""),
     )
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ succeeded",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ succeeded",
         res.output.replace("\n", ""),
     )
 

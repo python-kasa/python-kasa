@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import logging
 import time
+from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
@@ -100,7 +101,7 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     # As the fixture data is already initialized, we reset the state for testing
     dev._components_raw = None
     dev._components = {}
-    dev._modules = {}
+    dev._modules = OrderedDict()
     dev._features = {}
     dev._children = {}
     dev._last_update = {}
@@ -988,3 +989,24 @@ async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
         await dev.update()
 
     assert "Could not find child id for device" not in caplog.text
+
+
+@hubs_smart
+async def test_unpair(dev: SmartDevice, mocker: MockerFixture):
+    """Verify that unpair calls childsetup module."""
+    if not dev.children:
+        pytest.skip("device has no children")
+
+    child = dev.children[0]
+
+    assert child.parent is not None
+    assert Module.ChildSetup in dev.modules
+    cs = dev.modules[Module.ChildSetup]
+
+    unpair_call = mocker.spy(cs, "unpair")
+
+    unpair_feat = child.features.get("unpair")
+    assert unpair_feat
+    await unpair_feat.set_value(None)
+
+    unpair_call.assert_called_with(child.device_id)
