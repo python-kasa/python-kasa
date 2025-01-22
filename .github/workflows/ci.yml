@@ -2,9 +2,16 @@ name: CI
 
 on:
   push:
-    branches: ["master", "patch"]
+    branches:
+      - master
+      - patch
   pull_request:
-    branches: ["master", "patch"]
+    branches:
+      - master
+      - patch
+      - 'feat/**'
+      - 'fix/**'
+      - 'janitor/**'
   workflow_dispatch:  # to allow manual re-runs
 
 env:
