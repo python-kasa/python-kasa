@@ -118,6 +118,16 @@ class SmartRequest:
         enable: bool
         id: str | None = None
 
+    @dataclass
+    class GetCleanAttrParams(SmartRequestParams):
+        """CleanAttr params.
+
+        Decides which cleaning settings are requested
+        """
+
+        #: type can be global or pose
+        type: str = "global"
+
     @staticmethod
     def get_raw_request(
         method: str, params: SmartRequestParams | None = None
@@ -427,23 +437,32 @@ COMPONENT_REQUESTS = {
     "overheat_protection": [],
     # Vacuum components
     "clean": [
+        SmartRequest.get_raw_request("getCarpetClean"),
         SmartRequest.get_raw_request("getCleanRecords"),
         SmartRequest.get_raw_request("getVacStatus"),
+        SmartRequest.get_raw_request("getAreaUnit"),
+        SmartRequest.get_raw_request("getCleanInfo"),
+        SmartRequest.get_raw_request("getCleanStatus"),
+        SmartRequest("getCleanAttr", SmartRequest.GetCleanAttrParams()),
     ],
     "battery": [SmartRequest.get_raw_request("getBatteryInfo")],
     "consumables": [SmartRequest.get_raw_request("getConsumablesInfo")],
     "direction_control": [],
-    "button_and_led": [],
+    "button_and_led": [SmartRequest.get_raw_request("getChildLockInfo")],
     "speaker": [
         SmartRequest.get_raw_request("getSupportVoiceLanguage"),
         SmartRequest.get_raw_request("getCurrentVoiceLanguage"),
+        SmartRequest.get_raw_request("getVolume"),
     ],
     "map": [
         SmartRequest.get_raw_request("getMapInfo"),
         SmartRequest.get_raw_request("getMapData"),
     ],
     "auto_change_map": [SmartRequest.get_raw_request("getAutoChangeMap")],
-    "dust_bucket": [SmartRequest.get_raw_request("getAutoDustCollection")],
+    "dust_bucket": [
+        SmartRequest.get_raw_request("getAutoDustCollection"),
+        SmartRequest.get_raw_request("getDustCollectionInfo"),
+    ],
     "mop": [SmartRequest.get_raw_request("getMopState")],
     "do_not_disturb": [SmartRequest.get_raw_request("getDoNotDisturb")],
     "charge_pose_clean": [],

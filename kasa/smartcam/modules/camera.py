@@ -99,6 +99,9 @@ class Camera(SmartCamModule):
         :return: rtsp url with escaped credentials or None if no credentials or
             camera is off.
         """
+        if self._device._is_hub_child:
+            return None
+
         streams = {
             StreamResolution.HD: "stream1",
             StreamResolution.SD: "stream2",
@@ -119,6 +122,9 @@ class Camera(SmartCamModule):
 
     def onvif_url(self) -> str | None:
         """Return the onvif url."""
+        if self._device._is_hub_child:
+            return None
+
         return f"http://{self._device.host}:{ONVIF_PORT}/onvif/device_service"
 
     async def _check_supported(self) -> bool:

@@ -135,6 +135,8 @@ SENSORS_SMART = {
 }
 THERMOSTATS_SMART = {"KE100"}
 
+VACUUMS_SMART = {"RV20"}
+
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "P110M", "P115", "KP125M", "EP25", "P304M"}
 WITH_EMETER = {*WITH_EMETER_IOT, *WITH_EMETER_SMART}
@@ -152,6 +154,7 @@ ALL_DEVICES_SMART = (
     .union(SENSORS_SMART)
     .union(SWITCHES_SMART)
     .union(THERMOSTATS_SMART)
+    .union(VACUUMS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -336,13 +339,14 @@ device_smartcam = parametrize("devices smartcam", protocol_filter={"SMARTCAM"})
 camera_smartcam = parametrize(
     "camera smartcam",
     device_type_filter=[DeviceType.Camera],
-    protocol_filter={"SMARTCAM"},
+    protocol_filter={"SMARTCAM", "SMARTCAM.CHILD"},
 )
 hub_smartcam = parametrize(
     "hub smartcam",
     device_type_filter=[DeviceType.Hub],
     protocol_filter={"SMARTCAM"},
 )
+vacuum = parametrize("vacuums", device_type_filter=[DeviceType.Vacuum])
 
 
 def check_categories():
@@ -361,6 +365,7 @@ def check_categories():
         + thermostats_smart.args[1]
         + camera_smartcam.args[1]
         + hub_smartcam.args[1]
+        + vacuum.args[1]
     )
     diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -378,7 +383,7 @@ check_categories()
 def device_for_fixture_name(model, protocol):
     if protocol in {"SMART", "SMART.CHILD"}:
         return SmartDevice
-    elif protocol == "SMARTCAM":
+    elif protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
         return SmartCamDevice
     else:
         for d in STRIPS_IOT:
@@ -431,11 +436,20 @@ async def get_device_for_fixture(
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
         host="127.0.0.123"
     )
+
+    # smart child devices sometimes check _is_hub_child which needs a parent
+    # of DeviceType.Hub
+    class DummyParent:
+        device_type = DeviceType.Hub
+
+    if fixture_data.protocol in {"SMARTCAM.CHILD"}:
+        d._parent = DummyParent()
+
     if fixture_data.protocol in {"SMART", "SMART.CHILD"}:
         d.protocol = FakeSmartProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
-    elif fixture_data.protocol == "SMARTCAM":
+    elif fixture_data.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
         d.protocol = FakeSmartCamProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )

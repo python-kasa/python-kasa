@@ -54,7 +54,8 @@ from kasa.protocols.smartcamprotocol import (
 from kasa.protocols.smartprotocol import REDACTORS as SMART_REDACTORS
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartChildDevice, SmartDevice
-from kasa.smartcam import SmartCamDevice
+from kasa.smartcam import SmartCamChild, SmartCamDevice
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 
 Call = namedtuple("Call", "module method")
 FixtureResult = namedtuple("FixtureResult", "filename, folder, data, protocol_suffix")
@@ -62,11 +63,13 @@ FixtureResult = namedtuple("FixtureResult", "filename, folder, data, protocol_su
 SMART_FOLDER = "tests/fixtures/smart/"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child/"
+SMARTCAM_CHILD_FOLDER = "tests/fixtures/smartcam/child/"
 IOT_FOLDER = "tests/fixtures/iot/"
 
 SMART_PROTOCOL_SUFFIX = "SMART"
 SMARTCAM_SUFFIX = "SMARTCAM"
 SMART_CHILD_SUFFIX = "SMART.CHILD"
+SMARTCAM_CHILD_SUFFIX = "SMARTCAM.CHILD"
 IOT_SUFFIX = "IOT"
 
 NO_GIT_FIXTURE_FOLDER = "kasa-fixtures"
@@ -297,7 +300,9 @@ async def cli(
             connection_type = DeviceConnectionParameters.from_values(
                 dr.device_type,
                 dr.mgt_encrypt_schm.encrypt_type,
-                dr.mgt_encrypt_schm.lv,
+                login_version=dr.mgt_encrypt_schm.lv,
+                https=dr.mgt_encrypt_schm.is_support_https,
+                http_port=dr.mgt_encrypt_schm.http_port,
             )
             dc = DeviceConfig(
                 host=host,
@@ -844,9 +849,8 @@ async def get_smart_test_calls(protocol: SmartProtocol):
     return test_calls, successes
 
 
-def get_smart_child_fixture(response):
+def get_smart_child_fixture(response, model_info, folder, suffix):
     """Get a seperate fixture for the child device."""
-    model_info = SmartDevice._get_device_info(response, None)
     hw_version = model_info.hardware_version
     fw_version = model_info.firmware_version
     model = model_info.long_name
@@ -855,10 +859,66 @@ def get_smart_child_fixture(response):
     save_filename = f"{model}_{hw_version}_{fw_version}"
     return FixtureResult(
         filename=save_filename,
-        folder=SMART_CHILD_FOLDER,
+        folder=folder,
         data=response,
-        protocol_suffix=SMART_CHILD_SUFFIX,
+        protocol_suffix=suffix,
     )
+
+
+def scrub_child_device_ids(
+    main_response: dict, child_responses: dict
+) -> dict[str, str]:
+    """Scrub all the child device ids in the responses."""
+    # Make the scrubbed id map
+    scrubbed_child_id_map = {
+        device_id: f"SCRUBBED_CHILD_DEVICE_ID_{index + 1}"
+        for index, device_id in enumerate(child_responses.keys())
+        if device_id != ""
+    }
+
+    for child_id, response in child_responses.items():
+        scrubbed_child_id = scrubbed_child_id_map[child_id]
+        # scrub the device id in the child's get info response
+        # The checks for the device_id will ensure we can get a fixture
+        # even if the data is unexpectedly not available although it should
+        # always be there
+        if "get_device_info" in response and "device_id" in response["get_device_info"]:
+            response["get_device_info"]["device_id"] = scrubbed_child_id
+        elif (
+            basic_info := response.get("getDeviceInfo", {})
+            .get("device_info", {})
+            .get("basic_info")
+        ) and "dev_id" in basic_info:
+            basic_info["dev_id"] = scrubbed_child_id
+        else:
+            _LOGGER.error(
+                "Cannot find device id in child get device info: %s", child_id
+            )
+
+    # Scrub the device ids in the parent for smart protocol
+    if gc := main_response.get("get_child_device_component_list"):
+        for child in gc["child_component_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_child_id_map[device_id]
+        for child in main_response["get_child_device_list"]["child_device_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_child_id_map[device_id]
+
+    # Scrub the device ids in the parent for the smart camera protocol
+    if gc := main_response.get("getChildDeviceComponentList"):
+        for child in gc["child_component_list"]:
+            device_id = child["device_id"]
+            child["device_id"] = scrubbed_child_id_map[device_id]
+        for child in main_response["getChildDeviceList"]["child_device_list"]:
+            if device_id := child.get("device_id"):
+                child["device_id"] = scrubbed_child_id_map[device_id]
+                continue
+            elif dev_id := child.get("dev_id"):
+                child["dev_id"] = scrubbed_child_id_map[dev_id]
+                continue
+            _LOGGER.error("Could not find a device id for the child device: %s", child)
+
+    return scrubbed_child_id_map
 
 
 async def get_smart_fixtures(
@@ -917,21 +977,19 @@ async def get_smart_fixtures(
         finally:
             await protocol.close()
 
+    # Put all the successes into a dict[child_device_id or "", successes[]]
     device_requests: dict[str, list[SmartCall]] = {}
     for success in successes:
         device_request = device_requests.setdefault(success.child_device_id, [])
         device_request.append(success)
 
-    scrubbed_device_ids = {
-        device_id: f"SCRUBBED_CHILD_DEVICE_ID_{index}"
-        for index, device_id in enumerate(device_requests.keys())
-        if device_id != ""
-    }
-
     final = await _make_final_calls(
         protocol, device_requests[""], "All successes", batch_size, child_device_id=""
     )
     fixture_results = []
+
+    # Make the final child calls
+    child_responses = {}
     for child_device_id, requests in device_requests.items():
         if child_device_id == "":
             continue
@@ -942,55 +1000,82 @@ async def get_smart_fixtures(
             batch_size,
             child_device_id=child_device_id,
         )
+        child_responses[child_device_id] = response
 
-        scrubbed = scrubbed_device_ids[child_device_id]
-        if "get_device_info" in response and "device_id" in response["get_device_info"]:
-            response["get_device_info"]["device_id"] = scrubbed
-        # If the child is a different model to the parent create a seperate fixture
-        if "get_device_info" in final:
-            parent_model = final["get_device_info"]["model"]
-        elif "getDeviceInfo" in final:
-            parent_model = final["getDeviceInfo"]["device_info"]["basic_info"][
-                "device_model"
-            ]
+    # scrub the child ids
+    scrubbed_child_id_map = scrub_child_device_ids(final, child_responses)
+
+    # Redact data from the main device response. _wrap_redactors ensure we do
+    # not redact the scrubbed child device ids and replaces REDACTED_partial_id
+    # with zeros
+    final = redact_data(final, _wrap_redactors(SMART_REDACTORS))
+
+    # smart cam child devices provide more information in getChildDeviceList on the
+    # parent than they return when queried directly for getDeviceInfo so we will store
+    # it in the child fixture.
+    if smart_cam_child_list := final.get("getChildDeviceList"):
+        child_infos_on_parent = {
+            info["device_id"]: info
+            for info in smart_cam_child_list["child_device_list"]
+        }
+
+    for child_id, response in child_responses.items():
+        scrubbed_child_id = scrubbed_child_id_map[child_id]
+
+        # Get the parent model for checking whether to create a seperate child fixture
+        if model := final.get("get_device_info", {}).get("model"):
+            parent_model = model
+        elif (
+            device_model := final.get("getDeviceInfo", {})
+            .get("device_info", {})
+            .get("basic_info", {})
+            .get("device_model")
+        ):
+            parent_model = device_model
         else:
-            raise KasaException("Cannot determine parent device model.")
+            parent_model = None
+            _LOGGER.error("Cannot determine parent device model.")
+
+        # different model smart child device
         if (
-            "component_nego" in response
-            and "get_device_info" in response
-            and (child_model := response["get_device_info"].get("model"))
+            (child_model := response.get("get_device_info", {}).get("model"))
+            and parent_model
             and child_model != parent_model
         ):
             response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
-            fixture_results.append(get_smart_child_fixture(response))
+            model_info = SmartDevice._get_device_info(response, None)
+            fixture_results.append(
+                get_smart_child_fixture(
+                    response, model_info, SMART_CHILD_FOLDER, SMART_CHILD_SUFFIX
+                )
+            )
+        # different model smartcam child device
+        elif (
+            (
+                child_model := response.get("getDeviceInfo", {})
+                .get("device_info", {})
+                .get("basic_info", {})
+                .get("device_model")
+            )
+            and parent_model
+            and child_model != parent_model
+        ):
+            response = redact_data(response, _wrap_redactors(SMART_REDACTORS))
+            # There is more info in the childDeviceList on the parent
+            # particularly the region is needed here.
+            child_info_from_parent = child_infos_on_parent[scrubbed_child_id]
+            response[CHILD_INFO_FROM_PARENT] = child_info_from_parent
+            model_info = SmartCamChild._get_device_info(response, None)
+            fixture_results.append(
+                get_smart_child_fixture(
+                    response, model_info, SMARTCAM_CHILD_FOLDER, SMARTCAM_CHILD_SUFFIX
+                )
+            )
+        # same model child device
         else:
             cd = final.setdefault("child_devices", {})
-            cd[scrubbed] = response
+            cd[scrubbed_child_id] = response
 
-    # Scrub the device ids in the parent for smart protocol
-    if gc := final.get("get_child_device_component_list"):
-        for child in gc["child_component_list"]:
-            device_id = child["device_id"]
-            child["device_id"] = scrubbed_device_ids[device_id]
-        for child in final["get_child_device_list"]["child_device_list"]:
-            device_id = child["device_id"]
-            child["device_id"] = scrubbed_device_ids[device_id]
-
-    # Scrub the device ids in the parent for the smart camera protocol
-    if gc := final.get("getChildDeviceComponentList"):
-        for child in gc["child_component_list"]:
-            device_id = child["device_id"]
-            child["device_id"] = scrubbed_device_ids[device_id]
-        for child in final["getChildDeviceList"]["child_device_list"]:
-            if device_id := child.get("device_id"):
-                child["device_id"] = scrubbed_device_ids[device_id]
-                continue
-            elif dev_id := child.get("dev_id"):
-                child["dev_id"] = scrubbed_device_ids[dev_id]
-                continue
-            _LOGGER.error("Could not find a device for the child device: %s", child)
-
-    final = redact_data(final, _wrap_redactors(SMART_REDACTORS))
     discovery_result = None
     if discovery_info:
         final["discovery_result"] = redact_data(

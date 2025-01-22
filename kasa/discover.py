@@ -146,6 +146,7 @@ class ConnectAttempt(NamedTuple):
     protocol: type
     transport: type
     device: type
+    https: bool
 
 
 class DiscoveredMeta(TypedDict):
@@ -360,7 +361,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 json_func = Discover._get_discovery_json_legacy
                 device_func = Discover._get_device_instance_legacy
             elif port == Discover.DISCOVERY_PORT_2:
-                config.uses_http = True
                 json_func = Discover._get_discovery_json
                 device_func = Discover._get_device_instance
             else:
@@ -634,12 +634,14 @@ class Discover:
             Device.Family.SmartTapoPlug,
             Device.Family.IotSmartPlugSwitch,
             Device.Family.SmartIpCamera,
+            Device.Family.SmartTapoRobovac,
+            Device.Family.IotIpCamera,
         }
         candidates: dict[
-            tuple[type[BaseProtocol], type[BaseTransport], type[Device]],
+            tuple[type[BaseProtocol], type[BaseTransport], type[Device], bool],
             tuple[BaseProtocol, DeviceConfig],
         ] = {
-            (type(protocol), type(protocol._transport), device_class): (
+            (type(protocol), type(protocol._transport), device_class, https): (
                 protocol,
                 config,
             )
@@ -663,10 +665,9 @@ class Discover:
                     port_override=port,
                     credentials=credentials,
                     http_client=http_client,
-                    uses_http=encrypt is not Device.EncryptionType.Xor,
                 )
             )
-            and (protocol := get_protocol(config))
+            and (protocol := get_protocol(config, strict=True))
             and (
                 device_class := get_device_class_from_family(
                     device_family.value, https=https, require_exact=True
@@ -676,9 +677,14 @@ class Discover:
         for key, val in candidates.items():
             try:
                 prot, config = val
+                _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
                 dev = await _connect(config, prot)
-            except Exception:
-                _LOGGER.debug("Unable to connect with %s", prot)
+            except Exception as ex:
+                _LOGGER.debug(
+                    "Unable to connect with %s: %s",
+                    prot.__class__.__name__,
+                    ex,
+                )
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, False)
@@ -686,6 +692,7 @@ class Discover:
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, True)
+                _LOGGER.debug("Found working protocol %s", prot.__class__.__name__)
                 return dev
             finally:
                 await prot.close()
@@ -864,8 +871,9 @@ class Discover:
             config.connection_type = DeviceConnectionParameters.from_values(
                 type_,
                 encrypt_type,
-                login_version,
-                encrypt_schm.is_support_https,
+                login_version=login_version,
+                https=encrypt_schm.is_support_https,
+                http_port=encrypt_schm.http_port,
             )
         except KasaException as ex:
             raise UnsupportedDeviceError(

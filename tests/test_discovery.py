@@ -134,7 +134,14 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     discovery_mock.ip = host
     discovery_mock.port_override = custom_port
 
-    device_class = Discover._get_device_class(discovery_mock.discovery_data)
+    disco_data = discovery_mock.discovery_data
+    device_class = Discover._get_device_class(disco_data)
+    http_port = (
+        DiscoveryResult.from_dict(disco_data["result"]).mgt_encrypt_schm.http_port
+        if "result" in disco_data
+        else None
+    )
+
     # discovery_mock patches protocol query methods so use spy here.
     update_mock = mocker.spy(device_class, "update")
 
@@ -143,23 +150,27 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
     )
     assert issubclass(x.__class__, Device)
     assert x._discovery_info is not None
-    assert x.port == custom_port or x.port == discovery_mock.default_port
+    assert (
+        x.port == custom_port
+        or x.port == discovery_mock.default_port
+        or x.port == http_port
+    )
     # Make sure discovery does not call update()
     assert update_mock.call_count == 0
-    if discovery_mock.default_port == 80:
+    if discovery_mock.default_port != 9999:
         assert x.alias is None
 
     ct = DeviceConnectionParameters.from_values(
         discovery_mock.device_type,
         discovery_mock.encrypt_type,
-        discovery_mock.login_version,
+        login_version=discovery_mock.login_version,
+        https=discovery_mock.https,
+        http_port=discovery_mock.http_port,
     )
-    uses_http = discovery_mock.default_port == 80
     config = DeviceConfig(
         host=host,
         port_override=custom_port,
         connection_type=ct,
-        uses_http=uses_http,
         credentials=Credentials(),
     )
     assert x.config == config
@@ -415,9 +426,9 @@ async def test_discover_single_http_client(discovery_mock, mocker):
 
     x: Device = await Discover.discover_single(host)
 
-    assert x.config.uses_http == (discovery_mock.default_port == 80)
+    assert x.config.uses_http == (discovery_mock.default_port != 9999)
 
-    if discovery_mock.default_port == 80:
+    if discovery_mock.default_port != 9999:
         assert x.protocol._transport._http_client.client != http_client
         x.config.http_client = http_client
         assert x.protocol._transport._http_client.client == http_client
@@ -432,9 +443,9 @@ async def test_discover_http_client(discovery_mock, mocker):
 
     devices = await Discover.discover(discovery_timeout=0)
     x: Device = devices[host]
-    assert x.config.uses_http == (discovery_mock.default_port == 80)
+    assert x.config.uses_http == (discovery_mock.default_port != 9999)
 
-    if discovery_mock.default_port == 80:
+    if discovery_mock.default_port != 9999:
         assert x.protocol._transport._http_client.client != http_client
         x.config.http_client = http_client
         assert x.protocol._transport._http_client.client == http_client
@@ -664,8 +675,9 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
         cparams = DeviceConnectionParameters.from_values(
             discovery_mock.device_type,
             discovery_mock.encrypt_type,
-            discovery_mock.login_version,
-            discovery_mock.https,
+            login_version=discovery_mock.login_version,
+            https=discovery_mock.https,
+            http_port=discovery_mock.http_port,
         )
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
@@ -677,21 +689,26 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
         protocol_class = IotProtocol
         transport_class = XorTransport
 
+    default_port = discovery_mock.default_port
+
     async def _query(self, *args, **kwargs):
         if (
             self.__class__ is protocol_class
             and self._transport.__class__ is transport_class
+            and self._transport._port == default_port
         ):
             return discovery_mock.query_data
-        raise KasaException()
+        raise KasaException("Unable to execute query")
 
     async def _update(self, *args, **kwargs):
         if (
             self.protocol.__class__ is protocol_class
             and self.protocol._transport.__class__ is transport_class
+            and self.protocol._transport._port == default_port
         ):
             return
-        raise KasaException()
+
+        raise KasaException("Unable to execute update")
 
     mocker.patch("kasa.IotProtocol.query", new=_query)
     mocker.patch("kasa.SmartProtocol.query", new=_query)

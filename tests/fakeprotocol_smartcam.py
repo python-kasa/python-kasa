@@ -6,6 +6,7 @@ from typing import Any
 
 from kasa import Credentials, DeviceConfig, SmartProtocol
 from kasa.protocols.smartcamprotocol import SmartCamProtocol
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT, SmartCamChild
 from kasa.transports.basetransport import BaseTransport
 
 from .fakeprotocol_smart import FakeSmartTransport
@@ -125,9 +126,25 @@ class FakeSmartCamTransport(BaseTransport):
 
     @staticmethod
     def _get_param_set_value(info: dict, set_keys: list[str], value):
+        cifp = info.get(CHILD_INFO_FROM_PARENT)
+
         for key in set_keys[:-1]:
             info = info[key]
         info[set_keys[-1]] = value
+
+        if (
+            cifp
+            and set_keys[0] == "getDeviceInfo"
+            and (
+                child_info_parent_key
+                := FakeSmartCamTransport.CHILD_INFO_SETTER_MAP.get(set_keys[-1])
+            )
+        ):
+            cifp[child_info_parent_key] = value
+
+    CHILD_INFO_SETTER_MAP = {
+        "device_alias": "alias",
+    }
 
     FIXTURE_MISSING_MAP = {
         "getMatterSetupInfo": (
@@ -170,6 +187,33 @@ class FakeSmartCamTransport(BaseTransport):
         it = iter(request_dict)
         next(it, None)
         return next(it)
+
+    def get_child_device_queries(self, method, params):
+        return self._get_method_from_info(method, params)
+
+    def _get_method_from_info(self, method, params):
+        result = copy.deepcopy(self.info[method])
+        if "start_index" in result and "sum" in result:
+            list_key = next(
+                iter([key for key in result if isinstance(result[key], list)])
+            )
+            assert isinstance(params, dict)
+            module_name = next(iter(params))
+
+            start_index = (
+                start_index
+                if (
+                    params
+                    and module_name
+                    and (start_index := params[module_name].get("start_index"))
+                )
+                else 0
+            )
+
+            result[list_key] = result[list_key][
+                start_index : start_index + self.list_return_size
+            ]
+        return {"result": result, "error_code": 0}
 
     async def _send_request(self, request_dict: dict):
         method = request_dict["method"]
@@ -226,30 +270,32 @@ class FakeSmartCamTransport(BaseTransport):
             else:
                 return {"error_code": -1}
 
+        # smartcam child devices do not make requests for getDeviceInfo as they
+        # get updated from the parent's query. If this is being called from a
+        # child it must be because the fixture has been created directly on the
+        # child device with a dummy parent. In this case return the child info
+        # from parent that's inside the fixture.
+        if (
+            not self.verbatim
+            and method == "getDeviceInfo"
+            and (cifp := info.get(CHILD_INFO_FROM_PARENT))
+        ):
+            mapped = SmartCamChild._map_child_info_from_parent(cifp)
+            result = {"device_info": {"basic_info": mapped}}
+            return {"result": result, "error_code": 0}
+
+        # These methods are handled in get_child_device_query so it can be
+        # patched for tests to simulate dynamic devices.
+        if (
+            method in ("getChildDeviceList", "getChildDeviceComponentList")
+            and method in info
+        ):
+            params = request_dict.get("params")
+            return self.get_child_device_queries(method, params)
+
         if method in info:
             params = request_dict.get("params")
-            result = copy.deepcopy(info[method])
-            if "start_index" in result and "sum" in result:
-                list_key = next(
-                    iter([key for key in result if isinstance(result[key], list)])
-                )
-                assert isinstance(params, dict)
-                module_name = next(iter(params))
-
-                start_index = (
-                    start_index
-                    if (
-                        params
-                        and module_name
-                        and (start_index := params[module_name].get("start_index"))
-                    )
-                    else 0
-                )
-
-                result[list_key] = result[list_key][
-                    start_index : start_index + self.list_return_size
-                ]
-            return {"result": result, "error_code": 0}
+            return self._get_method_from_info(method, params)
 
         if self.verbatim:
             return {"error_code": -1}

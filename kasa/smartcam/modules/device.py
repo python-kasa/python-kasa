@@ -16,6 +16,11 @@ class DeviceModule(SmartCamModule):
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
+        if self._device._is_hub_child:
+            # Child devices get their device info updated by the parent device.
+            # and generally don't support connection type as they're not
+            # connected to the network
+            return {}
         q = super().query()
         q["getConnectionType"] = {"network": {"get_connection_type": []}}
 
@@ -70,14 +75,14 @@ class DeviceModule(SmartCamModule):
     @property
     def device_id(self) -> str:
         """Return the device id."""
-        return self.data[self.QUERY_GETTER_NAME]["basic_info"]["dev_id"]
+        return self._device._info["device_id"]
 
     @property
     def rssi(self) -> int | None:
         """Return the device id."""
-        return self.data["getConnectionType"].get("rssiValue")
+        return self.data.get("getConnectionType", {}).get("rssiValue")
 
     @property
     def signal_level(self) -> int | None:
         """Return the device id."""
-        return self.data["getConnectionType"].get("rssi")
+        return self.data.get("getConnectionType", {}).get("rssi")

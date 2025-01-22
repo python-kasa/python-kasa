@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ class LensMask(SmartCamModule):
         """Return the lens mask state."""
         return self.data["lens_mask_info"]["enabled"] == "on"
 
+    @allow_update_after
     async def set_enabled(self, enable: bool) -> dict:
         """Set the lens mask state."""
         params = {"enabled": "on" if enable else "off"}

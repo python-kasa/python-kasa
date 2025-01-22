@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 import warnings
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+# TODO: this and runner fixture could be moved to tests/cli/conftest.py
+from asyncclick.testing import CliRunner
 
 from kasa import (
     DeviceConfig,
@@ -149,3 +153,12 @@ def mock_datagram_endpoint(request):  # noqa: PT004
             side_effect=_create_datagram_endpoint,
         ):
             yield
+
+
+@pytest.fixture
+def runner():
+    """Runner fixture that unsets the KASA_ environment variables for tests."""
+    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
+    runner = CliRunner(env=KASA_VARS)
+
+    return runner

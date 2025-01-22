@@ -127,6 +127,8 @@ class SmartErrorCode(IntEnum):
     DST_ERROR = -2301
     DST_SAVE_ERROR = -2302
 
+    VACUUM_BATTERY_LOW = -3001
+
     SYSTEM_ERROR = -40101
     INVALID_ARGUMENTS = -40209
 

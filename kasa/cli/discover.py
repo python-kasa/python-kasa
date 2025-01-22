@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from pprint import pformat as pf
+from typing import TYPE_CHECKING, cast
 
 import asyncclick as click
 
@@ -17,8 +18,12 @@ from kasa import (
 from kasa.discover import (
     NEW_DISCOVERY_REDACTORS,
     ConnectAttempt,
+    DeviceDict,
     DiscoveredRaw,
     DiscoveryResult,
+    OnDiscoveredCallable,
+    OnDiscoveredRawCallable,
+    OnUnsupportedCallable,
 )
 from kasa.iot.iotdevice import _extract_sys_info
 from kasa.protocols.iotprotocol import REDACTORS as IOT_REDACTORS
@@ -30,15 +35,33 @@ from .common import echo, error
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-async def discover(ctx):
+async def discover(ctx: click.Context):
     """Discover devices in the network."""
     if ctx.invoked_subcommand is None:
         return await ctx.invoke(detail)
 
 
+@discover.result_callback()
+@click.pass_context
+async def _close_protocols(ctx: click.Context, discovered: DeviceDict):
+    """Close all the device protocols if discover was invoked directly by the user."""
+    if _discover_is_root_cmd(ctx):
+        for dev in discovered.values():
+            await dev.disconnect()
+    return discovered
+
+
+def _discover_is_root_cmd(ctx: click.Context) -> bool:
+    """Will return true if discover was invoked directly by the user."""
+    root_ctx = ctx.find_root()
+    return (
+        root_ctx.invoked_subcommand is None or root_ctx.invoked_subcommand == "discover"
+    )
+
+
 @discover.command()
 @click.pass_context
-async def detail(ctx):
+async def detail(ctx: click.Context) -> DeviceDict:
     """Discover devices in the network using udp broadcasts."""
     unsupported = []
     auth_failed = []
@@ -59,10 +82,14 @@ async def detail(ctx):
     from .device import state
 
     async def print_discovered(dev: Device) -> None:
+        if TYPE_CHECKING:
+            assert ctx.parent
         async with sem:
             try:
                 await dev.update()
             except AuthenticationError:
+                if TYPE_CHECKING:
+                    assert dev._discovery_info
                 auth_failed.append(dev._discovery_info)
                 echo("== Authentication failed for device ==")
                 _echo_discovery_info(dev._discovery_info)
@@ -73,9 +100,11 @@ async def detail(ctx):
             echo()
 
     discovered = await _discover(
-        ctx, print_discovered=print_discovered, print_unsupported=print_unsupported
+        ctx,
+        print_discovered=print_discovered if _discover_is_root_cmd(ctx) else None,
+        print_unsupported=print_unsupported,
     )
-    if ctx.parent.parent.params["host"]:
+    if ctx.find_root().params["host"]:
         return discovered
 
     echo(f"Found {len(discovered)} devices")
@@ -96,7 +125,7 @@ async def detail(ctx):
     help="Set flag to redact sensitive data from raw output.",
 )
 @click.pass_context
-async def raw(ctx, redact: bool):
+async def raw(ctx: click.Context, redact: bool) -> DeviceDict:
     """Return raw discovery data returned from devices."""
 
     def print_raw(discovered: DiscoveredRaw):
@@ -116,7 +145,7 @@ async def raw(ctx, redact: bool):
 
 @discover.command()
 @click.pass_context
-async def list(ctx):
+async def list(ctx: click.Context) -> DeviceDict:
     """List devices in the network in a table using udp broadcasts."""
     sem = asyncio.Semaphore()
 
@@ -147,18 +176,24 @@ async def list(ctx):
         f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
         f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
     )
-    return await _discover(
+    discovered = await _discover(
         ctx,
         print_discovered=print_discovered,
         print_unsupported=print_unsupported,
         do_echo=False,
     )
+    return discovered
 
 
 async def _discover(
-    ctx, *, print_discovered=None, print_unsupported=None, print_raw=None, do_echo=True
-):
-    params = ctx.parent.parent.params
+    ctx: click.Context,
+    *,
+    print_discovered: OnDiscoveredCallable | None = None,
+    print_unsupported: OnUnsupportedCallable | None = None,
+    print_raw: OnDiscoveredRawCallable | None = None,
+    do_echo=True,
+) -> DeviceDict:
+    params = ctx.find_root().params
     target = params["target"]
     username = params["username"]
     password = params["password"]
@@ -170,8 +205,9 @@ async def _discover(
     credentials = Credentials(username, password) if username and password else None
 
     if host:
+        host = cast(str, host)
         echo(f"Discovering device {host} for {discovery_timeout} seconds")
-        return await Discover.discover_single(
+        dev = await Discover.discover_single(
             host,
             port=port,
             credentials=credentials,
@@ -180,6 +216,12 @@ async def _discover(
             on_unsupported=print_unsupported,
             on_discovered_raw=print_raw,
         )
+        if dev:
+            if print_discovered:
+                await print_discovered(dev)
+            return {host: dev}
+        else:
+            return {}
     if do_echo:
         echo(f"Discovering devices on {target} for {discovery_timeout} seconds")
     discovered_devices = await Discover.discover(
@@ -193,21 +235,18 @@ async def _discover(
         on_discovered_raw=print_raw,
     )
 
-    for device in discovered_devices.values():
-        await device.protocol.close()
-
     return discovered_devices
 
 
 @discover.command()
 @click.pass_context
-async def config(ctx):
+async def config(ctx: click.Context) -> DeviceDict:
     """Bypass udp discovery and try to show connection config for a device.
 
     Bypasses udp discovery and shows the parameters required to connect
     directly to the device.
     """
-    params = ctx.parent.parent.params
+    params = ctx.find_root().params
     username = params["username"]
     password = params["password"]
     timeout = params["timeout"]
@@ -222,8 +261,11 @@ async def config(ctx):
     host_port = host + (f":{port}" if port else "")
 
     def on_attempt(connect_attempt: ConnectAttempt, success: bool) -> None:
-        prot, tran, dev = connect_attempt
-        key_str = f"{prot.__name__} + {tran.__name__} + {dev.__name__}"
+        prot, tran, dev, https = connect_attempt
+        key_str = (
+            f"{prot.__name__} + {tran.__name__} + {dev.__name__}"
+            f" + {'https' if https else 'http'}"
+        )
         result = "succeeded" if success else "failed"
         msg = f"Attempt to connect to {host_port} with {key_str} {result}"
         echo(msg)
@@ -239,6 +281,7 @@ async def config(ctx):
             f"--encrypt-type {cparams.encryption_type.value} "
             f"{'--https' if cparams.https else '--no-https'}"
         )
+        return {host: dev}
     else:
         error(f"Unable to connect to {host}")
 
@@ -251,7 +294,7 @@ def _echo_dictionary(discovery_info: dict) -> None:
         echo(f"\t{key_name_and_spaces}{value}")
 
 
-def _echo_discovery_info(discovery_info) -> None:
+def _echo_discovery_info(discovery_info: dict) -> None:
     # We don't have discovery info when all connection params are passed manually
     if discovery_info is None:
         return

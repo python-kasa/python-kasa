@@ -63,8 +63,9 @@ def _get_connection_type_device_class(discovery_info):
         connection_type = DeviceConnectionParameters.from_values(
             dr.device_type,
             dr.mgt_encrypt_schm.encrypt_type,
-            dr.mgt_encrypt_schm.lv,
-            dr.mgt_encrypt_schm.is_support_https,
+            login_version=dr.mgt_encrypt_schm.lv,
+            https=dr.mgt_encrypt_schm.is_support_https,
+            http_port=dr.mgt_encrypt_schm.http_port,
         )
     else:
         connection_type = DeviceConnectionParameters.from_values(
@@ -117,7 +118,11 @@ async def test_connect_custom_port(discovery_mock, mocker, custom_port):
         connection_type=ctype,
         credentials=Credentials("dummy_user", "dummy_password"),
     )
-    default_port = 80 if "result" in discovery_data else 9999
+    default_port = (
+        DiscoveryResult.from_dict(discovery_data["result"]).mgt_encrypt_schm.http_port
+        if "result" in discovery_data
+        else 9999
+    )
 
     ctype, _ = _get_connection_type_device_class(discovery_data)
 
