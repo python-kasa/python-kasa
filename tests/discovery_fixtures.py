@@ -159,6 +159,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         https: bool
         login_version: int | None = None
         port_override: int | None = None
+        http_port: int | None = None
 
         @property
         def model(self) -> str:
@@ -194,9 +195,15 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         ):
             login_version = max([int(i) for i in et])
         https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
+        http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
+        if not http_port:  # noqa: SIM108
+            # Not all discovery responses set the http port, i.e. smartcam.
+            default_port = 443 if https else 80
+        else:
+            default_port = http_port
         dm = _DiscoveryMock(
             ip,
-            80,
+            default_port,
             20002,
             discovery_data,
             fixture_data,
@@ -204,6 +211,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             encrypt_type,
             https,
             login_version,
+            http_port=http_port,
         )
     else:
         sys_info = fixture_data["system"]["get_sysinfo"]

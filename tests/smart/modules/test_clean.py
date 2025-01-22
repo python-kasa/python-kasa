@@ -104,19 +104,41 @@ async def test_actions(
 
 
 @pytest.mark.parametrize(
-    ("err_status", "error"),
+    ("err_status", "error", "warning_msg"),
     [
-        pytest.param([], ErrorCode.Ok, id="empty error"),
-        pytest.param([0], ErrorCode.Ok, id="no error"),
-        pytest.param([3], ErrorCode.MainBrushStuck, id="known error"),
-        pytest.param([123], ErrorCode.UnknownInternal, id="unknown error"),
-        pytest.param([3, 4], ErrorCode.MainBrushStuck, id="multi-error"),
+        pytest.param([], ErrorCode.Ok, None, id="empty error"),
+        pytest.param([0], ErrorCode.Ok, None, id="no error"),
+        pytest.param([3], ErrorCode.MainBrushStuck, None, id="known error"),
+        pytest.param(
+            [123],
+            ErrorCode.UnknownInternal,
+            "Unknown error code, please create an issue describing the error: 123",
+            id="unknown error",
+        ),
+        pytest.param(
+            [3, 4],
+            ErrorCode.MainBrushStuck,
+            "Multiple error codes, using the first one only: [3, 4]",
+            id="multi-error",
+        ),
     ],
 )
 @clean
-async def test_post_update_hook(dev: SmartDevice, err_status: list, error: ErrorCode):
+async def test_post_update_hook(
+    dev: SmartDevice,
+    err_status: list,
+    error: ErrorCode,
+    warning_msg: str | None,
+    caplog: pytest.LogCaptureFixture,
+):
     """Test that post update hook sets error states correctly."""
     clean = next(get_parent_and_child_modules(dev, Module.Clean))
+    assert clean
+
+    caplog.set_level(logging.DEBUG)
+
+    # _post_update_hook will pop an item off the status list so create a copy.
+    err_status = [e for e in err_status]
     clean.data["getVacStatus"]["err_status"] = err_status
 
     await clean._post_update_hook()
@@ -125,6 +147,16 @@ async def test_post_update_hook(dev: SmartDevice, err_status: list, error: Error
 
     if error is not ErrorCode.Ok:
         assert clean.status is Status.Error
+
+    if warning_msg:
+        assert warning_msg in caplog.text
+
+    # Check doesn't log twice
+    caplog.clear()
+    await clean._post_update_hook()
+
+    if warning_msg:
+        assert warning_msg not in caplog.text
 
 
 @clean
@@ -159,6 +191,20 @@ async def test_unknown_status(
 
     assert clean.status is Status.UnknownInternal
     assert "Got unknown status code: 123" in caplog.text
+
+    # Check only logs once
+    caplog.clear()
+
+    assert clean.status is Status.UnknownInternal
+    assert "Got unknown status code: 123" not in caplog.text
+
+    # Check logs again for other errors
+
+    caplog.clear()
+    clean.data["getVacStatus"]["status"] = 123456
+
+    assert clean.status is Status.UnknownInternal
+    assert "Got unknown status code: 123456" in caplog.text
 
 
 @clean

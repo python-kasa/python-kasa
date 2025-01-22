@@ -37,6 +37,7 @@ class ErrorCode(IntEnum):
     SideBrushStuck = 2
     MainBrushStuck = 3
     WheelBlocked = 4
+    Trapped = 6
     DustBinRemoved = 14
     UnableToMove = 15
     LidarBlocked = 16
@@ -79,6 +80,8 @@ class Clean(SmartModule):
 
     REQUIRED_COMPONENT = "clean"
     _error_code = ErrorCode.Ok
+    _logged_error_code_warnings: set | None = None
+    _logged_status_code_warnings: set
 
     def _initialize_features(self) -> None:
         """Initialize features."""
@@ -229,12 +232,17 @@ class Clean(SmartModule):
 
     async def _post_update_hook(self) -> None:
         """Set error code after update."""
+        if self._logged_error_code_warnings is None:
+            self._logged_error_code_warnings = set()
+            self._logged_status_code_warnings = set()
+
         errors = self._vac_status.get("err_status")
         if errors is None or not errors:
             self._error_code = ErrorCode.Ok
             return
 
-        if len(errors) > 1:
+        if len(errors) > 1 and "multiple" not in self._logged_error_code_warnings:
+            self._logged_error_code_warnings.add("multiple")
             _LOGGER.warning(
                 "Multiple error codes, using the first one only: %s", errors
             )
@@ -243,10 +251,13 @@ class Clean(SmartModule):
         try:
             self._error_code = ErrorCode(error)
         except ValueError:
-            _LOGGER.warning(
-                "Unknown error code, please create an issue describing the error: %s",
-                error,
-            )
+            if error not in self._logged_error_code_warnings:
+                self._logged_error_code_warnings.add(error)
+                _LOGGER.warning(
+                    "Unknown error code, please create an issue "
+                    "describing the error: %s",
+                    error,
+                )
             self._error_code = ErrorCode.UnknownInternal
 
     def query(self) -> dict:
@@ -360,7 +371,11 @@ class Clean(SmartModule):
         try:
             return Status(status_code)
         except ValueError:
-            _LOGGER.warning("Got unknown status code: %s (%s)", status_code, self.data)
+            if status_code not in self._logged_status_code_warnings:
+                self._logged_status_code_warnings.add(status_code)
+                _LOGGER.warning(
+                    "Got unknown status code: %s (%s)", status_code, self.data
+                )
             return Status.UnknownInternal
 
     @property
