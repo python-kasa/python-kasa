@@ -65,9 +65,9 @@ It is also possible to pass a coroutine to be executed for each found device:
 >>>     print(f"Discovered {dev.alias} (model: {dev.model})")
 >>>
 >>> devices = await Discover.discover(on_discovered=print_dev_info, credentials=creds)
-Discovered Living Room Bulb (model: L530)
 Discovered Bedroom Power Strip (model: KP303)
 Discovered Bedroom Lamp Plug (model: HS110)
+Discovered Living Room Bulb (model: L530)
 Discovered Bedroom Lightstrip (model: KL430)
 Discovered Living Room Dimmer Switch (model: HS220)
 Discovered Tapo Hub (model: H200)
