@@ -261,8 +261,11 @@ async def config(ctx: click.Context) -> DeviceDict:
     host_port = host + (f":{port}" if port else "")
 
     def on_attempt(connect_attempt: ConnectAttempt, success: bool) -> None:
-        prot, tran, dev = connect_attempt
-        key_str = f"{prot.__name__} + {tran.__name__} + {dev.__name__}"
+        prot, tran, dev, https = connect_attempt
+        key_str = (
+            f"{prot.__name__} + {tran.__name__} + {dev.__name__}"
+            f" + {'https' if https else 'http'}"
+        )
         result = "succeeded" if success else "failed"
         msg = f"Attempt to connect to {host_port} with {key_str} {result}"
         echo(msg)
