@@ -36,6 +36,18 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _mask_area_list(area_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def mask_area(area: dict[str, Any]) -> dict[str, Any]:
+        result = {**area}
+        # Will leave empty names as blank
+        if area.get("name"):
+            result["name"] = "I01BU0tFRF9OQU1FIw=="  # #MASKED_NAME#
+        return result
+
+    return [mask_area(area) for area in area_list]
+
+
 REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "latitude": lambda x: 0,
     "longitude": lambda x: 0,
@@ -71,9 +83,10 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "custom_sn": lambda _: "000000000000",
     "location": lambda x: "#MASKED_NAME#" if x else "",
     "map_data": lambda x: "#SCRUBBED_MAPDATA#" if x else "",
-    "map_name": lambda x: "I01BU0tFRF9OQU1FIwo=",  # #MASKED_NAME#
+    "map_name": lambda x: "I01BU0tFRF9OQU1FIw==",  # #MASKED_NAME#
+    "area_list": _mask_area_list,
     # unknown robovac binary blob in get_device_info
-    "cd": lambda x: "I01BU0tFRF9CSU5BUlkjCg==",  # #MASKED_BINARY#
+    "cd": lambda x: "I01BU0tFRF9CSU5BUlkj",  # #MASKED_BINARY#
 }
 
 # Queries that are known not to work properly when sent as a

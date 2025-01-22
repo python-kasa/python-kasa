@@ -413,7 +413,7 @@
                 "color": 3,
                 "floor_texture": -1,
                 "id": 5,
-                "name": "I01BU0tFRF9OQU1FIwo=",
+                "name": "I01BU0tFRF9OQU1FIw==",
                 "suction": 2,
                 "type": "room"
             },
@@ -423,7 +423,7 @@
                 "color": 4,
                 "floor_texture": -1,
                 "id": 6,
-                "name": "I01BU0tFRF9OQU1FIwo=",
+                "name": "I01BU0tFRF9OQU1FIw==",
                 "suction": 2,
                 "type": "room"
             },
@@ -433,7 +433,7 @@
                 "color": 1,
                 "floor_texture": 0,
                 "id": 2,
-                "name": "I01BU0tFRF9OQU1FIwo=",
+                "name": "I01BU0tFRF9OQU1FIw==",
                 "suction": 2,
                 "type": "room"
             },
@@ -443,7 +443,7 @@
                 "color": 5,
                 "floor_texture": 90,
                 "id": 3,
-                "name": "I01BU0tFRF9OQU1FIwo=",
+                "name": "I01BU0tFRF9OQU1FIw==",
                 "suction": 2,
                 "type": "room"
             },
@@ -453,7 +453,7 @@
                 "color": 2,
                 "floor_texture": -1,
                 "id": 4,
-                "name": "I01BU0tFRF9OQU1FIwo=",
+                "name": "I01BU0tFRF9OQU1FIw==",
                 "suction": 2,
                 "type": "room"
             },
@@ -647,7 +647,7 @@
         "map_hash": "A5D8FA4487CC40312EF58D8123F0A4CC",
         "map_id": 1734727686,
         "map_locked": 0,
-        "map_name": "I01BU0tFRF9OQU1FIwo=",
+        "map_name": "I01BU0tFRF9OQU1FIw==",
         "origin_coor": [
             -33,
             -108,
@@ -691,7 +691,7 @@
                 "is_saved": true,
                 "map_id": 1734727686,
                 "map_locked": 0,
-                "map_name": "I01BU0tFRF9OQU1FIwo=",
+                "map_name": "I01BU0tFRF9OQU1FIw==",
                 "rotate_angle": 270,
                 "update_time": 1737387285
             },
@@ -701,7 +701,7 @@
                 "is_saved": true,
                 "map_id": 1734742958,
                 "map_locked": 0,
-                "map_name": "I01BU0tFRF9OQU1FIwo=",
+                "map_name": "I01BU0tFRF9OQU1FIw==",
                 "rotate_angle": 0,
                 "update_time": 1737304392
             },
@@ -711,7 +711,7 @@
                 "is_saved": true,
                 "map_id": 1736541042,
                 "map_locked": 0,
-                "map_name": "I01BU0tFRF9OQU1FIwo=",
+                "map_name": "I01BU0tFRF9OQU1FIw==",
                 "rotate_angle": 270,
                 "update_time": 1737216718
             }
@@ -740,7 +740,7 @@
         "auto_pack_ver": "0.0.131.1852",
         "avatar": "",
         "board_sn": "000000000000",
-        "cd": "I01BU0tFRF9CSU5BUlkjCg==",
+        "cd": "I01BU0tFRF9CSU5BUlkj",
         "custom_sn": "000000000000",
         "device_id": "0000000000000000000000000000000000000000",
         "fw_id": "00000000000000000000000000000000",
