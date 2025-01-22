@@ -115,9 +115,7 @@ class IotDimmer(IotPlug):
             raise KasaException("Device is not dimmable.")
 
         if not isinstance(brightness, int):
-            raise ValueError(
-                "Brightness must be integer, " "not of %s.", type(brightness)
-            )
+            raise ValueError("Brightness must be integer, not of %s.", type(brightness))
 
         if not 0 <= brightness <= 100:
             raise ValueError(

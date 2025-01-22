@@ -1,5 +1,65 @@
 # Changelog
 
+## [0.10.0](https://github.com/python-kasa/python-kasa/tree/0.10.0) (2025-01-22)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.9.1...0.10.0)
+
+**Release summary:**
+
+**Breaking changes:**
+
+- Make uses\_http a readonly property of device config [\#1449](https://github.com/python-kasa/python-kasa/pull/1449) (@sdb9696)
+- Deprecate legacy light module is\_capability checks [\#1297](https://github.com/python-kasa/python-kasa/pull/1297) (@sdb9696)
+
+**Implemented enhancements:**
+
+- Expose more battery sensors for D230 [\#1451](https://github.com/python-kasa/python-kasa/issues/1451)
+- dumping HTTP POST Body for Tapo Vacuum \(RV30 Plus\) [\#937](https://github.com/python-kasa/python-kasa/issues/937)
+- Add smartcam pet detection toggle module [\#1465](https://github.com/python-kasa/python-kasa/pull/1465) (@DawidPietrykowski)
+- Only log one warning per unknown clean error code and status [\#1462](https://github.com/python-kasa/python-kasa/pull/1462) (@rytilahti)
+- Add childlock module for vacuums [\#1461](https://github.com/python-kasa/python-kasa/pull/1461) (@rytilahti)
+- Add ultra mode \(fanspeed = 5\) for vacuums [\#1459](https://github.com/python-kasa/python-kasa/pull/1459) (@rytilahti)
+- Add setting to change carpet clean mode [\#1458](https://github.com/python-kasa/python-kasa/pull/1458) (@rytilahti)
+- Add setting to change clean count [\#1457](https://github.com/python-kasa/python-kasa/pull/1457) (@rytilahti)
+- Add mop module [\#1456](https://github.com/python-kasa/python-kasa/pull/1456) (@rytilahti)
+- Enable dynamic hub child creation and deletion on update [\#1454](https://github.com/python-kasa/python-kasa/pull/1454) (@sdb9696)
+- Expose current cleaning information [\#1453](https://github.com/python-kasa/python-kasa/pull/1453) (@rytilahti)
+- Add battery module to smartcam devices [\#1452](https://github.com/python-kasa/python-kasa/pull/1452) (@sdb9696)
+- Allow update of camera modules after setting values [\#1450](https://github.com/python-kasa/python-kasa/pull/1450) (@sdb9696)
+- Update hub children on first update and delay subsequent updates [\#1438](https://github.com/python-kasa/python-kasa/pull/1438) (@sdb9696)
+- Implement vacuum dustbin module \(dust\_bucket\) [\#1423](https://github.com/python-kasa/python-kasa/pull/1423) (@rytilahti)
+- Allow https for klaptransport [\#1415](https://github.com/python-kasa/python-kasa/pull/1415) (@rytilahti)
+- Add smartcam child device support for smartcam hubs [\#1413](https://github.com/python-kasa/python-kasa/pull/1413) (@sdb9696)
+- Add vacuum speaker controls [\#1332](https://github.com/python-kasa/python-kasa/pull/1332) (@rytilahti)
+- Add consumables module for vacuums [\#1327](https://github.com/python-kasa/python-kasa/pull/1327) (@rytilahti)
+- Add support for cleaning records [\#945](https://github.com/python-kasa/python-kasa/pull/945) (@rytilahti)
+- Initial support for vacuums \(clean module\) [\#944](https://github.com/python-kasa/python-kasa/pull/944) (@rytilahti)
+- Add support for pairing devices with hubs [\#859](https://github.com/python-kasa/python-kasa/pull/859) (@rytilahti)
+
+**Fixed bugs:**
+
+- ssltransport: use debug logger for sending requests [\#1443](https://github.com/python-kasa/python-kasa/pull/1443) (@rytilahti)
+- Fix discover cli command with host [\#1437](https://github.com/python-kasa/python-kasa/pull/1437) (@sdb9696)
+- Fallback to is\_low for batterysensor's battery\_low [\#1420](https://github.com/python-kasa/python-kasa/pull/1420) (@rytilahti)
+
+**Added support for devices:**
+
+- Add C220\(EU\) 1.0 1.2.2 camera fixture [\#1466](https://github.com/python-kasa/python-kasa/pull/1466) (@DawidPietrykowski)
+- Add D230\(EU\) 1.20 1.1.19 fixture [\#1448](https://github.com/python-kasa/python-kasa/pull/1448) (@sdb9696)
+- Add fixture for C720 camera [\#1433](https://github.com/python-kasa/python-kasa/pull/1433) (@steveredden)
+
+**Project maintenance:**
+
+- Add commit-hook to prettify JSON files [\#1455](https://github.com/python-kasa/python-kasa/pull/1455) (@rytilahti)
+- Add required sphinx.configuration [\#1446](https://github.com/python-kasa/python-kasa/pull/1446) (@rytilahti)
+- Add more redactors for smartcams [\#1439](https://github.com/python-kasa/python-kasa/pull/1439) (@sdb9696)
+- Add tests for dump\_devinfo parent/child smartcam fixture generation [\#1428](https://github.com/python-kasa/python-kasa/pull/1428) (@sdb9696)
+- Raise errors on single smartcam child requests [\#1427](https://github.com/python-kasa/python-kasa/pull/1427) (@sdb9696)
+
+**Merged pull requests:**
+
+- Add KS230\(US\) 2.0 1.0.11 IOT Fixture [\#1430](https://github.com/python-kasa/python-kasa/pull/1430) (@ZeliardM)
+
 ## [0.9.1](https://github.com/python-kasa/python-kasa/tree/0.9.1) (2025-01-06)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.9.0...0.9.1)
@@ -19,8 +79,8 @@
 **Fixed bugs:**
 
 - T310 not detected with H200 Hub [\#1409](https://github.com/python-kasa/python-kasa/issues/1409)
-- Backoff after xor timeout and improve error reporting [\#1424](https://github.com/python-kasa/python-kasa/pull/1424) (@bdraco)
 - Fix incorrect obd src echo [\#1412](https://github.com/python-kasa/python-kasa/pull/1412) (@rytilahti)
+- Backoff after xor timeout and improve error reporting [\#1424](https://github.com/python-kasa/python-kasa/pull/1424) (@bdraco)
 - Handle smartcam partial list responses [\#1411](https://github.com/python-kasa/python-kasa/pull/1411) (@sdb9696)
 
 **Added support for devices:**
@@ -34,8 +94,8 @@
 
 **Project maintenance:**
 
-- Add C210 2.0 1.3.11 fixture [\#1406](https://github.com/python-kasa/python-kasa/pull/1406) (@sdb9696)
 - Add HS210\(US\) 3.0 1.0.10 IOT Fixture [\#1405](https://github.com/python-kasa/python-kasa/pull/1405) (@ZeliardM)
+- Add C210 2.0 1.3.11 fixture [\#1406](https://github.com/python-kasa/python-kasa/pull/1406) (@sdb9696)
 - Change smartcam detection features to category config [\#1402](https://github.com/python-kasa/python-kasa/pull/1402) (@sdb9696)
 
 ## [0.9.0](https://github.com/python-kasa/python-kasa/tree/0.9.0) (2024-12-21)

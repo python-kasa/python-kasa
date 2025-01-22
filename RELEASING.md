@@ -44,9 +44,10 @@ uv lock --upgrade
 uv sync --all-extras
 ```
 
-### Run pre-commit and tests
+### Update and run pre-commit and tests
 
 ```bash
+pre-commit autoupdate
 uv run pre-commit run --all-files
 uv run pytest -n auto
 ```

@@ -181,9 +181,9 @@ class FakeSmartCamTransport(BaseTransport):
 
     @staticmethod
     def _get_second_key(request_dict: dict[str, Any]) -> str:
-        assert (
-            len(request_dict) == 2
-        ), f"Unexpected dict {request_dict}, should be length 2"
+        assert len(request_dict) == 2, (
+            f"Unexpected dict {request_dict}, should be length 2"
+        )
         it = iter(request_dict)
         next(it, None)
         return next(it)
