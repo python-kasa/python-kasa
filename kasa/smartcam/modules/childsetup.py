@@ -9,18 +9,22 @@ import asyncio
 import logging
 
 from ...feature import Feature
+from ...interfaces.childsetup import ChildSetup as ChildSetupInterface
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class ChildSetup(SmartCamModule):
+class ChildSetup(SmartCamModule, ChildSetupInterface):
     """Implementation for child device setup."""
 
     REQUIRED_COMPONENT = "childQuickSetup"
     QUERY_GETTER_NAME = "getSupportChildDeviceCategory"
     QUERY_MODULE_NAME = "childControl"
     _categories: list[str] = []
+
+    # Supported child device categories will hardly ever change
+    MINIMUM_UPDATE_INTERVAL_SECS = 60 * 60 * 24
 
     def _initialize_features(self) -> None:
         """Initialize features."""
@@ -37,11 +41,10 @@ class ChildSetup(SmartCamModule):
         )
 
     async def _post_update_hook(self) -> None:
-        if not self._categories:
-            self._categories = [
-                cat["category"].replace("ipcamera", "camera")
-                for cat in self.data["device_category_list"]
-            ]
+        self._categories = [
+            cat["category"].replace("ipcamera", "camera")
+            for cat in self.data["device_category_list"]
+        ]
 
     @property
     def supported_child_device_categories(self) -> list[str]:
@@ -76,7 +79,7 @@ class ChildSetup(SmartCamModule):
         )
         return await self._add_devices(detected_list)
 
-    async def _add_devices(self, detected_list: list[dict]) -> list:
+    async def _add_devices(self, detected_list: list[dict]) -> list[dict]:
         """Add devices based on getScanChildDeviceList response."""
         await self.call(
             "addScanChildDeviceList",
@@ -94,7 +97,7 @@ class ChildSetup(SmartCamModule):
             else:
                 result = "not added"
             msg = f"{detected['device_model']} - {device_id} - {result}"
-            _LOGGER.info("Adding child to %s: %s", self._device.host, msg)
+            _LOGGER.info("Added child to %s: %s", self._device.host, msg)
 
         return successes
 
@@ -103,4 +106,6 @@ class ChildSetup(SmartCamModule):
         _LOGGER.info("Going to unpair %s from %s", device_id, self)
 
         payload = {"childControl": {"child_device_list": [{"device_id": device_id}]}}
-        return await self.call("removeChildDeviceList", payload)
+        res = await self.call("removeChildDeviceList", payload)
+        await self._device.update()
+        return res

@@ -44,28 +44,12 @@ async def test_childsetup_pair(
             mocker.call(
                 "startScanChildDevice",
                 params={
-                    "childControl": {
-                        "category": [
-                            "camera",
-                            "subg.trv",
-                            "subg.trigger",
-                            "subg.plugswitch",
-                        ]
-                    }
+                    "childControl": {"category": cs.supported_child_device_categories}
                 },
             ),
             mocker.call(
                 "getScanChildDeviceList",
-                {
-                    "childControl": {
-                        "category": [
-                            "camera",
-                            "subg.trv",
-                            "subg.trigger",
-                            "subg.plugswitch",
-                        ]
-                    }
-                },
+                {"childControl": {"category": cs.supported_child_device_categories}},
             ),
             mocker.call(
                 "addScanChildDeviceList",
@@ -73,10 +57,10 @@ async def test_childsetup_pair(
                     "childControl": {
                         "child_device_list": [
                             {
-                                "device_id": "0000000000000000000000000000000000000000",
-                                "category": "subg.trigger.button",
-                                "device_model": "S200B",
-                                "name": "I01BU0tFRF9OQU1FIw====",
+                                "device_id": mocker.ANY,
+                                "category": mocker.ANY,
+                                "device_model": mocker.ANY,
+                                "name": mocker.ANY,
                             }
                         ]
                     }

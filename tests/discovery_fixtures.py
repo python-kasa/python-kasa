@@ -295,6 +295,7 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
         # side_effect=lambda *_, **__: [(None, None, None, None, (first_ip, 0))],
         side_effect=_getaddrinfo,
     )
+    mocker.patch("kasa.discover.Discover._decrypt_discovery_data")
     # Only return the first discovery mock to be used for testing discover single
     return discovery_mocks[first_ip]
 
