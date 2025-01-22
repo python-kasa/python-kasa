@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from ..device import DeviceInfo
 from ..device_type import DeviceType
@@ -187,22 +187,6 @@ class SmartCamDevice(SmartDevice):
         self, method: str, module: str, section: str, params: dict | None = None
     ) -> dict:
         res = await self.protocol.query({method: {module: {section: params}}})
-
-        return res
-
-    async def _query_helper(
-        self, method: str, params: dict | None = None, child_ids: None = None
-    ) -> Any:
-        if TYPE_CHECKING:
-            assert params
-        module = next(iter(params))
-        section = params.get(module, {})
-
-        if isinstance(section, str | list):
-            section_param = {"name": section}
-        else:
-            section_param = section if section is not None else {}
-        res = await self.protocol.query({method: {module: section_param}})
 
         return res
 

@@ -43,6 +43,11 @@ class ChildSetup(SmartCamModule):
                 for cat in self.data["device_category_list"]
             ]
 
+    @property
+    def supported_child_device_categories(self) -> list[str]:
+        """Supported child device categories."""
+        return self._categories
+
     async def pair(self, *, timeout: int = 10) -> list[dict]:
         """Scan for new devices and pair after discovering first new device."""
         await self.call(
@@ -58,11 +63,10 @@ class ChildSetup(SmartCamModule):
 
         detected_list = res["getScanChildDeviceList"]["child_device_list"]
         if not detected_list:
-            detected_list = await self.call(
-                "getScanChildDeviceList",
-                {"childControl": {"category": self._categories}},
+            _LOGGER.warning(
+                "No devices found, make sure to activate pairing "
+                "mode on the devices to be added."
             )
-            _LOGGER.info("No devices found.")
             return []
 
         _LOGGER.info(
@@ -70,7 +74,10 @@ class ChildSetup(SmartCamModule):
             len(detected_list),
             detected_list,
         )
+        return await self._add_devices(detected_list)
 
+    async def _add_devices(self, detected_list: list[dict]) -> list:
+        """Add devices based on getScanChildDeviceList response."""
         await self.call(
             "addScanChildDeviceList",
             {"childControl": {"child_device_list": detected_list}},
@@ -93,7 +100,7 @@ class ChildSetup(SmartCamModule):
 
     async def unpair(self, device_id: str) -> dict:
         """Remove device from the hub."""
-        _LOGGER.debug("Going to unpair %s from %s", device_id, self)
+        _LOGGER.info("Going to unpair %s from %s", device_id, self)
 
         payload = {"childControl": {"child_device_list": [{"device_id": device_id}]}}
         return await self.call("removeChildDeviceList", payload)
