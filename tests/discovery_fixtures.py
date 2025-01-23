@@ -136,7 +136,9 @@ smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMA
 
 
 @pytest.fixture(
-    params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
+    params=filter_fixtures(
+        "discoverable", protocol_filter={"SMART", "SMARTCAM", "IOT"}
+    ),
     ids=idgenerator,
 )
 async def discovery_mock(request, mocker):
@@ -341,7 +343,9 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
 
     mocker.patch("socket.getaddrinfo", side_effect=_getaddrinfo)
 
-    # Mock decrypt so it doesn't error with unencryptable empty data in the fixtures
+    # Mock decrypt so it doesn't error with unencryptable empty data in the
+    # fixtures. The discovery result will already contain the decrypted data
+    # deserialized from the fixture
     mocker.patch("kasa.discover.Discover._decrypt_discovery_data")
 
     # Only return the first discovery mock to be used for testing discover single
@@ -349,7 +353,9 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
 
 
 @pytest.fixture(
-    params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
+    params=filter_fixtures(
+        "discoverable", protocol_filter={"SMART", "SMARTCAM", "IOT"}
+    ),
     ids=idgenerator,
 )
 def discovery_data(request, mocker):
