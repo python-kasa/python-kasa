@@ -177,6 +177,11 @@ class Module(ABC):
         self._module_features: dict[str, Feature] = {}
 
     @property
+    def device(self) -> Device:
+        """Get the module device."""
+        return self._device
+
+    @property
     def _all_features(self) -> dict[str, Feature]:
         """Get the features for this module and any sub modules."""
         return self._module_features
