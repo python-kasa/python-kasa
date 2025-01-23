@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Annotated, Literal, TypeAlias
 
 from ...feature import Feature
+from ...interfaces import Alarm as AlarmInterface
 from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
 
@@ -19,11 +20,12 @@ VOLUME_INT_TO_STR = {
 
 VOLUME_STR_LIST = [v for v in VOLUME_INT_TO_STR.values()]
 VOLUME_INT_RANGE = (min(VOLUME_INT_TO_STR.keys()), max(VOLUME_INT_TO_STR.keys()))
+VOLUME_STR_TO_INT = {v: k for k, v in VOLUME_INT_TO_STR.items()}
 
 AlarmVolume: TypeAlias = Literal["mute", "low", "normal", "high"]
 
 
-class Alarm(SmartModule):
+class Alarm(SmartModule, AlarmInterface):
     """Implementation of alarm module."""
 
     REQUIRED_COMPONENT = "alarm"
@@ -79,7 +81,7 @@ class Alarm(SmartModule):
                 id="alarm_volume",
                 name="Alarm volume",
                 container=self,
-                attribute_getter="alarm_volume",
+                attribute_getter="_alarm_volume_str",
                 attribute_setter="set_alarm_volume",
                 category=Feature.Category.Config,
                 type=Feature.Type.Choice,
@@ -142,7 +144,12 @@ class Alarm(SmartModule):
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
     @property
-    def alarm_volume(self) -> Annotated[AlarmVolume, FeatureAttribute()]:
+    def alarm_volume(self) -> Annotated[int, FeatureAttribute("alarm_volume")]:
+        """Return alarm volume."""
+        return VOLUME_STR_TO_INT[self._alarm_volume_str]
+
+    @property
+    def _alarm_volume_str(self) -> str:
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
 

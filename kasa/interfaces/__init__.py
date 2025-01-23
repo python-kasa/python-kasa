@@ -1,5 +1,6 @@
 """Package for interfaces."""
 
+from .alarm import Alarm
 from .energy import Energy
 from .fan import Fan
 from .led import Led
@@ -10,6 +11,7 @@ from .thermostat import Thermostat, ThermostatState
 from .time import Time
 
 __all__ = [
+    "Alarm",
     "Fan",
     "Energy",
     "Led",

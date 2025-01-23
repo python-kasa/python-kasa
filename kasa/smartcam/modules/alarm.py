@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ...feature import Feature
+from ...interfaces import Alarm as AlarmInterface
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -13,11 +14,8 @@ VOLUME_MIN = 0
 VOLUME_MAX = 10
 
 
-class Alarm(SmartCamModule):
+class Alarm(SmartCamModule, AlarmInterface):
     """Implementation of alarm module."""
-
-    # Needs a different name to avoid clashing with SmartAlarm
-    NAME = "SmartCamAlarm"
 
     REQUIRED_COMPONENT = "siren"
     QUERY_GETTER_NAME = "getSirenStatus"
@@ -117,11 +115,8 @@ class Alarm(SmartCamModule):
 
         See *alarm_sounds* for list of available sounds.
         """
-        if sound not in self.alarm_sounds:
-            raise ValueError(
-                f"sound must be one of {', '.join(self.alarm_sounds)}: {sound}"
-            )
-        return await self.call("setSirenConfig", {"siren": {"siren_type": sound}})
+        config = self._validate_and_get_config(sound=sound)
+        return await self.call("setSirenConfig", {"siren": config})
 
     @property
     def alarm_sounds(self) -> list[str]:
@@ -139,9 +134,8 @@ class Alarm(SmartCamModule):
     @allow_update_after
     async def set_alarm_volume(self, volume: int) -> dict:
         """Set alarm volume."""
-        if volume < VOLUME_MIN or volume > VOLUME_MAX:
-            raise ValueError(f"volume must be between {VOLUME_MIN} and {VOLUME_MAX}")
-        return await self.call("setSirenConfig", {"siren": {"volume": str(volume)}})
+        config = self._validate_and_get_config(volume=volume)
+        return await self.call("setSirenConfig", {"siren": config})
 
     @property
     def alarm_duration(self) -> int:
@@ -151,20 +145,66 @@ class Alarm(SmartCamModule):
     @allow_update_after
     async def set_alarm_duration(self, duration: int) -> dict:
         """Set alarm volume."""
-        if duration < DURATION_MIN or duration > DURATION_MAX:
-            msg = f"duration must be between {DURATION_MIN} and {DURATION_MAX}"
-            raise ValueError(msg)
-        return await self.call("setSirenConfig", {"siren": {"duration": duration}})
+        config = self._validate_and_get_config(duration=duration)
+        return await self.call("setSirenConfig", {"siren": config})
 
     @property
     def active(self) -> bool:
         """Return true if alarm is active."""
         return self.data["getSirenStatus"]["status"] != "off"
 
-    async def play(self) -> dict:
-        """Play alarm."""
+    async def play(
+        self,
+        *,
+        duration: int | None = None,
+        volume: int | None = None,
+        sound: str | None = None,
+    ) -> dict:
+        """Play alarm.
+
+        The optional *duration*, *volume*, and *sound* to override the device settings.
+        *volume* can be set to 'mute', 'low', 'normal', or 'high'.
+        *duration* is in seconds.
+        See *alarm_sounds* for the list of sounds available for the device.
+        """
+        if config := self._validate_and_get_config(
+            duration=duration, volume=volume, sound=sound
+        ):
+            await self.call("setSirenConfig", {"siren": config})
+
         return await self.call("setSirenStatus", {"siren": {"status": "on"}})
 
     async def stop(self) -> dict:
         """Stop alarm."""
         return await self.call("setSirenStatus", {"siren": {"status": "off"}})
+
+    def _validate_and_get_config(
+        self,
+        *,
+        duration: int | None = None,
+        volume: int | None = None,
+        sound: str | None = None,
+    ) -> dict:
+        if sound and sound not in self.alarm_sounds:
+            raise ValueError(
+                f"sound must be one of {', '.join(self.alarm_sounds)}: {sound}"
+            )
+
+        if duration is not None and (
+            duration < DURATION_MIN or duration > DURATION_MAX
+        ):
+            msg = f"duration must be between {DURATION_MIN} and {DURATION_MAX}"
+            raise ValueError(msg)
+
+        if volume is not None and (volume < VOLUME_MIN or volume > VOLUME_MAX):
+            raise ValueError(f"volume must be between {VOLUME_MIN} and {VOLUME_MAX}")
+
+        config: dict[str, str | int] = {}
+        if sound:
+            config["siren_type"] = sound
+        if duration is not None:
+            config["duration"] = duration
+        if volume is not None:
+            config["volume"] = str(volume)
+
+        return config
