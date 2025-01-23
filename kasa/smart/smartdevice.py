@@ -691,12 +691,8 @@ class SmartDevice(Device):
         """
         self._info = info
 
-    async def _query_helper(
-        self, method: str, params: dict | None = None, child_ids: None = None
-    ) -> dict:
-        res = await self.protocol.query({method: params})
-
-        return res
+    async def _query_helper(self, method: str, params: dict | None = None) -> dict:
+        return await self.protocol.query({method: params})
 
     @property
     def ssid(self) -> str:

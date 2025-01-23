@@ -188,13 +188,6 @@ class SmartCamDevice(SmartDevice):
 
         return res
 
-    async def _query_getter_helper(
-        self, method: str, module: str, sections: str | list[str]
-    ) -> Any:
-        res = await self.protocol.query({method: {module: {"name": sections}}})
-
-        return res
-
     @staticmethod
     def _parse_components(components_raw: ComponentsRaw) -> dict[str, int]:
         return {
