@@ -17,8 +17,7 @@ childsetup = parametrize(
 @childsetup
 async def test_childsetup_features(dev: SmartDevice):
     """Test the exposed features."""
-    cs = dev.modules.get(Module.ChildSetup)
-    assert cs
+    cs = dev.modules[Module.ChildSetup]
 
     assert "pair" in cs._module_features
     pair = cs._module_features["pair"]
@@ -34,8 +33,7 @@ async def test_childsetup_pair(
     mock_query_helper = mocker.spy(dev, "_query_helper")
     mocker.patch("asyncio.sleep")
 
-    cs = dev.modules.get(Module.ChildSetup)
-    assert cs
+    cs = dev.modules[Module.ChildSetup]
 
     await cs.pair()
 
@@ -95,8 +93,7 @@ async def test_childsetup_unpair(
     mock_query_helper = mocker.spy(dev, "_query_helper")
     DUMMY_ID = "dummy_id"
 
-    cs = dev.modules.get(Module.ChildSetup)
-    assert cs
+    cs = dev.modules[Module.ChildSetup]
 
     await cs.unpair(DUMMY_ID)
 
