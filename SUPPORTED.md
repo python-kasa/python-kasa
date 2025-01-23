@@ -292,10 +292,6 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Doorbells and chimes
 
-- **D100C**
-  - Hardware: 1.0 (US) / Firmware: 1.1.3
-- **D130**
-  - Hardware: 1.0 (US) / Firmware: 1.1.9
 - **D230**
   - Hardware: 1.20 (EU) / Firmware: 1.1.19
 
