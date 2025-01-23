@@ -346,6 +346,16 @@ hub_smartcam = parametrize(
     device_type_filter=[DeviceType.Hub],
     protocol_filter={"SMARTCAM"},
 )
+doobell_smartcam = parametrize(
+    "doorbell smartcam",
+    device_type_filter=[DeviceType.Doorbell],
+    protocol_filter={"SMARTCAM", "SMARTCAM.CHILD"},
+)
+chime_smart = parametrize(
+    "chime smart",
+    device_type_filter=[DeviceType.Chime],
+    protocol_filter={"SMART"},
+)
 vacuum = parametrize("vacuums", device_type_filter=[DeviceType.Vacuum])
 
 
@@ -363,7 +373,9 @@ def check_categories():
         + hubs_smart.args[1]
         + sensors_smart.args[1]
         + thermostats_smart.args[1]
+        + chime_smart.args[1]
         + camera_smartcam.args[1]
+        + doobell_smartcam.args[1]
         + hub_smartcam.args[1]
         + vacuum.args[1]
     )

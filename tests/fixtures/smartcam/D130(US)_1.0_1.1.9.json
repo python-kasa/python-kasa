@@ -1,4 +1,31 @@
 {
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "D130",
+            "device_name": "#MASKED_NAME#",
+            "device_type": "SMART.TAPODOORBELL",
+            "encrypt_info": {
+                "data": "",
+                "key": "",
+                "sym_schm": "AES"
+            },
+            "encrypt_type": [
+                "3"
+            ],
+            "factory_default": false,
+            "firmware_version": "1.1.9 Build 240716 Rel.51615n",
+            "hardware_version": "1.0",
+            "ip": "127.0.0.123",
+            "isResetWiFi": false,
+            "is_support_iot_cloud": true,
+            "mac": "40-AE-30-00-00-00",
+            "mgt_encrypt_schm": {
+                "is_support_https": true
+            }
+        }
+    },
     "getAlertConfig": {
         "msg_alarm": {
             "capability": {

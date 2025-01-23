@@ -36,6 +36,7 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Bulb: "Bulbs",
     DeviceType.LightStrip: "Light Strips",
     DeviceType.Camera: "Cameras",
+    DeviceType.Doorbell: "Doorbells and chimes",
     DeviceType.Chime: "Doorbells and chimes",
     DeviceType.Vacuum: "Vacuums",
     DeviceType.Hub: "Hubs",

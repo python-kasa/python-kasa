@@ -246,6 +246,12 @@ ET = DeviceEncryptionType
             id="smartcam-hub",
         ),
         pytest.param(
+            CP(DF.SmartTapoDoorbell, ET.Aes, https=True),
+            SmartCamProtocol,
+            SslAesTransport,
+            id="smartcam-doorbell",
+        ),
+        pytest.param(
             CP(DF.IotIpCamera, ET.Aes, https=True),
             IotProtocol,
             LinkieTransportV2,
@@ -280,6 +286,12 @@ ET = DeviceEncryptionType
             SmartProtocol,
             KlapTransportV2,
             id="smart-klap",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoChime, ET.Klap, https=False),
+            SmartProtocol,
+            KlapTransportV2,
+            id="smart-chime",
         ),
     ],
 )
