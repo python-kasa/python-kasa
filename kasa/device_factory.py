@@ -159,6 +159,7 @@ def get_device_class_from_family(
         "SMART.KASAHUB": SmartDevice,
         "SMART.KASASWITCH": SmartDevice,
         "SMART.IPCAMERA.HTTPS": SmartCamDevice,
+        "SMART.TAPODOORBELL.HTTPS": SmartCamDevice,
         "SMART.TAPOROBOVAC.HTTPS": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
@@ -194,7 +195,10 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     protocol_name = ctype.device_family.value.split(".")[0]
     _LOGGER.debug("Finding protocol for %s", ctype.device_family)
 
-    if ctype.device_family is DeviceFamily.SmartIpCamera:
+    if ctype.device_family in {
+        DeviceFamily.SmartIpCamera,
+        DeviceFamily.SmartTapoDoorbell,
+    }:
         if strict and ctype.encryption_type is not DeviceEncryptionType.Aes:
             return None
         return SmartCamProtocol(transport=SslAesTransport(config=config))

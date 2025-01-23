@@ -91,13 +91,14 @@ class ChildSetup(SmartCamModule, ChildSetupInterface):
         successes = []
         for detected in detected_list:
             device_id = detected["device_id"]
+
+            result = "not added"
             if device_id in self._device._children:
                 result = "added"
                 successes.append(detected)
-            else:
-                result = "not added"
+
             msg = f"{detected['device_model']} - {device_id} - {result}"
-            _LOGGER.info("Added child to %s: %s", self._device.host, msg)
+            _LOGGER.info("Adding child to %s: %s", self._device.host, msg)
 
         return successes
 
