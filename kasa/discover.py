@@ -800,6 +800,47 @@ class Discover:
         return info
 
     @staticmethod
+    def _get_connection_parameters(
+        discovery_result: DiscoveryResult,
+    ) -> DeviceConnectionParameters:
+        """Get connection parameters from the discovery result."""
+        type_ = discovery_result.device_type
+        if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {discovery_result.ip} of type {type_} "
+                "with no mgt_encrypt_schm",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
+
+        if not (encrypt_type := encrypt_schm.encrypt_type) and (
+            encrypt_info := discovery_result.encrypt_info
+        ):
+            encrypt_type = encrypt_info.sym_schm
+
+        if not (login_version := encrypt_schm.lv) and (
+            et := discovery_result.encrypt_type
+        ):
+            # Known encrypt types are ["1","2"] and ["3"]
+            # Reuse the login_version attribute to pass the max to transport
+            login_version = max([int(i) for i in et])
+
+        if not encrypt_type:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {discovery_result.ip} of type {type_} "
+                + "with no encryption type",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
+        return DeviceConnectionParameters.from_values(
+            type_,
+            encrypt_type,
+            login_version=login_version,
+            https=encrypt_schm.is_support_https,
+            http_port=encrypt_schm.http_port,
+        )
+
+    @staticmethod
     def _get_device_instance(
         info: dict,
         config: DeviceConfig,
@@ -838,55 +879,22 @@ class Discover:
                     config.host,
                     redact_data(info, NEW_DISCOVERY_REDACTORS),
                 )
-
         type_ = discovery_result.device_type
-        if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
-            raise UnsupportedDeviceError(
-                f"Unsupported device {config.host} of type {type_} "
-                "with no mgt_encrypt_schm",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            )
-
         try:
-            if not (encrypt_type := encrypt_schm.encrypt_type) and (
-                encrypt_info := discovery_result.encrypt_info
-            ):
-                encrypt_type = encrypt_info.sym_schm
-
-            if not (login_version := encrypt_schm.lv) and (
-                et := discovery_result.encrypt_type
-            ):
-                # Known encrypt types are ["1","2"] and ["3"]
-                # Reuse the login_version attribute to pass the max to transport
-                login_version = max([int(i) for i in et])
-
-            if not encrypt_type:
-                raise UnsupportedDeviceError(
-                    f"Unsupported device {config.host} of type {type_} "
-                    + "with no encryption type",
-                    discovery_result=discovery_result.to_dict(),
-                    host=config.host,
-                )
-            config.connection_type = DeviceConnectionParameters.from_values(
-                type_,
-                encrypt_type,
-                login_version=login_version,
-                https=encrypt_schm.is_support_https,
-                http_port=encrypt_schm.http_port,
-            )
+            conn_params = Discover._get_connection_parameters(discovery_result)
+            config.connection_type = conn_params
         except KasaException as ex:
+            if isinstance(ex, UnsupportedDeviceError):
+                raise
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
-                + f"with encrypt_type {encrypt_schm.encrypt_type}",
+                + f"with encrypt_scheme {discovery_result.mgt_encrypt_schm}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             ) from ex
 
         if (
-            device_class := get_device_class_from_family(
-                type_, https=encrypt_schm.is_support_https
-            )
+            device_class := get_device_class_from_family(type_, https=conn_params.https)
         ) is None:
             _LOGGER.debug("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(

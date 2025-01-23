@@ -36,7 +36,7 @@ UNSUPPORTED_HOMEWIFISYSTEM = {
         "group_id": "REDACTED_07d902da02fa9beab8a64",
         "group_name": "I01BU0tFRF9TU0lEIw==",  # '#MASKED_SSID#'
         "hardware_version": "3.0",
-        "ip": "192.168.1.192",
+        "ip": "127.0.0.1",
         "mac": "24:2F:D0:00:00:00",
         "master_device_id": "REDACTED_51f72a752213a6c45203530",
         "need_account_digest": True,
