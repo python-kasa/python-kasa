@@ -45,12 +45,12 @@ class ChildSetup(SmartModule, ChildSetupInterface):
         ]
 
     @property
-    def supported_child_device_categories(self) -> list[str]:
+    def supported_categories(self) -> list[str]:
         """Supported child device categories."""
         return self._categories
 
     async def pair(self, *, timeout: int = 10) -> list[dict]:
-        """Scan for new devices and pair after discovering first new device."""
+        """Scan for new devices and pair them."""
         await self.call("begin_scanning_child_device")
 
         _LOGGER.info("Waiting %s seconds for discovering new devices", timeout)
@@ -88,14 +88,17 @@ class ChildSetup(SmartModule, ChildSetupInterface):
         """
         await self.call("add_child_device_list", devices)
 
+        await self._device.update()
+
         successes = []
         for detected in devices["child_device_list"]:
             device_id = detected["device_id"]
+
+            result = "not added"
             if device_id in self._device._children:
                 result = "added"
                 successes.append(detected)
-            else:
-                result = "not added"
+
             msg = f"{detected['device_model']} - {device_id} - {result}"
             _LOGGER.info("Added child to %s: %s", self._device.host, msg)
 

@@ -47,12 +47,12 @@ class ChildSetup(SmartCamModule, ChildSetupInterface):
         ]
 
     @property
-    def supported_child_device_categories(self) -> list[str]:
+    def supported_categories(self) -> list[str]:
         """Supported child device categories."""
         return self._categories
 
     async def pair(self, *, timeout: int = 10) -> list[dict]:
-        """Scan for new devices and pair after discovering first new device."""
+        """Scan for new devices and pair them."""
         await self.call(
             "startScanChildDevice", {"childControl": {"category": self._categories}}
         )

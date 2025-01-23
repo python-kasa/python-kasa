@@ -15,7 +15,7 @@ hubs.
 Tapo Hub
 
 >>> childsetup = dev.modules[Module.ChildSetup]
->>> childsetup.supported_child_device_categories
+>>> childsetup.supported_categories
 ['camera', 'subg.trv', 'subg.trigger', 'subg.plugswitch']
 
 Put child devices in pairing mode.
@@ -58,7 +58,7 @@ class ChildSetup(Module, ABC):
 
     @property
     @abstractmethod
-    def supported_child_device_categories(self) -> list[str]:
+    def supported_categories(self) -> list[str]:
         """Supported child device categories."""
 
     @abstractmethod

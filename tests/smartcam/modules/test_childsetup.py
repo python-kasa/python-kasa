@@ -41,13 +41,11 @@ async def test_childsetup_pair(
         [
             mocker.call(
                 "startScanChildDevice",
-                params={
-                    "childControl": {"category": cs.supported_child_device_categories}
-                },
+                params={"childControl": {"category": cs.supported_categories}},
             ),
             mocker.call(
                 "getScanChildDeviceList",
-                {"childControl": {"category": cs.supported_child_device_categories}},
+                {"childControl": {"category": cs.supported_categories}},
             ),
             mocker.call(
                 "addScanChildDeviceList",

@@ -44,7 +44,7 @@ async def hub_supported(dev: SmartDevice):
     """List supported hub child device categories."""
     cs = dev.modules[Module.ChildSetup]
 
-    for cat in cs.supported_child_device_categories:
+    for cat in cs.supported_categories:
         echo(f"Supports: {cat}")
 
 
