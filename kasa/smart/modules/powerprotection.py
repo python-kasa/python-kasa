@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from ...feature import Feature
+from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
 
 
@@ -27,33 +30,25 @@ class PowerProtection(SmartModule):
         self._add_feature(
             Feature(
                 device=self._device,
-                id="power_protection_enabled",
-                name="Power protection enabled",
-                container=self,
-                attribute_getter="enabled",
-                attribute_setter="set_enabled",
-                type=Feature.Type.Switch,
-                category=Feature.Category.Config,
-            )
-        )
-        self._add_feature(
-            Feature(
-                device=self._device,
                 id="power_protection_threshold",
                 name="Power protection threshold",
                 container=self,
-                attribute_getter="protection_threshold",
-                attribute_setter="set_protection_threshold",
+                attribute_getter=lambda x: self.protection_threshold
+                if self.enabled
+                else 0,
+                attribute_setter=lambda x: self.set_enabled(False)
+                if x == 0
+                else self.set_enabled(True, threshold=x),
                 unit_getter=lambda: "W",
                 type=Feature.Type.Number,
-                range_getter="protection_threshold_range",
+                range_getter=lambda: (0, self._max_power),
                 category=Feature.Category.Config,
             )
         )
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {"get_protection_power": None, "get_max_power": None}
+        return {"get_protection_power": {}, "get_max_power": {}}
 
     @property
     def overloaded(self) -> bool:
@@ -68,25 +63,41 @@ class PowerProtection(SmartModule):
         """Return True if child protection is enabled."""
         return self.data["get_protection_power"]["enabled"]
 
-    async def set_enabled(self, enabled: bool) -> dict:
-        """Set child protection."""
+    async def set_enabled(self, enabled: bool, *, threshold: int | None = None) -> dict:
+        """Set child protection.
+
+        If power protection has never been enabled before the threshold will
+        be 0 so if threshold is not provided it will be set to half the max.
+        """
+        if threshold is None and enabled and self.protection_threshold == 0:
+            threshold = int(self._max_power / 2)
+
+        if threshold and (threshold < 0 or threshold > self._max_power):
+            raise ValueError(
+                "Threshold out of range: %s (%s)", threshold, self.protection_threshold
+            )
+
         params = {**self.data["get_protection_power"], "enabled": enabled}
+        if threshold is not None:
+            params["protection_power"] = threshold
         return await self.call("set_protection_power", params)
 
     @property
-    def protection_threshold_range(self) -> tuple[int, int]:
-        """Return threshold range."""
-        return 0, self.data["get_max_power"]["max_power"]
+    def _max_power(self) -> int:
+        """Return max power."""
+        return self.data["get_max_power"]["max_power"]
 
     @property
-    def protection_threshold(self) -> int:
+    def protection_threshold(
+        self,
+    ) -> Annotated[int, FeatureAttribute("power_protection_threshold")]:
         """Return protection threshold in watts."""
         # If never configured, there is no value set.
         return self.data["get_protection_power"].get("protection_power", 0)
 
     async def set_protection_threshold(self, threshold: int) -> dict:
         """Set protection threshold."""
-        if threshold < 0 or threshold > self.protection_threshold_range[1]:
+        if threshold < 0 or threshold > self._max_power:
             raise ValueError(
                 "Threshold out of range: %s (%s)", threshold, self.protection_threshold
             )
