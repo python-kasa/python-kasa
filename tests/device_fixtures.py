@@ -79,8 +79,6 @@ PLUGS_IOT = {
     "KP125",
     "KP401",
 }
-# P135 supports dimming, but its not currently support
-# by the library
 PLUGS_SMART = {
     "P100",
     "P110",
@@ -98,6 +96,7 @@ PLUGS = {
 SWITCHES_IOT = {
     "HS200",
     "HS210",
+    "KS200",
     "KS200M",
 }
 SWITCHES_SMART = {
@@ -111,7 +110,7 @@ SWITCHES_SMART = {
 }
 SWITCHES = {*SWITCHES_IOT, *SWITCHES_SMART}
 STRIPS_IOT = {"HS107", "HS300", "KP303", "KP200", "KP400", "EP40"}
-STRIPS_SMART = {"P300", "P304M", "TP25", "EP40M"}
+STRIPS_SMART = {"P300", "P304M", "TP25", "EP40M", "P210M", "P306"}
 STRIPS = {*STRIPS_IOT, *STRIPS_SMART}
 
 DIMMERS_IOT = {"ES20M", "HS220", "KS220", "KS220M", "KS230", "KP405"}
@@ -122,8 +121,21 @@ DIMMERS = {
 }
 
 HUBS_SMART = {"H100", "KH100"}
-SENSORS_SMART = {"T310", "T315", "T300", "T100", "T110", "S200B", "S200D"}
+SENSORS_SMART = {
+    "T310",
+    "T315",
+    "T300",
+    "T100",
+    "T110",
+    "S200B",
+    "S200D",
+    "S210",
+    "S220",
+    "D100C",  # needs a home category?
+}
 THERMOSTATS_SMART = {"KE100"}
+
+VACUUMS_SMART = {"RV20"}
 
 WITH_EMETER_IOT = {"HS110", "HS300", "KP115", "KP125", *BULBS_IOT}
 WITH_EMETER_SMART = {"P110", "P110M", "P115", "KP125M", "EP25", "P304M"}
@@ -142,6 +154,7 @@ ALL_DEVICES_SMART = (
     .union(SENSORS_SMART)
     .union(SWITCHES_SMART)
     .union(THERMOSTATS_SMART)
+    .union(VACUUMS_SMART)
 )
 ALL_DEVICES = ALL_DEVICES_IOT.union(ALL_DEVICES_SMART)
 
@@ -326,13 +339,24 @@ device_smartcam = parametrize("devices smartcam", protocol_filter={"SMARTCAM"})
 camera_smartcam = parametrize(
     "camera smartcam",
     device_type_filter=[DeviceType.Camera],
-    protocol_filter={"SMARTCAM"},
+    protocol_filter={"SMARTCAM", "SMARTCAM.CHILD"},
 )
 hub_smartcam = parametrize(
     "hub smartcam",
     device_type_filter=[DeviceType.Hub],
     protocol_filter={"SMARTCAM"},
 )
+doobell_smartcam = parametrize(
+    "doorbell smartcam",
+    device_type_filter=[DeviceType.Doorbell],
+    protocol_filter={"SMARTCAM", "SMARTCAM.CHILD"},
+)
+chime_smart = parametrize(
+    "chime smart",
+    device_type_filter=[DeviceType.Chime],
+    protocol_filter={"SMART"},
+)
+vacuum = parametrize("vacuums", device_type_filter=[DeviceType.Vacuum])
 
 
 def check_categories():
@@ -349,8 +373,11 @@ def check_categories():
         + hubs_smart.args[1]
         + sensors_smart.args[1]
         + thermostats_smart.args[1]
+        + chime_smart.args[1]
         + camera_smartcam.args[1]
+        + doobell_smartcam.args[1]
         + hub_smartcam.args[1]
+        + vacuum.args[1]
     )
     diffs: set[FixtureInfo] = set(FIXTURE_DATA) - set(categorized_fixtures)
     if diffs:
@@ -368,7 +395,7 @@ check_categories()
 def device_for_fixture_name(model, protocol):
     if protocol in {"SMART", "SMART.CHILD"}:
         return SmartDevice
-    elif protocol == "SMARTCAM":
+    elif protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
         return SmartCamDevice
     else:
         for d in STRIPS_IOT:
@@ -421,11 +448,20 @@ async def get_device_for_fixture(
     d = device_for_fixture_name(fixture_data.name, fixture_data.protocol)(
         host="127.0.0.123"
     )
+
+    # smart child devices sometimes check _is_hub_child which needs a parent
+    # of DeviceType.Hub
+    class DummyParent:
+        device_type = DeviceType.Hub
+
+    if fixture_data.protocol in {"SMARTCAM.CHILD"}:
+        d._parent = DummyParent()
+
     if fixture_data.protocol in {"SMART", "SMART.CHILD"}:
         d.protocol = FakeSmartProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
-    elif fixture_data.protocol == "SMARTCAM":
+    elif fixture_data.protocol in {"SMARTCAM", "SMARTCAM.CHILD"}:
         d.protocol = FakeSmartCamProtocol(
             fixture_data.data, fixture_data.name, verbatim=verbatim
         )
@@ -434,7 +470,7 @@ async def get_device_for_fixture(
 
     discovery_data = None
     if "discovery_result" in fixture_data.data:
-        discovery_data = fixture_data.data["discovery_result"]
+        discovery_data = fixture_data.data["discovery_result"]["result"]
     elif "system" in fixture_data.data:
         discovery_data = {
             "system": {"get_sysinfo": fixture_data.data["system"]["get_sysinfo"]}
@@ -472,8 +508,12 @@ def get_nearest_fixture_to_ip(dev):
     assert protocol_fixtures, "Unknown device type"
 
     # This will get the best fixture with a match on model region
-    if model_region_fixtures := filter_fixtures(
-        "", model_filter={dev._model_region}, fixture_list=protocol_fixtures
+    if (di := dev.device_info) and (
+        model_region_fixtures := filter_fixtures(
+            "",
+            model_filter={di.long_name + (f"({di.region})" if di.region else "")},
+            fixture_list=protocol_fixtures,
+        )
     ):
         return next(iter(model_region_fixtures))
 

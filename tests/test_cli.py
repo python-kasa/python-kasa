@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from datetime import datetime
 from unittest.mock import ANY, PropertyMock, patch
@@ -12,6 +11,7 @@ from pytest_mock import MockerFixture
 
 from kasa import (
     AuthenticationError,
+    ColorTempRange,
     Credentials,
     Device,
     DeviceError,
@@ -42,8 +42,9 @@ from kasa.cli.main import TYPES, _legacy_type_to_class, cli, cmd_command, raw_co
 from kasa.cli.time import time
 from kasa.cli.usage import energy
 from kasa.cli.wifi import wifi
-from kasa.discover import Discover, DiscoveryResult
+from kasa.discover import Discover, DiscoveryResult, redact_data
 from kasa.iot import IotDevice
+from kasa.json import dumps as json_dumps
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
 
@@ -58,15 +59,6 @@ from .conftest import (
 # The cli tests should be testing the cli logic rather than a physical device
 # so mark the whole file for skipping with real devices.
 pytestmark = [pytest.mark.requires_dummy]
-
-
-@pytest.fixture
-def runner():
-    """Runner fixture that unsets the KASA_ environment variables for tests."""
-    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
-    runner = CliRunner(env=KASA_VARS)
-
-    return runner
 
 
 async def test_help(runner):
@@ -120,20 +112,69 @@ async def test_list_devices(discovery_mock, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
-    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7}"
+    header = (
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
+    row = (
+        f"{discovery_mock.ip:<15} {discovery_mock.model:<9} {discovery_mock.device_type:<20} "
+        f"{discovery_mock.encrypt_type:<7} {discovery_mock.https:<5} "
+        f"{discovery_mock.login_version or '-':<3}"
+    )
     assert header in res.output
     assert row in res.output
 
 
+async def test_discover_raw(discovery_mock, runner, mocker):
+    """Test the discover raw command."""
+    redact_spy = mocker.patch(
+        "kasa.protocols.protocol.redact_data", side_effect=redact_data
+    )
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+
+    expected = {
+        "discovery_response": discovery_mock.discovery_data,
+        "meta": {"ip": "127.0.0.123", "port": discovery_mock.discovery_port},
+    }
+    assert res.output == json_dumps(expected, indent=True) + "\n"
+
+    redact_spy.assert_not_called()
+
+    res = await runner.invoke(
+        cli,
+        ["--username", "foo", "--password", "bar", "discover", "raw", "--redact"],
+        catch_exceptions=False,
+    )
+    assert res.exit_code == 0
+
+    redact_spy.assert_called()
+
+
+@pytest.mark.parametrize(
+    ("exception", "expected"),
+    [
+        pytest.param(
+            AuthenticationError("Failed to authenticate"),
+            "Authentication failed",
+            id="auth",
+        ),
+        pytest.param(TimeoutError(), "Timed out", id="timeout"),
+        pytest.param(Exception("Foobar"), "Error: Foobar", id="other-error"),
+    ],
+)
 @new_discovery
-async def test_list_auth_failed(discovery_mock, mocker, runner):
+async def test_list_update_failed(discovery_mock, mocker, runner, exception, expected):
     """Test that device update is called on main."""
     device_class = Discover._get_device_class(discovery_mock.discovery_data)
     mocker.patch.object(
         device_class,
         "update",
-        side_effect=AuthenticationError("Failed to authenticate"),
+        side_effect=exception,
     )
     res = await runner.invoke(
         cli,
@@ -141,10 +182,17 @@ async def test_list_auth_failed(discovery_mock, mocker, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
-    row = f"{discovery_mock.ip:<15} {discovery_mock.device_type:<20} {discovery_mock.encrypt_type:<7} - Authentication failed"
-    assert header in res.output
-    assert row in res.output
+    header = (
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
+    row = (
+        f"{discovery_mock.ip:<15} {discovery_mock.model:<9} {discovery_mock.device_type:<20} "
+        f"{discovery_mock.encrypt_type:<7} {discovery_mock.https:<5} "
+        f"{discovery_mock.login_version or '-':<3} - {expected}"
+    )
+    assert header in res.output.replace("\n", "")
+    assert row in res.output.replace("\n", "")
 
 
 async def test_list_unsupported(unsupported_device_info, runner):
@@ -155,7 +203,10 @@ async def test_list_unsupported(unsupported_device_info, runner):
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    header = f"{'HOST':<15} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} {'ALIAS'}"
+    header = (
+        f"{'HOST':<15} {'MODEL':<9} {'DEVICE FAMILY':<20} {'ENCRYPT':<7} "
+        f"{'HTTPS':<5} {'LV':<3} {'ALIAS'}"
+    )
     row = f"{'127.0.0.1':<15} UNSUPPORTED DEVICE"
     assert header in res.output
     assert row in res.output
@@ -207,7 +258,8 @@ async def test_alias(dev, runner):
     res = await runner.invoke(alias, obj=dev)
     assert f"Alias: {new_alias}" in res.output
 
-    await dev.set_alias(old_alias)
+    # If alias is None set it back to empty string
+    await dev.set_alias(old_alias or "")
 
 
 async def test_raw_command(dev, mocker, runner):
@@ -215,7 +267,11 @@ async def test_raw_command(dev, mocker, runner):
     from kasa.smart import SmartDevice
 
     if isinstance(dev, SmartCamDevice):
-        params = ["na", "getDeviceInfo"]
+        params = [
+            "na",
+            "getDeviceInfo",
+            '{"device_info": {"name": ["basic_info", "info"]}}',
+        ]
     elif isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
     else:
@@ -492,7 +548,9 @@ async def test_emeter(dev: Device, mocker, runner):
 
 async def test_brightness(dev: Device, runner):
     res = await runner.invoke(brightness, obj=dev)
-    if not (light := dev.modules.get(Module.Light)) or not light.is_dimmable:
+    if not (light := dev.modules.get(Module.Light)) or not light.has_feature(
+        "brightness"
+    ):
         assert "This device does not support brightness." in res.output
         return
 
@@ -509,13 +567,16 @@ async def test_brightness(dev: Device, runner):
 
 async def test_color_temperature(dev: Device, runner):
     res = await runner.invoke(temperature, obj=dev)
-    if not (light := dev.modules.get(Module.Light)) or not light.is_variable_color_temp:
+    if not (light := dev.modules.get(Module.Light)) or not (
+        color_temp_feat := light.get_feature("color_temp")
+    ):
         assert "Device does not support color temperature" in res.output
         return
 
     res = await runner.invoke(temperature, obj=dev)
     assert f"Color temperature: {light.color_temp}" in res.output
-    valid_range = light.valid_temperature_range
+    valid_range = color_temp_feat.range
+    assert isinstance(valid_range, ColorTempRange)
     assert f"(min: {valid_range.min}, max: {valid_range.max})" in res.output
 
     val = int((valid_range.min + valid_range.max) / 2)
@@ -541,7 +602,7 @@ async def test_color_temperature(dev: Device, runner):
 
 async def test_color_hsv(dev: Device, runner: CliRunner):
     res = await runner.invoke(hsv, obj=dev)
-    if not (light := dev.modules.get(Module.Light)) or not light.is_color:
+    if not (light := dev.modules.get(Module.Light)) or not light.has_feature("hsv"):
         assert "Device does not support colors" in res.output
         return
 
@@ -731,6 +792,7 @@ async def test_without_device_type(dev, mocker, runner):
         timeout=5,
         discovery_timeout=7,
         on_unsupported=ANY,
+        on_discovered_raw=ANY,
     )
 
 
@@ -1094,7 +1156,7 @@ async def test_feature_set_child(mocker, runner):
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
     get_child_device = mocker.spy(dummy_device, "get_child_device")
 
-    child_id = "000000000000000000000000000000000000000001"
+    child_id = "SCRUBBED_CHILD_DEVICE_ID_1"
 
     res = await runner.invoke(
         cli,
@@ -1250,11 +1312,11 @@ async def test_discover_config(dev: Device, mocker, runner):
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ failed",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ failed",
         res.output.replace("\n", ""),
     )
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ succeeded",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ succeeded",
         res.output.replace("\n", ""),
     )
 

@@ -38,8 +38,9 @@ from kasa.feature import Feature
 from kasa.interfaces.light import HSV, ColorTempRange, Light, LightState
 from kasa.interfaces.thermostat import Thermostat, ThermostatState
 from kasa.module import Module
-from kasa.protocols import BaseProtocol, IotProtocol, SmartProtocol
+from kasa.protocols import BaseProtocol, IotProtocol, SmartCamProtocol, SmartProtocol
 from kasa.protocols.iotprotocol import _deprecated_TPLinkSmartHomeProtocol  # noqa: F401
+from kasa.smartcam.modules.camera import StreamResolution
 from kasa.transports import BaseTransport
 
 __version__ = version("python-kasa")
@@ -51,6 +52,7 @@ __all__ = [
     "BaseTransport",
     "IotProtocol",
     "SmartProtocol",
+    "SmartCamProtocol",
     "LightState",
     "TurnOnBehaviors",
     "TurnOnBehavior",
@@ -75,6 +77,7 @@ __all__ = [
     "DeviceFamily",
     "ThermostatState",
     "Thermostat",
+    "StreamResolution",
 ]
 
 from . import iot

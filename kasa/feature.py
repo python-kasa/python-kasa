@@ -24,8 +24,8 @@ State (state): True
 Signal Level (signal_level): 2
 RSSI (rssi): -52
 SSID (ssid): #MASKED_SSID#
-Overheated (overheated): False
 Reboot (reboot): <Action>
+Device time (device_time): 2024-02-23 02:40:15+01:00
 Brightness (brightness): 100
 Cloud connection (cloud_connection): True
 HSV (hsv): HSV(hue=0, saturation=100, value=100)
@@ -39,7 +39,7 @@ Light effect (light_effect): Off
 Light preset (light_preset): Not set
 Smooth transition on (smooth_transition_on): 2
 Smooth transition off (smooth_transition_off): 2
-Device time (device_time): 2024-02-23 02:40:15+01:00
+Overheated (overheated): False
 
 To see whether a device supports a feature, check for the existence of it:
 
@@ -76,6 +76,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .device import Device
+    from .module import Module
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -142,7 +143,7 @@ class Feature:
     #: Callable coroutine or name of the method that allows changing the value
     attribute_setter: str | Callable[..., Coroutine[Any, Any, Any]] | None = None
     #: Container storing the data, this overrides 'device' for getters
-    container: Any = None
+    container: Device | Module | None = None
     #: Icon suggestion
     icon: str | None = None
     #: Attribute containing the name of the unit getter property.
@@ -295,9 +296,13 @@ class Feature:
         if self.precision_hint is not None and isinstance(value, float):
             value = round(value, self.precision_hint)
 
+        if isinstance(value, Enum):
+            value = repr(value)
         s = f"{self.name} ({self.id}): {value}"
-        if self.unit is not None:
-            s += f" {self.unit}"
+        if (unit := self.unit) is not None:
+            if isinstance(unit, Enum):
+                unit = repr(unit)
+            s += f" {unit}"
 
         if self.type == Feature.Type.Number:
             s += f" (range: {self.minimum_value}-{self.maximum_value})"

@@ -19,7 +19,10 @@ class ChildDevice(SmartCamModule):
 
         Default implementation uses the raw query getter w/o parameters.
         """
-        return {self.QUERY_GETTER_NAME: {"childControl": {"start_index": 0}}}
+        q = {self.QUERY_GETTER_NAME: {"childControl": {"start_index": 0}}}
+        if self._device.device_type is DeviceType.Hub:
+            q["getChildDeviceComponentList"] = {"childControl": {"start_index": 0}}
+        return q
 
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""

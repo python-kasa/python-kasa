@@ -99,7 +99,7 @@ async def test_invalid_connection(mocker, dev):
 @has_emeter_iot
 async def test_initial_update_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
-    dev._last_update = None
+    dev._last_update = {}
     dev._legacy_features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
@@ -111,7 +111,7 @@ async def test_initial_update_emeter(dev, mocker):
 @no_emeter_iot
 async def test_initial_update_no_emeter(dev, mocker):
     """Test that the initial update performs second query if emeter is available."""
-    dev._last_update = None
+    dev._last_update = {}
     dev._legacy_features = set()
     spy = mocker.spy(dev.protocol, "query")
     await dev.update()
@@ -137,8 +137,9 @@ async def test_query_helper(dev):
 @device_iot
 @turn_on
 async def test_state(dev, turn_on):
-    await handle_turn_on(dev, turn_on)
     orig_state = dev.is_on
+    await handle_turn_on(dev, turn_on)
+    await dev.update()
     if orig_state:
         await dev.turn_off()
         await dev.update()

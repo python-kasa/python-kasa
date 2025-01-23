@@ -13,9 +13,13 @@ import aiohttp
 import pytest  # type: ignore # https://github.com/pytest-dev/pytest/issues/3342
 
 from kasa import (
+    BaseProtocol,
     Credentials,
     Discover,
+    IotProtocol,
     KasaException,
+    SmartCamProtocol,
+    SmartProtocol,
 )
 from kasa.device_factory import (
     Device,
@@ -33,6 +37,16 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.transports import (
+    AesTransport,
+    BaseTransport,
+    KlapTransport,
+    KlapTransportV2,
+    LinkieTransportV2,
+    SslAesTransport,
+    SslTransport,
+    XorTransport,
+)
 
 from .conftest import DISCOVERY_MOCK_IP
 
@@ -46,12 +60,7 @@ def _get_connection_type_device_class(discovery_info):
         device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult.from_dict(discovery_info["result"])
 
-        connection_type = DeviceConnectionParameters.from_values(
-            dr.device_type,
-            dr.mgt_encrypt_schm.encrypt_type,
-            dr.mgt_encrypt_schm.lv,
-            dr.mgt_encrypt_schm.is_support_https,
-        )
+        connection_type = Discover._get_connection_parameters(dr)
     else:
         connection_type = DeviceConnectionParameters.from_values(
             DeviceFamily.IotSmartPlugSwitch.value, DeviceEncryptionType.Xor.value
@@ -103,7 +112,7 @@ async def test_connect_custom_port(discovery_mock, mocker, custom_port):
         connection_type=ctype,
         credentials=Credentials("dummy_user", "dummy_password"),
     )
-    default_port = 80 if "result" in discovery_data else 9999
+    default_port = discovery_mock.default_port
 
     ctype, _ = _get_connection_type_device_class(discovery_data)
 
@@ -203,3 +212,86 @@ async def test_device_class_from_unknown_family(caplog):
     with caplog.at_level(logging.DEBUG):
         assert get_device_class_from_family(dummy_name, https=False) == SmartDevice
     assert f"Unknown SMART device with {dummy_name}" in caplog.text
+
+
+# Aliases to make the test params more readable
+CP = DeviceConnectionParameters
+DF = DeviceFamily
+ET = DeviceEncryptionType
+
+
+@pytest.mark.parametrize(
+    ("conn_params", "expected_protocol", "expected_transport"),
+    [
+        pytest.param(
+            CP(DF.SmartIpCamera, ET.Aes, https=True),
+            SmartCamProtocol,
+            SslAesTransport,
+            id="smartcam",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoHub, ET.Aes, https=True),
+            SmartCamProtocol,
+            SslAesTransport,
+            id="smartcam-hub",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoDoorbell, ET.Aes, https=True),
+            SmartCamProtocol,
+            SslAesTransport,
+            id="smartcam-doorbell",
+        ),
+        pytest.param(
+            CP(DF.IotIpCamera, ET.Aes, https=True),
+            IotProtocol,
+            LinkieTransportV2,
+            id="kasacam",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoRobovac, ET.Aes, https=True),
+            SmartProtocol,
+            SslTransport,
+            id="robovac",
+        ),
+        pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Klap, https=False),
+            IotProtocol,
+            KlapTransport,
+            id="iot-klap",
+        ),
+        pytest.param(
+            CP(DF.IotSmartPlugSwitch, ET.Xor, https=False),
+            IotProtocol,
+            XorTransport,
+            id="iot-xor",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoPlug, ET.Aes, https=False),
+            SmartProtocol,
+            AesTransport,
+            id="smart-aes",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoPlug, ET.Klap, https=False),
+            SmartProtocol,
+            KlapTransportV2,
+            id="smart-klap",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoChime, ET.Klap, https=False),
+            SmartProtocol,
+            KlapTransportV2,
+            id="smart-chime",
+        ),
+    ],
+)
+async def test_get_protocol(
+    conn_params: DeviceConnectionParameters,
+    expected_protocol: type[BaseProtocol],
+    expected_transport: type[BaseTransport],
+):
+    """Test get_protocol returns the right protocol."""
+    config = DeviceConfig("127.0.0.1", connection_type=conn_params)
+    protocol = get_protocol(config)
+    assert isinstance(protocol, expected_protocol)
+    assert isinstance(protocol._transport, expected_transport)

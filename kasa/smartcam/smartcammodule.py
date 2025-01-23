@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Final
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
 from ..modulemapping import ModuleName
@@ -20,9 +20,28 @@ class SmartCamModule(SmartModule):
     """Base class for SMARTCAM modules."""
 
     SmartCamAlarm: Final[ModuleName[modules.Alarm]] = ModuleName("SmartCamAlarm")
+    SmartCamMotionDetection: Final[ModuleName[modules.MotionDetection]] = ModuleName(
+        "MotionDetection"
+    )
+    SmartCamPersonDetection: Final[ModuleName[modules.PersonDetection]] = ModuleName(
+        "PersonDetection"
+    )
+    SmartCamPetDetection: Final[ModuleName[modules.PetDetection]] = ModuleName(
+        "PetDetection"
+    )
+    SmartCamTamperDetection: Final[ModuleName[modules.TamperDetection]] = ModuleName(
+        "TamperDetection"
+    )
+    SmartCamBabyCryDetection: Final[ModuleName[modules.BabyCryDetection]] = ModuleName(
+        "BabyCryDetection"
+    )
 
-    #: Query to execute during the main update cycle
-    QUERY_GETTER_NAME: str
+    SmartCamBattery: Final[ModuleName[modules.Battery]] = ModuleName("Battery")
+
+    SmartCamDeviceModule: Final[ModuleName[modules.DeviceModule]] = ModuleName(
+        "devicemodule"
+    )
+
     #: Module name to be queried
     QUERY_MODULE_NAME: str
     #: Section name or names to be queried
@@ -37,6 +56,8 @@ class SmartCamModule(SmartModule):
 
         Default implementation uses the raw query getter w/o parameters.
         """
+        if not self.QUERY_GETTER_NAME:
+            return {}
         section_names = (
             {"name": self.QUERY_SECTION_NAMES} if self.QUERY_SECTION_NAMES else {}
         )
@@ -47,21 +68,7 @@ class SmartCamModule(SmartModule):
 
         Just a helper method.
         """
-        if params:
-            module = next(iter(params))
-            section = next(iter(params[module]))
-        else:
-            module = "system"
-            section = "null"
-
-        if method[:3] == "get":
-            return await self._device._query_getter_helper(method, module, section)
-
-        if TYPE_CHECKING:
-            params = cast(dict[str, dict[str, Any]], params)
-        return await self._device._query_setter_helper(
-            method, module, section, params[module][section]
-        )
+        return await self._device._query_helper(method, params)
 
     @property
     def data(self) -> dict:
@@ -86,7 +93,8 @@ class SmartCamModule(SmartModule):
                     f" for '{self._module}'"
                 )
 
-            return query_resp.get(self.QUERY_MODULE_NAME)
+            # Some calls return the data under the module, others not
+            return query_resp.get(self.QUERY_MODULE_NAME, query_resp)
         else:
             found = {key: val for key, val in dev._last_update.items() if key in q}
             for key in q:
