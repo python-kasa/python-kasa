@@ -79,6 +79,8 @@ class DeviceFamily(Enum):
     SmartKasaHub = "SMART.KASAHUB"
     SmartIpCamera = "SMART.IPCAMERA"
     SmartTapoRobovac = "SMART.TAPOROBOVAC"
+    SmartTapoChime = "SMART.TAPOCHIME"
+    SmartTapoDoorbell = "SMART.TAPODOORBELL"
 
 
 class _DeviceConfigBaseMixin(DataClassJSONMixin):

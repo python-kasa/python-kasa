@@ -285,12 +285,22 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (US) / Firmware: 1.2.8
 - **C720**
   - Hardware: 1.0 (US) / Firmware: 1.2.3
-- **D230**
-  - Hardware: 1.20 (EU) / Firmware: 1.1.19
 - **TC65**
   - Hardware: 1.0 / Firmware: 1.3.9
 - **TC70**
   - Hardware: 3.0 / Firmware: 1.3.11
+
+### Doorbells and chimes
+
+- **D230**
+  - Hardware: 1.20 (EU) / Firmware: 1.1.19
+
+### Vacuums
+
+- **RV20 Max Plus**
+  - Hardware: 1.0 (EU) / Firmware: 1.0.7
+- **RV30 Max**
+  - Hardware: 1.0 (US) / Firmware: 1.2.0
 
 ### Hubs
 
@@ -325,13 +335,6 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **T315**
   - Hardware: 1.0 (EU) / Firmware: 1.7.0
   - Hardware: 1.0 (US) / Firmware: 1.8.0
-
-### Vacuums
-
-- **RV20 Max Plus**
-  - Hardware: 1.0 (EU) / Firmware: 1.0.7
-- **RV30 Max**
-  - Hardware: 1.0 (US) / Firmware: 1.2.0
 
 
 <!--SUPPORTED_END-->

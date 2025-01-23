@@ -85,6 +85,13 @@ class SmartCamChild(SmartChildDevice, SmartCamDevice):
         # devices
         self._info = self._map_child_info_from_parent(info)
 
+    @property
+    def device_type(self) -> DeviceType:
+        """Return the device type."""
+        if self._device_type == DeviceType.Unknown and self._info:
+            self._device_type = self._get_device_type_from_sysinfo(self._info)
+        return self._device_type
+
     @staticmethod
     def _get_device_info(
         info: dict[str, Any], discovery_info: dict[str, Any] | None

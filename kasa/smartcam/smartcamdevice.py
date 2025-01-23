@@ -26,12 +26,15 @@ class SmartCamDevice(SmartDevice):
     @staticmethod
     def _get_device_type_from_sysinfo(sysinfo: dict[str, Any]) -> DeviceType:
         """Find type to be displayed as a supported device category."""
-        if (
-            sysinfo
-            and (device_type := sysinfo.get("device_type"))
-            and device_type.endswith("HUB")
-        ):
+        if not (device_type := sysinfo.get("device_type")):
+            return DeviceType.Unknown
+
+        if device_type.endswith("HUB"):
             return DeviceType.Hub
+
+        if "DOORBELL" in device_type:
+            return DeviceType.Doorbell
+
         return DeviceType.Camera
 
     @staticmethod
@@ -165,11 +168,6 @@ class SmartCamDevice(SmartDevice):
             if (
                 mod.REQUIRED_COMPONENT
                 and mod.REQUIRED_COMPONENT not in self._components
-                # Always add Camera module to cameras
-                and (
-                    mod._module_name() != Module.Camera
-                    or self._device_type is not DeviceType.Camera
-                )
             ):
                 continue
             module = mod(self, mod._module_name())
@@ -258,7 +256,7 @@ class SmartCamDevice(SmartDevice):
     @property
     def device_type(self) -> DeviceType:
         """Return the device type."""
-        if self._device_type == DeviceType.Unknown:
+        if self._device_type == DeviceType.Unknown and self._info:
             self._device_type = self._get_device_type_from_sysinfo(self._info)
         return self._device_type
 
