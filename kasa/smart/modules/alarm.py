@@ -10,6 +10,16 @@ from ..smartmodule import SmartModule
 
 DURATION_MAX = 10 * 60
 
+VOLUME_INT_TO_STR = {
+    0: "mute",
+    1: "low",
+    2: "normal",
+    3: "high",
+}
+
+VOLUME_STR_LIST = [v for v in VOLUME_INT_TO_STR.values()]
+VOLUME_INT_RANGE = (min(VOLUME_INT_TO_STR.keys()), max(VOLUME_INT_TO_STR.keys()))
+
 AlarmVolume: TypeAlias = Literal["mute", "low", "normal", "high"]
 
 
@@ -73,7 +83,8 @@ class Alarm(SmartModule):
                 attribute_setter="set_alarm_volume",
                 category=Feature.Category.Config,
                 type=Feature.Type.Choice,
-                choices_getter=lambda: ["mute", "low", "normal", "high"],
+                choices_getter=lambda: VOLUME_STR_LIST,
+                range_getter=lambda: VOLUME_INT_RANGE,
             )
         )
         self._add_feature(
@@ -205,22 +216,16 @@ class Alarm(SmartModule):
 
     def _check_and_convert_volume(self, volume: str | int) -> str:
         """Raise an exception on invalid volume."""
-        volume_int_to_str = {
-            0: "mute",
-            1: "low",
-            2: "normal",
-            3: "high",
-        }
         if isinstance(volume, int):
-            volume = volume_int_to_str.get(volume, "invalid")
+            volume = VOLUME_INT_TO_STR.get(volume, "invalid")
 
         if TYPE_CHECKING:
             assert isinstance(volume, str)
 
-        if volume not in volume_int_to_str.values():
+        if volume not in VOLUME_INT_TO_STR.values():
             raise ValueError(
                 f"Invalid volume {volume} "
-                f"available: {volume_int_to_str.keys()}, {volume_int_to_str.values()}"
+                f"available: {VOLUME_INT_TO_STR.keys()}, {VOLUME_INT_TO_STR.values()}"
             )
 
         return volume

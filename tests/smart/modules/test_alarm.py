@@ -36,6 +36,21 @@ async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: ty
 
 
 @alarm
+async def test_volume_feature(dev: SmartDevice):
+    """Test that volume feature has correct choices and range."""
+    alarm = next(get_parent_and_child_modules(dev, Module.Alarm))
+    assert alarm is not None
+
+    volume_feat = alarm.get_feature("alarm_volume")
+    assert volume_feat
+
+    assert volume_feat.minimum_value == 0
+    assert volume_feat.maximum_value == 3
+
+    assert volume_feat.choices == ["mute", "low", "normal", "high"]
+
+
+@alarm
 @pytest.mark.parametrize(
     ("kwargs", "request_params"),
     [
