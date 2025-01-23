@@ -19,7 +19,7 @@ Tapo Hub
 ['camera', 'subg.trv', 'subg.trigger', 'subg.plugswitch']
 
 Put child devices in pairing mode.
-The hub will pair with all supported devices in pairing mode
+The hub will pair with all supported devices in pairing mode:
 
 >>> added = await childsetup.pair()
 >>> added
@@ -34,7 +34,7 @@ SCRUBBED_CHILD_DEVICE_ID_3 - T110
 SCRUBBED_CHILD_DEVICE_ID_4 - S200B
 SCRUBBED_CHILD_DEVICE_ID_5 - S200B
 
-Unpair with the child device id
+Unpair with the child `device_id`:
 
 >>> await childsetup.unpair("SCRUBBED_CHILD_DEVICE_ID_4")
 >>> for child in dev.children:
@@ -63,7 +63,7 @@ class ChildSetup(Module, ABC):
 
     @abstractmethod
     async def pair(self, *, timeout: int = 10) -> list[dict]:
-        """Scan for new devices and pair after discovering first new device."""
+        """Scan for new devices and pair them."""
 
     @abstractmethod
     async def unpair(self, device_id: str) -> dict:
