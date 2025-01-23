@@ -22,6 +22,8 @@ class DeviceType(Enum):
     Fan = "fan"
     Thermostat = "thermostat"
     Vacuum = "vacuum"
+    Chime = "chime"
+    Doorbell = "doorbell"
     Unknown = "unknown"
 
     @staticmethod

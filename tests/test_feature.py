@@ -74,7 +74,7 @@ def test_feature_value_container(mocker, dummy_feature: Feature):
         def test_prop(self):
             return "dummy"
 
-    dummy_feature.container = DummyContainer()
+    dummy_feature.container = DummyContainer()  # type: ignore[assignment]
     dummy_feature.attribute_getter = "test_prop"
 
     mock_dev_prop = mocker.patch.object(
@@ -191,7 +191,12 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         exceptions = []
         for feat in dev.features.values():
             try:
-                with patch.object(feat.device.protocol, "query") as query:
+                patch_dev = feat.container._device if feat.container else feat.device
+                with (
+                    patch.object(patch_dev.protocol, "query", name=feat.id) as query,
+                    # patch update in case feature setter does an update
+                    patch.object(patch_dev, "update"),
+                ):
                     await _test_feature(feat, query)
             # we allow our own exceptions to avoid mocking valid responses
             except KasaException:

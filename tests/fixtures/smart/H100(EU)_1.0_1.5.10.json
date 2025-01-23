@@ -96,21 +96,24 @@
         ]
     },
     "discovery_result": {
-        "device_id": "00000000000000000000000000000000",
-        "device_model": "H100(EU)",
-        "device_type": "SMART.TAPOHUB",
-        "factory_default": false,
-        "ip": "127.0.0.123",
-        "is_support_iot_cloud": true,
-        "mac": "3C-52-A1-00-00-00",
-        "mgt_encrypt_schm": {
-            "encrypt_type": "AES",
-            "http_port": 80,
-            "is_support_https": false,
-            "lv": 2
-        },
-        "obd_src": "tplink",
-        "owner": "00000000000000000000000000000000"
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "H100(EU)",
+            "device_type": "SMART.TAPOHUB",
+            "factory_default": false,
+            "ip": "127.0.0.123",
+            "is_support_iot_cloud": true,
+            "mac": "3C-52-A1-00-00-00",
+            "mgt_encrypt_schm": {
+                "encrypt_type": "AES",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000"
+        }
     },
     "get_alarm_configure": {
         "duration": 10,
@@ -468,6 +471,24 @@
     "get_matter_setup_info": {
         "setup_code": "00000000000",
         "setup_payload": "00:0000000000000000000"
+    },
+    "get_scan_child_device_list": {
+        "child_device_list": [
+            {
+                "category": "subg.trigger.temp-hmdt-sensor",
+                "device_id": "REDACTED_1",
+                "device_model": "T315",
+                "name": "REDACTED_1"
+            },
+            {
+                "category": "subg.trigger.contact-sensor",
+                "device_id": "REDACTED_2",
+                "device_model": "T110",
+                "name": "REDACTED_2"
+            }
+        ],
+        "scan_status": "scanning",
+        "scan_wait_time": 28
     },
     "get_support_alarm_type_list": {
         "alarm_type_list": [

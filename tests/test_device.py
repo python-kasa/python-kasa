@@ -16,6 +16,7 @@ import kasa
 from kasa import Credentials, Device, DeviceConfig, DeviceType, KasaException, Module
 from kasa.iot import (
     IotBulb,
+    IotCamera,
     IotDevice,
     IotDimmer,
     IotLightStrip,
@@ -30,7 +31,7 @@ from kasa.iot.iottimezone import (
 )
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
-from kasa.smartcam import SmartCamDevice
+from kasa.smartcam import SmartCamChild, SmartCamDevice
 
 
 def _get_subclasses(of_class):
@@ -55,16 +56,22 @@ device_classes = pytest.mark.parametrize(
 )
 
 
+async def test_device_id(dev: Device):
+    """Test all devices have a device id."""
+    assert dev.device_id
+
+
 async def test_alias(dev):
     test_alias = "TEST1234"
     original = dev.alias
 
-    assert isinstance(original, str)
+    assert isinstance(original, str | None)
     await dev.set_alias(test_alias)
     await dev.update()
     assert dev.alias == test_alias
 
-    await dev.set_alias(original)
+    # If alias is None set it back to empty string
+    await dev.set_alias(original or "")
     await dev.update()
     assert dev.alias == original
 
@@ -77,10 +84,25 @@ async def test_device_class_ctors(device_class_name_obj):
     credentials = Credentials("foo", "bar")
     config = DeviceConfig(host, port_override=port, credentials=credentials)
     klass = device_class_name_obj[1]
-    if issubclass(klass, SmartChildDevice):
+    if issubclass(klass, SmartChildDevice | SmartCamChild):
         parent = SmartDevice(host, config=config)
+        smartcam_required = {
+            "device_model": "foo",
+            "device_type": "SMART.TAPODOORBELL",
+            "alias": "Foo",
+            "sw_ver": "1.1",
+            "hw_ver": "1.0",
+            "mac": "1.2.3.4",
+            "hwId": "hw_id",
+            "oem_id": "oem_id",
+        }
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy", **smartcam_required},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+                "app_component_list": [{"name": "device", "version": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)
@@ -97,10 +119,15 @@ async def test_device_class_repr(device_class_name_obj):
     credentials = Credentials("foo", "bar")
     config = DeviceConfig(host, port_override=port, credentials=credentials)
     klass = device_class_name_obj[1]
-    if issubclass(klass, SmartChildDevice):
+    if issubclass(klass, SmartChildDevice | SmartCamChild):
         parent = SmartDevice(host, config=config)
         dev = klass(
-            parent, {"dummy": "info", "device_id": "dummy"}, {"dummy": "components"}
+            parent,
+            {"dummy": "info", "device_id": "dummy"},
+            {
+                "component_list": [{"id": "device", "ver_code": 1}],
+                "app_component_list": [{"name": "device", "version": 1}],
+            },
         )
     else:
         dev = klass(host, config=config)
@@ -113,14 +140,18 @@ async def test_device_class_repr(device_class_name_obj):
         IotStrip: DeviceType.Strip,
         IotWallSwitch: DeviceType.WallSwitch,
         IotLightStrip: DeviceType.LightStrip,
+        IotCamera: DeviceType.Camera,
         SmartChildDevice: DeviceType.Unknown,
         SmartDevice: DeviceType.Unknown,
-        SmartCamDevice: DeviceType.Camera,
+        SmartCamDevice: DeviceType.Unknown,
+        SmartCamChild: DeviceType.Unknown,
     }
     type_ = CLASS_TO_DEFAULT_TYPE[klass]
     child_repr = "<DeviceType.Unknown(child) of <DeviceType.Unknown at 127.0.0.2 - update() needed>>"
     not_child_repr = f"<{type_} at 127.0.0.2 - update() needed>"
-    expected_repr = child_repr if klass is SmartChildDevice else not_child_repr
+    expected_repr = (
+        child_repr if klass in {SmartChildDevice, SmartCamChild} else not_child_repr
+    )
     assert repr(dev) == expected_repr
 
 
@@ -265,19 +296,19 @@ async def test_deprecated_light_attributes(dev: Device):
     await _test_attribute(dev, "is_color", bool(light), "Light")
     await _test_attribute(dev, "is_variable_color_temp", bool(light), "Light")
 
-    exc = KasaException if light and not light.is_dimmable else None
+    exc = KasaException if light and not light.has_feature("brightness") else None
     await _test_attribute(dev, "brightness", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_brightness", bool(light), "Light", 50, will_raise=exc
     )
 
-    exc = KasaException if light and not light.is_color else None
+    exc = KasaException if light and not light.has_feature("hsv") else None
     await _test_attribute(dev, "hsv", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_hsv", bool(light), "Light", 50, 50, 50, will_raise=exc
     )
 
-    exc = KasaException if light and not light.is_variable_color_temp else None
+    exc = KasaException if light and not light.has_feature("color_temp") else None
     await _test_attribute(dev, "color_temp", bool(light), "Light", will_raise=exc)
     await _test_attribute(
         dev, "set_color_temp", bool(light), "Light", 2700, will_raise=exc

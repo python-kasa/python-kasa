@@ -2,6 +2,7 @@ import logging
 
 import pytest
 import pytest_mock
+from pytest_mock import MockerFixture
 
 from kasa.exceptions import (
     SMART_RETRYABLE_ERRORS,
@@ -9,11 +10,13 @@ from kasa.exceptions import (
     KasaException,
     SmartErrorCode,
 )
+from kasa.protocols.smartcamprotocol import SmartCamProtocol
 from kasa.protocols.smartprotocol import SmartProtocol, _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 
 from ..conftest import device_smart
 from ..fakeprotocol_smart import FakeSmartTransport
+from ..fakeprotocol_smartcam import FakeSmartCamTransport
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
 DUMMY_MULTIPLE_QUERY = {
@@ -371,6 +374,46 @@ async def test_smart_protocol_lists_multiple_request(mocker, list_sum, batch_siz
     assert resp == response
 
 
+@pytest.mark.parametrize("list_sum", [5, 10, 30])
+@pytest.mark.parametrize("batch_size", [1, 2, 3, 50])
+async def test_smartcam_protocol_list_request(mocker, list_sum, batch_size):
+    """Test smartcam protocol list handling for lists."""
+    child_list = [{"foo": i} for i in range(list_sum)]
+
+    response = {
+        "getChildDeviceList": {
+            "child_device_list": child_list,
+            "start_index": 0,
+            "sum": list_sum,
+        },
+        "getChildDeviceComponentList": {
+            "child_component_list": child_list,
+            "start_index": 0,
+            "sum": list_sum,
+        },
+    }
+    request = {
+        "getChildDeviceList": {"childControl": {"start_index": 0}},
+        "getChildDeviceComponentList": {"childControl": {"start_index": 0}},
+    }
+
+    ft = FakeSmartCamTransport(
+        response,
+        "foobar",
+        list_return_size=batch_size,
+        components_not_included=True,
+        get_child_fixtures=False,
+    )
+    protocol = SmartCamProtocol(transport=ft)
+    query_spy = mocker.spy(protocol, "_execute_query")
+    resp = await protocol.query(request)
+    expected_count = 1 + 2 * (
+        int(list_sum / batch_size) + (0 if list_sum % batch_size else -1)
+    )
+    assert query_spy.call_count == expected_count
+    assert resp == response
+
+
 async def test_incomplete_list(mocker, caplog):
     """Test for handling incomplete lists returned from queries."""
     info = {
@@ -448,3 +491,81 @@ async def test_smart_queries_redaction(
     await dev.update()
     assert device_id not in caplog.text
     assert "REDACTED_" + device_id[9::] in caplog.text
+
+
+async def test_no_method_returned_multiple(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+):
+    """Test protocol handles multiple requests that don't return the method."""
+    req = {
+        "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
+        "getAppComponentList": {"app_component": {"name": "app_component_list"}},
+    }
+    res = {
+        "result": {
+            "responses": [
+                {
+                    "method": "getDeviceInfo",
+                    "result": {
+                        "device_info": {
+                            "basic_info": {
+                                "device_model": "C210",
+                            },
+                        }
+                    },
+                    "error_code": 0,
+                },
+                {
+                    "result": {"app_component": {"app_component_list": []}},
+                    "error_code": 0,
+                },
+            ]
+        },
+        "error_code": 0,
+    }
+
+    transport = FakeSmartCamTransport(
+        {},
+        "dummy-name",
+        components_not_included=True,
+    )
+    protocol = SmartProtocol(transport=transport)
+    mocker.patch.object(protocol._transport, "send", return_value=res)
+    await protocol.query(req)
+    assert "No method key in response" in caplog.text
+    caplog.clear()
+    await protocol.query(req)
+    assert "No method key in response" not in caplog.text
+
+
+async def test_no_multiple_methods(
+    mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+):
+    """Test protocol sends NO_MULTI methods as single call."""
+    req = {
+        "getDeviceInfo": {"device_info": {"name": ["basic_info", "info"]}},
+        "getConnectStatus": {"onboarding": {"get_connect_status": {}}},
+    }
+    info = {
+        "getDeviceInfo": {
+            "device_info": {
+                "basic_info": {
+                    "avatar": "Home",
+                }
+            }
+        },
+        "getConnectStatus": {
+            "onboarding": {
+                "get_connect_status": {"current_ssid": "", "err_code": 0, "status": 0}
+            }
+        },
+    }
+    transport = FakeSmartCamTransport(
+        info,
+        "dummy-name",
+        components_not_included=True,
+    )
+    protocol = SmartProtocol(transport=transport)
+    send_spy = mocker.spy(protocol._transport, "send")
+    await protocol.query(req)
+    assert send_spy.call_count == 2

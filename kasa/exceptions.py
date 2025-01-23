@@ -127,11 +127,14 @@ class SmartErrorCode(IntEnum):
     DST_ERROR = -2301
     DST_SAVE_ERROR = -2302
 
+    VACUUM_BATTERY_LOW = -3001
+
     SYSTEM_ERROR = -40101
     INVALID_ARGUMENTS = -40209
 
     # Camera error codes
     SESSION_EXPIRED = -40401
+    BAD_USERNAME = -40411  # determined from testing
     HOMEKIT_LOGIN_FAIL = -40412
     DEVICE_BLOCKED = -40404
     DEVICE_FACTORY = -40405

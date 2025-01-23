@@ -21,6 +21,9 @@ check for the existence of the module:
 >>>     print(light.brightness)
 100
 
+.. include:: ../featureattributes.md
+   :parser: myst_parser.sphinx_
+
 To see whether a device supports specific functionality, you can check whether the
 module has that feature:
 
@@ -149,10 +152,24 @@ class Module(ABC):
     ChildProtection: Final[ModuleName[smart.ChildProtection]] = ModuleName(
         "ChildProtection"
     )
+    ChildLock: Final[ModuleName[smart.ChildLock]] = ModuleName("ChildLock")
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+    ChildSetup: Final[ModuleName[smart.ChildSetup]] = ModuleName("ChildSetup")
+
+    HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("HomeKit")
+    Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")
 
     # SMARTCAM only modules
     Camera: Final[ModuleName[smartcam.Camera]] = ModuleName("Camera")
+    LensMask: Final[ModuleName[smartcam.LensMask]] = ModuleName("LensMask")
+
+    # Vacuum modules
+    Clean: Final[ModuleName[smart.Clean]] = ModuleName("Clean")
+    Consumables: Final[ModuleName[smart.Consumables]] = ModuleName("Consumables")
+    Dustbin: Final[ModuleName[smart.Dustbin]] = ModuleName("Dustbin")
+    Speaker: Final[ModuleName[smart.Speaker]] = ModuleName("Speaker")
+    Mop: Final[ModuleName[smart.Mop]] = ModuleName("Mop")
+    CleanRecords: Final[ModuleName[smart.CleanRecords]] = ModuleName("CleanRecords")
 
     def __init__(self, device: Device, module: str) -> None:
         self._device = device

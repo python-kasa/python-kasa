@@ -13,7 +13,7 @@ from typing import Any, NamedTuple
 from kasa.device_type import DeviceType
 from kasa.iot import IotDevice
 from kasa.smart import SmartDevice
-from kasa.smartcam import SmartCamDevice
+from kasa.smartcam import SmartCamChild, SmartCamDevice
 
 
 class SupportedVersion(NamedTuple):
@@ -36,6 +36,9 @@ DEVICE_TYPE_TO_PRODUCT_GROUP = {
     DeviceType.Bulb: "Bulbs",
     DeviceType.LightStrip: "Light Strips",
     DeviceType.Camera: "Cameras",
+    DeviceType.Doorbell: "Doorbells and chimes",
+    DeviceType.Chime: "Doorbells and chimes",
+    DeviceType.Vacuum: "Vacuums",
     DeviceType.Hub: "Hubs",
     DeviceType.Sensor: "Hub-Connected Devices",
     DeviceType.Thermostat: "Hub-Connected Devices",
@@ -49,6 +52,7 @@ IOT_FOLDER = "tests/fixtures/iot/"
 SMART_FOLDER = "tests/fixtures/smart/"
 SMART_CHILD_FOLDER = "tests/fixtures/smart/child"
 SMARTCAM_FOLDER = "tests/fixtures/smartcam/"
+SMARTCAM_CHILD_FOLDER = "tests/fixtures/smartcam/child"
 
 
 def generate_supported(args):
@@ -66,6 +70,7 @@ def generate_supported(args):
     _get_supported_devices(supported, SMART_FOLDER, SmartDevice)
     _get_supported_devices(supported, SMART_CHILD_FOLDER, SmartDevice)
     _get_supported_devices(supported, SMARTCAM_FOLDER, SmartCamDevice)
+    _get_supported_devices(supported, SMARTCAM_CHILD_FOLDER, SmartCamChild)
 
     readme_updated = _update_supported_file(
         README_FILENAME, _supported_summary(supported), print_diffs
@@ -205,7 +210,7 @@ def _get_supported_devices(
             fixture_data = json.load(f)
 
         model_info = device_cls._get_device_info(
-            fixture_data, fixture_data.get("discovery_result")
+            fixture_data, fixture_data.get("discovery_result", {}).get("result")
         )
 
         supported_type = DEVICE_TYPE_TO_PRODUCT_GROUP[model_info.device_type]
@@ -214,7 +219,7 @@ def _get_supported_devices(
         smodel = stype.setdefault(model_info.long_name, [])
         smodel.append(
             SupportedVersion(
-                region=model_info.region,
+                region=model_info.region if model_info.region else "",
                 hw=model_info.hardware_version,
                 fw=model_info.firmware_version,
                 auth=model_info.requires_auth,

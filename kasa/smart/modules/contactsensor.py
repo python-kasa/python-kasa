@@ -10,7 +10,7 @@ class ContactSensor(SmartModule):
     """Implementation of contact sensor module."""
 
     REQUIRED_COMPONENT = None  # we depend on availability of key
-    REQUIRED_KEY_ON_PARENT = "open"
+    SYSINFO_LOOKUP_KEYS = ["open"]
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""

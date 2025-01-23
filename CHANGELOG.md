@@ -1,5 +1,135 @@
 # Changelog
 
+## [0.9.1](https://github.com/python-kasa/python-kasa/tree/0.9.1) (2025-01-06)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.9.0...0.9.1)
+
+**Release summary:**
+
+- Support for hub-attached wall switches S210 and S220
+- Support for older firmware on Tapo cameras
+- Bugfixes and improvements
+
+**Implemented enhancements:**
+
+- Add support for Tapo hub-attached switch devices [\#1421](https://github.com/python-kasa/python-kasa/pull/1421) (@sdb9696)
+- Use repr\(\) for enum values in Feature.\_\_repr\_\_ [\#1414](https://github.com/python-kasa/python-kasa/pull/1414) (@rytilahti)
+- Update SslAesTransport for older firmware versions [\#1362](https://github.com/python-kasa/python-kasa/pull/1362) (@sdb9696)
+
+**Fixed bugs:**
+
+- T310 not detected with H200 Hub [\#1409](https://github.com/python-kasa/python-kasa/issues/1409)
+- Backoff after xor timeout and improve error reporting [\#1424](https://github.com/python-kasa/python-kasa/pull/1424) (@bdraco)
+- Fix incorrect obd src echo [\#1412](https://github.com/python-kasa/python-kasa/pull/1412) (@rytilahti)
+- Handle smartcam partial list responses [\#1411](https://github.com/python-kasa/python-kasa/pull/1411) (@sdb9696)
+
+**Added support for devices:**
+
+- Add S220 fixture [\#1419](https://github.com/python-kasa/python-kasa/pull/1419) (@rytilahti)
+- Add S210 fixture [\#1418](https://github.com/python-kasa/python-kasa/pull/1418) (@rytilahti)
+
+**Documentation updates:**
+
+- Improve exception messages on credential mismatches [\#1417](https://github.com/python-kasa/python-kasa/pull/1417) (@rytilahti)
+
+**Project maintenance:**
+
+- Add C210 2.0 1.3.11 fixture [\#1406](https://github.com/python-kasa/python-kasa/pull/1406) (@sdb9696)
+- Add HS210\(US\) 3.0 1.0.10 IOT Fixture [\#1405](https://github.com/python-kasa/python-kasa/pull/1405) (@ZeliardM)
+- Change smartcam detection features to category config [\#1402](https://github.com/python-kasa/python-kasa/pull/1402) (@sdb9696)
+
+## [0.9.0](https://github.com/python-kasa/python-kasa/tree/0.9.0) (2024-12-21)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.8.1...0.9.0)
+
+**Release highlights:**
+
+- Improvements to Tapo camera support:
+  - C100, C225, C325WB, C520WS and TC70 now supported.
+  - Support for motion, person, tamper, and baby cry detection.
+- Initial support for Tapo robovacs.
+- API extended with `FeatureAttributes` for consumers to test for [supported features](https://python-kasa.readthedocs.io/en/stable/topics.html#modules-and-features).
+- Experimental support for Kasa cameras[^1]
+
+[^1]: Currently limited to devices not yet provisioned via the Tapo app - Many thanks to @puxtril!
+
+**Breaking changes:**
+
+- Use DeviceInfo consistently across devices [\#1338](https://github.com/python-kasa/python-kasa/pull/1338) (@sdb9696)
+
+**Implemented enhancements:**
+
+- Add bare-bones matter modules to smart and smartcam devices [\#1371](https://github.com/python-kasa/python-kasa/pull/1371) (@sdb9696)
+- Add bare bones homekit modules smart and smartcam devices [\#1370](https://github.com/python-kasa/python-kasa/pull/1370) (@sdb9696)
+- cli: print model, https, and lv for discover list [\#1339](https://github.com/python-kasa/python-kasa/pull/1339) (@rytilahti)
+- Add LinkieTransportV2 and basic IOT.IPCAMERA support [\#1270](https://github.com/python-kasa/python-kasa/pull/1270) (@Puxtril)
+- Add ssltransport for robovacs [\#943](https://github.com/python-kasa/python-kasa/pull/943) (@rytilahti)
+- Add rssi and signal\_level to smartcam [\#1392](https://github.com/python-kasa/python-kasa/pull/1392) (@sdb9696)
+- Add smartcam detection modules [\#1389](https://github.com/python-kasa/python-kasa/pull/1389) (@sdb9696)
+- Return raw discovery result in cli discover raw [\#1342](https://github.com/python-kasa/python-kasa/pull/1342) (@sdb9696)
+- Improve overheat reporting [\#1335](https://github.com/python-kasa/python-kasa/pull/1335) (@rytilahti)
+- Provide alternative camera urls [\#1316](https://github.com/python-kasa/python-kasa/pull/1316) (@sdb9696)
+
+**Fixed bugs:**
+
+- Tapo H200 Hub does not work with python-kasa [\#1149](https://github.com/python-kasa/python-kasa/issues/1149)
+- Fix lens mask required component and state [\#1386](https://github.com/python-kasa/python-kasa/pull/1386) (@sdb9696)
+- Add LensMask module to smartcam [\#1385](https://github.com/python-kasa/python-kasa/pull/1385) (@sdb9696)
+- Treat smartcam 500 errors after handshake as retryable [\#1395](https://github.com/python-kasa/python-kasa/pull/1395) (@sdb9696)
+- Do not error when accessing smart device\_type before update [\#1319](https://github.com/python-kasa/python-kasa/pull/1319) (@sdb9696)
+- Fallback to other module data on get\_energy\_usage errors [\#1245](https://github.com/python-kasa/python-kasa/pull/1245) (@rytilahti)
+
+**Added support for devices:**
+
+- Add P210M\(US\) 1.0 1.0.3 fixture [\#1399](https://github.com/python-kasa/python-kasa/pull/1399) (@sdb9696)
+- Add C225\(US\) 2.0 1.0.11 fixture [\#1398](https://github.com/python-kasa/python-kasa/pull/1398) (@sdb9696)
+- Add P306\(US\) 1.0 1.1.2 fixture [\#1396](https://github.com/python-kasa/python-kasa/pull/1396) (@nakanaela)
+- Add TC70 3.0 1.3.11 fixture [\#1390](https://github.com/python-kasa/python-kasa/pull/1390) (@sdb9696)
+- Add KS200 \(US\) IOT Fixture and P115 \(US\) Smart Fixture [\#1355](https://github.com/python-kasa/python-kasa/pull/1355) (@ZeliardM)
+- Add C520WS camera fixture [\#1352](https://github.com/python-kasa/python-kasa/pull/1352) (@Happy-Cadaver)
+- Add C325WB\(EU\) 1.0 1.1.17 Fixture [\#1379](https://github.com/python-kasa/python-kasa/pull/1379) (@sdb9696)
+- Add C100 4.0 1.3.14 Fixture [\#1378](https://github.com/python-kasa/python-kasa/pull/1378) (@sdb9696)
+
+**Documentation updates:**
+
+- Update docs for Tapo Lab Third-Party compatibility [\#1380](https://github.com/python-kasa/python-kasa/pull/1380) (@sdb9696)
+- Add homebridge-kasa-python link to README [\#1367](https://github.com/python-kasa/python-kasa/pull/1367) (@rytilahti)
+- Add link to related homeassistant-tapo-control [\#1333](https://github.com/python-kasa/python-kasa/pull/1333) (@rytilahti)
+- Update docs for new FeatureAttribute behaviour [\#1365](https://github.com/python-kasa/python-kasa/pull/1365) (@sdb9696)
+
+**Project maintenance:**
+
+- Add P135 1.0 1.2.0 fixture [\#1397](https://github.com/python-kasa/python-kasa/pull/1397) (@sdb9696)
+- Update C520WS fixture with new methods [\#1384](https://github.com/python-kasa/python-kasa/pull/1384) (@sdb9696)
+- Miscellaneous minor fixes to dump\_devinfo [\#1382](https://github.com/python-kasa/python-kasa/pull/1382) (@sdb9696)
+- Add timeout parameter to dump\_devinfo [\#1381](https://github.com/python-kasa/python-kasa/pull/1381) (@sdb9696)
+- Force single for some smartcam requests [\#1374](https://github.com/python-kasa/python-kasa/pull/1374) (@sdb9696)
+- Pass raw components to SmartChildDevice init [\#1363](https://github.com/python-kasa/python-kasa/pull/1363) (@sdb9696)
+- Fix line endings in device\_fixtures.py [\#1361](https://github.com/python-kasa/python-kasa/pull/1361) (@sdb9696)
+- Tweak RELEASING.md instructions for patch releases [\#1347](https://github.com/python-kasa/python-kasa/pull/1347) (@sdb9696)
+- Scrub more vacuum keys [\#1328](https://github.com/python-kasa/python-kasa/pull/1328) (@rytilahti)
+- Remove unnecessary check for python \<3.10 [\#1326](https://github.com/python-kasa/python-kasa/pull/1326) (@rytilahti)
+- Add vacuum component queries to dump\_devinfo [\#1320](https://github.com/python-kasa/python-kasa/pull/1320) (@rytilahti)
+- Handle missing mgt\_encryption\_schm in discovery [\#1318](https://github.com/python-kasa/python-kasa/pull/1318) (@sdb9696)
+- Follow main package structure for tests [\#1317](https://github.com/python-kasa/python-kasa/pull/1317) (@rytilahti)
+- Handle smartcam device blocked response [\#1393](https://github.com/python-kasa/python-kasa/pull/1393) (@sdb9696)
+- Handle KeyboardInterrupts in the cli better [\#1391](https://github.com/python-kasa/python-kasa/pull/1391) (@sdb9696)
+- Simplify get\_protocol to prevent clashes with smartcam and robovac [\#1377](https://github.com/python-kasa/python-kasa/pull/1377) (@sdb9696)
+- Add smartcam modules to package inits [\#1376](https://github.com/python-kasa/python-kasa/pull/1376) (@sdb9696)
+- Enable saving of fixture files without git clone [\#1375](https://github.com/python-kasa/python-kasa/pull/1375) (@sdb9696)
+- Add new methods to dump\_devinfo [\#1373](https://github.com/python-kasa/python-kasa/pull/1373) (@sdb9696)
+- Update cli, light modules, and docs to use FeatureAttributes [\#1364](https://github.com/python-kasa/python-kasa/pull/1364) (@sdb9696)
+- Update dump\_devinfo for raw discovery json and common redactors [\#1358](https://github.com/python-kasa/python-kasa/pull/1358) (@sdb9696)
+
+## [0.8.1](https://github.com/python-kasa/python-kasa/tree/0.8.1) (2024-12-06)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.8.0...0.8.1)
+
+**Fixed bugs:**
+
+- Fix update errors on hubs with unsupported children [\#1344](https://github.com/python-kasa/python-kasa/pull/1344) (@sdb9696)
+- Fix smartcam missing device id [\#1343](https://github.com/python-kasa/python-kasa/pull/1343) (@sdb9696)
+
 ## [0.8.0](https://github.com/python-kasa/python-kasa/tree/0.8.0) (2024-11-26)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.7.7...0.8.0)
@@ -35,28 +165,28 @@ Special thanks to @ryenitcher and @Puxtril for their new contributions to the im
 - Update cli feature command for actions not to require a value [\#1264](https://github.com/python-kasa/python-kasa/pull/1264) (@sdb9696)
 - Add pan tilt camera module [\#1261](https://github.com/python-kasa/python-kasa/pull/1261) (@sdb9696)
 - Add alarm module for smartcamera hubs [\#1258](https://github.com/python-kasa/python-kasa/pull/1258) (@sdb9696)
-- Move TAPO smartcamera out of experimental package [\#1255](https://github.com/python-kasa/python-kasa/pull/1255) (@sdb9696)
 - Add SmartCamera Led Module [\#1249](https://github.com/python-kasa/python-kasa/pull/1249) (@sdb9696)
-- Use component queries to select smartcamera modules [\#1248](https://github.com/python-kasa/python-kasa/pull/1248) (@sdb9696)
 - Print formatting for IotLightPreset [\#1216](https://github.com/python-kasa/python-kasa/pull/1216) (@Puxtril)
 - Allow getting Annotated features from modules [\#1018](https://github.com/python-kasa/python-kasa/pull/1018) (@sdb9696)
+- Move TAPO smartcamera out of experimental package [\#1255](https://github.com/python-kasa/python-kasa/pull/1255) (@sdb9696)
+- Use component queries to select smartcamera modules [\#1248](https://github.com/python-kasa/python-kasa/pull/1248) (@sdb9696)
 - Add common Thermostat module [\#977](https://github.com/python-kasa/python-kasa/pull/977) (@sdb9696)
 
 **Fixed bugs:**
 
 - TP-Link Tapo S505D cannot disable gradual on/off  [\#1309](https://github.com/python-kasa/python-kasa/issues/1309)
-- Inconsistent emeter information between features and emeter cli [\#1308](https://github.com/python-kasa/python-kasa/issues/1308)
 - How to dump power usage after latest updates? [\#1306](https://github.com/python-kasa/python-kasa/issues/1306)
 - kasa.discover: Got unsupported connection type: 'device\_family': 'SMART.IPCAMERA' [\#1267](https://github.com/python-kasa/python-kasa/issues/1267)
 - device \_\_repr\_\_ fails if no sys\_info [\#1262](https://github.com/python-kasa/python-kasa/issues/1262)
 - Tapo P110M: Error processing Energy for device, module will be unavailable: get\_energy\_usage for Energy  [\#1243](https://github.com/python-kasa/python-kasa/issues/1243)
 - Listing light presets throws error [\#1201](https://github.com/python-kasa/python-kasa/issues/1201)
-- Include duration when disabling smooth transition on/off [\#1313](https://github.com/python-kasa/python-kasa/pull/1313) (@rytilahti)
-- Expose energy command to cli [\#1307](https://github.com/python-kasa/python-kasa/pull/1307) (@rytilahti)
+- Inconsistent emeter information between features and emeter cli [\#1308](https://github.com/python-kasa/python-kasa/issues/1308)
 - Make discovery on unsupported devices less noisy [\#1291](https://github.com/python-kasa/python-kasa/pull/1291) (@rytilahti)
 - Fix repr for device created with no sysinfo or discovery info" [\#1266](https://github.com/python-kasa/python-kasa/pull/1266) (@sdb9696)
 - Fix discovery by alias for smart devices [\#1260](https://github.com/python-kasa/python-kasa/pull/1260) (@sdb9696)
 - Make \_\_repr\_\_ work on discovery info [\#1233](https://github.com/python-kasa/python-kasa/pull/1233) (@rytilahti)
+- Include duration when disabling smooth transition on/off [\#1313](https://github.com/python-kasa/python-kasa/pull/1313) (@rytilahti)
+- Expose energy command to cli [\#1307](https://github.com/python-kasa/python-kasa/pull/1307) (@rytilahti)
 
 **Added support for devices:**
 
@@ -70,13 +200,11 @@ Special thanks to @ryenitcher and @Puxtril for their new contributions to the im
 **Documentation updates:**
 
 - Use markdown footnotes in supported.md [\#1310](https://github.com/python-kasa/python-kasa/pull/1310) (@sdb9696)
-- Update docs for the new module attributes has/get feature [\#1301](https://github.com/python-kasa/python-kasa/pull/1301) (@sdb9696)
 - Fixup contributing.md for running test against a real device [\#1236](https://github.com/python-kasa/python-kasa/pull/1236) (@sdb9696)
+- Update docs for the new module attributes has/get feature [\#1301](https://github.com/python-kasa/python-kasa/pull/1301) (@sdb9696)
 
 **Project maintenance:**
 
-- Rename tests/smartcamera to tests/smartcam [\#1315](https://github.com/python-kasa/python-kasa/pull/1315) (@sdb9696)
-- Do not error on smartcam hub attached smartcam child devices [\#1314](https://github.com/python-kasa/python-kasa/pull/1314) (@sdb9696)
 - Add P110M\(EU\) fixture [\#1305](https://github.com/python-kasa/python-kasa/pull/1305) (@sdb9696)
 - Run tests with caplog in a single worker [\#1304](https://github.com/python-kasa/python-kasa/pull/1304) (@sdb9696)
 - Rename smartcamera to smartcam [\#1300](https://github.com/python-kasa/python-kasa/pull/1300) (@sdb9696)
@@ -106,15 +234,17 @@ Special thanks to @ryenitcher and @Puxtril for their new contributions to the im
 - Add linkcheck to readthedocs CI [\#1253](https://github.com/python-kasa/python-kasa/pull/1253) (@rytilahti)
 - Update cli energy command to use energy module [\#1252](https://github.com/python-kasa/python-kasa/pull/1252) (@sdb9696)
 - Consolidate warnings for fixtures missing child devices [\#1251](https://github.com/python-kasa/python-kasa/pull/1251) (@sdb9696)
-- Update smartcamera fixtures with components [\#1250](https://github.com/python-kasa/python-kasa/pull/1250) (@sdb9696)
 - Move transports into their own package [\#1247](https://github.com/python-kasa/python-kasa/pull/1247) (@rytilahti)
-- Fix warnings in our test suite [\#1246](https://github.com/python-kasa/python-kasa/pull/1246) (@rytilahti)
 - Move tests folder to top level of project [\#1242](https://github.com/python-kasa/python-kasa/pull/1242) (@sdb9696)
-- Fix test framework running against real devices [\#1235](https://github.com/python-kasa/python-kasa/pull/1235) (@sdb9696)
 - Add Additional Firmware Test Fixures [\#1234](https://github.com/python-kasa/python-kasa/pull/1234) (@ryenitcher)
-- Update DiscoveryResult to use Mashumaro instead of pydantic [\#1231](https://github.com/python-kasa/python-kasa/pull/1231) (@sdb9696)
 - Update fixture for ES20M 1.0.11 [\#1215](https://github.com/python-kasa/python-kasa/pull/1215) (@rytilahti)
 - Enable ruff check for ANN [\#1139](https://github.com/python-kasa/python-kasa/pull/1139) (@rytilahti)
+- Rename tests/smartcamera to tests/smartcam [\#1315](https://github.com/python-kasa/python-kasa/pull/1315) (@sdb9696)
+- Do not error on smartcam hub attached smartcam child devices [\#1314](https://github.com/python-kasa/python-kasa/pull/1314) (@sdb9696)
+- Update smartcamera fixtures with components [\#1250](https://github.com/python-kasa/python-kasa/pull/1250) (@sdb9696)
+- Fix warnings in our test suite [\#1246](https://github.com/python-kasa/python-kasa/pull/1246) (@rytilahti)
+- Fix test framework running against real devices [\#1235](https://github.com/python-kasa/python-kasa/pull/1235) (@sdb9696)
+- Update DiscoveryResult to use Mashumaro instead of pydantic [\#1231](https://github.com/python-kasa/python-kasa/pull/1231) (@sdb9696)
 
 **Closed issues:**
 

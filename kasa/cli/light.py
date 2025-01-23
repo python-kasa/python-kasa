@@ -25,7 +25,9 @@ def light(dev) -> None:
 @pass_dev_or_child
 async def brightness(dev: Device, brightness: int, transition: int):
     """Get or set brightness."""
-    if not (light := dev.modules.get(Module.Light)) or not light.is_dimmable:
+    if not (light := dev.modules.get(Module.Light)) or not light.has_feature(
+        "brightness"
+    ):
         error("This device does not support brightness.")
         return
 
@@ -45,13 +47,15 @@ async def brightness(dev: Device, brightness: int, transition: int):
 @pass_dev_or_child
 async def temperature(dev: Device, temperature: int, transition: int):
     """Get or set color temperature."""
-    if not (light := dev.modules.get(Module.Light)) or not light.is_variable_color_temp:
+    if not (light := dev.modules.get(Module.Light)) or not (
+        color_temp_feat := light.get_feature("color_temp")
+    ):
         error("Device does not support color temperature")
         return
 
     if temperature is None:
         echo(f"Color temperature: {light.color_temp}")
-        valid_temperature_range = light.valid_temperature_range
+        valid_temperature_range = color_temp_feat.range
         if valid_temperature_range != (0, 0):
             echo("(min: {}, max: {})".format(*valid_temperature_range))
         else:
@@ -59,7 +63,7 @@ async def temperature(dev: Device, temperature: int, transition: int):
                 "Temperature range unknown, please open a github issue"
                 f" or a pull request for model '{dev.model}'"
             )
-        return light.valid_temperature_range
+        return color_temp_feat.range
     else:
         echo(f"Setting color temperature to {temperature}")
         return await light.set_color_temp(temperature, transition=transition)
@@ -99,7 +103,7 @@ async def effect(dev: Device, ctx, effect):
 @pass_dev_or_child
 async def hsv(dev: Device, ctx, h, s, v, transition):
     """Get or set color in HSV."""
-    if not (light := dev.modules.get(Module.Light)) or not light.is_color:
+    if not (light := dev.modules.get(Module.Light)) or not light.has_feature("hsv"):
         error("Device does not support colors")
         return
 

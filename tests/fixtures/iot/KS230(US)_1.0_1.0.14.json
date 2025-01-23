@@ -14,7 +14,7 @@
     "system": {
         "get_sysinfo": {
             "active_mode": "none",
-            "alias": "Test KS230",
+            "alias": "#MASKED_NAME#",
             "brightness": 60,
             "dc_state": 0,
             "dev_name": "Wi-Fi Smart 3-Way Dimmer",

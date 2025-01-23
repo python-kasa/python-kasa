@@ -22,7 +22,7 @@ Discovery returns a dict of {ip: discovered devices}:
 >>>
 >>> found_devices = await Discover.discover()
 >>> [dev.model for dev in found_devices.values()]
-['KP303(UK)', 'HS110(EU)', 'L530E', 'KL430(US)', 'HS220(US)']
+['KP303', 'HS110', 'L530E', 'KL430', 'HS220']
 
 You can pass username and password for devices requiring authentication
 
@@ -65,17 +65,17 @@ It is also possible to pass a coroutine to be executed for each found device:
 >>>     print(f"Discovered {dev.alias} (model: {dev.model})")
 >>>
 >>> devices = await Discover.discover(on_discovered=print_dev_info, credentials=creds)
-Discovered Bedroom Power Strip (model: KP303(UK))
-Discovered Bedroom Lamp Plug (model: HS110(EU))
+Discovered Bedroom Power Strip (model: KP303)
+Discovered Bedroom Lamp Plug (model: HS110)
 Discovered Living Room Bulb (model: L530)
-Discovered Bedroom Lightstrip (model: KL430(US))
-Discovered Living Room Dimmer Switch (model: HS220(US))
+Discovered Bedroom Lightstrip (model: KL430)
+Discovered Living Room Dimmer Switch (model: HS220)
 
 Discovering a single device returns a kasa.Device object.
 
 >>> device = await Discover.discover_single("127.0.0.1", credentials=creds)
 >>> device.model
-'KP303(UK)'
+'KP303'
 
 """
 
@@ -99,6 +99,7 @@ from typing import (
     Annotated,
     Any,
     NamedTuple,
+    TypedDict,
     cast,
 )
 
@@ -123,7 +124,7 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.iot.iotdevice import IotDevice
+from kasa.iot.iotdevice import IotDevice, _extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -145,20 +146,46 @@ class ConnectAttempt(NamedTuple):
     protocol: type
     transport: type
     device: type
+    https: bool
+
+
+class DiscoveredMeta(TypedDict):
+    """Meta info about discovery response."""
+
+    ip: str
+    port: int
+
+
+class DiscoveredRaw(TypedDict):
+    """Try to connect attempt."""
+
+    meta: DiscoveredMeta
+    discovery_response: dict
 
 
 OnDiscoveredCallable = Callable[[Device], Coroutine]
+OnDiscoveredRawCallable = Callable[[DiscoveredRaw], None]
 OnUnsupportedCallable = Callable[[UnsupportedDeviceError], Coroutine]
 OnConnectAttemptCallable = Callable[[ConnectAttempt, bool], None]
 DeviceDict = dict[str, Device]
 
+DECRYPTED_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
+    "connect_ssid": lambda x: "#MASKED_SSID#" if x else "",
+    "device_id": lambda x: "REDACTED_" + x[9::],
+    "owner": lambda x: "REDACTED_" + x[9::],
+}
+
 NEW_DISCOVERY_REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "device_id": lambda x: "REDACTED_" + x[9::],
+    "device_name": lambda x: "#MASKED_NAME#" if x else "",
     "owner": lambda x: "REDACTED_" + x[9::],
     "mac": mask_mac,
     "master_device_id": lambda x: "REDACTED_" + x[9::],
     "group_id": lambda x: "REDACTED_" + x[9::],
     "group_name": lambda x: "I01BU0tFRF9TU0lEIw==",
+    "encrypt_info": lambda x: {**x, "key": "", "data": ""},
+    "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
+    "decrypted_data": lambda x: redact_data(x, DECRYPTED_REDACTORS),
 }
 
 
@@ -216,6 +243,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self,
         *,
         on_discovered: OnDiscoveredCallable | None = None,
+        on_discovered_raw: OnDiscoveredRawCallable | None = None,
         target: str = "255.255.255.255",
         discovery_packets: int = 3,
         discovery_timeout: int = 5,
@@ -240,6 +268,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.unsupported_device_exceptions: dict = {}
         self.invalid_device_exceptions: dict = {}
         self.on_unsupported = on_unsupported
+        self.on_discovered_raw = on_discovered_raw
         self.credentials = credentials
         self.timeout = timeout
         self.discovery_timeout = discovery_timeout
@@ -329,12 +358,22 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             config.timeout = self.timeout
         try:
             if port == self.discovery_port:
-                device = Discover._get_device_instance_legacy(data, config)
+                json_func = Discover._get_discovery_json_legacy
+                device_func = Discover._get_device_instance_legacy
             elif port == Discover.DISCOVERY_PORT_2:
-                config.uses_http = True
-                device = Discover._get_device_instance(data, config)
+                json_func = Discover._get_discovery_json
+                device_func = Discover._get_device_instance
             else:
                 return
+            info = json_func(data, ip)
+            if self.on_discovered_raw is not None:
+                self.on_discovered_raw(
+                    {
+                        "discovery_response": info,
+                        "meta": {"ip": ip, "port": port},
+                    }
+                )
+            device = device_func(info, config)
         except UnsupportedDeviceError as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
             self.unsupported_device_exceptions[ip] = udex
@@ -391,6 +430,7 @@ class Discover:
         *,
         target: str = "255.255.255.255",
         on_discovered: OnDiscoveredCallable | None = None,
+        on_discovered_raw: OnDiscoveredRawCallable | None = None,
         discovery_timeout: int = 5,
         discovery_packets: int = 3,
         interface: str | None = None,
@@ -421,6 +461,8 @@ class Discover:
         :param target: The target address where to send the broadcast discovery
          queries if multi-homing (e.g. 192.168.xxx.255).
         :param on_discovered: coroutine to execute on discovery
+        :param on_discovered_raw: Optional callback once discovered json is loaded
+            before any attempt to deserialize it and create devices
         :param discovery_timeout: Seconds to wait for responses, defaults to 5
         :param discovery_packets: Number of discovery packets to broadcast
         :param interface: Bind to specific interface
@@ -443,6 +485,7 @@ class Discover:
                 discovery_packets=discovery_packets,
                 interface=interface,
                 on_unsupported=on_unsupported,
+                on_discovered_raw=on_discovered_raw,
                 credentials=credentials,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
@@ -455,7 +498,7 @@ class Discover:
         try:
             _LOGGER.debug("Waiting %s seconds for responses...", discovery_timeout)
             await protocol.wait_for_discovery_to_complete()
-        except KasaException as ex:
+        except (KasaException, asyncio.CancelledError) as ex:
             for device in protocol.discovered_devices.values():
                 await device.protocol.close()
             raise ex
@@ -476,6 +519,7 @@ class Discover:
         credentials: Credentials | None = None,
         username: str | None = None,
         password: str | None = None,
+        on_discovered_raw: OnDiscoveredRawCallable | None = None,
         on_unsupported: OnUnsupportedCallable | None = None,
     ) -> Device | None:
         """Discover a single device by the given IP address.
@@ -493,6 +537,9 @@ class Discover:
             username and password are ignored if provided.
         :param username: Username for devices that require authentication
         :param password: Password for devices that require authentication
+        :param on_discovered_raw: Optional callback once discovered json is loaded
+            before any attempt to deserialize it and create devices
+        :param on_unsupported: Optional callback when unsupported devices are discovered
         :rtype: SmartDevice
         :return: Object for querying/controlling found device.
         """
@@ -529,6 +576,7 @@ class Discover:
                 credentials=credentials,
                 timeout=timeout,
                 discovery_timeout=discovery_timeout,
+                on_discovered_raw=on_discovered_raw,
             ),
             local_addr=("0.0.0.0", 0),  # noqa: S104
         )
@@ -586,12 +634,14 @@ class Discover:
             Device.Family.SmartTapoPlug,
             Device.Family.IotSmartPlugSwitch,
             Device.Family.SmartIpCamera,
+            Device.Family.SmartTapoRobovac,
+            Device.Family.IotIpCamera,
         }
         candidates: dict[
-            tuple[type[BaseProtocol], type[BaseTransport], type[Device]],
+            tuple[type[BaseProtocol], type[BaseTransport], type[Device], bool],
             tuple[BaseProtocol, DeviceConfig],
         ] = {
-            (type(protocol), type(protocol._transport), device_class): (
+            (type(protocol), type(protocol._transport), device_class, https): (
                 protocol,
                 config,
             )
@@ -615,10 +665,9 @@ class Discover:
                     port_override=port,
                     credentials=credentials,
                     http_client=http_client,
-                    uses_http=encrypt is not Device.EncryptionType.Xor,
                 )
             )
-            and (protocol := get_protocol(config))
+            and (protocol := get_protocol(config, strict=True))
             and (
                 device_class := get_device_class_from_family(
                     device_family.value, https=https, require_exact=True
@@ -628,9 +677,14 @@ class Discover:
         for key, val in candidates.items():
             try:
                 prot, config = val
+                _LOGGER.debug("Trying to connect with %s", prot.__class__.__name__)
                 dev = await _connect(config, prot)
-            except Exception:
-                _LOGGER.debug("Unable to connect with %s", prot)
+            except Exception as ex:
+                _LOGGER.debug(
+                    "Unable to connect with %s: %s",
+                    prot.__class__.__name__,
+                    ex,
+                )
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, False)
@@ -638,6 +692,7 @@ class Discover:
                 if on_attempt:
                     ca = tuple.__new__(ConnectAttempt, key)
                     on_attempt(ca, True)
+                _LOGGER.debug("Found working protocol %s", prot.__class__.__name__)
                 return dev
             finally:
                 await prot.close()
@@ -666,33 +721,43 @@ class Discover:
             return get_device_class_from_sys_info(info)
 
     @staticmethod
-    def _get_device_instance_legacy(data: bytes, config: DeviceConfig) -> IotDevice:
-        """Get SmartDevice from legacy 9999 response."""
+    def _get_discovery_json_legacy(data: bytes, ip: str) -> dict:
+        """Get discovery json from legacy 9999 response."""
         try:
             info = json_loads(XorEncryption.decrypt(data))
         except Exception as ex:
             raise KasaException(
-                f"Unable to read response from device: {config.host}: {ex}"
+                f"Unable to read response from device: {ip}: {ex}"
             ) from ex
+        return info
 
+    @staticmethod
+    def _get_device_instance_legacy(info: dict, config: DeviceConfig) -> Device:
+        """Get IotDevice from legacy 9999 response."""
         if _LOGGER.isEnabledFor(logging.DEBUG):
             data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
 
         device_class = cast(type[IotDevice], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
-        sys_info = info["system"]["get_sysinfo"]
-        if device_type := sys_info.get("mic_type", sys_info.get("type")):
-            config.connection_type = DeviceConnectionParameters.from_values(
-                device_family=device_type,
-                encryption_type=DeviceEncryptionType.Xor.value,
-            )
+        sys_info = _extract_sys_info(info)
+        device_type = sys_info.get("mic_type", sys_info.get("type"))
+        login_version = (
+            sys_info.get("stream_version") if device_type == "IOT.IPCAMERA" else None
+        )
+        config.connection_type = DeviceConnectionParameters.from_values(
+            device_family=device_type,
+            encryption_type=DeviceEncryptionType.Xor.value,
+            https=device_type == "IOT.IPCAMERA",
+            login_version=login_version,
+        )
         device.protocol = get_protocol(config)  # type: ignore[assignment]
         device.update_from_discover_info(info)
         return device
 
     @staticmethod
     def _decrypt_discovery_data(discovery_result: DiscoveryResult) -> None:
+        debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         if TYPE_CHECKING:
             assert discovery_result.encrypt_info
             assert _AesDiscoveryQuery.keypair
@@ -708,22 +773,80 @@ class Discover:
         session = AesEncyptionSession(key, iv)
         decrypted_data = session.decrypt(encrypted_data)
 
-        discovery_result.decrypted_data = json_loads(decrypted_data)
+        result = json_loads(decrypted_data)
+        if debug_enabled:
+            data = (
+                redact_data(result, DECRYPTED_REDACTORS)
+                if Discover._redact_data
+                else result
+            )
+            _LOGGER.debug(
+                "Decrypted encrypt_info for %s: %s",
+                discovery_result.ip,
+                pf(data),
+            )
+        discovery_result.decrypted_data = result
+
+    @staticmethod
+    def _get_discovery_json(data: bytes, ip: str) -> dict:
+        """Get discovery json from the new 20002 response."""
+        try:
+            info = json_loads(data[16:])
+        except Exception as ex:
+            _LOGGER.debug("Got invalid response from device %s: %s", ip, data)
+            raise KasaException(
+                f"Unable to read response from device: {ip}: {ex}"
+            ) from ex
+        return info
+
+    @staticmethod
+    def _get_connection_parameters(
+        discovery_result: DiscoveryResult,
+    ) -> DeviceConnectionParameters:
+        """Get connection parameters from the discovery result."""
+        type_ = discovery_result.device_type
+        if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {discovery_result.ip} of type {type_} "
+                "with no mgt_encrypt_schm",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
+
+        if not (encrypt_type := encrypt_schm.encrypt_type) and (
+            encrypt_info := discovery_result.encrypt_info
+        ):
+            encrypt_type = encrypt_info.sym_schm
+
+        if not (login_version := encrypt_schm.lv) and (
+            et := discovery_result.encrypt_type
+        ):
+            # Known encrypt types are ["1","2"] and ["3"]
+            # Reuse the login_version attribute to pass the max to transport
+            login_version = max([int(i) for i in et])
+
+        if not encrypt_type:
+            raise UnsupportedDeviceError(
+                f"Unsupported device {discovery_result.ip} of type {type_} "
+                + "with no encryption type",
+                discovery_result=discovery_result.to_dict(),
+                host=discovery_result.ip,
+            )
+        return DeviceConnectionParameters.from_values(
+            type_,
+            encrypt_type,
+            login_version=login_version,
+            https=encrypt_schm.is_support_https,
+            http_port=encrypt_schm.http_port,
+        )
 
     @staticmethod
     def _get_device_instance(
-        data: bytes,
+        info: dict,
         config: DeviceConfig,
     ) -> Device:
         """Get SmartDevice from the new 20002 response."""
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
-        try:
-            info = json_loads(data[16:])
-        except Exception as ex:
-            _LOGGER.debug("Got invalid response from device %s: %s", config.host, data)
-            raise KasaException(
-                f"Unable to read response from device: {config.host}: {ex}"
-            ) from ex
 
         try:
             discovery_result = DiscoveryResult.from_dict(info["result"])
@@ -752,56 +875,26 @@ class Discover:
                 Discover._decrypt_discovery_data(discovery_result)
             except Exception:
                 _LOGGER.exception(
-                    "Unable to decrypt discovery data %s: %s", config.host, data
+                    "Unable to decrypt discovery data %s: %s",
+                    config.host,
+                    redact_data(info, NEW_DISCOVERY_REDACTORS),
                 )
-
         type_ = discovery_result.device_type
-        if (encrypt_schm := discovery_result.mgt_encrypt_schm) is None:
-            raise UnsupportedDeviceError(
-                f"Unsupported device {config.host} of type {type_} "
-                "with no mgt_encrypt_schm",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            )
-
         try:
-            if not (encrypt_type := encrypt_schm.encrypt_type) and (
-                encrypt_info := discovery_result.encrypt_info
-            ):
-                encrypt_type = encrypt_info.sym_schm
-
-            if (
-                not (login_version := encrypt_schm.lv)
-                and (et := discovery_result.encrypt_type)
-                and et == ["3"]
-            ):
-                login_version = 2
-
-            if not encrypt_type:
-                raise UnsupportedDeviceError(
-                    f"Unsupported device {config.host} of type {type_} "
-                    + "with no encryption type",
-                    discovery_result=discovery_result.to_dict(),
-                    host=config.host,
-                )
-            config.connection_type = DeviceConnectionParameters.from_values(
-                type_,
-                encrypt_type,
-                login_version,
-                encrypt_schm.is_support_https,
-            )
+            conn_params = Discover._get_connection_parameters(discovery_result)
+            config.connection_type = conn_params
         except KasaException as ex:
+            if isinstance(ex, UnsupportedDeviceError):
+                raise
             raise UnsupportedDeviceError(
                 f"Unsupported device {config.host} of type {type_} "
-                + f"with encrypt_type {encrypt_schm.encrypt_type}",
+                + f"with encrypt_scheme {discovery_result.mgt_encrypt_schm}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             ) from ex
 
         if (
-            device_class := get_device_class_from_family(
-                type_, https=encrypt_schm.is_support_https
-            )
+            device_class := get_device_class_from_family(type_, https=conn_params.https)
         ) is None:
             _LOGGER.debug("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(

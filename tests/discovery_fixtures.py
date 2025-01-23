@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import copy
+from collections.abc import Coroutine
 from dataclasses import dataclass
 from json import dumps as json_dumps
 from typing import Any, TypedDict
@@ -34,7 +36,7 @@ UNSUPPORTED_HOMEWIFISYSTEM = {
         "group_id": "REDACTED_07d902da02fa9beab8a64",
         "group_name": "I01BU0tFRF9TU0lEIw==",  # '#MASKED_SSID#'
         "hardware_version": "3.0",
-        "ip": "192.168.1.192",
+        "ip": "127.0.0.1",
         "mac": "24:2F:D0:00:00:00",
         "master_device_id": "REDACTED_51f72a752213a6c45203530",
         "need_account_digest": True,
@@ -130,14 +132,19 @@ new_discovery = parametrize_discovery(
     "new discovery", data_root_filter="discovery_result"
 )
 
+smart_discovery = parametrize_discovery("smart discovery", protocol_filter={"SMART"})
+
 
 @pytest.fixture(
-    params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
+    params=filter_fixtures(
+        "discoverable", protocol_filter={"SMART", "SMARTCAM", "IOT"}
+    ),
     ids=idgenerator,
 )
 async def discovery_mock(request, mocker):
     """Mock discovery and patch protocol queries to use Fake protocols."""
-    fixture_info: FixtureInfo = request.param
+    fi: FixtureInfo = request.param
+    fixture_info = FixtureInfo(fi.name, fi.protocol, copy.deepcopy(fi.data))
     return patch_discovery({DISCOVERY_MOCK_IP: fixture_info}, mocker)
 
 
@@ -156,6 +163,18 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         https: bool
         login_version: int | None = None
         port_override: int | None = None
+        http_port: int | None = None
+
+        @property
+        def model(self) -> str:
+            dd = self.discovery_data
+            model_region = (
+                dd["result"]["device_model"]
+                if self.discovery_port == 20002
+                else dd["system"]["get_sysinfo"]["model"]
+            )
+            model, _, _ = model_region.partition("(")
+            return model
 
         @property
         def _datagram(self) -> bytes:
@@ -168,18 +187,27 @@ def create_discovery_mock(ip: str, fixture_data: dict):
                 )
 
     if "discovery_result" in fixture_data:
-        discovery_data = {"result": fixture_data["discovery_result"].copy()}
-        discovery_result = fixture_data["discovery_result"]
+        discovery_data = fixture_data["discovery_result"].copy()
+        discovery_result = fixture_data["discovery_result"]["result"]
         device_type = discovery_result["device_type"]
         encrypt_type = discovery_result["mgt_encrypt_schm"].get(
             "encrypt_type", discovery_result.get("encrypt_info", {}).get("sym_schm")
         )
 
-        login_version = discovery_result["mgt_encrypt_schm"].get("lv")
+        if not (login_version := discovery_result["mgt_encrypt_schm"].get("lv")) and (
+            et := discovery_result.get("encrypt_type")
+        ):
+            login_version = max([int(i) for i in et])
         https = discovery_result["mgt_encrypt_schm"]["is_support_https"]
+        http_port = discovery_result["mgt_encrypt_schm"].get("http_port")
+        if not http_port:  # noqa: SIM108
+            # Not all discovery responses set the http port, i.e. smartcam.
+            default_port = 443 if https else 80
+        else:
+            default_port = http_port
         dm = _DiscoveryMock(
             ip,
-            80,
+            default_port,
             20002,
             discovery_data,
             fixture_data,
@@ -187,6 +215,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
             encrypt_type,
             https,
             login_version,
+            http_port=http_port,
         )
     else:
         sys_info = fixture_data["system"]["get_sysinfo"]
@@ -226,12 +255,46 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
     first_ip = list(fixture_infos.keys())[0]
     first_host = None
 
+    # Mock _run_callback_task so the tasks complete in the order they started.
+    # Otherwise test output is non-deterministic which affects readme examples.
+    callback_queue: asyncio.Queue = asyncio.Queue()
+    exception_queue: asyncio.Queue = asyncio.Queue()
+
+    async def process_callback_queue(finished_event: asyncio.Event) -> None:
+        while (finished_event.is_set() is False) or callback_queue.qsize():
+            coro = await callback_queue.get()
+            try:
+                await coro
+            except Exception as ex:
+                await exception_queue.put(ex)
+            else:
+                await exception_queue.put(None)
+            callback_queue.task_done()
+
+    async def wait_for_coro():
+        await callback_queue.join()
+        if ex := exception_queue.get_nowait():
+            raise ex
+
+    def _run_callback_task(self, coro: Coroutine) -> None:
+        callback_queue.put_nowait(coro)
+        task = asyncio.create_task(wait_for_coro())
+        self.callback_tasks.append(task)
+
+    mocker.patch(
+        "kasa.discover._DiscoverProtocol._run_callback_task", _run_callback_task
+    )
+
+    # do_discover_mock
     async def mock_discover(self):
         """Call datagram_received for all mock fixtures.
 
         Handles test cases modifying the ip and hostname of the first fixture
         for discover_single testing.
         """
+        finished_event = asyncio.Event()
+        asyncio.create_task(process_callback_queue(finished_event))
+
         for ip, dm in discovery_mocks.items():
             first_ip = list(discovery_mocks.values())[0].ip
             fixture_info = fixture_infos[ip]
@@ -258,9 +321,17 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
                 dm._datagram,
                 (dm.ip, port),
             )
+        # Setting this event will stop the processing of callbacks
+        finished_event.set()
 
+    mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
+
+    # query_mock
     async def _query(self, request, retry_count: int = 3):
         return await protos[self._host].query(request)
+
+    mocker.patch("kasa.IotProtocol.query", _query)
+    mocker.patch("kasa.SmartProtocol.query", _query)
 
     def _getaddrinfo(host, *_, **__):
         nonlocal first_host, first_ip
@@ -270,20 +341,21 @@ def patch_discovery(fixture_infos: dict[str, FixtureInfo], mocker):
         ].ip  # ip could have been overridden in test
         return [(None, None, None, None, (first_ip, 0))]
 
-    mocker.patch("kasa.IotProtocol.query", _query)
-    mocker.patch("kasa.SmartProtocol.query", _query)
-    mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
-    mocker.patch(
-        "socket.getaddrinfo",
-        # side_effect=lambda *_, **__: [(None, None, None, None, (first_ip, 0))],
-        side_effect=_getaddrinfo,
-    )
+    mocker.patch("socket.getaddrinfo", side_effect=_getaddrinfo)
+
+    # Mock decrypt so it doesn't error with unencryptable empty data in the
+    # fixtures. The discovery result will already contain the decrypted data
+    # deserialized from the fixture
+    mocker.patch("kasa.discover.Discover._decrypt_discovery_data")
+
     # Only return the first discovery mock to be used for testing discover single
     return discovery_mocks[first_ip]
 
 
 @pytest.fixture(
-    params=filter_fixtures("discoverable", protocol_filter={"SMART", "IOT"}),
+    params=filter_fixtures(
+        "discoverable", protocol_filter={"SMART", "SMARTCAM", "IOT"}
+    ),
     ids=idgenerator,
 )
 def discovery_data(request, mocker):
@@ -303,7 +375,7 @@ def discovery_data(request, mocker):
     mocker.patch("kasa.IotProtocol.query", return_value=fixture_data)
     mocker.patch("kasa.SmartProtocol.query", return_value=fixture_data)
     if "discovery_result" in fixture_data:
-        return {"result": fixture_data["discovery_result"]}
+        return fixture_data["discovery_result"].copy()
     else:
         return {"system": {"get_sysinfo": fixture_data["system"]["get_sysinfo"]}}
 

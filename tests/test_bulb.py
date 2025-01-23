@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import re
+from collections.abc import Callable
+from contextlib import nullcontext
+
 import pytest
 
 from kasa import Device, DeviceType, KasaException, Module
@@ -25,7 +29,7 @@ async def test_hsv(dev: Device, turn_on):
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
-    assert light.is_color
+    assert light.has_feature("hsv")
 
     hue, saturation, brightness = light.hsv
     assert 0 <= hue <= 360
@@ -106,7 +110,7 @@ async def test_invalid_hsv(
     light = dev.modules.get(Module.Light)
     assert light
     await handle_turn_on(dev, turn_on)
-    assert light.is_color
+    assert light.has_feature("hsv")
     with pytest.raises(exception_cls, match=error):
         await light.set_hsv(hue, sat, brightness)
 
@@ -124,7 +128,7 @@ async def test_color_state_information(dev: Device):
 async def test_hsv_on_non_color(dev: Device):
     light = dev.modules.get(Module.Light)
     assert light
-    assert not light.is_color
+    assert not light.has_feature("hsv")
 
     with pytest.raises(KasaException):
         await light.set_hsv(0, 0, 0)
@@ -174,12 +178,73 @@ async def test_non_variable_temp(dev: Device):
         await light.set_color_temp(2700)
 
     with pytest.raises(KasaException):
-        print(light.valid_temperature_range)
-
-    with pytest.raises(KasaException):
         print(light.color_temp)
 
 
 @bulb
 def test_device_type_bulb(dev: Device):
     assert dev.device_type in {DeviceType.Bulb, DeviceType.LightStrip}
+
+
+@pytest.mark.parametrize(
+    ("attribute", "use_msg", "use_fn"),
+    [
+        pytest.param(
+            "is_color",
+            'use has_feature("hsv") instead',
+            lambda device, mod: mod.has_feature("hsv"),
+            id="is_color",
+        ),
+        pytest.param(
+            "is_dimmable",
+            'use has_feature("brightness") instead',
+            lambda device, mod: mod.has_feature("brightness"),
+            id="is_dimmable",
+        ),
+        pytest.param(
+            "is_variable_color_temp",
+            'use has_feature("color_temp") instead',
+            lambda device, mod: mod.has_feature("color_temp"),
+            id="is_variable_color_temp",
+        ),
+        pytest.param(
+            "has_effects",
+            "check `Module.LightEffect in device.modules` instead",
+            lambda device, mod: Module.LightEffect in device.modules,
+            id="has_effects",
+        ),
+    ],
+)
+@bulb
+async def test_deprecated_light_is_has_attributes(
+    dev: Device, attribute: str, use_msg: str, use_fn: Callable[[Device, Module], bool]
+):
+    light = dev.modules.get(Module.Light)
+    assert light
+
+    msg = f"{attribute} is deprecated, {use_msg}"
+    with pytest.deprecated_call(match=(re.escape(msg))):
+        result = getattr(light, attribute)
+
+    assert result == use_fn(dev, light)
+
+
+@bulb
+async def test_deprecated_light_valid_temperature_range(dev: Device):
+    light = dev.modules.get(Module.Light)
+    assert light
+
+    color_temp = light.has_feature("color_temp")
+    dep_msg = (
+        "valid_temperature_range is deprecated, use "
+        'get_feature("color_temp") minimum_value '
+        " and maximum_value instead"
+    )
+    exc_context = pytest.raises(KasaException, match="Color temperature not supported")
+    expected_context = nullcontext() if color_temp else exc_context
+
+    with (
+        expected_context,
+        pytest.deprecated_call(match=(re.escape(dep_msg))),
+    ):
+        assert light.valid_temperature_range  # type: ignore[attr-defined]
