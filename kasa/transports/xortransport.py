@@ -142,18 +142,16 @@ class XorTransport(BaseTransport):
             await self.reset()
             if ex.errno in _NO_RETRY_ERRORS:
                 raise KasaException(
-                    f"Unable to connect to the device:"
-                    f" {self._host}:{self._port}: {ex}"
+                    f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
                 ) from ex
             else:
                 raise _RetryableError(
-                    f"Unable to connect to the device:"
-                    f" {self._host}:{self._port}: {ex}"
+                    f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
                 ) from ex
         except Exception as ex:
             await self.reset()
             raise _RetryableError(
-                f"Unable to connect to the device:" f" {self._host}:{self._port}: {ex}"
+                f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
             ) from ex
         except BaseException:
             # Likely something cancelled the task so we need to close the connection
