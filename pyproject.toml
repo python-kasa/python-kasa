@@ -86,6 +86,9 @@ include = [
 [tool.coverage.run]
 source = ["kasa"]
 branch = true
+omit = [
+  "kasa/experimental/*"
+]
 
 [tool.coverage.report]
 exclude_lines = [
