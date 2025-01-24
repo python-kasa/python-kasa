@@ -93,6 +93,7 @@ class Module(ABC):
     """
 
     # Common Modules
+    ChildSetup: Final[ModuleName[interfaces.ChildSetup]] = ModuleName("ChildSetup")
     Energy: Final[ModuleName[interfaces.Energy]] = ModuleName("Energy")
     Fan: Final[ModuleName[interfaces.Fan]] = ModuleName("Fan")
     LightEffect: Final[ModuleName[interfaces.LightEffect]] = ModuleName("LightEffect")
@@ -154,7 +155,6 @@ class Module(ABC):
     )
     ChildLock: Final[ModuleName[smart.ChildLock]] = ModuleName("ChildLock")
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
-    ChildSetup: Final[ModuleName[smart.ChildSetup]] = ModuleName("ChildSetup")
 
     HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("HomeKit")
     Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")
