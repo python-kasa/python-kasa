@@ -654,8 +654,7 @@ async def test_light_preset(dev: Device, runner: CliRunner):
 
     if len(light_preset.preset_states_list) == 0:
         pytest.skip(
-            "Some fixtures do not have presets and"
-            " the api doesn'tsupport creating them"
+            "Some fixtures do not have presets and the api doesn'tsupport creating them"
         )
     # Start off with a known state
     first_name = light_preset.preset_list[1]
