@@ -66,8 +66,8 @@ async def hub_pair(dev: SmartDevice, timeout: int):
 
     for child in pair_res:
         echo(
-            f'Paired {child["name"]} ({child["device_model"]}, '
-            f'{pretty_category(child["category"])}) with id {child["device_id"]}'
+            f"Paired {child['name']} ({child['device_model']}, "
+            f"{pretty_category(child['category'])}) with id {child['device_id']}"
         )
 
 
