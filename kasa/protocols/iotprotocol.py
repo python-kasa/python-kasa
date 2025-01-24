@@ -30,7 +30,7 @@ def _mask_children(children: list[dict[str, Any]]) -> list[dict[str, Any]]:
     def mask_child(child: dict[str, Any], index: int) -> dict[str, Any]:
         result = {
             **child,
-            "id": f"SCRUBBED_CHILD_DEVICE_ID_{index+1}",
+            "id": f"SCRUBBED_CHILD_DEVICE_ID_{index + 1}",
         }
         # Will leave empty aliases as blank
         if child.get("alias"):
