@@ -69,6 +69,7 @@ Many thanks to testers and new contributors - @steveredden, @DawidPietrykowski, 
 
 **Project maintenance:**
 
+- Update ruff to 0.9 [\#1482](https://github.com/python-kasa/python-kasa/pull/1482) (@sdb9696)
 - Update test framework to support smartcam device discovery. [\#1477](https://github.com/python-kasa/python-kasa/pull/1477) (@sdb9696)
 - Add error code 7 for clean module [\#1474](https://github.com/python-kasa/python-kasa/pull/1474) (@rytilahti)
 - Enable CI workflow on PRs to feat/ fix/ and janitor/ [\#1471](https://github.com/python-kasa/python-kasa/pull/1471) (@sdb9696)
