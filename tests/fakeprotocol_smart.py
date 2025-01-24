@@ -176,10 +176,19 @@ class FakeSmartTransport(BaseTransport):
             "child_quick_setup",
             {"device_category_list": [{"category": "subg.trv"}]},
         ),
-        # no devices found
         "get_scan_child_device_list": (
             "child_quick_setup",
-            {"child_device_list": [{"dummy": "response"}], "scan_status": "idle"},
+            {
+                "child_device_list": [
+                    {
+                        "device_id": "0000000000000000000000000000000000000000",
+                        "category": "subg.trigger.button",
+                        "device_model": "S200B",
+                        "name": "I01BU0tFRF9OQU1FIw==",
+                    }
+                ],
+                "scan_status": "idle",
+            },
         ),
     }
 

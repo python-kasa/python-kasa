@@ -22,7 +22,7 @@ Discovery returns a dict of {ip: discovered devices}:
 >>>
 >>> found_devices = await Discover.discover()
 >>> [dev.model for dev in found_devices.values()]
-['KP303', 'HS110', 'L530E', 'KL430', 'HS220']
+['KP303', 'HS110', 'L530E', 'KL430', 'HS220', 'H200']
 
 You can pass username and password for devices requiring authentication
 
@@ -31,21 +31,21 @@ You can pass username and password for devices requiring authentication
 >>>     password="great_password",
 >>> )
 >>> print(len(devices))
-5
+6
 
 You can also pass a :class:`kasa.Credentials`
 
 >>> creds = Credentials("user@example.com", "great_password")
 >>> devices = await Discover.discover(credentials=creds)
 >>> print(len(devices))
-5
+6
 
 Discovery can also be targeted to a specific broadcast address instead of
 the default 255.255.255.255:
 
 >>> found_devices = await Discover.discover(target="127.0.0.255", credentials=creds)
 >>> print(len(found_devices))
-5
+6
 
 Basic information is available on the device from the discovery broadcast response
 but it is important to call device.update() after discovery if you want to access
@@ -70,6 +70,7 @@ Discovered Bedroom Lamp Plug (model: HS110)
 Discovered Living Room Bulb (model: L530)
 Discovered Bedroom Lightstrip (model: KL430)
 Discovered Living Room Dimmer Switch (model: HS220)
+Discovered Tapo Hub (model: H200)
 
 Discovering a single device returns a kasa.Device object.
 
