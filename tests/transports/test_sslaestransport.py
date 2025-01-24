@@ -273,7 +273,7 @@ async def test_unencrypted_passthrough_errors(mocker, caplog, want_default):
         aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
     )
 
-    msg = f"{host} responded with an unexpected " f"status code 401 to handshake1"
+    msg = f"{host} responded with an unexpected status code 401 to handshake1"
     with pytest.raises(KasaException, match=msg):
         await transport.send(json_dumps(request))
 
@@ -288,7 +288,7 @@ async def test_unencrypted_passthrough_errors(mocker, caplog, want_default):
         aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
     )
 
-    msg = f"{host} responded with an unexpected " f"status code 401 to login"
+    msg = f"{host} responded with an unexpected status code 401 to login"
     with pytest.raises(KasaException, match=msg):
         await transport.send(json_dumps(request))
 
@@ -303,7 +303,7 @@ async def test_unencrypted_passthrough_errors(mocker, caplog, want_default):
         aiohttp.ClientSession, "post", side_effect=mock_ssl_aes_device.post
     )
 
-    msg = f"{host} responded with an unexpected " f"status code 401 to unencrypted send"
+    msg = f"{host} responded with an unexpected status code 401 to unencrypted send"
     with pytest.raises(KasaException, match=msg):
         await transport.send(json_dumps(request))
 

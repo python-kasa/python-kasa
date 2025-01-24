@@ -236,7 +236,7 @@ class SmartProtocol(BaseProtocol):
 
             smart_params = {"requests": requests_step}
             smart_request = self.get_smart_request(smart_method, smart_params)
-            batch_name = f"multi-request-batch-{batch_num+1}-of-{int(end/step)+1}"
+            batch_name = f"multi-request-batch-{batch_num + 1}-of-{int(end / step) + 1}"
             if debug_enabled:
                 _LOGGER.debug(
                     "%s %s >> %s",
