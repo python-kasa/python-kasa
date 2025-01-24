@@ -346,6 +346,7 @@ hub_smartcam = parametrize(
     device_type_filter=[DeviceType.Hub],
     protocol_filter={"SMARTCAM"},
 )
+hubs = parametrize_combine([hubs_smart, hub_smartcam])
 doobell_smartcam = parametrize(
     "doorbell smartcam",
     device_type_filter=[DeviceType.Doorbell],
