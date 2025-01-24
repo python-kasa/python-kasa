@@ -13,6 +13,7 @@
 127.0.0.3
 127.0.0.4
 127.0.0.5
+127.0.0.6
 
 :meth:`~kasa.Discover.discover_single` returns a single device by hostname:
 
