@@ -125,6 +125,12 @@ git push upstream release/$NEW_RELEASE -u
 gh pr create --title "Prepare $NEW_RELEASE" --body "$RELEASE_NOTES" --label release-prep --base master
 ```
 
+To update the PR after refreshing the changelog:
+
+```
+gh pr edit --body "$RELEASE_NOTES"
+```
+
 #### Merge the PR once the CI passes
 
 Create a squash commit and add the markdown from the PR description to the commit description.
