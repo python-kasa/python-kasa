@@ -42,7 +42,6 @@ async def test_childsetup_pair(
     mock_query_helper.assert_has_awaits(
         [
             mocker.call("begin_scanning_child_device", None),
-            mocker.call("get_support_child_device_category", None),
             mocker.call("get_scan_child_device_list", params=mocker.ANY),
             mocker.call("add_child_device_list", params=mocker.ANY),
         ]
