@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from kasa import Device, Feature, KasaException
+from kasa.iot import IotStrip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -168,7 +169,10 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         if feat.attribute_setter is None:
             return
 
-        expecting_call = feat.id not in internal_setters
+        # IotStrip makes calls via it's children
+        expecting_call = feat.id not in internal_setters and not isinstance(
+            dev, IotStrip
+        )
 
         if feat.type == Feature.Type.Number:
             await feat.set_value(feat.minimum_value)
@@ -191,12 +195,12 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         exceptions = []
         for feat in dev.features.values():
             try:
-                prot = (
-                    feat.container._device.protocol
-                    if feat.container
-                    else feat.device.protocol
-                )
-                with patch.object(prot, "query", name=feat.id) as query:
+                patch_dev = feat.container._device if feat.container else feat.device
+                with (
+                    patch.object(patch_dev.protocol, "query", name=feat.id) as query,
+                    # patch update in case feature setter does an update
+                    patch.object(patch_dev, "update"),
+                ):
                     await _test_feature(feat, query)
             # we allow our own exceptions to avoid mocking valid responses
             except KasaException:

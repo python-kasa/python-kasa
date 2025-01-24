@@ -267,7 +267,11 @@ async def test_raw_command(dev, mocker, runner):
     from kasa.smart import SmartDevice
 
     if isinstance(dev, SmartCamDevice):
-        params = ["na", "getDeviceInfo"]
+        params = [
+            "na",
+            "getDeviceInfo",
+            '{"device_info": {"name": ["basic_info", "info"]}}',
+        ]
     elif isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
     else:

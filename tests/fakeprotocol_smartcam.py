@@ -153,7 +153,33 @@ class FakeSmartCamTransport(BaseTransport):
                 "setup_code": "00000000000",
                 "setup_payload": "00:0000000-0000.00.000",
             },
-        )
+        ),
+        "getSupportChildDeviceCategory": (
+            "childQuickSetup",
+            {
+                "device_category_list": [
+                    {"category": "ipcamera"},
+                    {"category": "subg.trv"},
+                    {"category": "subg.trigger"},
+                    {"category": "subg.plugswitch"},
+                ]
+            },
+        ),
+        "getScanChildDeviceList": (
+            "childQuickSetup",
+            {
+                "child_device_list": [
+                    {
+                        "device_id": "0000000000000000000000000000000000000000",
+                        "category": "subg.trigger.button",
+                        "device_model": "S200B",
+                        "name": "I01BU0tFRF9OQU1FIw====",
+                    }
+                ],
+                "scan_wait_time": 55,
+                "scan_status": "scanning",
+            },
+        ),
     }
     # Setters for when there's not a simple mapping of setters to getters
     SETTERS = {
@@ -178,6 +204,17 @@ class FakeSmartCamTransport(BaseTransport):
             "local_time",
         ],
     }
+
+    def _hub_remove_device(self, info, params):
+        """Remove hub device."""
+        items_to_remove = [dev["device_id"] for dev in params["child_device_list"]]
+        children = info["getChildDeviceList"]["child_device_list"]
+        new_children = [
+            dev for dev in children if dev["device_id"] not in items_to_remove
+        ]
+        info["getChildDeviceList"]["child_device_list"] = new_children
+
+        return {"result": {}, "error_code": 0}
 
     @staticmethod
     def _get_second_key(request_dict: dict[str, Any]) -> str:
@@ -269,6 +306,14 @@ class FakeSmartCamTransport(BaseTransport):
                 return {**result, "error_code": 0}
             else:
                 return {"error_code": -1}
+        elif method == "removeChildDeviceList":
+            return self._hub_remove_device(info, request_dict["params"]["childControl"])
+        # actions
+        elif method in [
+            "addScanChildDeviceList",
+            "startScanChildDevice",
+        ]:
+            return {"result": {}, "error_code": 0}
 
         # smartcam child devices do not make requests for getDeviceInfo as they
         # get updated from the parent's query. If this is being called from a

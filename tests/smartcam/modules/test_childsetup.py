@@ -10,15 +10,14 @@ from kasa import Feature, Module, SmartDevice
 from ...device_fixtures import parametrize
 
 childsetup = parametrize(
-    "supports pairing", component_filter="child_quick_setup", protocol_filter={"SMART"}
+    "supports pairing", component_filter="childQuickSetup", protocol_filter={"SMARTCAM"}
 )
 
 
 @childsetup
 async def test_childsetup_features(dev: SmartDevice):
     """Test the exposed features."""
-    cs = dev.modules.get(Module.ChildSetup)
-    assert cs
+    cs = dev.modules[Module.ChildSetup]
 
     assert "pair" in cs._module_features
     pair = cs._module_features["pair"]
@@ -34,16 +33,35 @@ async def test_childsetup_pair(
     mock_query_helper = mocker.spy(dev, "_query_helper")
     mocker.patch("asyncio.sleep")
 
-    cs = dev.modules.get(Module.ChildSetup)
-    assert cs
+    cs = dev.modules[Module.ChildSetup]
 
     await cs.pair()
 
     mock_query_helper.assert_has_awaits(
         [
-            mocker.call("begin_scanning_child_device", None),
-            mocker.call("get_scan_child_device_list", params=mocker.ANY),
-            mocker.call("add_child_device_list", params=mocker.ANY),
+            mocker.call(
+                "startScanChildDevice",
+                params={"childControl": {"category": cs.supported_categories}},
+            ),
+            mocker.call(
+                "getScanChildDeviceList",
+                {"childControl": {"category": cs.supported_categories}},
+            ),
+            mocker.call(
+                "addScanChildDeviceList",
+                {
+                    "childControl": {
+                        "child_device_list": [
+                            {
+                                "device_id": mocker.ANY,
+                                "category": mocker.ANY,
+                                "device_model": mocker.ANY,
+                                "name": mocker.ANY,
+                            }
+                        ]
+                    }
+                },
+            ),
         ]
     )
     assert "Discovery done" in caplog.text
@@ -57,12 +75,11 @@ async def test_childsetup_unpair(
     mock_query_helper = mocker.spy(dev, "_query_helper")
     DUMMY_ID = "dummy_id"
 
-    cs = dev.modules.get(Module.ChildSetup)
-    assert cs
+    cs = dev.modules[Module.ChildSetup]
 
     await cs.unpair(DUMMY_ID)
 
     mock_query_helper.assert_awaited_with(
-        "remove_child_device_list",
-        params={"child_device_list": [{"device_id": DUMMY_ID}]},
+        "removeChildDeviceList",
+        params={"childControl": {"child_device_list": [{"device_id": DUMMY_ID}]}},
     )

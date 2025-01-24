@@ -691,12 +691,8 @@ class SmartDevice(Device):
         """
         self._info = info
 
-    async def _query_helper(
-        self, method: str, params: dict | None = None, child_ids: None = None
-    ) -> dict:
-        res = await self.protocol.query({method: params})
-
-        return res
+    async def _query_helper(self, method: str, params: dict | None = None) -> dict:
+        return await self.protocol.query({method: params})
 
     @property
     def ssid(self) -> str:
@@ -885,6 +881,8 @@ class SmartDevice(Device):
             return DeviceType.Thermostat
         if "ROBOVAC" in device_type:
             return DeviceType.Vacuum
+        if "TAPOCHIME" in device_type:
+            return DeviceType.Chime
         _LOGGER.warning("Unknown device type, falling back to plug")
         return DeviceType.Plug
 

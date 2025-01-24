@@ -121,19 +121,9 @@ async def test_device_class_repr(device_class_name_obj):
     klass = device_class_name_obj[1]
     if issubclass(klass, SmartChildDevice | SmartCamChild):
         parent = SmartDevice(host, config=config)
-        smartcam_required = {
-            "device_model": "foo",
-            "device_type": "SMART.TAPODOORBELL",
-            "alias": "Foo",
-            "sw_ver": "1.1",
-            "hw_ver": "1.0",
-            "mac": "1.2.3.4",
-            "hwId": "hw_id",
-            "oem_id": "oem_id",
-        }
         dev = klass(
             parent,
-            {"dummy": "info", "device_id": "dummy", **smartcam_required},
+            {"dummy": "info", "device_id": "dummy"},
             {
                 "component_list": [{"id": "device", "ver_code": 1}],
                 "app_component_list": [{"name": "device", "version": 1}],
@@ -153,8 +143,8 @@ async def test_device_class_repr(device_class_name_obj):
         IotCamera: DeviceType.Camera,
         SmartChildDevice: DeviceType.Unknown,
         SmartDevice: DeviceType.Unknown,
-        SmartCamDevice: DeviceType.Camera,
-        SmartCamChild: DeviceType.Camera,
+        SmartCamDevice: DeviceType.Unknown,
+        SmartCamChild: DeviceType.Unknown,
     }
     type_ = CLASS_TO_DEFAULT_TYPE[klass]
     child_repr = "<DeviceType.Unknown(child) of <DeviceType.Unknown at 127.0.0.2 - update() needed>>"
