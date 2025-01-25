@@ -125,7 +125,6 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.experimental import Experimental
 from kasa.iot.iotdevice import IotDevice, _extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
@@ -637,11 +636,8 @@ class Discover:
             Device.Family.IotSmartPlugSwitch,
             Device.Family.SmartIpCamera,
             Device.Family.SmartTapoRobovac,
+            Device.Family.IotIpCamera,
         }
-
-        if Experimental.enabled():
-            main_device_families.add(Device.Family.IotIpCamera)
-
         candidates: dict[
             tuple[type[BaseProtocol], type[BaseTransport], type[Device], bool],
             tuple[BaseProtocol, DeviceConfig],
