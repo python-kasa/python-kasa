@@ -46,41 +46,45 @@ class PIRConfig:
 class PIRStatus:
     """Dataclass representing the current trigger state of an ADC PIR sensor."""
 
+    pir_config: PIRConfig
     adc_value: int
 
-    def get_pir_value(self, config: PIRConfig) -> int:
+    @property
+    def pir_value(self) -> int:
         """
         Get the PIR status value in integer form.
 
         Computes the PIR status value that this object represents,
         using the given PIR configuration.
         """
-        return config.adc_mid - self.adc_value
+        return self.pir_config.adc_mid - self.adc_value
 
-    def get_pir_percent(self, config: PIRConfig) -> float:
+    @property
+    def pir_percent(self) -> float:
         """
         Get the PIR status value in percentile form.
 
         Computes the PIR status percentage that this object represents,
         using the given PIR configuration.
         """
-        value = self.get_pir_value(config)
+        value = self.pir_value
         divisor = (
-            (config.adc_mid - config.adc_min)
+            (self.pir_config.adc_mid - self.pir_config.adc_min)
             if (value < 0)
-            else (config.adc_max - config.adc_mid)
+            else (self.pir_config.adc_max - self.pir_config.adc_mid)
         )
         return (float(value) / divisor) * 100
 
-    def get_pir_triggered(self, config: PIRConfig) -> bool:
+    @property
+    def pir_triggered(self) -> bool:
         """
         Get the PIR status trigger state.
 
         Compute the PIR trigger state this object represents,
         using the given PIR configuration.
         """
-        return (config.enabled) and (
-            abs(self.get_pir_percent(config)) > (100 - config.threshold)
+        return (self.pir_config.enabled) and (
+            abs(self.pir_percent) > (100 - self.pir_config.threshold)
         )
 
 
@@ -329,12 +333,13 @@ class Motion(IotModule):
     def _parse_range_value(self, value: str) -> Range:
         """Attempt to parse a range value from the given string."""
         value = value.strip().capitalize()
-        if value not in Range._member_names_:
+        try:
+            return Range[value]
+        except KeyError:
             raise KasaException(
                 f"Invalid range value: '{value}'."
                 f" Valid options are: {Range._member_names_}"
-            )
-        return Range[value]
+            ) from KeyError
 
     async def _set_range_from_str(self, input: str) -> dict:
         value = self._parse_range_value(input)
@@ -374,12 +379,13 @@ class Motion(IotModule):
     @property
     def pir_state(self) -> PIRStatus:
         """Return cached PIR status."""
-        return PIRStatus(self.data["get_adc_value"]["value"])
+        return PIRStatus(self.pir_config, self.data["get_adc_value"]["value"])
 
     async def get_pir_state(self) -> PIRStatus:
         """Return real-time PIR status."""
-        current = await self.call("get_adc_value")
-        return PIRStatus(current["value"])
+        latest = await self.call("get_adc_value")
+        self.data["get_adc_value"] = latest
+        return PIRStatus(self.pir_config, latest["value"])
 
     @property
     def adc_value(self) -> int:
@@ -389,14 +395,14 @@ class Motion(IotModule):
     @property
     def pir_value(self) -> int:
         """Return the computed PIR sensor value."""
-        return self.pir_state.get_pir_value(self.pir_config)
+        return self.pir_state.pir_value
 
     @property
     def pir_percent(self) -> float:
         """Return the computed PIR sensor value, in percentile form."""
-        return self.pir_state.get_pir_percent(self.pir_config)
+        return self.pir_state.pir_percent
 
     @property
     def pir_triggered(self) -> bool:
         """Return if the motion sensor has been triggered."""
-        return self.pir_state.get_pir_triggered(self.pir_config)
+        return self.pir_state.pir_triggered
