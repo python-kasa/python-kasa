@@ -33,12 +33,8 @@ class PowerProtection(SmartModule):
                 id="power_protection_threshold",
                 name="Power protection threshold",
                 container=self,
-                attribute_getter=lambda x: self.protection_threshold
-                if self.enabled
-                else 0,
-                attribute_setter=lambda x: self.set_enabled(False)
-                if x == 0
-                else self.set_enabled(True, threshold=x),
+                attribute_getter="_threshold_or_zero",
+                attribute_setter="_set_threshold_auto_enable",
                 unit_getter=lambda: "W",
                 type=Feature.Type.Number,
                 range_getter=lambda: (0, self._max_power),
@@ -64,7 +60,7 @@ class PowerProtection(SmartModule):
         return self.data["get_protection_power"]["enabled"]
 
     async def set_enabled(self, enabled: bool, *, threshold: int | None = None) -> dict:
-        """Set child protection.
+        """Set power protection enabled.
 
         If power protection has never been enabled before the threshold will
         be 0 so if threshold is not provided it will be set to half the max.
@@ -81,6 +77,18 @@ class PowerProtection(SmartModule):
         if threshold is not None:
             params["protection_power"] = threshold
         return await self.call("set_protection_power", params)
+
+    async def _set_threshold_auto_enable(self, threshold: int) -> dict:
+        """Set power protection and enable."""
+        if threshold == 0:
+            return await self.set_enabled(False)
+        else:
+            return await self.set_enabled(True, threshold=threshold)
+
+    @property
+    def _threshold_or_zero(self) -> int:
+        """Get power protection threshold. 0 if not enabled."""
+        return self.protection_threshold if self.enabled else 0
 
     @property
     def _max_power(self) -> int:
