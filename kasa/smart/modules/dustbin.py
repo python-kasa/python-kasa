@@ -19,6 +19,8 @@ class Mode(IntEnum):
     Balanced = 2
     Max = 3
 
+    Off = -1_000
+
 
 class Dustbin(SmartModule):
     """Implementation of vacuum dustbin."""
@@ -91,6 +93,8 @@ class Dustbin(SmartModule):
     @property
     def mode(self) -> str:
         """Return auto-emptying mode."""
+        if self.auto_collection is False:
+            return Mode.Off.name
         return Mode(self._settings["dust_collection_mode"]).name
 
     async def set_mode(self, mode: str) -> dict:
@@ -101,8 +105,14 @@ class Dustbin(SmartModule):
                 "Invalid auto/emptying mode speed %s, available %s", mode, name_to_value
             )
 
+        if mode == Mode.Off.name:
+            return await self.set_auto_collection(False)
+
+        # Make a copy just in case, even when we are overriding both settings
         settings = self._settings.copy()
+        settings["auto_dust_collection"] = True
         settings["dust_collection_mode"] = name_to_value[mode]
+
         return await self.call("setDustCollectionInfo", settings)
 
     @property
