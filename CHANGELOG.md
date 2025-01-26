@@ -6,17 +6,20 @@
 
 **Release summary:**
 
-- Support for Tapo robo vaccums!
-- Support for hub attached camera and doorbells!
-- Support for Tapo chime devices!
-- Support for many new camera and doorbell device models, i.e.  C220, C720, D100C, D130, D230.
+This release brings support for many new devices, including completely new device types:
+
+- Support for Tapo robot vacuums. Special thanks to @steveredden, @MAXIGAMESSUPPER, and veep60 for helping to get this implemented!
+- Support for hub attached cameras and doorbells (H200)
+- Improved support for hubs (including pairing & better chime controls)
+- Support for many new camera and doorbell device models, including C220, C720, D100C, D130, and D230
 
 Many thanks to testers and new contributors - @steveredden, @DawidPietrykowski, @Obbay2, @andrewome, @ryenitcher and @etmmvdp!
 
-**Breaking change notes**
+**Breaking changes:**
 
 - `uses_http` is now a readonly property of device config. Consumers that relied on `uses_http` to be persisted with `DeviceConfig.to_dict()` will need to store the value separately.
 - `is_color`, `is_dimmable`, `is_variable_color_temp`, `valid_temperate_range`, and `has_effects` attributes from the `Light` module are deprecated, consumers should use `has_feature("hsv")`, `has_feature("brightness")`, `has_feature("color_temp")`, `get_feature("color_temp").range`, and `Module.LightEffect in dev.modules` respectively. Calling the deprecated attributes will emit a `DeprecationWarning` and type checkers will fail them.
+-  `alarm_volume` on the `smart.Alarm` module is changed from `str` to `int`
 
 **Breaking changes:**
 
@@ -58,6 +61,8 @@ Many thanks to testers and new contributors - @steveredden, @DawidPietrykowski, 
 **Fixed bugs:**
 
 - TP-Link HS300 Wi-Fi Power-Strip - "Parent On/Off" not functioning. [\#637](https://github.com/python-kasa/python-kasa/issues/637)
+- Convert carpet\_clean\_mode to carpet\_boost switch [\#1486](https://github.com/python-kasa/python-kasa/pull/1486) (@rytilahti)
+- Change category for empty dustbin feature from Primary to Config [\#1485](https://github.com/python-kasa/python-kasa/pull/1485) (@rytilahti)
 - Report 0 for instead of None for zero current and voltage [\#1483](https://github.com/python-kasa/python-kasa/pull/1483) (@ryenitcher)
 - Disable iot camera creation until more complete [\#1480](https://github.com/python-kasa/python-kasa/pull/1480) (@sdb9696)
 - ssltransport: use debug logger for sending requests [\#1443](https://github.com/python-kasa/python-kasa/pull/1443) (@rytilahti)
