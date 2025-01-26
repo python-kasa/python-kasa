@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Annotated, Literal, TypeAlias
 
 from ...feature import Feature
+from ...interfaces import Alarm as AlarmInterface
 from ...module import FeatureAttribute
 from ..smartmodule import SmartModule
 
@@ -24,7 +25,7 @@ VOLUME_STR_TO_INT = {v: k for k, v in VOLUME_INT_TO_STR.items()}
 AlarmVolume: TypeAlias = Literal["mute", "low", "normal", "high"]
 
 
-class Alarm(SmartModule):
+class Alarm(SmartModule, AlarmInterface):
     """Implementation of alarm module."""
 
     REQUIRED_COMPONENT = "alarm"

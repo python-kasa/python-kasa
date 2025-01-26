@@ -96,6 +96,7 @@ class Module(ABC):
     """
 
     # Common Modules
+    Alarm: Final[ModuleName[interfaces.Alarm]] = ModuleName("Alarm")
     ChildSetup: Final[ModuleName[interfaces.ChildSetup]] = ModuleName("ChildSetup")
     Energy: Final[ModuleName[interfaces.Energy]] = ModuleName("Energy")
     Fan: Final[ModuleName[interfaces.Fan]] = ModuleName("Fan")
@@ -116,7 +117,6 @@ class Module(ABC):
     IotCloud: Final[ModuleName[iot.Cloud]] = ModuleName("cloud")
 
     # SMART only Modules
-    Alarm: Final[ModuleName[smart.Alarm]] = ModuleName("Alarm")
     AutoOff: Final[ModuleName[smart.AutoOff]] = ModuleName("AutoOff")
     BatterySensor: Final[ModuleName[smart.BatterySensor]] = ModuleName("BatterySensor")
     Brightness: Final[ModuleName[smart.Brightness]] = ModuleName("Brightness")
