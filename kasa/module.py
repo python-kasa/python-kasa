@@ -81,6 +81,9 @@ ModuleT = TypeVar("ModuleT", bound="Module")
 class FeatureAttribute:
     """Class for annotating attributes bound to feature."""
 
+    def __init__(self, feature_name: str | None = None) -> None:
+        self.feature_name = feature_name
+
     def __repr__(self) -> str:
         return "FeatureAttribute"
 
@@ -155,6 +158,9 @@ class Module(ABC):
     )
     ChildLock: Final[ModuleName[smart.ChildLock]] = ModuleName("ChildLock")
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+    PowerProtection: Final[ModuleName[smart.PowerProtection]] = ModuleName(
+        "PowerProtection"
+    )
 
     HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("HomeKit")
     Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")
@@ -234,7 +240,7 @@ class Module(ABC):
         )
 
 
-def _is_bound_feature(attribute: property | Callable) -> bool:
+def _get_feature_attribute(attribute: property | Callable) -> FeatureAttribute | None:
     """Check if an attribute is bound to a feature with FeatureAttribute."""
     if isinstance(attribute, property):
         hints = get_type_hints(attribute.fget, include_extras=True)
@@ -245,9 +251,9 @@ def _is_bound_feature(attribute: property | Callable) -> bool:
         metadata = hints["return"].__metadata__
         for meta in metadata:
             if isinstance(meta, FeatureAttribute):
-                return True
+                return meta
 
-    return False
+    return None
 
 
 @cache
@@ -274,11 +280,16 @@ def _get_bound_feature(
                 f"module {module.__class__.__name__}"
             )
 
-    if not _is_bound_feature(attribute_callable):
+    if not (fa := _get_feature_attribute(attribute_callable)):
         raise KasaException(
             f"Attribute {attribute_name} of module {module.__class__.__name__}"
             " is not bound to a feature"
         )
+
+    # If a feature_name was passed to the FeatureAttribute use that to check
+    # for the feature. Otherwise check the getters and setters in the features
+    if fa.feature_name:
+        return module._all_features.get(fa.feature_name)
 
     check = {attribute_name, attribute_callable}
     for feature in module._all_features.values():

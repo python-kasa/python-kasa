@@ -34,6 +34,7 @@ from .matter import Matter
 from .mop import Mop
 from .motionsensor import MotionSensor
 from .overheatprotection import OverheatProtection
+from .powerprotection import PowerProtection
 from .reportmode import ReportMode
 from .speaker import Speaker
 from .temperaturecontrol import TemperatureControl
@@ -80,6 +81,7 @@ __all__ = [
     "Consumables",
     "CleanRecords",
     "SmartLightEffect",
+    "PowerProtection",
     "OverheatProtection",
     "Speaker",
     "HomeKit",
