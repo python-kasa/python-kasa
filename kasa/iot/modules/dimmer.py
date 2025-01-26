@@ -198,7 +198,7 @@ class Dimmer(IotModule):
                 "Fade time is outside the bounds of the supported range:"
                 f"{self.FADE_TIME_ABS_MIN}-{self.FADE_TIME_ABS_MAX}"
             )
-        return await self.call("set_fade_on_time", {"fadeTime": _td_to_ms(time)})
+        return await self.call("set_fade_off_time", {"fadeTime": _td_to_ms(time)})
 
     @property
     def fade_on_time(self) -> timedelta:
