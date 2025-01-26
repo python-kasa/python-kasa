@@ -63,7 +63,12 @@ class Alarm(Module, ABC):
         volume: int | None = None,
         sound: str | None = None,
     ) -> dict:
-        """Play alarm."""
+        """Play alarm.
+
+        The optional *duration*, *volume*, and *sound* to override the device settings.
+        *duration* is in seconds.
+        See *alarm_sounds* for the list of sounds available for the device.
+        """
 
     @abstractmethod
     async def stop(self) -> dict:

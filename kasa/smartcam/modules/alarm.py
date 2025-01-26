@@ -163,7 +163,6 @@ class Alarm(SmartCamModule, AlarmInterface):
         """Play alarm.
 
         The optional *duration*, *volume*, and *sound* to override the device settings.
-        *volume* can be set to 'mute', 'low', 'normal', or 'high'.
         *duration* is in seconds.
         See *alarm_sounds* for the list of sounds available for the device.
         """
