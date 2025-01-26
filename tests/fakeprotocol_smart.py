@@ -134,11 +134,9 @@ class FakeSmartTransport(BaseTransport):
         "get_alarm_configure": (
             "alarm",
             {
-                "get_alarm_configure": {
-                    "duration": 10,
-                    "type": "Doorbell Ring 2",
-                    "volume": "low",
-                }
+                "duration": 10,
+                "type": "Doorbell Ring 2",
+                "volume": "low",
             },
         ),
         "get_support_alarm_type_list": (
@@ -163,6 +161,14 @@ class FakeSmartTransport(BaseTransport):
         "get_emeter_vgain_igain": (
             "energy_monitoring",
             {"igain": 10861, "vgain": 118657},
+        ),
+        "get_protection_power": (
+            "power_protection",
+            {"enabled": False, "protection_power": 0},
+        ),
+        "get_max_power": (
+            "power_protection",
+            {"max_power": 3904},
         ),
         "get_matter_setup_info": (
             "matter",
@@ -664,7 +670,7 @@ class FakeSmartTransport(BaseTransport):
                     self.fixture_name, set()
                 ).add(method)
             return retval
-        elif method in ["set_qs_info", "fw_download"]:
+        elif method in ["set_qs_info", "fw_download", "play_alarm", "stop_alarm"]:
             return {"error_code": 0}
         elif method == "set_dynamic_light_effect_rule_enable":
             self._set_dynamic_light_effect(info, params)

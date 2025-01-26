@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from kasa import Device
+from kasa import Device, Module
 from kasa.smartcam.modules.alarm import (
     DURATION_MAX,
     DURATION_MIN,
     VOLUME_MAX,
     VOLUME_MIN,
 )
-from kasa.smartcam.smartcammodule import SmartCamModule
 
 from ...conftest import hub_smartcam
 
@@ -19,7 +18,7 @@ from ...conftest import hub_smartcam
 @hub_smartcam
 async def test_alarm(dev: Device):
     """Test device alarm."""
-    alarm = dev.modules.get(SmartCamModule.SmartCamAlarm)
+    alarm = dev.modules.get(Module.Alarm)
     assert alarm
 
     original_duration = alarm.alarm_duration
@@ -63,6 +62,19 @@ async def test_alarm(dev: Device):
         await dev.update()
         assert alarm.alarm_sound == new_sound
 
+        # Test play parameters
+        await alarm.play(
+            duration=original_duration, volume=original_volume, sound=original_sound
+        )
+        await dev.update()
+        assert alarm.active
+        assert alarm.alarm_sound == original_sound
+        assert alarm.alarm_duration == original_duration
+        assert alarm.alarm_volume == original_volume
+        await alarm.stop()
+        await dev.update()
+        assert not alarm.active
+
     finally:
         await alarm.set_alarm_volume(original_volume)
         await alarm.set_alarm_duration(original_duration)
@@ -73,7 +85,7 @@ async def test_alarm(dev: Device):
 @hub_smartcam
 async def test_alarm_invalid_setters(dev: Device):
     """Test device alarm invalid setter values."""
-    alarm = dev.modules.get(SmartCamModule.SmartCamAlarm)
+    alarm = dev.modules.get(Module.Alarm)
     assert alarm
 
     # test set sound invalid
@@ -95,7 +107,7 @@ async def test_alarm_invalid_setters(dev: Device):
 @hub_smartcam
 async def test_alarm_features(dev: Device):
     """Test device alarm features."""
-    alarm = dev.modules.get(SmartCamModule.SmartCamAlarm)
+    alarm = dev.modules.get(Module.Alarm)
     assert alarm
 
     original_duration = alarm.alarm_duration
