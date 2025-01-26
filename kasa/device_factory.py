@@ -12,7 +12,6 @@ from .deviceconfig import DeviceConfig, DeviceEncryptionType, DeviceFamily
 from .exceptions import KasaException, UnsupportedDeviceError
 from .iot import (
     IotBulb,
-    IotCamera,
     IotDevice,
     IotDimmer,
     IotLightStrip,
@@ -140,7 +139,8 @@ def get_device_class_from_sys_info(sysinfo: dict[str, Any]) -> type[IotDevice]:
         DeviceType.Strip: IotStrip,
         DeviceType.WallSwitch: IotWallSwitch,
         DeviceType.LightStrip: IotLightStrip,
-        DeviceType.Camera: IotCamera,
+        # Disabled until properly implemented
+        # DeviceType.Camera: IotCamera,
     }
     return TYPE_TO_CLASS[IotDevice._get_device_type_from_sys_info(sysinfo)]
 
@@ -163,7 +163,8 @@ def get_device_class_from_family(
         "SMART.TAPOROBOVAC.HTTPS": SmartDevice,
         "IOT.SMARTPLUGSWITCH": IotPlug,
         "IOT.SMARTBULB": IotBulb,
-        "IOT.IPCAMERA": IotCamera,
+        # Disabled until properly implemented
+        # "IOT.IPCAMERA": IotCamera,
     }
     lookup_key = f"{device_type}{'.HTTPS' if https else ''}"
     if (

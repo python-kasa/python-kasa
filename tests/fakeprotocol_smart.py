@@ -162,6 +162,14 @@ class FakeSmartTransport(BaseTransport):
             "energy_monitoring",
             {"igain": 10861, "vgain": 118657},
         ),
+        "get_protection_power": (
+            "power_protection",
+            {"enabled": False, "protection_power": 0},
+        ),
+        "get_max_power": (
+            "power_protection",
+            {"max_power": 3904},
+        ),
         "get_matter_setup_info": (
             "matter",
             {

@@ -86,6 +86,18 @@ class Alarm(SmartModule, AlarmInterface):
                 category=Feature.Category.Config,
                 type=Feature.Type.Choice,
                 choices_getter=lambda: VOLUME_STR_LIST,
+            )
+        )
+        self._add_feature(
+            Feature(
+                device,
+                id="alarm_volume_number",
+                name="Alarm volume",
+                container=self,
+                attribute_getter="alarm_volume",
+                attribute_setter="set_alarm_volume",
+                category=Feature.Category.Config,
+                type=Feature.Type.Number,
                 range_getter=lambda: VOLUME_INT_RANGE,
             )
         )
@@ -144,12 +156,14 @@ class Alarm(SmartModule, AlarmInterface):
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
     @property
-    def alarm_volume(self) -> Annotated[int, FeatureAttribute("alarm_volume")]:
+    def alarm_volume(self) -> Annotated[int, FeatureAttribute("alarm_volume_number")]:
         """Return alarm volume."""
         return VOLUME_STR_TO_INT[self._alarm_volume_str]
 
     @property
-    def _alarm_volume_str(self) -> str:
+    def _alarm_volume_str(
+        self,
+    ) -> Annotated[AlarmVolume, FeatureAttribute("alarm_volume")]:
         """Return alarm volume."""
         return self.data["get_alarm_configure"]["volume"]
 

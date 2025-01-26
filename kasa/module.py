@@ -158,6 +158,9 @@ class Module(ABC):
     )
     ChildLock: Final[ModuleName[smart.ChildLock]] = ModuleName("ChildLock")
     TriggerLogs: Final[ModuleName[smart.TriggerLogs]] = ModuleName("TriggerLogs")
+    PowerProtection: Final[ModuleName[smart.PowerProtection]] = ModuleName(
+        "PowerProtection"
+    )
 
     HomeKit: Final[ModuleName[smart.HomeKit]] = ModuleName("HomeKit")
     Matter: Final[ModuleName[smart.Matter]] = ModuleName("Matter")
