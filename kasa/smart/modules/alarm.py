@@ -91,7 +91,7 @@ class Alarm(SmartModule, AlarmInterface):
         self._add_feature(
             Feature(
                 device,
-                id="alarm_volume_number",
+                id="alarm_volume_level",
                 name="Alarm volume",
                 container=self,
                 attribute_getter="alarm_volume",
@@ -156,7 +156,7 @@ class Alarm(SmartModule, AlarmInterface):
         return self.data["get_support_alarm_type_list"]["alarm_type_list"]
 
     @property
-    def alarm_volume(self) -> Annotated[int, FeatureAttribute("alarm_volume_number")]:
+    def alarm_volume(self) -> Annotated[int, FeatureAttribute("alarm_volume_level")]:
         """Return alarm volume."""
         return VOLUME_STR_TO_INT[self._alarm_volume_str]
 
