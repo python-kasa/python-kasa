@@ -20,7 +20,7 @@ alarm = parametrize("has alarm", component_filter="alarm", protocol_filter={"SMA
         ("alarm_source", "source", str | None),
         ("alarm_sound", "alarm_sound", str),
         ("alarm_volume", "_alarm_volume_str", str),
-        ("alarm_volume_number", "alarm_volume", int),
+        ("alarm_volume_level", "alarm_volume", int),
     ],
 )
 async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: type):
