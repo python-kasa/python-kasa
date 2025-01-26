@@ -34,7 +34,7 @@ class Dustbin(SmartModule):
                 name="Empty dustbin",
                 container=self,
                 attribute_setter="start_emptying",
-                category=Feature.Category.Primary,
+                category=Feature.Category.Config,
                 type=Feature.Action,
             )
         )
