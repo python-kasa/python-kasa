@@ -604,7 +604,7 @@ async def test_get_modules():
     # Modules on device
     module = dummy_device.modules.get("Cloud")
     assert module
-    assert module._device == dummy_device
+    assert module.device == dummy_device
     assert isinstance(module, Cloud)
 
     module = dummy_device.modules.get(Module.Cloud)
@@ -617,8 +617,8 @@ async def test_get_modules():
     assert module is None
     module = next(get_parent_and_child_modules(dummy_device, "Fan"))
     assert module
-    assert module._device != dummy_device
-    assert module._device._parent == dummy_device
+    assert module.device != dummy_device
+    assert module.device.parent == dummy_device
 
     # Invalid modules
     module = dummy_device.modules.get("DummyModule")

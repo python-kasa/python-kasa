@@ -178,7 +178,7 @@ class Module(ABC):
 
     @property
     def device(self) -> Device:
-        """Get the module device."""
+        """Return the device exposing the module."""
         return self._device
 
     @property
