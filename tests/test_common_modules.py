@@ -91,6 +91,7 @@ def _get_subclasses(of_class, package):
         if ispkg:
             res = _get_subclasses(of_class, module)
             subclasses.update(res)
+
     return subclasses
 
 
