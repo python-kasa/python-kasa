@@ -74,6 +74,7 @@ interfaces = pytest.mark.parametrize("interface", kasa.interfaces.__all__)
 
 
 def _get_subclasses(of_class, package):
+    """Get all the subclasses of a given class."""
     subclasses = set()
     # iter_modules returns ModuleInfo: (module_finder, name, ispkg)
     for _, modname, ispkg in pkgutil.iter_modules(package.__path__):
@@ -86,6 +87,7 @@ def _get_subclasses(of_class, package):
                 and obj is not of_class
             ):
                 subclasses.add(obj)
+
         if ispkg:
             res = _get_subclasses(of_class, module)
             subclasses.update(res)
