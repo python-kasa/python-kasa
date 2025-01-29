@@ -233,7 +233,7 @@ async def test_light_brightness(dev: Device):
     assert light
 
     # Test getting the value
-    feature = light._device.features["brightness"]
+    feature = light.device.features["brightness"]
     assert feature.minimum_value == 0
     assert feature.maximum_value == 100
 
@@ -262,7 +262,7 @@ async def test_light_color_temp(dev: Device):
         )
 
     # Test getting the value
-    feature = light._device.features["color_temperature"]
+    feature = light.device.features["color_temperature"]
     assert isinstance(feature.minimum_value, int)
     assert isinstance(feature.maximum_value, int)
 
@@ -294,7 +294,7 @@ async def test_light_set_state(dev: Device):
     light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
     # For fixtures that have a light effect active switch off
-    if light_effect := light._device.modules.get(Module.LightEffect):
+    if light_effect := light.device.modules.get(Module.LightEffect):
         await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
 
     await light.set_state(LightState(light_on=False))
@@ -321,7 +321,7 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     assert preset_mod
     light_mod = next(get_parent_and_child_modules(dev, Module.Light))
     assert light_mod
-    feat = preset_mod._device.features["light_preset"]
+    feat = preset_mod.device.features["light_preset"]
 
     preset_list = preset_mod.preset_list
     assert "Not set" in preset_list

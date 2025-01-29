@@ -51,6 +51,7 @@ class LightEffect(Module, ABC):
     """Interface to represent a light effect module."""
 
     LIGHT_EFFECTS_OFF = "Off"
+    LIGHT_EFFECTS_UNNAMED_CUSTOM = "Custom"
 
     def _initialize_features(self) -> None:
         """Initialize features."""
@@ -77,7 +78,7 @@ class LightEffect(Module, ABC):
     @property
     @abstractmethod
     def effect(self) -> str:
-        """Return effect state or name."""
+        """Return effect name."""
 
     @property
     @abstractmethod
