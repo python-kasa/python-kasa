@@ -37,20 +37,14 @@ class LightStripEffect(SmartModule, SmartLightEffect):
 
     @property
     def effect(self) -> str:
-        """Return effect state.
-
-        Example:
-            {'brightness': 50,
-             'custom': 0,
-             'enable': 0,
-             'id': '',
-             'name': ''}
-        """
+        """Return effect name."""
         eff = self.data["lighting_effect"]
         name = eff["name"]
         # When devices are unpaired effect name is softAP which is not in our list
         if eff["enable"] and name in self._effect_list:
             return name
+        if eff["enable"] and eff["custom"]:
+            return name or self.LIGHT_EFFECTS_UNNAMED_CUSTOM
         return self.LIGHT_EFFECTS_OFF
 
     @property

@@ -12,20 +12,11 @@ class LightEffect(IotModule, LightEffectInterface):
 
     @property
     def effect(self) -> str:
-        """Return effect state.
-
-        Example:
-            {'brightness': 50,
-             'custom': 0,
-             'enable': 0,
-             'id': '',
-             'name': ''}
-        """
+        """Return effect name."""
         eff = self.data["lighting_effect_state"]
         name = eff["name"]
         if eff["enable"]:
-            return name
-
+            return name or self.LIGHT_EFFECTS_UNNAMED_CUSTOM
         return self.LIGHT_EFFECTS_OFF
 
     @property
