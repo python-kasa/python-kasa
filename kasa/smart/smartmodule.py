@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
@@ -20,15 +21,16 @@ _R = TypeVar("_R")
 
 
 def allow_update_after(
-    func: Callable[Concatenate[_T, _P], Awaitable[dict]],
-) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, dict]]:
+    func: Callable[Concatenate[_T, _P], Coroutine[Any, Any, _R]],
+) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, _R]]:
     """Define a wrapper to set _last_update_time to None.
 
     This will ensure that a module is updated in the next update cycle after
     a value has been changed.
     """
 
-    async def _async_wrap(self: _T, *args: _P.args, **kwargs: _P.kwargs) -> dict:
+    @wraps(func)
+    async def _async_wrap(self: _T, *args: _P.args, **kwargs: _P.kwargs) -> _R:
         try:
             return await func(self, *args, **kwargs)
         finally:
@@ -40,6 +42,7 @@ def allow_update_after(
 def raise_if_update_error(func: Callable[[_T], _R]) -> Callable[[_T], _R]:
     """Define a wrapper to raise an error if the last module update was an error."""
 
+    @wraps(func)
     def _wrap(self: _T) -> _R:
         if err := self._last_update_error:
             raise err
