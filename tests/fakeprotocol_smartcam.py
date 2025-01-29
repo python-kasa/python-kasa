@@ -218,9 +218,9 @@ class FakeSmartCamTransport(BaseTransport):
 
     @staticmethod
     def _get_second_key(request_dict: dict[str, Any]) -> str:
-        assert (
-            len(request_dict) == 2
-        ), f"Unexpected dict {request_dict}, should be length 2"
+        assert len(request_dict) == 2, (
+            f"Unexpected dict {request_dict}, should be length 2"
+        )
         it = iter(request_dict)
         next(it, None)
         return next(it)
@@ -276,12 +276,14 @@ class FakeSmartCamTransport(BaseTransport):
                 section = next(iter(val))
                 skey_val = val[section]
                 if not isinstance(skey_val, dict):  # single level query
-                    section_key = section
-                    section_val = skey_val
-                    if (get_info := info.get(get_method)) and section_key in get_info:
-                        get_info[section_key] = section_val
-                    else:
+                    updates = {
+                        k: v for k, v in val.items() if k in info.get(get_method, {})
+                    }
+                    if len(updates) != len(val):
+                        # All keys to update must already be in the getter
                         return {"error_code": -1}
+                    info[get_method] = {**info[get_method], **updates}
+
                     break
                 for skey, sval in skey_val.items():
                     section_key = skey

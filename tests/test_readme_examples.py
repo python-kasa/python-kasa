@@ -148,6 +148,25 @@ def test_tutorial_examples(readmes_mock):
     assert not res["failed"]
 
 
+def test_childsetup_examples(readmes_mock, mocker):
+    """Test device examples."""
+    pair_resp = [
+        {
+            "device_id": "SCRUBBED_CHILD_DEVICE_ID_5",
+            "category": "subg.trigger.button",
+            "device_model": "S200B",
+            "name": "I01BU0tFRF9OQU1FIw====",
+        }
+    ]
+    mocker.patch(
+        "kasa.smartcam.modules.childsetup.ChildSetup.pair", return_value=pair_resp
+    )
+    res = xdoctest.doctest_module("kasa.interfaces.childsetup", "all")
+    assert res["n_passed"] > 0
+    assert res["n_warned"] == 0
+    assert not res["failed"]
+
+
 @pytest.fixture
 async def readmes_mock(mocker):
     fixture_infos = {
@@ -156,6 +175,7 @@ async def readmes_mock(mocker):
         "127.0.0.3": get_fixture_info("L530E(EU)_3.0_1.1.6.json", "SMART"),  # Bulb
         "127.0.0.4": get_fixture_info("KL430(US)_1.0_1.0.10.json", "IOT"),  # Lightstrip
         "127.0.0.5": get_fixture_info("HS220(US)_1.0_1.5.7.json", "IOT"),  # Dimmer
+        "127.0.0.6": get_fixture_info("H200(US)_1.0_1.3.6.json", "SMARTCAM"),  # Hub
     }
     fixture_infos["127.0.0.1"].data["system"]["get_sysinfo"]["alias"] = (
         "Bedroom Power Strip"
@@ -176,4 +196,7 @@ async def readmes_mock(mocker):
     fixture_infos["127.0.0.5"].data["system"]["get_sysinfo"]["alias"] = (
         "Living Room Dimmer Switch"
     )
+    fixture_infos["127.0.0.6"].data["getDeviceInfo"]["device_info"]["basic_info"][
+        "device_alias"
+    ] = "Tapo Hub"
     return patch_discovery(fixture_infos, mocker)

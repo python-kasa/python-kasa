@@ -44,8 +44,7 @@ async def hub_supported(dev: SmartDevice):
     """List supported hub child device categories."""
     cs = dev.modules[Module.ChildSetup]
 
-    cats = [cat["category"] for cat in await cs.get_supported_device_categories()]
-    for cat in cats:
+    for cat in cs.supported_categories:
         echo(f"Supports: {cat}")
 
 
@@ -67,8 +66,8 @@ async def hub_pair(dev: SmartDevice, timeout: int):
 
     for child in pair_res:
         echo(
-            f'Paired {child["name"]} ({child["device_model"]}, '
-            f'{pretty_category(child["category"])}) with id {child["device_id"]}'
+            f"Paired {child['name']} ({child['device_model']}, "
+            f"{pretty_category(child['category'])}) with id {child['device_id']}"
         )
 
 

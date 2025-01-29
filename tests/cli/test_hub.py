@@ -4,10 +4,10 @@ from pytest_mock import MockerFixture
 from kasa import DeviceType, Module
 from kasa.cli.hub import hub
 
-from ..device_fixtures import HUBS_SMART, hubs_smart, parametrize, plug_iot
+from ..device_fixtures import hubs, plug_iot
 
 
-@hubs_smart
+@hubs
 async def test_hub_pair(dev, mocker: MockerFixture, runner, caplog):
     """Test that pair calls the expected methods."""
     cs = dev.modules.get(Module.ChildSetup)
@@ -25,7 +25,7 @@ async def test_hub_pair(dev, mocker: MockerFixture, runner, caplog):
     assert res.exit_code == 0
 
 
-@parametrize("hubs smart", model_filter=HUBS_SMART, protocol_filter={"SMART"})
+@hubs
 async def test_hub_unpair(dev, mocker: MockerFixture, runner):
     """Test that unpair calls the expected method."""
     if not dev.children:

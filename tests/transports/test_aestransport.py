@@ -56,7 +56,7 @@ def test_encrypt():
 
 
 status_parameters = pytest.mark.parametrize(
-    "status_code, error_code, inner_error_code, expectation",
+    ("status_code", "error_code", "inner_error_code", "expectation"),
     [
         (200, 0, 0, does_not_raise()),
         (400, 0, 0, pytest.raises(KasaException)),

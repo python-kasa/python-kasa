@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from kasa import Device, Feature, KasaException
+from kasa.iot import IotStrip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -140,7 +141,10 @@ async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture)
     mock_setter.assert_called_with("first")
     mock_setter.reset_mock()
 
-    with pytest.raises(ValueError, match="Unexpected value for dummy_feature: invalid"):  # noqa: PT012
+    with pytest.raises(  # noqa: PT012
+        ValueError,
+        match="Unexpected value for dummy_feature: 'invalid' (?: - allowed: .*)?",
+    ):
         await dummy_feature.set_value("invalid")
         assert "Unexpected value" in caplog.text
 
@@ -168,7 +172,10 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         if feat.attribute_setter is None:
             return
 
-        expecting_call = feat.id not in internal_setters
+        # IotStrip makes calls via it's children
+        expecting_call = feat.id not in internal_setters and not isinstance(
+            dev, IotStrip
+        )
 
         if feat.type == Feature.Type.Number:
             await feat.set_value(feat.minimum_value)

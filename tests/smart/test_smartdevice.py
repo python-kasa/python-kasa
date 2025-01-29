@@ -223,9 +223,9 @@ async def test_update_module_update_delays(
                     now if mod_delay == 0 else now - (seconds % mod_delay)
                 )
 
-                assert (
-                    module._last_update_time == expected_update_time
-                ), f"Expected update time {expected_update_time} after {seconds} seconds for {module.name} with delay {mod_delay} got {module._last_update_time}"
+                assert module._last_update_time == expected_update_time, (
+                    f"Expected update time {expected_update_time} after {seconds} seconds for {module.name} with delay {mod_delay} got {module._last_update_time}"
+                )
 
 
 async def _get_child_responses(child_requests: list[dict[str, Any]], child_protocol):

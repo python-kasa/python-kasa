@@ -44,9 +44,10 @@ uv lock --upgrade
 uv sync --all-extras
 ```
 
-### Run pre-commit and tests
+### Update and run pre-commit and tests
 
 ```bash
+pre-commit autoupdate
 uv run pre-commit run --all-files
 uv run pytest -n auto
 ```
@@ -122,6 +123,12 @@ git push upstream release/$NEW_RELEASE -u
 #### Create the PR
 ```
 gh pr create --title "Prepare $NEW_RELEASE" --body "$RELEASE_NOTES" --label release-prep --base master
+```
+
+To update the PR after refreshing the changelog:
+
+```
+gh pr edit --body "$RELEASE_NOTES"
 ```
 
 #### Merge the PR once the CI passes

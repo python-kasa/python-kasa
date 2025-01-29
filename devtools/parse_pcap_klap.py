@@ -286,8 +286,7 @@ def main(
                     operator.local_seed = message
                     response = None
                     print(
-                        f"got handshake1 in {packet_number}, "
-                        f"looking for the response"
+                        f"got handshake1 in {packet_number}, looking for the response"
                     )
                     while (
                         True

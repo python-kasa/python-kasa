@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from enum import IntEnum, StrEnum
+from enum import IntEnum
 from typing import Annotated, Literal
 
 from ...feature import Feature
@@ -38,6 +38,7 @@ class ErrorCode(IntEnum):
     MainBrushStuck = 3
     WheelBlocked = 4
     Trapped = 6
+    TrappedCliff = 7
     DustBinRemoved = 14
     UnableToMove = 15
     LidarBlocked = 16
@@ -55,13 +56,6 @@ class FanSpeed(IntEnum):
     Turbo = 3
     Max = 4
     Ultra = 5
-
-
-class CarpetCleanMode(StrEnum):
-    """Carpet clean mode."""
-
-    Normal = "normal"
-    Boost = "boost"
 
 
 class AreaUnit(IntEnum):
@@ -183,15 +177,14 @@ class Clean(SmartModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="carpet_clean_mode",
-                name="Carpet clean mode",
+                id="carpet_boost",
+                name="Carpet boost",
                 container=self,
-                attribute_getter="carpet_clean_mode",
-                attribute_setter="set_carpet_clean_mode",
+                attribute_getter="carpet_boost",
+                attribute_setter="set_carpet_boost",
                 icon="mdi:rug",
-                choices_getter=lambda: list(CarpetCleanMode.__members__),
                 category=Feature.Category.Config,
-                type=Feature.Type.Choice,
+                type=Feature.Type.Switch,
             )
         )
         self._add_feature(
@@ -379,22 +372,14 @@ class Clean(SmartModule):
             return Status.UnknownInternal
 
     @property
-    def carpet_clean_mode(self) -> Annotated[str, FeatureAttribute()]:
-        """Return carpet clean mode."""
-        return CarpetCleanMode(self.data["getCarpetClean"]["carpet_clean_prefer"]).name
+    def carpet_boost(self) -> bool:
+        """Return carpet boost mode."""
+        return self.data["getCarpetClean"]["carpet_clean_prefer"] == "boost"
 
-    async def set_carpet_clean_mode(
-        self, mode: str
-    ) -> Annotated[dict, FeatureAttribute()]:
+    async def set_carpet_boost(self, on: bool) -> dict:
         """Set carpet clean mode."""
-        name_to_value = {x.name: x.value for x in CarpetCleanMode}
-        if mode not in name_to_value:
-            raise ValueError(
-                "Invalid carpet clean mode %s, available %s", mode, name_to_value
-            )
-        return await self.call(
-            "setCarpetClean", {"carpet_clean_prefer": name_to_value[mode]}
-        )
+        mode = "boost" if on else "normal"
+        return await self.call("setCarpetClean", {"carpet_clean_prefer": mode})
 
     @property
     def area_unit(self) -> AreaUnit:

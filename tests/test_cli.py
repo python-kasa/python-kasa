@@ -653,8 +653,7 @@ async def test_light_preset(dev: Device, runner: CliRunner):
 
     if len(light_preset.preset_states_list) == 0:
         pytest.skip(
-            "Some fixtures do not have presets and"
-            " the api doesn'tsupport creating them"
+            "Some fixtures do not have presets and the api doesn'tsupport creating them"
         )
     # Start off with a known state
     first_name = light_preset.preset_list[1]
@@ -1178,6 +1177,63 @@ async def test_feature_set_child(mocker, runner):
 
     assert f"Targeting child device {child_id}"
     assert "Changing state from False to True" in res.output
+    assert res.exit_code == 0
+
+
+async def test_feature_set_unquoted(mocker, runner):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "ES20M(US)_1.0_1.0.11.json", "IOT"
+    )
+    range_setter = mocker.patch("kasa.iot.modules.motion.Motion._set_range_from_str")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "pir_range", "Far"],
+        catch_exceptions=False,
+    )
+
+    range_setter.assert_not_called()
+    assert "Error: Invalid value: " in res.output
+    assert res.exit_code != 0
+
+
+async def test_feature_set_badquoted(mocker, runner):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "ES20M(US)_1.0_1.0.11.json", "IOT"
+    )
+    range_setter = mocker.patch("kasa.iot.modules.motion.Motion._set_range_from_str")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "pir_range", "`Far"],
+        catch_exceptions=False,
+    )
+
+    range_setter.assert_not_called()
+    assert "Error: Invalid value: " in res.output
+    assert res.exit_code != 0
+
+
+async def test_feature_set_goodquoted(mocker, runner):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "ES20M(US)_1.0_1.0.11.json", "IOT"
+    )
+    range_setter = mocker.patch("kasa.iot.modules.motion.Motion._set_range_from_str")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "pir_range", "'Far'"],
+        catch_exceptions=False,
+    )
+
+    range_setter.assert_called()
+    assert "Error: Invalid value: " not in res.output
     assert res.exit_code == 0
 
 
