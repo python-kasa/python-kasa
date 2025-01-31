@@ -26,24 +26,21 @@ class Dimmer(IotModule):
     """Implements the dimmer config module."""
 
     THRESHOLD_ABS_MIN: Final[int] = 0
-    THRESHOLD_ABS_MAX: Final[int] = (
-        51  # Strange value, but verified against hardware (KS220).
-    )
+    # Strange value, but verified against hardware (KS220).
+    THRESHOLD_ABS_MAX: Final[int] = 51
     FADE_TIME_ABS_MIN: Final[timedelta] = timedelta(seconds=0)
-    FADE_TIME_ABS_MAX: Final[timedelta] = timedelta(seconds=10)  # Completely arbitrary.
+    # Arbitrary, but set low intending GENTLE FADE for longer fades.
+    FADE_TIME_ABS_MAX: Final[timedelta] = timedelta(seconds=10)
     GENTLE_TIME_ABS_MIN: Final[timedelta] = timedelta(seconds=0)
-    GENTLE_TIME_ABS_MAX: Final[timedelta] = timedelta(
-        seconds=120
-    )  # Completely arbitrary.
-    RAMP_RATE_ABS_MIN: Final[int] = 10  # Verified against KS220.
-    RAMP_RATE_ABS_MAX: Final[int] = 50  # Verified against KS220.
+    # Arbitrary, but reasonable default.
+    GENTLE_TIME_ABS_MAX: Final[timedelta] = timedelta(seconds=120)
+    # Verified against KS220.
+    RAMP_RATE_ABS_MIN: Final[int] = 10
+    # Verified against KS220.
+    RAMP_RATE_ABS_MAX: Final[int] = 50
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
-        # Only add features if the device supports the module
-        if "get_dimmer_parameters" not in self.data:
-            return
-
         self._add_feature(
             Feature(
                 device=self._device,
@@ -166,14 +163,13 @@ class Dimmer(IotModule):
         return self.config["minThreshold"]
 
     async def set_threshold_min(self, min: int) -> dict:
-        """
-        Set the minimum dimming level for this dimmer.
+        """Set the minimum dimming level for this dimmer.
 
         The value will depend on the luminaries connected to the dimmer.
 
         :param min: The minimum dimming level, in the range 0-51.
         """
-        if (min < self.THRESHOLD_ABS_MIN) or (min > self.THRESHOLD_ABS_MAX):
+        if min < self.THRESHOLD_ABS_MIN or min > self.THRESHOLD_ABS_MAX:
             raise KasaException(
                 "Minimum dimming threshold is outside the supported range: "
                 f"{self.THRESHOLD_ABS_MIN}-{self.THRESHOLD_ABS_MAX}"
@@ -186,14 +182,13 @@ class Dimmer(IotModule):
         return timedelta(milliseconds=cast(int, self.config["fadeOffTime"]))
 
     async def set_fade_off_time(self, time: int | timedelta) -> dict:
-        """
-        Set the duration of the fade off animation.
+        """Set the duration of the fade off animation.
 
         :param time: The animation duration, in ms.
         """
         if isinstance(time, int):
             time = timedelta(milliseconds=time)
-        if (time < self.FADE_TIME_ABS_MIN) or (time > self.FADE_TIME_ABS_MAX):
+        if time < self.FADE_TIME_ABS_MIN or time > self.FADE_TIME_ABS_MAX:
             raise KasaException(
                 "Fade time is outside the bounds of the supported range:"
                 f"{self.FADE_TIME_ABS_MIN}-{self.FADE_TIME_ABS_MAX}"
@@ -206,14 +201,13 @@ class Dimmer(IotModule):
         return timedelta(milliseconds=cast(int, self.config["fadeOnTime"]))
 
     async def set_fade_on_time(self, time: int | timedelta) -> dict:
-        """
-        Set the duration of the fade on animation.
+        """Set the duration of the fade on animation.
 
         :param time: The animation duration, in ms.
         """
         if isinstance(time, int):
             time = timedelta(milliseconds=time)
-        if (time < self.FADE_TIME_ABS_MIN) or (time > self.FADE_TIME_ABS_MAX):
+        if time < self.FADE_TIME_ABS_MIN or time > self.FADE_TIME_ABS_MAX:
             raise KasaException(
                 "Fade time is outside the bounds of the supported range:"
                 f"{self.FADE_TIME_ABS_MIN}-{self.FADE_TIME_ABS_MAX}"
@@ -226,14 +220,13 @@ class Dimmer(IotModule):
         return timedelta(milliseconds=cast(int, self.config["gentleOffTime"]))
 
     async def set_gentle_off_time(self, time: int | timedelta) -> dict:
-        """
-        Set the duration of the gentle fade off animation.
+        """Set the duration of the gentle fade off animation.
 
         :param time: The animation duration, in ms.
         """
         if isinstance(time, int):
             time = timedelta(milliseconds=time)
-        if (time < self.GENTLE_TIME_ABS_MIN) or (time > self.GENTLE_TIME_ABS_MAX):
+        if time < self.GENTLE_TIME_ABS_MIN or time > self.GENTLE_TIME_ABS_MAX:
             raise KasaException(
                 "Gentle off time is outside the bounds of the supported range: "
                 f"{self.GENTLE_TIME_ABS_MIN}-{self.GENTLE_TIME_ABS_MAX}."
@@ -246,14 +239,13 @@ class Dimmer(IotModule):
         return timedelta(milliseconds=cast(int, self.config["gentleOnTime"]))
 
     async def set_gentle_on_time(self, time: int | timedelta) -> dict:
-        """
-        Set the duration of the gentle fade on animation.
+        """Set the duration of the gentle fade on animation.
 
         :param time: The animation duration, in ms.
         """
         if isinstance(time, int):
             time = timedelta(milliseconds=time)
-        if (time < self.GENTLE_TIME_ABS_MIN) or (time > self.GENTLE_TIME_ABS_MAX):
+        if time < self.GENTLE_TIME_ABS_MIN or time > self.GENTLE_TIME_ABS_MAX:
             raise KasaException(
                 "Gentle off time is outside the bounds of the supported range: "
                 f"{self.GENTLE_TIME_ABS_MIN}-{self.GENTLE_TIME_ABS_MAX}."
@@ -266,12 +258,11 @@ class Dimmer(IotModule):
         return self.config["rampRate"]
 
     async def set_ramp_rate(self, rate: int) -> dict:
-        """
-        Set how quickly to ramp the dimming level when using the dimmer buttons.
+        """Set how quickly to ramp the dimming level when using the dimmer buttons.
 
         :param rate: The rate to increment the dimming level with each press.
         """
-        if (rate < self.RAMP_RATE_ABS_MIN) or (rate > self.RAMP_RATE_ABS_MAX):
+        if rate < self.RAMP_RATE_ABS_MIN or rate > self.RAMP_RATE_ABS_MAX:
             raise KasaException(
                 "Gentle off time is outside the bounds of the supported range:"
                 f"{self.RAMP_RATE_ABS_MIN}-{self.RAMP_RATE_ABS_MAX}"
