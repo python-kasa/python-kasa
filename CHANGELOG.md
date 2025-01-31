@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.10.1](https://github.com/python-kasa/python-kasa/tree/0.10.1) (2025-01-31)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.0...0.10.1)
+
+**Release summary:**
+
+Small patch release for bugfixes
+
+**Fixed bugs:**
+
+- Do not return empty string for custom light effect name [\#1491](https://github.com/python-kasa/python-kasa/pull/1491) (@sdb9696)
+- Add FeatureAttributes to smartcam Alarm [\#1489](https://github.com/python-kasa/python-kasa/pull/1489) (@sdb9696)
+
+**Project maintenance:**
+
+- Add module.device to the public api [\#1478](https://github.com/python-kasa/python-kasa/pull/1478) (@sdb9696)
+
 ## [0.10.0](https://github.com/python-kasa/python-kasa/tree/0.10.0) (2025-01-26)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.9.1...0.10.0)
@@ -31,11 +48,7 @@ Many thanks to testers and new contributors - @steveredden, @DawidPietrykowski, 
 
 - Expose more battery sensors for D230 [\#1451](https://github.com/python-kasa/python-kasa/issues/1451)
 - dumping HTTP POST Body for Tapo Vacuum \(RV30 Plus\) [\#937](https://github.com/python-kasa/python-kasa/issues/937)
-- Add common alarm interface [\#1479](https://github.com/python-kasa/python-kasa/pull/1479) (@sdb9696)
-- Add common childsetup interface [\#1470](https://github.com/python-kasa/python-kasa/pull/1470) (@sdb9696)
-- Add childsetup module to smartcam hubs [\#1469](https://github.com/python-kasa/python-kasa/pull/1469) (@sdb9696)
 - Add smartcam pet detection toggle module [\#1465](https://github.com/python-kasa/python-kasa/pull/1465) (@DawidPietrykowski)
-- Only log one warning per unknown clean error code and status [\#1462](https://github.com/python-kasa/python-kasa/pull/1462) (@rytilahti)
 - Add childlock module for vacuums [\#1461](https://github.com/python-kasa/python-kasa/pull/1461) (@rytilahti)
 - Add ultra mode \(fanspeed = 5\) for vacuums [\#1459](https://github.com/python-kasa/python-kasa/pull/1459) (@rytilahti)
 - Add setting to change carpet clean mode [\#1458](https://github.com/python-kasa/python-kasa/pull/1458) (@rytilahti)
@@ -46,49 +59,53 @@ Many thanks to testers and new contributors - @steveredden, @DawidPietrykowski, 
 - Add battery module to smartcam devices [\#1452](https://github.com/python-kasa/python-kasa/pull/1452) (@sdb9696)
 - Allow update of camera modules after setting values [\#1450](https://github.com/python-kasa/python-kasa/pull/1450) (@sdb9696)
 - Update hub children on first update and delay subsequent updates [\#1438](https://github.com/python-kasa/python-kasa/pull/1438) (@sdb9696)
-- Add support for doorbells and chimes [\#1435](https://github.com/python-kasa/python-kasa/pull/1435) (@steveredden)
 - Implement vacuum dustbin module \(dust\_bucket\) [\#1423](https://github.com/python-kasa/python-kasa/pull/1423) (@rytilahti)
-- Allow https for klaptransport [\#1415](https://github.com/python-kasa/python-kasa/pull/1415) (@rytilahti)
 - Add smartcam child device support for smartcam hubs [\#1413](https://github.com/python-kasa/python-kasa/pull/1413) (@sdb9696)
-- Add powerprotection module [\#1337](https://github.com/python-kasa/python-kasa/pull/1337) (@rytilahti)
 - Add vacuum speaker controls [\#1332](https://github.com/python-kasa/python-kasa/pull/1332) (@rytilahti)
 - Add consumables module for vacuums [\#1327](https://github.com/python-kasa/python-kasa/pull/1327) (@rytilahti)
 - Add ADC Value to PIR Enabled Switches [\#1263](https://github.com/python-kasa/python-kasa/pull/1263) (@ryenitcher)
 - Add support for cleaning records [\#945](https://github.com/python-kasa/python-kasa/pull/945) (@rytilahti)
 - Initial support for vacuums \(clean module\) [\#944](https://github.com/python-kasa/python-kasa/pull/944) (@rytilahti)
 - Add support for pairing devices with hubs [\#859](https://github.com/python-kasa/python-kasa/pull/859) (@rytilahti)
+- Add common alarm interface [\#1479](https://github.com/python-kasa/python-kasa/pull/1479) (@sdb9696)
+- Add common childsetup interface [\#1470](https://github.com/python-kasa/python-kasa/pull/1470) (@sdb9696)
+- Add childsetup module to smartcam hubs [\#1469](https://github.com/python-kasa/python-kasa/pull/1469) (@sdb9696)
+- Only log one warning per unknown clean error code and status [\#1462](https://github.com/python-kasa/python-kasa/pull/1462) (@rytilahti)
+- Add support for doorbells and chimes [\#1435](https://github.com/python-kasa/python-kasa/pull/1435) (@steveredden)
+- Allow https for klaptransport [\#1415](https://github.com/python-kasa/python-kasa/pull/1415) (@rytilahti)
+- Add powerprotection module [\#1337](https://github.com/python-kasa/python-kasa/pull/1337) (@rytilahti)
 
 **Fixed bugs:**
 
 - TP-Link HS300 Wi-Fi Power-Strip - "Parent On/Off" not functioning. [\#637](https://github.com/python-kasa/python-kasa/issues/637)
-- Convert carpet\_clean\_mode to carpet\_boost switch [\#1486](https://github.com/python-kasa/python-kasa/pull/1486) (@rytilahti)
-- Change category for empty dustbin feature from Primary to Config [\#1485](https://github.com/python-kasa/python-kasa/pull/1485) (@rytilahti)
 - Report 0 for instead of None for zero current and voltage [\#1483](https://github.com/python-kasa/python-kasa/pull/1483) (@ryenitcher)
-- Disable iot camera creation until more complete [\#1480](https://github.com/python-kasa/python-kasa/pull/1480) (@sdb9696)
 - ssltransport: use debug logger for sending requests [\#1443](https://github.com/python-kasa/python-kasa/pull/1443) (@rytilahti)
 - Fix discover cli command with host [\#1437](https://github.com/python-kasa/python-kasa/pull/1437) (@sdb9696)
 - Fallback to is\_low for batterysensor's battery\_low [\#1420](https://github.com/python-kasa/python-kasa/pull/1420) (@rytilahti)
+- Convert carpet\_clean\_mode to carpet\_boost switch [\#1486](https://github.com/python-kasa/python-kasa/pull/1486) (@rytilahti)
+- Change category for empty dustbin feature from Primary to Config [\#1485](https://github.com/python-kasa/python-kasa/pull/1485) (@rytilahti)
+- Disable iot camera creation until more complete [\#1480](https://github.com/python-kasa/python-kasa/pull/1480) (@sdb9696)
+- Add error code 7 for clean module [\#1474](https://github.com/python-kasa/python-kasa/pull/1474) (@rytilahti)
 - Fix iot strip turn on and off from parent [\#639](https://github.com/python-kasa/python-kasa/pull/639) (@Obbay2)
 
 **Added support for devices:**
 
-- Add D130\(US\) 1.0 1.1.9 fixture [\#1476](https://github.com/python-kasa/python-kasa/pull/1476) (@sdb9696)
-- Add D100C\(US\) 1.0 1.1.3 fixture [\#1475](https://github.com/python-kasa/python-kasa/pull/1475) (@sdb9696)
 - Add C220\(EU\) 1.0 1.2.2 camera fixture [\#1466](https://github.com/python-kasa/python-kasa/pull/1466) (@DawidPietrykowski)
 - Add D230\(EU\) 1.20 1.1.19 fixture [\#1448](https://github.com/python-kasa/python-kasa/pull/1448) (@sdb9696)
 - Add fixture for C720 camera [\#1433](https://github.com/python-kasa/python-kasa/pull/1433) (@steveredden)
+- Add D130\(US\) 1.0 1.1.9 fixture [\#1476](https://github.com/python-kasa/python-kasa/pull/1476) (@sdb9696)
+- Add D100C\(US\) 1.0 1.1.3 fixture [\#1475](https://github.com/python-kasa/python-kasa/pull/1475) (@sdb9696)
 
 **Project maintenance:**
 
-- Update ruff to 0.9 [\#1482](https://github.com/python-kasa/python-kasa/pull/1482) (@sdb9696)
-- Cancel in progress CI workflows after new pushes [\#1481](https://github.com/python-kasa/python-kasa/pull/1481) (@sdb9696)
-- Update test framework to support smartcam device discovery. [\#1477](https://github.com/python-kasa/python-kasa/pull/1477) (@sdb9696)
-- Add error code 7 for clean module [\#1474](https://github.com/python-kasa/python-kasa/pull/1474) (@rytilahti)
 - Enable CI workflow on PRs to feat/ fix/ and janitor/ [\#1471](https://github.com/python-kasa/python-kasa/pull/1471) (@sdb9696)
 - Add commit-hook to prettify JSON files [\#1455](https://github.com/python-kasa/python-kasa/pull/1455) (@rytilahti)
 - Add required sphinx.configuration [\#1446](https://github.com/python-kasa/python-kasa/pull/1446) (@rytilahti)
 - Add more redactors for smartcams [\#1439](https://github.com/python-kasa/python-kasa/pull/1439) (@sdb9696)
 - Add KS230\(US\) 2.0 1.0.11 IOT Fixture [\#1430](https://github.com/python-kasa/python-kasa/pull/1430) (@ZeliardM)
+- Update ruff to 0.9 [\#1482](https://github.com/python-kasa/python-kasa/pull/1482) (@sdb9696)
+- Cancel in progress CI workflows after new pushes [\#1481](https://github.com/python-kasa/python-kasa/pull/1481) (@sdb9696)
+- Update test framework to support smartcam device discovery. [\#1477](https://github.com/python-kasa/python-kasa/pull/1477) (@sdb9696)
 - Add tests for dump\_devinfo parent/child smartcam fixture generation [\#1428](https://github.com/python-kasa/python-kasa/pull/1428) (@sdb9696)
 - Raise errors on single smartcam child requests [\#1427](https://github.com/python-kasa/python-kasa/pull/1427) (@sdb9696)
 
