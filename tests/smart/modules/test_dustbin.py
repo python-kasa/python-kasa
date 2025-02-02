@@ -76,6 +76,7 @@ async def test_dustbin_mode_off(dev: SmartDevice, mocker: MockerFixture):
 
     await dev.update()
     assert dustbin.auto_collection is False
+    assert dustbin.mode is Mode.Off.name
 
 
 @dustbin
