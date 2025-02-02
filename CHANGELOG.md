@@ -1,12 +1,17 @@
 # Changelog
 
-## [0.10.1](https://github.com/python-kasa/python-kasa/tree/0.10.1) (2025-01-31)
+## [0.10.1](https://github.com/python-kasa/python-kasa/tree/0.10.1) (2025-02-02)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.0...0.10.1)
 
 **Release summary:**
 
 Small patch release for bugfixes
+
+**Implemented enhancements:**
+
+- dustbin\_mode: add 'off' mode for cleaner downstream impl [\#1488](https://github.com/python-kasa/python-kasa/pull/1488) (@rytilahti)
+- Add Dimmer Configuration Support [\#1484](https://github.com/python-kasa/python-kasa/pull/1484) (@ryenitcher)
 
 **Fixed bugs:**
 
