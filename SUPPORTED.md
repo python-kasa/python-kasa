@@ -93,6 +93,7 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 - **HS210**
   - Hardware: 1.0 (US) / Firmware: 1.5.8
   - Hardware: 2.0 (US) / Firmware: 1.1.5
+  - Hardware: 3.0 (US) / Firmware: 1.0.10
 - **HS220**
   - Hardware: 1.0 (US) / Firmware: 1.5.7
   - Hardware: 2.0 (US) / Firmware: 1.0.3
@@ -119,6 +120,7 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
   - Hardware: 1.0 (US) / Firmware: 1.1.0[^1]
 - **KS230**
   - Hardware: 1.0 (US) / Firmware: 1.0.14
+  - Hardware: 2.0 (US) / Firmware: 1.0.11
 - **KS240**
   - Hardware: 1.0 (US) / Firmware: 1.0.4[^1]
   - Hardware: 1.0 (US) / Firmware: 1.0.5[^1]
@@ -223,6 +225,10 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Wall Switches
 
+- **S210**
+  - Hardware: 1.0 (EU) / Firmware: 1.9.0
+- **S220**
+  - Hardware: 1.0 (EU) / Firmware: 1.9.0
 - **S500D**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
 - **S505**
@@ -266,18 +272,39 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **C100**
   - Hardware: 4.0 / Firmware: 1.3.14
 - **C210**
+  - Hardware: 2.0 / Firmware: 1.3.11
   - Hardware: 2.0 (EU) / Firmware: 1.4.2
   - Hardware: 2.0 (EU) / Firmware: 1.4.3
+- **C220**
+  - Hardware: 1.0 (EU) / Firmware: 1.2.2
 - **C225**
   - Hardware: 2.0 (US) / Firmware: 1.0.11
 - **C325WB**
   - Hardware: 1.0 (EU) / Firmware: 1.1.17
 - **C520WS**
   - Hardware: 1.0 (US) / Firmware: 1.2.8
+- **C720**
+  - Hardware: 1.0 (US) / Firmware: 1.2.3
 - **TC65**
   - Hardware: 1.0 / Firmware: 1.3.9
 - **TC70**
   - Hardware: 3.0 / Firmware: 1.3.11
+
+### Doorbells and chimes
+
+- **D100C**
+  - Hardware: 1.0 (US) / Firmware: 1.1.3
+- **D130**
+  - Hardware: 1.0 (US) / Firmware: 1.1.9
+- **D230**
+  - Hardware: 1.20 (EU) / Firmware: 1.1.19
+
+### Vacuums
+
+- **RV20 Max Plus**
+  - Hardware: 1.0 (EU) / Firmware: 1.0.7
+- **RV30 Max**
+  - Hardware: 1.0 (US) / Firmware: 1.2.0
 
 ### Hubs
 
@@ -287,6 +314,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.5.5
 - **H200**
   - Hardware: 1.0 (EU) / Firmware: 1.3.2
+  - Hardware: 1.0 (EU) / Firmware: 1.3.6
   - Hardware: 1.0 (US) / Firmware: 1.3.6
 
 ### Hub-Connected Devices

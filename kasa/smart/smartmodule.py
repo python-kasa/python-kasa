@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from ..exceptions import DeviceError, KasaException, SmartErrorCode
@@ -20,15 +21,16 @@ _R = TypeVar("_R")
 
 
 def allow_update_after(
-    func: Callable[Concatenate[_T, _P], Awaitable[dict]],
-) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, dict]]:
+    func: Callable[Concatenate[_T, _P], Coroutine[Any, Any, _R]],
+) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, _R]]:
     """Define a wrapper to set _last_update_time to None.
 
     This will ensure that a module is updated in the next update cycle after
     a value has been changed.
     """
 
-    async def _async_wrap(self: _T, *args: _P.args, **kwargs: _P.kwargs) -> dict:
+    @wraps(func)
+    async def _async_wrap(self: _T, *args: _P.args, **kwargs: _P.kwargs) -> _R:
         try:
             return await func(self, *args, **kwargs)
         finally:
@@ -40,6 +42,7 @@ def allow_update_after(
 def raise_if_update_error(func: Callable[[_T], _R]) -> Callable[[_T], _R]:
     """Define a wrapper to raise an error if the last module update was an error."""
 
+    @wraps(func)
     def _wrap(self: _T) -> _R:
         if err := self._last_update_error:
             raise err
@@ -62,6 +65,8 @@ class SmartModule(Module):
     REGISTERED_MODULES: dict[str, type[SmartModule]] = {}
 
     MINIMUM_UPDATE_INTERVAL_SECS = 0
+    MINIMUM_HUB_CHILD_UPDATE_INTERVAL_SECS = 60 * 60 * 24
+
     UPDATE_INTERVAL_AFTER_ERROR_SECS = 30
 
     DISABLE_AFTER_ERROR_COUNT = 10
@@ -107,15 +112,26 @@ class SmartModule(Module):
     @property
     def update_interval(self) -> int:
         """Time to wait between updates."""
-        if self._last_update_error is None:
-            return self.MINIMUM_UPDATE_INTERVAL_SECS
+        if self._last_update_error:
+            return self.UPDATE_INTERVAL_AFTER_ERROR_SECS * self._error_count
 
-        return self.UPDATE_INTERVAL_AFTER_ERROR_SECS * self._error_count
+        if self._device._is_hub_child:
+            return self.MINIMUM_HUB_CHILD_UPDATE_INTERVAL_SECS
+
+        return self.MINIMUM_UPDATE_INTERVAL_SECS
 
     @property
     def disabled(self) -> bool:
         """Return true if the module is disabled due to errors."""
         return self._error_count >= self.DISABLE_AFTER_ERROR_COUNT
+
+    def _should_update(self, update_time: float) -> bool:
+        """Return true if module should update based on delay parameters."""
+        return (
+            not self.update_interval
+            or not self._last_update_time
+            or (update_time - self._last_update_time) >= self.update_interval
+        )
 
     @classmethod
     def _module_name(cls) -> str:

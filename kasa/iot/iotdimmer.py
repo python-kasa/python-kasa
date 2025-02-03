@@ -11,7 +11,7 @@ from ..module import Module
 from ..protocols import BaseProtocol
 from .iotdevice import KasaException, requires_update
 from .iotplug import IotPlug
-from .modules import AmbientLight, Light, Motion
+from .modules import AmbientLight, Dimmer, Light, Motion
 
 
 class ButtonAction(Enum):
@@ -87,6 +87,7 @@ class IotDimmer(IotPlug):
         # TODO: need to be figured out what's the best approach to detect support
         self.add_module(Module.IotMotion, Motion(self, "smartlife.iot.PIR"))
         self.add_module(Module.IotAmbientLight, AmbientLight(self, "smartlife.iot.LAS"))
+        self.add_module(Module.IotDimmer, Dimmer(self, "smartlife.iot.dimmer"))
         self.add_module(Module.Light, Light(self, "light"))
 
     @property  # type: ignore
@@ -115,9 +116,7 @@ class IotDimmer(IotPlug):
             raise KasaException("Device is not dimmable.")
 
         if not isinstance(brightness, int):
-            raise ValueError(
-                "Brightness must be integer, " "not of %s.", type(brightness)
-            )
+            raise ValueError("Brightness must be integer, not of %s.", type(brightness))
 
         if not 0 <= brightness <= 100:
             raise ValueError(

@@ -31,7 +31,7 @@ from kasa.iot.iottimezone import (
 )
 from kasa.iot.modules import IotLightPreset
 from kasa.smart import SmartChildDevice, SmartDevice
-from kasa.smartcam import SmartCamDevice
+from kasa.smartcam import SmartCamChild, SmartCamDevice
 
 
 def _get_subclasses(of_class):
@@ -84,13 +84,24 @@ async def test_device_class_ctors(device_class_name_obj):
     credentials = Credentials("foo", "bar")
     config = DeviceConfig(host, port_override=port, credentials=credentials)
     klass = device_class_name_obj[1]
-    if issubclass(klass, SmartChildDevice):
+    if issubclass(klass, SmartChildDevice | SmartCamChild):
         parent = SmartDevice(host, config=config)
+        smartcam_required = {
+            "device_model": "foo",
+            "device_type": "SMART.TAPODOORBELL",
+            "alias": "Foo",
+            "sw_ver": "1.1",
+            "hw_ver": "1.0",
+            "mac": "1.2.3.4",
+            "hwId": "hw_id",
+            "oem_id": "oem_id",
+        }
         dev = klass(
             parent,
-            {"dummy": "info", "device_id": "dummy"},
+            {"dummy": "info", "device_id": "dummy", **smartcam_required},
             {
                 "component_list": [{"id": "device", "ver_code": 1}],
+                "app_component_list": [{"name": "device", "version": 1}],
             },
         )
     else:
@@ -108,13 +119,14 @@ async def test_device_class_repr(device_class_name_obj):
     credentials = Credentials("foo", "bar")
     config = DeviceConfig(host, port_override=port, credentials=credentials)
     klass = device_class_name_obj[1]
-    if issubclass(klass, SmartChildDevice):
+    if issubclass(klass, SmartChildDevice | SmartCamChild):
         parent = SmartDevice(host, config=config)
         dev = klass(
             parent,
             {"dummy": "info", "device_id": "dummy"},
             {
                 "component_list": [{"id": "device", "ver_code": 1}],
+                "app_component_list": [{"name": "device", "version": 1}],
             },
         )
     else:
@@ -131,12 +143,15 @@ async def test_device_class_repr(device_class_name_obj):
         IotCamera: DeviceType.Camera,
         SmartChildDevice: DeviceType.Unknown,
         SmartDevice: DeviceType.Unknown,
-        SmartCamDevice: DeviceType.Camera,
+        SmartCamDevice: DeviceType.Unknown,
+        SmartCamChild: DeviceType.Unknown,
     }
     type_ = CLASS_TO_DEFAULT_TYPE[klass]
     child_repr = "<DeviceType.Unknown(child) of <DeviceType.Unknown at 127.0.0.2 - update() needed>>"
     not_child_repr = f"<{type_} at 127.0.0.2 - update() needed>"
-    expected_repr = child_repr if klass is SmartChildDevice else not_child_repr
+    expected_repr = (
+        child_repr if klass in {SmartChildDevice, SmartCamChild} else not_child_repr
+    )
     assert repr(dev) == expected_repr
 
 

@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from ...feature import Feature
+from ...interfaces import Alarm as AlarmInterface
+from ...module import FeatureAttribute
+from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
 DURATION_MIN = 0
@@ -12,11 +17,8 @@ VOLUME_MIN = 0
 VOLUME_MAX = 10
 
 
-class Alarm(SmartCamModule):
+class Alarm(SmartCamModule, AlarmInterface):
     """Implementation of alarm module."""
-
-    # Needs a different name to avoid clashing with SmartAlarm
-    NAME = "SmartCamAlarm"
 
     REQUIRED_COMPONENT = "siren"
     QUERY_GETTER_NAME = "getSirenStatus"
@@ -106,20 +108,18 @@ class Alarm(SmartCamModule):
         )
 
     @property
-    def alarm_sound(self) -> str:
+    def alarm_sound(self) -> Annotated[str, FeatureAttribute()]:
         """Return current alarm sound."""
         return self.data["getSirenConfig"]["siren_type"]
 
-    async def set_alarm_sound(self, sound: str) -> dict:
+    @allow_update_after
+    async def set_alarm_sound(self, sound: str) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm sound.
 
         See *alarm_sounds* for list of available sounds.
         """
-        if sound not in self.alarm_sounds:
-            raise ValueError(
-                f"sound must be one of {', '.join(self.alarm_sounds)}: {sound}"
-            )
-        return await self.call("setSirenConfig", {"siren": {"siren_type": sound}})
+        config = self._validate_and_get_config(sound=sound)
+        return await self.call("setSirenConfig", {"siren": config})
 
     @property
     def alarm_sounds(self) -> list[str]:
@@ -127,40 +127,90 @@ class Alarm(SmartCamModule):
         return self.data["getSirenTypeList"]["siren_type_list"]
 
     @property
-    def alarm_volume(self) -> int:
+    def alarm_volume(self) -> Annotated[int, FeatureAttribute()]:
         """Return alarm volume.
 
         Unlike duration the device expects/returns a string for volume.
         """
         return int(self.data["getSirenConfig"]["volume"])
 
-    async def set_alarm_volume(self, volume: int) -> dict:
+    @allow_update_after
+    async def set_alarm_volume(
+        self, volume: int
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm volume."""
-        if volume < VOLUME_MIN or volume > VOLUME_MAX:
-            raise ValueError(f"volume must be between {VOLUME_MIN} and {VOLUME_MAX}")
-        return await self.call("setSirenConfig", {"siren": {"volume": str(volume)}})
+        config = self._validate_and_get_config(volume=volume)
+        return await self.call("setSirenConfig", {"siren": config})
 
     @property
-    def alarm_duration(self) -> int:
+    def alarm_duration(self) -> Annotated[int, FeatureAttribute()]:
         """Return alarm duration."""
         return self.data["getSirenConfig"]["duration"]
 
-    async def set_alarm_duration(self, duration: int) -> dict:
+    @allow_update_after
+    async def set_alarm_duration(
+        self, duration: int
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm volume."""
-        if duration < DURATION_MIN or duration > DURATION_MAX:
-            msg = f"duration must be between {DURATION_MIN} and {DURATION_MAX}"
-            raise ValueError(msg)
-        return await self.call("setSirenConfig", {"siren": {"duration": duration}})
+        config = self._validate_and_get_config(duration=duration)
+        return await self.call("setSirenConfig", {"siren": config})
 
     @property
     def active(self) -> bool:
         """Return true if alarm is active."""
         return self.data["getSirenStatus"]["status"] != "off"
 
-    async def play(self) -> dict:
-        """Play alarm."""
+    async def play(
+        self,
+        *,
+        duration: int | None = None,
+        volume: int | None = None,
+        sound: str | None = None,
+    ) -> dict:
+        """Play alarm.
+
+        The optional *duration*, *volume*, and *sound* to override the device settings.
+        *duration* is in seconds.
+        See *alarm_sounds* for the list of sounds available for the device.
+        """
+        if config := self._validate_and_get_config(
+            duration=duration, volume=volume, sound=sound
+        ):
+            await self.call("setSirenConfig", {"siren": config})
+
         return await self.call("setSirenStatus", {"siren": {"status": "on"}})
 
     async def stop(self) -> dict:
         """Stop alarm."""
         return await self.call("setSirenStatus", {"siren": {"status": "off"}})
+
+    def _validate_and_get_config(
+        self,
+        *,
+        duration: int | None = None,
+        volume: int | None = None,
+        sound: str | None = None,
+    ) -> dict:
+        if sound and sound not in self.alarm_sounds:
+            raise ValueError(
+                f"sound must be one of {', '.join(self.alarm_sounds)}: {sound}"
+            )
+
+        if duration is not None and (
+            duration < DURATION_MIN or duration > DURATION_MAX
+        ):
+            msg = f"duration must be between {DURATION_MIN} and {DURATION_MAX}"
+            raise ValueError(msg)
+
+        if volume is not None and (volume < VOLUME_MIN or volume > VOLUME_MAX):
+            raise ValueError(f"volume must be between {VOLUME_MIN} and {VOLUME_MAX}")
+
+        config: dict[str, str | int] = {}
+        if sound:
+            config["siren_type"] = sound
+        if duration is not None:
+            config["duration"] = duration
+        if volume is not None:
+            config["volume"] = str(volume)
+
+        return config

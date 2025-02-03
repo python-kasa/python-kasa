@@ -66,7 +66,6 @@ class LazyGroup(click.Group):
         # check the result to make debugging easier
         if not isinstance(cmd_object, click.BaseCommand):
             raise ValueError(
-                f"Lazy loading of {cmd_name} failed by returning "
-                "a non-command object"
+                f"Lazy loading of {cmd_name} failed by returning a non-command object"
             )
         return cmd_object

@@ -94,6 +94,8 @@ class SslTransport(BaseTransport):
     @property
     def default_port(self) -> int:
         """Default port for the transport."""
+        if port := self._config.connection_type.http_port:
+            return port
         return self.DEFAULT_PORT
 
     @property
@@ -215,7 +217,7 @@ class SslTransport(BaseTransport):
 
     async def send(self, request: str) -> dict[str, Any]:
         """Send the request."""
-        _LOGGER.info("Going to send %s", request)
+        _LOGGER.debug("Going to send %s", request)
         if self._state is not TransportState.ESTABLISHED or self._session_expired():
             _LOGGER.debug("Transport not established or session expired, logging in")
             await self.perform_login()

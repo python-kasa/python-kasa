@@ -24,6 +24,7 @@ class SmartChildDevice(SmartDevice):
 
     CHILD_DEVICE_TYPE_MAP = {
         "plug.powerstrip.sub-plug": DeviceType.Plug,
+        "subg.plugswitch.switch": DeviceType.WallSwitch,
         "subg.trigger.contact-sensor": DeviceType.Sensor,
         "subg.trigger.temp-hmdt-sensor": DeviceType.Sensor,
         "subg.trigger.water-leak-sensor": DeviceType.Sensor,
@@ -85,17 +86,33 @@ class SmartChildDevice(SmartDevice):
         module_queries: list[SmartModule] = []
         req: dict[str, Any] = {}
         for module in self.modules.values():
-            if module.disabled is False and (mod_query := module.query()):
+            if (
+                module.disabled is False
+                and (mod_query := module.query())
+                and module._should_update(now)
+            ):
                 module_queries.append(module)
                 req.update(mod_query)
         if req:
-            self._last_update = await self.protocol.query(req)
+            first_update = self._last_update != {}
+            try:
+                resp = await self.protocol.query(req)
+            except Exception as ex:
+                resp = await self._handle_modular_update_error(
+                    ex, first_update, ", ".join(mod.name for mod in module_queries), req
+                )
+            self._last_update = resp
 
         for module in self.modules.values():
             await self._handle_module_post_update(
                 module, now, had_query=module in module_queries
             )
         self._last_update_time = now
+
+        # We can first initialize the features after the first update.
+        # We make here an assumption that every device has at least a single feature.
+        if not self._features:
+            await self._initialize_features()
 
     @classmethod
     async def create(

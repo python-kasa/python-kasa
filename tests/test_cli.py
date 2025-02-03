@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from datetime import datetime
 from unittest.mock import ANY, PropertyMock, patch
@@ -60,15 +59,6 @@ from .conftest import (
 # The cli tests should be testing the cli logic rather than a physical device
 # so mark the whole file for skipping with real devices.
 pytestmark = [pytest.mark.requires_dummy]
-
-
-@pytest.fixture
-def runner():
-    """Runner fixture that unsets the KASA_ environment variables for tests."""
-    KASA_VARS = {k: None for k, v in os.environ.items() if k.startswith("KASA_")}
-    runner = CliRunner(env=KASA_VARS)
-
-    return runner
 
 
 async def test_help(runner):
@@ -277,7 +267,11 @@ async def test_raw_command(dev, mocker, runner):
     from kasa.smart import SmartDevice
 
     if isinstance(dev, SmartCamDevice):
-        params = ["na", "getDeviceInfo"]
+        params = [
+            "na",
+            "getDeviceInfo",
+            '{"device_info": {"name": ["basic_info", "info"]}}',
+        ]
     elif isinstance(dev, SmartDevice):
         params = ["na", "get_device_info"]
     else:
@@ -659,8 +653,7 @@ async def test_light_preset(dev: Device, runner: CliRunner):
 
     if len(light_preset.preset_states_list) == 0:
         pytest.skip(
-            "Some fixtures do not have presets and"
-            " the api doesn'tsupport creating them"
+            "Some fixtures do not have presets and the api doesn'tsupport creating them"
         )
     # Start off with a known state
     first_name = light_preset.preset_list[1]
@@ -1187,6 +1180,63 @@ async def test_feature_set_child(mocker, runner):
     assert res.exit_code == 0
 
 
+async def test_feature_set_unquoted(mocker, runner):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "ES20M(US)_1.0_1.0.11.json", "IOT"
+    )
+    range_setter = mocker.patch("kasa.iot.modules.motion.Motion._set_range_from_str")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "pir_range", "Far"],
+        catch_exceptions=False,
+    )
+
+    range_setter.assert_not_called()
+    assert "Error: Invalid value: " in res.output
+    assert res.exit_code != 0
+
+
+async def test_feature_set_badquoted(mocker, runner):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "ES20M(US)_1.0_1.0.11.json", "IOT"
+    )
+    range_setter = mocker.patch("kasa.iot.modules.motion.Motion._set_range_from_str")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "pir_range", "`Far"],
+        catch_exceptions=False,
+    )
+
+    range_setter.assert_not_called()
+    assert "Error: Invalid value: " in res.output
+    assert res.exit_code != 0
+
+
+async def test_feature_set_goodquoted(mocker, runner):
+    """Test feature command's set value."""
+    dummy_device = await get_device_for_fixture_protocol(
+        "ES20M(US)_1.0_1.0.11.json", "IOT"
+    )
+    range_setter = mocker.patch("kasa.iot.modules.motion.Motion._set_range_from_str")
+    mocker.patch("kasa.discover.Discover.discover_single", return_value=dummy_device)
+
+    res = await runner.invoke(
+        cli,
+        ["--host", "127.0.0.123", "--debug", "feature", "pir_range", "'Far'"],
+        catch_exceptions=False,
+    )
+
+    range_setter.assert_called()
+    assert "Error: Invalid value: " not in res.output
+    assert res.exit_code == 0
+
+
 async def test_cli_child_commands(
     dev: Device, runner: CliRunner, mocker: MockerFixture
 ):
@@ -1318,11 +1368,11 @@ async def test_discover_config(dev: Device, mocker, runner):
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ failed",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ failed",
         res.output.replace("\n", ""),
     )
     assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ succeeded",
+        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ succeeded",
         res.output.replace("\n", ""),
     )
 

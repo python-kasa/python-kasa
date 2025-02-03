@@ -20,7 +20,7 @@ None
 {'host': '127.0.0.3', 'timeout': 5, 'credentials': {'username': 'user@example.com', \
 'password': 'great_password'}, 'connection_type'\
 : {'device_family': 'SMART.TAPOBULB', 'encryption_type': 'KLAP', 'login_version': 2, \
-'https': False}, 'uses_http': True}
+'https': False, 'http_port': 80}}
 
 >>> later_device = await Device.connect(config=Device.Config.from_dict(config_dict))
 >>> print(later_device.alias)  # Alias is available as connect() calls update()
@@ -79,6 +79,8 @@ class DeviceFamily(Enum):
     SmartKasaHub = "SMART.KASAHUB"
     SmartIpCamera = "SMART.IPCAMERA"
     SmartTapoRobovac = "SMART.TAPOROBOVAC"
+    SmartTapoChime = "SMART.TAPOCHIME"
+    SmartTapoDoorbell = "SMART.TAPODOORBELL"
 
 
 class _DeviceConfigBaseMixin(DataClassJSONMixin):
@@ -98,13 +100,16 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     encryption_type: DeviceEncryptionType
     login_version: int | None = None
     https: bool = False
+    http_port: int | None = None
 
     @staticmethod
     def from_values(
         device_family: str,
         encryption_type: str,
+        *,
         login_version: int | None = None,
         https: bool | None = None,
+        http_port: int | None = None,
     ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:
@@ -115,6 +120,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
                 DeviceEncryptionType(encryption_type),
                 login_version,
                 https,
+                http_port=http_port,
             )
         except (ValueError, TypeError) as ex:
             raise KasaException(
@@ -148,9 +154,12 @@ class DeviceConfig(_DeviceConfigBaseMixin):
             DeviceFamily.IotSmartPlugSwitch, DeviceEncryptionType.Xor
         )
     )
-    #: True if the device uses http.  Consumers should retrieve rather than set this
-    #: in order to determine whether they should pass a custom http client if desired.
-    uses_http: bool = False
+
+    @property
+    def uses_http(self) -> bool:
+        """True if the device uses http."""
+        ctype = self.connection_type
+        return ctype.encryption_type is not DeviceEncryptionType.Xor or ctype.https
 
     #: Set a custom http_client for the device to use.
     http_client: ClientSession | None = field(

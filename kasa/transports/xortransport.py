@@ -23,6 +23,7 @@ from collections.abc import Generator
 
 from kasa.deviceconfig import DeviceConfig
 from kasa.exceptions import KasaException, _RetryableError
+from kasa.exceptions import TimeoutError as KasaTimeoutError
 from kasa.json import loads as json_loads
 
 from .basetransport import BaseTransport
@@ -126,6 +127,12 @@ class XorTransport(BaseTransport):
         # This is especially import when there are multiple tplink devices being polled.
         try:
             await self._connect(self._timeout)
+        except TimeoutError as ex:
+            await self.reset()
+            raise KasaTimeoutError(
+                f"Timeout after {self._timeout} seconds connecting to the device:"
+                f" {self._host}:{self._port}: {ex}"
+            ) from ex
         except ConnectionRefusedError as ex:
             await self.reset()
             raise KasaException(
@@ -135,18 +142,16 @@ class XorTransport(BaseTransport):
             await self.reset()
             if ex.errno in _NO_RETRY_ERRORS:
                 raise KasaException(
-                    f"Unable to connect to the device:"
-                    f" {self._host}:{self._port}: {ex}"
+                    f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
                 ) from ex
             else:
                 raise _RetryableError(
-                    f"Unable to connect to the device:"
-                    f" {self._host}:{self._port}: {ex}"
+                    f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
                 ) from ex
         except Exception as ex:
             await self.reset()
             raise _RetryableError(
-                f"Unable to connect to the device:" f" {self._host}:{self._port}: {ex}"
+                f"Unable to connect to the device: {self._host}:{self._port}: {ex}"
             ) from ex
         except BaseException:
             # Likely something cancelled the task so we need to close the connection
@@ -159,6 +164,12 @@ class XorTransport(BaseTransport):
             assert self.writer is not None  # noqa: S101
             async with asyncio_timeout(self._timeout):
                 return await self._execute_send(request)
+        except TimeoutError as ex:
+            await self.reset()
+            raise KasaTimeoutError(
+                f"Timeout after {self._timeout} seconds sending request to the device"
+                f" {self._host}:{self._port}: {ex}"
+            ) from ex
         except Exception as ex:
             await self.reset()
             raise _RetryableError(

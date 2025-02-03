@@ -36,6 +36,18 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _mask_area_list(area_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def mask_area(area: dict[str, Any]) -> dict[str, Any]:
+        result = {**area}
+        # Will leave empty names as blank
+        if area.get("name"):
+            result["name"] = "I01BU0tFRF9OQU1FIw=="  # #MASKED_NAME#
+        return result
+
+    return [mask_area(area) for area in area_list]
+
+
 REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "latitude": lambda x: 0,
     "longitude": lambda x: 0,
@@ -61,14 +73,20 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
     # smartcam
     "dev_id": lambda x: "REDACTED_" + x[9::],
+    "ext_addr": lambda x: "REDACTED_" + x[9::],
     "device_name": lambda x: "#MASKED_NAME#" if x else "",
     "device_alias": lambda x: "#MASKED_NAME#" if x else "",
+    "alias": lambda x: "#MASKED_NAME#" if x else "",  # child info on parent uses alias
     "local_ip": lambda x: x,  # don't redact but keep listed here for dump_devinfo
     # robovac
     "board_sn": lambda _: "000000000000",
     "custom_sn": lambda _: "000000000000",
     "location": lambda x: "#MASKED_NAME#" if x else "",
     "map_data": lambda x: "#SCRUBBED_MAPDATA#" if x else "",
+    "map_name": lambda x: "I01BU0tFRF9OQU1FIw==",  # #MASKED_NAME#
+    "area_list": _mask_area_list,
+    # unknown robovac binary blob in get_device_info
+    "cd": lambda x: "I01BU0tFRF9CSU5BUlkj",  # #MASKED_BINARY#
 }
 
 # Queries that are known not to work properly when sent as a
@@ -180,7 +198,9 @@ class SmartProtocol(BaseProtocol):
         # make mypy happy, this should never be reached..
         raise KasaException("Query reached somehow to unreachable")
 
-    async def _execute_multiple_query(self, requests: dict, retry_count: int) -> dict:
+    async def _execute_multiple_query(
+        self, requests: dict, retry_count: int, iterate_list_pages: bool
+    ) -> dict:
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
         multi_result: dict[str, Any] = {}
         smart_method = "multipleRequest"
@@ -216,7 +236,7 @@ class SmartProtocol(BaseProtocol):
 
             smart_params = {"requests": requests_step}
             smart_request = self.get_smart_request(smart_method, smart_params)
-            batch_name = f"multi-request-batch-{batch_num+1}-of-{int(end/step)+1}"
+            batch_name = f"multi-request-batch-{batch_num + 1}-of-{int(end / step) + 1}"
             if debug_enabled:
                 _LOGGER.debug(
                     "%s %s >> %s",
@@ -275,9 +295,11 @@ class SmartProtocol(BaseProtocol):
                     response, method, raise_on_error=raise_on_error
                 )
                 result = response.get("result", None)
-                await self._handle_response_lists(
-                    result, method, retry_count=retry_count
-                )
+                request_params = rp if (rp := requests.get(method)) else None
+                if iterate_list_pages and result:
+                    await self._handle_response_lists(
+                        result, method, request_params, retry_count=retry_count
+                    )
                 multi_result[method] = result
 
         # Multi requests don't continue after errors so requery any missing.
@@ -303,7 +325,9 @@ class SmartProtocol(BaseProtocol):
                 smart_method = next(iter(request))
                 smart_params = request[smart_method]
             else:
-                return await self._execute_multiple_query(request, retry_count)
+                return await self._execute_multiple_query(
+                    request, retry_count, iterate_list_pages
+                )
         else:
             smart_method = request
             smart_params = None
@@ -330,12 +354,21 @@ class SmartProtocol(BaseProtocol):
         result = response_data.get("result")
         if iterate_list_pages and result:
             await self._handle_response_lists(
-                result, smart_method, retry_count=retry_count
+                result, smart_method, smart_params, retry_count=retry_count
             )
         return {smart_method: result}
 
+    def _get_list_request(
+        self, method: str, params: dict | None, start_index: int
+    ) -> dict:
+        return {method: {"start_index": start_index}}
+
     async def _handle_response_lists(
-        self, response_result: dict[str, Any], method: str, retry_count: int
+        self,
+        response_result: dict[str, Any],
+        method: str,
+        params: dict | None,
+        retry_count: int,
     ) -> None:
         if (
             response_result is None
@@ -355,8 +388,9 @@ class SmartProtocol(BaseProtocol):
             )
         )
         while (list_length := len(response_result[response_list_name])) < list_sum:
+            request = self._get_list_request(method, params, list_length)
             response = await self._execute_query(
-                {method: {"start_index": list_length}},
+                request,
                 retry_count=retry_count,
                 iterate_list_pages=False,
             )

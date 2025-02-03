@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from kasa import Device, Feature, KasaException
+from kasa.iot import IotStrip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ def test_feature_value_container(mocker, dummy_feature: Feature):
         def test_prop(self):
             return "dummy"
 
-    dummy_feature.container = DummyContainer()
+    dummy_feature.container = DummyContainer()  # type: ignore[assignment]
     dummy_feature.attribute_getter = "test_prop"
 
     mock_dev_prop = mocker.patch.object(
@@ -140,7 +141,10 @@ async def test_feature_choice_list(dummy_feature, caplog, mocker: MockerFixture)
     mock_setter.assert_called_with("first")
     mock_setter.reset_mock()
 
-    with pytest.raises(ValueError, match="Unexpected value for dummy_feature: invalid"):  # noqa: PT012
+    with pytest.raises(  # noqa: PT012
+        ValueError,
+        match="Unexpected value for dummy_feature: 'invalid' (?: - allowed: .*)?",
+    ):
         await dummy_feature.set_value("invalid")
         assert "Unexpected value" in caplog.text
 
@@ -168,7 +172,10 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         if feat.attribute_setter is None:
             return
 
-        expecting_call = feat.id not in internal_setters
+        # IotStrip makes calls via it's children
+        expecting_call = feat.id not in internal_setters and not isinstance(
+            dev, IotStrip
+        )
 
         if feat.type == Feature.Type.Number:
             await feat.set_value(feat.minimum_value)
@@ -191,7 +198,12 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         exceptions = []
         for feat in dev.features.values():
             try:
-                with patch.object(feat.device.protocol, "query") as query:
+                patch_dev = feat.container._device if feat.container else feat.device
+                with (
+                    patch.object(patch_dev.protocol, "query", name=feat.id) as query,
+                    # patch update in case feature setter does an update
+                    patch.object(patch_dev, "update"),
+                ):
                     await _test_feature(feat, query)
             # we allow our own exceptions to avoid mocking valid responses
             except KasaException:

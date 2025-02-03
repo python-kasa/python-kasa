@@ -10,7 +10,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from functools import singledispatch, update_wrapper, wraps
 from gettext import gettext
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, NoReturn
 
 import asyncclick as click
 
@@ -57,7 +57,7 @@ def echo(*args, **kwargs) -> None:
         _echo(*args, **kwargs)
 
 
-def error(msg: str) -> None:
+def error(msg: str) -> NoReturn:
     """Print an error and exit."""
     echo(f"[bold red]{msg}[/bold red]")
     sys.exit(1)
@@ -67,6 +67,16 @@ def json_formatter_cb(result: Any, **kwargs) -> None:
     """Format and output the result as JSON, if requested."""
     if not kwargs.get("json"):
         return
+
+    # Calling the discover command directly always returns a DeviceDict so if host
+    # was specified just format the device json
+    if (
+        (host := kwargs.get("host"))
+        and isinstance(result, dict)
+        and (dev := result.get(host))
+        and isinstance(dev, Device)
+    ):
+        result = dev
 
     @singledispatch
     def to_serializable(val):
@@ -83,6 +93,25 @@ def json_formatter_cb(result: Any, **kwargs) -> None:
 
     json_content = json.dumps(result, indent=4, default=to_serializable)
     print(json_content)
+
+
+async def invoke_subcommand(
+    command: click.BaseCommand,
+    ctx: click.Context,
+    args: list[str] | None = None,
+    **extra: Any,
+) -> Any:
+    """Invoke a click subcommand.
+
+    Calling ctx.Invoke() treats the command like a simple callback and doesn't
+    process any result_callbacks so we use this pattern from the click docs
+    https://click.palletsprojects.com/en/stable/exceptions/#what-if-i-don-t-want-that.
+    """
+    if args is None:
+        args = []
+    sub_ctx = await command.make_context(command.name, args, parent=ctx, **extra)
+    async with sub_ctx:
+        return await command.invoke(sub_ctx)
 
 
 def pass_dev_or_child(wrapped_function: Callable) -> Callable:

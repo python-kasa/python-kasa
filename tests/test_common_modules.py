@@ -1,10 +1,16 @@
+import importlib
+import inspect
+import pkgutil
+import sys
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pytest
 from pytest_mock import MockerFixture
 
+import kasa.interfaces
 from kasa import Device, LightState, Module, ThermostatState
+from kasa.module import _get_feature_attribute
 
 from .device_fixtures import (
     bulb_iot,
@@ -62,6 +68,57 @@ temp_control_smart = parametrize(
     component_filter="temp_control",
     protocol_filter={"SMART.CHILD"},
 )
+
+
+interfaces = pytest.mark.parametrize("interface", kasa.interfaces.__all__)
+
+
+def _get_subclasses(of_class, package):
+    """Get all the subclasses of a given class."""
+    subclasses = set()
+    # iter_modules returns ModuleInfo: (module_finder, name, ispkg)
+    for _, modname, ispkg in pkgutil.iter_modules(package.__path__):
+        importlib.import_module("." + modname, package=package.__name__)
+        module = sys.modules[package.__name__ + "." + modname]
+        for _, obj in inspect.getmembers(module):
+            if (
+                inspect.isclass(obj)
+                and issubclass(obj, of_class)
+                and obj is not of_class
+            ):
+                subclasses.add(obj)
+
+        if ispkg:
+            res = _get_subclasses(of_class, module)
+            subclasses.update(res)
+
+    return subclasses
+
+
+@interfaces
+def test_feature_attributes(interface):
+    """Test that all common derived classes define the FeatureAttributes."""
+    klass = getattr(kasa.interfaces, interface)
+
+    package = sys.modules["kasa"]
+    sub_classes = _get_subclasses(klass, package)
+
+    feat_attributes: set[str] = set()
+    attribute_names = [
+        k
+        for k, v in vars(klass).items()
+        if (callable(v) and not inspect.isclass(v)) or isinstance(v, property)
+    ]
+    for attr_name in attribute_names:
+        attribute = getattr(klass, attr_name)
+        if _get_feature_attribute(attribute):
+            feat_attributes.add(attr_name)
+
+    for sub_class in sub_classes:
+        for attr_name in feat_attributes:
+            attribute = getattr(sub_class, attr_name)
+            fa = _get_feature_attribute(attribute)
+            assert fa, f"{attr_name} is not a defined module feature for {sub_class}"
 
 
 @led
@@ -176,7 +233,7 @@ async def test_light_brightness(dev: Device):
     assert light
 
     # Test getting the value
-    feature = light._device.features["brightness"]
+    feature = light.device.features["brightness"]
     assert feature.minimum_value == 0
     assert feature.maximum_value == 100
 
@@ -205,7 +262,7 @@ async def test_light_color_temp(dev: Device):
         )
 
     # Test getting the value
-    feature = light._device.features["color_temperature"]
+    feature = light.device.features["color_temperature"]
     assert isinstance(feature.minimum_value, int)
     assert isinstance(feature.maximum_value, int)
 
@@ -237,7 +294,7 @@ async def test_light_set_state(dev: Device):
     light = next(get_parent_and_child_modules(dev, Module.Light))
     assert light
     # For fixtures that have a light effect active switch off
-    if light_effect := light._device.modules.get(Module.LightEffect):
+    if light_effect := light.device.modules.get(Module.LightEffect):
         await light_effect.set_effect(light_effect.LIGHT_EFFECTS_OFF)
 
     await light.set_state(LightState(light_on=False))
@@ -264,7 +321,7 @@ async def test_light_preset_module(dev: Device, mocker: MockerFixture):
     assert preset_mod
     light_mod = next(get_parent_and_child_modules(dev, Module.Light))
     assert light_mod
-    feat = preset_mod._device.features["light_preset"]
+    feat = preset_mod.device.features["light_preset"]
 
     preset_list = preset_mod.preset_list
     assert "Not set" in preset_list

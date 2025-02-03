@@ -1,16 +1,26 @@
 """Module for dump_devinfo tests."""
 
+import copy
+
 import pytest
 
-from devtools.dump_devinfo import get_legacy_fixture, get_smart_fixtures
+from devtools.dump_devinfo import (
+    _wrap_redactors,
+    get_legacy_fixture,
+    get_smart_fixtures,
+)
 from kasa.iot import IotDevice
 from kasa.protocols import IotProtocol
+from kasa.protocols.protocol import redact_data
+from kasa.protocols.smartprotocol import REDACTORS as SMART_REDACTORS
 from kasa.smart import SmartDevice
 from kasa.smartcam import SmartCamDevice
+from kasa.smartcam.smartcamchild import CHILD_INFO_FROM_PARENT
 
 from .conftest import (
     FixtureInfo,
     get_device_for_fixture,
+    get_fixture_info,
     parametrize,
 )
 
@@ -64,21 +74,65 @@ async def test_smart_fixtures(fixture_info: FixtureInfo):
     assert fixture_info.data == fixture_result.data
 
 
+def _normalize_child_device_ids(info: dict):
+    """Scrubbed child device ids in hubs may not match ids in child fixtures.
+
+    Different hub fixtures could create the same child fixture so we scrub
+    them again for the purpose of the test.
+    """
+    if dev_info := info.get("get_device_info"):
+        dev_info["device_id"] = "SCRUBBED"
+    elif (
+        dev_info := info.get("getDeviceInfo", {})
+        .get("device_info", {})
+        .get("basic_info")
+    ):
+        dev_info["dev_id"] = "SCRUBBED"
+
+
 @smartcam_fixtures
 async def test_smartcam_fixtures(fixture_info: FixtureInfo):
     """Test that smartcam fixtures are created the same."""
     dev = await get_device_for_fixture(fixture_info, verbatim=True)
     assert isinstance(dev, SmartCamDevice)
-    if dev.children:
-        pytest.skip("Test not currently implemented for devices with children.")
-    fixtures = await get_smart_fixtures(
+
+    created_fixtures = await get_smart_fixtures(
         dev.protocol,
         discovery_info=fixture_info.data.get("discovery_result"),
         batch_size=5,
     )
-    fixture_result = fixtures[0]
+    fixture_result = created_fixtures.pop(0)
 
     assert fixture_info.data == fixture_result.data
+
+    for created_child_fixture in created_fixtures:
+        child_fixture_info = get_fixture_info(
+            created_child_fixture.filename + ".json",
+            created_child_fixture.protocol_suffix,
+        )
+
+        assert child_fixture_info
+
+        _normalize_child_device_ids(created_child_fixture.data)
+
+        saved_fixture_data = copy.deepcopy(child_fixture_info.data)
+        _normalize_child_device_ids(saved_fixture_data)
+        saved_fixture_data = {
+            key: val for key, val in saved_fixture_data.items() if val != -1001
+        }
+
+        # Remove the child info from parent from the comparison because the
+        # child may have been created by a different parent fixture
+        saved_fixture_data.pop(CHILD_INFO_FROM_PARENT, None)
+        created_cifp = created_child_fixture.data.pop(CHILD_INFO_FROM_PARENT, None)
+
+        # Still check that the created child info from parent was redacted.
+        # only smartcam children generate child_info_from_parent
+        if created_cifp:
+            redacted_cifp = redact_data(created_cifp, _wrap_redactors(SMART_REDACTORS))
+            assert created_cifp == redacted_cifp
+
+        assert saved_fixture_data == created_child_fixture.data
 
 
 @iot_fixtures

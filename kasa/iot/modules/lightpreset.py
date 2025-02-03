@@ -54,7 +54,7 @@ class LightPreset(IotModule, LightPresetInterface):
     async def _post_update_hook(self) -> None:
         """Update the internal presets."""
         self._presets = {
-            f"Light preset {index+1}": IotLightPreset.from_dict(vals)
+            f"Light preset {index + 1}": IotLightPreset.from_dict(vals)
             for index, vals in enumerate(self.data["preferred_state"])
             # Devices may list some light effects along with normal presets but these
             # are handled by the LightEffect module so exclude preferred states with id

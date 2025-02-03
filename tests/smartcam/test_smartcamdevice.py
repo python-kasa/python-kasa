@@ -52,12 +52,12 @@ async def test_alias(dev):
 async def test_hub(dev):
     assert dev.children
     for child in dev.children:
-        assert "Cloud" in child.modules
-        assert child.modules["Cloud"].data
+        assert child.modules
+        assert child.device_info
+
         assert child.alias
         await child.update()
-        assert "Time" not in child.modules
-        assert child.time
+        assert child.device_id
 
 
 @device_smartcam

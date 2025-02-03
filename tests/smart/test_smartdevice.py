@@ -5,7 +5,8 @@ from __future__ import annotations
 import copy
 import logging
 import time
-from typing import Any, cast
+from collections import OrderedDict
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -14,10 +15,10 @@ from pytest_mock import MockerFixture
 
 from kasa import Device, DeviceType, KasaException, Module
 from kasa.exceptions import DeviceError, SmartErrorCode
-from kasa.protocols.smartprotocol import _ChildProtocolWrapper
 from kasa.smart import SmartDevice
 from kasa.smart.modules.energy import Energy
 from kasa.smart.smartmodule import SmartModule
+from kasa.smartcam import SmartCamDevice
 from tests.conftest import (
     DISCOVERY_MOCK_IP,
     device_smart,
@@ -25,7 +26,19 @@ from tests.conftest import (
     get_parent_and_child_modules,
     smart_discovery,
 )
-from tests.device_fixtures import variable_temp_smart
+from tests.device_fixtures import (
+    hub_smartcam,
+    hubs_smart,
+    parametrize_combine,
+    variable_temp_smart,
+)
+
+from ..fakeprotocol_smart import FakeSmartTransport
+from ..fakeprotocol_smartcam import FakeSmartCamTransport
+
+DUMMY_CHILD_REQUEST_PREFIX = "get_dummy_"
+
+hub_all = parametrize_combine([hubs_smart, hub_smartcam])
 
 
 @device_smart
@@ -88,7 +101,7 @@ async def test_initial_update(dev: SmartDevice, mocker: MockerFixture):
     # As the fixture data is already initialized, we reset the state for testing
     dev._components_raw = None
     dev._components = {}
-    dev._modules = {}
+    dev._modules = OrderedDict()
     dev._features = {}
     dev._children = {}
     dev._last_update = {}
@@ -140,6 +153,7 @@ async def test_negotiate(dev: SmartDevice, mocker: MockerFixture):
                 "get_child_device_list": None,
             }
         )
+        await dev.update()
         assert len(dev._children) == dev.internal_state["get_child_device_list"]["sum"]
 
 
@@ -209,9 +223,169 @@ async def test_update_module_update_delays(
                     now if mod_delay == 0 else now - (seconds % mod_delay)
                 )
 
-                assert (
-                    module._last_update_time == expected_update_time
-                ), f"Expected update time {expected_update_time} after {seconds} seconds for {module.name} with delay {mod_delay} got {module._last_update_time}"
+                assert module._last_update_time == expected_update_time, (
+                    f"Expected update time {expected_update_time} after {seconds} seconds for {module.name} with delay {mod_delay} got {module._last_update_time}"
+                )
+
+
+async def _get_child_responses(child_requests: list[dict[str, Any]], child_protocol):
+    """Get dummy responses for testing all child modules.
+
+    Even if they don't return really return query.
+    """
+    child_req = {item["method"]: item.get("params") for item in child_requests}
+    child_resp = {k: v for k, v in child_req.items() if k.startswith("get_dummy")}
+    child_req = {
+        k: v for k, v in child_req.items() if k.startswith("get_dummy") is False
+    }
+    resp = await child_protocol._query(child_req)
+    resp = {**child_resp, **resp}
+    return [
+        {"method": k, "error_code": 0, "result": v or {"dummy": "dummy"}}
+        for k, v in resp.items()
+    ]
+
+
+@hub_all
+@pytest.mark.xdist_group(name="caplog")
+async def test_hub_children_update_delays(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    caplog: pytest.LogCaptureFixture,
+    freezer: FrozenDateTimeFactory,
+):
+    """Test that hub children use the correct delay."""
+    if not dev.children:
+        pytest.skip(f"Device {dev.model} does not have children.")
+    # We need to have some modules initialized by now
+    assert dev._modules
+
+    new_dev = type(dev)("127.0.0.1", protocol=dev.protocol)
+    module_queries: dict[str, dict[str, dict]] = {}
+
+    # children should always update on first update
+    await new_dev.update(update_children=False)
+
+    if TYPE_CHECKING:
+        from ..fakeprotocol_smart import FakeSmartTransport
+
+        assert isinstance(dev.protocol._transport, FakeSmartTransport)
+    if dev.protocol._transport.child_protocols:
+        for child in new_dev.children:
+            for modname, module in child._modules.items():
+                if (
+                    not (q := module.query())
+                    and modname not in {"DeviceModule", "Light", "Battery", "Camera"}
+                    and not module.SYSINFO_LOOKUP_KEYS
+                ):
+                    q = {f"get_dummy_{modname}": {}}
+                    mocker.patch.object(module, "query", return_value=q)
+                if q:
+                    queries = module_queries.setdefault(child.device_id, {})
+                    queries[cast(str, modname)] = q
+                module._last_update_time = None
+
+    module_queries[""] = {
+        cast(str, modname): q
+        for modname, module in dev._modules.items()
+        if (q := module.query())
+    }
+
+    async def _query(request, *args, **kwargs):
+        # If this is a child multipleRequest query return the error wrapped
+        child_id = None
+        # smart hub
+        if (
+            (cc := request.get("control_child"))
+            and (child_id := cc.get("device_id"))
+            and (requestData := cc["requestData"])
+            and requestData["method"] == "multipleRequest"
+            and (child_requests := requestData["params"]["requests"])
+        ):
+            child_protocol = dev.protocol._transport.child_protocols[child_id]
+            resp = await _get_child_responses(child_requests, child_protocol)
+            return {"control_child": {"responseData": {"result": {"responses": resp}}}}
+        # smartcam hub
+        if (
+            (mr := request.get("multipleRequest"))
+            and (requests := mr.get("requests"))
+            # assumes all requests for the same child
+            and (
+                child_id := next(iter(requests))
+                .get("params", {})
+                .get("childControl", {})
+                .get("device_id")
+            )
+            and (
+                child_requests := [
+                    cc["request_data"]
+                    for req in requests
+                    if (cc := req["params"].get("childControl"))
+                ]
+            )
+        ):
+            child_protocol = dev.protocol._transport.child_protocols[child_id]
+            resp = await _get_child_responses(child_requests, child_protocol)
+            resp = [{"result": {"response_data": resp}} for resp in resp]
+            return {"multipleRequest": {"responses": resp}}
+
+        if child_id:  # child single query
+            child_protocol = dev.protocol._transport.child_protocols[child_id]
+            resp_list = await _get_child_responses([requestData], child_protocol)
+            resp = {"control_child": {"responseData": resp_list[0]}}
+        else:
+            resp = await dev.protocol._query(request, *args, **kwargs)
+
+        return resp
+
+    mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
+
+    first_update_time = time.monotonic()
+    assert new_dev._last_update_time == first_update_time
+
+    await new_dev.update()
+
+    for dev_id, modqueries in module_queries.items():
+        check_dev = new_dev._children[dev_id] if dev_id else new_dev
+        for modname in modqueries:
+            mod = cast(SmartModule, check_dev.modules[modname])
+            assert mod._last_update_time == first_update_time
+
+    for mod in new_dev.modules.values():
+        mod.MINIMUM_UPDATE_INTERVAL_SECS = 5
+    freezer.tick(180)
+
+    now = time.monotonic()
+    await new_dev.update()
+
+    child_tick = max(
+        module.MINIMUM_HUB_CHILD_UPDATE_INTERVAL_SECS
+        for child in new_dev.children
+        for module in child.modules.values()
+    )
+
+    for dev_id, modqueries in module_queries.items():
+        check_dev = new_dev._children[dev_id] if dev_id else new_dev
+        for modname in modqueries:
+            if modname in {"Firmware"}:
+                continue
+            mod = cast(SmartModule, check_dev.modules[modname])
+            expected_update_time = first_update_time if dev_id else now
+            assert mod._last_update_time == expected_update_time
+
+    freezer.tick(child_tick)
+
+    now = time.monotonic()
+    await new_dev.update()
+
+    for dev_id, modqueries in module_queries.items():
+        check_dev = new_dev._children[dev_id] if dev_id else new_dev
+        for modname in modqueries:
+            if modname in {"Firmware"}:
+                continue
+            mod = cast(SmartModule, check_dev.modules[modname])
+
+            assert mod._last_update_time == now
 
 
 @pytest.mark.parametrize(
@@ -261,25 +435,82 @@ async def test_update_module_query_errors(
     new_dev = SmartDevice("127.0.0.1", protocol=dev.protocol)
     if not first_update:
         await new_dev.update()
-        freezer.tick(
-            max(module.MINIMUM_UPDATE_INTERVAL_SECS for module in dev._modules.values())
-        )
+        freezer.tick(max(module.update_interval for module in dev._modules.values()))
 
-    module_queries = {
-        modname: q
+    module_queries: dict[str, dict[str, dict]] = {}
+    if TYPE_CHECKING:
+        from ..fakeprotocol_smart import FakeSmartTransport
+
+        assert isinstance(dev.protocol._transport, FakeSmartTransport)
+    if dev.protocol._transport.child_protocols:
+        for child in new_dev.children:
+            for modname, module in child._modules.items():
+                if (
+                    not (q := module.query())
+                    and modname not in {"DeviceModule", "Light"}
+                    and not module.SYSINFO_LOOKUP_KEYS
+                ):
+                    q = {f"get_dummy_{modname}": {}}
+                    mocker.patch.object(module, "query", return_value=q)
+                if q:
+                    queries = module_queries.setdefault(child.device_id, {})
+                    queries[cast(str, modname)] = q
+
+    module_queries[""] = {
+        cast(str, modname): q
         for modname, module in dev._modules.items()
         if (q := module.query()) and modname not in critical_modules
     }
 
+    raise_error = True
+
     async def _query(request, *args, **kwargs):
+        pass
+        # If this is a childmultipleRequest query return the error wrapped
+        child_id = None
         if (
-            "component_nego" in request
-            or "get_child_device_component_list" in request
-            or "control_child" in request
+            (cc := request.get("control_child"))
+            and (child_id := cc.get("device_id"))
+            and (requestData := cc["requestData"])
+            and requestData["method"] == "multipleRequest"
+            and (child_requests := requestData["params"]["requests"])
         ):
-            resp = await dev.protocol._query(request, *args, **kwargs)
-            resp["get_connect_cloud_state"] = SmartErrorCode.CLOUD_FAILED_ERROR
+            if raise_error:
+                if not isinstance(error_type, SmartErrorCode):
+                    raise TimeoutError()
+                if len(child_requests) > 1:
+                    raise TimeoutError()
+
+            if raise_error:
+                resp = {
+                    "method": child_requests[0]["method"],
+                    "error_code": error_type.value,
+                }
+            else:
+                child_protocol = dev.protocol._transport.child_protocols[child_id]
+                resp = await _get_child_responses(child_requests, child_protocol)
+            return {"control_child": {"responseData": {"result": {"responses": resp}}}}
+
+        if (
+            not raise_error
+            or "component_nego" in request
+            # allow the initial child device query
+            or (
+                "get_child_device_component_list" in request
+                and "get_child_device_list" in request
+                and len(request) == 2
+            )
+        ):
+            if child_id:  # child single query
+                child_protocol = dev.protocol._transport.child_protocols[child_id]
+                resp_list = await _get_child_responses([requestData], child_protocol)
+                resp = {"control_child": {"responseData": resp_list[0]}}
+            else:
+                resp = await dev.protocol._query(request, *args, **kwargs)
+            if raise_error:
+                resp["get_connect_cloud_state"] = SmartErrorCode.CLOUD_FAILED_ERROR
             return resp
+
         # Don't test for errors on get_device_info as that is likely terminal
         if len(request) == 1 and "get_device_info" in request:
             return await dev.protocol._query(request, *args, **kwargs)
@@ -290,80 +521,77 @@ async def test_update_module_query_errors(
             raise TimeoutError("Dummy timeout")
         raise error_type
 
-    child_protocols = {
-        cast(_ChildProtocolWrapper, child.protocol)._device_id: child.protocol
-        for child in dev.children
-    }
-
-    async def _child_query(self, request, *args, **kwargs):
-        return await child_protocols[self._device_id]._query(request, *args, **kwargs)
-
     mocker.patch.object(new_dev.protocol, "query", side_effect=_query)
-    # children not created yet so cannot patch.object
-    mocker.patch(
-        "kasa.protocols.smartprotocol._ChildProtocolWrapper.query", new=_child_query
-    )
 
     await new_dev.update()
 
     msg = f"Error querying {new_dev.host} for modules"
     assert msg in caplog.text
-    for modname in module_queries:
-        mod = cast(SmartModule, new_dev.modules[modname])
-        assert mod.disabled is False, f"{modname} disabled"
-        assert mod.update_interval == mod.UPDATE_INTERVAL_AFTER_ERROR_SECS
-        for mod_query in module_queries[modname]:
-            if not first_update or mod_query not in first_update_queries:
-                msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
-                assert msg in caplog.text
+    for dev_id, modqueries in module_queries.items():
+        check_dev = new_dev._children[dev_id] if dev_id else new_dev
+        for modname in modqueries:
+            mod = cast(SmartModule, check_dev.modules[modname])
+            if modname in {"DeviceModule"} or (
+                hasattr(mod, "_state_in_sysinfo") and mod._state_in_sysinfo is True
+            ):
+                continue
+            assert mod.disabled is False, f"{modname} disabled"
+            assert mod.update_interval == mod.UPDATE_INTERVAL_AFTER_ERROR_SECS
+            for mod_query in modqueries[modname]:
+                if not first_update or mod_query not in first_update_queries:
+                    msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
+                    assert msg in caplog.text
 
     # Query again should not run for the modules
     caplog.clear()
     await new_dev.update()
-    for modname in module_queries:
-        mod = cast(SmartModule, new_dev.modules[modname])
-        assert mod.disabled is False, f"{modname} disabled"
+    for dev_id, modqueries in module_queries.items():
+        check_dev = new_dev._children[dev_id] if dev_id else new_dev
+        for modname in modqueries:
+            mod = cast(SmartModule, check_dev.modules[modname])
+            assert mod.disabled is False, f"{modname} disabled"
 
     freezer.tick(SmartModule.UPDATE_INTERVAL_AFTER_ERROR_SECS)
 
     caplog.clear()
 
     if recover:
-        mocker.patch.object(
-            new_dev.protocol, "query", side_effect=new_dev.protocol._query
-        )
-        mocker.patch(
-            "kasa.protocols.smartprotocol._ChildProtocolWrapper.query",
-            new=_ChildProtocolWrapper._query,
-        )
+        raise_error = False
 
     await new_dev.update()
     msg = f"Error querying {new_dev.host} for modules"
     if not recover:
         assert msg in caplog.text
-    for modname in module_queries:
-        mod = cast(SmartModule, new_dev.modules[modname])
-        if not recover:
-            assert mod.disabled is True, f"{modname} not disabled"
-            assert mod._error_count == 2
-            assert mod._last_update_error
-            for mod_query in module_queries[modname]:
-                if not first_update or mod_query not in first_update_queries:
-                    msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
-                    assert msg in caplog.text
-            # Test one of the raise_if_update_error
-            if mod.name == "Energy":
-                emod = cast(Energy, mod)
-                with pytest.raises(KasaException, match="Module update error"):
+
+    for dev_id, modqueries in module_queries.items():
+        check_dev = new_dev._children[dev_id] if dev_id else new_dev
+        for modname in modqueries:
+            mod = cast(SmartModule, check_dev.modules[modname])
+            if modname in {"DeviceModule"} or (
+                hasattr(mod, "_state_in_sysinfo") and mod._state_in_sysinfo is True
+            ):
+                continue
+            if not recover:
+                assert mod.disabled is True, f"{modname} not disabled"
+                assert mod._error_count == 2
+                assert mod._last_update_error
+                for mod_query in modqueries[modname]:
+                    if not first_update or mod_query not in first_update_queries:
+                        msg = f"Error querying {new_dev.host} individually for module query '{mod_query}"
+                        assert msg in caplog.text
+                # Test one of the raise_if_update_error
+                if mod.name == "Energy":
+                    emod = cast(Energy, mod)
+                    with pytest.raises(KasaException, match="Module update error"):
+                        assert emod.status is not None
+            else:
+                assert mod.disabled is False
+                assert mod._error_count == 0
+                assert mod._last_update_error is None
+                # Test one of the raise_if_update_error doesn't raise
+                if mod.name == "Energy":
+                    emod = cast(Energy, mod)
                     assert emod.status is not None
-        else:
-            assert mod.disabled is False
-            assert mod._error_count == 0
-            assert mod._last_update_error is None
-            # Test one of the raise_if_update_error doesn't raise
-            if mod.name == "Energy":
-                emod = cast(Energy, mod)
-                assert emod.status is not None
 
 
 async def test_get_modules():
@@ -376,7 +604,7 @@ async def test_get_modules():
     # Modules on device
     module = dummy_device.modules.get("Cloud")
     assert module
-    assert module._device == dummy_device
+    assert module.device == dummy_device
     assert isinstance(module, Cloud)
 
     module = dummy_device.modules.get(Module.Cloud)
@@ -389,8 +617,8 @@ async def test_get_modules():
     assert module is None
     module = next(get_parent_and_child_modules(dummy_device, "Fan"))
     assert module
-    assert module._device != dummy_device
-    assert module._device._parent == dummy_device
+    assert module.device != dummy_device
+    assert module.device.parent == dummy_device
 
     # Invalid modules
     module = dummy_device.modules.get("DummyModule")
@@ -546,3 +774,239 @@ async def test_smartmodule_query():
     )
     mod = DummyModule(dummy_device, "dummy")
     assert mod.query() == {}
+
+
+@hub_all
+@pytest.mark.xdist_group(name="caplog")
+@pytest.mark.requires_dummy
+async def test_dynamic_devices(dev: Device, caplog: pytest.LogCaptureFixture):
+    """Test dynamic child devices."""
+    if not dev.children:
+        pytest.skip(f"Device {dev.model} does not have children.")
+
+    transport = dev.protocol._transport
+    assert isinstance(transport, FakeSmartCamTransport | FakeSmartTransport)
+
+    lu = dev._last_update
+    assert lu
+    child_device_info = lu.get("getChildDeviceList", lu.get("get_child_device_list"))
+    assert child_device_info
+
+    child_device_components = lu.get(
+        "getChildDeviceComponentList", lu.get("get_child_device_component_list")
+    )
+    assert child_device_components
+
+    mock_child_device_info = copy.deepcopy(child_device_info)
+    mock_child_device_components = copy.deepcopy(child_device_components)
+
+    first_child = child_device_info["child_device_list"][0]
+    first_child_device_id = first_child["device_id"]
+
+    first_child_components = next(
+        iter(
+            [
+                cc
+                for cc in child_device_components["child_component_list"]
+                if cc["device_id"] == first_child_device_id
+            ]
+        )
+    )
+
+    first_child_fake_transport = transport.child_protocols[first_child_device_id]
+
+    # Test adding devices
+    start_child_count = len(dev.children)
+    added_ids = []
+    for i in range(1, 3):
+        new_child = copy.deepcopy(first_child)
+        new_child_components = copy.deepcopy(first_child_components)
+
+        mock_device_id = f"mock_child_device_id_{i}"
+
+        transport.child_protocols[mock_device_id] = first_child_fake_transport
+        new_child["device_id"] = mock_device_id
+        new_child_components["device_id"] = mock_device_id
+
+        added_ids.append(mock_device_id)
+        mock_child_device_info["child_device_list"].append(new_child)
+        mock_child_device_components["child_component_list"].append(
+            new_child_components
+        )
+
+    def mock_get_child_device_queries(method, params):
+        if method in {"getChildDeviceList", "get_child_device_list"}:
+            result = mock_child_device_info
+        if method in {"getChildDeviceComponentList", "get_child_device_component_list"}:
+            result = mock_child_device_components
+        return {"result": result, "error_code": 0}
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    for added_id in added_ids:
+        assert added_id in dev._children
+    expected_new_length = start_child_count + len(added_ids)
+    assert len(dev.children) == expected_new_length
+
+    # Test removing devices
+    mock_child_device_info["child_device_list"] = [
+        info
+        for info in mock_child_device_info["child_device_list"]
+        if info["device_id"] != first_child_device_id
+    ]
+    mock_child_device_components["child_component_list"] = [
+        cc
+        for cc in mock_child_device_components["child_component_list"]
+        if cc["device_id"] != first_child_device_id
+    ]
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    expected_new_length -= 1
+    assert len(dev.children) == expected_new_length
+
+    # Test no child devices
+
+    mock_child_device_info["child_device_list"] = []
+    mock_child_device_components["child_component_list"] = []
+    mock_child_device_info["sum"] = 0
+    mock_child_device_components["sum"] = 0
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert len(dev.children) == 0
+
+    # Logging tests are only for smartcam hubs as smart hubs do not test categories
+    if not isinstance(dev, SmartCamDevice):
+        return
+
+    # setup
+    mock_child = copy.deepcopy(first_child)
+    mock_components = copy.deepcopy(first_child_components)
+
+    mock_child_device_info["child_device_list"] = [mock_child]
+    mock_child_device_components["child_component_list"] = [mock_components]
+    mock_child_device_info["sum"] = 1
+    mock_child_device_components["sum"] = 1
+
+    # Test can't find matching components
+
+    mock_child["device_id"] = "no_comps_1"
+    mock_components["device_id"] = "no_comps_2"
+
+    caplog.set_level("DEBUG")
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child components for device" in caplog.text
+
+    caplog.clear()
+
+    # Test doesn't log multiple
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child components for device" not in caplog.text
+
+    # Test invalid category
+
+    mock_child["device_id"] = "invalid_cat"
+    mock_components["device_id"] = "invalid_cat"
+    mock_child["category"] = "foobar"
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" in caplog.text
+
+    caplog.clear()
+
+    # Test doesn't log multiple
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" not in caplog.text
+
+    # Test no category
+
+    mock_child["device_id"] = "no_cat"
+    mock_components["device_id"] = "no_cat"
+    mock_child.pop("category")
+
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" in caplog.text
+
+    # Test only log once
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Child device type not supported" not in caplog.text
+
+    # Test no device_id
+
+    mock_child.pop("device_id")
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child id for device" in caplog.text
+
+    # Test only log once
+
+    caplog.clear()
+    with patch.object(
+        transport, "get_child_device_queries", side_effect=mock_get_child_device_queries
+    ):
+        await dev.update()
+
+    assert "Could not find child id for device" not in caplog.text
+
+
+@hubs_smart
+async def test_unpair(dev: SmartDevice, mocker: MockerFixture):
+    """Verify that unpair calls childsetup module."""
+    if not dev.children:
+        pytest.skip("device has no children")
+
+    child = dev.children[0]
+
+    assert child.parent is not None
+    assert Module.ChildSetup in dev.modules
+    cs = dev.modules[Module.ChildSetup]
+
+    unpair_call = mocker.spy(cs, "unpair")
+
+    unpair_feat = child.features.get("unpair")
+    assert unpair_feat
+    await unpair_feat.set_value(None)
+
+    unpair_call.assert_called_with(child.device_id)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from ...feature import Feature
+from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class TamperDetection(SmartCamModule):
                 attribute_getter="enabled",
                 attribute_setter="set_enabled",
                 type=Feature.Type.Switch,
-                category=Feature.Category.Primary,
+                category=Feature.Category.Config,
             )
         )
 
@@ -39,6 +40,7 @@ class TamperDetection(SmartCamModule):
         """Return the tamper detection enabled state."""
         return self.data["tamper_det"]["enabled"] == "on"
 
+    @allow_update_after
     async def set_enabled(self, enable: bool) -> dict:
         """Set the tamper detection enabled state."""
         params = {"enabled": "on" if enable else "off"}

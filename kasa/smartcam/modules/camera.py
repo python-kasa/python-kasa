@@ -9,7 +9,6 @@ from typing import Annotated
 from urllib.parse import quote_plus
 
 from ...credentials import Credentials
-from ...device_type import DeviceType
 from ...feature import Feature
 from ...json import loads as json_loads
 from ...module import FeatureAttribute, Module
@@ -30,6 +29,8 @@ class StreamResolution(StrEnum):
 
 class Camera(SmartCamModule):
     """Implementation of device module."""
+
+    REQUIRED_COMPONENT = "video"
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
@@ -99,6 +100,9 @@ class Camera(SmartCamModule):
         :return: rtsp url with escaped credentials or None if no credentials or
             camera is off.
         """
+        if self._device._is_hub_child:
+            return None
+
         streams = {
             StreamResolution.HD: "stream1",
             StreamResolution.SD: "stream2",
@@ -119,8 +123,7 @@ class Camera(SmartCamModule):
 
     def onvif_url(self) -> str | None:
         """Return the onvif url."""
-        return f"http://{self._device.host}:{ONVIF_PORT}/onvif/device_service"
+        if self._device._is_hub_child:
+            return None
 
-    async def _check_supported(self) -> bool:
-        """Additional check to see if the module is supported by the device."""
-        return self._device.device_type is DeviceType.Camera
+        return f"http://{self._device.host}:{ONVIF_PORT}/onvif/device_service"

@@ -60,12 +60,7 @@ def _get_connection_type_device_class(discovery_info):
         device_class = Discover._get_device_class(discovery_info)
         dr = DiscoveryResult.from_dict(discovery_info["result"])
 
-        connection_type = DeviceConnectionParameters.from_values(
-            dr.device_type,
-            dr.mgt_encrypt_schm.encrypt_type,
-            dr.mgt_encrypt_schm.lv,
-            dr.mgt_encrypt_schm.is_support_https,
-        )
+        connection_type = Discover._get_connection_parameters(dr)
     else:
         connection_type = DeviceConnectionParameters.from_values(
             DeviceFamily.IotSmartPlugSwitch.value, DeviceEncryptionType.Xor.value
@@ -117,7 +112,7 @@ async def test_connect_custom_port(discovery_mock, mocker, custom_port):
         connection_type=ctype,
         credentials=Credentials("dummy_user", "dummy_password"),
     )
-    default_port = 80 if "result" in discovery_data else 9999
+    default_port = discovery_mock.default_port
 
     ctype, _ = _get_connection_type_device_class(discovery_data)
 
@@ -241,6 +236,12 @@ ET = DeviceEncryptionType
             id="smartcam-hub",
         ),
         pytest.param(
+            CP(DF.SmartTapoDoorbell, ET.Aes, https=True),
+            SmartCamProtocol,
+            SslAesTransport,
+            id="smartcam-doorbell",
+        ),
+        pytest.param(
             CP(DF.IotIpCamera, ET.Aes, https=True),
             IotProtocol,
             LinkieTransportV2,
@@ -275,6 +276,12 @@ ET = DeviceEncryptionType
             SmartProtocol,
             KlapTransportV2,
             id="smart-klap",
+        ),
+        pytest.param(
+            CP(DF.SmartTapoChime, ET.Klap, https=False),
+            SmartProtocol,
+            KlapTransportV2,
+            id="smart-chime",
         ),
     ],
 )
