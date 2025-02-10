@@ -47,7 +47,10 @@ class SmartCamDevice(SmartDevice):
         long_name = discovery_info["device_model"] if discovery_info else short_name
         device_type = SmartCamDevice._get_device_type_from_sysinfo(basic_info)
         fw_version_full = basic_info["sw_version"]
-        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        if " " in fw_version_full:
+            firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        else:
+            firmware_version, firmware_build = fw_version_full, None
         return DeviceInfo(
             short_name=basic_info["device_model"],
             long_name=long_name,

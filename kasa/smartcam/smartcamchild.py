@@ -103,7 +103,10 @@ class SmartCamChild(SmartChildDevice, SmartCamDevice):
         model = cifp["device_model"]
         device_type = SmartCamDevice._get_device_type_from_sysinfo(cifp)
         fw_version_full = cifp["sw_ver"]
-        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        if " " in fw_version_full:
+            firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        else:
+            firmware_version, firmware_build = fw_version_full, None
         return DeviceInfo(
             short_name=model,
             long_name=model,

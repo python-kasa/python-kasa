@@ -760,7 +760,10 @@ class IotDevice(Device):
         device_family = sys_info.get("type", sys_info.get("mic_type"))
         device_type = IotDevice._get_device_type_from_sys_info(info)
         fw_version_full = sys_info["sw_ver"]
-        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        if " " in fw_version_full:
+            firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        else:
+            firmware_version, firmware_build = fw_version_full, None
         auth = bool(discovery_info and ("mgt_encrypt_schm" in discovery_info))
 
         return DeviceInfo(
