@@ -191,6 +191,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0.0 (US) / Firmware: 1.3.7
   - Hardware: 1.0.0 (US) / Firmware: 1.4.0
 - **P110**
+  - Hardware: 1.0 (AU) / Firmware: 1.3.1
   - Hardware: 1.0 (EU) / Firmware: 1.0.7
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (UK) / Firmware: 1.3.0
@@ -243,6 +244,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **L510E**
   - Hardware: 3.0 (US) / Firmware: 1.0.5
   - Hardware: 3.0 (US) / Firmware: 1.1.2
+- **L530B**
+  - Hardware: 3.0 (EU) / Firmware: 1.1.9
 - **L530E**
   - Hardware: 3.0 (EU) / Firmware: 1.0.6
   - Hardware: 3.0 (EU) / Firmware: 1.1.0
@@ -272,6 +275,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 - **C100**
   - Hardware: 4.0 / Firmware: 1.3.14
+- **C110**
+  - Hardware: 2.0 (EU) / Firmware: 1.4.3
 - **C210**
   - Hardware: 2.0 / Firmware: 1.3.11
   - Hardware: 2.0 (EU) / Firmware: 1.4.2
@@ -310,6 +315,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 ### Hubs
 
 - **H100**
+  - Hardware: 1.0 (AU) / Firmware: 1.5.23
   - Hardware: 1.0 (EU) / Firmware: 1.2.3
   - Hardware: 1.0 (EU) / Firmware: 1.5.10
   - Hardware: 1.0 (EU) / Firmware: 1.5.5
@@ -328,6 +334,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.12.0
 - **T100**
   - Hardware: 1.0 (EU) / Firmware: 1.12.0
+  - Hardware: 1.0 (US) / Firmware: 1.12.0
 - **T110**
   - Hardware: 1.0 (EU) / Firmware: 1.8.0
   - Hardware: 1.0 (EU) / Firmware: 1.9.0
