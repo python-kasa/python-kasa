@@ -725,15 +725,6 @@ async def get_smart_test_calls(protocol: SmartProtocol):
     successes = []
     child_device_components = {}
 
-    extra_test_calls = [
-        SmartCall(
-            module="temp_humidity_records",
-            request=SmartRequest.get_raw_request("get_temp_humidity_records").to_dict(),
-            should_succeed=False,
-            child_device_id="",
-        ),
-    ]
-
     click.echo("Testing component_nego call ..", nl=False)
     responses = await _make_requests_or_exit(
         protocol,
@@ -812,8 +803,6 @@ async def get_smart_test_calls(protocol: SmartProtocol):
             click.echo(f"Skipping {component_id}..", nl=False)
             click.echo(click.style("UNSUPPORTED", fg="yellow"))
 
-    test_calls.extend(extra_test_calls)
-
     # Child component calls
     for child_device_id, child_components in child_device_components.items():
         test_calls.append(
@@ -839,12 +828,6 @@ async def get_smart_test_calls(protocol: SmartProtocol):
             else:
                 click.echo(f"Skipping {component_id}..", nl=False)
                 click.echo(click.style("UNSUPPORTED", fg="yellow"))
-        # Add the extra calls for each child
-        for extra_call in extra_test_calls:
-            extra_child_call = dataclasses.replace(
-                extra_call, child_device_id=child_device_id
-            )
-            test_calls.append(extra_child_call)
 
     return test_calls, successes
 

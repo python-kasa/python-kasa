@@ -913,7 +913,10 @@ class SmartDevice(Device):
             components, device_family
         )
         fw_version_full = di["fw_ver"]
-        firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        if " " in fw_version_full:
+            firmware_version, firmware_build = fw_version_full.split(" ", maxsplit=1)
+        else:
+            firmware_version, firmware_build = fw_version_full, None
         _protocol, devicetype = device_family.split(".")
         # Brand inferred from SMART.KASAPLUG/SMART.TAPOPLUG etc.
         brand = devicetype[:4].lower()

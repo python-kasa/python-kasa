@@ -48,7 +48,7 @@ async def state(ctx, dev: Device):
     )
     echo(
         f"Firmware:     {dev.device_info.firmware_version}"
-        f" {dev.device_info.firmware_build}"
+        f"{' ' + build if (build := dev.device_info.firmware_build) else ''}"
     )
     echo(f"MAC (rssi):   {dev.mac} ({dev.rssi})")
     if verbose:
