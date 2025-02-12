@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.10.2](https://github.com/python-kasa/python-kasa/tree/0.10.2) (2025-02-12)
+
+[Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.1...0.10.2)
+
+**Release summary:**
+
+- Bugfix for [#1499](https://github.com/python-kasa/python-kasa/issues/1499).
+- Support for L530B and C110 devices.
+
+**Fixed bugs:**
+
+- H100 - Raised error: not enough values to unpack \(expected 2, got 1\) [\#1499](https://github.com/python-kasa/python-kasa/issues/1499)
+- Do not crash on missing build number in fw version [\#1500](https://github.com/python-kasa/python-kasa/pull/1500) (@rytilahti)
+
+**Added support for devices:**
+
+- Add C110\(EU\) 2.0 1.4.3 fixture [\#1503](https://github.com/python-kasa/python-kasa/pull/1503) (@sdb9696)
+- Add L530B\(EU\) 3.0 1.1.9 fixture [\#1502](https://github.com/python-kasa/python-kasa/pull/1502) (@sdb9696)
+
+**Project maintenance:**
+
+- Add fixtures for new versions of H100, P110, and T100 devices [\#1501](https://github.com/python-kasa/python-kasa/pull/1501) (@LXGaming)
+- Add L530E\(TW\) 2.0 1.1.1 fixture [\#1497](https://github.com/python-kasa/python-kasa/pull/1497) (@bluehomewu)
+
 ## [0.10.1](https://github.com/python-kasa/python-kasa/tree/0.10.1) (2025-02-02)
 
 [Full Changelog](https://github.com/python-kasa/python-kasa/compare/0.10.0...0.10.1)
