@@ -243,6 +243,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **L510E**
   - Hardware: 3.0 (US) / Firmware: 1.0.5
   - Hardware: 3.0 (US) / Firmware: 1.1.2
+- **L530B**
+  - Hardware: 3.0 (EU) / Firmware: 1.1.9
 - **L530E**
   - Hardware: 3.0 (EU) / Firmware: 1.0.6
   - Hardware: 3.0 (EU) / Firmware: 1.1.0
