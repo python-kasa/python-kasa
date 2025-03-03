@@ -149,6 +149,8 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 - **KL60**
   - Hardware: 1.0 (UN) / Firmware: 1.1.4
   - Hardware: 1.0 (US) / Firmware: 1.1.13
+- **LB100**
+  - Hardware: 1.0 (US) / Firmware: 1.8.11
 - **LB110**
   - Hardware: 1.0 (US) / Firmware: 1.8.11
 
