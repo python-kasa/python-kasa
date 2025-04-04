@@ -598,6 +598,8 @@ class SmartDevice(Device):
         """Returns the device alias or nickname."""
         if self._info and (nickname := self._info.get("nickname")):
             return base64.b64decode(nickname).decode()
+        elif self._info and (model := self._info.get("model")):
+            return model
         else:
             return None
 
