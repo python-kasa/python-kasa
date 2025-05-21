@@ -87,6 +87,7 @@ PLUGS_SMART = {
     "KP125M",
     "EP25",
     "P125M",
+    "TP10",
     "TP15",
 }
 PLUGS = {
