@@ -1,0 +1,144 @@
+{
+    "smartlife.iot.common.cloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": []
+        }
+    },
+    "smartlife.iot.common.emeter": {
+        "get_realtime": {
+            "err_code": 0,
+            "power_mw": 1800,
+            "total_wh": 443
+        }
+    },
+    "smartlife.iot.common.schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 0,
+            "err_code": 0,
+            "rule_list": [],
+            "version": 2
+        }
+    },
+    "smartlife.iot.lightStrip": {
+        "get_default_behavior": {
+            "err_code": 0,
+            "hard_on": {
+                "mode": "last_status"
+            },
+            "soft_on": {
+                "mode": "last_status"
+            }
+        },
+        "get_light_details": {
+            "color_rendering_index": 90,
+            "err_code": 0,
+            "incandescent_equivalent": 60,
+            "lamp_beam_angle": 220,
+            "max_lumens": 800,
+            "max_voltage": 120,
+            "min_voltage": 100,
+            "wattage": 10
+        },
+        "get_light_state": {
+            "err_code": 0,
+            "groups": [
+                [
+                    0,
+                    0,
+                    251,
+                    0,
+                    10,
+                    0
+                ]
+            ],
+            "length": 1,
+            "mode": "normal",
+            "on_off": 1,
+            "transition": 500
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "LEF": 0,
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "ctrl_protocols": {
+                "name": "Linkie",
+                "version": "1.0"
+            },
+            "description": "Kasa Smart Light Strip, Multicolor",
+            "dev_state": "normal",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "disco_ver": "1.0",
+            "err_code": 0,
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "is_color": 1,
+            "is_dimmable": 1,
+            "is_factory": false,
+            "is_variable_color_temp": 0,
+            "latitude_i": 0,
+            "length": 1,
+            "light_state": {
+                "brightness": 10,
+                "color_temp": 0,
+                "hue": 251,
+                "mode": "normal",
+                "on_off": 1,
+                "saturation": 0
+            },
+            "lighting_effect_state": {
+                "brightness": 10,
+                "custom": 0,
+                "enable": 0,
+                "id": "ojqpUUxdGHoIugGPknrUcRoyJiItsjuE",
+                "name": "Lightning"
+            },
+            "longitude_i": 0,
+            "mic_mac": "D8:44:89:00:00:00",
+            "mic_type": "IOT.SMARTBULB",
+            "model": "KL400L10(US)",
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "preferred_state": [
+                {
+                    "brightness": 100,
+                    "color_temp": 0,
+                    "hue": 1,
+                    "index": 0,
+                    "mode": 1,
+                    "saturation": 100
+                },
+                {
+                    "brightness": 15,
+                    "color_temp": 0,
+                    "hue": 251,
+                    "index": 1,
+                    "mode": 1,
+                    "saturation": 0
+                }
+            ],
+            "rssi": -38,
+            "status": "new",
+            "sw_ver": "1.0.10 Build 220929 Rel.170054"
+        }
+    }
+}
