@@ -284,7 +284,7 @@ LIGHT_STATE_SCHEMA = Schema(
                 "hue": All(int, Range(min=0, max=360)),
                 "mode": str,
                 "saturation": All(int, Range(min=0, max=100)),
-                "groups": Optional(list[int])
+                "groups": Optional(list[int]),
             }
         ),
         "err_code": int,
