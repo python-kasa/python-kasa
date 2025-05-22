@@ -190,13 +190,13 @@ The following devices have been tested and confirmed as working. If your device 
 - **Power Strips**: EP40, EP40M[^1], HS107, HS300, KP200, KP303, KP400
 - **Wall Switches**: ES20M, HS200[^2], HS210, HS220[^2], KP405, KS200, KS200M, KS205[^1], KS220, KS220M, KS225[^1], KS230, KS240[^1]
 - **Bulbs**: KL110, KL120, KL125, KL130, KL135, KL50, KL60, LB100, LB110
-- **Light Strips**: KL400L5, KL420L5, KL430
+- **Light Strips**: KL400L10, KL400L5, KL420L5, KL430
 - **Hubs**: KH100[^1]
 - **Hub-Connected Devices[^3]**: KE100[^1]
 
 ### Supported Tapo[^1] devices
 
-- **Plugs**: P100, P110, P110M, P115, P125M, P135, TP10, TP15
+- **Plugs**: P100, P110, P110M, P115, P125M, P135, TP15
 - **Power Strips**: P210M, P300, P304M, P306, TP25
 - **Wall Switches**: S210, S220, S500D, S505, S505D
 - **Bulbs**: L510B, L510E, L530B, L530E, L630

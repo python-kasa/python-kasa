@@ -156,6 +156,8 @@ Some newer Kasa devices require authentication. These are marked with [^1] in th
 
 ### Light Strips
 
+- **KL400L10**
+  - Hardware: 1.0 (US) / Firmware: 1.0.10
 - **KL400L5**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
   - Hardware: 1.0 (US) / Firmware: 1.0.8
@@ -209,8 +211,6 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 - **P135**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
   - Hardware: 1.0 (US) / Firmware: 1.2.0
-- **TP10**
-  - Hardware: 1.0 (IT) / Firmware: 1.2.5
 - **TP15**
   - Hardware: 1.0 (US) / Firmware: 1.0.3
 
