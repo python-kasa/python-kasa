@@ -76,6 +76,7 @@ def _legacy_type_to_class(_type: str) -> Any:
         "time": None,
         "schedule": None,
         "usage": None,
+        "monitor": None,
         "energy": "usage",
         # device commands runnnable at top level
         "state": "device",
