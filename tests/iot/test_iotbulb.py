@@ -277,6 +277,7 @@ LIGHT_STATE_SCHEMA = Schema(
         "saturation": All(int, Range(min=0, max=100)),
         "length": Optional(int),
         "transition": Optional(int),
+        "groups": Optional(list[int]),
         "dft_on_state": Optional(
             {
                 "brightness": All(int, Range(min=0, max=100)),
