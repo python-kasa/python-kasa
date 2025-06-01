@@ -90,7 +90,7 @@ async def test_device_type_no_update(discovery_mock, caplog: pytest.LogCaptureFi
     assert dev.device_type is DeviceType.Plug
     assert (
         repr(dev)
-        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - None ({short_model}) - update() needed>"
+        == f"<DeviceType.Plug at {DISCOVERY_MOCK_IP} - Plug ({short_model}) - update() needed>"
     )
     assert "Unknown device type, falling back to plug" in caplog.text
 
