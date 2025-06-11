@@ -617,7 +617,7 @@ class SmartDevice(Device):
         if self._info and (nickname := self._info.get("nickname")):
             return base64.b64decode(nickname).decode()
         elif label := DEVICE_TYPE_TO_LABEL.get(self._device_type):
-            return f"Unnamed {label} ({self.model} {self.device_id})"
+            return f"{label} ({self.model} {self.device_id})"
         else:
             return None
 
