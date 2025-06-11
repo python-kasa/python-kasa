@@ -49,7 +49,7 @@ DEVICE_TYPE_TO_LABEL = {
     DeviceType.StripSocket: "Power Strip",
     DeviceType.Dimmer: "Wall Switch",
     DeviceType.WallSwitch: "Wall Switch",
-    DeviceType.Fan: "Wall Switch",
+    DeviceType.Fan: "Fan",
     DeviceType.Bulb: "Bulb",
     DeviceType.LightStrip: "Light Strip",
     DeviceType.Camera: "Camera",
@@ -57,7 +57,7 @@ DEVICE_TYPE_TO_LABEL = {
     DeviceType.Chime: "Chime",
     DeviceType.Vacuum: "Vacuum",
     DeviceType.Hub: "Hub",
-    DeviceType.Sensor: "Hub-Connected Device",
+    DeviceType.Sensor: "Sensor",
     DeviceType.Thermostat: "Hub-Connected Thermostat",
 }
 
@@ -617,7 +617,7 @@ class SmartDevice(Device):
         if self._info and (nickname := self._info.get("nickname")):
             return base64.b64decode(nickname).decode()
         elif label := DEVICE_TYPE_TO_LABEL.get(self._device_type):
-            return label
+            return f"Unnamed {label} ({self.model} {self.device_id})"
         else:
             return None
 
