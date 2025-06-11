@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from ...feature import Feature
 from ...interfaces import Alarm as AlarmInterface
+from ...module import FeatureAttribute
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -105,12 +108,12 @@ class Alarm(SmartCamModule, AlarmInterface):
         )
 
     @property
-    def alarm_sound(self) -> str:
+    def alarm_sound(self) -> Annotated[str, FeatureAttribute()]:
         """Return current alarm sound."""
         return self.data["getSirenConfig"]["siren_type"]
 
     @allow_update_after
-    async def set_alarm_sound(self, sound: str) -> dict:
+    async def set_alarm_sound(self, sound: str) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm sound.
 
         See *alarm_sounds* for list of available sounds.
@@ -124,7 +127,7 @@ class Alarm(SmartCamModule, AlarmInterface):
         return self.data["getSirenTypeList"]["siren_type_list"]
 
     @property
-    def alarm_volume(self) -> int:
+    def alarm_volume(self) -> Annotated[int, FeatureAttribute()]:
         """Return alarm volume.
 
         Unlike duration the device expects/returns a string for volume.
@@ -132,18 +135,22 @@ class Alarm(SmartCamModule, AlarmInterface):
         return int(self.data["getSirenConfig"]["volume"])
 
     @allow_update_after
-    async def set_alarm_volume(self, volume: int) -> dict:
+    async def set_alarm_volume(
+        self, volume: int
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm volume."""
         config = self._validate_and_get_config(volume=volume)
         return await self.call("setSirenConfig", {"siren": config})
 
     @property
-    def alarm_duration(self) -> int:
+    def alarm_duration(self) -> Annotated[int, FeatureAttribute()]:
         """Return alarm duration."""
         return self.data["getSirenConfig"]["duration"]
 
     @allow_update_after
-    async def set_alarm_duration(self, duration: int) -> dict:
+    async def set_alarm_duration(
+        self, duration: int
+    ) -> Annotated[dict, FeatureAttribute()]:
         """Set alarm volume."""
         config = self._validate_and_get_config(duration=duration)
         return await self.call("setSirenConfig", {"siren": config})

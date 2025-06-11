@@ -111,6 +111,7 @@ class Module(ABC):
     IotAmbientLight: Final[ModuleName[iot.AmbientLight]] = ModuleName("ambient")
     IotAntitheft: Final[ModuleName[iot.Antitheft]] = ModuleName("anti_theft")
     IotCountdown: Final[ModuleName[iot.Countdown]] = ModuleName("countdown")
+    IotDimmer: Final[ModuleName[iot.Dimmer]] = ModuleName("dimmer")
     IotMotion: Final[ModuleName[iot.Motion]] = ModuleName("motion")
     IotSchedule: Final[ModuleName[iot.Schedule]] = ModuleName("schedule")
     IotUsage: Final[ModuleName[iot.Usage]] = ModuleName("usage")
@@ -181,6 +182,11 @@ class Module(ABC):
         self._device = device
         self._module = module
         self._module_features: dict[str, Feature] = {}
+
+    @property
+    def device(self) -> Device:
+        """Return the device exposing the module."""
+        return self._device
 
     @property
     def _all_features(self) -> dict[str, Feature]:

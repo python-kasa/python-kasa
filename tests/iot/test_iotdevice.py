@@ -277,12 +277,12 @@ async def test_get_modules():
     # Modules on device
     module = dummy_device.modules.get("cloud")
     assert module
-    assert module._device == dummy_device
+    assert module.device == dummy_device
     assert isinstance(module, Cloud)
 
     module = dummy_device.modules.get(Module.IotCloud)
     assert module
-    assert module._device == dummy_device
+    assert module.device == dummy_device
     assert isinstance(module, Cloud)
 
     # Invalid modules

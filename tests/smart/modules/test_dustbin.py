@@ -61,6 +61,25 @@ async def test_dustbin_mode(dev: SmartDevice, mocker: MockerFixture):
 
 
 @dustbin
+async def test_dustbin_mode_off(dev: SmartDevice, mocker: MockerFixture):
+    """Test dustbin_mode == Off."""
+    dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))
+    call = mocker.spy(dustbin, "call")
+
+    auto_collection = dustbin._device.features["dustbin_mode"]
+    await auto_collection.set_value(Mode.Off.name)
+
+    params = dustbin._settings.copy()
+    params["auto_dust_collection"] = False
+
+    call.assert_called_with("setDustCollectionInfo", params)
+
+    await dev.update()
+    assert dustbin.auto_collection is False
+    assert dustbin.mode is Mode.Off.name
+
+
+@dustbin
 async def test_autocollection(dev: SmartDevice, mocker: MockerFixture):
     """Test autocollection switch."""
     dustbin = next(get_parent_and_child_modules(dev, Module.Dustbin))

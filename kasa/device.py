@@ -161,7 +161,7 @@ class DeviceInfo:
     device_type: DeviceType
     hardware_version: str
     firmware_version: str
-    firmware_build: str
+    firmware_build: str | None
     requires_auth: bool
     region: str | None
 

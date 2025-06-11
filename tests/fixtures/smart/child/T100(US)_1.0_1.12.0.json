@@ -1,0 +1,141 @@
+{
+    "component_nego": {
+        "component_list": [
+            {
+                "id": "device",
+                "ver_code": 2
+            },
+            {
+                "id": "quick_setup",
+                "ver_code": 3
+            },
+            {
+                "id": "trigger_log",
+                "ver_code": 1
+            },
+            {
+                "id": "time",
+                "ver_code": 1
+            },
+            {
+                "id": "device_local_time",
+                "ver_code": 1
+            },
+            {
+                "id": "account",
+                "ver_code": 1
+            },
+            {
+                "id": "synchronize",
+                "ver_code": 1
+            },
+            {
+                "id": "cloud_connect",
+                "ver_code": 1
+            },
+            {
+                "id": "iot_cloud",
+                "ver_code": 1
+            },
+            {
+                "id": "firmware",
+                "ver_code": 1
+            },
+            {
+                "id": "localSmart",
+                "ver_code": 1
+            },
+            {
+                "id": "battery_detect",
+                "ver_code": 1
+            },
+            {
+                "id": "sensitivity",
+                "ver_code": 1
+            }
+        ]
+    },
+    "get_connect_cloud_state": {
+        "status": 0
+    },
+    "get_device_info": {
+        "at_low_battery": false,
+        "avatar": "sensor",
+        "bind_count": 1,
+        "category": "subg.trigger.motion-sensor",
+        "detected": true,
+        "device_id": "SCRUBBED_CHILD_DEVICE_ID_2",
+        "fw_ver": "1.12.0 Build 230512 Rel.103040",
+        "hw_id": "00000000000000000000000000000000",
+        "hw_ver": "1.0",
+        "jamming_rssi": -115,
+        "jamming_signal_level": 1,
+        "lastOnboardingTimestamp": 1734051318,
+        "mac": "E4FAC4000000",
+        "model": "T100",
+        "nickname": "I01BU0tFRF9OQU1FIw==",
+        "oem_id": "00000000000000000000000000000000",
+        "parent_device_id": "0000000000000000000000000000000000000000",
+        "region": "Pacific/Auckland",
+        "report_interval": 16,
+        "rssi": -59,
+        "signal_level": 3,
+        "specs": "US",
+        "status": "online",
+        "status_follow_edge": false,
+        "type": "SMART.TAPOSENSOR"
+    },
+    "get_fw_download_state": {
+        "cloud_cache_seconds": 1,
+        "download_progress": 0,
+        "reboot_time": 5,
+        "status": 0,
+        "upgrade_time": 5
+    },
+    "get_latest_fw": {
+        "fw_size": 0,
+        "fw_ver": "1.12.0 Build 230512 Rel.103040",
+        "hw_id": "",
+        "need_to_upgrade": false,
+        "oem_id": "",
+        "release_date": "",
+        "release_note": "",
+        "type": 0
+    },
+    "get_trigger_logs": {
+        "logs": [
+            {
+                "event": "motion",
+                "eventId": "51281c8e-c763-3914-0281-c8ec76339140",
+                "id": 24,
+                "timestamp": 1739230242
+            },
+            {
+                "event": "motion",
+                "eventId": "120180c0-e874-b251-2018-0c0e874b2512",
+                "id": 23,
+                "timestamp": 1739230209
+            },
+            {
+                "event": "motion",
+                "eventId": "752388d5-7ba4-c378-adc7-72a845b3c875",
+                "id": 22,
+                "timestamp": 1739230188
+            },
+            {
+                "event": "motion",
+                "eventId": "efa20c53-74e7-264e-fa20-c5374e7264ef",
+                "id": 21,
+                "timestamp": 1739230153
+            },
+            {
+                "event": "motion",
+                "eventId": "962d70de-0962-df09-62d7-0de0962df096",
+                "id": 20,
+                "timestamp": 1739230137
+            }
+        ],
+        "start_id": 24,
+        "sum": 24
+    }
+}

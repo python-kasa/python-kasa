@@ -28,7 +28,7 @@ class Energy(Module, ABC):
 
     _supported: ModuleFeature = ModuleFeature(0)
 
-    def supports(self, module_feature: ModuleFeature) -> bool:
+    def supports(self, module_feature: Energy.ModuleFeature) -> bool:
         """Return True if module supports the feature."""
         return module_feature in self._supported
 

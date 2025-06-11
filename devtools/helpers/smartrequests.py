@@ -425,6 +425,7 @@ COMPONENT_REQUESTS = {
             "get_trigger_logs", SmartRequest.GetTriggerLogsParams()
         )
     ],
+    "temp_humidity_record": [SmartRequest.get_raw_request("get_temp_humidity_records")],
     "double_click": [SmartRequest.get_raw_request("get_double_click_info")],
     "child_device": [
         SmartRequest.get_raw_request("get_child_device_list"),
