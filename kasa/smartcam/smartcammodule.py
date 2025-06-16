@@ -39,6 +39,18 @@ class SmartCamModule(SmartModule):
     SmartCamLineCrossingDetection: Final[ModuleName[modules.LineCrossingDetection]] = ModuleName(
         "LineCrossingDetection"
     )
+    SmartCamBarkDetection: Final[ModuleName[modules.BarkDetection]] = ModuleName(
+        "BarkDetection"
+    )
+    SmartCamGlassDetection: Final[ModuleName[modules.GlassDetection]] = ModuleName(
+        "GlassDetection"
+    )
+    SmartCamMeowDetection: Final[ModuleName[modules.MeowDetection]] = ModuleName(
+        "MeowDetection"
+    )
+    SmartCamVehicleDetection: Final[ModuleName[modules.VehicleDetection]] = ModuleName(
+        "VehicleDetection"
+    )
 
     SmartCamBattery: Final[ModuleName[modules.Battery]] = ModuleName("Battery")
 
