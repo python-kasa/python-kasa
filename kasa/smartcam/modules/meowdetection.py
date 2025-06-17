@@ -45,5 +45,6 @@ class MeowDetection(SmartCamModule):
         """Set the meow detection enabled state."""
         params = {"enabled": "on" if enable else "off"}
         return await self._device._query_setter_helper(
-            "setMeowDetectionConfig", self.QUERY_MODULE_NAME, self.QUERY_SECTION_NAMES, params
+            "setMeowDetectionConfig", self.QUERY_MODULE_NAME,
+            self.QUERY_SECTION_NAMES, params
         )

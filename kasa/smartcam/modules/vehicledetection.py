@@ -45,5 +45,6 @@ class VehicleDetection(SmartCamModule):
         """Set the vehicle detection enabled state."""
         params = {"enabled": "on" if enable else "off"}
         return await self._device._query_setter_helper(
-            "setVehicleDetectionConfig", self.QUERY_MODULE_NAME, self.QUERY_SECTION_NAMES, params
+            "setVehicleDetectionConfig", self.QUERY_MODULE_NAME,
+            self.QUERY_SECTION_NAMES, params
         )

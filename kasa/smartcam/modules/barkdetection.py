@@ -45,5 +45,6 @@ class BarkDetection(SmartCamModule):
         """Set the bark detection enabled state."""
         params = {"enabled": "on" if enable else "off"}
         return await self._device._query_setter_helper(
-            "setBarkDetectionConfig", self.QUERY_MODULE_NAME, self.QUERY_SECTION_NAMES, params
+            "setBarkDetectionConfig", self.QUERY_MODULE_NAME,
+            self.QUERY_SECTION_NAMES, params
         )
