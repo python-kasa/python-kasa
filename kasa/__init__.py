@@ -34,7 +34,7 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.feature import Feature
+from kasa.feature import Feature, FeatureIdentifier
 from kasa.interfaces.light import HSV, ColorTempRange, Light, LightState
 from kasa.interfaces.thermostat import Thermostat, ThermostatState
 from kasa.module import Module
@@ -58,6 +58,7 @@ __all__ = [
     "TurnOnBehavior",
     "DeviceType",
     "Feature",
+    "FeatureIdentifier",
     "EmeterStatus",
     "Device",
     "Light",

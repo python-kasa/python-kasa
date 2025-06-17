@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature
+from ...feature import Feature, FeatureIdentifier
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -17,7 +17,7 @@ class BarkDetection(SmartCamModule):
     REQUIRED_COMPONENT = "barkDetection"
 
     QUERY_GETTER_NAME = "getBarkDetectionConfig"
-    QUERY_MODULE_NAME = "bark_detection"
+    QUERY_MODULE_NAME = FeatureIdentifier.BARK_DETECTION.value
     QUERY_SECTION_NAMES = "detection"
 
     def _initialize_features(self) -> None:

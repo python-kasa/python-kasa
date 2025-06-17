@@ -70,7 +70,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
@@ -79,6 +79,44 @@ if TYPE_CHECKING:
     from .module import Module
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class FeatureIdentifier(StrEnum):
+    """Feature identifier to be used in Home Assistant entity's key."""
+
+    ALARM = auto()
+    ALARM_DURATION = auto()
+    ALARM_SOUND = auto()
+    ALARM_VOLUME = auto()
+    BABY_CRY_DETECTION = auto()
+    BARK_DETECTION = auto()
+    BATTERY_CHARGING = auto()
+    BATTERY_LOW = auto()
+    BATTERY_LEVEL = auto()
+    BATTERY_TEMPERATURE = auto()
+    BATTERY_VOLTAGE = auto()
+    DEVICE_ID = auto()
+    DEVICE_TIME = auto()
+    GLASS_DETECTION = auto()
+    LINE_CROSSING_DETECTION = auto()
+    MATTER_SETUP_CODE = auto()
+    MATTER_SETUP_PAYLOAD = auto()
+    MEOW_DETECTION = auto()
+    MOTION_DETECTION = auto()
+    PAN_RIGHT = auto()
+    PAN_LEFT = auto()
+    PAN_STEP = auto()
+    PERSON_DETECTION = auto()
+    PET_DETECTION = auto()
+    RSSI = auto()
+    SIGNAL_LEVEL = auto()
+    STOP_ALARM = auto()
+    TAMPER_DETECTION = auto()
+    TEST_ALARM = auto()
+    TILT_UP = auto()
+    TILT_DOWN = auto()
+    TILT_STEP = auto()
+    VEHICLE_DETECTION = auto()
 
 
 @dataclass

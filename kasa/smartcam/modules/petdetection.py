@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature
+from ...feature import Feature, FeatureIdentifier
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -17,7 +17,7 @@ class PetDetection(SmartCamModule):
     REQUIRED_COMPONENT = "petDetection"
 
     QUERY_GETTER_NAME = "getPetDetectionConfig"
-    QUERY_MODULE_NAME = "pet_detection"
+    QUERY_MODULE_NAME = FeatureIdentifier.PET_DETECTION.value
     QUERY_SECTION_NAMES = "detection"
 
     def _initialize_features(self) -> None:
@@ -25,7 +25,7 @@ class PetDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="pet_detection",
+                id=self.QUERY_MODULE_NAME,
                 name="Pet detection",
                 container=self,
                 attribute_getter="enabled",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature
+from ...feature import Feature, FeatureIdentifier
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -17,7 +17,7 @@ class MotionDetection(SmartCamModule):
     REQUIRED_COMPONENT = "detection"
 
     QUERY_GETTER_NAME = "getDetectionConfig"
-    QUERY_MODULE_NAME = "motion_detection"
+    QUERY_MODULE_NAME = FeatureIdentifier.MOTION_DETECTION.value
     QUERY_SECTION_NAMES = "motion_det"
 
     def _initialize_features(self) -> None:
@@ -25,7 +25,7 @@ class MotionDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id="motion_detection",
+                id=self.QUERY_MODULE_NAME,
                 name="Motion detection",
                 container=self,
                 attribute_getter="enabled",
