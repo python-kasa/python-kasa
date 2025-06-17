@@ -36,6 +36,10 @@ class SmartCamModule(SmartModule):
         "BabyCryDetection"
     )
 
+    SmartCamLineCrossingDetection: Final[ModuleName[modules.LineCrossingDetection]] = ModuleName(
+        "LineCrossingDetection"
+    )
+
     SmartCamBattery: Final[ModuleName[modules.Battery]] = ModuleName("Battery")
 
     SmartCamDeviceModule: Final[ModuleName[modules.DeviceModule]] = ModuleName(

@@ -10,6 +10,7 @@ from .device import DeviceModule
 from .homekit import HomeKit
 from .led import Led
 from .lensmask import LensMask
+from .linecrossingdetection import LineCrossingDetection
 from .matter import Matter
 from .motiondetection import MotionDetection
 from .pantilt import PanTilt
@@ -27,6 +28,7 @@ __all__ = [
     "ChildSetup",
     "DeviceModule",
     "Led",
+    "LineCrossingDetection",
     "PanTilt",
     "PersonDetection",
     "PetDetection",
