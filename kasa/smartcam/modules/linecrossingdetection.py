@@ -45,6 +45,8 @@ class LineCrossingDetection(SmartCamModule):
         """Set the line crossing detection enabled state."""
         params = {"enabled": "on" if enable else "off"}
         return await self._device._query_setter_helper(
-            "setLinecrossingDetectionConfig", self.QUERY_MODULE_NAME,
-            self.QUERY_SECTION_NAMES, params
+            "setLinecrossingDetectionConfig",
+            self.QUERY_MODULE_NAME,
+            self.QUERY_SECTION_NAMES,
+            params,
         )

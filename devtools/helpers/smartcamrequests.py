@@ -44,8 +44,11 @@ SMARTCAM_REQUESTS: list[dict] = [
     {"getWhitelampConfig": {"image": {"name": "switch"}}},
     {"getMsgPushConfig": {"msg_push": {"name": ["chn1_msg_push_info"]}}},
     {"getSdCardStatus": {"harddisk_manage": {"table": ["hd_info"]}}},
-    {"getLinecrossingDetectionConfig":
-         {"linecrossing_detection": {"name": ["detection", "arming_schedule"]}}},
+    {
+        "getLinecrossingDetectionConfig": {
+            "linecrossing_detection": {"name": ["detection", "arming_schedule"]}
+        }
+    },
     {"getCircularRecordingConfig": {"harddisk_manage": {"name": "harddisk"}}},
     {"getRecordPlan": {"record_plan": {"name": ["chn1_channel"]}}},
     {"getAudioConfig": {"audio_config": {"name": ["speaker", "microphone"]}}},

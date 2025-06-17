@@ -45,6 +45,8 @@ class GlassDetection(SmartCamModule):
         """Set the glass detection enabled state."""
         params = {"enabled": "on" if enable else "off"}
         return await self._device._query_setter_helper(
-            "setGlassDetectionConfig", self.QUERY_MODULE_NAME,
-            self.QUERY_SECTION_NAMES, params
+            "setGlassDetectionConfig",
+            self.QUERY_MODULE_NAME,
+            self.QUERY_SECTION_NAMES,
+            params,
         )
