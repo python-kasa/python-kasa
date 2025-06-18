@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ..smartcammodule import SmartCamModule
 
 
@@ -18,7 +18,7 @@ class Matter(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id=FeatureIdentifier.MATTER_SETUP_CODE.value,
+                id="matter_setup_code",
                 name="Matter setup code",
                 container=self,
                 attribute_getter=lambda x: x.info["setup_code"],
@@ -29,7 +29,7 @@ class Matter(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id=FeatureIdentifier.MATTER_SETUP_PAYLOAD.value,
+                id="matter_setup_payload",
                 name="Matter setup payload",
                 container=self,
                 attribute_getter=lambda x: x.info["setup_payload"],

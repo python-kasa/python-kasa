@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -25,7 +25,7 @@ class LineCrossingDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id=FeatureIdentifier.LINE_CROSSING_DETECTION.value,
+                id="line_crossing_detection",
                 name="Line crossing detection",
                 container=self,
                 attribute_getter="enabled",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ..smartcammodule import SmartCamModule
 
 DEFAULT_PAN_STEP = 30
@@ -28,7 +28,7 @@ class PanTilt(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.PAN_RIGHT.value,
+                "pan_right",
                 "Pan right",
                 container=self,
                 attribute_setter=lambda: self.pan(self._pan_step * -1),
@@ -38,7 +38,7 @@ class PanTilt(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.PAN_LEFT.value,
+                "pan_left",
                 "Pan left",
                 container=self,
                 attribute_setter=lambda: self.pan(self._pan_step),
@@ -48,7 +48,7 @@ class PanTilt(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.PAN_STEP.value,
+                "pan_step",
                 "Pan step",
                 container=self,
                 attribute_getter="_pan_step",
@@ -59,7 +59,7 @@ class PanTilt(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.TILT_UP.value,
+                "tilt_up",
                 "Tilt up",
                 container=self,
                 attribute_setter=lambda: self.tilt(self._tilt_step),
@@ -69,7 +69,7 @@ class PanTilt(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.TILT_DOWN.value,
+                "tilt_down",
                 "Tilt down",
                 container=self,
                 attribute_setter=lambda: self.tilt(self._tilt_step * -1),
@@ -79,7 +79,7 @@ class PanTilt(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.TILT_STEP.value,
+                "tilt_step",
                 "Tilt step",
                 container=self,
                 attribute_getter="_tilt_step",

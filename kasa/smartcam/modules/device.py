@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ..smartcammodule import SmartCamModule
 
 
@@ -31,7 +31,7 @@ class DeviceModule(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id=FeatureIdentifier.DEVICE_ID.value,
+                id="device_id",
                 name="Device ID",
                 attribute_getter="device_id",
                 category=Feature.Category.Debug,
@@ -43,7 +43,7 @@ class DeviceModule(SmartCamModule):
                 Feature(
                     self._device,
                     container=self,
-                    id=FeatureIdentifier.RSSI.value,
+                    id="rssi",
                     name="RSSI",
                     attribute_getter="rssi",
                     icon="mdi:signal",
@@ -56,7 +56,7 @@ class DeviceModule(SmartCamModule):
                 Feature(
                     self._device,
                     container=self,
-                    id=FeatureIdentifier.SIGNAL_LEVEL.value,
+                    id="signal_level",
                     name="Signal Level",
                     attribute_getter="signal_level",
                     icon="mdi:signal",

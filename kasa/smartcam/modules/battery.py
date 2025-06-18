@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ..smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class Battery(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.BATTERY_LOW.value,
+                "battery_low",
                 "Battery low",
                 container=self,
                 attribute_getter="battery_low",
@@ -33,7 +33,7 @@ class Battery(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.BATTERY_LEVEL.value,
+                "battery_level",
                 "Battery level",
                 container=self,
                 attribute_getter="battery_percent",
@@ -47,7 +47,7 @@ class Battery(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.BATTERY_TEMPERATURE.value,
+                "battery_temperature",
                 "Battery temperature",
                 container=self,
                 attribute_getter="battery_temperature",
@@ -60,7 +60,7 @@ class Battery(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.BATTERY_VOLTAGE.value,
+                "battery_voltage",
                 "Battery voltage",
                 container=self,
                 attribute_getter="battery_voltage",
@@ -73,7 +73,7 @@ class Battery(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                FeatureIdentifier.BATTERY_CHARGING.value,
+                "battery_charging",
                 "Battery charging",
                 container=self,
                 attribute_getter="battery_charging",

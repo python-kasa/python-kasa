@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -17,7 +17,7 @@ class TamperDetection(SmartCamModule):
     REQUIRED_COMPONENT = "tamperDetection"
 
     QUERY_GETTER_NAME = "getTamperDetectionConfig"
-    QUERY_MODULE_NAME = FeatureIdentifier.TAMPER_DETECTION.value
+    QUERY_MODULE_NAME = "tamper_detection"
     QUERY_SECTION_NAMES = "tamper_det"
 
     def _initialize_features(self) -> None:
@@ -25,7 +25,7 @@ class TamperDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id=self.QUERY_MODULE_NAME,
+                id="tamper_detection",
                 name="Tamper detection",
                 container=self,
                 attribute_getter="enabled",

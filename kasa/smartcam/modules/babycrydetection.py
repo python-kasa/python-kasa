@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
 
@@ -25,7 +25,7 @@ class BabyCryDetection(SmartCamModule):
         self._add_feature(
             Feature(
                 self._device,
-                id=FeatureIdentifier.BABY_CRY_DETECTION.value,
+                id="baby_cry_detection",
                 name="Baby cry detection",
                 container=self,
                 attribute_getter="enabled",

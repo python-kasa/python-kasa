@@ -7,7 +7,7 @@ from typing import cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ...cachedzoneinfo import CachedZoneInfo
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ...interfaces import Time as TimeInterface
 from ...smart.smartmodule import allow_update_after
 from ..smartcammodule import SmartCamModule
@@ -28,7 +28,7 @@ class Time(SmartCamModule, TimeInterface):
         self._add_feature(
             Feature(
                 device=self._device,
-                id=FeatureIdentifier.DEVICE_TIME.value,
+                id="device_time",
                 name="Device time",
                 attribute_getter="time",
                 container=self,

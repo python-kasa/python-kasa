@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from ...feature import Feature, FeatureIdentifier
+from ...feature import Feature
 from ...interfaces import Alarm as AlarmInterface
 from ...module import FeatureAttribute
 from ...smart.smartmodule import allow_update_after
@@ -38,7 +38,7 @@ class Alarm(SmartCamModule, AlarmInterface):
         self._add_feature(
             Feature(
                 device,
-                id=FeatureIdentifier.ALARM.value,
+                id="alarm",
                 name="Alarm",
                 container=self,
                 attribute_getter="active",
@@ -50,7 +50,7 @@ class Alarm(SmartCamModule, AlarmInterface):
         self._add_feature(
             Feature(
                 device,
-                id=FeatureIdentifier.ALARM_SOUND.value,
+                id="alarm_sound",
                 name="Alarm sound",
                 container=self,
                 attribute_getter="alarm_sound",
@@ -63,7 +63,7 @@ class Alarm(SmartCamModule, AlarmInterface):
         self._add_feature(
             Feature(
                 device,
-                id=FeatureIdentifier.ALARM_VOLUME.value,
+                id="alarm_volume",
                 name="Alarm volume",
                 container=self,
                 attribute_getter="alarm_volume",
@@ -76,7 +76,7 @@ class Alarm(SmartCamModule, AlarmInterface):
         self._add_feature(
             Feature(
                 device,
-                id=FeatureIdentifier.ALARM_DURATION.value,
+                id="alarm_duration",
                 name="Alarm duration",
                 container=self,
                 attribute_getter="alarm_duration",
@@ -89,7 +89,7 @@ class Alarm(SmartCamModule, AlarmInterface):
         self._add_feature(
             Feature(
                 device,
-                id=FeatureIdentifier.TEST_ALARM.value,
+                id="test_alarm",
                 name="Test alarm",
                 container=self,
                 attribute_setter="play",
@@ -99,7 +99,7 @@ class Alarm(SmartCamModule, AlarmInterface):
         self._add_feature(
             Feature(
                 device,
-                id=FeatureIdentifier.STOP_ALARM.value,
+                id="stop_alarm",
                 name="Stop alarm",
                 container=self,
                 attribute_setter="stop",
