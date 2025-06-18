@@ -7,13 +7,13 @@
                 "connect_type": "wireless",
                 "device_id": "0000000000000000000000000000000000000000",
                 "http_port": 443,
-                "last_alarm_time": "1734729039",
-                "last_alarm_type": "motion",
+                "last_alarm_time": "0",
+                "last_alarm_type": "",
                 "owner": "00000000000000000000000000000000",
-                "sd_status": "normal"
+                "sd_status": "offline"
             },
             "device_id": "00000000000000000000000000000000",
-            "device_model": "C225",
+            "device_model": "C220",
             "device_name": "#MASKED_NAME#",
             "device_type": "SMART.IPCAMERA",
             "encrypt_info": {
@@ -25,24 +25,29 @@
                 "3"
             ],
             "factory_default": false,
-            "firmware_version": "1.0.11 Build 240826 Rel.62730n",
-            "hardware_version": "2.0",
+            "firmware_version": "1.2.5 Build 241224 Rel.40956n",
+            "hardware_version": "1.0",
             "ip": "127.0.0.123",
+            "isResetWiFi": false,
             "is_support_iot_cloud": true,
-            "mac": "A8-42-A1-00-00-00",
+            "mac": "7C-F1-7E-00-00-00",
             "mgt_encrypt_schm": {
                 "is_support_https": true
             },
-            "obd_src": "tplink"
+            "protocol_version": 1
         }
     },
     "getAlertConfig": {
         "msg_alarm": {
             "capability": {
                 "alarm_duration_support": "1",
+                "alarm_func": [
+                    "sound",
+                    "light"
+                ],
                 "alarm_volume_support": "1",
                 "alert_event_type_support": "1",
-                "usr_def_audio_alarm_max_num": "15",
+                "usr_def_audio_alarm_max_num": "2",
                 "usr_def_audio_alarm_support": "1",
                 "usr_def_audio_max_duration": "15",
                 "usr_def_audio_type": "0",
@@ -211,10 +216,6 @@
                     "version": 1
                 },
                 {
-                    "name": "panoramicView",
-                    "version": 1
-                },
-                {
                     "name": "vehicleDetection",
                     "version": 1
                 },
@@ -235,14 +236,6 @@
                     "version": 1
                 },
                 {
-                    "name": "alarmDetection",
-                    "version": 1
-                },
-                {
-                    "name": "infLamp",
-                    "version": 1
-                },
-                {
                     "name": "markerBox",
                     "version": 1
                 },
@@ -255,20 +248,8 @@
                     "version": 1
                 },
                 {
-                    "name": "hdr",
+                    "name": "panoramicView",
                     "version": 1
-                },
-                {
-                    "name": "homekit",
-                    "version": 1
-                },
-                {
-                    "name": "upnpc",
-                    "version": 2
-                },
-                {
-                    "name": "bleOnboarding",
-                    "version": 2
                 },
                 {
                     "name": "recordDownload",
@@ -279,16 +260,28 @@
                     "version": 1
                 },
                 {
-                    "name": "encryption",
-                    "version": 3
+                    "name": "detectionRegion",
+                    "version": 2
                 },
                 {
                     "name": "staticIp",
                     "version": 2
                 },
                 {
-                    "name": "detectionRegion",
+                    "name": "snapshot",
                     "version": 2
+                },
+                {
+                    "name": "timeFormat",
+                    "version": 1
+                },
+                {
+                    "name": "upnpc",
+                    "version": 2
+                },
+                {
+                    "name": "relayPreConnection",
+                    "version": 1
                 }
             ]
         }
@@ -300,16 +293,17 @@
                 "channels": "1",
                 "echo_cancelling": "off",
                 "encode_type": "G711alaw",
+                "factory_noise_cancelling": "off",
                 "input_device_type": "MicIn",
                 "mute": "off",
                 "noise_cancelling": "on",
                 "sampling_rate": "8",
-                "volume": "80"
+                "volume": "100"
             },
             "speaker": {
                 "mute": "off",
                 "output_device_type": "SpeakerOut",
-                "volume": "80"
+                "volume": "100"
             }
         }
     },
@@ -340,8 +334,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2024-12-20 15:15:46",
-                "seconds_from_1970": 1734736546
+                "local_time": "2025-06-18 13:00:26",
+                "seconds_from_1970": 1750244426
             }
         }
     },
@@ -355,7 +349,7 @@
     "getConnectionType": {
         "link_type": "wifi",
         "rssi": "4",
-        "rssiValue": -9,
+        "rssiValue": -46,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -373,30 +367,31 @@
     "getDeviceInfo": {
         "device_info": {
             "basic_info": {
-                "avatar": "camera c225",
+                "avatar": "camera c212",
                 "barcode": "",
                 "dev_id": "0000000000000000000000000000000000000000",
                 "device_alias": "#MASKED_NAME#",
-                "device_info": "C225 2.0 IPC",
-                "device_model": "C225",
+                "device_info": "C220 1.0 IPC",
+                "device_model": "C220",
                 "device_name": "#MASKED_NAME#",
                 "device_type": "SMART.IPCAMERA",
                 "features": 3,
                 "ffs": false,
-                "has_set_location_info": 0,
+                "has_set_location_info": 1,
                 "hw_desc": "00000000000000000000000000000000",
                 "hw_id": "00000000000000000000000000000000",
-                "hw_version": "2.0",
+                "hw_version": "1.0",
                 "is_cal": true,
                 "latitude": 0,
                 "longitude": 0,
-                "mac": "A8-42-A1-00-00-00",
+                "mac": "7C-F1-7E-00-00-00",
                 "manufacturer_name": "TP-LINK",
                 "mobile_access": "0",
                 "no_rtsp_constrain": 1,
                 "oem_id": "00000000000000000000000000000000",
-                "region": "US",
-                "sw_version": "1.0.11 Build 240826 Rel.62730n"
+                "region": "EU",
+                "sw_version": "1.2.5 Build 241224 Rel.40956n",
+                "tss": false
             }
         }
     },
@@ -420,7 +415,7 @@
     "getGlassDetectionConfig": {
         "glass_detection": {
             "detection": {
-                "enabled": "off",
+                "enabled": "on",
                 "sensitivity": "50"
             }
         }
@@ -428,8 +423,8 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "1734729039",
-                "last_alarm_type": "motion"
+                "last_alarm_time": "0",
+                "last_alarm_type": ""
             }
         }
     },
@@ -458,7 +453,7 @@
                 "inf_start_time": "64800",
                 "inf_type": "auto",
                 "iris_level": "160",
-                "light_freq_mode": "auto",
+                "light_freq_mode": "50",
                 "lock_blue_colton": "0",
                 "lock_blue_gain": "0",
                 "lock_gb_gain": "0",
@@ -511,15 +506,14 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
-                "wtl_manual_start_flag": "off"
+                "wtl_intensity_level": "1"
             }
         }
     },
     "getLedStatus": {
         "led": {
             "config": {
-                "enabled": "on"
+                "enabled": "off"
             }
         }
     },
@@ -555,7 +549,7 @@
                 "inf_start_time": "64800",
                 "inf_type": "auto",
                 "iris_level": "160",
-                "light_freq_mode": "auto",
+                "light_freq_mode": "50",
                 "lock_blue_colton": "0",
                 "lock_blue_gain": "0",
                 "lock_gb_gain": "0",
@@ -602,8 +596,82 @@
                 "wednesday": "[\"0000-2400\"]"
             },
             "detection": {
-                "enabled": "on"
+                "enabled": "off"
             }
+        }
+    },
+    "getLinecrossingDetectionRegion": {
+        "linecrossing_detection": {
+            "region_info": [
+                {
+                    "region_info_1": {
+                        "direction": "both",
+                        "id": "0",
+                        "non_vehicle_enabled": "off",
+                        "people_enabled": "off",
+                        "position_pan": "0.000000",
+                        "position_tilt": "0.000000",
+                        "position_zoom": "0.000000",
+                        "pt1_x": "1662",
+                        "pt1_y": "837",
+                        "pt2_x": "7516",
+                        "pt2_y": "903",
+                        "sensitivity": "50",
+                        "vehicle_enabled": "off"
+                    }
+                },
+                {
+                    "region_info_2": {
+                        "direction": "both",
+                        "id": "0",
+                        "non_vehicle_enabled": "off",
+                        "people_enabled": "off",
+                        "position_pan": "0.000000",
+                        "position_tilt": "0.000000",
+                        "position_zoom": "0.000000",
+                        "pt1_x": "8264",
+                        "pt1_y": "8653",
+                        "pt2_x": "7626",
+                        "pt2_y": "1264",
+                        "sensitivity": "50",
+                        "vehicle_enabled": "off"
+                    }
+                },
+                {
+                    "region_info_3": {
+                        "direction": "both",
+                        "id": "0",
+                        "non_vehicle_enabled": "off",
+                        "people_enabled": "off",
+                        "position_pan": "0.000000",
+                        "position_tilt": "0.000000",
+                        "position_zoom": "0.000000",
+                        "pt1_x": "1666",
+                        "pt1_y": "3333",
+                        "pt2_x": "1634",
+                        "pt2_y": "9556",
+                        "sensitivity": "50",
+                        "vehicle_enabled": "off"
+                    }
+                },
+                {
+                    "region_info_4": {
+                        "direction": "both",
+                        "id": "0",
+                        "non_vehicle_enabled": "off",
+                        "people_enabled": "off",
+                        "position_pan": "0.000000",
+                        "position_tilt": "0.000000",
+                        "position_zoom": "0.000000",
+                        "pt1_x": "821",
+                        "pt1_y": "8866",
+                        "pt2_x": "8393",
+                        "pt2_y": "9129",
+                        "sensitivity": "50",
+                        "vehicle_enabled": "off"
+                    }
+                }
+            ]
         }
     },
     "getMediaEncrypt": {
@@ -663,15 +731,14 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
-                "wtl_manual_start_flag": "off"
+                "wtl_intensity_level": "1"
             }
         }
     },
     "getPersonDetectionConfig": {
         "people_detection": {
             "detection": {
-                "enabled": "on",
+                "enabled": "off",
                 "sensitivity": "60"
             }
         }
@@ -732,8 +799,7 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
-                "wtl_manual_start_flag": "off"
+                "wtl_intensity_level": "1"
             }
         }
     },
@@ -746,32 +812,32 @@
                         "crossline_free_space_accurate": "0B",
                         "crossline_total_space": "0B",
                         "crossline_total_space_accurate": "0B",
-                        "detect_status": "normal",
+                        "detect_status": "offline",
                         "disk_name": "1",
-                        "free_space": "98.6GB",
-                        "free_space_accurate": "105903970616B",
+                        "free_space": "0B",
+                        "free_space_accurate": "0B",
                         "loop_record_status": "0",
                         "msg_push_free_space": "0B",
                         "msg_push_free_space_accurate": "0B",
                         "msg_push_total_space": "0B",
                         "msg_push_total_space_accurate": "0B",
-                        "percent": "100",
+                        "percent": "0",
                         "picture_free_space": "0B",
                         "picture_free_space_accurate": "0B",
                         "picture_total_space": "0B",
                         "picture_total_space_accurate": "0B",
                         "record_duration": "0",
                         "record_free_duration": "0",
-                        "record_start_time": "1729454840",
-                        "rw_attr": "rw",
-                        "status": "normal",
-                        "total_space": "118.8GB",
-                        "total_space_accurate": "127531646976B",
+                        "record_start_time": "0",
+                        "rw_attr": "r",
+                        "status": "offline",
+                        "total_space": "0B",
+                        "total_space_accurate": "0B",
                         "type": "local",
-                        "video_free_space": "98.6GB",
-                        "video_free_space_accurate": "105903970616B",
-                        "video_total_space": "114.0GB",
-                        "video_total_space_accurate": "122406567936B",
+                        "video_free_space": "0B",
+                        "video_free_space_accurate": "0B",
+                        "video_total_space": "0B",
+                        "video_total_space_accurate": "0B",
                         "write_protect": "0"
                     }
                 }
@@ -782,7 +848,7 @@
         "tamper_detection": {
             "tamper_det": {
                 "digital_sensitivity": "50",
-                "enabled": "off",
+                "enabled": "on",
                 "sensitivity": "medium"
             }
         }
@@ -800,9 +866,9 @@
     "getTimezone": {
         "system": {
             "basic": {
-                "timezone": "UTC-08:00",
+                "timezone": "UTC+01:00",
                 "timing_mode": "ntp",
-                "zone_id": "America/Los_Angeles"
+                "zone_id": "Europe/Amsterdam"
             }
         }
     },
@@ -826,7 +892,8 @@
                     "512",
                     "1024",
                     "1536",
-                    "2048"
+                    "2048",
+                    "2560"
                 ],
                 "change_fps_support": "1",
                 "encode_types": [
@@ -836,12 +903,7 @@
                 "frame_rates": [
                     "65551",
                     "65556",
-                    "65561",
-                    "65566"
-                ],
-                "hdrs": [
-                    "0",
-                    "1"
+                    "65561"
                 ],
                 "minor_stream_support": "1",
                 "qualitys": [
@@ -850,7 +912,7 @@
                     "5"
                 ],
                 "resolutions": [
-                    "2688*1520",
+                    "2560*1440",
                     "1920*1080"
                 ]
             }
@@ -859,15 +921,14 @@
     "getVideoQualities": {
         "video": {
             "main": {
-                "bitrate": "2048",
+                "bitrate": "2560",
                 "bitrate_type": "vbr",
-                "default_bitrate": "2048",
+                "default_bitrate": "2560",
                 "encode_type": "H264",
-                "frame_rate": "65551",
-                "hdr": "0",
+                "frame_rate": "65561",
                 "name": "VideoEncoder_1",
                 "quality": "3",
-                "resolution": "2688*1520",
+                "resolution": "2560*1440",
                 "smart_codec": "off"
             }
         }
@@ -894,8 +955,7 @@
                 "schedule_start_time": "21600",
                 "switch_mode": "common",
                 "wtl_force_time": "300",
-                "wtl_intensity_level": "5",
-                "wtl_manual_start_flag": "off"
+                "wtl_intensity_level": "1"
             }
         }
     },
@@ -945,16 +1005,17 @@
                     "channels": "1",
                     "echo_cancelling": "off",
                     "encode_type": "G711alaw",
+                    "factory_noise_cancelling": "off",
                     "input_device_type": "MicIn",
                     "mute": "off",
                     "noise_cancelling": "on",
                     "sampling_rate": "8",
-                    "volume": "80"
+                    "volume": "100"
                 },
                 "speaker": {
                     "mute": "off",
                     "output_device_type": "SpeakerOut",
-                    "volume": "80"
+                    "volume": "100"
                 }
             }
         }
@@ -1099,90 +1160,6 @@
                         "auth": 3,
                         "bssid": "000000000000",
                         "encryption": 2,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 4,
-                        "bssid": "000000000000",
-                        "encryption": 3,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 4,
-                        "bssid": "000000000000",
-                        "encryption": 3,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 4,
-                        "bssid": "000000000000",
-                        "encryption": 3,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 4,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 3,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 2,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 2,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 4,
-                        "bssid": "000000000000",
-                        "encryption": 3,
-                        "rssi": 2,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
                         "rssi": 2,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
@@ -1197,84 +1174,42 @@
                         "auth": 3,
                         "bssid": "000000000000",
                         "encryption": 2,
-                        "rssi": 1,
+                        "rssi": 0,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
                         "auth": 3,
                         "bssid": "000000000000",
                         "encryption": 2,
-                        "rssi": 1,
+                        "rssi": 0,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
                         "auth": 3,
                         "bssid": "000000000000",
                         "encryption": 2,
-                        "rssi": 1,
+                        "rssi": 0,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
                         "auth": 3,
                         "bssid": "000000000000",
                         "encryption": 2,
-                        "rssi": 1,
+                        "rssi": 0,
+                        "ssid": "I01BU0tFRF9TU0lEIw=="
+                    },
+                    {
+                        "auth": 3,
+                        "bssid": "000000000000",
+                        "encryption": 1,
+                        "rssi": 0,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
                         "auth": 3,
                         "bssid": "000000000000",
                         "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 5,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 1,
+                        "rssi": 0,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
