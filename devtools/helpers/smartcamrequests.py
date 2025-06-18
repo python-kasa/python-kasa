@@ -49,6 +49,7 @@ SMARTCAM_REQUESTS: list[dict] = [
             "linecrossing_detection": {"name": ["detection", "arming_schedule"]}
         }
     },
+    {"getLinecrossingDetectionRegion": {"linecrossing_detection":{"table":["region_info"]}}},
     {"getCircularRecordingConfig": {"harddisk_manage": {"name": "harddisk"}}},
     {"getRecordPlan": {"record_plan": {"name": ["chn1_channel"]}}},
     {"getAudioConfig": {"audio_config": {"name": ["speaker", "microphone"]}}},
