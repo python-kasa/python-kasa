@@ -21,3 +21,4 @@ class BabyCryDetection(DetectionModule):
     DETECTION_FEATURE_ID = "baby_cry_detection"
     DETECTION_FEATURE_NAME = "Baby cry detection"
     QUERY_SETTER_NAME = "setBCDConfig"
+    QUERY_SET_SECTION_NAME = "bcd"

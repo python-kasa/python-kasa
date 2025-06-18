@@ -21,3 +21,4 @@ class LineCrossingDetection(DetectionModule):
     DETECTION_FEATURE_ID = "line_crossing_detection"
     DETECTION_FEATURE_NAME = "Line crossing detection"
     QUERY_SETTER_NAME = "setLinecrossingDetectionConfig"
+    QUERY_SET_SECTION_NAME = "detection"

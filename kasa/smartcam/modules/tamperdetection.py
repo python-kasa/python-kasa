@@ -21,3 +21,4 @@ class TamperDetection(DetectionModule):
     DETECTION_FEATURE_ID = "tamper_detection"
     DETECTION_FEATURE_NAME = "Tamper detection"
     QUERY_SETTER_NAME = "setTamperDetectionConfig"
+    QUERY_SET_SECTION_NAME = "tamper_det"

@@ -21,3 +21,4 @@ class PersonDetection(DetectionModule):
     DETECTION_FEATURE_ID = "person_detection"
     DETECTION_FEATURE_NAME = "Person detection"
     QUERY_SETTER_NAME = "setPersonDetectionConfig"
+    QUERY_SET_SECTION_NAME = "detection"

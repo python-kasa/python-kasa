@@ -21,3 +21,4 @@ class GlassDetection(DetectionModule):
     DETECTION_FEATURE_ID = "glass_detection"
     DETECTION_FEATURE_NAME = "Glass detection"
     QUERY_SETTER_NAME = "setGlassDetectionConfig"
+    QUERY_SET_SECTION_NAME = "detection"

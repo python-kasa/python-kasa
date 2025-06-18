@@ -21,3 +21,4 @@ class MotionDetection(DetectionModule):
     DETECTION_FEATURE_ID = "motion_detection"
     DETECTION_FEATURE_NAME = "Motion detection"
     QUERY_SETTER_NAME = "setDetectionConfig"
+    QUERY_SET_SECTION_NAME = "motion_det"

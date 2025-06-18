@@ -21,3 +21,4 @@ class MeowDetection(DetectionModule):
     DETECTION_FEATURE_ID = "meow_detection"
     DETECTION_FEATURE_NAME = "Meow detection"
     QUERY_SETTER_NAME = "setMeowDetectionConfig"
+    QUERY_SET_SECTION_NAME = "detection"

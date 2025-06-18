@@ -17,6 +17,7 @@ class DetectionModule(SmartCamModule):
     DETECTION_FEATURE_ID: str = ""
     DETECTION_FEATURE_NAME: str = ""
     QUERY_SETTER_NAME: str = ""
+    QUERY_SET_SECTION_NAME: str = ""
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
@@ -45,6 +46,6 @@ class DetectionModule(SmartCamModule):
         return await self._device._query_setter_helper(
             self.QUERY_SETTER_NAME,
             self.QUERY_MODULE_NAME,
-            self.QUERY_SECTION_NAMES,
-            params
+            self.QUERY_SET_SECTION_NAME,
+            params,
         )

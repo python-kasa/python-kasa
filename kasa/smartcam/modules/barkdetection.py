@@ -21,3 +21,4 @@ class BarkDetection(DetectionModule):
     DETECTION_FEATURE_ID = "bark_detection"
     DETECTION_FEATURE_NAME = "Bark detection"
     QUERY_SETTER_NAME = "setBarkDetectionConfig"
+    QUERY_SET_SECTION_NAME = "detection"

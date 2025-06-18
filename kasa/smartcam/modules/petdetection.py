@@ -21,3 +21,4 @@ class PetDetection(DetectionModule):
     DETECTION_FEATURE_ID = "pet_detection"
     DETECTION_FEATURE_NAME = "Pet detection"
     QUERY_SETTER_NAME = "setPetDetectionConfig"
+    QUERY_SET_SECTION_NAME = "detection"

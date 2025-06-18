@@ -21,3 +21,4 @@ class VehicleDetection(DetectionModule):
     DETECTION_FEATURE_ID = "vehicle_detection"
     DETECTION_FEATURE_NAME = "Vehicle detection"
     QUERY_SETTER_NAME = "setVehicleDetectionConfig"
+    QUERY_SET_SECTION_NAME = "detection"
