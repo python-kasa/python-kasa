@@ -7,8 +7,8 @@
                 "connect_type": "wireless",
                 "device_id": "0000000000000000000000000000000000000000",
                 "http_port": 443,
-                "last_alarm_time": "0",
-                "last_alarm_type": "",
+                "last_alarm_time": "1750109746",
+                "last_alarm_type": "motion",
                 "owner": "00000000000000000000000000000000",
                 "sd_status": "offline"
             },
@@ -334,8 +334,8 @@
     "getClockStatus": {
         "system": {
             "clock_status": {
-                "local_time": "2025-06-18 13:00:26",
-                "seconds_from_1970": 1750244426
+                "local_time": "2025-06-16 23:47:00",
+                "seconds_from_1970": 1750110420
             }
         }
     },
@@ -348,8 +348,8 @@
     },
     "getConnectionType": {
         "link_type": "wifi",
-        "rssi": "4",
-        "rssiValue": -46,
+        "rssi": "3",
+        "rssiValue": -54,
         "ssid": "I01BU0tFRF9TU0lEIw=="
     },
     "getDetectionConfig": {
@@ -423,8 +423,8 @@
     "getLastAlarmInfo": {
         "system": {
             "last_alarm_info": {
-                "last_alarm_time": "0",
-                "last_alarm_type": ""
+                "last_alarm_time": "1750109746",
+                "last_alarm_type": "motion"
             }
         }
     },
@@ -596,82 +596,8 @@
                 "wednesday": "[\"0000-2400\"]"
             },
             "detection": {
-                "enabled": "off"
+                "enabled": "on"
             }
-        }
-    },
-    "getLinecrossingDetectionRegion": {
-        "linecrossing_detection": {
-            "region_info": [
-                {
-                    "region_info_1": {
-                        "direction": "both",
-                        "id": "0",
-                        "non_vehicle_enabled": "off",
-                        "people_enabled": "off",
-                        "position_pan": "0.000000",
-                        "position_tilt": "0.000000",
-                        "position_zoom": "0.000000",
-                        "pt1_x": "1662",
-                        "pt1_y": "837",
-                        "pt2_x": "7516",
-                        "pt2_y": "903",
-                        "sensitivity": "50",
-                        "vehicle_enabled": "off"
-                    }
-                },
-                {
-                    "region_info_2": {
-                        "direction": "both",
-                        "id": "0",
-                        "non_vehicle_enabled": "off",
-                        "people_enabled": "off",
-                        "position_pan": "0.000000",
-                        "position_tilt": "0.000000",
-                        "position_zoom": "0.000000",
-                        "pt1_x": "8264",
-                        "pt1_y": "8653",
-                        "pt2_x": "7626",
-                        "pt2_y": "1264",
-                        "sensitivity": "50",
-                        "vehicle_enabled": "off"
-                    }
-                },
-                {
-                    "region_info_3": {
-                        "direction": "both",
-                        "id": "0",
-                        "non_vehicle_enabled": "off",
-                        "people_enabled": "off",
-                        "position_pan": "0.000000",
-                        "position_tilt": "0.000000",
-                        "position_zoom": "0.000000",
-                        "pt1_x": "1666",
-                        "pt1_y": "3333",
-                        "pt2_x": "1634",
-                        "pt2_y": "9556",
-                        "sensitivity": "50",
-                        "vehicle_enabled": "off"
-                    }
-                },
-                {
-                    "region_info_4": {
-                        "direction": "both",
-                        "id": "0",
-                        "non_vehicle_enabled": "off",
-                        "people_enabled": "off",
-                        "position_pan": "0.000000",
-                        "position_tilt": "0.000000",
-                        "position_zoom": "0.000000",
-                        "pt1_x": "821",
-                        "pt1_y": "8866",
-                        "pt2_x": "8393",
-                        "pt2_y": "9129",
-                        "sensitivity": "50",
-                        "vehicle_enabled": "off"
-                    }
-                }
-            ]
         }
     },
     "getMediaEncrypt": {
@@ -1174,7 +1100,7 @@
                         "auth": 3,
                         "bssid": "000000000000",
                         "encryption": 2,
-                        "rssi": 0,
+                        "rssi": 1,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
@@ -1192,30 +1118,9 @@
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
                     {
-                        "auth": 3,
+                        "auth": 4,
                         "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 1,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
-                        "rssi": 0,
-                        "ssid": "I01BU0tFRF9TU0lEIw=="
-                    },
-                    {
-                        "auth": 3,
-                        "bssid": "000000000000",
-                        "encryption": 2,
+                        "encryption": 3,
                         "rssi": 0,
                         "ssid": "I01BU0tFRF9TU0lEIw=="
                     },
