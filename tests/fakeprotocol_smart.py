@@ -160,7 +160,7 @@ class FakeSmartTransport(BaseTransport):
                     "wednesday": '["0000-2400"]',
                 },
                 "detection": {"enabled": "on"},
-            }
+            },
         ),
         "get_device_usage": ("device", {}),
         "get_connect_cloud_state": ("cloud_connect", {"status": 0}),
