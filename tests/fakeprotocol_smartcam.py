@@ -154,6 +154,21 @@ class FakeSmartCamTransport(BaseTransport):
                 "setup_payload": "00:0000000-0000.00.000",
             },
         ),
+        "getLinecrossingDetectionConfig": (
+            "linecrossing_detection",
+            {
+                "arming_schedule": {
+                    "friday": '["0000-2400"]',
+                    "monday": '["0000-2400"]',
+                    "saturday": '["0000-2400"]',
+                    "sunday": '["0000-2400"]',
+                    "thursday": '["0000-2400"]',
+                    "tuesday": '["0000-2400"]',
+                    "wednesday": '["0000-2400"]',
+                },
+                "detection": {"enabled": "on"},
+            },
+        ),
         "getSupportChildDeviceCategory": (
             "childQuickSetup",
             {
