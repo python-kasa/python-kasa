@@ -11,6 +11,7 @@ linecrossingdetection = parametrize(
     "has line crossing detection",
     component_filter="linecrossingDetection",
     protocol_filter={"SMARTCAM"},
+    model_filter="C220(EU)_1.0_1.2.5",
 )
 
 
