@@ -48,7 +48,7 @@ async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
         # Simple enable with an existing threshold
         call_spy = mocker.spy(powerprot, "call")
         await powerprot.set_enabled(True)
-        
+
         # Check which key is used by this device
         protection_data = powerprot.data["get_protection_power"]
         if "protection_enabled" in protection_data:
@@ -68,7 +68,7 @@ async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
         await powerprot.set_protection_threshold(0)
         await device.update()
         await powerprot.set_enabled(True)
-        
+
         # Check which key is used by this device
         protection_data = powerprot.data["get_protection_power"]
         if "protection_enabled" in protection_data:
@@ -88,7 +88,7 @@ async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
         await powerprot.set_protection_threshold(0)
         await device.update()
         await powerprot.set_enabled(False)
-        
+
         # Check which key is used by this device
         protection_data = powerprot.data["get_protection_power"]
         if "protection_enabled" in protection_data:
@@ -115,7 +115,7 @@ async def test_set_threshold(dev: SmartDevice, mocker: MockerFixture):
 
     call_spy = mocker.spy(powerprot, "call")
     await powerprot.set_protection_threshold(123)
-    
+
     # Check which key is used by this device
     protection_data = powerprot.data["get_protection_power"]
     if "protection_enabled" in protection_data:
