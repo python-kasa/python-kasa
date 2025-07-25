@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import logging
 
-from ...feature import Feature
-from ...smart.smartmodule import allow_update_after
-from ..smartcammodule import SmartCamModule
+from kasa.feature import Feature
+from kasa.smart.smartmodule import allow_update_after
+from kasa.smartcam.smartcammodule import SmartCamModule
 
 _LOGGER = logging.getLogger(__name__)
 

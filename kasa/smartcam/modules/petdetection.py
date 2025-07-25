@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from .detectionmodule import DetectionModule
+from kasa.smartcam.detectionmodule import DetectionModule
 
 _LOGGER = logging.getLogger(__name__)
 
