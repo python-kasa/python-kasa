@@ -1,14 +1,17 @@
 """Tests for smartcam detections."""
 
 from __future__ import annotations
-
+from typing import List, Any, Dict, NamedTuple, Optional
 from kasa.modulemapping import ModuleName
 from kasa import Device
 from kasa.smartcam.smartcammodule import SmartCamModule
 from kasa.smartcam import DetectionModule
 
-from ...device_fixtures import parametrize, dev
+from ...device_fixtures import dev
+from ...fixtureinfo import filter_fixtures, ComponentFilter, idgenerator
 
+
+import pytest
 
 baby_cry_detection = parametrize(
     "has babycry detection",
@@ -16,17 +19,39 @@ baby_cry_detection = parametrize(
     protocol_filter={"SMARTCAM"},
 )
 
+def parametrize_detection(
+    *,
+    model_filter=None,
+    protocol_filter=None,
+    fixture_name="dev",
+    other_params_names: List[str] | None = None,
+    other_params_values: Dict[
+        str, Dict[str, str | ModuleName[DetectionModule] | ComponentFilter]
+    ]
+    | None = None,
+):
+    _parameters = []
+
 bark_detection = parametrize(
     "has bark detection",
     component_filter="barkDetection",
     protocol_filter={"SMARTCAM"},
 )
+    _all_inputs = fixture_name
+    if other_params_names:
+        _all_inputs = f"{fixture_name},{','.join(other_params_names)}"
+
+    _model_filter = model_filter
+
+    for _detection in other_params_values.values():
 
 glass_detection = parametrize(
     "has glass detection",
     component_filter="glassDetection",
     protocol_filter={"SMARTCAM"},
 )
+        if 'model_filter' in _detection:
+            _model_filter = _detection['model_filter']
 
 line_crossing_detection = parametrize(
     "has line crossing detection",
@@ -34,6 +59,19 @@ line_crossing_detection = parametrize(
     protocol_filter={"SMARTCAM"},
     model_filter="C220(EU)_1.0_1.2.5",
 )
+        other_val = list(map(lambda x: _detection[x], other_params_names))
+        _parameters.extend(
+            [
+                (i, *other_val)
+                for i in filter_fixtures(
+                    _detection["desc"],
+                    model_filter=_model_filter,
+                    protocol_filter=protocol_filter,
+                    component_filter=_detection["component_filter"],
+                    data_root_filter=None,
+                    device_type_filter=None,
+                )
+            ])
 
 meow_detection = parametrize(
     "has meow detection",
@@ -44,6 +82,12 @@ meow_detection = parametrize(
 motion_detection = parametrize(
     "has motion detection", component_filter="detection", protocol_filter={"SMARTCAM"}
 )
+    return pytest.mark.parametrize(
+        _all_inputs,
+        _parameters,
+        indirect=[fixture_name],
+        ids=idgenerator,
+    )
 
 person_detection = parametrize(
     "has person detection",
@@ -57,107 +101,100 @@ pet_detection = parametrize(
     protocol_filter={"SMARTCAM"},
 )
 
-tamper_detection = parametrize(
-    "has tamper detection",
-    component_filter="tamperDetection",
+params_detections = parametrize_detection(
     protocol_filter={"SMARTCAM"},
+    other_params_names=["module", "feature_name"],
+    other_params_values={
+        "baby_cry": {
+            "desc": "has baby cry detection",
+            "module": SmartCamModule.SmartCamBabyCryDetection,
+            "feature_name": "baby_cry_detection",
+            "component_filter": "babyCryDetection",
+        },
+        "bark": {
+            "desc": "has bark detection",
+            "module": SmartCamModule.SmartCamBarkDetection,
+            "feature_name": "bark_detection",
+            "component_filter": "barkDetection",
+        },
+        "glass": {
+            "desc": "has glass detection",
+            "module": SmartCamModule.SmartCamGlassDetection,
+            "feature_name": "glass_detection",
+            "component_filter": "glassDetection",
+        },
+        "line_crossing": {
+            "desc": "has line crossing detection",
+            "module": SmartCamModule.SmartCamLineCrossingDetection,
+            "feature_name": "line_crossing_detection",
+            "component_filter": "linecrossingDetection",
+            "model_filter": "C220(EU)_1.0_1.2.5",
+        },
+        "meow": {
+            "desc": "has meow detection",
+            "module": SmartCamModule.SmartCamMeowDetection,
+            "feature_name": "meow_detection",
+            "component_filter": "meowDetection",
+        },
+        "motion": {
+            "desc": "has motion detection",
+            "module": SmartCamModule.SmartCamMotionDetection,
+            "feature_name": "motion_detection",
+            "component_filter": "detection",
+        },
+        "person": {
+            "desc": "has person detection",
+            "module": SmartCamModule.SmartCamPersonDetection,
+            "feature_name": "person_detection",
+            "component_filter": "personDetection",
+        },
+        "pet": {
+            "desc": "has pet detection",
+            "module": SmartCamModule.SmartCamPetDetection,
+            "feature_name": "pet_detection",
+            "component_filter": "petDetection",
+        },
+        "tamper": {
+            "desc": "has tamper detection",
+            "module": SmartCamModule.SmartCamTamperDetection,
+            "feature_name": "tamper_detection",
+            "component_filter": "tamperDetection",
+        },
+
+        "vehicle": {
+            "desc": "has vehicle detection",
+            "module": SmartCamModule.SmartCamVehicleDetection,
+            "feature_name": "vehicle_detection",
+            "component_filter": "vehicleDetection",
+        },
+    },
 )
 
-vehicle_detection = parametrize(
-    "has vehicle detection",
-    component_filter="vehicleDetection",
-    protocol_filter={"SMARTCAM"},
-)
-
-
-@baby_cry_detection
-async def test_baby_cry_detection(dev: Device):
-    """Test device baby cry detection."""
-    await common_test(
-        dev, SmartCamModule.SmartCamBabyCryDetection, "baby_cry_detection"
-    )
-
-
-@bark_detection
-async def test_bark_detection(dev: Device):
-    """Test device bark detection."""
-    await common_test(dev, SmartCamModule.SmartCamBarkDetection, "bark_detection")
-
-
-@glass_detection
-async def test_glass_detection(dev: Device):
-    """Test device glass detection."""
-    await common_test(dev, SmartCamModule.SmartCamGlassDetection, "glass_detection")
-
-
-@line_crossing_detection
-async def test_line_crossing_detection(dev: Device):
-    """Test device line crossing detection."""
-    await common_test(
-        dev, SmartCamModule.SmartCamLineCrossingDetection, "line_crossing_detection"
-    )
-
-
-@meow_detection
-async def test_meow_detection(dev: Device):
-    """Test device meow detection."""
-    await common_test(dev, SmartCamModule.SmartCamMeowDetection, "meow_detection")
-
-
-@motion_detection
-async def test_motion_detection(dev: Device):
-    """Test device motion detection."""
-    await common_test(dev, SmartCamModule.SmartCamMotionDetection, "motion_detection")
-
-
-@person_detection
-async def test_person_detection(dev: Device):
-    """Test device person detection."""
-    await common_test(dev, SmartCamModule.SmartCamPersonDetection, "person_detection")
-
-
-@pet_detection
-async def test_pet_detection(dev: Device):
-    """Test device pet detection."""
-    await common_test(dev, SmartCamModule.SmartCamPetDetection, "pet_detection")
-
-
-@tamper_detection
-async def test_tamper_detection(dev: Device):
-    """Test device tamper detection."""
-    await common_test(dev, SmartCamModule.SmartCamTamperDetection, "tamper_detection")
-
-
-@vehicle_detection
-async def test_vehicle_detection(dev: Device):
-    """Test device vehicle detection."""
-    await common_test(dev, SmartCamModule.SmartCamVehicleDetection, "vehicle_detection")
-
-
-async def common_test(
-    device: Device, module: ModuleName[DetectionModule], feature_name: str
+@params_detections
+async def test_detections(
+    dev: Device, module: ModuleName[DetectionModule], feature_name: str
 ):
-    detection = device.modules.get(module)
+    detection = dev.modules.get(module)
     assert detection
 
-    detection_feat = device.features.get(feature_name)
+    detection_feat = dev.features.get(feature_name)
     assert detection_feat
 
     original_enabled = detection.enabled
 
     try:
         await detection.set_enabled(not original_enabled)
-        await device.update()
+        await dev.update()
         assert detection.enabled is not original_enabled
         assert detection_feat.value is not original_enabled
 
         await detection.set_enabled(original_enabled)
-        await device.update()
+        await dev.update()
         assert detection.enabled is original_enabled
         assert detection_feat.value is original_enabled
 
         await detection_feat.set_value(not original_enabled)
-        await device.update()
+        await dev.update()
         assert detection.enabled is not original_enabled
         assert detection_feat.value is not original_enabled
 
