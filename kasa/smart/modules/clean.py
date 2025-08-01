@@ -454,10 +454,8 @@ class Clean(SmartModule):
             for map_data in map_info.get("map_list", []):
                 if map_data.get("map_id") == current_map_id:
                     return self._get_map_name(map_data)
-                
-        return "No map"
 
-    
+        return "No map"
 
     @property
     def available_maps(self) -> list[str]:

@@ -23,6 +23,7 @@ clean = parametrize("clean module", component_filter="clean", protocol_filter={"
         ("vacuum_fan_speed", "fan_speed_preset", str),
         ("carpet_boost", "carpet_boost", bool),
         ("battery_level", "battery", int),
+        ("selected_map", "current_map", str),
     ],
 )
 async def test_features(dev: SmartDevice, feature: str, prop_name: str, type: type):
@@ -239,3 +240,219 @@ async def test_invalid_settings(
 
     with pytest.raises(exc, match=exc_message):
         await setter(value)
+
+
+@clean
+@pytest.mark.parametrize(
+    ("map_info", "expected_current", "expected_available"),
+    [
+        pytest.param(
+            {},
+            "No map",
+            [],
+            id="no_map_info",
+        ),
+        pytest.param(
+            {"current_map_id": None, "map_list": []},
+            "No map",
+            [],
+            id="no_current_map",
+        ),
+        pytest.param(
+            {
+                "current_map_id": "map1",
+                "map_list": [
+                    {"map_id": "map1", "map_name": "TGl2aW5nIFJvb20="},
+                    {"map_id": "map2", "map_name": "S2l0Y2hlbg=="},
+                ],
+            },
+            "Living Room",
+            ["Living Room", "Kitchen"],
+            id="valid_maps_with_current",
+        ),
+        pytest.param(
+            {
+                "current_map_id": "map3",
+                "map_list": [
+                    {"map_id": "map1", "map_name": "TGl2aW5nIFJvb20="},
+                    {"map_id": "map2", "map_name": "S2l0Y2hlbg=="},
+                ],
+            },
+            "No map",
+            ["Living Room", "Kitchen"],
+            id="current_map_not_in_list",
+        ),
+        pytest.param(
+            {
+                "current_map_id": "map1",
+                "map_list": [
+                    {"map_id": "map1", "map_name": ""},  # Empty name
+                    {"map_id": "map2", "map_name": "S2l0Y2hlbg=="},
+                ],
+            },
+            "map1",
+            ["map1", "Kitchen"],
+            id="empty_map_name",
+        ),
+        pytest.param(
+            {
+                "current_map_id": "map1",
+                "map_list": [
+                    {"map_id": "map1", "map_name": "invalid_base64!"},
+                    {"map_id": "map2", "map_name": "S2l0Y2hlbg=="},
+                ],
+            },
+            "map1",
+            ["map1", "Kitchen"],
+            id="invalid_base64_fallback_to_id",
+        ),
+    ],
+)
+async def test_map_properties(
+    dev: SmartDevice,
+    mocker: MockerFixture,
+    map_info: dict,
+    expected_current: str,
+    expected_available: list[str | None],
+):
+    """Test map properties with various map configurations."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    mocker.patch.object(
+        type(clean),
+        "_map_info",
+        new_callable=mocker.PropertyMock,
+        return_value=map_info,
+    )
+
+    assert clean.current_map == expected_current
+    assert clean.available_maps == expected_available
+
+
+@clean
+async def test_set_current_map_success(dev: SmartDevice, mocker: MockerFixture):
+    """Test setting current map successfully."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_info = {
+        "current_map_id": "map1",
+        "map_list": [
+            {"map_id": "map1", "map_name": "TGl2aW5nIFJvb20="},
+            {"map_id": "map2", "map_name": "S2l0Y2hlbg=="},
+        ],
+    }
+
+    mocker.patch.object(
+        type(clean),
+        "_map_info",
+        new_callable=mocker.PropertyMock,
+        return_value=map_info,
+    )
+    call = mocker.spy(clean, "call")
+
+    _result = await clean.set_current_map("Kitchen")
+
+    call.assert_called_with("setMapInfo", {"current_map_id": "map2"})
+
+
+@clean
+async def test_set_current_map_not_found(dev: SmartDevice, mocker: MockerFixture):
+    """Test setting current map with invalid map name."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_info = {
+        "current_map_id": "map1",
+        "map_list": [
+            {"map_id": "map1", "map_name": "TGl2aW5nIFJvb20="},
+            {"map_id": "map2", "map_name": "S2l0Y2hlbg=="},
+        ],
+    }
+
+    mocker.patch.object(
+        type(clean),
+        "_map_info",
+        new_callable=mocker.PropertyMock,
+        return_value=map_info,
+    )
+
+    with pytest.raises(ValueError, match="Map 'Bedroom' not found. Available maps:"):
+        await clean.set_current_map("Bedroom")
+
+
+@clean
+async def test_get_map_name_edge_cases(
+    dev: SmartDevice, caplog: pytest.LogCaptureFixture
+):
+    """Test _get_map_name method with edge cases."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    caplog.set_level(logging.DEBUG)
+
+    # Test with empty map name - should return map_id as fallback
+    assert clean._get_map_name({"map_id": "map1", "map_name": ""}) == "map1"
+
+    # Test with no map name key - should return map_id as fallback
+    assert clean._get_map_name({"map_id": "map1"}) == "map1"
+
+    # Test with invalid base64 - should return map_id as fallback and log error
+    result = clean._get_map_name({"map_id": "map1", "map_name": "invalid_base64!"})
+    assert result == "map1"
+    assert "Failed to decode map name" in caplog.text
+
+    # Test with valid base64
+    result = clean._get_map_name({"map_id": "map1", "map_name": "TGl2aW5nIFJvb20="})
+    assert result == "Living Room"
+
+    # Test with no map_id key - should return "Unknown Map"
+    assert clean._get_map_name({"map_name": ""}) == "Unknown Map"
+
+
+@clean
+async def test_set_current_map_in_actions_test(dev: SmartDevice, mocker: MockerFixture):
+    """Test that selected_map action calls set_current_map correctly."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_info = {
+        "current_map_id": "map1",
+        "map_list": [
+            {"map_id": "map1", "map_name": "TGl2aW5nIFJvb20="},
+        ],
+    }
+    mocker.patch.object(
+        type(clean),
+        "_map_info",
+        new_callable=mocker.PropertyMock,
+        return_value=map_info,
+    )
+
+    call = mocker.spy(clean, "call")
+
+    await dev.features["selected_map"].set_value("Living Room")
+    call.assert_called_with("setMapInfo", {"current_map_id": "map1"})
+
+
+@clean
+async def test_selected_map_action_with_mock_data(
+    dev: SmartDevice, mocker: MockerFixture
+):
+    """Test the selected_map feature action with proper mocking."""
+    clean = next(get_parent_and_child_modules(dev, Module.Clean))
+
+    map_info = {
+        "current_map_id": "map1",
+        "map_list": [
+            {"map_id": "map1", "map_name": "TGl2aW5nIFJvb20="},
+            {"map_id": "map2", "map_name": "S2l0Y2hlbg=="},
+        ],
+    }
+    mocker.patch.object(
+        type(clean),
+        "_map_info",
+        new_callable=mocker.PropertyMock,
+        return_value=map_info,
+    )
+
+    call = mocker.spy(clean, "call")
+
+    await dev.features["selected_map"].set_value("Kitchen")
+    call.assert_called_with("setMapInfo", {"current_map_id": "map2"})
