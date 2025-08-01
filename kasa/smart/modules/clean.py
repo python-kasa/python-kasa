@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import logging
 from datetime import timedelta
 from enum import IntEnum
@@ -222,6 +223,19 @@ class Clean(SmartModule):
                 type=Feature.Type.Sensor,
             )
         )
+        self._add_feature(
+            Feature(
+                self._device,
+                id="selected_map",
+                name="Selected map",
+                container=self,
+                attribute_getter="current_map",
+                attribute_setter="set_current_map",
+                choices_getter="available_maps",
+                category=Feature.Category.Config,
+                type=Feature.Type.Choice,
+            )
+        )
 
     async def _post_update_hook(self) -> None:
         """Set error code after update."""
@@ -263,6 +277,7 @@ class Clean(SmartModule):
             "getBatteryInfo": {},
             "getCleanStatus": {},
             "getCleanAttr": {"type": "global"},
+            "getMapInfo": {},
         }
 
     async def start(self) -> dict:
@@ -409,3 +424,59 @@ class Clean(SmartModule):
     async def set_clean_count(self, count: int) -> Annotated[dict, FeatureAttribute()]:
         """Set number of times to clean."""
         return await self._change_setting("clean_number", count)
+
+    @property
+    def _map_info(self) -> dict:
+        """Return map info."""
+        return self.data.get("getMapInfo", {})
+
+    def _get_map_name(self, map_data: dict) -> str:
+        """Decode map name from base64."""
+        encoded_name = map_data.get("map_name", "")
+
+        if encoded_name:
+            try:
+                return base64.b64decode(encoded_name).decode("utf-8")
+            except Exception:
+                _LOGGER.debug(
+                    "Failed to decode map name '%s' for map ID %s",
+                    encoded_name,
+                    map_data.get("map_id"),
+                )
+        return map_data.get("map_id", "Unknown Map")
+
+    @property
+    def current_map(self) -> str:
+        """Return current map name."""
+        map_info = self._map_info
+        current_map_id = map_info.get("current_map_id")
+        if current_map_id:
+            for map_data in map_info.get("map_list", []):
+                if map_data.get("map_id") == current_map_id:
+                    return self._get_map_name(map_data)
+                
+        return "No map"
+
+    
+
+    @property
+    def available_maps(self) -> list[str]:
+        """Return available maps with base64 decoded names."""
+        return [
+            self._get_map_name(map_data)
+            for map_data in self._map_info.get("map_list", [])
+        ]
+
+    async def set_current_map(self, map_name: str) -> dict:
+        """Set current map by its name."""
+        map_list = self._map_info.get("map_list", [])
+
+        for map_data in map_list:
+            if self._get_map_name(map_data) == map_name:
+                return await self.call(
+                    "setMapInfo", {"current_map_id": map_data.get("map_id")}
+                )
+
+        raise ValueError(
+            f"Map '{map_name}' not found. Available maps: {self.available_maps}"
+        )
