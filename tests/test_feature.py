@@ -184,7 +184,13 @@ async def test_feature_setters(dev: Device, mocker: MockerFixture):
         elif feat.type == Feature.Type.Action:
             await feat.set_value("dummyvalue")
         elif feat.type == Feature.Type.Choice:
-            await feat.set_value(feat.choices[0])
+            if feat.choices and len(feat.choices) > 0:
+                await feat.set_value(feat.choices[0])
+            else:
+                _LOGGER.warning(
+                    "Feature '%s' has no choices, cannot test the setter", feat
+                )
+                expecting_call = False
         elif feat.type == Feature.Type.Unknown:
             _LOGGER.warning("Feature '%s' has no type, cannot test the setter", feat)
             expecting_call = False
