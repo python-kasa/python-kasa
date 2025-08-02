@@ -77,6 +77,8 @@ class Clean(SmartModule):
     _error_code = ErrorCode.Ok
     _logged_error_code_warnings: set | None = None
     _logged_status_code_warnings: set
+    _current_map_id: str | None = None
+    _map_id_to_name: dict[str, str] = {}
 
     def _initialize_features(self) -> None:
         """Initialize features."""
@@ -238,7 +240,7 @@ class Clean(SmartModule):
         )
 
     async def _post_update_hook(self) -> None:
-        """Set error code after update."""
+        """Set error code and process map data after update."""
         if self._logged_error_code_warnings is None:
             self._logged_error_code_warnings = set()
             self._logged_status_code_warnings = set()
@@ -266,6 +268,8 @@ class Clean(SmartModule):
                     error,
                 )
             self._error_code = ErrorCode.UnknownInternal
+
+        self._process_map_data()
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
@@ -449,37 +453,47 @@ class Clean(SmartModule):
     @property
     def current_map(self) -> str:
         """Return current map name."""
-        map_info = self._map_info
-        current_map_id = map_info.get("current_map_id")
-        map_name = "No map"
-        
-        if not current_map_id:
-            return map_name
-
-        for map_data in map_info.get("map_list", []):
-            if map_data.get("map_id") == current_map_id:
-                return self._get_map_name(map_data)
-
-        return map_name
+        if self._current_map_id and self._current_map_id in self._map_id_to_name:
+            return self._map_id_to_name[self._current_map_id]
+        return "No map"
 
     @property
     def available_maps(self) -> list[str]:
         """Return available maps with base64 decoded names."""
-        return [
-            self._get_map_name(map_data)
-            for map_data in self._map_info.get("map_list", [])
-        ]
+        return list(self._map_id_to_name.values())
 
     async def set_current_map(self, map_name: str) -> dict:
         """Set current map by its name."""
-        map_list = self._map_info.get("map_list", [])
+        # Find map ID by iterating through values
+        map_id = None
+        for mid, name in self._map_id_to_name.items():
+            if name == map_name:
+                map_id = mid
+                break
+
+        if map_id is None:
+            raise ValueError(
+                f"Map '{map_name}' not found. Available maps: {self.available_maps}"
+            )
+
+        return await self.call("setMapInfo", {"current_map_id": map_id})
+
+    def _process_map_data(self) -> None:
+        """Process map data to build efficient lookup structures."""
+        map_info = self._map_info
+        map_list = map_info.get("map_list", [])
+        current_map_id = map_info.get("current_map_id")
+
+        self._map_id_to_name.clear()
 
         for map_data in map_list:
-            if self._get_map_name(map_data) == map_name:
-                return await self.call(
-                    "setMapInfo", {"current_map_id": map_data.get("map_id")}
-                )
+            map_id = map_data.get("map_id")
+            if not map_id:
+                continue
 
-        raise ValueError(
-            f"Map '{map_name}' not found. Available maps: {self.available_maps}"
+            map_name = self._get_map_name(map_data)
+            self._map_id_to_name[map_id] = map_name
+
+        self._current_map_id = (
+            current_map_id if current_map_id in self._map_id_to_name else None
         )
