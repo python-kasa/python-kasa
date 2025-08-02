@@ -437,11 +437,12 @@ class Clean(SmartModule):
         if encoded_name:
             try:
                 return base64.b64decode(encoded_name).decode("utf-8")
-            except Exception:
-                _LOGGER.debug(
-                    "Failed to decode map name '%s' for map ID %s",
+            except (ValueError, UnicodeDecodeError) as e:
+                _LOGGER.warning(
+                    "Failed to decode map name '%s' for map ID %s: %s",
                     encoded_name,
                     map_data.get("map_id"),
+                    e,
                 )
         return map_data.get("map_id", "Unknown Map")
 
@@ -450,12 +451,16 @@ class Clean(SmartModule):
         """Return current map name."""
         map_info = self._map_info
         current_map_id = map_info.get("current_map_id")
-        if current_map_id:
-            for map_data in map_info.get("map_list", []):
-                if map_data.get("map_id") == current_map_id:
-                    return self._get_map_name(map_data)
+        map_name = "No map"
+        
+        if not current_map_id:
+            return map_name
 
-        return "No map"
+        for map_data in map_info.get("map_list", []):
+            if map_data.get("map_id") == current_map_id:
+                return self._get_map_name(map_data)
+
+        return map_name
 
     @property
     def available_maps(self) -> list[str]:
