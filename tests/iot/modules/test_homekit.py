@@ -37,7 +37,7 @@ def homekit_device():
 
 @pytest.mark.asyncio
 async def test_homekit_getters(homekit_device):
-    module = HomeKit(homekit_device)
+    module = HomeKit(homekit_device, "homekit")
     # Patch query to do nothing (not used in this test)
     module.query = lambda: {"smartlife.iot.homekit": {"setup_info_get": {}}}
     info = module.info["smartlife.iot.homekit"]["setup_info_get"]
@@ -56,7 +56,7 @@ async def test_homekit_getters(homekit_device):
 
 @pytest.mark.asyncio
 async def test_homekit_feature(homekit_device):
-    module = HomeKit(homekit_device)
+    module = HomeKit(homekit_device, "homekit")
     module.query = lambda: {"smartlife.iot.homekit": {"setup_info_get": {}}}
     module._initialize_features()
     # Check that the feature is added and returns correct value
