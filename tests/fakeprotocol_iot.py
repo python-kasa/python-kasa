@@ -190,7 +190,6 @@ AMBIENT_MODULE = {
     },
 }
 
-
 MOTION_MODULE = {
     "get_adc_value": {"value": 50, "err_code": 0},
     "get_config": {
@@ -220,6 +219,14 @@ DEFAULT_BEHAVIOR = {
     "err_code": 0,
     "hard_on": {"mode": "circadian"},
     "soft_on": {"mode": "last_status"},
+}
+
+HOMEKIT_MODULE = {
+    "setup_info_get": {
+        "setup_code": "000-00-000",
+        "setup_payload": "X-00://000000000000",
+        "err_code": 0,
+    },
 }
 
 
@@ -477,6 +484,7 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.common.cloud": CLOUD_MODULE,
         "schedule": SCHEDULE_MODULE,
         "smartlife.iot.common.schedule": SCHEDULE_MODULE,
+        "smartlife.iot.homekit": HOMEKIT_MODULE,
     }
 
     async def send(self, request, port=9999):
