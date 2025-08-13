@@ -18,7 +18,12 @@ class HomeKit(IotModule):
     @property
     def info(self) -> dict[str, Any]:
         """Return the HomeKit setup info."""
-        return self.data
+        return self.data["smartlife.iot.homekit"]["setup_info_get"]
+
+    @property
+    def setup_code(self) -> str:
+        """Return the HomeKit setup code."""
+        return self.info["setup_code"]
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
@@ -32,9 +37,7 @@ class HomeKit(IotModule):
                 container=self,
                 id="homekit_setup_code",
                 name="HomeKit setup code",
-                attribute_getter=lambda x: x.info["smartlife.iot.homekit"][
-                    "setup_info_get"
-                ]["setup_code"],
+                attribute_getter="setup_code",
                 type=Feature.Type.Sensor,
                 category=Feature.Category.Debug,
             )

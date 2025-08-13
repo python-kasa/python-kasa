@@ -12,7 +12,7 @@ def test_homekit_getters(dev):
     if Module.IotHomeKit not in dev.modules:
         pytest.skip("HomeKit module not present on this device")
     homekit: HomeKit = dev.modules[Module.IotHomeKit]
-    info = homekit.info["smartlife.iot.homekit"]["setup_info_get"]
+    info = homekit.info
     assert "setup_code" in info
     assert "setup_payload" in info
     assert "err_code" in info
@@ -33,5 +33,5 @@ def test_homekit_feature(dev):
     homekit._initialize_features()
     feature = homekit._all_features.get("homekit_setup_code")
     assert feature is not None
-    value = feature.attribute_getter(homekit)
+    value = getattr(homekit, feature.attribute_getter)
     assert value == homekit.setup_code
