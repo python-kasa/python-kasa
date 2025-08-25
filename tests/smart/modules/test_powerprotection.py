@@ -48,10 +48,19 @@ async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
         # Simple enable with an existing threshold
         call_spy = mocker.spy(powerprot, "call")
         await powerprot.set_enabled(True)
-        params = {
-            "enabled": True,
-            "protection_power": mocker.ANY,
-        }
+
+        # Check which key is used by this device
+        protection_data = powerprot.data["get_protection_power"]
+        if "protection_enabled" in protection_data:
+            params = {
+                "protection_enabled": True,
+                "protection_power": mocker.ANY,
+            }
+        else:
+            params = {
+                "enabled": True,
+                "protection_power": mocker.ANY,
+            }
         call_spy.assert_called_with("set_protection_power", params)
 
         # Enable with no threshold param when 0
@@ -59,10 +68,19 @@ async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
         await powerprot.set_protection_threshold(0)
         await device.update()
         await powerprot.set_enabled(True)
-        params = {
-            "enabled": True,
-            "protection_power": int(powerprot._max_power / 2),
-        }
+
+        # Check which key is used by this device
+        protection_data = powerprot.data["get_protection_power"]
+        if "protection_enabled" in protection_data:
+            params = {
+                "protection_enabled": True,
+                "protection_power": int(powerprot._max_power / 2),
+            }
+        else:
+            params = {
+                "enabled": True,
+                "protection_power": int(powerprot._max_power / 2),
+            }
         call_spy.assert_called_with("set_protection_power", params)
 
         # Enable false should not update the threshold
@@ -70,10 +88,19 @@ async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
         await powerprot.set_protection_threshold(0)
         await device.update()
         await powerprot.set_enabled(False)
-        params = {
-            "enabled": False,
-            "protection_power": 0,
-        }
+
+        # Check which key is used by this device
+        protection_data = powerprot.data["get_protection_power"]
+        if "protection_enabled" in protection_data:
+            params = {
+                "protection_enabled": False,
+                "protection_power": 0,
+            }
+        else:
+            params = {
+                "enabled": False,
+                "protection_power": 0,
+            }
         call_spy.assert_called_with("set_protection_power", params)
 
     finally:
@@ -88,10 +115,19 @@ async def test_set_threshold(dev: SmartDevice, mocker: MockerFixture):
 
     call_spy = mocker.spy(powerprot, "call")
     await powerprot.set_protection_threshold(123)
-    params = {
-        "enabled": mocker.ANY,
-        "protection_power": 123,
-    }
+
+    # Check which key is used by this device
+    protection_data = powerprot.data["get_protection_power"]
+    if "protection_enabled" in protection_data:
+        params = {
+            "protection_enabled": mocker.ANY,
+            "protection_power": 123,
+        }
+    else:
+        params = {
+            "enabled": mocker.ANY,
+            "protection_power": 123,
+        }
     call_spy.assert_called_with("set_protection_power", params)
 
     with pytest.raises(ValueError, match="Threshold out of range"):

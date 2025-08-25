@@ -164,4 +164,10 @@ class Energy(SmartModule, EnergyInterface):
     async def _check_supported(self) -> bool:
         """Additional check to see if the module is supported by the device."""
         # Energy module is not supported on P304M parent device
+        # P316M powerstrip does not have 'device_on' key in sys_info.
+        if (
+            "device_on" not in self._device.sys_info
+            and self._device.sys_info.get("model") == "P316M"
+        ):
+            return True
         return "device_on" in self._device.sys_info
