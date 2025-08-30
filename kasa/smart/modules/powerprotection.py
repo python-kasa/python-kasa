@@ -57,7 +57,9 @@ class PowerProtection(SmartModule):
     @property
     def enabled(self) -> bool:
         """Return True if child protection is enabled."""
-        return self.data["get_protection_power"]["enabled"]
+        settings = self.data["get_protection_power"]
+        enabled_key = next(k for k in settings if "enabled" in k)
+        return settings[enabled_key]
 
     async def set_enabled(self, enabled: bool, *, threshold: int | None = None) -> dict:
         """Set power protection enabled.
@@ -73,7 +75,10 @@ class PowerProtection(SmartModule):
                 "Threshold out of range: %s (%s)", threshold, self.protection_threshold
             )
 
-        params = {**self.data["get_protection_power"], "enabled": enabled}
+        enabled_key = next(
+            k for k in self.data["get_protection_power"] if "enabled" in k
+        )
+        params = {**self.data["get_protection_power"], enabled_key: enabled}
         if threshold is not None:
             params["protection_power"] = threshold
         return await self.call("set_protection_power", params)
