@@ -57,7 +57,7 @@ async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
             k for k in powerprot.data["get_protection_power"] if "enabled" in k
         )
         assert params[enabled_key] is True
-        assert params.get("protection_power") is not None
+        assert params["protection_power"] is not None
 
         # Enable with no threshold param when 0
         call_spy.reset_mock()
@@ -100,7 +100,7 @@ async def test_set_threshold(dev: SmartDevice, mocker: MockerFixture):
     method, params = args
     assert method == "set_protection_power"
     assert "enabled" in params or "protection_enabled" in params
-    assert params.get("protection_power") == 123
+    assert params["protection_power"] == 123
 
     with pytest.raises(ValueError, match="Threshold out of range"):
         await powerprot.set_protection_threshold(-10)
