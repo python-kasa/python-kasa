@@ -239,6 +239,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 1.0 (EU) / Firmware: 1.9.0
 - **S220**
   - Hardware: 1.0 (EU) / Firmware: 1.9.0
+- **S500**
+  - Hardware: 1.0 (US) / Firmware: 1.2.0
 - **S500D**
   - Hardware: 1.0 (US) / Firmware: 1.0.5
 - **S505**
@@ -295,6 +297,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 2.0 (EU) / Firmware: 1.4.3
 - **C220**
   - Hardware: 1.0 (EU) / Firmware: 1.2.2
+  - Hardware: 1.0 (EU) / Firmware: 1.2.5
 - **C225**
   - Hardware: 2.0 (US) / Firmware: 1.0.11
 - **C325WB**
