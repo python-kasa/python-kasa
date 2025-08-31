@@ -92,6 +92,7 @@ UNSUPPORTED_DEVICES = {
     "wrong_encryption_iot": _make_unsupported("IOT.SMARTPLUGSWITCH", "AES"),
     "wrong_encryption_smart": _make_unsupported("SMART.TAPOBULB", "IOT"),
     "unknown_encryption": _make_unsupported("IOT.SMARTPLUGSWITCH", "FOO"),
+    "incomplete_iotcamera": _make_unsupported("IOT.IPCAMERA", "XOR"),
     "missing_encrypt_type": _make_unsupported(
         "SMART.TAPOBULB",
         "FOO",
