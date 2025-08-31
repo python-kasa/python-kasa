@@ -47,6 +47,7 @@ Devices support different functionality that are exposed via
 
 >>> for module_name in dev.modules:
 >>>     print(module_name)
+homekit
 Energy
 schedule
 usage
@@ -85,6 +86,7 @@ state
 rssi
 on_since
 reboot
+homekit_setup_code
 current_consumption
 consumption_today
 consumption_this_month
