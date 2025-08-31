@@ -30,7 +30,6 @@ def test_homekit_feature(dev):
     if Module.IotHomeKit not in dev.modules:
         pytest.skip("HomeKit module not present on this device")
     homekit: HomeKit = dev.modules[Module.IotHomeKit]
-    homekit._initialize_features()
     feature = homekit._all_features.get("homekit_setup_code")
     assert feature is not None
     value = getattr(homekit, feature.attribute_getter)

@@ -31,7 +31,7 @@ from ..module import Module
 from ..modulemapping import ModuleMapping, ModuleName
 from ..protocols import BaseProtocol
 from .iotmodule import IotModule, merge
-from .modules import Emeter
+from .modules import Emeter, HomeKit
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -330,6 +330,8 @@ class IotDevice(Device):
 
     async def _initialize_modules(self) -> None:
         """Initialize modules not added in init."""
+        self.add_module(Module.IotHomeKit, HomeKit(self, "smartlife.iot.homekit"))
+
         if self.has_emeter:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"

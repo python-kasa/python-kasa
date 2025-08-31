@@ -18,17 +18,22 @@ class HomeKit(IotModule):
     @property
     def info(self) -> dict[str, Any]:
         """Return the HomeKit setup info."""
-        return self.data["smartlife.iot.homekit"]["setup_info_get"]
+        return self.data["setup_info_get"]
 
     @property
     def setup_code(self) -> str:
         """Return the HomeKit setup code."""
         return self.info["setup_code"]
 
+    @property
+    def setup_payload(self) -> str:
+        """Return the HomeKit setup payload."""
+        return self.info["setup_payload"]
+
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         # Only add features if the device supports the module
-        if "smartlife.iot.homekit" not in self.data:
+        if "setup_info_get" not in self.data:
             return
 
         self._add_feature(
