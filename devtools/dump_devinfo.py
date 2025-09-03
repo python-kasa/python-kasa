@@ -80,7 +80,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _wrap_redactors(redactors: dict[str, Callable[[Any], Any] | None]):
-    """Wrap the redactors for  dump_devinfo.
+    """Wrap the redactors for dump_devinfo.
 
     Will replace all partial REDACT_ values with zeros.
     If the data item is already scrubbed by dump_devinfo will leave as-is.
@@ -423,6 +423,7 @@ async def get_legacy_fixture(
         Call(module="smartlife.iot.LAS", method="get_adc_value"),
         Call(module="smartlife.iot.PIR", method="get_config"),
         Call(module="smartlife.iot.PIR", method="get_adc_value"),
+        Call(module="smartlife.iot.homekit", method="setup_info_get"),
     ]
 
     successes = []

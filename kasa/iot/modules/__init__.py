@@ -6,6 +6,7 @@ from .cloud import Cloud
 from .countdown import Countdown
 from .dimmer import Dimmer
 from .emeter import Emeter
+from .homekit import HomeKit
 from .led import Led
 from .light import Light
 from .lighteffect import LightEffect
@@ -34,4 +35,5 @@ __all__ = [
     "Schedule",
     "Time",
     "Usage",
+    "HomeKit",
 ]

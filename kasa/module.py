@@ -116,6 +116,7 @@ class Module(ABC):
     IotSchedule: Final[ModuleName[iot.Schedule]] = ModuleName("schedule")
     IotUsage: Final[ModuleName[iot.Usage]] = ModuleName("usage")
     IotCloud: Final[ModuleName[iot.Cloud]] = ModuleName("cloud")
+    IotHomeKit: Final[ModuleName[iot.HomeKit]] = ModuleName("homekit")
 
     # SMART only Modules
     AutoOff: Final[ModuleName[smart.AutoOff]] = ModuleName("AutoOff")
