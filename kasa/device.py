@@ -86,7 +86,7 @@ state
 rssi
 on_since
 reboot
-homekit_setup_code
+...
 current_consumption
 consumption_today
 consumption_this_month
