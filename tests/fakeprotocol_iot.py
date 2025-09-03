@@ -221,14 +221,6 @@ DEFAULT_BEHAVIOR = {
     "soft_on": {"mode": "last_status"},
 }
 
-HOMEKIT_MODULE = {
-    "setup_info_get": {
-        "setup_code": "000-00-000",
-        "setup_payload": "X-00://000000000000",
-        "err_code": 0,
-    },
-}
-
 
 class FakeIotProtocol(IotProtocol):
     def __init__(self, info, fixture_name=None, *, verbatim=False):
@@ -484,7 +476,6 @@ class FakeIotTransport(BaseTransport):
         "smartlife.iot.common.cloud": CLOUD_MODULE,
         "schedule": SCHEDULE_MODULE,
         "smartlife.iot.common.schedule": SCHEDULE_MODULE,
-        "smartlife.iot.homekit": HOMEKIT_MODULE,
     }
 
     async def send(self, request, port=9999):

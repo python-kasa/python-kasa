@@ -18,7 +18,10 @@ class HomeKit(IotModule):
     @property
     def info(self) -> dict[str, Any]:
         """Return the HomeKit setup info."""
-        return self.data["setup_info_get"]
+        # Only return info if the module has data
+        if self._module not in self._device._last_update:
+            return {}
+        return self.data.get("setup_info_get", {})
 
     @property
     def setup_code(self) -> str:
@@ -33,7 +36,8 @@ class HomeKit(IotModule):
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
         # Only add features if the device supports the module
-        if "setup_info_get" not in self.data:
+        data = self._device._last_update.get(self._module, {})
+        if not data or "setup_info_get" not in data:
             return
 
         self._add_feature(
