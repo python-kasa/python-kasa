@@ -527,57 +527,104 @@ async def test_query(mocker):
 
 
 @pytest.mark.parametrize(
-    ("response_status", "credentials_match", "expectation"),
+    ("transport_class", "response_status", "credentials_match", "expectation"),
     [
         pytest.param(
+            KlapTransport,
             (403, 403, 403),
             True,
             pytest.raises(KasaException),
-            id="handshake1-403-status",
+            id="klap-handshake1-403-status",
         ),
         pytest.param(
+            KlapTransport,
             (200, 403, 403),
             True,
             pytest.raises(KasaException),
-            id="handshake2-403-status",
+            id="klap-handshake2-403-status",
         ),
         pytest.param(
+            KlapTransport,
             (200, 200, 403),
             True,
             pytest.raises(_RetryableError),
-            id="request-403-status",
+            id="klap-request-403-status",
         ),
         pytest.param(
+            KlapTransport,
             (200, 200, 400),
             True,
             pytest.raises(KasaException),
-            id="request-400-status",
+            id="klap-request-400-status",
         ),
         pytest.param(
+            KlapTransport,
             (200, 200, 200),
             False,
             pytest.raises(AuthenticationError),
-            id="handshake1-wrong-auth",
+            id="klap-handshake1-wrong-auth",
         ),
         pytest.param(
+            KlapTransport,
             (200, 200, 200),
             secrets.token_bytes(16),
             pytest.raises(KasaException),
-            id="handshake1-bad-auth-length",
+            id="klap-handshake1-bad-auth-length",
+        ),
+        pytest.param(
+            KlapTransportV3,
+            (403, 403, 403),
+            True,
+            pytest.raises(KasaException),
+            id="v3-handshake1-403-status",
+        ),
+        pytest.param(
+            KlapTransportV3,
+            (200, 403, 403),
+            True,
+            pytest.raises(KasaException),
+            id="v3-handshake2-403-status",
+        ),
+        pytest.param(
+            KlapTransportV3,
+            (200, 200, 403),
+            True,
+            pytest.raises(_RetryableError),
+            id="v3-request-403-status",
+        ),
+        pytest.param(
+            KlapTransportV3,
+            (200, 200, 400),
+            True,
+            pytest.raises(KasaException),
+            id="v3-request-400-status",
+        ),
+        pytest.param(
+            KlapTransportV3,
+            (200, 200, 200),
+            False,
+            pytest.raises(AuthenticationError),
+            id="v3-handshake1-wrong-auth",
+        ),
+        pytest.param(
+            KlapTransportV3,
+            (200, 200, 200),
+            secrets.token_bytes(16),
+            pytest.raises(KasaException),
+            id="v3-handshake1-bad-auth-length",
         ),
     ],
 )
 async def test_authentication_failures(
-    mocker, response_status, credentials_match, expectation
+    mocker, transport_class, response_status, credentials_match, expectation
 ):
     client_seed = None
-
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
     device_credentials = (
-        client_credentials if credentials_match else Credentials("bar", "foo")
+        client_credentials if credentials_match is True else Credentials("bar", "foo")
     )
-    device_auth_hash = KlapTransport.generate_auth_hash(device_credentials)
+    device_auth_hash = transport_class.generate_auth_hash(device_credentials)
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
         nonlocal \
@@ -588,26 +635,53 @@ async def test_authentication_failures(
             credentials_match
 
         if url == URL("http://127.0.0.1:80/app/handshake1"):
-            client_seed = data
-            client_seed_auth_hash = _sha256(data + device_auth_hash)
             if credentials_match is not False and credentials_match is not True:
-                client_seed_auth_hash += credentials_match
-            return _mock_response(
-                response_status[0], server_seed + client_seed_auth_hash
-            )
+                if transport_class is KlapTransportV3:
+                    return _mock_response(response_status[0], b"short")
+                else:
+                    client_seed = data
+                    client_seed_auth_hash = (
+                        _sha256(data + device_auth_hash) + credentials_match
+                    )
+                    return _mock_response(
+                        response_status[0], server_seed + client_seed_auth_hash
+                    )
+            if transport_class is KlapTransportV3:
+                client_seed = bytes.fromhex(data.decode("ascii"))
+                client_seed_auth_hash = _sha256(
+                    client_seed + server_seed + device_auth_hash
+                )
+                return _mock_response(
+                    response_status[0], server_seed + client_seed_auth_hash
+                )
+            else:
+                client_seed = data
+                client_seed_auth_hash = _sha256(data + device_auth_hash)
+                return _mock_response(
+                    response_status[0], server_seed + client_seed_auth_hash
+                )
         elif url == URL("http://127.0.0.1:80/app/handshake2"):
-            client_seed = data
-            client_seed_auth_hash = _sha256(data + device_auth_hash)
-            return _mock_response(
-                response_status[1], server_seed + client_seed_auth_hash
-            )
+            if transport_class is KlapTransportV3:
+                payload_seed = client_seed
+                client_seed_auth_hash = _sha256(
+                    server_seed + payload_seed + device_auth_hash
+                )
+                return _mock_response(
+                    response_status[1], server_seed + client_seed_auth_hash
+                )
+            else:
+                client_seed = data
+                client_seed_auth_hash = _sha256(data + device_auth_hash)
+                return _mock_response(
+                    response_status[1], server_seed + client_seed_auth_hash
+                )
         elif url == URL("http://127.0.0.1:80/app/request"):
             return _mock_response(response_status[2], b"")
 
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
-    protocol = IotProtocol(transport=KlapTransport(config=config))
+    protocol = IotProtocol(transport=transport_class(config=config))
 
     with expectation:
         await protocol.query({})
