@@ -101,7 +101,10 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     login_version: int | None = None
     https: bool = False
     http_port: int | None = None
-    new_klap: int | None = None
+    new_klap: int | None = field(
+        default=None,
+        metadata=field_options(serialize=lambda v: None if v in (None, 0) else v),
+    )
 
     @staticmethod
     def from_values(
@@ -130,17 +133,6 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
                 f"Invalid connection parameters for {device_family}."
                 + f"{encryption_type}.{login_version}"
             ) from ex
-
-    class Config(_DeviceConfigBaseMixin.Config):
-        """Mashumaro config for DeviceConnectionParameters."""
-
-        @classmethod
-        def pre_serialize(cls, data: dict, obj: DeviceConnectionParameters) -> dict:
-            """Pre-serialization hook to omit new_klap if None."""
-            if "new_klap" in data and data["new_klap"] is None:
-                data = dict(data)
-                del data["new_klap"]
-            return data
 
 
 @dataclass

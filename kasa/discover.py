@@ -650,12 +650,16 @@ class Discover:
             for device_family in main_device_families
             for https in (True, False)
             for login_version in (None, 2)
+            for new_klap in (
+                (1, None) if encrypt == DeviceEncryptionType.Klap else (None,)
+            )
             if (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
                     encryption_type=encrypt,
                     login_version=login_version,
                     https=https,
+                    new_klap=new_klap,
                 )
             )
             and (
