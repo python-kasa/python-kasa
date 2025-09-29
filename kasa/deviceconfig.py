@@ -136,10 +136,8 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
 
         @classmethod
         def pre_serialize(cls, data: dict, obj: DeviceConnectionParameters) -> dict:
-            """Pre-serialization hook to omit new_klap if None or 0."""
-            if "new_klap" in data and (
-                data["new_klap"] is None or data["new_klap"] == 0
-            ):
+            """Pre-serialization hook to omit new_klap if None."""
+            if "new_klap" in data and data["new_klap"] is None:
                 data = dict(data)
                 del data["new_klap"]
             return data

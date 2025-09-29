@@ -42,7 +42,7 @@ CAMERA_AES_CONFIG = DeviceConfig(
 
 
 def test_pre_serialize_omits_new_klap():
-    """Test that pre_serialize omits new_klap if None or 0."""
+    """Test that pre_serialize omits new_klap if None."""
     param_none = DeviceConnectionParameters(
         device_family=DeviceFamily.SmartTapoPlug,
         encryption_type=DeviceEncryptionType.Klap,
@@ -53,17 +53,6 @@ def test_pre_serialize_omits_new_klap():
     )
     d_none = param_none.to_dict()
     assert "new_klap" not in d_none
-
-    param_zero = DeviceConnectionParameters(
-        device_family=DeviceFamily.SmartTapoPlug,
-        encryption_type=DeviceEncryptionType.Klap,
-        login_version=2,
-        https=False,
-        http_port=None,
-        new_klap=0,
-    )
-    d_zero = param_zero.to_dict()
-    assert "new_klap" not in d_zero
 
     param_one = DeviceConnectionParameters(
         device_family=DeviceFamily.SmartTapoPlug,
