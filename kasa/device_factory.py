@@ -32,6 +32,7 @@ from .transports import (
     BaseTransport,
     KlapTransport,
     KlapTransportV2,
+    KlapTransportV3,
     LinkieTransportV2,
     SslTransport,
     XorTransport,
@@ -215,6 +216,14 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         and ctype.encryption_type is DeviceEncryptionType.Aes
     ):
         return SmartProtocol(transport=SslTransport(config=config))
+
+    if (
+        protocol_name == "IOT"
+        and ctype.encryption_type.value == "KLAP"
+        and ctype.new_klap is not None
+        and ctype.new_klap > 0
+    ):
+        return IotProtocol(transport=KlapTransportV3(config=config))
 
     protocol_transport_key = (
         protocol_name

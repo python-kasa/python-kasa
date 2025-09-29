@@ -101,6 +101,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     login_version: int | None = None
     https: bool = False
     http_port: int | None = None
+    new_klap: int | None = None
 
     @staticmethod
     def from_values(
@@ -110,6 +111,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
         login_version: int | None = None,
         https: bool | None = None,
         http_port: int | None = None,
+        new_klap: int | None = None,
     ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:
@@ -121,12 +123,26 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
                 login_version,
                 https,
                 http_port=http_port,
+                new_klap=new_klap,
             )
         except (ValueError, TypeError) as ex:
             raise KasaException(
                 f"Invalid connection parameters for {device_family}."
                 + f"{encryption_type}.{login_version}"
             ) from ex
+
+    class Config(_DeviceConfigBaseMixin.Config):
+        """Mashumaro config for DeviceConnectionParameters."""
+
+        @classmethod
+        def pre_serialize(cls, data: dict, obj: DeviceConnectionParameters) -> dict:
+            """Pre-serialization hook to omit new_klap if None or 0."""
+            if "new_klap" in data and (
+                data["new_klap"] is None or data["new_klap"] == 0
+            ):
+                data = dict(data)
+                del data["new_klap"]
+            return data
 
 
 @dataclass

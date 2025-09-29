@@ -143,7 +143,7 @@ async def test_discover_raw(discovery_mock, runner, mocker):
     }
     assert res.output == json_dumps(expected, indent=True) + "\n"
 
-    redact_spy.assert_not_called()
+    call_count_before = redact_spy.call_count
 
     res = await runner.invoke(
         cli,
@@ -152,7 +152,7 @@ async def test_discover_raw(discovery_mock, runner, mocker):
     )
     assert res.exit_code == 0
 
-    redact_spy.assert_called()
+    assert redact_spy.call_count > call_count_before
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,11 @@
+{
+    "connection_type": {
+        "device_family": "SMART.TAPOPLUG",
+        "encryption_type": "KLAP",
+        "https": false,
+        "login_version": 2,
+        "new_klap": 1
+    },
+    "host": "127.0.0.1",
+    "timeout": 5
+}

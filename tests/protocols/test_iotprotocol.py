@@ -26,7 +26,11 @@ from kasa.protocols.protocol import (
 )
 from kasa.transports.aestransport import AesTransport
 from kasa.transports.basetransport import BaseTransport
-from kasa.transports.klaptransport import KlapTransport, KlapTransportV2
+from kasa.transports.klaptransport import (
+    KlapTransport,
+    KlapTransportV2,
+    KlapTransportV3,
+)
 from kasa.transports.xortransport import XorEncryption, XorTransport
 
 from ..conftest import device_iot
@@ -753,6 +757,18 @@ def test_transport_init_signature(class_name_obj):
             "tEmiensOcZkP9twDEZKwU3JJl3asmseKCP7N9sfatVo=",
             id="klapv2-lv-2",
         ),
+        pytest.param(
+            KlapTransportV3,
+            1,
+            "tEmiensOcZkP9twDEZKwU3JJl3asmseKCP7N9sfatVo=",
+            id="klapv3-lv-1",
+        ),
+        pytest.param(
+            KlapTransportV3,
+            2,
+            "tEmiensOcZkP9twDEZKwU3JJl3asmseKCP7N9sfatVo=",
+            id="klapv3-lv-2",
+        ),
         pytest.param(XorTransport, None, None, id="xor"),
     ],
 )
@@ -786,7 +802,7 @@ async def test_transport_credentials_hash(
 
 @pytest.mark.parametrize(
     "transport_class",
-    [AesTransport, KlapTransport, KlapTransportV2, XorTransport],
+    [AesTransport, KlapTransport, KlapTransportV2, KlapTransportV3, XorTransport],
 )
 async def test_transport_credentials_hash_from_config(mocker, transport_class):
     """Test that credentials_hash provided via config sets correctly."""

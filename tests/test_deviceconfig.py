@@ -24,6 +24,15 @@ PLUG_KLAP_CONFIG = DeviceConfig(
         DeviceFamily.SmartTapoPlug, DeviceEncryptionType.Klap, login_version=2
     ),
 )
+PLUG_NEW_KLAP_CONFIG = DeviceConfig(
+    host="127.0.0.1",
+    connection_type=DeviceConnectionParameters(
+        DeviceFamily.SmartTapoPlug,
+        DeviceEncryptionType.Klap,
+        login_version=2,
+        new_klap=1,
+    ),
+)
 CAMERA_AES_CONFIG = DeviceConfig(
     host="127.0.0.1",
     connection_type=DeviceConnectionParameters(
@@ -48,6 +57,7 @@ async def test_serialization():
     [
         ("deviceconfig_plug-xor.json", PLUG_XOR_CONFIG),
         ("deviceconfig_plug-klap.json", PLUG_KLAP_CONFIG),
+        ("deviceconfig_plug-new-klap.json", PLUG_NEW_KLAP_CONFIG),
         ("deviceconfig_camera-aes-https.json", CAMERA_AES_CONFIG),
     ],
     ids=lambda arg: arg.split("_")[-1] if isinstance(arg, str) else "",
@@ -79,6 +89,7 @@ async def test_conn_param_no_https():
     }
     param = DeviceConnectionParameters.from_dict(dict_val)
     assert param.https is False
+    assert param.new_klap is None
     assert param.to_dict() == {**dict_val, "https": False}
 
 

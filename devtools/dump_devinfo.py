@@ -303,6 +303,7 @@ async def cli(
                 login_version=dr.mgt_encrypt_schm.lv,
                 https=dr.mgt_encrypt_schm.is_support_https,
                 http_port=dr.mgt_encrypt_schm.http_port,
+                new_klap=dr.mgt_encrypt_schm.new_klap,
             )
             dc = DeviceConfig(
                 host=host,
@@ -468,7 +469,7 @@ async def get_legacy_fixture(
             else:
                 child["id"] = f"SCRUBBED_CHILD_DEVICE_ID_{index + 1}"
 
-    if discovery_info and not discovery_info.get("system"):
+    if discovery_info:
         final["discovery_result"] = redact_data(
             discovery_info, _wrap_redactors(NEW_DISCOVERY_REDACTORS)
         )

@@ -166,6 +166,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
         login_version=discovery_mock.login_version,
         https=discovery_mock.https,
         http_port=discovery_mock.http_port,
+        new_klap=discovery_mock.new_klap,
     )
     config = DeviceConfig(
         host=host,
@@ -678,6 +679,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
             login_version=discovery_mock.login_version,
             https=discovery_mock.https,
             http_port=discovery_mock.http_port,
+            new_klap=discovery_mock.new_klap,
         )
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)

@@ -839,6 +839,7 @@ class Discover:
             login_version=login_version,
             https=encrypt_schm.is_support_https,
             http_port=encrypt_schm.http_port,
+            new_klap=encrypt_schm.new_klap,
         )
 
     @staticmethod
@@ -950,6 +951,7 @@ class EncryptionScheme(_DiscoveryBaseMixin):
     encrypt_type: str | None = None
     http_port: int | None = None
     lv: int | None = None
+    new_klap: int | None = None
 
 
 @dataclass

@@ -85,6 +85,10 @@ def _sha1(payload: bytes) -> bytes:
     return hashlib.sha1(payload).digest()  # noqa: S324
 
 
+def _to_hex_ascii(payload: bytes) -> bytes:
+    return payload.hex().encode("ascii")  # noqa: S324
+
+
 class KlapTransport(BaseTransport):
     """Implementation of the KLAP encryption protocol.
 
@@ -458,11 +462,11 @@ class KlapTransport(BaseTransport):
 
 
 class KlapTransportV2(KlapTransport):
-    """Implementation of the KLAP encryption protocol with v2 hanshake hashes."""
+    """Implementation of the KLAP encryption protocol with v2 handshake hashes."""
 
     @staticmethod
     def generate_auth_hash(creds: Credentials) -> bytes:
-        """Generate an md5 auth hash for the protocol on the supplied credentials."""
+        """Generate an sha1 auth hash for the protocol on the supplied credentials."""
         un = creds.username
         pw = creds.password
 
@@ -472,15 +476,191 @@ class KlapTransportV2(KlapTransport):
     def handshake1_seed_auth_hash(
         local_seed: bytes, remote_seed: bytes, auth_hash: bytes
     ) -> bytes:
-        """Generate an md5 auth hash for the protocol on the supplied credentials."""
+        """Generate an sha1 auth hash for the protocol on the supplied credentials."""
         return _sha256(local_seed + remote_seed + auth_hash)
 
     @staticmethod
     def handshake2_seed_auth_hash(
         local_seed: bytes, remote_seed: bytes, auth_hash: bytes
     ) -> bytes:
-        """Generate an md5 auth hash for the protocol on the supplied credentials."""
+        """Generate an sha1 auth hash for the protocol on the supplied credentials."""
         return _sha256(remote_seed + local_seed + auth_hash)
+
+
+class KlapTransportV3(KlapTransport):
+    """Implementation of the KLAP encryption protocol with new_klap handshake hashes."""
+
+    @staticmethod
+    def generate_auth_hash(creds: Credentials) -> bytes:
+        """Generate an sha1 auth hash for the protocol on the supplied credentials."""
+        un = creds.username
+        pw = creds.password
+        return _sha256(_sha1(un.encode()) + _sha1(pw.encode()))
+
+    @staticmethod
+    def handshake1_seed_auth_hash(
+        local_seed: bytes, remote_seed: bytes, auth_hash: bytes
+    ) -> bytes:
+        """Generate an sha1 auth hash for the protocol on the supplied credentials."""
+        return _sha256(local_seed + remote_seed + auth_hash)
+
+    @staticmethod
+    def handshake2_seed_auth_hash(
+        local_seed: bytes, remote_seed: bytes, auth_hash: bytes
+    ) -> bytes:
+        """Generate an sha1 auth hash for the protocol on the supplied credentials."""
+        return _sha256(remote_seed + local_seed + auth_hash)
+
+    async def perform_handshake1(self) -> tuple[bytes, bytes, bytes]:
+        """Preform handshake1."""
+        local_seed: bytes = secrets.token_bytes(16)
+
+        # Handshake 1 has a payload of local_seed in ASCII hex
+        # and a response of 16 bytes, followed by 32 bytes
+        # sha256(local_seed | remote_seed | auth_hash)
+
+        payload = _to_hex_ascii(local_seed)
+
+        url = self._app_url / "handshake1"
+
+        response_status, response_data = await self._http_client.post(
+            url, data=payload, ssl=await self._get_ssl_context()
+        )
+
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug(
+                "Handshake1 posted at %s. Host is %s, "
+                "Response status is %s, Request was %s",
+                datetime.datetime.now(),
+                self._host,
+                response_status,
+                payload.decode("ascii"),
+            )
+
+        if response_status != 200:
+            raise KasaException(
+                f"Device {self._host} responded with {response_status} to handshake1"
+            )
+
+        response_data = cast(bytes, response_data)
+        remote_seed: bytes = response_data[0:16]
+        server_hash = response_data[16:]
+
+        if len(response_data) != 48:
+            raise KasaException(
+                f"Device {self._host} responded with unexpected klap response "
+                + f"{response_data!r} to handshake1"
+            )
+
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug(
+                "Handshake1 success at %s. Host is %s, "
+                "Server remote_seed is: %s, server hash is: %s",
+                datetime.datetime.now(),
+                self._host,
+                remote_seed.hex(),
+                server_hash.hex(),
+            )
+
+        local_seed_auth_hash = self.handshake1_seed_auth_hash(
+            local_seed, remote_seed, self._local_auth_hash
+        )  # type: ignore
+
+        # Check the response from the device with local credentials
+        if local_seed_auth_hash == server_hash:
+            _LOGGER.debug("handshake1 hashes match with expected credentials")
+            return local_seed, remote_seed, self._local_auth_hash  # type: ignore
+
+        # Now check against the default setup credentials
+        for key, value in DEFAULT_CREDENTIALS.items():
+            if key not in self._default_credentials_auth_hash:
+                default_credentials = get_default_credentials(value)
+                self._default_credentials_auth_hash[key] = self.generate_auth_hash(
+                    default_credentials
+                )
+
+            default_credentials_seed_auth_hash = self.handshake1_seed_auth_hash(
+                local_seed,
+                remote_seed,
+                self._default_credentials_auth_hash[key],  # type: ignore
+            )
+
+            if default_credentials_seed_auth_hash == server_hash:
+                _LOGGER.debug(
+                    "Device response did not match our expected hash on ip %s,"
+                    "but an authentication with %s default credentials worked",
+                    self._host,
+                    key,
+                )
+                return local_seed, remote_seed, self._default_credentials_auth_hash[key]  # type: ignore
+
+        # Finally check against blank credentials if not already blank
+        blank_creds = Credentials()
+        if self._credentials != blank_creds:
+            if not self._blank_auth_hash:
+                self._blank_auth_hash = self.generate_auth_hash(blank_creds)
+
+            blank_seed_auth_hash = self.handshake1_seed_auth_hash(
+                local_seed,
+                remote_seed,
+                self._blank_auth_hash,  # type: ignore
+            )
+
+            if blank_seed_auth_hash == server_hash:
+                _LOGGER.debug(
+                    "Device response did not match our expected hash on ip %s, "
+                    "but an authentication with blank credentials worked",
+                    self._host,
+                )
+                return local_seed, remote_seed, self._blank_auth_hash  # type: ignore
+
+        msg = (
+            f"Device response did not match our challenge on ip {self._host}, "
+            f"check that your e-mail and password (both case-sensitive) are correct. "
+        )
+        _LOGGER.debug(msg)
+        raise AuthenticationError(msg)
+
+    async def perform_handshake2(
+        self, local_seed: bytes, remote_seed: bytes, auth_hash: bytes
+    ) -> KlapEncryptionSession:
+        """Perform handshake2."""
+        # Handshake 2 has the following payload:
+        #    sha256(remote_seed | local_seed | auth_hash)
+        # which is sent as ASCII hex
+
+        url = self._app_url / "handshake2"
+
+        payload_hash = self.handshake2_seed_auth_hash(
+            local_seed, remote_seed, auth_hash
+        )
+        payload = _to_hex_ascii(payload_hash)
+
+        response_status, _ = await self._http_client.post(
+            url,
+            data=payload,
+            cookies_dict=self._session_cookie,
+            ssl=await self._get_ssl_context(),
+        )
+
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug(
+                "Handshake2 posted %s. Host is %s, "
+                "Response status is %s, Request was %s",
+                datetime.datetime.now(),
+                self._host,
+                response_status,
+                payload.decode("ascii"),
+            )
+
+        if response_status != 200:
+            # This shouldn't be caused by incorrect
+            # credentials so don't raise AuthenticationError
+            raise KasaException(
+                f"Device {self._host} responded with {response_status} to handshake2"
+            )
+
+        return KlapEncryptionSession(local_seed, remote_seed, auth_hash)
 
 
 class KlapEncryptionSession:
