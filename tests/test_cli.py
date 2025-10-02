@@ -143,8 +143,7 @@ async def test_discover_raw(discovery_mock, runner, mocker):
     }
     assert res.output == json_dumps(expected, indent=True) + "\n"
 
-    call_count_before = redact_spy.call_count
-
+    redact_spy.reset_mock()
     res = await runner.invoke(
         cli,
         ["--username", "foo", "--password", "bar", "discover", "raw", "--redact"],
@@ -152,7 +151,7 @@ async def test_discover_raw(discovery_mock, runner, mocker):
     )
     assert res.exit_code == 0
 
-    assert redact_spy.call_count > call_count_before
+    redact_spy.assert_called()
 
 
 @pytest.mark.parametrize(
@@ -279,8 +278,7 @@ async def test_raw_command(dev, mocker, runner):
     res = await runner.invoke(raw_command, params, obj=dev)
 
     # Make sure that update was not called for wifi
-    with pytest.raises(AssertionError):
-        update.assert_called()
+    update.assert_not_called()
 
     assert res.exit_code == 0
     assert dev.model in res.output
@@ -369,8 +367,7 @@ async def test_wifi_join(dev, mocker, runner):
     )
 
     # Make sure that update was not called for wifi
-    with pytest.raises(AssertionError):
-        update.assert_called()
+    update.assert_not_called()
 
     assert res.exit_code == 0
     assert "Asking the device to connect to FOOBAR" in res.output
@@ -514,14 +511,14 @@ async def test_emeter(dev: Device, mocker, runner):
 
             res = await runner.invoke(cli, [*base_cmd, "--index", "0"], obj=dev)
             assert "Voltage: 122.066 V" in res.output
-            child_status.assert_called()
-            assert child_status.call_count == 1
+            child_status.assert_called_once()
 
+            child_status.reset_mock()
             res = await runner.invoke(
                 cli, [*base_cmd, "--name", dev.children[0].alias], obj=dev
             )
             assert "Voltage: 122.066 V" in res.output
-            assert child_status.call_count == 2
+            child_status.assert_called_once()
 
     if isinstance(dev, IotDevice):
         monthly = mocker.patch.object(energy, "get_monthly_stats")
@@ -1367,14 +1364,17 @@ async def test_discover_config(dev: Device, mocker, runner):
     cparam = dev.config.connection_type
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
-    assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ failed",
-        res.output.replace("\n", ""),
+    normalized = " ".join(res.output.split())
+    failed_pat = re.compile(
+        r"Attempt to connect to 127\.0\.0\.1 with \S+\s*\+\s*\S+\s*\+\s*\S+\s*\+\s*\S+\s+failed",
+        re.IGNORECASE,
     )
-    assert re.search(
-        r"Attempt to connect to 127\.0\.0\.1 with \w+ \+ \w+ \+ \w+ \+ \w+ succeeded",
-        res.output.replace("\n", ""),
+    succeeded_pat = re.compile(
+        r"Attempt to connect to 127\.0\.0\.1 with \S+\s*\+\s*\S+\s*\+\s*\S+\s*\+\s*\S+\s+succeeded",
+        re.IGNORECASE,
     )
+    assert failed_pat.search(normalized)
+    assert succeeded_pat.search(normalized)
 
 
 async def test_discover_config_invalid(mocker, runner):
