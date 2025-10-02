@@ -25,9 +25,7 @@ from kasa.transports.klaptransport import (
     KlapEncryptionSession,
     KlapTransport,
     KlapTransportV2,
-    KlapTransportV3,
     _sha256,
-    _to_hex_ascii,
 )
 
 DUMMY_QUERY = {"foobar": {"foo": "bar", "bar": "foo"}}
@@ -325,35 +323,21 @@ async def test_transport_decrypt_error(mocker, caplog):
     ids=("client", "blank", "kasa_setup", "shouldfail"),
 )
 @pytest.mark.parametrize(
-    ("transport_class", "seed_auth_hash_calc", "client_seed_transform"),
+    ("transport_class", "seed_auth_hash_calc"),
     [
-        pytest.param(KlapTransport, lambda c, s, a: c + a, lambda c: c, id="KLAP"),
-        pytest.param(
-            KlapTransportV2, lambda c, s, a: c + s + a, lambda c: c, id="KLAPV2"
-        ),
-        pytest.param(
-            KlapTransportV3,
-            lambda c, s, a: c + s + a,
-            lambda c: bytes.fromhex(c.decode("ascii")),
-            id="KLAPV3",
-        ),
+        pytest.param(KlapTransport, lambda c, s, a: c + a, id="KLAP"),
+        pytest.param(KlapTransportV2, lambda c, s, a: c + s + a, id="KLAPV2"),
     ],
 )
 async def test_handshake1(
-    mocker,
-    device_credentials,
-    expectation,
-    transport_class,
-    seed_auth_hash_calc,
-    client_seed_transform,
+    mocker, device_credentials, expectation, transport_class, seed_auth_hash_calc
 ):
     async def _return_handshake1_response(url, params=None, data=None, *_, **__):
         nonlocal client_seed, server_seed, device_auth_hash
 
         client_seed = data
-        seed_for_hash = client_seed_transform(client_seed)
         seed_auth_hash = _sha256(
-            seed_auth_hash_calc(seed_for_hash, server_seed, device_auth_hash)
+            seed_auth_hash_calc(client_seed, server_seed, device_auth_hash)
         )
         return _mock_response(200, server_seed + seed_auth_hash)
 
@@ -376,58 +360,28 @@ async def test_handshake1(
             auth_hash,
         ) = await protocol._transport.perform_handshake1()
 
-        if transport_class is KlapTransportV3:
-            assert client_seed == local_seed.hex().encode("ascii")
-            assert local_seed == bytes.fromhex(client_seed.decode("ascii"))
-        else:
-            assert local_seed == client_seed
+        assert local_seed == client_seed
         assert device_remote_seed == server_seed
         assert device_auth_hash == auth_hash
     await protocol.close()
 
 
 @pytest.mark.parametrize(
-    (
-        "transport_class",
-        "seed_auth_hash_calc1",
-        "seed_auth_hash_calc2",
-        "handshake1_payload",
-        "handshake2_payload",
-    ),
+    ("transport_class", "seed_auth_hash_calc1", "seed_auth_hash_calc2"),
     [
         pytest.param(
-            KlapTransport,
-            lambda c, s, a: c + a,
-            lambda c, s, a: s + a,
-            lambda local_seed: local_seed,
-            lambda hash_bytes: hash_bytes,
-            id="KLAP",
+            KlapTransport, lambda c, s, a: c + a, lambda c, s, a: s + a, id="KLAP"
         ),
         pytest.param(
             KlapTransportV2,
             lambda c, s, a: c + s + a,
             lambda c, s, a: s + c + a,
-            lambda local_seed: local_seed,
-            lambda hash_bytes: hash_bytes,
             id="KLAPV2",
-        ),
-        pytest.param(
-            KlapTransportV3,
-            lambda c, s, a: c + s + a,
-            lambda c, s, a: s + c + a,
-            lambda local_seed: _to_hex_ascii(local_seed),
-            lambda hash_bytes: _to_hex_ascii(hash_bytes),
-            id="KLAPV3",
         ),
     ],
 )
 async def test_handshake(
-    mocker,
-    transport_class,
-    seed_auth_hash_calc1,
-    seed_auth_hash_calc2,
-    handshake1_payload,
-    handshake2_payload,
+    mocker, transport_class, seed_auth_hash_calc1, seed_auth_hash_calc2
 ):
     client_seed = None
     server_seed = secrets.token_bytes(16)
@@ -438,30 +392,17 @@ async def test_handshake(
         nonlocal client_seed, server_seed, device_auth_hash
 
         if url == URL("http://127.0.0.1:80/app/handshake1"):
-            if transport_class is KlapTransportV3:
-                client_seed_bytes = bytes.fromhex(data.decode("ascii"))
-            else:
-                client_seed_bytes = data
             client_seed = data
             seed_auth_hash = _sha256(
-                seed_auth_hash_calc1(client_seed_bytes, server_seed, device_auth_hash)
+                seed_auth_hash_calc1(client_seed, server_seed, device_auth_hash)
             )
+
             return _mock_response(200, server_seed + seed_auth_hash)
         elif url == URL("http://127.0.0.1:80/app/handshake2"):
-            if transport_class is KlapTransportV3:
-                client_seed_bytes = bytes.fromhex(client_seed.decode("ascii"))
-                expected_hash = _sha256(
-                    seed_auth_hash_calc2(
-                        client_seed_bytes, server_seed, device_auth_hash
-                    )
-                )
-                expected_payload = handshake2_payload(expected_hash)
-                assert data == expected_payload
-            else:
-                expected_hash = _sha256(
-                    seed_auth_hash_calc2(client_seed, server_seed, device_auth_hash)
-                )
-                assert data == expected_hash
+            seed_auth_hash = _sha256(
+                seed_auth_hash_calc2(client_seed, server_seed, device_auth_hash)
+            )
+            assert data == seed_auth_hash
             return _mock_response(response_status, b"")
 
     mocker.patch.object(
@@ -527,104 +468,57 @@ async def test_query(mocker):
 
 
 @pytest.mark.parametrize(
-    ("transport_class", "response_status", "credentials_match", "expectation"),
+    ("response_status", "credentials_match", "expectation"),
     [
         pytest.param(
-            KlapTransport,
             (403, 403, 403),
             True,
             pytest.raises(KasaException),
-            id="klap-handshake1-403-status",
+            id="handshake1-403-status",
         ),
         pytest.param(
-            KlapTransport,
             (200, 403, 403),
             True,
             pytest.raises(KasaException),
-            id="klap-handshake2-403-status",
+            id="handshake2-403-status",
         ),
         pytest.param(
-            KlapTransport,
             (200, 200, 403),
             True,
             pytest.raises(_RetryableError),
-            id="klap-request-403-status",
+            id="request-403-status",
         ),
         pytest.param(
-            KlapTransport,
             (200, 200, 400),
             True,
             pytest.raises(KasaException),
-            id="klap-request-400-status",
+            id="request-400-status",
         ),
         pytest.param(
-            KlapTransport,
             (200, 200, 200),
             False,
             pytest.raises(AuthenticationError),
-            id="klap-handshake1-wrong-auth",
+            id="handshake1-wrong-auth",
         ),
         pytest.param(
-            KlapTransport,
             (200, 200, 200),
             secrets.token_bytes(16),
             pytest.raises(KasaException),
-            id="klap-handshake1-bad-auth-length",
-        ),
-        pytest.param(
-            KlapTransportV3,
-            (403, 403, 403),
-            True,
-            pytest.raises(KasaException),
-            id="v3-handshake1-403-status",
-        ),
-        pytest.param(
-            KlapTransportV3,
-            (200, 403, 403),
-            True,
-            pytest.raises(KasaException),
-            id="v3-handshake2-403-status",
-        ),
-        pytest.param(
-            KlapTransportV3,
-            (200, 200, 403),
-            True,
-            pytest.raises(_RetryableError),
-            id="v3-request-403-status",
-        ),
-        pytest.param(
-            KlapTransportV3,
-            (200, 200, 400),
-            True,
-            pytest.raises(KasaException),
-            id="v3-request-400-status",
-        ),
-        pytest.param(
-            KlapTransportV3,
-            (200, 200, 200),
-            False,
-            pytest.raises(AuthenticationError),
-            id="v3-handshake1-wrong-auth",
-        ),
-        pytest.param(
-            KlapTransportV3,
-            (200, 200, 200),
-            secrets.token_bytes(16),
-            pytest.raises(KasaException),
-            id="v3-handshake1-bad-auth-length",
+            id="handshake1-bad-auth-length",
         ),
     ],
 )
 async def test_authentication_failures(
-    mocker, transport_class, response_status, credentials_match, expectation
+    mocker, response_status, credentials_match, expectation
 ):
     client_seed = None
+
     server_seed = secrets.token_bytes(16)
     client_credentials = Credentials("foo", "bar")
     device_credentials = (
-        client_credentials if credentials_match is True else Credentials("bar", "foo")
+        client_credentials if credentials_match else Credentials("bar", "foo")
     )
-    device_auth_hash = transport_class.generate_auth_hash(device_credentials)
+    device_auth_hash = KlapTransport.generate_auth_hash(device_credentials)
 
     async def _return_response(url: URL, params=None, data=None, *_, **__):
         nonlocal \
@@ -635,53 +529,26 @@ async def test_authentication_failures(
             credentials_match
 
         if url == URL("http://127.0.0.1:80/app/handshake1"):
+            client_seed = data
+            client_seed_auth_hash = _sha256(data + device_auth_hash)
             if credentials_match is not False and credentials_match is not True:
-                if transport_class is KlapTransportV3:
-                    return _mock_response(response_status[0], b"short")
-                else:
-                    client_seed = data
-                    client_seed_auth_hash = (
-                        _sha256(data + device_auth_hash) + credentials_match
-                    )
-                    return _mock_response(
-                        response_status[0], server_seed + client_seed_auth_hash
-                    )
-            if transport_class is KlapTransportV3:
-                client_seed = bytes.fromhex(data.decode("ascii"))
-                client_seed_auth_hash = _sha256(
-                    client_seed + server_seed + device_auth_hash
-                )
-                return _mock_response(
-                    response_status[0], server_seed + client_seed_auth_hash
-                )
-            else:
-                client_seed = data
-                client_seed_auth_hash = _sha256(data + device_auth_hash)
-                return _mock_response(
-                    response_status[0], server_seed + client_seed_auth_hash
-                )
+                client_seed_auth_hash += credentials_match
+            return _mock_response(
+                response_status[0], server_seed + client_seed_auth_hash
+            )
         elif url == URL("http://127.0.0.1:80/app/handshake2"):
-            if transport_class is KlapTransportV3:
-                payload_seed = client_seed
-                client_seed_auth_hash = _sha256(
-                    server_seed + payload_seed + device_auth_hash
-                )
-                return _mock_response(
-                    response_status[1], server_seed + client_seed_auth_hash
-                )
-            else:
-                client_seed = data
-                client_seed_auth_hash = _sha256(data + device_auth_hash)
-                return _mock_response(
-                    response_status[1], server_seed + client_seed_auth_hash
-                )
+            client_seed = data
+            client_seed_auth_hash = _sha256(data + device_auth_hash)
+            return _mock_response(
+                response_status[1], server_seed + client_seed_auth_hash
+            )
         elif url == URL("http://127.0.0.1:80/app/request"):
             return _mock_response(response_status[2], b"")
 
     mocker.patch.object(aiohttp.ClientSession, "post", side_effect=_return_response)
 
     config = DeviceConfig("127.0.0.1", credentials=client_credentials)
-    protocol = IotProtocol(transport=transport_class(config=config))
+    protocol = IotProtocol(transport=KlapTransport(config=config))
 
     with expectation:
         await protocol.query({})

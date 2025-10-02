@@ -27,7 +27,7 @@ PLUG_KLAP_CONFIG = DeviceConfig(
 PLUG_NEW_KLAP_CONFIG = DeviceConfig(
     host="127.0.0.1",
     connection_type=DeviceConnectionParameters(
-        DeviceFamily.SmartTapoPlug,
+        DeviceFamily.IotSmartPlugSwitch,
         DeviceEncryptionType.Klap,
         login_version=2,
         new_klap=1,

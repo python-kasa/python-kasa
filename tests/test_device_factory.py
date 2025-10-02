@@ -42,7 +42,6 @@ from kasa.transports import (
     BaseTransport,
     KlapTransport,
     KlapTransportV2,
-    KlapTransportV3,
     LinkieTransportV2,
     SslAesTransport,
     SslTransport,
@@ -263,7 +262,7 @@ ET = DeviceEncryptionType
         pytest.param(
             CP(DF.IotSmartPlugSwitch, ET.Klap, https=False, new_klap=1),
             IotProtocol,
-            KlapTransportV3,
+            XorTransport,
             id="iot-new-klap",
         ),
         pytest.param(

@@ -3,6 +3,7 @@
 
 import asyncio
 import base64
+import copy
 import json
 import logging
 import re
@@ -750,3 +751,92 @@ async def test_discovery_device_repr(discovery_mock, mocker):
         assert "update() needed" not in repr_
     else:
         assert "update() needed" in repr_
+
+
+@pytest.mark.parametrize(
+    ("has_children", "has_callback"),
+    [(True, True), (False, False)],
+    ids=["children_callback", "no_children_no_callback"],
+)
+async def test_discover_protocol_new_klap_finalize_discovered_branches(
+    mocker, has_children, has_callback
+):
+    """Exercise finalize_discovered."""
+    proto = _DiscoverProtocol()
+    ip = "127.0.0.1"
+    port = 20002
+
+    result = {
+        "mgt_encrypt_schm": {"new_klap": 1},
+        "device_type": "IOT.SMARTPLUGSWITCH",
+        "device_model": "HS100(UK)",
+        "mac": "00:00:00:00:00:00",
+        "device_id": "0000000000000000000000000000000000000000",
+    }
+    if has_children:
+        result["children"] = [{"foo": "bar"}, {"foo": "baz"}]
+
+    mocker.patch("kasa.discover.json_loads", return_value={"result": result})
+
+    def fake_get_device_instance(info_arg, config_arg):
+        if "system" in info_arg and "get_sysinfo" in info_arg["system"]:
+            sysinfo = info_arg["system"]["get_sysinfo"]
+            if "result" in sysinfo:
+                sysinfo = sysinfo["result"]
+        elif "result" in info_arg:
+            sysinfo = info_arg["result"]
+        else:
+            sysinfo = info_arg
+
+        dev = mocker.Mock()
+        dev.sys_info = copy.deepcopy(sysinfo)
+
+        async def fake_update():
+            dev.sys_info["updated"] = True
+
+        dev.update = fake_update
+        return dev
+
+    mocker.patch(
+        "kasa.discover.Discover._get_device_instance",
+        side_effect=fake_get_device_instance,
+    )
+    mocker.patch(
+        "kasa.discover.Discover._get_device_instance_legacy",
+        side_effect=fake_get_device_instance,
+    )
+
+    if has_callback:
+
+        async def _noop_on_discovered(dev):
+            return None
+
+        proto.on_discovered = _noop_on_discovered
+    else:
+        proto.on_discovered = None
+
+    tasks: list[asyncio.Task] = []
+
+    def run_task(coro):
+        if asyncio.iscoroutine(coro):
+            tasks.append(asyncio.create_task(coro))
+
+    mocker.patch.object(proto, "_run_callback_task", side_effect=run_task)
+
+    mocker.patch.object(proto, "_handle_discovered_event")
+
+    proto.datagram_received(b"<placeholder>", (ip, port))
+
+    if tasks:
+        await asyncio.gather(*tasks)
+
+    assert ip in proto.discovered_devices
+    device = proto.discovered_devices[ip]
+    assert device.sys_info.get("updated") is True
+
+    if has_children:
+        children = device.sys_info["children"]
+        assert children[0]["id"] == "00"
+        assert children[1]["id"] == "01"
+    else:
+        assert "children" not in device.sys_info

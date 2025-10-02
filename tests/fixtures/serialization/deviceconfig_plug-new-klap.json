@@ -1,6 +1,6 @@
 {
     "connection_type": {
-        "device_family": "SMART.TAPOPLUG",
+        "device_family": "IOT.SMARTPLUGSWITCH",
         "encryption_type": "KLAP",
         "https": false,
         "login_version": 2,

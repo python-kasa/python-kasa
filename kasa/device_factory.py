@@ -32,7 +32,6 @@ from .transports import (
     BaseTransport,
     KlapTransport,
     KlapTransportV2,
-    KlapTransportV3,
     LinkieTransportV2,
     SslTransport,
     XorTransport,
@@ -223,7 +222,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         and ctype.new_klap is not None
         and ctype.new_klap > 0
     ):
-        return IotProtocol(transport=KlapTransportV3(config=config))
+        return IotProtocol(transport=XorTransport(config=config))
 
     protocol_transport_key = (
         protocol_name

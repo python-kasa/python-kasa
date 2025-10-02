@@ -85,6 +85,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import copy
 import ipaddress
 import logging
 import secrets
@@ -375,6 +376,28 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                     }
                 )
             device = device_func(info, config)
+
+            new_klap = (
+                info.get("result", {}).get("mgt_encrypt_schm", {}).get("new_klap")
+            )
+            if new_klap is not None:
+
+                async def finalize_discovered(dev: Device) -> None:
+                    await dev.update()
+                    info = copy.deepcopy(dev.sys_info)
+                    if "children" in info and isinstance(info["children"], list):
+                        for idx, child in enumerate(info["children"]):
+                            child["id"] = f"{idx:02d}"
+                    info = {"system": {"get_sysinfo": info}}
+                    device_func = Discover._get_device_instance_legacy
+                    device = device_func(info, config)
+                    self.discovered_devices[ip] = device
+                    if self.on_discovered is not None:
+                        self._run_callback_task(self.on_discovered(device))
+                    self._handle_discovered_event()
+
+                self._run_callback_task(finalize_discovered(device))
+                return
         except UnsupportedDeviceError as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
             self.unsupported_device_exceptions[ip] = udex
