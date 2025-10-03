@@ -4,7 +4,7 @@ import asyncio
 
 import asyncclick as click
 
-from kasa import Device, DeviceType, Module
+from kasa import DeviceType, Module, SmartDevice
 from kasa.smart import SmartChildDevice
 
 from .common import (
@@ -21,7 +21,7 @@ def pretty_category(cat: str):
 
 @click.group()
 @pass_dev
-async def hub(dev: Device):
+async def hub(dev: SmartDevice):
     """Commands controlling hub child device pairing."""
     if dev.device_type is not DeviceType.Hub:
         error(f"{dev} is not a hub.")
@@ -32,7 +32,7 @@ async def hub(dev: Device):
 
 @hub.command(name="list")
 @pass_dev
-async def hub_list(dev: Device):
+async def hub_list(dev: SmartDevice):
     """List hub paired child devices."""
     for c in dev.children:
         echo(f"{c.device_id}: {c}")
@@ -40,7 +40,7 @@ async def hub_list(dev: Device):
 
 @hub.command(name="supported")
 @pass_dev
-async def hub_supported(dev: Device):
+async def hub_supported(dev: SmartDevice):
     """List supported hub child device categories."""
     cs = dev.modules[Module.ChildSetup]
 
@@ -51,7 +51,7 @@ async def hub_supported(dev: Device):
 @hub.command(name="pair")
 @click.option("--timeout", default=10)
 @pass_dev
-async def hub_pair(dev: Device, timeout: int):
+async def hub_pair(dev: SmartDevice, timeout: int):
     """Pair all pairable device.
 
     This will pair any child devices currently in pairing mode.

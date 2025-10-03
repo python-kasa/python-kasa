@@ -5,7 +5,7 @@ import logging
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device, Feature, Module
+from kasa import Feature, Module, SmartDevice
 
 from ...device_fixtures import parametrize
 
@@ -15,7 +15,7 @@ childsetup = parametrize(
 
 
 @childsetup
-async def test_childsetup_features(dev: Device):
+async def test_childsetup_features(dev: SmartDevice):
     """Test the exposed features."""
     cs = dev.modules.get(Module.ChildSetup)
     assert cs
@@ -27,7 +27,7 @@ async def test_childsetup_features(dev: Device):
 
 @childsetup
 async def test_childsetup_pair(
-    dev: Device, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+    dev: SmartDevice, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ):
     """Test device pairing."""
     caplog.set_level(logging.INFO)
@@ -51,7 +51,7 @@ async def test_childsetup_pair(
 
 @childsetup
 async def test_childsetup_unpair(
-    dev: Device, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+    dev: SmartDevice, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ):
     """Test unpair."""
     mock_query_helper = mocker.spy(dev, "_query_helper")

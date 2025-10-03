@@ -1,7 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from kasa import Device, Module
+from kasa import Module, SmartDevice
 
 from ...device_fixtures import get_parent_and_child_modules, parametrize
 
@@ -35,7 +35,7 @@ async def test_features(dev, feature, prop_name, type):
 
 
 @powerprotection
-async def test_set_enable(dev: Device, mocker: MockerFixture):
+async def test_set_enable(dev: SmartDevice, mocker: MockerFixture):
     """Test enable."""
     powerprot = next(get_parent_and_child_modules(dev, Module.PowerProtection))
     assert powerprot
@@ -88,7 +88,7 @@ async def test_set_enable(dev: Device, mocker: MockerFixture):
 
 
 @powerprotection
-async def test_set_threshold(dev: Device, mocker: MockerFixture):
+async def test_set_threshold(dev: SmartDevice, mocker: MockerFixture):
     """Test enable."""
     powerprot = next(get_parent_and_child_modules(dev, Module.PowerProtection))
     assert powerprot
