@@ -3,7 +3,6 @@
 
 import asyncio
 import base64
-import copy
 import json
 import logging
 import re
@@ -326,6 +325,10 @@ async def test_discover_datagram_received(mocker, discovery_data):
     addr2 = "127.0.0.2"
     mocker.patch("kasa.discover.json_loads", return_value=UNSUPPORTED)
     proto.datagram_received("<placeholder data>", (addr2, 20002))
+
+    # Wait for async processing of the discovery callbacks to finish
+    if proto.callback_tasks:
+        await asyncio.gather(*proto.callback_tasks, return_exceptions=True)
 
     # Check that device in discovered_devices is initialized correctly
     assert len(proto.discovered_devices) == 1
@@ -753,90 +756,70 @@ async def test_discovery_device_repr(discovery_mock, mocker):
         assert "update() needed" in repr_
 
 
-@pytest.mark.parametrize(
-    ("has_children", "has_callback"),
-    [(True, True), (False, False)],
-    ids=["children_callback", "no_children_no_callback"],
-)
-async def test_discover_protocol_new_klap_finalize_discovered_branches(
-    mocker, has_children, has_callback
-):
-    """Exercise finalize_discovered."""
-    proto = _DiscoverProtocol()
-    ip = "127.0.0.1"
-    port = 20002
-
-    result = {
-        "mgt_encrypt_schm": {"new_klap": 1},
-        "device_type": "IOT.SMARTPLUGSWITCH",
-        "device_model": "HS100(UK)",
-        "mac": "00:00:00:00:00:00",
-        "device_id": "0000000000000000000000000000000000000000",
+@pytest.mark.asyncio
+async def test_get_device_instance_new_klap_unsupported_logs(mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    info = {
+        "result": {
+            "device_type": "IOT.SMARTPLUGSWITCH",
+            "device_model": "HS100(UK)",
+            "device_id": "id",
+            "ip": "127.0.0.1",
+            "mac": "00-00-00-00-00-00",
+            "mgt_encrypt_schm": {
+                "is_support_https": False,
+                "encrypt_type": "KLAP",
+                "http_port": 9999,
+                "lv": 1,
+                "new_klap": 1,
+            },
+            # Force decrypt attempt to run and be logged (will fail harmlessly and be caught/logged)
+            "encrypt_info": {"sym_schm": "AES", "key": "", "data": ""},
+        }
     }
-    if has_children:
-        result["children"] = [{"foo": "bar"}, {"foo": "baz"}]
 
-    mocker.patch("kasa.discover.json_loads", return_value={"result": result})
+    class DummyProt:
+        def __init__(self):
+            self._transport = MagicMock()
 
-    def fake_get_device_instance(info_arg, config_arg):
-        if "system" in info_arg and "get_sysinfo" in info_arg["system"]:
-            sysinfo = info_arg["system"]["get_sysinfo"]
-            if "result" in sysinfo:
-                sysinfo = sysinfo["result"]
-        elif "result" in info_arg:
-            sysinfo = info_arg["result"]
-        else:
-            sysinfo = info_arg
+        async def query(self, req):
+            # Return legacy-style sysinfo to go through get_device_class(sysinfo)
+            return {"system": {"get_sysinfo": {"mic_type": "IOT.SMARTPLUGSWITCH"}}}
 
-        dev = mocker.Mock()
-        dev.sys_info = copy.deepcopy(sysinfo)
-
-        async def fake_update():
-            dev.sys_info["updated"] = True
-
-        dev.update = fake_update
-        return dev
-
-    mocker.patch(
-        "kasa.discover.Discover._get_device_instance",
-        side_effect=fake_get_device_instance,
-    )
-    mocker.patch(
-        "kasa.discover.Discover._get_device_instance_legacy",
-        side_effect=fake_get_device_instance,
-    )
-
-    if has_callback:
-
-        async def _noop_on_discovered(dev):
+        async def close(self):
             return None
 
-        proto.on_discovered = _noop_on_discovered
-    else:
-        proto.on_discovered = None
+    mocker.patch("kasa.discover.get_protocol", return_value=DummyProt())
+    # Force device_class resolution to fail to trigger the debug log and UnsupportedDeviceError
+    mocker.patch("kasa.discover.Discover._get_device_class", return_value=None)
 
-    tasks: list[asyncio.Task] = []
+    with pytest.raises(UnsupportedDeviceError):
+        await Discover._get_device_instance(info, DeviceConfig(host="127.0.0.1"))
 
-    def run_task(coro):
-        if asyncio.iscoroutine(coro):
-            tasks.append(asyncio.create_task(coro))
+    # Validate the debug log was emitted
+    assert "Got unsupported device type" in caplog.text
 
-    mocker.patch.object(proto, "_run_callback_task", side_effect=run_task)
 
-    mocker.patch.object(proto, "_handle_discovered_event")
+def test_datagram_received_logs_for_exceptions(caplog, mocker):
+    proto = _DiscoverProtocol()
+    caplog.set_level(logging.DEBUG)
 
-    proto.datagram_received(b"<placeholder>", (ip, port))
+    ip1 = "127.0.0.10"
+    ip2 = "127.0.0.11"
 
-    if tasks:
-        await asyncio.gather(*tasks)
+    # First call raises UnsupportedDeviceError -> goes to unsupported_device_exceptions and logs
+    mocker.patch(
+        "kasa.discover.Discover._get_discovery_json",
+        side_effect=[UnsupportedDeviceError("boom"), KasaException("bad")],
+    )
 
-    assert ip in proto.discovered_devices
-    device = proto.discovered_devices[ip]
-    assert device.sys_info.get("updated") is True
+    proto.datagram_received(b"x", (ip1, Discover.DISCOVERY_PORT_2))
+    proto.datagram_received(b"x", (ip2, Discover.DISCOVERY_PORT_2))
 
-    if has_children:
-        children = device.sys_info["children"]
-        assert children[0]["id"] == "00"
-        assert children[1]["id"] == "01"
-    else:
-        assert "children" not in device.sys_info
+    # Bookkeeping recorded correctly
+    assert ip1 in proto.unsupported_device_exceptions
+    assert ip2 in proto.invalid_device_exceptions
+
+    # Logs were written
+    assert f"Unsupported device found at {ip1} << boom" in caplog.text
+    assert f"[DISCOVERY] Unable to find device type for {ip2}: bad" in caplog.text

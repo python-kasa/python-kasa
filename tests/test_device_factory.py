@@ -262,7 +262,7 @@ ET = DeviceEncryptionType
         pytest.param(
             CP(DF.IotSmartPlugSwitch, ET.Klap, https=False, new_klap=1),
             IotProtocol,
-            XorTransport,
+            KlapTransportV2,
             id="iot-new-klap",
         ),
         pytest.param(
