@@ -469,7 +469,7 @@ async def get_legacy_fixture(
             else:
                 child["id"] = f"SCRUBBED_CHILD_DEVICE_ID_{index + 1}"
 
-    if discovery_info:
+    if discovery_info and not discovery_info.get("system"):
         final["discovery_result"] = redact_data(
             discovery_info, _wrap_redactors(NEW_DISCOVERY_REDACTORS)
         )
