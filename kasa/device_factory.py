@@ -216,21 +216,12 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     ):
         return SmartProtocol(transport=SslTransport(config=config))
 
-    # Newer Iot device firmwares report KLAP encryption but still actually
-    # use Xor transport
-    if (
-        protocol_name == "IOT"
-        and ctype.encryption_type.value == "KLAP"
-        and ctype.new_klap is not None
-        and ctype.new_klap > 0
-    ):
-        return IotProtocol(transport=XorTransport(config=config))
-
     protocol_transport_key = (
         protocol_name
         + "."
         + ctype.encryption_type.value
         + (".HTTPS" if ctype.https else "")
+        + (".NEW_KLAP" if ctype.new_klap not in (None, 0) else "")
     )
 
     _LOGGER.debug("Finding transport for %s", protocol_transport_key)
@@ -239,6 +230,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
     ] = {
         "IOT.XOR": (IotProtocol, XorTransport),
         "IOT.KLAP": (IotProtocol, KlapTransport),
+        "IOT.KLAP.NEW_KLAP": (IotProtocol, KlapTransportV2),
         "SMART.AES": (SmartProtocol, AesTransport),
         "SMART.KLAP": (SmartProtocol, KlapTransportV2),
         "SMART.KLAP.HTTPS": (SmartProtocol, KlapTransportV2),

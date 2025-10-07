@@ -85,7 +85,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
-import copy
 import ipaddress
 import logging
 import secrets
@@ -126,7 +125,7 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.iot.iotdevice import IotDevice, _extract_sys_info
+from kasa.iot.iotdevice import _extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -376,28 +375,6 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                     }
                 )
             device = device_func(info, config)
-
-            new_klap = (
-                info.get("result", {}).get("mgt_encrypt_schm", {}).get("new_klap")
-            )
-            if new_klap is not None:
-
-                async def finalize_discovered(dev: Device) -> None:
-                    await dev.update()
-                    info = copy.deepcopy(dev.sys_info)
-                    if "children" in info and isinstance(info["children"], list):
-                        for idx, child in enumerate(info["children"]):
-                            child["id"] = f"{idx:02d}"
-                    info = {"system": {"get_sysinfo": info}}
-                    device_func = Discover._get_device_instance_legacy
-                    device = device_func(info, config)
-                    self.discovered_devices[ip] = device
-                    if self.on_discovered is not None:
-                        self._run_callback_task(self.on_discovered(device))
-                    self._handle_discovered_event()
-
-                self._run_callback_task(finalize_discovered(device))
-                return
         except UnsupportedDeviceError as udex:
             _LOGGER.debug("Unsupported device found at %s << %s", ip, udex)
             self.unsupported_device_exceptions[ip] = udex
@@ -766,7 +743,7 @@ class Discover:
             data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
 
-        device_class = cast(type[IotDevice], Discover._get_device_class(info))
+        device_class = cast(type[Device], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
         sys_info = _extract_sys_info(info)
         device_type = sys_info.get("mic_type", sys_info.get("type"))
@@ -874,7 +851,7 @@ class Discover:
         info: dict,
         config: DeviceConfig,
     ) -> Device:
-        """Get SmartDevice from the new 20002 response."""
+        """Get SmartDevice or IotDevice from the new 20002 response."""
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         try:
@@ -923,7 +900,7 @@ class Discover:
             ) from ex
 
         if (
-            device_class := get_device_class_from_family(type_, https=conn_params.https)
+            device_class := cast(type[Device], Discover._get_device_class(info))
         ) is None:
             _LOGGER.debug("Got unsupported device type: %s", type_)
             raise UnsupportedDeviceError(
