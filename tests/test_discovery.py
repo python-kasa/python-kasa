@@ -738,9 +738,7 @@ async def test_discovery_device_repr(discovery_mock, mocker):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "info",
-    "needs_query",
-    "host",
+    ("info", "needs_query", "host"),
     [
         (
             {
