@@ -190,6 +190,7 @@ AMBIENT_MODULE = {
     },
 }
 
+
 MOTION_MODULE = {
     "get_adc_value": {"value": 50, "err_code": 0},
     "get_config": {
