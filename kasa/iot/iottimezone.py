@@ -109,7 +109,7 @@ def expected_dst_behavior_for_index(index: int) -> bool | None:
     """Return whether the given index implies a DST-observing zone."""
     try:
         key = TIMEZONE_INDEX[index]
-    except Exception:
+    except KeyError:
         return None
     return _dst_expected_from_key(key)
 

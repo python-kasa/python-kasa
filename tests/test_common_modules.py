@@ -652,9 +652,9 @@ async def test_smartcam_time_post_update_fallback_parses_timezone_str_unit(
     }
     monkeypatch.setattr(CamTimeModule, "data", property(lambda self: data))
 
-    mocker.patch.object(
-        sys.modules["kasa.smartcam.modules.time"].CachedZoneInfo,
-        "get_cached_zone_info",
+    # Patch directly via the module path instead of sys.modules lookup
+    mocker.patch(
+        "kasa.smartcam.modules.time.CachedZoneInfo.get_cached_zone_info",
         new=AsyncMock(side_effect=ZoneInfoNotFoundError("missing on host")),
     )
 
