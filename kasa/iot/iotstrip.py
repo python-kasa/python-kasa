@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from datetime import tzinfo
 
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig

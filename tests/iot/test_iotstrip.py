@@ -67,9 +67,7 @@ async def test_strip_emeter_erase_stats(dev, mocker):
     # Now try the real call (without patches) to tolerate devices that don't support erase_emeter_stat.
     # This still executes the loop lines in StripEmeter.erase_stats even if it raises.
     # Remove patches
-    await (
-        dev.update()
-    )  # refresh modules to remove patched callables (safe no-op on many)
+    await dev.update()
     try:
         await dev.modules[Module.Energy].erase_stats()
     except KasaException as ex:
