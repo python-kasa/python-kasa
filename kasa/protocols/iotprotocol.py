@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from collections.abc import Callable
 from pprint import pformat as pf
 from typing import TYPE_CHECKING, Any
@@ -54,6 +55,8 @@ REDACTORS: dict[str, Callable[[Any], Any] | None] = {
     "oemId": lambda x: "REDACTED_" + x[9::],
     "username": lambda _: "user@example.com",  # cnCloud
     "hwId": lambda x: "REDACTED_" + x[9::],
+    "setup_code": lambda x: re.sub(r"\w", "0", x),  # homekit
+    "setup_payload": lambda x: re.sub(r"\w", "0", x),  # homekit
 }
 
 
