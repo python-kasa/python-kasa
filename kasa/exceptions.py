@@ -200,3 +200,11 @@ SMART_AUTHENTICATION_ERRORS = [
     SmartErrorCode.TRANSPORT_UNKNOWN_CREDENTIALS_ERROR,
     SmartErrorCode.HOMEKIT_LOGIN_FAIL,
 ]
+
+
+class UnsupportedAuthenticationError(UnsupportedDeviceError, AuthenticationError):
+    """Raised when authentication fails with unsupported provisioning method.
+
+    This can be used to display a more helpful message to the user when their devices
+    have been provisioned using the tplink simple setup (tss).
+    """

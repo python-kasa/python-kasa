@@ -399,3 +399,21 @@ def unsupported_device_info(request, mocker):
     mocker.patch("kasa.discover._DiscoverProtocol.do_discover", mock_discover)
 
     return discovery_data
+
+
+def test_unsupported_authentication_exception_for_tss():
+    from kasa.discover import Discover, DiscoveryResult
+    from kasa.exceptions import UnsupportedAuthenticationError
+
+    # Create a mock discovery result with obd_src='tss'
+    dr = DiscoveryResult(
+        device_type="SomeType",
+        device_model="SomeModel",
+        device_id="SomeID",
+        ip="127.0.0.2",
+        mac="00:11:22:33:44:55",
+        obd_src="tss",
+    )
+    with pytest.raises(UnsupportedAuthenticationError) as excinfo:
+        Discover._get_connection_parameters(dr)
+    assert "obd_src='tss'" in str(excinfo.value)
