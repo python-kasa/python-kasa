@@ -378,7 +378,7 @@ class SmartDevice(Device):
         """
         msg_part = "on first update" if first_update else "after first update"
 
-        _LOGGER.error(
+        _LOGGER.debug(
             "Error querying %s for modules '%s' %s: %s",
             self.host,
             module_names,
@@ -391,7 +391,7 @@ class SmartDevice(Device):
                 resp = await self.protocol.query({meth: params})
                 responses[meth] = resp[meth]
             except Exception as iex:
-                _LOGGER.error(
+                _LOGGER.debug(
                     "Error querying %s individually for module query '%s' %s: %s",
                     self.host,
                     meth,
