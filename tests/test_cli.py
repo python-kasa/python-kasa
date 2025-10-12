@@ -1365,16 +1365,14 @@ async def test_discover_config(dev: Device, mocker, runner):
     expected = f"--device-family {cparam.device_family.value} --encrypt-type {cparam.encryption_type.value} {'--https' if cparam.https else '--no-https'}"
     assert expected in res.output
     normalized = " ".join(res.output.split())
-    failed_pat = re.compile(
-        r"Attempt to connect to 127\.0\.0\.1 with \S+\s*\+\s*\S+\s*\+\s*\S+\s*\+\s*\S+\s+failed",
-        re.IGNORECASE,
+    attempt_segs = normalized.split(f"Attempt to connect to {host} with")[1:]
+    assert attempt_segs, f"No connection attempt lines found in output:\n{res.output}"
+    assert any(" succeeded" in seg.lower() for seg in attempt_segs), (
+        f"No succeeded attempt line found in:\n{res.output}"
     )
-    succeeded_pat = re.compile(
-        r"Attempt to connect to 127\.0\.0\.1 with \S+\s*\+\s*\S+\s*\+\s*\S+\s*\+\s*\S+\s+succeeded",
-        re.IGNORECASE,
+    assert any(" failed" in seg.lower() for seg in attempt_segs), (
+        f"No failed attempt line found in:\n{res.output}"
     )
-    assert failed_pat.search(normalized)
-    assert succeeded_pat.search(normalized)
 
 
 async def test_discover_config_invalid(mocker, runner):

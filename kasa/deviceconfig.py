@@ -101,10 +101,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     login_version: int | None = None
     https: bool = False
     http_port: int | None = None
-    new_klap: int | None = field(
-        default=None,
-        metadata=field_options(serialize=lambda v: None if v in (None, 0) else v),
-    )
+    new_klap: bool | None = None
 
     @staticmethod
     def from_values(
@@ -114,7 +111,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
         login_version: int | None = None,
         https: bool | None = None,
         http_port: int | None = None,
-        new_klap: int | None = None,
+        new_klap: bool | None = None,
     ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:

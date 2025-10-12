@@ -221,7 +221,7 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         + "."
         + ctype.encryption_type.value
         + (".HTTPS" if ctype.https else "")
-        + (".NEW_KLAP" if ctype.new_klap not in (None, 0) else "")
+        + (".NEW_KLAP" if ctype.new_klap else "")
     )
 
     _LOGGER.debug("Finding transport for %s", protocol_transport_key)

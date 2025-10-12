@@ -197,9 +197,8 @@ async def test_discover_single_hostname(discovery_mock, mocker):
         x = await Discover.discover_single(host, credentials=Credentials())
 
 
-@pytest.mark.parametrize("entrypoint", ["discover", "discover_single"])
-async def test_credentials_precedence(entrypoint, mocker):
-    """Ensure credentials precedence logic is identical for discover and discover_single."""
+async def test_credentials_precedence_discover(mocker):
+    """Ensure credentials precedence logic for Discover.discover()."""
     host = "127.0.0.1"
 
     async def mock_discover(self, *_, **__):
@@ -210,36 +209,45 @@ async def test_credentials_precedence(entrypoint, mocker):
     mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
-    # Only credentials passed
-    if entrypoint == "discover":
-        await Discover.discover(credentials=Credentials(), timeout=0)
-    else:
-        await Discover.discover_single(host, credentials=Credentials(), timeout=0)
+    await Discover.discover(credentials=Credentials(), timeout=0)
     assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
 
-    # Credentials and un/pw passed
-    if entrypoint == "discover":
-        await Discover.discover(
-            credentials=Credentials(), username="Foo", password="Bar", timeout=0
-        )
-    else:
-        await Discover.discover_single(
-            host, credentials=Credentials(), username="Foo", password="Bar", timeout=0
-        )
+    await Discover.discover(
+        credentials=Credentials(), username="Foo", password="Bar", timeout=0
+    )
     assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
 
-    # Only un/pw passed
-    if entrypoint == "discover":
-        await Discover.discover(username="Foo", password="Bar", timeout=0)
-    else:
-        await Discover.discover_single(host, username="Foo", password="Bar", timeout=0)
+    await Discover.discover(username="Foo", password="Bar", timeout=0)
     assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
 
-    # Only un passed, credentials should be None
-    if entrypoint == "discover":
-        await Discover.discover(username="Foo", timeout=0)
-    else:
-        await Discover.discover_single(host, username="Foo", timeout=0)
+    await Discover.discover(username="Foo", timeout=0)
+    assert dp.mock_calls[3].kwargs["credentials"] is None
+
+
+async def test_credentials_precedence_discover_single(mocker):
+    """Ensure credentials precedence logic for Discover.discover_single()."""
+    host = "127.0.0.1"
+
+    async def mock_discover(self, *_, **__):
+        self.discovered_devices = {host: MagicMock()}
+        self.seen_hosts.add(host)
+        self._handle_discovered_event()
+
+    mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
+    dp = mocker.spy(_DiscoverProtocol, "__init__")
+
+    await Discover.discover_single(host, credentials=Credentials(), timeout=0)
+    assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
+
+    await Discover.discover_single(
+        host, credentials=Credentials(), username="Foo", password="Bar", timeout=0
+    )
+    assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
+
+    await Discover.discover_single(host, username="Foo", password="Bar", timeout=0)
+    assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
+
+    await Discover.discover_single(host, username="Foo", timeout=0)
     assert dp.mock_calls[3].kwargs["credentials"] is None
 
 

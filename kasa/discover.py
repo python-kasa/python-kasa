@@ -669,9 +669,7 @@ class Discover:
             for device_family in main_device_families
             for https in (True, False)
             for login_version in (None, 2)
-            for new_klap in (
-                (1, None) if encrypt == DeviceEncryptionType.Klap else (None,)
-            )
+            for new_klap in (True, None)
             if (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
@@ -872,6 +870,7 @@ class Discover:
     ) -> Device:
         """Get SmartDevice or IotDevice from the new 20002 response."""
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
+        sysinfo: dict | None = None
 
         try:
             discovery_result = DiscoveryResult.from_dict(info["result"])
@@ -931,25 +930,19 @@ class Discover:
 
         if config.connection_type.new_klap:
             sysinfo = await protocol.query({"system": {"get_sysinfo": {}}})
-            if (
-                device_class := cast(type[Device], Discover._get_device_class(sysinfo))
-            ) is None:
-                _LOGGER.debug("Got unsupported device type: %s", type_)
-                raise UnsupportedDeviceError(
-                    f"Unsupported device {config.host} of type {type_}: {info}",
-                    discovery_result=discovery_result.to_dict(),
-                    host=config.host,
-                )
-        else:
-            if (
-                device_class := cast(type[Device], Discover._get_device_class(info))
-            ) is None:
-                _LOGGER.debug("Got unsupported device type: %s", type_)
-                raise UnsupportedDeviceError(
-                    f"Unsupported device {config.host} of type {type_}: {info}",
-                    discovery_result=discovery_result.to_dict(),
-                    host=config.host,
-                )
+
+        if (
+            device_class := cast(
+                type[Device],
+                Discover._get_device_class(sysinfo or info),
+            )
+        ) is None:
+            _LOGGER.debug("Got unsupported device type: %s", type_)
+            raise UnsupportedDeviceError(
+                f"Unsupported device {config.host} of type {type_}: {info}",
+                discovery_result=discovery_result.to_dict(),
+                host=config.host,
+            )
 
         if debug_enabled:
             data = (
@@ -986,7 +979,7 @@ class EncryptionScheme(_DiscoveryBaseMixin):
     encrypt_type: str | None = None
     http_port: int | None = None
     lv: int | None = None
-    new_klap: int | None = None
+    new_klap: bool | None = None
 
 
 @dataclass

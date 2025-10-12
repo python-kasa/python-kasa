@@ -30,7 +30,7 @@ PLUG_NEW_KLAP_CONFIG = DeviceConfig(
         DeviceFamily.IotSmartPlugSwitch,
         DeviceEncryptionType.Klap,
         login_version=2,
-        new_klap=1,
+        new_klap=True,
     ),
 )
 CAMERA_AES_CONFIG = DeviceConfig(

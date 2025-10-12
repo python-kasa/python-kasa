@@ -164,7 +164,7 @@ def create_discovery_mock(ip: str, fixture_data: dict):
         login_version: int | None = None
         port_override: int | None = None
         http_port: int | None = None
-        new_klap: int | None = None
+        new_klap: bool | None = None
 
         @property
         def model(self) -> str:
