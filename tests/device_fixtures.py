@@ -309,6 +309,11 @@ bulb = parametrize_combine([bulb_smart, bulb_iot])
 strip_iot = parametrize(
     "strip devices iot", model_filter=STRIPS_IOT, protocol_filter={"IOT"}
 )
+strip_emeter_iot = parametrize(
+    "strip devices iot with emeter",
+    model_filter=STRIPS_IOT & WITH_EMETER_IOT,
+    protocol_filter={"IOT"},
+)
 strip_smart = parametrize(
     "strip devices smart", model_filter=STRIPS_SMART, protocol_filter={"SMART"}
 )
