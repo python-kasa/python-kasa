@@ -12,6 +12,7 @@ dependencies = [
   "aiohttp>=3",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
   "mashumaro>=3.14",
+  "ecdsa>=0.18.0",
 ]
 
 classifiers = [
@@ -194,3 +195,7 @@ module = [
     "devtools.create_module_fixtures"
 ]
 disable_error_code = "import-not-found,import-untyped"
+
+[[tool.mypy.overrides]]
+module = ["ecdsa", "ecdsa.*"]
+ignore_missing_imports = true
