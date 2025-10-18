@@ -1,0 +1,80 @@
+{
+    "cnCloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": []
+        }
+    },
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 0,
+            "err_code": 0,
+            "power_mw": 0,
+            "total_wh": 50,
+            "voltage_mv": 125403
+        }
+    },
+    "schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 0,
+            "err_code": 0,
+            "rule_list": [],
+            "version": 2
+        }
+    },
+    "smartlife.iot.homekit": {
+        "setup_info_get": {
+            "err_code": 0,
+            "setup_code": "000-00-000",
+            "setup_payload": "0-00://0000000000000"
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "active_mode": "none",
+            "alias": "#MASKED_NAME#",
+            "dev_name": "Smart Wi-Fi Plug Mini",
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "1.0",
+            "icon_hash": "",
+            "latitude_i": 0,
+            "led_off": 0,
+            "longitude_i": 0,
+            "mac": "AC:15:A2:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "EP25(US)",
+            "next_action": {
+                "type": -1
+            },
+            "ntc_state": 0,
+            "obd_src": "apple",
+            "oemId": "00000000000000000000000000000000",
+            "on_time": 495961,
+            "relay_state": 1,
+            "rssi": -37,
+            "status": "configured",
+            "sw_ver": "1.0.14 Build 240424 Rel.094105",
+            "updating": 0
+        }
+    }
+}

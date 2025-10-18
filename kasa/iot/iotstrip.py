@@ -24,7 +24,17 @@ from .iotdevice import (
 )
 from .iotmodule import IotModule
 from .iotplug import IotPlug
-from .modules import Antitheft, Cloud, Countdown, Emeter, Led, Schedule, Time, Usage
+from .modules import (
+    Antitheft,
+    Cloud,
+    Countdown,
+    Emeter,
+    HomeKit,
+    Led,
+    Schedule,
+    Time,
+    Usage,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -112,6 +122,7 @@ class IotStrip(IotDevice):
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
         self.add_module(Module.Led, Led(self, "system"))
         self.add_module(Module.IotCloud, Cloud(self, "cnCloud"))
+        self.add_module(Module.IotHomeKit, HomeKit(self, "smartlife.iot.homekit"))
         if self.has_emeter:
             _LOGGER.debug(
                 "The device has emeter, querying its information along sysinfo"
