@@ -83,9 +83,15 @@ def test_authkey_mask():
 def test_sha1_username_mac_shadow():
     username = "user"
     mac12 = "aabbccddeeff"
-    expected = hashlib.sha1(  # noqa: S324
+    # codeql[py/weak-cryptographic-algorithm]:
+    # Required by device firmware for credential compatibility.
+    # Do not change.
+    expected = hashlib.sha1(  # nosec B303  # noqa: S324
         (
-            hashlib.md5(username.encode()).hexdigest() + "_" + "AA:BB:CC:DD:EE:FF"  # noqa: S324
+            # codeql[py/weak-cryptographic-algorithm]:
+            # Required by device firmware for credential compatibility.
+            # Do not change.
+            hashlib.md5(username.encode()).hexdigest() + "_" + "AA:BB:CC:DD:EE:FF"  # nosec B303  # noqa: S324
         ).encode()
     ).hexdigest()
     out = TpapTransport._sha1_username_mac_shadow(username, mac12, "ignored")
@@ -96,10 +102,16 @@ def test_sha1_username_mac_shadow():
 def test_password_shadow_variants():
     extra = {"type": "password_shadow", "params": {"passwd_id": 1}}
     out = TpapTransport._build_credentials(extra, "", "pw", "")
-    assert out == hashlib.md5(b"pw").hexdigest()  # noqa: S324
+    # codeql[py/weak-cryptographic-algorithm]:
+    # Required by device firmware for credential compatibility.
+    # Do not change.
+    assert out == hashlib.md5(b"pw").hexdigest()  # nosec B303  # noqa: S324
     extra = {"type": "password_shadow", "params": {"passwd_id": 2}}
     out = TpapTransport._build_credentials(extra, "", "pw", "")
-    assert out == hashlib.sha1(b"pw").hexdigest()  # noqa: S324
+    # codeql[py/weak-cryptographic-algorithm]:
+    # Required by device firmware for credential compatibility.
+    # Do not change.
+    assert out == hashlib.sha1(b"pw").hexdigest()  # nosec B303  # noqa: S324
     extra = {
         "type": "password_shadow",
         "params": {"passwd_id": 5, "passwd_prefix": "x"},

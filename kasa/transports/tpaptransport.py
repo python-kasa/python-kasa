@@ -510,16 +510,16 @@ class TpapTransport(BaseTransport):
     @staticmethod
     def _md5_hex(s: str) -> str:
         # codeql[py/weak-cryptographic-algorithm]:
-        # Required by device firmware for credential shadow compatibility.
+        # Required by device firmware for credential compatibility.
         # Do not change.
-        return hashlib.md5(s.encode()).hexdigest()  # nosec B303 # noqa: S324
+        return hashlib.md5(s.encode()).hexdigest()  # nosec B303  # noqa: S324
 
     @staticmethod
     def _sha1_hex(s: str) -> str:
         # codeql[py/weak-cryptographic-algorithm]:
-        # Required by device firmware for credential shadow compatibility.
+        # Required by device firmware for credential compatibility.
         # Do not change.
-        return hashlib.sha1(s.encode()).hexdigest()  # nosec B303 # noqa: S324
+        return hashlib.sha1(s.encode()).hexdigest()  # nosec B303  # noqa: S324
 
     @classmethod
     def _authkey_mask(cls, passcode: str, tmpkey: str, dictionary: str) -> str:
@@ -545,9 +545,9 @@ class TpapTransport(BaseTransport):
     @staticmethod
     def _sha256crypt_simple(passcode: str, prefix: str) -> str:
         # codeql[py/weak-cryptographic-algorithm]:
-        # Device-advertised "password_shadow" pid=5 format;
-        # not general-purpose password hashing.
-        return prefix + "$" + hashlib.sha256(passcode.encode()).hexdigest()
+        # Required by device firmware for credential compatibility.
+        # Do not change.
+        return prefix + "$" + hashlib.sha256(passcode.encode()).hexdigest()  # nosec B303  # noqa: S324
 
     @classmethod
     def _build_credentials(
@@ -596,9 +596,9 @@ class TpapTransport(BaseTransport):
                 name = "admin" if sha_name == 0 else "user"
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
                 # codeql[py/weak-cryptographic-algorithm]:
-                # Device-advertised "password_sha_with_salt" format;
-                # not general-purpose password hashing.
-                return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()
+                # Required by device firmware for credential compatibility.
+                # Do not change.
+                return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()  # nosec B303  # noqa: S324
             except Exception:
                 return passcode
 
