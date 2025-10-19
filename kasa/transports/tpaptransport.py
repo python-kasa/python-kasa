@@ -224,9 +224,11 @@ class TpapTransport(BaseTransport):
         seq = self._seq
         frame = struct.pack(">I", seq) + self._cipher.encrypt(request.encode(), seq)
         self._seq += 1
+        headers = {"Content-Type": "application/octet-stream"}
         status, data = await self._http_client.post(
             self._ds_url,
             data=frame,
+            headers=headers,
             ssl=await self._get_ssl_context(),
         )
         if status != 200:
@@ -401,7 +403,7 @@ class TpapTransport(BaseTransport):
         return self._ssl_context
 
     def _create_ssl_context(self) -> ssl.SSLContext:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         context.set_ciphers(self.CIPHERS)
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE

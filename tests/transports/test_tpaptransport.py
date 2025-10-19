@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json as jsonlib
 import re
+import ssl as _ssl
 import struct
 
 import aiohttp
@@ -432,7 +433,10 @@ async def test_send_success_aes128(mocker):
 
     def _mock_post(url, *, json=None, data=None, headers=None, ssl=None, params=None):
         assert url == transport._ds_url
+        assert headers["Content-Type"] == "application/octet-stream"
         assert isinstance(data, bytes | bytearray)
+        assert isinstance(ssl, _ssl.SSLContext)
+        assert ssl.protocol == _ssl.PROTOCOL_TLSv1_2
         raw = bytes(data)
         rseq = struct.unpack(">I", raw[:4])[0]
         plaintext = cipher.decrypt(raw[4:], rseq).decode()
