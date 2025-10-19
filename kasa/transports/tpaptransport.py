@@ -17,7 +17,7 @@ import ssl
 import struct
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any, Literal, cast
+from typing import Any, Literal, TypedDict, cast
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -49,13 +49,12 @@ class TransportState(Enum):
     ESTABLISHED = auto()
 
 
-# Session AEAD (matches device SecSessionCipher)
 _TAG_LEN = 16
 _NONCE_LEN = 12
 CipherId = Literal["aes_128_ccm", "aes_256_ccm", "chacha20_poly1305"]
 
 
-class _CipherLabels(dict):
+class _CipherLabels(TypedDict):
     key_salt: bytes
     key_info: bytes
     nonce_salt: bytes
@@ -64,27 +63,27 @@ class _CipherLabels(dict):
 
 
 _LABELS: dict[CipherId, _CipherLabels] = {
-    "aes_128_ccm": _CipherLabels(
-        key_salt=b"tp-kdf-salt-aes128-key",
-        key_info=b"tp-kdf-info-aes128-key",
-        nonce_salt=b"tp-kdf-salt-aes128-iv",
-        nonce_info=b"tp-kdf-info-aes128-iv",
-        key_len=16,
-    ),
-    "aes_256_ccm": _CipherLabels(
-        key_salt=b"tp-kdf-salt-aes256-key",
-        key_info=b"tp-kdf-info-aes256-key",
-        nonce_salt=b"tp-kdf-salt-aes256-iv",
-        nonce_info=b"tp-kdf-info-aes256-iv",
-        key_len=32,
-    ),
-    "chacha20_poly1305": _CipherLabels(
-        key_salt=b"tp-kdf-salt-chacha20-key",
-        key_info=b"tp-kdf-info-chacha20-key",
-        nonce_salt=b"tp-kdf-salt-chacha20-iv",
-        nonce_info=b"tp-kdf-info-chacha20-iv",
-        key_len=32,
-    ),
+    "aes_128_ccm": {
+        "key_salt": b"tp-kdf-salt-aes128-key",
+        "key_info": b"tp-kdf-info-aes128-key",
+        "nonce_salt": b"tp-kdf-salt-aes128-iv",
+        "nonce_info": b"tp-kdf-info-aes128-iv",
+        "key_len": 16,
+    },
+    "aes_256_ccm": {
+        "key_salt": b"tp-kdf-salt-aes256-key",
+        "key_info": b"tp-kdf-info-aes256-key",
+        "nonce_salt": b"tp-kdf-salt-aes256-iv",
+        "nonce_info": b"tp-kdf-info-aes256-iv",
+        "key_len": 32,
+    },
+    "chacha20_poly1305": {
+        "key_salt": b"tp-kdf-salt-chacha20-key",
+        "key_info": b"tp-kdf-info-chacha20-key",
+        "nonce_salt": b"tp-kdf-salt-chacha20-iv",
+        "nonce_info": b"tp-kdf-info-chacha20-iv",
+        "key_len": 32,
+    },
 }
 
 
@@ -172,8 +171,6 @@ class TpapTransport(BaseTransport):
             "AES256-SHA",
         ]
     )
-
-    # SPAKE2+ fixed points (compressed SEC1)
     P256_M_COMP = bytes.fromhex(
         "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
     )
@@ -188,32 +185,21 @@ class TpapTransport(BaseTransport):
 
     def __init__(self, *, config: DeviceConfig) -> None:
         super().__init__(config=config)
-
         self._http_client: HttpClient = HttpClient(config)
         self._ssl_context: ssl.SSLContext | None = None
-
         self._state = TransportState.HANDSHAKE_REQUIRED
-
         self._app_url = URL(f"https://{self._host}:{self._port}")
         self._ds_url: URL | None = None
-
-        # Session
         self._session_id: str | None = None
         self._seq: int | None = None
         self._cipher: _SessionCipher | None = None
-
-        # EC group setup (ecdsa for point ops, cryptography for SEC1 encode/decode)
         self._curve = NIST256p
         self._G = self._curve.generator
         self._order = self._curve.order
-
-        # Decode SPAKE2+ fixed points M, N once
         Mx, My = self._sec1_to_xy(self.P256_M_COMP)
         Nx, Ny = self._sec1_to_xy(self.P256_N_COMP)
         self._M = ellipticcurve.Point(self._curve.curve, Mx, My, self._order)
         self._N = ellipticcurve.Point(self._curve.curve, Nx, Ny, self._order)
-
-        # Cached from discover
         self._discover_mac: str | None = None
         self._discover_suites: list[int] | None = None
 
@@ -233,15 +219,11 @@ class TpapTransport(BaseTransport):
         """Send a request over the TPAP secure channel."""
         if self._state is TransportState.HANDSHAKE_REQUIRED:
             await self.perform_handshake()
-
         if self._seq is None or self._cipher is None or self._ds_url is None:
             raise KasaException("TPAP transport is not established")
-
-        # Frame: 4-byte BE seq || AEAD(ciphertext||tag)
         seq = self._seq
         frame = struct.pack(">I", seq) + self._cipher.encrypt(request.encode(), seq)
         self._seq += 1
-
         status, data = await self._http_client.post(
             self._ds_url,
             data=frame,
@@ -252,15 +234,12 @@ class TpapTransport(BaseTransport):
                 f"{self._host} responded with unexpected status {status} "
                 "on secure request"
             )
-
         if not isinstance(data, bytes | bytearray):
             self._handle_response_error_code(data, "Error sending TPAP request")
             return cast(dict, data)
-
         raw = bytes(data)
         if len(raw) < 4 + _TAG_LEN:
             raise KasaException("TPAP response too short")
-
         rseq = struct.unpack(">I", raw[:4])[0]
         plaintext = self._cipher.decrypt(raw[4:], rseq)
         return cast(dict, json_loads(plaintext.decode()))
@@ -277,28 +256,20 @@ class TpapTransport(BaseTransport):
         self._seq = None
         self._cipher = None
         self._ds_url = None
-        # keep discover cache; it's cheap and harmless to reuse
-
-    # ===== Handshake (register/share) =====
 
     async def perform_handshake(self) -> None:
         """Perform SPAKE2+ handshake and initialize the secure channel."""
-        # Discover (fetch MAC and preferred suites)
         await self._perform_discover()
-
         username = (
             self._config.credentials.username if self._config.credentials else ""
         ) or ""
         passcode = (
             self._config.credentials.password if self._config.credentials else ""
         ) or ""
-
         suites = self._discover_suites or [2]
         enc_prefs = ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"]
         mac = (self._discover_mac or "").upper()
         mac_no_colon = mac.replace(":", "").replace("-", "")
-
-        # Register
         user_random = os.urandom(16).hex().upper()
         reg = await self._post_login(
             {
@@ -312,7 +283,6 @@ class TpapTransport(BaseTransport):
             },
             step_name="register",
         )
-
         dev_random = reg.get("dev_random") or ""
         dev_salt = reg.get("dev_salt") or ""
         dev_share = reg.get("dev_share") or ""
@@ -320,8 +290,6 @@ class TpapTransport(BaseTransport):
         iterations = int(reg.get("iterations") or 10000)
         chosen_cipher = cast(CipherId, reg.get("encryption") or "aes_128_ccm")
         extra_crypt = reg.get("extra_crypt") or {}
-
-        # Credentials string (APK parity)
         if suites and 0 in suites:
             if not mac:
                 raise AuthenticationError(
@@ -334,34 +302,26 @@ class TpapTransport(BaseTransport):
                 extra_crypt, username, passcode, mac_no_colon
             )
         cred = cred_str.encode()
-
-        # Derive a,b -> w,h
         a, b = self._derive_ab(cred, bytes.fromhex(dev_salt), iterations, 32)
         order = self._order
         w = a % order
         h_scalar = b % order
-
-        # SPAKE2+ prover computations
         G, M, N = self._G, self._M, self._N
         x = self._rand_scalar(order)
         xG = x * G  # type: ignore[operator]
         wM = w * M  # type: ignore[operator]
         Lp = xG + wM  # type: ignore[operator]
-
         Rx, Ry = self._sec1_to_xy(bytes.fromhex(dev_share))
         R = ellipticcurve.Point(self._curve.curve, Rx, Ry, order)
         Rprime = R + (-(w * N))  # type: ignore[operator]
         Zp = x * Rprime  # type: ignore[operator]
         Vp = (h_scalar % order) * Rprime  # type: ignore[operator]
-
         L_enc = self._xy_to_uncompressed(Lp.x(), Lp.y())  # type: ignore[operator]
         R_enc = self._xy_to_uncompressed(R.x(), R.y())
         Z_enc = self._xy_to_uncompressed(Zp.x(), Zp.y())  # type: ignore[operator]
         V_enc = self._xy_to_uncompressed(Vp.x(), Vp.y())  # type: ignore[operator]
         M_enc = self._xy_to_uncompressed(M.x(), M.y())  # type: ignore[operator]
         N_enc = self._xy_to_uncompressed(N.x(), N.y())  # type: ignore[operator]
-
-        # Transcript -> KcA/KcB/shared_key
         hash_name = "SHA512" if suite_type == 2 else "SHA256"
         context = (
             self.PAKE_CONTEXT_TAG
@@ -371,8 +331,8 @@ class TpapTransport(BaseTransport):
         context_hash = self._hash(hash_name, context)
         transcript = (
             self._len8le(context_hash)
-            + self._len8le(b"")  # username identity (empty per APK)
-            + self._len8le(b"")  # peer identity (empty per APK)
+            + self._len8le(b"")
+            + self._len8le(b"")
             + self._len8le(M_enc)
             + self._len8le(N_enc)
             + self._len8le(L_enc)
@@ -386,11 +346,8 @@ class TpapTransport(BaseTransport):
         conf = self._hkdf_expand("ConfirmationKeys", T, mac_len * 2, hash_name)
         KcA, KcB = conf[:mac_len], conf[mac_len:]
         shared_key = self._hkdf_expand("SharedKey", T, len(T), hash_name)
-
         user_confirm = self._hmac(hash_name, KcA, R_enc).hex()
         expected_dev_confirm = self._hmac(hash_name, KcB, L_enc).hex()
-
-        # Share
         share = await self._post_login(
             {
                 "sub_method": "pake_share",
@@ -402,26 +359,20 @@ class TpapTransport(BaseTransport):
         dev_confirm = (share.get("dev_confirm") or "").lower()
         if dev_confirm != expected_dev_confirm.lower():
             raise KasaException("SPAKE2+ confirmation mismatch")
-
         self._session_id = share.get("stok") or share.get("sessionId")
         self._seq = int(share.get("start_seq") or 1)
         if not self._session_id or self._seq is None:
             raise KasaException("Missing session fields from device")
-
-        # AEAD channel keys (HKDF-SHA256 label scheme)
         self._cipher = _SessionCipher.from_shared_key(
             chosen_cipher, shared_key, hkdf_hash="SHA256"
         )
         self._ds_url = URL(f"{str(self._app_url)}/stok={self._session_id}/ds")
         self._state = TransportState.ESTABLISHED
 
-    # ===== Internal "discover" =====
-
     async def _perform_discover(self) -> None:
         """Call login/discover to fetch MAC and preferred PAKE suites."""
         if self._discover_mac is not None and self._discover_suites is not None:
             return
-
         body = {"method": "login", "params": {"sub_method": "discover"}}
         status, data = await self._http_client.post(
             self._app_url.with_path("/"),
@@ -430,21 +381,16 @@ class TpapTransport(BaseTransport):
             ssl=await self._get_ssl_context(),
         )
         if status != 200 or not isinstance(data, dict):
-            # Best-effort: proceed without MAC (may fail later if
-            # suite 0 or passwd_id=3)
             return
 
         resp = cast(dict[str, Any], data)
         self._handle_response_error_code(resp, "TPAP discover failed")
         result = resp.get("result") or {}
-
         self._discover_mac = cast(str | None, result.get("mac")) or None
         tpap = result.get("tpap") or {}
         suites = tpap.get("pake")
         if isinstance(suites, list) and all(isinstance(x, int) for x in suites):
             self._discover_suites = suites
-
-    # ===== HTTP/TLS helpers =====
 
     async def _get_ssl_context(self) -> ssl.SSLContext:
         if not self._ssl_context:
@@ -488,10 +434,8 @@ class TpapTransport(BaseTransport):
             error_code = SmartErrorCode.from_int(error_code_raw)
         except (ValueError, TypeError):
             error_code = SmartErrorCode.SUCCESS
-
         if error_code is SmartErrorCode.SUCCESS:
             return
-
         full = f"{msg}: {self._host}: {error_code.name}({error_code.value})"
         if error_code in SMART_RETRYABLE_ERRORS:
             raise _RetryableError(full, error_code=error_code)
@@ -499,8 +443,6 @@ class TpapTransport(BaseTransport):
             self._state = TransportState.HANDSHAKE_REQUIRED
             raise AuthenticationError(full, error_code=error_code)
         raise DeviceError(full, error_code=error_code)
-
-    # ===== Crypto helpers (scoped to this class) =====
 
     @staticmethod
     def _sec1_to_xy(sec1: bytes) -> tuple[int, int]:
@@ -545,7 +487,6 @@ class TpapTransport(BaseTransport):
     @staticmethod
     def _encode_w(w: int) -> bytes:
         wb = w.to_bytes((w.bit_length() + 7) // 8 or 1, "big", signed=False)
-        # APK BigInteger rule: strip 0x00 only when length is even
         if len(wb) > 1 and len(wb) % 2 == 0 and wb[0] == 0x00:
             wb = wb[1:]
         return wb
@@ -568,11 +509,17 @@ class TpapTransport(BaseTransport):
 
     @staticmethod
     def _md5_hex(s: str) -> str:
-        return hashlib.md5(s.encode()).hexdigest()  # noqa: S324
+        # codeql[py/weak-cryptographic-algorithm]:
+        # Required by device firmware for credential shadow compatibility.
+        # Do not change.
+        return hashlib.md5(s.encode()).hexdigest()  # nosec B303 # noqa: S324
 
     @staticmethod
     def _sha1_hex(s: str) -> str:
-        return hashlib.sha1(s.encode()).hexdigest()  # noqa: S324
+        # codeql[py/weak-cryptographic-algorithm]:
+        # Required by device firmware for credential shadow compatibility.
+        # Do not change.
+        return hashlib.sha1(s.encode()).hexdigest()  # nosec B303 # noqa: S324
 
     @classmethod
     def _authkey_mask(cls, passcode: str, tmpkey: str, dictionary: str) -> str:
@@ -597,6 +544,9 @@ class TpapTransport(BaseTransport):
 
     @staticmethod
     def _sha256crypt_simple(passcode: str, prefix: str) -> str:
+        # codeql[py/weak-cryptographic-algorithm]:
+        # Device-advertised "password_shadow" pid=5 format;
+        # not general-purpose password hashing.
         return prefix + "$" + hashlib.sha256(passcode.encode()).hexdigest()
 
     @classmethod
@@ -607,6 +557,14 @@ class TpapTransport(BaseTransport):
         passcode: str,
         mac_no_colon: str,
     ) -> str:
+        """Build the credential string expected by the device firmware.
+
+        Important:
+        - The hashing/transform branches herein intentionally mirror vendor formats
+          advertised by the device (extra_crypt) for interoperability.
+        - These are NOT general-purpose password hashes. Do not change algorithms.
+        - Weak-hash usage is explicitly justified and suppressed at call sites.
+        """
         if not extra_crypt:
             return (username + "/" + passcode) if username else passcode
 
@@ -632,11 +590,14 @@ class TpapTransport(BaseTransport):
             return cls._authkey_mask(passcode, tmp, dic) if tmp and dic else passcode
 
         if t == "password_sha_with_salt":
-            sha_name = int(p.get("sha_name", -1))  # 0 -> "admin", else "user"
+            sha_name = int(p.get("sha_name", -1))
             sha_salt_b64 = p.get("sha_salt", "") or ""
             try:
                 name = "admin" if sha_name == 0 else "user"
                 salt_dec = base64.b64decode(sha_salt_b64).decode()
+                # codeql[py/weak-cryptographic-algorithm]:
+                # Device-advertised "password_sha_with_salt" format;
+                # not general-purpose password hashing.
                 return hashlib.sha256((name + salt_dec + passcode).encode()).hexdigest()
             except Exception:
                 return passcode
@@ -645,7 +606,6 @@ class TpapTransport(BaseTransport):
 
     @staticmethod
     def _mac_pass_from_device_mac(mac_colon: str) -> str:
-        # Fallback when device advertises suite 0 (MAC-derived passcode)
         mac_hex = mac_colon.replace(":", "").replace("-", "")
         mac_bytes = bytes.fromhex(mac_hex)
         seed = b"GqY5o136oa4i6VprTlMW2DpVXxmfW8"
