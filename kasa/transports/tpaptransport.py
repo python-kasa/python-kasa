@@ -281,7 +281,7 @@ class TpapTransport(BaseTransport):
                 "cipher_suites": suites,
                 "encryption": enc_prefs,
                 "passcode_type": "password",
-                "stok": None,
+                "sessionId": None,
             },
             step_name="register",
         )
