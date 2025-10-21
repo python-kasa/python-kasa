@@ -164,6 +164,9 @@ class TpapTransport(BaseTransport):
     DEFAULT_PORT: int = 4433
     CIPHERS = ":".join(
         [
+            "ECDHE-ECDSA-AES256-GCM-SHA384",
+            "ECDHE-ECDSA-CHACHA20-POLY1305",
+            "ECDHE-ECDSA-AES128-GCM-SHA256",
             "AES256-GCM-SHA384",
             "AES256-SHA256",
             "AES128-GCM-SHA256",
