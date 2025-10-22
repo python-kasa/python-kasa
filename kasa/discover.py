@@ -264,6 +264,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
         self.target = target
         self.target_1 = (target, self.discovery_port)
         self.target_2 = (target, Discover.DISCOVERY_PORT_2)
+        self.target_3 = (target, Discover.DISCOVERY_PORT_3)
 
         self.discovered_devices = {}
         self.unsupported_device_exceptions: dict = {}
@@ -333,6 +334,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
                 break
             self.transport.sendto(encrypted_req[4:], self.target_1)  # type: ignore
             self.transport.sendto(aes_discovery_query, self.target_2)  # type: ignore
+            self.transport.sendto(aes_discovery_query, self.target_3)  # type: ignore
             await asyncio.sleep(sleep_between_packets)
 
     def datagram_received(
@@ -361,7 +363,7 @@ class _DiscoverProtocol(asyncio.DatagramProtocol):
             if port == self.discovery_port:
                 json_func = Discover._get_discovery_json_legacy
                 device_func = Discover._get_device_instance_legacy
-            elif port == Discover.DISCOVERY_PORT_2:
+            elif port in (Discover.DISCOVERY_PORT_2, Discover.DISCOVERY_PORT_3):
                 json_func = Discover._get_discovery_json
                 device_func = Discover._get_device_instance
             else:
@@ -422,7 +424,9 @@ class Discover:
     }
 
     DISCOVERY_PORT_2 = 20002
+    DISCOVERY_PORT_3 = 20004
     DISCOVERY_QUERY_2 = binascii.unhexlify("020000010000000000000000463cb5d3")
+    DISCOVERY_QUERY_3 = binascii.unhexlify("020000010000000000000000463cb5d3")
 
     _redact_data = True
 
