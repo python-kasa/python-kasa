@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.13"]
+        python-version: ["3.14"]
 
     steps:
       - name: "Checkout source files"
