@@ -2,13 +2,13 @@ repos:
 
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
-  rev: 0.5.30
+  rev: 0.9.5
   hooks:
     # Update the uv lockfile
     - id: uv-lock
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v5.0.0
+  rev: v6.0.0
   hooks:
   - id: trailing-whitespace
   - id: end-of-file-fixer
@@ -22,14 +22,14 @@ repos:
       - "--indent=4"
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.9.6
+  rev: v0.14.2
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix]
     - id: ruff-format
 
 - repo: https://github.com/PyCQA/doc8
-  rev: 'v1.1.2'
+  rev: 'v2.0.0'
   hooks:
   - id: doc8
     additional_dependencies: [tomli]
