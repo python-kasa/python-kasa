@@ -426,7 +426,6 @@ class Discover:
     DISCOVERY_PORT_2 = 20002
     DISCOVERY_PORT_3 = 20004
     DISCOVERY_QUERY_2 = binascii.unhexlify("020000010000000000000000463cb5d3")
-    DISCOVERY_QUERY_3 = binascii.unhexlify("020000010000000000000000463cb5d3")
 
     _redact_data = True
 
