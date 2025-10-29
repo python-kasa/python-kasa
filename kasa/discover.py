@@ -821,6 +821,12 @@ class Discover:
             encrypt_info := discovery_result.encrypt_info
         ):
             encrypt_type = encrypt_info.sym_schm
+        elif (
+            discovery_result.encrypt_type
+            and '3' in discovery_result.encrypt_type
+            and not discovery_result.encrypt_info
+        ):
+            encrypt_type = 'AES'
 
         if not (login_version := encrypt_schm.lv) and (
             et := discovery_result.encrypt_type
