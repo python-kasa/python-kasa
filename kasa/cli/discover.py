@@ -167,7 +167,9 @@ async def list(ctx: click.Context) -> DeviceDict:
         model = dev.model or "-"
         device_family = getattr(cparams.device_family, "value", "-") or "-"
         encryption_type = getattr(cparams.encryption_type, "value", "-") or "-"
-        login_version = cparams.login_version if cparams.login_version is not None else "-"
+        login_version = (
+            cparams.login_version if cparams.login_version is not None else "-"
+        )
         # Represent https as a compact numeric flag (1/0) to keep table compact
         # and to match how some fixtures encode this value.
         https_flag = str(int(bool(cparams.https)))
