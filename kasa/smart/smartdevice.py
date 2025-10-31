@@ -204,6 +204,14 @@ class SmartDevice(Device):
             for comp in components_raw["component_list"]
         }
 
+    def _enable_device_quirks(self) -> None:
+        # Read computed energy values for devices not having physical sensors
+        if "energy_monitoring" not in self._components and self.model in ["L535"]:
+            self._components["energy_monitoring"] = 1
+            _LOGGER.debug(
+                "[QUIRKS] Energy monitoring enabled to read computed energy values"
+            )
+
     async def _negotiate(self) -> None:
         """Perform initialization.
 
@@ -227,6 +235,7 @@ class SmartDevice(Device):
         self._components_raw = cast(ComponentsRaw, resp["component_nego"])
 
         self._components = self._parse_components(self._components_raw)
+        self._enable_device_quirks()
 
         if "child_device" in self._components and not self.children:
             await self._initialize_children()
