@@ -77,6 +77,42 @@ UNSUPPORTED = {
     "error_code": 0,
 }
 
+NEW_KLAP_INFO = {
+    "result": {
+        "device_type": "IOT.SMARTPLUGSWITCH",
+        "device_model": "HS100(UK)",
+        "device_id": "id",
+        "ip": "127.0.0.1",
+        "mac": "00-00-00-00-00-00",
+        "mgt_encrypt_schm": {
+            "is_support_https": False,
+            "encrypt_type": "KLAP",
+            "http_port": 9999,
+            "lv": 1,
+            "new_klap": 1,
+        },
+        # Force decrypt attempt to run and be logged (will fail harmlessly and be caught/logged)
+        "encrypt_info": {"sym_schm": "AES", "key": "", "data": ""},
+    }
+}
+
+IPCAMERA_INFO = {
+    "result": {
+        "device_type": "SMART.IPCAMERA",
+        "device_model": "C100(US)",
+        "device_id": "id",
+        "ip": "127.0.0.2",
+        "mac": "00-00-00-00-00-01",
+        "mgt_encrypt_schm": {
+            "is_support_https": True,
+            "encrypt_type": "AES",
+            "http_port": 443,
+            "lv": 3,
+        },
+        "encrypt_type": ["3"],
+    }
+}
+
 
 @wallswitch_iot
 async def test_type_detection_switch(dev: Device):
@@ -166,6 +202,7 @@ async def test_discover_single(discovery_mock, custom_port, mocker):
         login_version=discovery_mock.login_version,
         https=discovery_mock.https,
         http_port=discovery_mock.http_port,
+        new_klap=discovery_mock.new_klap,
     )
     config = DeviceConfig(
         host=host,
@@ -196,8 +233,8 @@ async def test_discover_single_hostname(discovery_mock, mocker):
         x = await Discover.discover_single(host, credentials=Credentials())
 
 
-async def test_discover_credentials(mocker):
-    """Make sure that discover gives credentials precedence over un and pw."""
+async def test_credentials_precedence_discover(mocker):
+    """Ensure credentials precedence logic for Discover.discover()."""
     host = "127.0.0.1"
 
     async def mock_discover(self, *_, **__):
@@ -211,21 +248,21 @@ async def test_discover_credentials(mocker):
     # Only credentials passed
     await Discover.discover(credentials=Credentials(), timeout=0)
     assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
-    # Credentials and un/pw passed
+
     await Discover.discover(
         credentials=Credentials(), username="Foo", password="Bar", timeout=0
     )
     assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
-    # Only un/pw passed
+
     await Discover.discover(username="Foo", password="Bar", timeout=0)
     assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
-    # Only un passed, credentials should be None
+
     await Discover.discover(username="Foo", timeout=0)
     assert dp.mock_calls[3].kwargs["credentials"] is None
 
 
-async def test_discover_single_credentials(mocker):
-    """Make sure that discover_single gives credentials precedence over un and pw."""
+async def test_credentials_precedence_discover_single(mocker):
+    """Ensure credentials precedence logic for Discover.discover_single()."""
     host = "127.0.0.1"
 
     async def mock_discover(self, *_, **__):
@@ -239,15 +276,16 @@ async def test_discover_single_credentials(mocker):
     # Only credentials passed
     await Discover.discover_single(host, credentials=Credentials(), timeout=0)
     assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
+
     # Credentials and un/pw passed
     await Discover.discover_single(
         host, credentials=Credentials(), username="Foo", password="Bar", timeout=0
     )
     assert dp.mock_calls[1].kwargs["credentials"] == Credentials()
-    # Only un/pw passed
+
     await Discover.discover_single(host, username="Foo", password="Bar", timeout=0)
     assert dp.mock_calls[2].kwargs["credentials"] == Credentials("Foo", "Bar")
-    # Only un passed, credentials should be None
+
     await Discover.discover_single(host, username="Foo", timeout=0)
     assert dp.mock_calls[3].kwargs["credentials"] is None
 
@@ -325,6 +363,10 @@ async def test_discover_datagram_received(mocker, discovery_data):
     addr2 = "127.0.0.2"
     mocker.patch("kasa.discover.json_loads", return_value=UNSUPPORTED)
     proto.datagram_received("<placeholder data>", (addr2, 20002))
+
+    # Wait for async processing of the discovery callbacks to finish
+    if proto.callback_tasks:
+        await asyncio.gather(*proto.callback_tasks, return_exceptions=True)
 
     # Check that device in discovered_devices is initialized correctly
     assert len(proto.discovered_devices) == 1
@@ -418,38 +460,28 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
             assert device.supported_modules
 
 
-async def test_discover_single_http_client(discovery_mock, mocker):
-    """Make sure that discover_single returns an initialized SmartDevice instance."""
+@pytest.mark.parametrize("entrypoint", ["discover_single", "discover"])
+async def test_http_client_passthrough(discovery_mock, mocker, entrypoint):
+    """Ensure HTTP client handling is consistent for discover and discover_single."""
     host = "127.0.0.1"
     discovery_mock.ip = host
 
     http_client = aiohttp.ClientSession()
+    try:
+        if entrypoint == "discover_single":
+            dev: Device = await Discover.discover_single(host)
+        else:
+            devices = await Discover.discover(discovery_timeout=0)
+            dev: Device = devices[host]
 
-    x: Device = await Discover.discover_single(host)
+        assert dev.config.uses_http == (discovery_mock.default_port != 9999)
 
-    assert x.config.uses_http == (discovery_mock.default_port != 9999)
-
-    if discovery_mock.default_port != 9999:
-        assert x.protocol._transport._http_client.client != http_client
-        x.config.http_client = http_client
-        assert x.protocol._transport._http_client.client == http_client
-
-
-async def test_discover_http_client(discovery_mock, mocker):
-    """Make sure that discover returns an initialized SmartDevice instance."""
-    host = "127.0.0.1"
-    discovery_mock.ip = host
-
-    http_client = aiohttp.ClientSession()
-
-    devices = await Discover.discover(discovery_timeout=0)
-    x: Device = devices[host]
-    assert x.config.uses_http == (discovery_mock.default_port != 9999)
-
-    if discovery_mock.default_port != 9999:
-        assert x.protocol._transport._http_client.client != http_client
-        x.config.http_client = http_client
-        assert x.protocol._transport._http_client.client == http_client
+        if discovery_mock.default_port != 9999:
+            assert dev.protocol._transport._http_client.client != http_client
+            dev.config.http_client = http_client
+            assert dev.protocol._transport._http_client.client == http_client
+    finally:
+        await http_client.close()
 
 
 LEGACY_DISCOVER_DATA = {
@@ -679,6 +711,7 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
             login_version=discovery_mock.login_version,
             https=discovery_mock.https,
             http_port=discovery_mock.http_port,
+            new_klap=discovery_mock.new_klap,
         )
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
@@ -749,3 +782,66 @@ async def test_discovery_device_repr(discovery_mock, mocker):
         assert "update() needed" not in repr_
     else:
         assert "update() needed" in repr_
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("info", "needs_query", "host"),
+    [
+        (NEW_KLAP_INFO, True, "127.0.0.1"),
+        (IPCAMERA_INFO, False, "127.0.0.2"),
+    ],
+    ids=["new_klap_unsupported", "non_iot_unsupported"],
+)
+async def test_get_device_instance_unsupported_logs(
+    mocker, caplog, info, needs_query, host
+):
+    caplog.set_level(logging.DEBUG)
+
+    class DummyProt:
+        def __init__(self):
+            self._transport = MagicMock()
+
+        async def close(self):
+            return None
+
+        # Only needed for the new_klap case to drive get_device_class(sysinfo)
+        if needs_query:
+
+            async def query(self, req):
+                return {"system": {"get_sysinfo": {"mic_type": "IOT.SMARTPLUGSWITCH"}}}
+
+    mocker.patch("kasa.discover.get_protocol", return_value=DummyProt())
+    # Force device_class resolution to fail to trigger the debug log and UnsupportedDeviceError
+    mocker.patch("kasa.discover.Discover._get_device_class", return_value=None)
+
+    with pytest.raises(UnsupportedDeviceError):
+        await Discover._get_device_instance(info, DeviceConfig(host=host))
+
+    # Validate the debug log was emitted
+    assert "Got unsupported device type" in caplog.text
+
+
+def test_datagram_received_logs_for_exceptions(caplog, mocker):
+    proto = _DiscoverProtocol()
+    caplog.set_level(logging.DEBUG)
+
+    ip1 = "127.0.0.10"
+    ip2 = "127.0.0.11"
+
+    # First call raises UnsupportedDeviceError -> goes to unsupported_device_exceptions and logs
+    mocker.patch(
+        "kasa.discover.Discover._get_discovery_json",
+        side_effect=[UnsupportedDeviceError("boom"), KasaException("bad")],
+    )
+
+    proto.datagram_received(b"x", (ip1, Discover.DISCOVERY_PORT_2))
+    proto.datagram_received(b"x", (ip2, Discover.DISCOVERY_PORT_2))
+
+    # Bookkeeping recorded correctly
+    assert ip1 in proto.unsupported_device_exceptions
+    assert ip2 in proto.invalid_device_exceptions
+
+    # Logs were written
+    assert f"Unsupported device found at {ip1} << boom" in caplog.text
+    assert f"[DISCOVERY] Unable to find device type for {ip2}: bad" in caplog.text
