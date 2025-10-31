@@ -90,7 +90,7 @@ TIMEZONE_INDEX = {
     15: "Canada/Saskatchewan",
     16: "America/Bogota",
     17: "Etc/GMT+5",
-    18: "EST",
+    18: "America/Toronto",
     19: "America/Indiana/Indianapolis",
     20: "America/Caracas",
     21: "America/Asuncion",
