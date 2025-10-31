@@ -125,7 +125,7 @@ version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
-    { name = "colorama", marker = "platform_system == 'Windows'" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cb/b5/e1e5fdf1c1bb7e6e614987c120a98d9324bf8edfaa5f5cd16a6235c9d91b/asyncclick-8.1.8.tar.gz", hash = "sha256:0f0eb0f280e04919d67cf71b9fcdfb4db2d9ff7203669c40284485c149578e4c", size = 232900 }
 wheels = [
@@ -389,6 +389,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1f/53/a5da4f2c5739cf66290fac1431ee52aff6851c7c8ffd8264f13affd7bcdd/docutils-0.20.1.tar.gz", hash = "sha256:f08a4e276c3a1583a86dce3e34aba3fe04d02bba2dd51ed16106244e8a923e3b", size = 2058365 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/26/87/f238c0670b94533ac0353a4e2a1a771a0cc73277b88bff23d3ae35a256c1/docutils-0.20.1-py3-none-any.whl", hash = "sha256:96f387a2c5562db4476f09f13bbab2192e764cac08ebbf3a34a95d9b1e4a59d6", size = 572666 },
+]
+
+[[package]]
+name = "ecdsa"
+version = "0.19.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c0/1f/924e3caae75f471eae4b26bd13b698f6af2c44279f67af317439c2f4c46a/ecdsa-0.19.1.tar.gz", hash = "sha256:478cba7b62555866fcb3bb3fe985e06decbdb68ef55713c4e5ab98c57d508e61", size = 201793 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/a3/460c57f094a4a165c84a1341c373b0a4f5ec6ac244b998d5021aade89b77/ecdsa-0.19.1-py2.py3-none-any.whl", hash = "sha256:30638e27cf77b7e15c4c4cc1973720149e1033827cfd00661ca5c8cc0cdb24c3", size = 150607 },
 ]
 
 [[package]]
@@ -1120,8 +1132,9 @@ dependencies = [
     { name = "aiohttp" },
     { name = "asyncclick" },
     { name = "cryptography" },
+    { name = "ecdsa" },
     { name = "mashumaro" },
-    { name = "tzdata", marker = "platform_system == 'Windows'" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
 
 [package.optional-dependencies]
@@ -1168,6 +1181,7 @@ requires-dist = [
     { name = "asyncclick", specifier = ">=8.1.7" },
     { name = "cryptography", specifier = ">=1.9" },
     { name = "docutils", marker = "extra == 'docs'", specifier = ">=0.17" },
+    { name = "ecdsa", specifier = ">=0.18.0" },
     { name = "kasa-crypt", marker = "extra == 'speedups'", specifier = ">=0.2.0" },
     { name = "mashumaro", specifier = ">=3.14" },
     { name = "myst-parser", marker = "extra == 'docs'" },
@@ -1177,7 +1191,7 @@ requires-dist = [
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.4.7" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = "~=2.0" },
     { name = "sphinxcontrib-programoutput", marker = "extra == 'docs'", specifier = "~=0.0" },
-    { name = "tzdata", marker = "platform_system == 'Windows'", specifier = ">=2024.2" },
+    { name = "tzdata", marker = "sys_platform == 'win32'", specifier = ">=2024.2" },
 ]
 
 [package.metadata.requires-dev]
