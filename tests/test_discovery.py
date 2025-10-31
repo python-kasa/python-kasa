@@ -77,6 +77,42 @@ UNSUPPORTED = {
     "error_code": 0,
 }
 
+NEW_KLAP_INFO = {
+    "result": {
+        "device_type": "IOT.SMARTPLUGSWITCH",
+        "device_model": "HS100(UK)",
+        "device_id": "id",
+        "ip": "127.0.0.1",
+        "mac": "00-00-00-00-00-00",
+        "mgt_encrypt_schm": {
+            "is_support_https": False,
+            "encrypt_type": "KLAP",
+            "http_port": 9999,
+            "lv": 1,
+            "new_klap": 1,
+        },
+        # Force decrypt attempt to run and be logged (will fail harmlessly and be caught/logged)
+        "encrypt_info": {"sym_schm": "AES", "key": "", "data": ""},
+    }
+}
+
+IPCAMERA_INFO = {
+    "result": {
+        "device_type": "SMART.IPCAMERA",
+        "device_model": "C100(US)",
+        "device_id": "id",
+        "ip": "127.0.0.2",
+        "mac": "00-00-00-00-00-01",
+        "mgt_encrypt_schm": {
+            "is_support_https": True,
+            "encrypt_type": "AES",
+            "http_port": 443,
+            "lv": 3,
+        },
+        "encrypt_type": ["3"],
+    }
+}
+
 
 @wallswitch_iot
 async def test_type_detection_switch(dev: Device):
@@ -209,6 +245,7 @@ async def test_credentials_precedence_discover(mocker):
     mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
+    # Only credentials passed
     await Discover.discover(credentials=Credentials(), timeout=0)
     assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
 
@@ -236,9 +273,11 @@ async def test_credentials_precedence_discover_single(mocker):
     mocker.patch.object(_DiscoverProtocol, "do_discover", new=mock_discover)
     dp = mocker.spy(_DiscoverProtocol, "__init__")
 
+    # Only credentials passed
     await Discover.discover_single(host, credentials=Credentials(), timeout=0)
     assert dp.mock_calls[0].kwargs["credentials"] == Credentials()
 
+    # Credentials and un/pw passed
     await Discover.discover_single(
         host, credentials=Credentials(), username="Foo", password="Bar", timeout=0
     )
@@ -748,48 +787,8 @@ async def test_discovery_device_repr(discovery_mock, mocker):
 @pytest.mark.parametrize(
     ("info", "needs_query", "host"),
     [
-        (
-            {
-                "result": {
-                    "device_type": "IOT.SMARTPLUGSWITCH",
-                    "device_model": "HS100(UK)",
-                    "device_id": "id",
-                    "ip": "127.0.0.1",
-                    "mac": "00-00-00-00-00-00",
-                    "mgt_encrypt_schm": {
-                        "is_support_https": False,
-                        "encrypt_type": "KLAP",
-                        "http_port": 9999,
-                        "lv": 1,
-                        "new_klap": 1,
-                    },
-                    # Force decrypt attempt to run and be logged (will fail harmlessly and be caught/logged)
-                    "encrypt_info": {"sym_schm": "AES", "key": "", "data": ""},
-                }
-            },
-            True,
-            "127.0.0.1",
-        ),
-        (
-            {
-                "result": {
-                    "device_type": "SMART.IPCAMERA",
-                    "device_model": "C100(US)",
-                    "device_id": "id",
-                    "ip": "127.0.0.2",
-                    "mac": "00-00-00-00-00-01",
-                    "mgt_encrypt_schm": {
-                        "is_support_https": True,
-                        "encrypt_type": "AES",
-                        "http_port": 443,
-                        "lv": 3,
-                    },
-                    "encrypt_type": ["3"],
-                }
-            },
-            False,
-            "127.0.0.2",
-        ),
+        (NEW_KLAP_INFO, True, "127.0.0.1"),
+        (IPCAMERA_INFO, False, "127.0.0.2"),
     ],
     ids=["new_klap_unsupported", "non_iot_unsupported"],
 )
