@@ -93,12 +93,14 @@ class TemperatureControl(SmartModule):
 
         states = self.states
 
+        # Discard known non-mode states
+        states.discard("low_battery")
+
         # If the states is empty, the device is idling
         if not states:
             return ThermostatState.Idle
 
-        # Discard known extra states, and report on unknown extra states
-        states.discard("low_battery")
+        # Report on unknown extra states
         if len(states) > 1:
             _LOGGER.warning("Got multiple states: %s", states)
 
