@@ -7,6 +7,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+if TYPE_CHECKING:
+    from datetime import tzinfo
+
 from ..device_type import DeviceType
 from ..deviceconfig import DeviceConfig
 from ..emeterstatus import EmeterStatus
@@ -349,6 +352,8 @@ class IotStripPlug(IotPlug):
         self.add_module(Module.IotAntitheft, Antitheft(self, "anti_theft"))
         self.add_module(Module.IotSchedule, Schedule(self, "schedule"))
         self.add_module(Module.IotCountdown, Countdown(self, "countdown"))
+        # Note: do not add a Time module to the child; time is device-level.
+        # Child exposes time/timezone by delegating to the parent.
 
     async def _initialize_features(self) -> None:
         """Initialize common features."""
@@ -440,6 +445,18 @@ class IotStripPlug(IotPlug):
         This is always false for subdevices.
         """
         return False
+
+    @property  # type: ignore
+    @requires_update
+    def time(self) -> datetime:
+        """Return current time, delegated from the parent strip."""
+        return self._parent.time
+
+    @property  # type: ignore
+    @requires_update
+    def timezone(self) -> tzinfo:
+        """Return timezone, delegated from the parent strip."""
+        return self._parent.timezone
 
     @property  # type: ignore
     @requires_update
