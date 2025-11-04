@@ -339,12 +339,13 @@ async def test_discover_invalid_info(msg, data, mocker):
 async def test_discover_send(mocker):
     """Test discovery parameters."""
     discovery_timeout = 0
+    discovery_ports = 3
     proto = _DiscoverProtocol(discovery_timeout=discovery_timeout)
     assert proto.discovery_packets == 3
     assert proto.target_1 == ("255.255.255.255", 9999)
     transport = mocker.patch.object(proto, "transport")
     await proto.do_discover()
-    assert transport.sendto.call_count == proto.discovery_packets * 2
+    assert transport.sendto.call_count == proto.discovery_packets * discovery_ports
 
 
 async def test_discover_datagram_received(mocker, discovery_data):

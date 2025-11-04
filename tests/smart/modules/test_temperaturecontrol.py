@@ -154,3 +154,13 @@ async def test_thermostat_heating_with_low_battery(dev):
     temp_module: TemperatureControl = dev.modules["TemperatureControl"]
     temp_module.data["trv_states"] = ["low_battery", "heating"]
     assert temp_module.mode is ThermostatState.Heating
+
+
+@thermostats_smart
+async def test_thermostat_idle_with_low_battery(dev, caplog):
+    """Test that mode is reported correctly with extra states."""
+    temp_module: TemperatureControl = dev.modules["TemperatureControl"]
+    temp_module.data["trv_states"] = ["low_battery"]
+    with caplog.at_level(logging.WARNING):
+        assert temp_module.mode is ThermostatState.Idle
+    assert not caplog.records
