@@ -140,11 +140,6 @@ async def raw(ctx: click.Context, redact: bool) -> DeviceDict:
             )
         echo(json_dumps(discovered, indent=True))
 
-    # Ensure Discover._redact_data reflects the CLI flag for this invocation.
-    # Some discovery internals call redact_data for debug logging when the
-    # global Discover._redact_data is True. We temporarily set the global
-    # to match the user's request so that redact_data is only invoked when
-    # --redact is passed. Restore the previous value afterwards.
     prev_redact = Discover._redact_data
     Discover._redact_data = bool(redact)
     try:
@@ -161,8 +156,6 @@ async def list(ctx: click.Context) -> DeviceDict:
 
     async def print_discovered(dev: Device):
         cparams = dev.config.connection_type
-        # Use safe fallbacks for values that may be None so formatting doesn't
-        # attempt to apply alignment to a None value (which raises TypeError).
         host = dev.host or "-"
         model = dev.model or "-"
         device_family = getattr(cparams.device_family, "value", "-") or "-"
@@ -170,8 +163,6 @@ async def list(ctx: click.Context) -> DeviceDict:
         login_version = (
             cparams.login_version if cparams.login_version is not None else "-"
         )
-        # Represent https as a compact numeric flag (1/0) to keep table compact
-        # and to match how some fixtures encode this value.
         https_flag = str(int(bool(cparams.https)))
         infostr = (
             f"{host:<15} {model:<9} {device_family:<20} "

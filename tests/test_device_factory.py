@@ -181,7 +181,6 @@ def test_get_connection_parameters_aes_branch():
 
     conn = Discover._get_connection_parameters(dr)
     assert conn.encryption_type == DeviceEncryptionType.Aes
-    # encryption_type should be AES for encrypt_type containing '3' when no encrypt_info
 
 
 async def test_connect_http_client(discovery_mock, mocker):
