@@ -88,50 +88,26 @@ class Battery(SmartCamModule):
         return {}
 
     @property
-    def battery_percent(self) -> int | None:
+    def battery_percent(self) -> int:
         """Return battery level."""
-        return self._device.sys_info.get("battery_percent")
+        return self._device.sys_info["battery_percent"]
 
     @property
-    def battery_low(self) -> bool | None:
+    def battery_low(self) -> bool:
         """Return True if battery is low."""
-        return self._device.sys_info.get("low_battery")
+        return self._device.sys_info["low_battery"]
 
     @property
-    def battery_temperature(self) -> float | int | None:
-        """Return battery temperature in C, if available."""
-        bt = self._device.sys_info.get("battery_temperature")
-        if bt is not None:
-            return bt
-        return 0
+    def battery_temperature(self) -> bool:
+        """Return battery voltage in C."""
+        return self._device.sys_info["battery_temperature"]
 
     @property
-    def battery_voltage(self) -> float | None:
+    def battery_voltage(self) -> bool:
         """Return battery voltage in V."""
-        bv = self._device.sys_info.get("battery_voltage")
-        if bv is None or bv == "NO":
-            bp = self._device.sys_info.get("battery_percent")
-            if bp is None:
-                return None
-            try:
-                return 3.0 + (float(bp) / 100.0) * 1.2
-            except Exception:
-                return None
-        try:
-            return bv / 1_000
-        except Exception:
-            try:
-                return int(bv) / 1_000
-            except Exception:
-                return None
+        return self._device.sys_info["battery_voltage"] / 1_000
 
     @property
     def battery_charging(self) -> bool:
         """Return True if battery is charging."""
-        bc = self._device.sys_info.get("battery_charging")
-        if bc is not None:
-            if isinstance(bc, bool):
-                return bc
-            return str(bc).upper() != "NO"
-        bv = self._device.sys_info.get("battery_voltage")
-        return bv is not None and bv != "NO"
+        return self._device.sys_info["battery_voltage"] != "NO"
