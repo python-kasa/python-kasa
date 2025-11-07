@@ -1,0 +1,146 @@
+{
+    "cnCloud": {
+        "get_info": {
+            "binded": 1,
+            "cld_connection": 1,
+            "err_code": 0,
+            "fwDlPage": "",
+            "fwNotifyType": -1,
+            "illegalType": 0,
+            "server": "n-devs.tplinkcloud.com",
+            "stopConnect": 0,
+            "tcspInfo": "",
+            "tcspStatus": 1,
+            "username": "user@example.com"
+        },
+        "get_intl_fw_list": {
+            "err_code": 0,
+            "fw_list": []
+        }
+    },
+    "discovery_result": {
+        "error_code": 0,
+        "result": {
+            "device_id": "00000000000000000000000000000000",
+            "device_model": "HS300(US)",
+            "device_type": "IOT.SMARTPLUGSWITCH",
+            "factory_default": false,
+            "hw_ver": "2.0",
+            "ip": "127.0.0.123",
+            "mac": "F0-A7-31-00-00-00",
+            "mgt_encrypt_schm": {
+                "ANS": false,
+                "encrypt_type": "KLAP",
+                "http_port": 80,
+                "is_support_https": false,
+                "lv": 2,
+                "new_klap": 1
+            },
+            "obd_src": "tplink",
+            "owner": "00000000000000000000000000000000",
+            "protocol_version": 1
+        }
+    },
+    "emeter": {
+        "get_realtime": {
+            "current_ma": 0,
+            "err_code": 0,
+            "power_mw": 0,
+            "slot_id": 0,
+            "total_wh": 785,
+            "voltage_mv": 122143
+        }
+    },
+    "schedule": {
+        "get_next_action": {
+            "err_code": 0,
+            "type": -1
+        },
+        "get_rules": {
+            "enable": 1,
+            "err_code": 0,
+            "rule_list": [],
+            "version": 2
+        }
+    },
+    "system": {
+        "get_sysinfo": {
+            "alias": "#MASKED_NAME#",
+            "child_num": 6,
+            "children": [
+                {
+                    "alias": "#MASKED_NAME# 1",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_1",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 735409,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME# 2",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_2",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 3",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_3",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 735408,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME# 4",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_4",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 0,
+                    "state": 0
+                },
+                {
+                    "alias": "#MASKED_NAME# 5",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_5",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 735407,
+                    "state": 1
+                },
+                {
+                    "alias": "#MASKED_NAME# 6",
+                    "id": "SCRUBBED_CHILD_DEVICE_ID_6",
+                    "next_action": {
+                        "type": -1
+                    },
+                    "on_time": 735407,
+                    "state": 1
+                }
+            ],
+            "deviceId": "0000000000000000000000000000000000000000",
+            "err_code": 0,
+            "feature": "TIM:ENE",
+            "hwId": "00000000000000000000000000000000",
+            "hw_ver": "2.0",
+            "latitude_i": 0,
+            "led_off": 0,
+            "lnk_on": 1,
+            "longitude_i": 0,
+            "mac": "F0:A7:31:00:00:00",
+            "mic_type": "IOT.SMARTPLUGSWITCH",
+            "model": "HS300(US)",
+            "obd_src": "tplink",
+            "oemId": "00000000000000000000000000000000",
+            "rssi": -54,
+            "status": "new",
+            "sw_ver": "1.1.2 Build 241220 Rel.171333",
+            "updating": 0
+        }
+    }
+}
