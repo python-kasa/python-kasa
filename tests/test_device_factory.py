@@ -28,7 +28,16 @@ from kasa.device_factory import (
     SmartDevice,
     connect,
     get_device_class_from_family,
+    get_device_class_from_sys_info,
     get_protocol,
+)
+from kasa.device_models import (
+    BULBS_IOT,
+    BULBS_IOT_LIGHT_STRIP,
+    DIMMERS_IOT,
+    PLUGS_IOT,
+    STRIPS_IOT,
+    SWITCHES_IOT,
 )
 from kasa.deviceconfig import (
     DeviceConfig,
@@ -37,6 +46,15 @@ from kasa.deviceconfig import (
     DeviceFamily,
 )
 from kasa.discover import DiscoveryResult
+from kasa.exceptions import UnsupportedDeviceError
+from kasa.iot import (
+    IotBulb,
+    IotDimmer,
+    IotLightStrip,
+    IotPlug,
+    IotStrip,
+    IotWallSwitch,
+)
 from kasa.transports import (
     AesTransport,
     BaseTransport,
@@ -301,3 +319,120 @@ async def test_get_protocol(
     protocol = get_protocol(config)
     assert isinstance(protocol, expected_protocol)
     assert isinstance(protocol._transport, expected_transport)
+
+
+async def test_connect_with_host_and_config_raises():
+    """Cover branch raising when both host and config are provided."""
+    dummy = DeviceConfig(host="127.0.0.1")
+    with pytest.raises(KasaException):
+        await connect(host="127.0.0.1", config=dummy)
+
+
+async def test_connect_protocol_none_raises():
+    """Cover branch when get_protocol returns None."""
+    params = DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartTapoPlug,
+        encryption_type=DeviceEncryptionType.Xor,  # No SMART.XOR mapping
+    )
+    cfg = DeviceConfig(host="127.0.0.15", connection_type=params)
+    with pytest.raises(UnsupportedDeviceError):
+        await connect(config=cfg)
+
+
+async def test__connect_iot_ipcamera_unsupported_family():
+    """Cover else branch in _connect raising UnsupportedDeviceError."""
+    # Use a valid DeviceFamily that is intentionally unsupported by get_device_class_from_family.
+    params = DeviceConnectionParameters(
+        device_family=DeviceFamily.IotIpCamera,
+        encryption_type=DeviceEncryptionType.Aes,
+        https=True,
+    )
+    cfg = DeviceConfig(host="127.0.0.16", connection_type=params)
+    protocol = get_protocol(cfg)
+    assert protocol is not None
+    # Ensure first XOR path is not taken.
+    assert not isinstance(protocol._transport, XorTransport)
+    with pytest.raises(UnsupportedDeviceError):
+        await connect(config=cfg)
+
+
+def _sample_model(models):
+    return next(iter(models))
+
+
+def test_get_device_class_from_family_lightstrip_model():
+    model = _sample_model(BULBS_IOT_LIGHT_STRIP)
+    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
+    assert cls is IotLightStrip
+
+
+def test_get_device_class_from_family_bulb_model():
+    model = next(m for m in BULBS_IOT if m not in BULBS_IOT_LIGHT_STRIP)
+    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
+    assert cls is IotBulb
+
+
+def test_get_device_class_from_family_plug_model():
+    model = _sample_model(PLUGS_IOT)
+    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
+    assert cls is IotPlug
+
+
+def test_get_device_class_from_family_switch_model():
+    model = _sample_model(SWITCHES_IOT)
+    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
+    assert cls is IotWallSwitch
+
+
+def test_get_device_class_from_family_strip_model():
+    model = _sample_model(STRIPS_IOT)
+    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
+    assert cls is IotStrip
+
+
+def test_get_device_class_from_family_dimmer_model():
+    model = _sample_model(DIMMERS_IOT)
+    cls = get_device_class_from_family("IOT.SMARTBULB", https=False, device_model=model)
+    assert cls is IotDimmer
+
+
+def test_get_protocol_returns_none_for_unsupported_combo():
+    """Cover protocol_transport_key miss returning None."""
+    p = DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartTapoPlug,
+        encryption_type=DeviceEncryptionType.Xor,
+    )
+    proto = get_protocol(DeviceConfig("127.0.0.99", connection_type=p))
+    assert proto is None
+
+
+def test_get_protocol_strict_encryption_mismatch():
+    """Cover strict=True mismatch branch for camera."""
+    p = DeviceConnectionParameters(
+        device_family=DeviceFamily.SmartIpCamera,
+        encryption_type=DeviceEncryptionType.Klap,
+    )
+    proto = get_protocol(DeviceConfig("127.0.0.55", connection_type=p), strict=True)
+    assert proto is None
+
+
+def test_get_device_class_from_sys_info_mapping():
+    """Cover get_device_class_from_sys_info mapping."""
+    info = {"system": {"get_sysinfo": {"type": "IOT.SMARTBULB"}}}
+    cls = get_device_class_from_sys_info(info)
+    assert cls is IotBulb
+
+
+async def test_connect_with_host_only_branch_raises_unsupported(mocker):
+    """Exercise connect(host=..., config=None) to hit 'if host:' branch."""
+    mocker.patch("kasa.device_factory.get_protocol", return_value=None)
+    with pytest.raises(UnsupportedDeviceError):
+        await connect(host="127.0.0.66", config=None)
+
+
+def test_get_device_class_from_family_unknown_model_defaults_to_iotbulb():
+    """Ensure device_model not in any set leaves cls unchanged."""
+    cls = get_device_class_from_family(
+        "IOT.SMARTBULB", https=False, device_model="UNKNOWN_MODEL_123"
+    )
+    assert cls is IotBulb

@@ -457,7 +457,7 @@ async def test_device_update_from_new_discovery_info(discovery_mock):
             KasaException,
             match=re.escape("You need to await update() to access the data"),
         ):
-            assert device.supported_modules
+            assert device.modules
 
 
 @pytest.mark.parametrize("entrypoint", ["discover_single", "discover"])
@@ -716,6 +716,9 @@ async def test_discover_try_connect_all(discovery_mock, mocker):
         protocol = get_protocol(
             DeviceConfig(discovery_mock.ip, connection_type=cparams)
         )
+        if issubclass(dev_class, IotDevice):
+            info = await protocol.query({"system": {"get_sysinfo": {}}})
+            dev_class = get_device_class_from_sys_info(info)
         protocol_class = protocol.__class__
         transport_class = protocol._transport.__class__
     else:
@@ -845,3 +848,85 @@ def test_datagram_received_logs_for_exceptions(caplog, mocker):
     # Logs were written
     assert f"Unsupported device found at {ip1} << boom" in caplog.text
     assert f"[DISCOVERY] Unable to find device type for {ip2}: bad" in caplog.text
+
+
+def test_handle_discovered_event_without_discover_task():
+    proto = _DiscoverProtocol(target="10.0.0.5")
+    proto.seen_hosts.add("10.0.0.5")
+    assert proto.discover_task is None
+    proto._handle_discovered_event()
+    assert proto.target_discovered is True
+    assert proto.discover_task is None
+
+
+def test_error_received_logs(caplog):
+    caplog.set_level(logging.ERROR)
+    proto = _DiscoverProtocol()
+    proto.error_received(RuntimeError("boom"))
+    assert "Got error: boom" in caplog.text
+
+
+def test_get_device_class_unknown_result_type():
+    info = {
+        "result": {
+            "device_type": "FOO.BAR",
+            "device_model": "X100(US)",
+            "device_id": "id",
+            "ip": "127.0.0.1",
+            "mac": "AA-BB-CC-DD-EE-FF",
+        }
+    }
+    with pytest.raises(UnsupportedDeviceError) as ex:
+        Discover._get_device_class(info)
+    assert "Unknown device type: FOO.BAR" in str(ex.value)
+
+
+def test_get_discovery_json_legacy_error(monkeypatch):
+    monkeypatch.setattr(
+        XorEncryption, "decrypt", lambda _: (_ for _ in ()).throw(ValueError("bad"))
+    )
+    with pytest.raises(KasaException) as ex:
+        Discover._get_discovery_json_legacy(b"\x00\x01", "127.0.0.2")
+    assert "Unable to read response from device: 127.0.0.2" in str(ex.value)
+
+
+def test_get_device_instance_legacy_no_debug_logging(caplog):
+    caplog.set_level(logging.INFO)
+    info = {
+        "system": {
+            "get_sysinfo": {
+                "alias": "Plug",
+                "deviceId": "id",
+                "mac": "00:11:22:33:44:55",
+                "mic_type": "IOT.SMARTPLUGSWITCH",
+                "model": "HS100(UK)",
+            }
+        }
+    }
+    config = DeviceConfig(host="127.0.0.3")
+    dev = Discover._get_device_instance_legacy(info, config)
+    assert dev.host == "127.0.0.3"
+    assert "[DISCOVERY]" not in caplog.text
+
+
+def test_get_discovery_json_error(caplog, monkeypatch):
+    caplog.set_level(logging.DEBUG)
+    monkeypatch.setattr(
+        "kasa.discover.json_loads",
+        lambda *_: (_ for _ in ()).throw(ValueError("bad json")),
+    )
+    with pytest.raises(KasaException) as ex:
+        Discover._get_discovery_json(b"\x00" * 32, "127.0.0.9")
+    assert "Unable to read response from device: 127.0.0.9" in str(ex.value)
+    assert "Got invalid response from device 127.0.0.9" in caplog.text
+
+
+def test_get_discovery_json_legacy_success(monkeypatch):
+    sample = {"system": {"get_sysinfo": {"type": "IOT.SMARTPLUGSWITCH"}}}
+    monkeypatch.setattr(
+        XorEncryption,
+        "decrypt",
+        lambda _: b'{"system":{"get_sysinfo":{"type":"IOT.SMARTPLUGSWITCH"}}}',
+    )
+    info = Discover._get_discovery_json_legacy(b"\x00\x01", "127.0.0.4")
+    assert info == sample
