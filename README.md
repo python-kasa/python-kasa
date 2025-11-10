@@ -199,7 +199,7 @@ The following devices have been tested and confirmed as working. If your device 
 - **Plugs**: P100, P110, P110M, P115, P125M, P135, TP10, TP15
 - **Power Strips**: P210M, P300, P304M, P306, P316M, TP25
 - **Wall Switches**: S210, S220, S500, S500D, S505, S505D
-- **Bulbs**: L510B, L510E, L530B, L530E, L535E, L630
+- **Bulbs**: L430P, L510B, L510E, L530B, L530E, L535E, L630
 - **Light Strips**: L900-10, L900-5, L920-5, L930-5
 - **Cameras**: C100, C110, C210, C220, C225, C325WB, C520WS, C720, TC65, TC70
 - **Doorbells and chimes**: D100C, D130, D230
