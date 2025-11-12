@@ -326,11 +326,16 @@ async def cli(
         if not encrypt_type:
             encrypt_type = "KLAP"
 
+        new_klap = None
+        if encrypt_type and encrypt_type == "KLAPV2":
+            new_klap = True
+
         ctype = DeviceConnectionParameters(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
             login_version,
             https,
+            new_klap=new_klap,
         )
         config = DeviceConfig(
             host=host,
