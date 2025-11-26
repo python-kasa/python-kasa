@@ -11,7 +11,8 @@ dependencies = [
   "cryptography>=1.9",
   "aiohttp>=3",
   "tzdata>=2024.2 ; platform_system == 'Windows'",
-  "mashumaro>=3.14",
+  "mashumaro>=3.14; python_version < '3.14'",
+  "mashumaro>=3.17; python_version >= '3.14'",
 ]
 
 classifiers = [
