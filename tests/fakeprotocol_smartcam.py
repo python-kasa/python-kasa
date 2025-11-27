@@ -314,6 +314,8 @@ class FakeSmartCamTransport(BaseTransport):
         elif method in [
             "addScanChildDeviceList",
             "startScanChildDevice",
+            "motorMoveToPreset",
+            "addMotorPostion",
         ]:
             return {"result": {}, "error_code": 0}
 

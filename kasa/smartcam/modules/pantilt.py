@@ -105,3 +105,25 @@ class PanTilt(SmartCamModule):
         return await self._device._raw_query(
             {"do": {"motor": {"move": {"x_coord": str(pan), "y_coord": str(tilt)}}}}
         )
+
+    async def get_presets(self) -> dict:
+        """Get presets."""
+        return await self._device._raw_query(
+            {"getPresetConfig": {"preset": {"name": ["preset"]}}}
+        )
+
+    async def goto_preset(self, preset_id: str) -> dict:
+        """Go to preset."""
+        return await self._device._raw_query(
+            {"motorMoveToPreset": {"preset": {"goto_preset": {"id": preset_id}}}}
+        )
+
+    async def save_preset(self, name: str) -> dict:
+        """Save preset."""
+        return await self._device._raw_query(
+            {
+                "addMotorPostion": {
+                    "preset": {"set_preset": {"name": name, "save_ptz": "1"}}
+                }
+            }
+        )
