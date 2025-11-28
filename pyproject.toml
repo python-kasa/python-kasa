@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-speedups = ["orjson>=3.9.1; python_version < '3.14'", "kasa-crypt>=0.2.0"]
+speedups = ["orjson>=3.11.1", "kasa-crypt>=0.2.0"]
 shell = ["ptpython", "rich"]
 
 [project.urls]
