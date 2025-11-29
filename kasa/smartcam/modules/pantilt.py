@@ -15,6 +15,7 @@ class PanTilt(SmartCamModule):
     REQUIRED_COMPONENT = "ptz"
     _pan_step = DEFAULT_PAN_STEP
     _tilt_step = DEFAULT_TILT_STEP
+    _presets: dict[str, str] = {}
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
@@ -88,9 +89,43 @@ class PanTilt(SmartCamModule):
             )
         )
 
+    async def _post_update_hook(self) -> None:
+        """Update presets after update."""
+        presets_data = await self._device._query_helper(
+            "getPresetConfig", {"preset": {"name": ["preset"]}}
+        )
+        if "preset" in presets_data and "preset" in presets_data["preset"]:
+            preset_info = presets_data["preset"]["preset"]
+            self._presets = {
+                name: preset_id
+                for preset_id, name in zip(
+                    preset_info.get("id", []), preset_info.get("name", []), strict=False
+                )
+            }
+
+        if self._presets:
+
+            async def set_preset(preset_name: str) -> None:
+                preset_id = self._presets.get(preset_name)
+                if preset_id:
+                    await self.goto_preset(preset_id)
+
+            self._add_feature(
+                Feature(
+                    self._device,
+                    "preset",
+                    "Preset position",
+                    container=self,
+                    attribute_getter=lambda: next(iter(self._presets.keys()), None),
+                    attribute_setter=set_preset,
+                    choices_getter=lambda: list(self._presets.keys()),
+                    type=Feature.Type.Choice,
+                )
+            )
+
     def query(self) -> dict:
         """Query to execute during the update cycle."""
-        return {}
+        return {"getPresetConfig": {"preset": {"name": ["preset"]}}}
 
     async def pan(self, pan: int) -> dict:
         """Pan horizontally."""
@@ -122,7 +157,7 @@ class PanTilt(SmartCamModule):
         """Save preset."""
         return await self._device._raw_query(
             {
-                "addMotorPostion": {
+                "addMotorPostion": {  # Note: API has typo in method name
                     "preset": {"set_preset": {"name": name, "save_ptz": "1"}}
                 }
             }

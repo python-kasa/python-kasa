@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pytest_mock import MockerFixture
 
 from kasa import Device, Module
 
@@ -10,27 +11,68 @@ from ...conftest import device_smartcam
 
 
 @device_smartcam
-async def test_pantilt(dev: Device):
+async def test_pantilt(dev: Device, mocker: MockerFixture):
     """Test PanTilt module."""
     pantilt = dev.modules.get(Module.PanTilt)
     if not pantilt:
         pytest.skip("Device does not support PanTilt")
 
+    mock_protocol_query = mocker.spy(dev.protocol, "query")
+
     # Test get_presets
     presets = await pantilt.get_presets()
     assert presets is not None
-    # The fixture C210(EU)_1.0_1.4.7.json has presets: Default, Door, Mid
-    # We can check if the response structure is correct
-    # The mock protocol returns what is in the fixture for the request.
-    # Since we added the fixture with the responses, it should work.
+    assert "getPresetConfig" in presets
+    assert "preset" in presets["getPresetConfig"]
+    assert "preset" in presets["getPresetConfig"]["preset"]
+    preset_data = presets["getPresetConfig"]["preset"]["preset"]
+    assert "id" in preset_data
+    assert "name" in preset_data
+    assert len(preset_data["id"]) == len(preset_data["name"])
 
-    # Test goto_preset
-    # We need to pick a valid preset ID from the fixture or just any ID if the mock is simple
-    # In the fixture:
-    # 'getPresetConfig': {'preset': {'preset': {'id': ['1', '2', '3'], ...}}}
-    # So we can try goto_preset('1')
+    # Test goto_preset - use a preset from the actual response
+    if preset_data["id"]:
+        first_preset_id = preset_data["id"][0]
+        await pantilt.goto_preset(first_preset_id)
 
-    await pantilt.goto_preset("1")
+        mock_protocol_query.assert_called_with(
+            request={
+                "motorMoveToPreset": {
+                    "preset": {"goto_preset": {"id": first_preset_id}}
+                }
+            }
+        )
 
     # Test save_preset
     await pantilt.save_preset("NewPreset")
+
+    # Note: The Tapo API has a typo in the method name (addMotorPostion instead of addMotorPosition)
+    mock_protocol_query.assert_called_with(
+        request={
+            "addMotorPostion": {
+                "preset": {"set_preset": {"name": "NewPreset", "save_ptz": "1"}}
+            }
+        }
+    )
+
+
+@device_smartcam
+async def test_pantilt_no_presets(dev: Device, mocker: MockerFixture):
+    """Test PanTilt module behavior when no presets are configured."""
+    pantilt = dev.modules.get(Module.PanTilt)
+    if not pantilt:
+        pytest.skip("Device does not support PanTilt")
+
+    # Mock empty presets response
+    mocker.patch.object(
+        dev,
+        "_query_helper",
+        return_value={"preset": {"preset": {"id": [], "name": []}}},
+    )
+
+    # Trigger update to refresh presets
+    await dev.update()
+
+    # When no presets exist, the preset feature should not be added
+    preset_feature = dev.features.get("preset")
+    assert preset_feature is None

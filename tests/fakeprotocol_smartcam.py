@@ -315,7 +315,7 @@ class FakeSmartCamTransport(BaseTransport):
             "addScanChildDeviceList",
             "startScanChildDevice",
             "motorMoveToPreset",
-            "addMotorPostion",
+            "addMotorPostion",  # Note: API has typo in method name
         ]:
             return {"result": {}, "error_code": 0}
 
