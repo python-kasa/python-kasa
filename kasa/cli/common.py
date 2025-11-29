@@ -42,7 +42,7 @@ except ImportError:
         @wraps(echo_func)
         def wrapper(message=None, *args, **kwargs) -> None:
             if message is not None:
-                if type(message) == str:
+                if type(message) is str:
                     message = rich_formatting.sub("", message)
                 else:
                     message = rich_formatting.sub("", repr(message))
