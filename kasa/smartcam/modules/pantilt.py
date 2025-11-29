@@ -91,9 +91,10 @@ class PanTilt(SmartCamModule):
 
     async def _post_update_hook(self) -> None:
         """Update presets after update."""
-        presets_data = await self._device._query_helper(
+        presets_response = await self._device._query_helper(
             "getPresetConfig", {"preset": {"name": ["preset"]}}
         )
+        presets_data = presets_response.get("getPresetConfig", presets_response)
         if "preset" in presets_data and "preset" in presets_data["preset"]:
             preset_info = presets_data["preset"]["preset"]
             self._presets = {
@@ -103,25 +104,24 @@ class PanTilt(SmartCamModule):
                 )
             }
 
-        if self._presets:
+        if self._presets and "preset" not in self._module_features:
 
             async def set_preset(preset_name: str) -> None:
                 preset_id = self._presets.get(preset_name)
                 if preset_id:
                     await self.goto_preset(preset_id)
 
-            self._add_feature(
-                Feature(
-                    self._device,
-                    "preset",
-                    "Preset position",
-                    container=self,
-                    attribute_getter=lambda: next(iter(self._presets.keys()), None),
-                    attribute_setter=set_preset,
-                    choices_getter=lambda: list(self._presets.keys()),
-                    type=Feature.Type.Choice,
-                )
+            feature = Feature(
+                self._device,
+                "preset",
+                "Preset position",
+                container=self,
+                attribute_getter=lambda x: next(iter(self._presets.keys()), None),
+                attribute_setter=set_preset,
+                choices_getter=lambda: list(self._presets.keys()),
+                type=Feature.Type.Choice,
             )
+            self._add_feature(feature)
 
     def query(self) -> dict:
         """Query to execute during the update cycle."""
