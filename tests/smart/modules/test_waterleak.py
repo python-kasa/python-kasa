@@ -43,3 +43,6 @@ async def test_waterleak_features(dev):
 
     assert "water_alert" in dev.features
     assert dev.features["water_alert"].value == waterleak.alert
+
+    assert "water_alert_timestamp" in dev.features
+    assert dev.features["water_alert_timestamp"].value == waterleak.alert_timestamp

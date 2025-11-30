@@ -80,11 +80,7 @@ class WaterleakSensor(SmartModule):
 
     @property
     def _time_module(self) -> Time:
-        """Return time module for timestamp calculation."""
-        if Module.Time in self._device.modules:
-            return self._device.modules[Module.Time]
-
-        # fallback to parent device's time
+        """Return time module from the parent for timestamp calculation."""
         parent = self._device.parent
         if TYPE_CHECKING:
             from ..smartdevice import SmartDevice
