@@ -296,6 +296,7 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
   - Hardware: 2.0 (EU) / Firmware: 1.4.3
 - **C210**
   - Hardware: 2.0 / Firmware: 1.3.11
+  - Hardware: 1.0 (EU) / Firmware: 1.4.7
   - Hardware: 2.0 (EU) / Firmware: 1.4.2
   - Hardware: 2.0 (EU) / Firmware: 1.4.3
 - **C220**

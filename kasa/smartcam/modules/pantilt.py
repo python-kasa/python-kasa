@@ -1,4 +1,4 @@
-"""Implementation of time module."""
+"""Implementation of pan/tilt module."""
 
 from __future__ import annotations
 
@@ -10,9 +10,13 @@ DEFAULT_TILT_STEP = 10
 
 
 class PanTilt(SmartCamModule):
-    """Implementation of device_local_time."""
+    """Implementation of pan/tilt module for PTZ cameras."""
 
     REQUIRED_COMPONENT = "ptz"
+    QUERY_GETTER_NAME = "getPresetConfig"
+    QUERY_MODULE_NAME = "preset"
+    QUERY_SECTION_NAMES = ["preset"]
+
     _pan_step = DEFAULT_PAN_STEP
     _tilt_step = DEFAULT_TILT_STEP
 
@@ -88,9 +92,51 @@ class PanTilt(SmartCamModule):
             )
         )
 
-    def query(self) -> dict:
-        """Query to execute during the update cycle."""
+        if self._presets:
+            self._add_feature(
+                Feature(
+                    self._device,
+                    "ptz_preset",
+                    "PTZ Preset",
+                    container=self,
+                    attribute_getter="preset",
+                    attribute_setter="set_preset",
+                    choices_getter=lambda: list(self._presets.keys()),
+                    type=Feature.Type.Choice,
+                )
+            )
+
+    @property
+    def _presets(self) -> dict[str, str]:
+        """Return presets from device data."""
+        if "preset" not in self.data:
+            return {}
+        preset_info = self.data["preset"]
+        return {
+            name: preset_id
+            for preset_id, name in zip(
+                preset_info.get("id", []), preset_info.get("name", []), strict=False
+            )
+        }
+
+    @property
+    def preset(self) -> str | None:
+        """Return first preset name as current value."""
+        return next(iter(self._presets.keys()), None)
+
+    async def set_preset(self, preset: str) -> dict:
+        """Set preset by name or ID."""
+        preset_id = self._presets.get(preset)
+        if preset_id:
+            return await self.goto_preset(preset_id)
+        if preset in self._presets.values():
+            return await self.goto_preset(preset)
         return {}
+
+    @property
+    def presets(self) -> dict[str, str]:
+        """Return available presets as dict of name -> id."""
+        return self._presets
 
     async def pan(self, pan: int) -> dict:
         """Pan horizontally."""
@@ -104,4 +150,26 @@ class PanTilt(SmartCamModule):
         """Pan and tilt camera."""
         return await self._device._raw_query(
             {"do": {"motor": {"move": {"x_coord": str(pan), "y_coord": str(tilt)}}}}
+        )
+
+    async def get_presets(self) -> dict:
+        """Get presets."""
+        return await self._device._raw_query(
+            {"getPresetConfig": {"preset": {"name": ["preset"]}}}
+        )
+
+    async def goto_preset(self, preset_id: str) -> dict:
+        """Go to preset."""
+        return await self._device._raw_query(
+            {"motorMoveToPreset": {"preset": {"goto_preset": {"id": preset_id}}}}
+        )
+
+    async def save_preset(self, name: str) -> dict:
+        """Save preset."""
+        return await self._device._raw_query(
+            {
+                "addMotorPostion": {  # Note: API has typo in method name
+                    "preset": {"set_preset": {"name": name, "save_ptz": "1"}}
+                }
+            }
         )
