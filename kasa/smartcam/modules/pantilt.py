@@ -1,4 +1,4 @@
-"""Implementation of time module."""
+"""Implementation of pan/tilt module."""
 
 from __future__ import annotations
 
@@ -10,12 +10,15 @@ DEFAULT_TILT_STEP = 10
 
 
 class PanTilt(SmartCamModule):
-    """Implementation of device_local_time."""
+    """Implementation of pan/tilt module for PTZ cameras."""
 
     REQUIRED_COMPONENT = "ptz"
+    QUERY_GETTER_NAME = "getPresetConfig"
+    QUERY_MODULE_NAME = "preset"
+    QUERY_SECTION_NAMES = ["preset"]
+
     _pan_step = DEFAULT_PAN_STEP
     _tilt_step = DEFAULT_TILT_STEP
-    _presets: dict[str, str] = {}
 
     def _initialize_features(self) -> None:
         """Initialize features after the initial update."""
@@ -89,43 +92,51 @@ class PanTilt(SmartCamModule):
             )
         )
 
-    async def _post_update_hook(self) -> None:
-        """Update presets after update."""
-        presets_response = await self._device._query_helper(
-            "getPresetConfig", {"preset": {"name": ["preset"]}}
-        )
-        presets_data = presets_response.get("getPresetConfig", presets_response)
-        if "preset" in presets_data and "preset" in presets_data["preset"]:
-            preset_info = presets_data["preset"]["preset"]
-            self._presets = {
-                name: preset_id
-                for preset_id, name in zip(
-                    preset_info.get("id", []), preset_info.get("name", []), strict=False
+        if self._presets:
+            self._add_feature(
+                Feature(
+                    self._device,
+                    "ptz_preset",
+                    "PTZ Preset",
+                    container=self,
+                    attribute_getter="preset",
+                    attribute_setter="set_preset",
+                    choices_getter=lambda: list(self._presets.keys()),
+                    type=Feature.Type.Choice,
                 )
-            }
-
-        if self._presets and "preset" not in self._module_features:
-
-            async def set_preset(preset_name: str) -> None:
-                preset_id = self._presets.get(preset_name)
-                if preset_id:
-                    await self.goto_preset(preset_id)
-
-            feature = Feature(
-                self._device,
-                "preset",
-                "Preset position",
-                container=self,
-                attribute_getter=lambda x: next(iter(self._presets.keys()), None),
-                attribute_setter=set_preset,
-                choices_getter=lambda: list(self._presets.keys()),
-                type=Feature.Type.Choice,
             )
-            self._add_feature(feature)
 
-    def query(self) -> dict:
-        """Query to execute during the update cycle."""
-        return {"getPresetConfig": {"preset": {"name": ["preset"]}}}
+    @property
+    def _presets(self) -> dict[str, str]:
+        """Return presets from device data."""
+        if "preset" not in self.data:
+            return {}
+        preset_info = self.data["preset"]
+        return {
+            name: preset_id
+            for preset_id, name in zip(
+                preset_info.get("id", []), preset_info.get("name", []), strict=False
+            )
+        }
+
+    @property
+    def preset(self) -> str | None:
+        """Return first preset name as current value."""
+        return next(iter(self._presets.keys()), None)
+
+    async def set_preset(self, preset: str) -> dict:
+        """Set preset by name or ID."""
+        preset_id = self._presets.get(preset)
+        if preset_id:
+            return await self.goto_preset(preset_id)
+        if preset in self._presets.values():
+            return await self.goto_preset(preset)
+        return {}
+
+    @property
+    def presets(self) -> dict[str, str]:
+        """Return available presets as dict of name -> id."""
+        return self._presets
 
     async def pan(self, pan: int) -> dict:
         """Pan horizontally."""
