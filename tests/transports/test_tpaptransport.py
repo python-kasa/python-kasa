@@ -366,7 +366,17 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
 
     class DummyHTTP:
         async def post(self, url, *, json=None, data=None, headers=None, ssl=None):
-            j = json or {}
+            json_mod = __import__("json")
+            param_json = json if json is not None else None
+            j = param_json or {}
+            if not j and data:
+                try:
+                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
+                        length = int.from_bytes(data[5:9], "big")
+                        payload = bytes(data[9 : 9 + length])
+                        j = json_mod.loads(payload.decode("utf-8"))
+                except Exception:
+                    j = {}
             p = j.get("params", {})
             if p and p.get("sub_method") == "noc_kex":
                 return 200, {
@@ -438,7 +448,17 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
 
     class DummyHTTPMissingDevPk:
         async def post(self, url, *, json=None, data=None, headers=None, ssl=None):
-            j = json or {}
+            json_mod = __import__("json")
+            param_json = json if json is not None else None
+            j = param_json or {}
+            if not j and data:
+                try:
+                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
+                        length = int.from_bytes(data[5:9], "big")
+                        payload = bytes(data[9 : 9 + length])
+                        j = json_mod.loads(payload.decode("utf-8"))
+                except Exception:
+                    j = {}
             p = j.get("params", {})
             if p and p.get("sub_method") == "noc_kex":
                 return 200, {"error_code": 0, "result": {"encryption": "aes_128_ccm"}}
@@ -451,7 +471,17 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
 
     class DummyHTTPNoDevProof(DummyHTTP):
         async def post(self, url, *, json=None, data=None, headers=None, ssl=None):
-            j = json or {}
+            json_mod = __import__("json")
+            param_json = json if json is not None else None
+            j = param_json or {}
+            if not j and data:
+                try:
+                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
+                        length = int.from_bytes(data[5:9], "big")
+                        payload = bytes(data[9 : 9 + length])
+                        j = json_mod.loads(payload.decode("utf-8"))
+                except Exception:
+                    j = {}
             p = j.get("params", {})
             if p and p.get("sub_method") == "noc_kex":
                 return await super().post(
@@ -566,7 +596,17 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
 
     class DummyHTTP:
         async def post(self, url, *, json=None, data=None, headers=None, ssl=None):
-            j = json or {}
+            json_mod = __import__("json")
+            param_json = json if json is not None else None
+            j = param_json or {}
+            if not j and data:
+                try:
+                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
+                        length = int.from_bytes(data[5:9], "big")
+                        payload = bytes(data[9 : 9 + length])
+                        j = json_mod.loads(payload.decode("utf-8"))
+                except Exception:
+                    j = {}
             p = j.get("params", {})
             if p and p.get("sub_method") == "noc_kex":
                 return 200, {
@@ -644,7 +684,17 @@ async def test_nocauth_no_tag_in_dev_proof(monkeypatch):
 
     class DummyHTTP:
         async def post(self, url, *, json=None, data=None, headers=None, ssl=None):
-            j = json or {}
+            json_mod = __import__("json")
+            param_json = json if json is not None else None
+            j = param_json or {}
+            if not j and data:
+                try:
+                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
+                        length = int.from_bytes(data[5:9], "big")
+                        payload = bytes(data[9 : 9 + length])
+                        j = json_mod.loads(payload.decode("utf-8"))
+                except Exception:
+                    j = {}
             p = j.get("params", {})
             if p and p.get("sub_method") == "noc_kex":
                 return 200, {
@@ -719,7 +769,18 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
 
     class DummyHTTP:
         async def post(self, url, *, json=None, data=None, headers=None, ssl=None):
-            p = (json or {}).get("params", {})
+            json_mod = __import__("json")
+            param_json = json if json is not None else None
+            j = param_json or {}
+            if not j and data:
+                try:
+                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
+                        length = int.from_bytes(data[5:9], "big")
+                        payload = bytes(data[9 : 9 + length])
+                        j = json_mod.loads(payload.decode("utf-8"))
+                except Exception:
+                    j = {}
+            p = (j or {}).get("params", {})
             if p.get("sub_method") == "noc_kex":
                 return 200, {
                     "error_code": 0,
