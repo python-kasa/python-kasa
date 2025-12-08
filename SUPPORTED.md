@@ -251,6 +251,8 @@ All Tapo devices require authentication.<br>Hub-Connected Devices may work acros
 
 ### Bulbs
 
+- **L430P**
+  - Hardware: 1.0 (EU) / Firmware: 1.0.9
 - **L510B**
   - Hardware: 3.0 (EU) / Firmware: 1.0.5
 - **L510E**

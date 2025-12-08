@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from ...feature import Feature
+from ...interfaces.time import Time
 from ..smartmodule import Module, SmartModule
 
 
@@ -77,6 +79,17 @@ class WaterleakSensor(SmartModule):
         return self._device.sys_info["in_alarm"]
 
     @property
+    def _time_module(self) -> Time:
+        """Return time module from the parent for timestamp calculation."""
+        parent = self._device.parent
+        if TYPE_CHECKING:
+            from ..smartdevice import SmartDevice
+
+            assert isinstance(parent, SmartDevice)
+
+        return parent.modules[Module.Time]
+
+    @property
     def alert_timestamp(self) -> datetime | None:
         """Return timestamp of the last leak trigger."""
         # The key is not always be there, maybe if it hasn't ever been triggered?
@@ -84,5 +97,5 @@ class WaterleakSensor(SmartModule):
             return None
 
         ts = self._device.sys_info["trigger_timestamp"]
-        tz = self._device.modules[Module.Time].timezone
+        tz = self._time_module.timezone
         return datetime.fromtimestamp(ts, tz=tz)
