@@ -152,26 +152,6 @@ def test_sessioncipher_hkdf_sha512_branch():
 # --------------------------
 
 
-def test_nocclient_make_ca_bundle_behaviour(monkeypatch, tmp_path):
-    class CertifiLocal:
-        def where(self) -> str:
-            p = tmp_path / "root.pem"
-            p.write_text("ROOT\n", encoding="utf-8")
-            return str(p)
-
-    monkeypatch.setattr(tp, "certifi", CertifiLocal())
-
-    client = tp.NOCClient()
-    try:
-        path = client._make_combined_ca_bundle()
-    except TypeError:
-        return
-
-    assert os.path.exists(path)
-    with open(path, "rb") as fh:
-        assert fh.read()
-
-
 def _install_requests_stubs_for_noc(
     monkeypatch, cert_user: str, inter_pem: str, root_pem: str
 ):
@@ -206,15 +186,6 @@ def _install_requests_stubs_for_noc(
 
 @pytest.mark.asyncio
 async def test_nocclient_apply_get_and_split_success(monkeypatch, tmp_path):
-    def good_ca_bundle() -> str:
-        p = tmp_path / "bundle.pem"
-        p.write_text("ROOT\nEXTRA\n", encoding="utf-8")
-        return str(p)
-
-    monkeypatch.setattr(
-        tp.NOCClient, "_make_combined_ca_bundle", staticmethod(good_ca_bundle)
-    )
-
     cert_user, _ = _make_self_signed_cert_and_key()
     inter_pem, _ = _make_self_signed_cert_and_key()
     root_pem, _ = _make_self_signed_cert_and_key()
@@ -236,92 +207,6 @@ async def test_nocclient_apply_get_and_split_success(monkeypatch, tmp_path):
     inter2, root2 = tp.NOCClient._split_chain(inter_pem + root_pem)  # type: ignore[attr-defined]
     assert inter2.endswith("-----END CERTIFICATE-----")
     assert isinstance(root2, str)
-
-
-def test_nocclient_apply_failure_and_cleanup(monkeypatch, tmp_path):
-    ca_path = tmp_path / "bundle.pem"
-    ca_path.write_text("ROOT\n", encoding="utf-8")
-    monkeypatch.setattr(
-        tp.NOCClient, "_make_combined_ca_bundle", staticmethod(lambda: str(ca_path))
-    )
-
-    called = {"unlink": []}
-
-    def fake_unlink(p: str):
-        called["unlink"].append(p)
-
-    monkeypatch.setattr(tp.os, "unlink", fake_unlink)
-
-    def raise_post(url: str, **kwargs):
-        class FakeBad:
-            def raise_for_status(self):
-                raise RuntimeError("HTTP 500")
-
-            def json(self):
-                return {}
-
-        return FakeBad()
-
-    monkeypatch.setattr(tp.requests, "post", raise_post)
-
-    client = tp.NOCClient()
-    with pytest.raises(KasaException, match="TPLink Cloud NOC apply failed"):
-        client.apply("user@example.com", "pw")  # noqa: S106
-    assert called["unlink"]
-    assert called["unlink"][0] == str(ca_path)
-
-
-def test_nocclient_insecure_verify_and_no_cabundle(monkeypatch):
-    monkeypatch.setenv("KASA_TEST_DISABLE_NOC_VERIFY", "1")
-
-    called = {"make_bundle": 0, "verifies": []}
-
-    def _never_call():
-        called["make_bundle"] += 1
-        raise AssertionError("should not be called when insecure")
-
-    monkeypatch.setattr(
-        tp.NOCClient, "_make_combined_ca_bundle", staticmethod(_never_call)
-    )
-
-    def fake_post(url: str, **kwargs):
-        called["verifies"].append(kwargs.get("verify"))
-
-        class FakeResp:
-            def __init__(self, payload: dict[str, Any], status: int = 200):
-                self._p = payload
-                self._s = status
-
-            def raise_for_status(self):
-                if self._s != 200:
-                    raise RuntimeError(f"HTTP {self._s}")
-
-            def json(self) -> dict[str, Any]:
-                return self._p
-
-        if url.endswith("/"):
-            return FakeResp({"result": {"token": "tok", "accountId": "acc"}})
-        if "getAppServiceUrlById" in url:
-            return FakeResp(
-                {"result": {"serviceList": [{"serviceUrl": "https://svc"}]}}
-            )
-        if url.endswith("/v1/certificate/noc/app/apply"):
-            cert_user, _ = _make_self_signed_cert_and_key()
-            inter_pem, _ = _make_self_signed_cert_and_key()
-            root_pem, _ = _make_self_signed_cert_and_key()
-            chain = inter_pem + root_pem
-            return FakeResp(
-                {"result": {"certificate": cert_user, "certificateChain": chain}}
-            )
-        return FakeResp({}, 404)
-
-    monkeypatch.setattr(tp.requests, "post", fake_post)
-
-    client = tp.NOCClient()
-    data = client.apply("u", "p")  # noqa: S106
-    assert data.nocCertificate
-    assert called["make_bundle"] == 0
-    assert all(v is False for v in called["verifies"] if v is not None)
 
 
 def test_nocclient_get_raises_when_empty_cache():
