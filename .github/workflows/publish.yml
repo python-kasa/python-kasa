@@ -1,33 +1,40 @@
-name: Publish packages
+---
+name: Publish Packages
+
 on:
   release:
     types: [published]
 
 env:
-  UV_VERSION: 0.4.16
-  PYTHON_VERSION: 3.12
+  UV_VERSION: 0.9.16
+  PYTHON_VERSION: 3.13
 
 jobs:
   build-n-publish:
-    name: Build release packages
+    name: Build Release Packages
     runs-on: ubuntu-latest
-    permissions:  # for trusted publishing
+    permissions:
       id-token: write
-
     steps:
-    - name: Checkout source files
-      uses: actions/checkout@v4
+    - name: Checkout Source Files
+      id: checkout
+      uses: actions/checkout@v6
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
+    - name: Setup uv
+      id: setup-uv
+      uses: astral-sh/setup-uv@v7
 
-    - name: Setup python
-      uses: actions/setup-python@v4
+    - name: Setup Python
+      id: setup-python
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Build a binary wheel and a source tarball
+    - name: Build Packages
+      id: build-packages
+      shell: bash
       run: uv build
 
-    - name: Publish release on pypi
+    - name: Publish Release on PyPI
+      id: publish-release-on-pypi
       uses: pypa/gh-action-pypi-publish@release/v1

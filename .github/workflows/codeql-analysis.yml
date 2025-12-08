@@ -1,4 +1,5 @@
-name: "CodeQL checks"
+---
+name: CodeQL Checks
 
 on:
   push:
@@ -31,16 +32,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python' ]
+        language: [python]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    - name: Checkout Source Files
+      id: checkout
+      uses: actions/checkout@v6
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      id: init-codeql
+      uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      id: perform-codeql-analysis
+      uses: github/codeql-action/analyze@v4

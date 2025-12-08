@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -12,48 +13,49 @@ on:
       - 'feat/**'
       - 'fix/**'
       - 'janitor/**'
-  workflow_dispatch:  # to allow manual re-runs
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
-  UV_VERSION: 0.4.16
+  UV_VERSION: 0.9.16
 
 jobs:
-  linting:
-    name: "Perform linting checks"
+  lint:
+    name: Perform Lint Checks
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: ["3.13"]
-
+        python-version: [3.13]
     steps:
-      - name: "Checkout source files"
-        uses: "actions/checkout@v4"
-      - name: Setup environment
+      - name: Checkout Source Files
+        id: checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Environment
+        id: setup-environment
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
           cache-pre-commit: true
           uv-version: ${{ env.UV_VERSION }}
-          uv-install-options: "--all-extras"
+          uv-install-options: --all-extras
 
-      - name: "Run pre-commit checks"
+      - name: Run pre-commit Checks
+        id: run-pre-commit
+        shell: bash
         run: |
           uv run pre-commit run --all-files --verbose
 
-
   tests:
     name: Python ${{ matrix.python-version}} on ${{ matrix.os }}${{ fromJSON('[" (extras)", ""]')[matrix.extras == ''] }}
-    needs: linting
+    needs: lint
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: [3.11, 3.12, 3.13]
         os: [ubuntu-latest, macos-latest, windows-latest]
         extras: [false, true]
         exclude:
@@ -61,19 +63,27 @@ jobs:
             extras: true
           - os: windows-latest
             extras: true
-
     steps:
-      - uses: "actions/checkout@v4"
-      - name: Setup environment
+      - name: Checkout Source Files
+        id: checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Environment
+        id: setup-environment
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
           uv-version: ${{ env.UV_VERSION }}
           uv-install-options: ${{ matrix.extras == true && '--all-extras' || '' }}
-      - name: "Run tests (with coverage)"
+
+      - name: Run PyTests with Code Coverage
+        id: run-pytests-with-code-coverage
+        shell: bash
         run: |
           uv run pytest -n auto --cov kasa --cov-report xml
-      - name: "Upload coverage to Codecov"
-        uses: "codecov/codecov-action@v4"
+
+      - name: Upload Code Coverage to Codecov
+        id: upload-code-coverage-to-codecov
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
