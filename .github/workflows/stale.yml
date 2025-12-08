@@ -45,7 +45,7 @@ jobs:
             Thank you for your contributions.
 
       - name: needs-more-information and waiting-for-reporter Stale Issues Policy
-        id: needs-more-information-and-waiting-for-reporter-stale-issues-policy
+        id: specific-stale-issues-policy
         uses: actions/stale@v10
         with:
           repo-token: ${{ github.token }}

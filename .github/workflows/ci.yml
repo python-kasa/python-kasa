@@ -83,6 +83,7 @@ jobs:
           uv run pytest -n auto --cov kasa --cov-report xml
 
       - name: Upload Code Coverage to Codecov
+        id: upload-code-coverage-to-codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
