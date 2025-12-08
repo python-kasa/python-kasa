@@ -16,12 +16,12 @@ import ssl
 import struct
 import tempfile
 import uuid
+import warnings
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum, auto
 from typing import Any, ClassVar, Literal, TypedDict, cast
 
-import certifi
 import requests
 from asn1crypto import core as asn1_core
 from asn1crypto import csr as asn1_csr
@@ -37,6 +37,7 @@ from cryptography.hazmat.primitives.cmac import CMAC
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from ecdsa import NIST256p, ellipticcurve
 from ecdsa.ellipticcurve import PointJacobi
+from urllib3.exceptions import InsecureRequestWarning
 from yarl import URL
 
 from kasa.deviceconfig import DeviceConfig
@@ -54,6 +55,8 @@ from kasa.json import loads as json_loads
 from kasa.transports import BaseTransport
 
 _LOGGER = logging.getLogger(__name__)
+
+warnings.simplefilter("ignore", InsecureRequestWarning)
 
 
 class TransportState(Enum):
@@ -247,35 +250,12 @@ class TpapNOCData:
 
 
 class NOCClient:
-    """
-    Client to fetch App NOC materials from TP-Link Cloud.
+    """Client to fetch App NOC materials from TP-Link Cloud."""
 
-    In tests set KASA_TEST_DISABLE_NOC_VERIFY=1 to disable TLS verification for these
-    specific cloud requests (no effect in production).
-    """
-
-    TP_LINK_CLOUD_CA = """-----BEGIN CERTIFICATE-----
-MIICjjCCAjSgAwIBAgIUDvm17dXeo3BBXMzvuzzwOgi3Q40wCgYIKoZIzj0EAwMw
-cjEeMBwGA1UEAwwVVFAtTGluayBDbG91ZCBSb290IENBMR0wGwYDVQQKDBRUUC1M
-aW5rIFN5c3RlbXMgSW5jLjEPMA0GA1UEBwwGSXJ2aW5lMRMwEQYDVQQIDApDYWxp
-Zm9ybmlhMQswCQYDVQQGEwJVUzAeFw0yNTAyMjUwMzU3MDFaFw00MDAyMjIwMzU3
-MDFaMHQxIDAeBgNVBAMMF1RQLUxpbmsgQ2xvdWQgU2VydmVyIENBMR0wGwYDVQQK
-DBRUUC1MaW5rIFN5c3RlbXMgSW5jLjEPMA0GA1UEBwwGSXJ2aW5lMRMwEQYDVQQI
-DApDYWxpZm9ybmlhMQswCQYDVQQGEwJVUzBZMBMGByqGSM49AgEGCCqGSM49AwEH
-A0IABFfbER2ybkfy/g1y2r7eBKXT+f5d3y/TtX/Z4ydUFZOIb6VxbcTPAniMSI4B
-/NNI0Tk/GCN0EFYlC/rGxoaA5mmjgaUwgaIwEgYDVR0TAQH/BAgwBgEB/wIBADAO
-BgNVHQ8BAf8EBAMCAYYwPAYDVR0fBDUwMzAxoC+gLYYraHR0cDovL2NybC50cGxp
-bmtjbG91ZC5jb20vVFBMaW5rUm9vdENBLmNybDAdBgNVHQ4EFgQUiG82rMbvOSoF
-Xc79B7Q2Co1VtJwwHwYDVR0jBBgwFoAUC1dD03ntY75yTHFAhLUICUoP6MkwCgYI
-KoZIzj0EAwMDSAAwRQIhANMn7B+KXILe2IYiLipivo+Xm3mwuncrTThiV3HKM2aZ
-Ai BXBL/Z6Uyn1ySWkv+RKvW+Ig9onNIejl0dAV8z9ielHQ==
------END CERTIFICATE-----
-"""
     ACCESS_KEY = "4d11b6b9d5ea4d19a829adbb9714b057"
     SECRET_KEY = "6ed7d97f3e73467f8a5bab90b577ba4c"  # noqa: S105
 
     def __init__(self) -> None:
-        self._insecure = bool(int(os.getenv("KASA_TEST_DISABLE_NOC_VERIFY", "0")))
         self._key_pem: str | None = None
         self._cert_pem: str | None = None
         self._inter_pem: str | None = None
@@ -294,17 +274,7 @@ Ai BXBL/Z6Uyn1ySWkv+RKvW+Ig9onNIejl0dAV8z9ielHQ==
             nocRootCertificate=self._root_pem,
         )
 
-    def _make_combined_ca_bundle(self) -> str:
-        """Create a temporary CA bundle including TP-Link Cloud CA."""
-        with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
-            with open(certifi.where()) as root_ca_file:
-                tmp.write(root_ca_file.read())
-            tmp.write("\n")
-            tmp.write(self.TP_LINK_CLOUD_CA)
-            tmp.flush()
-            return tmp.name
-
-    def _login(self, username: str, password: str, ca_bundle: str) -> tuple[str, str]:
+    def _login(self, username: str, password: str) -> tuple[str, str]:
         """Login to Cloud and return (token, account_id)."""
         payload = {
             "method": "login",
@@ -318,16 +288,14 @@ Ai BXBL/Z6Uyn1ySWkv+RKvW+Ig9onNIejl0dAV8z9ielHQ==
         r = requests.post(
             "https://n-wap.i.tplinkcloud.com/",
             json=payload,
-            verify=(False if self._insecure else ca_bundle),
+            verify=False,  # noqa: S501
             timeout=15.0,
         )
         r.raise_for_status()
         result = r.json()["result"]
         return result["token"], result["accountId"]
 
-    def _get_url(
-        self, account_id: str, token: str, username: str, ca_bundle: str
-    ) -> str:
+    def _get_url(self, account_id: str, token: str, username: str) -> str:
         """Resolve service URL for CVM server."""
         body_obj = {
             "serviceIds": ["nbu.cvm-server-v2"],
@@ -362,7 +330,7 @@ Ai BXBL/Z6Uyn1ySWkv+RKvW+Ig9onNIejl0dAV8z9ielHQ==
             endpoint,
             headers=headers,
             data=body_bytes,
-            verify=(False if self._insecure else ca_bundle),
+            verify=False,  # noqa: S501
             timeout=15.0,
         )
         r.raise_for_status()
@@ -379,12 +347,9 @@ Ai BXBL/Z6Uyn1ySWkv+RKvW+Ig9onNIejl0dAV8z9ielHQ==
         """Apply for a new NOC and cache materials."""
         if self._key_pem and self._cert_pem and self._inter_pem and self._root_pem:
             return self.get()
-        ca_bundle = ""
         try:
-            if not self._insecure:
-                ca_bundle = self._make_combined_ca_bundle()
-            token, account_id = self._login(username, password, ca_bundle)
-            url = self._get_url(account_id, token, username, ca_bundle)
+            token, account_id = self._login(username, password)
+            url = self._get_url(account_id, token, username)
 
             priv = ec.generate_private_key(ec.SECP256R1())
             pub_der = priv.public_key().public_bytes(
@@ -460,7 +425,7 @@ Ai BXBL/Z6Uyn1ySWkv+RKvW+Ig9onNIejl0dAV8z9ielHQ==
             r = requests.post(
                 endpoint,
                 json=body,
-                verify=(False if self._insecure else ca_bundle),
+                verify=False,  # noqa: S501
                 timeout=15.0,
             )
             r.raise_for_status()
@@ -476,10 +441,6 @@ Ai BXBL/Z6Uyn1ySWkv+RKvW+Ig9onNIejl0dAV8z9ielHQ==
             return self.get()
         except Exception as exc:
             raise KasaException(f"TPLink Cloud NOC apply failed: {exc}") from exc
-        finally:
-            if ca_bundle:
-                with contextlib.suppress(Exception):
-                    os.unlink(ca_bundle)
 
 
 class BaseAuthContext:
@@ -660,9 +621,11 @@ class NocAuthContext(BaseAuthContext):
         }
         resp = await self._login(params, step_name="noc_kex")
 
+        _LOGGER.debug("NOC KEX response: %r", resp)
         dev_pk_hex = resp.get("dev_pk")
         if not dev_pk_hex:
-            raise KasaException("NOC KEX response missing dev_pk")
+            _LOGGER.error("NOC KEX response missing dev_pk, full response: %r", resp)
+            raise KasaException(f"NOC KEX response missing dev_pk, got {resp!r}")
         self._dev_pub_bytes = self._unhex(dev_pk_hex)
         chosen = (resp.get("encryption") or "aes_128_ccm").lower().replace("-", "_")
         self._chosen_cipher = (
