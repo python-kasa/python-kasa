@@ -255,8 +255,10 @@ async def test_baseauth_login_and_tslp_success_and_errors(monkeypatch):
     assert r2 == {"ok": True}
 
     wrapped = tp.BaseAuthContext._wrap_tslp_packet(b"abc")
-    assert wrapped.startswith(b"TSLP")
-    assert wrapped[4:5] == b"\x01"
+    # New wrapper uses 24-byte header: 4 control bytes, 4-byte length, 8-byte name,
+    # 4-byte session, 4-byte CRC, then payload.
+    assert wrapped[0:4] == b"\x01\x01\x01\x00"
+    assert wrapped[4:8] == len(b"abc").to_bytes(4, "big")
 
     ctx_bad = tp.BaseAuthContext(DummyAuth(ok=False))
     with pytest.raises(KasaException, match="bad status/body"):
@@ -371,10 +373,13 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
             j = param_json or {}
             if not j and data:
                 try:
-                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
-                        length = int.from_bytes(data[5:9], "big")
-                        payload = bytes(data[9 : 9 + length])
-                        j = json_mod.loads(payload.decode("utf-8"))
+                    if isinstance(data, bytes | bytearray) and len(data) >= 24:
+                        try:
+                            length = int.from_bytes(data[4:8], "big")
+                            payload = bytes(data[24 : 24 + length])
+                            j = json_mod.loads(payload.decode("utf-8"))
+                        except Exception:
+                            j = {}
                 except Exception:
                     j = {}
             p = j.get("params", {})
@@ -453,10 +458,13 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
             j = param_json or {}
             if not j and data:
                 try:
-                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
-                        length = int.from_bytes(data[5:9], "big")
-                        payload = bytes(data[9 : 9 + length])
-                        j = json_mod.loads(payload.decode("utf-8"))
+                    if isinstance(data, bytes | bytearray) and len(data) >= 24:
+                        try:
+                            length = int.from_bytes(data[4:8], "big")
+                            payload = bytes(data[24 : 24 + length])
+                            j = json_mod.loads(payload.decode("utf-8"))
+                        except Exception:
+                            j = {}
                 except Exception:
                     j = {}
             p = j.get("params", {})
@@ -476,10 +484,13 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
             j = param_json or {}
             if not j and data:
                 try:
-                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
-                        length = int.from_bytes(data[5:9], "big")
-                        payload = bytes(data[9 : 9 + length])
-                        j = json_mod.loads(payload.decode("utf-8"))
+                    if isinstance(data, bytes | bytearray) and len(data) >= 24:
+                        try:
+                            length = int.from_bytes(data[4:8], "big")
+                            payload = bytes(data[24 : 24 + length])
+                            j = json_mod.loads(payload.decode("utf-8"))
+                        except Exception:
+                            j = {}
                 except Exception:
                     j = {}
             p = j.get("params", {})
@@ -601,10 +612,13 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
             j = param_json or {}
             if not j and data:
                 try:
-                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
-                        length = int.from_bytes(data[5:9], "big")
-                        payload = bytes(data[9 : 9 + length])
-                        j = json_mod.loads(payload.decode("utf-8"))
+                    if isinstance(data, bytes | bytearray) and len(data) >= 24:
+                        try:
+                            length = int.from_bytes(data[4:8], "big")
+                            payload = bytes(data[24 : 24 + length])
+                            j = json_mod.loads(payload.decode("utf-8"))
+                        except Exception:
+                            j = {}
                 except Exception:
                     j = {}
             p = j.get("params", {})
@@ -689,10 +703,13 @@ async def test_nocauth_no_tag_in_dev_proof(monkeypatch):
             j = param_json or {}
             if not j and data:
                 try:
-                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
-                        length = int.from_bytes(data[5:9], "big")
-                        payload = bytes(data[9 : 9 + length])
-                        j = json_mod.loads(payload.decode("utf-8"))
+                    if isinstance(data, bytes | bytearray) and len(data) >= 24:
+                        try:
+                            length = int.from_bytes(data[4:8], "big")
+                            payload = bytes(data[24 : 24 + length])
+                            j = json_mod.loads(payload.decode("utf-8"))
+                        except Exception:
+                            j = {}
                 except Exception:
                     j = {}
             p = j.get("params", {})
@@ -774,10 +791,13 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
             j = param_json or {}
             if not j and data:
                 try:
-                    if isinstance(data, bytes | bytearray) and data.startswith(b"TSLP"):
-                        length = int.from_bytes(data[5:9], "big")
-                        payload = bytes(data[9 : 9 + length])
-                        j = json_mod.loads(payload.decode("utf-8"))
+                    if isinstance(data, bytes | bytearray) and len(data) >= 24:
+                        try:
+                            length = int.from_bytes(data[4:8], "big")
+                            payload = bytes(data[24 : 24 + length])
+                            j = json_mod.loads(payload.decode("utf-8"))
+                        except Exception:
+                            j = {}
                 except Exception:
                     j = {}
             p = (j or {}).get("params", {})

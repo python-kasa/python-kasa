@@ -17,6 +17,7 @@ import struct
 import tempfile
 import uuid
 import warnings
+import zlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum, auto
@@ -516,12 +517,25 @@ class BaseAuthContext:
 
     @staticmethod
     def _wrap_tslp_packet(payload: bytes) -> bytes:
-        """Wrap payload to TSLP: magic/version/len/payload/crc16-IBM."""
-        magic = b"TSLP"
-        version = b"\x01"
+        """Wrap payload to TSLP."""
+        b0 = (1).to_bytes(1, "big")
+        b1 = (1).to_bytes(1, "big")
+        b2 = (1).to_bytes(1, "big")
+        b3 = (0).to_bytes(1, "big")
         length = len(payload).to_bytes(4, "big")
-        crc = (binascii.crc_hqx(payload, 0) & 0xFFFFFFFF).to_bytes(4, "big")
-        return magic + version + length + payload + crc
+        name = b"".ljust(8, b"\x00")
+        session_int = (0).to_bytes(4, "big")
+        placeholder = (-1832963859 & 0xFFFFFFFF).to_bytes(4, "big")
+        packet = b"".join(
+            [b0, b1, b2, b3, length, name, session_int, placeholder, payload]
+        )
+        try:
+            crc32 = zlib.crc32(packet) & 0xFFFFFFFF
+        except Exception:
+            crc32 = binascii.crc_hqx(packet, 0) & 0xFFFFFFFF
+        crc_bytes = int(crc32).to_bytes(4, "big")
+        packet = packet[:20] + crc_bytes + packet[24:]
+        return packet
 
 
 class NocAuthContext(BaseAuthContext):
