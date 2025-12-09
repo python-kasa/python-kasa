@@ -101,6 +101,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
     login_version: int | None = None
     https: bool = False
     http_port: int | None = None
+    new_klap: bool | None = None
 
     @staticmethod
     def from_values(
@@ -110,6 +111,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
         login_version: int | None = None,
         https: bool | None = None,
         http_port: int | None = None,
+        new_klap: bool | None = None,
     ) -> DeviceConnectionParameters:
         """Return connection parameters from string values."""
         try:
@@ -121,6 +123,7 @@ class DeviceConnectionParameters(_DeviceConfigBaseMixin):
                 login_version,
                 https,
                 http_port=http_port,
+                new_klap=new_klap,
             )
         except (ValueError, TypeError) as ex:
             raise KasaException(

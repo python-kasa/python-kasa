@@ -125,7 +125,7 @@ from kasa.exceptions import (
     TimeoutError,
     UnsupportedDeviceError,
 )
-from kasa.iot.iotdevice import IotDevice, _extract_sys_info
+from kasa.iot.iotdevice import _extract_sys_info
 from kasa.json import DataClassJSONMixin
 from kasa.json import dumps as json_dumps
 from kasa.json import loads as json_loads
@@ -653,12 +653,14 @@ class Discover:
             for device_family in main_device_families
             for https in (True, False)
             for login_version in (None, 2)
+            for new_klap in (True, None)
             if (
                 conn_params := DeviceConnectionParameters(
                     device_family=device_family,
                     encryption_type=encrypt,
                     login_version=login_version,
                     https=https,
+                    new_klap=new_klap,
                 )
             )
             and (
@@ -713,7 +715,9 @@ class Discover:
                 else False
             )
             dev_class = get_device_class_from_family(
-                discovery_result.device_type, https=https
+                discovery_result.device_type,
+                https=https,
+                device_model=discovery_result.device_model,
             )
             if not dev_class:
                 raise UnsupportedDeviceError(
@@ -742,7 +746,7 @@ class Discover:
             data = redact_data(info, IOT_REDACTORS) if Discover._redact_data else info
             _LOGGER.debug("[DISCOVERY] %s << %s", config.host, pf(data))
 
-        device_class = cast(type[IotDevice], Discover._get_device_class(info))
+        device_class = cast(type[Device], Discover._get_device_class(info))
         device = device_class(config.host, config=config)
         sys_info = _extract_sys_info(info)
         device_type = sys_info.get("mic_type", sys_info.get("type"))
@@ -842,6 +846,7 @@ class Discover:
             login_version=login_version,
             https=encrypt_schm.is_support_https,
             http_port=encrypt_schm.http_port,
+            new_klap=encrypt_schm.new_klap,
         )
 
     @staticmethod
@@ -849,7 +854,7 @@ class Discover:
         info: dict,
         config: DeviceConfig,
     ) -> Device:
-        """Get SmartDevice from the new 20002 response."""
+        """Get SmartDevice or IotDevice from the new 20002 response."""
         debug_enabled = _LOGGER.isEnabledFor(logging.DEBUG)
 
         try:
@@ -897,16 +902,6 @@ class Discover:
                 host=config.host,
             ) from ex
 
-        if (
-            device_class := get_device_class_from_family(type_, https=conn_params.https)
-        ) is None:
-            _LOGGER.debug("Got unsupported device type: %s", type_)
-            raise UnsupportedDeviceError(
-                f"Unsupported device {config.host} of type {type_}: {info}",
-                discovery_result=discovery_result.to_dict(),
-                host=config.host,
-            )
-
         if (protocol := get_protocol(config)) is None:
             _LOGGER.debug(
                 "Got unsupported connection type: %s", config.connection_type.to_dict()
@@ -914,6 +909,19 @@ class Discover:
             raise UnsupportedDeviceError(
                 f"Unsupported encryption scheme {config.host} of "
                 + f"type {config.connection_type.to_dict()}: {info}",
+                discovery_result=discovery_result.to_dict(),
+                host=config.host,
+            )
+
+        if (
+            device_class := cast(
+                type[Device],
+                Discover._get_device_class(info),
+            )
+        ) is None:
+            _LOGGER.debug("Got unsupported device type: %s", type_)
+            raise UnsupportedDeviceError(
+                f"Unsupported device {config.host} of type {type_}: {info}",
                 discovery_result=discovery_result.to_dict(),
                 host=config.host,
             )
@@ -953,6 +961,7 @@ class EncryptionScheme(_DiscoveryBaseMixin):
     encrypt_type: str | None = None
     http_port: int | None = None
     lv: int | None = None
+    new_klap: bool | None = None
 
 
 @dataclass

@@ -40,6 +40,7 @@ TYPES = [
 ]
 
 ENCRYPT_TYPES = [encrypt_type.value for encrypt_type in DeviceEncryptionType]
+ENCRYPT_TYPES.append("KLAPV2")
 DEFAULT_TARGET = "255.255.255.255"
 
 
@@ -326,11 +327,17 @@ async def cli(
         if not encrypt_type:
             encrypt_type = "KLAP"
 
+        new_klap = None
+        if encrypt_type and encrypt_type == "KLAPV2":
+            encrypt_type = "KLAP"
+            new_klap = True
+
         ctype = DeviceConnectionParameters(
             DeviceFamily(device_family),
             DeviceEncryptionType(encrypt_type),
             login_version,
             https,
+            new_klap=new_klap,
         )
         config = DeviceConfig(
             host=host,
