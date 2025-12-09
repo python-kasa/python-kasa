@@ -72,6 +72,7 @@ async def test_help(runner):
     [
         pytest.param(None, None, id="No connect params"),
         pytest.param("SMART.TAPOPLUG", None, id="Only device_family"),
+        pytest.param("SMART.TAPOPLUG", "KLAPV2", id="KLAPV2 encrypt type"),
     ],
 )
 async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_type):
@@ -83,6 +84,13 @@ async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_
     mocker.patch("kasa.iot.iotdevice.IotDevice.features", return_value={})
 
     mocker.patch("kasa.discover.Discover.discover_single", return_value=dev)
+    connect_mock = None
+    if encrypt_type:
+        connect_mock = mocker.patch(
+            "kasa.device.Device.connect",
+            new_callable=mocker.AsyncMock,
+            return_value=dev,
+        )
 
     res = await runner.invoke(
         cli,
@@ -101,7 +109,17 @@ async def test_update_called_by_cli(dev, mocker, runner, device_family, encrypt_
         catch_exceptions=False,
     )
     assert res.exit_code == 0
-    update.assert_called()
+    if encrypt_type:
+        update.assert_not_called()
+    else:
+        update.assert_called()
+    if connect_mock:
+        connect_mock.assert_called()
+        if encrypt_type == "KLAPV2":
+            called_kwargs = connect_mock.call_args.kwargs
+            cfg = called_kwargs.get("config")
+            assert cfg is not None
+            assert getattr(cfg.connection_type, "new_klap", None) is True
 
 
 async def test_list_devices(discovery_mock, runner):
