@@ -349,18 +349,13 @@ class NOCClient:
         if self._key_pem and self._cert_pem and self._inter_pem and self._root_pem:
             return self.get()
         try:
-            _LOGGER.debug("NOCClient: Starting NOC apply for user %r", username)
             token, account_id = self._login(username, password)
-            _LOGGER.debug("NOCClient: Got token/account_id: %r/%r", token, account_id)
             url = self._get_url(account_id, token, username)
-            _LOGGER.debug("NOCClient: Got service URL: %r", url)
-
             priv = ec.generate_private_key(ec.SECP256R1())
             pub_der = priv.public_key().public_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo,
             )
-            _LOGGER.debug("NOCClient: Generated EC keypair for CSR")
             subject = asn1_x509.Name.build({"organizational_unit_name": "UNOC"})
             attributes = [
                 {
@@ -424,13 +419,8 @@ class NOCClient:
                 format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=serialization.NoEncryption(),
             ).decode()
-            _LOGGER.debug(
-                "NOCClient: Created CSR and private key (PEM length: %d)", len(key_pem)
-            )
-
             endpoint = url.rstrip("/") + "/v1/certificate/noc/app/apply"
             body = {"userToken": token, "csr": csr_pem}
-            _LOGGER.debug("NOCClient: Posting CSR to %r", endpoint)
             r = requests.post(
                 endpoint,
                 json=body,
@@ -442,16 +432,10 @@ class NOCClient:
             cert_pem: str = res["certificate"]
             chain_pem: str = res["certificateChain"]
             inter_pem, root_pem = self._split_chain(chain_pem)
-            _LOGGER.debug(
-                "NOCClient: Received certificate and chain (cert PEM length: %d)",
-                len(cert_pem),
-            )
-
             self._cert_pem = cert_pem
             self._key_pem = key_pem
             self._inter_pem = inter_pem
             self._root_pem = root_pem
-            _LOGGER.debug("NOCClient: NOC materials cached")
             return self.get()
         except Exception as exc:
             _LOGGER.exception("NOCClient: Error during NOC apply: %r", exc)
@@ -504,20 +488,48 @@ class BaseAuthContext:
             headers=headers,
             ssl=await self._transport._get_ssl_context(),
         )
-        if status != 200 or not isinstance(data, dict):
+        if status != 200:
             raise KasaException(
-                f"{self._transport._host} TSLP {step_name} bad status/body: "
-                f"{status} {type(data)}"
+                f"{self._transport._host} TSLP {step_name} bad status: {status}"
             )
-        resp = cast(dict[str, Any], data)
+        if isinstance(data, bytes | bytearray):
+            try:
+                payload_bytes = self._parse_tslp_packet(bytes(data))
+                resp = json_loads(payload_bytes.decode("utf-8"))
+            except Exception as exc:
+                raise KasaException(
+                    f"{self._transport._host} TSLP {step_name} bad body: {exc}"
+                ) from exc
+        elif isinstance(data, dict):
+            resp = cast(dict[str, Any], data)
+        else:
+            raise KasaException(
+                f"{self._transport._host} TSLP {step_name} bad body type: {type(data)}"
+            )
         self._authenticator._handle_response_error_code(
             resp, f"TPAP {step_name} TSLP failed"
         )
         return cast(dict, resp.get("result") or {})
 
     @staticmethod
+    def _parse_tslp_packet(packet: bytes) -> bytes:
+        """Parse TSLP packet to payload."""
+        if len(packet) < 24:
+            raise ValueError("TSLP packet too short")
+        length = int.from_bytes(packet[4:8], "big")
+        if len(packet) < 24 + length:
+            raise ValueError("TSLP packet truncated")
+        original_crc = int.from_bytes(packet[20:24], "big")
+        placeholder = (-1832963859 & 0xFFFFFFFF).to_bytes(4, "big")
+        packet_with_placeholder = packet[:20] + placeholder + packet[24:]
+        computed = zlib.crc32(packet_with_placeholder) & 0xFFFFFFFF
+        if computed != original_crc:
+            raise ValueError("TSLP CRC mismatch")
+        return packet[24 : 24 + length]
+
+    @staticmethod
     def _wrap_tslp_packet(payload: bytes) -> bytes:
-        """Wrap payload to TSLP."""
+        """Wrap payload to TSLP packet."""
         b0 = (1).to_bytes(1, "big")
         b1 = (1).to_bytes(1, "big")
         b2 = (1).to_bytes(1, "big")
@@ -552,7 +564,6 @@ class NocAuthContext(BaseAuthContext):
         self.noc_key_pem = noc.nocPrivateKey
         self.user_icac_pem = noc.nocIntermediateCertificate or ""
         self.device_root_pem = noc.nocRootCertificate
-
         self._ephemeral_priv: ec.EllipticCurvePrivateKey | None = None
         self._ephemeral_pub_bytes: bytes | None = None
         self._dev_pub_bytes: bytes | None = None
@@ -646,22 +657,16 @@ class NocAuthContext(BaseAuthContext):
         """Run NOC KEX + proof exchange and return session."""
         user_pk_hex = self._hex(self._gen_ephemeral())
         admin_md5 = self._md5_hex("admin")
-        _LOGGER.debug(
-            "NocAuthContext: Generated ephemeral user_pk_hex: %r", user_pk_hex
-        )
         params = {
             "sub_method": "noc_kex",
             "username": admin_md5,
             "user_pk": user_pk_hex,
             "sessionId": None,
         }
-        _LOGGER.debug("NocAuthContext: Sending NOC KEX params: %r", params)
         resp = await self._login_tslp(params, step_name="noc_kex")
-
         _LOGGER.debug("NOC KEX response: %r", resp)
         dev_pk_hex = resp.get("dev_pk")
         if not dev_pk_hex:
-            _LOGGER.error("NOC KEX response missing dev_pk, full response: %r", resp)
             raise KasaException(f"NOC KEX response missing dev_pk, got {resp!r}")
         self._dev_pub_bytes = self._unhex(dev_pk_hex)
         chosen = (resp.get("encryption") or "aes_128_ccm").lower().replace("-", "_")
@@ -671,18 +676,10 @@ class NocAuthContext(BaseAuthContext):
             else "aes_128_ccm"
         )
         self._session_expired = int(resp.get("expired") or 0)
-        _LOGGER.debug(
-            "NOC KEX: dev_pk_hex=%r, chosen_cipher=%r, session_expired=%r",
-            dev_pk_hex,
-            self._chosen_cipher,
-            self._session_expired,
-        )
-
         self._shared_secret = self._derive_shared_secret(self._dev_pub_bytes)
         key, base_nonce = _SessionCipher.key_nonce_from_shared(
             self._shared_secret, self._chosen_cipher, hkdf_hash=self._hkdf_hash
         )
-
         user_cert = x509.load_pem_x509_certificate(self.noc_cert_pem.encode())
         user_cert_der = user_cert.public_bytes(serialization.Encoding.DER)
         user_icac_der = (
@@ -709,14 +706,12 @@ class NocAuthContext(BaseAuthContext):
         ct_body, tag = _SessionCipher.sec_encrypt(
             self._chosen_cipher, key, base_nonce, proof_json, seq=1
         )
-
         proof_params = {
             "sub_method": "noc_proof",
             "user_proof_encrypt": self._hex(ct_body),
             "tag": self._hex(tag),
         }
         proof_res = await self._login_tslp(proof_params, step_name="noc_proof")
-
         dev_proof_hex = proof_res.get("dev_proof_encrypt") or proof_res.get("dev_proof")
         tag_hex = proof_res.get("tag")
         if not dev_proof_hex:
@@ -728,7 +723,6 @@ class NocAuthContext(BaseAuthContext):
         )
         dev_obj = json.loads(dev_plain.decode("utf-8"))
         self._verify_device_proof(dev_obj)
-
         session_id = (
             proof_res.get("sessionId")
             or proof_res.get("stok")

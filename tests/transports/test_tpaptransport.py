@@ -68,7 +68,6 @@ def _make_rsa_key_pem() -> str:
 
 
 def _make_ec_cert_and_key() -> tuple[str, bytes, object]:
-    # Returns (cert_pem, pub_uncompressed, priv_key_for_signing)
     from datetime import datetime, timedelta
 
     from cryptography import x509
@@ -255,15 +254,13 @@ async def test_baseauth_login_and_tslp_success_and_errors(monkeypatch):
     assert r2 == {"ok": True}
 
     wrapped = tp.BaseAuthContext._wrap_tslp_packet(b"abc")
-    # New wrapper uses 24-byte header: 4 control bytes, 4-byte length, 8-byte name,
-    # 4-byte session, 4-byte CRC, then payload.
     assert wrapped[0:4] == b"\x01\x01\x01\x00"
     assert wrapped[4:8] == len(b"abc").to_bytes(4, "big")
 
     ctx_bad = tp.BaseAuthContext(DummyAuth(ok=False))
     with pytest.raises(KasaException, match="bad status/body"):
         await ctx_bad._login({}, step_name="x")
-    with pytest.raises(KasaException, match=r"TSLP x bad status/body"):
+    with pytest.raises(KasaException, match=r"TSLP x bad status"):
         await ctx_bad._login_tslp({}, step_name="x")
 
 
@@ -293,7 +290,7 @@ async def test_baseauth_login_200_but_not_dict():
     ctx = tp.BaseAuthContext(DummyAuth())
     with pytest.raises(KasaException, match="bad status/body"):
         await ctx._login({"a": 1}, step_name="s")
-    with pytest.raises(KasaException, match="TSLP s bad status/body"):
+    with pytest.raises(KasaException, match="TSLP s bad body"):
         await ctx._login_tslp({"a": 1}, step_name="s")
 
 
@@ -323,6 +320,30 @@ async def test_baseauth_login_missing_result_returns_empty():
     ctx = tp.BaseAuthContext(DummyAuth())
     assert await ctx._login({"x": 1}, step_name="s") == {}
     assert await ctx._login_tslp({"y": 2}, step_name="t") == {}
+
+
+def test_tslp_wrap_and_parse_roundtrip():
+    payload = b'{"test":true}'
+    wrapped = tp.BaseAuthContext._wrap_tslp_packet(payload)
+    parsed = tp.BaseAuthContext._parse_tslp_packet(wrapped)
+    assert parsed == payload
+
+
+def test_tslp_parse_crc_mismatch_raises():
+    payload = b'{"x":1}'
+    wrapped = bytearray(tp.BaseAuthContext._wrap_tslp_packet(payload))
+    if len(wrapped) > 24:
+        wrapped[24] ^= 0xFF
+    with pytest.raises(ValueError, match="CRC mismatch"):
+        tp.BaseAuthContext._parse_tslp_packet(bytes(wrapped))
+
+
+def test_tslp_parse_truncated_raises():
+    payload = b'{"y":2}'
+    wrapped = tp.BaseAuthContext._wrap_tslp_packet(payload)
+    truncated = wrapped[:-1]
+    with pytest.raises(ValueError, match="truncated"):
+        tp.BaseAuthContext._parse_tslp_packet(truncated)
 
 
 # --------------------------
@@ -1627,7 +1648,6 @@ async def test_authenticator_handle_response_error_code_nonint():
 
 @pytest.mark.asyncio
 async def test_authenticator_noc_returns_none_falls_back_to_spake(monkeypatch):
-    # Cover branch where NOC returns None (not TlaSession) and SPAKE succeeds
     tr = tp.TpapTransport(config=DeviceConfig("host-fallback"))
 
     async def post_ok(url, *, json=None, data=None, headers=None, ssl=None):
@@ -1765,13 +1785,10 @@ async def test_transport_ssl_context_variants_and_cleanup(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_transport_ssl_context_tls_mode_unknown_skips_tls2_block():
-    # Cover branch where tls_mode is an unexpected value (not 0, None, 1, or 2)
-    # Ensures we take the false path of "if tls_mode == 2" and return the context.
     tr = tp.TpapTransport(config=DeviceConfig("host-tls3"))
     tr._authenticator._tpap_tls = 3
     ctx = tr._create_ssl_context()
     assert isinstance(ctx, ssl.SSLContext)
-    # For PROTOCOL_TLS_CLIENT, default verify_mode is CERT_REQUIRED
     assert ctx.verify_mode == ssl.CERT_REQUIRED
 
 
@@ -1873,7 +1890,6 @@ async def test_transport_send_happy_and_error_paths(monkeypatch):
     with pytest.raises(DeviceError):
         await tr.send('{"m":"g"}')
 
-    # Branch where _send_lock is None and ensure_authenticator is not re-run
     tr._http_client.post = post_bytes  # type: ignore[assignment]
     tr._authenticator._seq = 20
     tr._send_lock = None  # trigger creation branch
@@ -1889,10 +1905,8 @@ async def test_transport_send_happy_and_error_paths(monkeypatch):
     assert out4["result"]["ok"] is True
     assert tr._authenticator.seq == 21
 
-    # Cover branch where getattr(..., "_seq", None) is None, so no increment happens
     original_prop = tp.Authenticator.seq
     try:
-        # Make property return a value while the underlying _seq is None
         monkeypatch.setattr(
             tp.Authenticator, "seq", property(lambda self: 30), raising=True
         )
@@ -1984,7 +1998,6 @@ async def test_tls2_verify_locations_raises_no_unlink(monkeypatch):
 
 
 def test_spake2p_cmac_direct_call():
-    # Ensure _cmac_aes function is exercised directly
     key = hashlib.sha256(b"k").digest()
     out = tp.Spake2pAuthContext._cmac_aes(key, b"data")
     assert isinstance(out, bytes)
@@ -1993,7 +2006,6 @@ def test_spake2p_cmac_direct_call():
 
 @pytest.mark.asyncio
 async def test_nocauth_derive_shared_raises_when_no_ephemeral():
-    # Trigger "Ephemeral private key not generated" branch
     cert_pem, key_pem = _make_self_signed_cert_and_key()
     root_pem, _ = _make_self_signed_cert_and_key()
 
