@@ -585,7 +585,7 @@ class NocAuthContext(BaseAuthContext):
         params = {
             "sub_method": "noc_kex",
             "username": admin_md5,
-            "encryption": "aes_128_ccm",
+            "encryption": ["aes_128_ccm"],
             "user_pk": user_pk_hex,
             "stok": None,
         }
