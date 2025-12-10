@@ -585,8 +585,9 @@ class NocAuthContext(BaseAuthContext):
         params = {
             "sub_method": "noc_kex",
             "username": admin_md5,
+            "encryption": "aes_128_ccm",
             "user_pk": user_pk_hex,
-            "sessionId": None,
+            "stok": None,
         }
         resp = await self._login(params, step_name="noc_kex")
         _LOGGER.debug("NOC KEX response: %r", resp)
@@ -637,7 +638,7 @@ class NocAuthContext(BaseAuthContext):
             "tag": self._hex(tag),
         }
         proof_res = await self._login(proof_params, step_name="noc_proof")
-        dev_proof_hex = proof_res.get("dev_proof_encrypt") or proof_res.get("dev_proof")
+        dev_proof_hex = proof_res.get("dev_proof_encrypt")
         tag_hex = proof_res.get("tag")
         if not dev_proof_hex:
             raise KasaException("NOC proof response missing device proof")
@@ -648,24 +649,14 @@ class NocAuthContext(BaseAuthContext):
         )
         dev_obj = json.loads(dev_plain.decode("utf-8"))
         self._verify_device_proof(dev_obj)
-        session_id = (
-            proof_res.get("sessionId")
-            or proof_res.get("stok")
-            or proof_res.get("session_id")
-            or ""
-        )
-        start_seq = int(proof_res.get("start_seq") or proof_res.get("startSeq") or 1)
+        session_id = proof_res.get("stok") or ""
+        start_seq = int(proof_res.get("start_seq") or 1)
         session_cipher = _SessionCipher.from_shared_key(
             self._chosen_cipher, self._shared_secret, hkdf_hash=self._hkdf_hash
         )
         return TlaSession(
             sessionId=session_id,
-            sessionExpired=int(
-                proof_res.get("expired")
-                or proof_res.get("sessionExpired")
-                or self._session_expired
-                or 0
-            ),
+            sessionExpired=int(proof_res.get("expired") or 0),
             sessionType="NOC",
             sessionCipher=session_cipher,
             startSequence=start_seq,

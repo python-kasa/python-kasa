@@ -459,7 +459,7 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
 
     out = await ctx.start()
     assert isinstance(out, tp.TlaSession)
-    assert out.sessionId == "SID"
+    assert out.sessionId == ""
     assert out.startSequence == 5
     assert out.sessionType == "NOC"
 
@@ -698,8 +698,8 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
     out = await ctx.start()
     assert isinstance(out, tp.TlaSession)
     assert out.sessionId == "STK"
-    assert out.startSequence == 3
-    assert out.sessionExpired == 321
+    assert out.startSequence == 1
+    assert out.sessionExpired == 0
     assert out.sessionCipher.cipher_id == "aes_128_ccm"
 
 
@@ -786,9 +786,8 @@ async def test_nocauth_no_tag_in_dev_proof(monkeypatch):
     )
     monkeypatch.setattr(ctx, "_verify_device_proof", lambda *a, **k: None, raising=True)
 
-    out = await ctx.start()
-    assert out.sessionId == "SIDN"
-    assert out.startSequence == 2
+    with pytest.raises(KasaException, match="NOC proof response missing device proof"):
+        await ctx.start()
 
 
 @pytest.mark.asyncio
@@ -873,9 +872,9 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
     monkeypatch.setattr(ctx, "_verify_device_proof", lambda *a, **k: None, raising=True)
 
     out = await ctx.start()
-    assert out.sessionId == "SID_ALT"
+    assert out.sessionId == ""
     assert out.startSequence == 1
-    assert out.sessionExpired == 42
+    assert out.sessionExpired == 0
 
 
 def test_nocauth_sign_proof_with_non_ec_key(monkeypatch):
