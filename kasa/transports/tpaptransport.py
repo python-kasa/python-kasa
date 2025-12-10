@@ -585,9 +585,9 @@ class NocAuthContext(BaseAuthContext):
         params = {
             "sub_method": "noc_kex",
             "username": admin_md5,
-            "encryption": ["aes_128_ccm"],
-            "user_pk": user_pk_hex,
-            "stok": None,
+            "encryption": ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"],
+            "userPublicKey": user_pk_hex,
+            "sessionId": None,
         }
         resp = await self._login(params, step_name="noc_kex")
         _LOGGER.debug("NOC KEX response: %r", resp)
@@ -866,19 +866,17 @@ class Spake2pAuthContext(BaseAuthContext):
 
     async def start(self) -> TlaSession | None:
         """Run SPAKE2+ register/share and return session."""
-        reg_params = {
+        params = {
             "sub_method": "pake_register",
             "username": self.username,
-            "user_random": self.user_random,
-            "cipher_suites": self.discover_suites or [1, 2],
+            "userRandom": self.user_random,
+            "cipherSuites": self.discover_suites or [1, 2],
             "encryption": ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"],
-            "passcode_type": "password",
+            "passcodeType": "password",
             "sessionId": None,
         }
-        reg_params.update(self.extra_params)
-
-        reg = await self._login(reg_params, step_name="pake_register")
-        share_params = self.process_register_result(reg)
+        resp = await self._login(params, step_name="pake_register")
+        share_params = self.process_register_result(resp)
 
         if self._use_dac_certification():
             self._dac_nonce_hex = secrets.token_hex(32)
