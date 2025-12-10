@@ -250,18 +250,12 @@ async def test_baseauth_login_and_tslp_success_and_errors(monkeypatch):
     ctx = tp.BaseAuthContext(DummyAuth())
     r = await ctx._login({"a": 1}, step_name="s")
     assert r == {"ok": True}
-    r2 = await ctx._login_tslp({"b": 2}, step_name="t")
+    r2 = await ctx._login({"b": 2}, step_name="t")
     assert r2 == {"ok": True}
-
-    wrapped = tp.BaseAuthContext._wrap_tslp_packet(b"abc")
-    assert wrapped[0:4] == b"\x01\x01\x01\x00"
-    assert wrapped[4:8] == len(b"abc").to_bytes(4, "big")
 
     ctx_bad = tp.BaseAuthContext(DummyAuth(ok=False))
     with pytest.raises(KasaException, match="bad status/body"):
         await ctx_bad._login({}, step_name="x")
-    with pytest.raises(KasaException, match=r"TSLP x bad status"):
-        await ctx_bad._login_tslp({}, step_name="x")
 
 
 @pytest.mark.asyncio
@@ -290,8 +284,6 @@ async def test_baseauth_login_200_but_not_dict():
     ctx = tp.BaseAuthContext(DummyAuth())
     with pytest.raises(KasaException, match="bad status/body"):
         await ctx._login({"a": 1}, step_name="s")
-    with pytest.raises(KasaException, match="TSLP s bad body"):
-        await ctx._login_tslp({"a": 1}, step_name="s")
 
 
 @pytest.mark.asyncio
@@ -319,31 +311,10 @@ async def test_baseauth_login_missing_result_returns_empty():
 
     ctx = tp.BaseAuthContext(DummyAuth())
     assert await ctx._login({"x": 1}, step_name="s") == {}
-    assert await ctx._login_tslp({"y": 2}, step_name="t") == {}
+    assert await ctx._login({"y": 2}, step_name="t") == {}
 
 
-def test_tslp_wrap_and_parse_roundtrip():
-    payload = b'{"test":true}'
-    wrapped = tp.BaseAuthContext._wrap_tslp_packet(payload)
-    parsed = tp.BaseAuthContext._parse_tslp_packet(wrapped)
-    assert parsed == payload
-
-
-def test_tslp_parse_crc_mismatch_raises():
-    payload = b'{"x":1}'
-    wrapped = bytearray(tp.BaseAuthContext._wrap_tslp_packet(payload))
-    if len(wrapped) > 24:
-        wrapped[24] ^= 0xFF
-    with pytest.raises(ValueError, match="CRC mismatch"):
-        tp.BaseAuthContext._parse_tslp_packet(bytes(wrapped))
-
-
-def test_tslp_parse_truncated_raises():
-    payload = b'{"y":2}'
-    wrapped = tp.BaseAuthContext._wrap_tslp_packet(payload)
-    truncated = wrapped[:-1]
-    with pytest.raises(ValueError, match="truncated"):
-        tp.BaseAuthContext._parse_tslp_packet(truncated)
+# TSLP wrapping/parsing and TSLP-specific login were removed; tests adapted
 
 
 # --------------------------

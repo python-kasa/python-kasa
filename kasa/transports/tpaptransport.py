@@ -17,7 +17,6 @@ import struct
 import tempfile
 import uuid
 import warnings
-import zlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum, auto
@@ -474,226 +473,6 @@ class BaseAuthContext:
         )
         return cast(dict, resp.get("result") or {})
 
-    async def _login_tslp(
-        self, params: dict[str, Any], *, step_name: str
-    ) -> dict[str, Any]:
-        """POST login step as a TSLP-octet wrapper and return result."""
-        body = {"method": "login", "params": params}
-        body_bytes = json.dumps(body, separators=(",", ":")).encode("utf-8")
-        wrapped = self._wrap_tslp_packet(body_bytes)
-        try:
-            hdr24 = wrapped[:24]
-            crc_val = int.from_bytes(hdr24[20:24], "big")
-            wrapped_len = len(wrapped)
-            _LOGGER.debug(
-                "TSLP wrap (step=%s) payload_len=%d wrapped_len=%d",
-                step_name,
-                len(body_bytes),
-                wrapped_len,
-            )
-            _LOGGER.debug(
-                "TSLP wrap header24=%s crc=0x%08x",
-                hdr24.hex(),
-                crc_val,
-            )
-        except Exception:
-            wrapped_len = len(wrapped)
-            _LOGGER.debug(
-                "TSLP wrap (step=%s) payload_len=%d wrapped_len=%d (hdr debug fail)",
-                step_name,
-                len(body_bytes),
-                wrapped_len,
-            )
-        headers = {"Content-Type": "application/octet-stream"}
-        status, data = await self._transport._http_client.post(
-            self._transport._app_url.with_path("/"),
-            data=wrapped,
-            headers=headers,
-            ssl=await self._transport._get_ssl_context(),
-        )
-        if status != 200:
-            _LOGGER.debug(
-                "TSLP %s returned non-200 status: %s (data_type=%s)",
-                step_name,
-                status,
-                type(data),
-            )
-            raise KasaException(
-                f"{self._transport._host} TSLP {step_name} bad status: {status}"
-            )
-        if isinstance(data, bytes | bytearray):
-            _LOGGER.debug(
-                "TSLP %s response: status=%s, data_type=bytes, data_len=%d",
-                step_name,
-                status,
-                len(data),
-            )
-            try:
-                payload_bytes = self._parse_tslp_packet(bytes(data))
-                resp = json_loads(payload_bytes.decode("utf-8"))
-            except Exception as exc:
-                preview = bytes(data[:256]).hex()
-                ascii_preview = None
-                with contextlib.suppress(Exception):
-                    ascii_preview = bytes(data[24 : 24 + 128]).decode(
-                        "utf-8", errors="replace"
-                    )
-                _LOGGER.debug(
-                    "TSLP %s parse failed: %s; preview(hex)=%s preview(ascii)=%s",
-                    step_name,
-                    exc,
-                    preview,
-                    ascii_preview,
-                )
-                raise KasaException(
-                    f"{self._transport._host} TSLP {step_name} bad body: {exc}"
-                ) from exc
-        elif isinstance(data, dict):
-            _LOGGER.debug(
-                "TSLP %s response: status=%s, data_type=dict, data_len=%d",
-                step_name,
-                status,
-                len(data),
-            )
-            resp = cast(dict[str, Any], data)
-        else:
-            _LOGGER.debug(
-                "TSLP %s response: unexpected body type %s", step_name, type(data)
-            )
-            raise KasaException(
-                f"{self._transport._host} TSLP {step_name} bad body type: {type(data)}"
-            )
-        self._authenticator._handle_response_error_code(
-            resp, f"TPAP {step_name} TSLP failed"
-        )
-        return cast(dict, resp.get("result") or {})
-
-    @staticmethod
-    def _parse_tslp_packet(packet: bytes) -> bytes:
-        """Parse TSLP packet to payload with rich debug output on failure."""
-        total_len = len(packet)
-        _LOGGER.debug("TSLP parse: total_len=%d", total_len)
-        try:
-            preview_len = min(256, total_len)
-            preview = packet[:preview_len].hex()
-            _LOGGER.debug(
-                "TSLP raw preview (first %d bytes hex): %s", preview_len, preview
-            )
-        except Exception:
-            _LOGGER.debug("TSLP raw preview failed")
-
-        if total_len < 24:
-            _LOGGER.debug("TSLP parse failed: packet too short (len=%d)", total_len)
-            with contextlib.suppress(Exception):
-                _LOGGER.debug("TSLP short packet hex: %s", packet.hex())
-            raise ValueError("TSLP packet too short")
-        try:
-            ctrl = packet[0:4]
-            payload_len = int.from_bytes(packet[4:8], "big")
-            name_bytes = packet[8:16]
-            session_id = int.from_bytes(packet[16:20], "big")
-            original_crc = int.from_bytes(packet[20:24], "big")
-            name_str = name_bytes.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
-            _LOGGER.debug(
-                "TSLP header: ctrl=%s payload_len=%d name=%r",
-                ctrl.hex(),
-                payload_len,
-                name_str,
-            )
-            _LOGGER.debug(
-                "TSLP header cont: session_id=%d original_crc=0x%08x",
-                session_id,
-                original_crc,
-            )
-        except Exception as exc:
-            _LOGGER.debug("TSLP header parse failed: %r", exc)
-            raise
-        expected_total = 24 + payload_len
-        if total_len < expected_total:
-            _LOGGER.debug(
-                "TSLP parse failed: truncated (total=%d expected=%d payload=%d)",
-                total_len,
-                expected_total,
-                payload_len,
-            )
-            with contextlib.suppress(Exception):
-                _LOGGER.debug("TSLP header24 hex: %s", packet[:24].hex())
-                _LOGGER.debug(
-                    "TSLP available payload hex (up to 256 bytes): %s",
-                    packet[24 : min(total_len, 24 + 256)].hex(),
-                )
-                ascii_preview = packet[24 : min(total_len, 24 + 128)].decode(
-                    "utf-8", errors="replace"
-                )
-                _LOGGER.debug("TSLP available payload ascii-preview: %r", ascii_preview)
-            raise ValueError("TSLP packet truncated")
-        placeholder = (-1832963859 & 0xFFFFFFFF).to_bytes(4, "big")
-        packet_with_placeholder = packet[:20] + placeholder + packet[24:]
-        try:
-            computed = zlib.crc32(packet_with_placeholder) & 0xFFFFFFFF
-        except Exception:
-            computed = binascii.crc_hqx(packet_with_placeholder, 0) & 0xFFFFFFFF
-        _LOGGER.debug(
-            "TSLP CRC original=0x%08x computed=0x%08x match=%s",
-            original_crc,
-            computed,
-            computed == original_crc,
-        )
-        if computed != original_crc:
-            with contextlib.suppress(Exception):
-                _LOGGER.debug("TSLP header24 hex (CRC mismatch): %s", packet[:24].hex())
-                _LOGGER.debug(
-                    "TSLP payload (first 256 bytes) hex (CRC mismatch): %s",
-                    packet[24 : 24 + min(payload_len, 256)].hex(),
-                )
-            raise ValueError("TSLP CRC mismatch")
-        payload = packet[24 : 24 + payload_len]
-        with contextlib.suppress(Exception):
-            _LOGGER.debug(
-                "TSLP parse success: payload_len=%d payload_preview=%s",
-                payload_len,
-                payload[:128].hex(),
-            )
-        return payload
-
-    @staticmethod
-    def _wrap_tslp_packet(payload: bytes) -> bytes:
-        """Wrap payload to TSLP packet."""
-        b0 = (1).to_bytes(1, "big")
-        b1 = (1).to_bytes(1, "big")
-        b2 = (1).to_bytes(1, "big")
-        b3 = (0).to_bytes(1, "big")
-        length = len(payload).to_bytes(4, "big")
-        name = b"".ljust(8, b"\x00")
-        session_int = (0).to_bytes(4, "big")
-        placeholder = (-1832963859 & 0xFFFFFFFF).to_bytes(4, "big")
-        packet = b"".join(
-            [b0, b1, b2, b3, length, name, session_int, placeholder, payload]
-        )
-        with contextlib.suppress(Exception):
-            pre_hdr = packet[:24]
-            _LOGGER.debug(
-                "TSLP wrap preview: ctrl_bytes=%s payload_len=%d session=%d",
-                pre_hdr[0:4].hex(),
-                len(payload),
-                int.from_bytes(session_int, "big"),
-            )
-            _LOGGER.debug("TSLP pre_header=%s", pre_hdr.hex())
-        try:
-            crc32 = zlib.crc32(packet) & 0xFFFFFFFF
-        except Exception:
-            crc32 = binascii.crc_hqx(packet, 0) & 0xFFFFFFFF
-        crc_bytes = int(crc32).to_bytes(4, "big")
-        packet = packet[:20] + crc_bytes + packet[24:]
-        with contextlib.suppress(Exception):
-            final_hdr = packet[:24]
-            _LOGGER.debug(
-                "TSLP wrap final header=%s crc=0x%08x",
-                final_hdr.hex(),
-                int.from_bytes(final_hdr[20:24], "big"),
-            )
-        return packet
-
 
 class NocAuthContext(BaseAuthContext):
     """NOC authentication: KEX -> proof encrypt -> dev proof verify."""
@@ -808,7 +587,7 @@ class NocAuthContext(BaseAuthContext):
             "user_pk": user_pk_hex,
             "sessionId": None,
         }
-        resp = await self._login_tslp(params, step_name="noc_kex")
+        resp = await self._login(params, step_name="noc_kex")
         _LOGGER.debug("NOC KEX response: %r", resp)
         dev_pk_hex = resp.get("dev_pk")
         if not dev_pk_hex:
@@ -856,7 +635,7 @@ class NocAuthContext(BaseAuthContext):
             "user_proof_encrypt": self._hex(ct_body),
             "tag": self._hex(tag),
         }
-        proof_res = await self._login_tslp(proof_params, step_name="noc_proof")
+        proof_res = await self._login(proof_params, step_name="noc_proof")
         dev_proof_hex = proof_res.get("dev_proof_encrypt") or proof_res.get("dev_proof")
         tag_hex = proof_res.get("tag")
         if not dev_proof_hex:
