@@ -484,17 +484,25 @@ class BaseAuthContext:
         try:
             hdr24 = wrapped[:24]
             crc_val = int.from_bytes(hdr24[20:24], "big")
+            wrapped_len = len(wrapped)
             _LOGGER.debug(
                 "TSLP wrap (step=%s) payload_len=%d wrapped_len=%d",
                 step_name,
                 len(body_bytes),
+                wrapped_len,
             )
-            _LOGGER.debug("TSLP wrap header24=%s crc=0x%08x", hdr24.hex(), crc_val)
+            _LOGGER.debug(
+                "TSLP wrap header24=%s crc=0x%08x",
+                hdr24.hex(),
+                crc_val,
+            )
         except Exception:
+            wrapped_len = len(wrapped)
             _LOGGER.debug(
                 "TSLP wrap (step=%s) payload_len=%d wrapped_len=%d (hdr debug fail)",
                 step_name,
                 len(body_bytes),
+                wrapped_len,
             )
         headers = {"Content-Type": "application/octet-stream"}
         status, data = await self._transport._http_client.post(
