@@ -462,6 +462,7 @@ class BaseAuthContext:
             headers=self._transport.COMMON_HEADERS,
             ssl=await self._transport._get_ssl_context(),
         )
+        _LOGGER.debug("TPAP %s response: %r %r", step_name, status, data)
         if status != 200 or not isinstance(data, dict):
             raise KasaException(
                 f"{self._transport._host} {step_name} bad status/body: "
@@ -471,7 +472,6 @@ class BaseAuthContext:
         self._authenticator._handle_response_error_code(
             resp, f"TPAP {step_name} failed"
         )
-        _LOGGER.debug("TPAP %s response: %r", step_name, resp)
         return cast(dict, resp.get("result") or {})
 
 
