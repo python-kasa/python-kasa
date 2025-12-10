@@ -471,6 +471,7 @@ class BaseAuthContext:
         self._authenticator._handle_response_error_code(
             resp, f"TPAP {step_name} failed"
         )
+        _LOGGER.debug("TPAP %s response: %r", step_name, resp)
         return cast(dict, resp.get("result") or {})
 
 
