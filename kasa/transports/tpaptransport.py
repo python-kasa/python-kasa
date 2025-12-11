@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import binascii
 import contextlib
 import hashlib
 import hmac
@@ -488,7 +487,7 @@ class NocAuthContext(BaseAuthContext):
             raise KasaException("NOC materials unavailable")
         self.noc_cert_pem = noc.nocCertificate
         self.noc_key_pem = noc.nocPrivateKey
-        self.user_icac_pem = noc.nocIntermediateCertificate or ""
+        self.user_icac_pem = noc.nocIntermediateCertificate
         self.device_root_pem = noc.nocRootCertificate
         self._ephemeral_priv: ec.EllipticCurvePrivateKey | None = None
         self._ephemeral_pub_bytes: bytes | None = None
@@ -499,21 +498,21 @@ class NocAuthContext(BaseAuthContext):
         self._hkdf_hash = "SHA256"
 
     @staticmethod
-    def _hex(b: bytes) -> str:
-        return binascii.hexlify(b).decode()
+    def _base64(b: bytes) -> str:
+        return base64.b64encode(b).decode()
 
     @staticmethod
-    def _unhex(s: str) -> bytes:
-        return binascii.unhexlify(s.encode())
+    def _unbase64(s: str) -> bytes:
+        return base64.b64decode(s)
 
     def _gen_ephemeral(self) -> bytes:
-        if self._ephemeral_priv is None:
+        if self._ephemeral_pub_bytes is None:
             self._ephemeral_priv = ec.generate_private_key(ec.SECP256R1())
             self._ephemeral_pub_bytes = self._ephemeral_priv.public_key().public_bytes(
                 encoding=serialization.Encoding.X962,
                 format=serialization.PublicFormat.UncompressedPoint,
             )
-        return cast(bytes, self._ephemeral_pub_bytes)
+        return self._ephemeral_pub_bytes
 
     def _derive_shared_secret(self, dev_pub_uncompressed: bytes) -> bytes:
         if self._ephemeral_priv is None:
@@ -551,8 +550,8 @@ class NocAuthContext(BaseAuthContext):
             dev_ica_pem = dev_proof_obj.get("dev_icac") or dev_proof_obj.get(
                 "devIcacCertificate"
             )
-            proof_hex = dev_proof_obj.get("proof")
-            if not dev_noc_pem or not proof_hex:
+            proof_base64 = dev_proof_obj.get("proof")
+            if not dev_noc_pem or not proof_base64:
                 raise KasaException("Device proof missing fields")
 
             dev_cert = x509.load_pem_x509_certificate(dev_noc_pem.encode())
@@ -571,7 +570,7 @@ class NocAuthContext(BaseAuthContext):
                 + self._dev_pub_bytes
                 + self._ephemeral_pub_bytes
             )
-            signature = binascii.unhexlify(proof_hex)
+            signature = self._unbase64(proof_base64)
             dev_pub = cast(ec.EllipticCurvePublicKey, dev_cert.public_key())
             dev_pub.verify(signature, message, ec.ECDSA(hashes.SHA256()))
         except InvalidSignature as exc:
@@ -581,21 +580,21 @@ class NocAuthContext(BaseAuthContext):
 
     async def start(self) -> TlaSession | None:
         """Run NOC KEX + proof exchange and return session."""
-        user_pk_hex = self._hex(self._gen_ephemeral())
+        user_pk_base64 = self._base64(self._gen_ephemeral())
         admin_md5 = self._md5_hex("admin")
         params = {
             "sub_method": "noc_kex",
             "username": admin_md5,
             "encryption": ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"],
-            "user_pk": user_pk_hex,
+            "user_pk": user_pk_base64,
             "stok": None,
         }
         resp = await self._login(params, step_name="noc_kex")
         _LOGGER.debug("NOC KEX response: %r", resp)
-        dev_pk_hex = resp.get("dev_pk")
-        if not dev_pk_hex:
+        dev_pk_base64 = resp.get("dev_pk")
+        if not dev_pk_base64:
             raise KasaException(f"NOC KEX response missing dev_pk, got {resp!r}")
-        self._dev_pub_bytes = self._unhex(dev_pk_hex)
+        self._dev_pub_bytes = self._unbase64(dev_pk_base64)
         chosen = (resp.get("encryption") or "aes_128_ccm").lower().replace("-", "_")
         self._chosen_cipher = (
             cast(_CipherId, chosen)
@@ -626,7 +625,7 @@ class NocAuthContext(BaseAuthContext):
             {
                 "user_noc": self.noc_cert_pem,
                 "user_icac": self.user_icac_pem,
-                "proof": self._hex(signature),
+                "proof": self._base64(signature),
             },
             separators=(",", ":"),
         ).encode("utf-8")
@@ -635,16 +634,16 @@ class NocAuthContext(BaseAuthContext):
         )
         proof_params = {
             "sub_method": "noc_proof",
-            "user_proof_encrypt": self._hex(ct_body),
-            "tag": self._hex(tag),
+            "user_proof_encrypt": self._base64(ct_body),
+            "tag": self._base64(tag),
         }
         proof_res = await self._login(proof_params, step_name="noc_proof")
-        dev_proof_hex = proof_res.get("dev_proof_encrypt")
-        tag_hex = proof_res.get("tag")
-        if not dev_proof_hex:
+        dev_proof_base64 = proof_res.get("dev_proof_encrypt")
+        tag_base64 = proof_res.get("tag")
+        if not dev_proof_base64:
             raise KasaException("NOC proof response missing device proof")
-        dev_ct = self._unhex(dev_proof_hex)
-        dev_tag = self._unhex(tag_hex) if tag_hex else b""
+        dev_ct = self._unbase64(dev_proof_base64)
+        dev_tag = self._unbase64(tag_base64) if tag_base64 else b""
         dev_plain = _SessionCipher.sec_decrypt(
             self._chosen_cipher, key, base_nonce, dev_ct, dev_tag, seq=1
         )

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import binascii
 import hashlib
 import logging
 import os
@@ -399,7 +398,7 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_pk": binascii.hexlify(b"\x04" + b"\x01" * 64).decode(),
+                        "dev_pk": base64.b64encode(b"\x04" + b"\x01" * 64).decode(),
                         "encryption": "aes_128_ccm",
                         "expired": 99,
                     },
@@ -408,8 +407,8 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_proof_encrypt": "00",
-                        "tag": "00" * 16,
+                        "dev_proof_encrypt": base64.b64encode(b"\x00").decode(),
+                        "tag": base64.b64encode(b"\x00" * 16).decode(),
                         "sessionId": "SID",
                         "start_seq": 5,
                         "expired": 123,
@@ -555,7 +554,11 @@ async def test_nocauth_flow_success_and_errors(monkeypatch):
     ctx_verify._ephemeral_pub_bytes = b"\x04" + b"\x04" * 64
     with pytest.raises(KasaException, match="Invalid NOC device proof signature"):
         ctx_verify._verify_device_proof(
-            {"dev_noc": dev_cert_pem, "dev_icac": inter_pem, "proof": bad_sig.hex()}
+            {
+                "dev_noc": dev_cert_pem,
+                "dev_icac": inter_pem,
+                "proof": base64.b64encode(bad_sig).decode(),
+            }
         )
 
 
@@ -638,7 +641,7 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_pk": binascii.hexlify(b"\x04" + b"\x02" * 64).decode(),
+                        "dev_pk": base64.b64encode(b"\x04" + b"\x02" * 64).decode(),
                         "encryption": "unknown",
                         "expired": 7,
                     },
@@ -647,7 +650,7 @@ async def test_nocauth_unknown_encryption_and_alt_session_fields(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_proof_encrypt": "00",
+                        "dev_proof_encrypt": base64.b64encode(b"\x00").decode(),
                         "stok": "STK",
                         "startSeq": 3,
                         "sessionExpired": 321,
@@ -729,7 +732,7 @@ async def test_nocauth_no_tag_in_dev_proof(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_pk": binascii.hexlify(b"\x04" + b"\x03" * 64).decode(),
+                        "dev_pk": base64.b64encode(b"\x04" + b"\x03" * 64).decode(),
                         "encryption": "aes_128_ccm",
                         "expired": 1,
                     },
@@ -738,7 +741,10 @@ async def test_nocauth_no_tag_in_dev_proof(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_proof": "00",
+                        # This test covers the case where the response has a
+                        # non-encrypted `dev_proof` field; keep it base64 for
+                        # realism, but the transport expects `dev_proof_encrypt`.
+                        "dev_proof": base64.b64encode(b"\x00").decode(),
                         "sessionId": "SIDN",
                         "start_seq": 2,
                         "expired": 5,
@@ -816,7 +822,7 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_pk": binascii.hexlify(b"\x04" + b"\x05" * 64).decode(),
+                        "dev_pk": base64.b64encode(b"\x04" + b"\x05" * 64).decode(),
                         "encryption": "aes_128_ccm",
                         "expired": 42,
                     },
@@ -825,7 +831,7 @@ async def test_nocauth_alt_session_id_and_defaults(monkeypatch):
                 return 200, {
                     "error_code": 0,
                     "result": {
-                        "dev_proof_encrypt": "00",
+                        "dev_proof_encrypt": base64.b64encode(b"\x00").decode(),
                         "session_id": "SID_ALT",
                     },
                 }
@@ -982,7 +988,7 @@ def test_nocauth_verify_device_proof_invalid_signature():
 
     wrong_message = b"not-the-expected-message"
     bad_sig = priv.sign(wrong_message, ec.ECDSA(hashes.SHA256()))
-    dev_proof_obj = {"dev_noc": cert_pem, "proof": binascii.hexlify(bad_sig).decode()}
+    dev_proof_obj = {"dev_noc": cert_pem, "proof": base64.b64encode(bad_sig).decode()}
     with pytest.raises(KasaException, match="Invalid NOC device proof signature"):
         ctx._verify_device_proof(dev_proof_obj)
 
