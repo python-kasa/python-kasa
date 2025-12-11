@@ -456,6 +456,7 @@ class BaseAuthContext:
     async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         """POST login step as JSON and return result payload."""
         body = {"method": "login", "params": params}
+        _LOGGER.debug("Starting _login with body: %r", body)
         status, data = await self._transport._http_client.post(
             self._transport._app_url.with_path("/"),
             json=body,
@@ -586,8 +587,8 @@ class NocAuthContext(BaseAuthContext):
             "sub_method": "noc_kex",
             "username": admin_md5,
             "encryption": ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"],
-            "userPublicKey": user_pk_hex,
-            "sessionId": None,
+            "user_pk": user_pk_hex,
+            "stok": None,
         }
         resp = await self._login(params, step_name="noc_kex")
         _LOGGER.debug("NOC KEX response: %r", resp)
@@ -869,11 +870,11 @@ class Spake2pAuthContext(BaseAuthContext):
         params = {
             "sub_method": "pake_register",
             "username": self.username,
-            "userRandom": self.user_random,
-            "cipherSuites": self.discover_suites or [1, 2],
+            "user_random": self.user_random,
+            "cipher_suites": self.discover_suites or [1, 2],
             "encryption": ["aes_128_ccm", "chacha20_poly1305", "aes_256_ccm"],
-            "passcodeType": "password",
-            "sessionId": None,
+            "passcode_type": "password",
+            "stok": None,
         }
         resp = await self._login(params, step_name="pake_register")
         share_params = self.process_register_result(resp)
