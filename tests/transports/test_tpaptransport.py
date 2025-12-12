@@ -221,16 +221,11 @@ def test_nocclient_apply_exception_logs_and_raises(monkeypatch):
         raise RuntimeError("login boom")
 
     monkeypatch.setattr(tp.NOCClient, "_login", fake_login, raising=True)
-    called: dict[str, object] = {}
-
-    def fake_log(msg, exc):  # noqa: ARG002
-        called["msg"] = msg
-        called["exc"] = exc
-
-    monkeypatch.setattr(tp._LOGGER, "exception", fake_log, raising=True)
-    with pytest.raises(KasaException, match="TPLink Cloud NOC apply failed"):
+    with pytest.raises(KasaException, match="TPLink Cloud NOC apply failed") as excinfo:
         client.apply("u", "p")
-    assert isinstance(called.get("exc"), Exception)
+    cause = excinfo.value.__cause__
+    assert isinstance(cause, Exception)
+    assert "login boom" in str(cause)
 
 
 # --------------------------

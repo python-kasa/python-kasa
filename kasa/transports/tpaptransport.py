@@ -437,7 +437,6 @@ class NOCClient:
             self._root_pem = root_pem
             return self.get()
         except Exception as exc:
-            _LOGGER.exception("NOCClient: Error during NOC apply: %r", exc)
             raise KasaException(f"TPLink Cloud NOC apply failed: {exc}") from exc
 
 
@@ -464,14 +463,12 @@ class BaseAuthContext:
     async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         """POST login step as JSON and return result payload."""
         body = {"method": "login", "params": params}
-        _LOGGER.debug("Starting _login with body: %r", body)
         status, data = await self._transport._http_client.post(
             self._transport._app_url.with_path("/"),
             json=body,
             headers=self._transport.COMMON_HEADERS,
             ssl=await self._transport._get_ssl_context(),
         )
-        _LOGGER.debug("TPAP %s response: %r %r", step_name, status, data)
         if status != 200 or not isinstance(data, dict):
             raise KasaException(
                 f"{self._transport._host} {step_name} bad status/body: "
@@ -591,7 +588,6 @@ class NocAuthContext(BaseAuthContext):
             "stok": None,
         }
         resp = await self._login(params, step_name="noc_kex")
-        _LOGGER.debug("NOC KEX response: %r", resp)
         dev_pk_base64 = resp.get("dev_pk")
         if not dev_pk_base64:
             raise KasaException(f"NOC KEX response missing dev_pk, got {resp!r}")
