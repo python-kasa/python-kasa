@@ -1475,6 +1475,8 @@ def test_spake2p_passlib_md5_and_sha256():
     assert out.startswith("$1$")
     long_pw = "x" * 30001
     assert K._md5_crypt(long_pw, "$1$abcd") is None
+    out_extra = K._md5_crypt("p", "$1$abcd$extra")
+    assert out_extra == out
     assert K._sha256_crypt("p", "") is None
     out2 = K._sha256_crypt("p", "$5$rounds=2000$mysalt")
     assert isinstance(out2, str)
@@ -1482,6 +1484,9 @@ def test_spake2p_passlib_md5_and_sha256():
     out3 = K._sha256_crypt("p", "$5$mysalt", rounds_from_params=10)
     assert isinstance(out3, str)
     assert "rounds=1000" in out3
+    out_bad = K._sha256_crypt("p", "$5$rounds=bad$mysalt")
+    assert isinstance(out_bad, str)
+    assert out_bad.startswith("$5$mysalt$") or "rounds=5000" in out_bad
 
 
 # --------------------------
