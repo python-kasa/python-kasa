@@ -1451,7 +1451,6 @@ async def test_spake2p_cmac_branch_in_register():
     ctx.username = "u"  # type: ignore[attr-defined]
     ctx.passcode = "p"  # type: ignore[attr-defined]
     ctx._authenticator = type("A", (), {"_tpap_tls": 1, "_tpap_dac": False})()  # type: ignore[attr-defined]
-
     reg = {
         "dev_random": base64.b64encode(b"\x00" * 16).decode(),
         "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
@@ -1464,6 +1463,25 @@ async def test_spake2p_cmac_branch_in_register():
     params = tp.Spake2pAuthContext.process_register_result(ctx, reg)  # type: ignore[misc]
     assert params["sub_method"] == "pake_share"
     assert isinstance(params["user_confirm"], str)
+
+
+def test_spake2p_passlib_md5_and_sha256():
+    """Cover passlib-based helpers: MD5-crypt and SHA256-crypt behavior."""
+    K = tp.Spake2pAuthContext
+    assert K._md5_crypt("p", "") is None
+    assert K._md5_crypt("p", "nope") is None
+    out = K._md5_crypt("p", "$1$abcd")
+    assert isinstance(out, str)
+    assert out.startswith("$1$")
+    long_pw = "x" * 30001
+    assert K._md5_crypt(long_pw, "$1$abcd") is None
+    assert K._sha256_crypt("p", "") is None
+    out2 = K._sha256_crypt("p", "$5$rounds=2000$mysalt")
+    assert isinstance(out2, str)
+    assert out2.startswith("$5$")
+    out3 = K._sha256_crypt("p", "$5$mysalt", rounds_from_params=10)
+    assert isinstance(out3, str)
+    assert "rounds=1000" in out3
 
 
 # --------------------------
