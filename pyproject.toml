@@ -14,6 +14,7 @@ dependencies = [
   "mashumaro>=3.14",
   "ecdsa>=0.19.1",
   "asn1crypto>=1.5.1",
+  "passlib>=1.7.4",
 ]
 
 classifiers = [
@@ -207,4 +208,8 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["requests", "requests.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["passlib", "passlib.*"]
 ignore_missing_imports = true

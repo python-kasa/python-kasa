@@ -1043,19 +1043,22 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     assert K._hash("SHA512", b"x") == hashlib.sha512(b"x").digest()
     assert K._md5_hex("a") == hashlib.md5(b"a").hexdigest()  # noqa: S324
     assert K._sha1_hex("a") == hashlib.sha1(b"a").hexdigest()  # noqa: S324
-    assert K._sha256crypt_simple("p", "X") == "X$" + hashlib.sha256(b"p").hexdigest()
+    assert isinstance(K._sha256_crypt("p", "X"), str)
     assert isinstance(K._authkey_mask("pass", "tmp", "ABC"), str)
     assert K._sha1_username_mac_shadow("", "AA" * 6, "pwd") == "pwd"
     assert len(K._sha1_username_mac_shadow("user", "AABBCCDDEEFF", "pwd")) == 40
     assert K._build_credentials(None, "u", "p", "MAC") == "u/p"
-    assert (
-        len(
-            K._build_credentials(
-                {"type": "password_shadow", "params": {"passwd_id": 1}}, "", "p", ""
-            )
-        )
-        == 32
+    out_md5 = K._build_credentials(
+        {
+            "type": "password_shadow",
+            "params": {"passwd_id": 1, "passwd_prefix": "$1$abcd"},
+        },
+        "",
+        "p",
+        "",
     )
+    assert isinstance(out_md5, str)
+    assert out_md5.startswith("$1$")
     assert (
         len(
             K._build_credentials(
@@ -1075,18 +1078,14 @@ async def test_spake2p_helpers_and_process(monkeypatch):
         )
         == 40
     )
-    assert (
-        K._build_credentials(
-            {
-                "type": "password_shadow",
-                "params": {"passwd_id": 5, "passwd_prefix": "X"},
-            },
-            "",
-            "p",
-            "",
-        )[:2]
-        == "X$"
+    out_s5 = K._build_credentials(
+        {"type": "password_shadow", "params": {"passwd_id": 5, "passwd_prefix": "X"}},
+        "",
+        "p",
+        "",
     )
+    assert isinstance(out_s5, str)
+    assert out_s5.startswith("$5$")
     assert K._build_credentials(
         {
             "type": "password_authkey",
@@ -1126,7 +1125,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     ctx._M = tp.ellipticcurve.Point(ctx._curve.curve, Mx, My, ctx._order)  # type: ignore[attr-defined]
     ctx._N = tp.ellipticcurve.Point(ctx._curve.curve, Nx, Ny, ctx._order)  # type: ignore[attr-defined]
     ctx._hkdf_hash = "SHA512"
-    ctx.user_random = "00" * 16  # type: ignore[attr-defined]
+    ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx.discover_suites = [1, 2]  # type: ignore[attr-defined]
     ctx.discover_mac = "AA:BB:CC:DD:EE:FF"  # type: ignore[attr-defined]
     ctx.username = "u"  # type: ignore[attr-defined]
@@ -1134,9 +1133,9 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     ctx._authenticator = type("A", (), {"_tpap_tls": 1, "_tpap_dac": False})()  # type: ignore[attr-defined]
 
     reg = {
-        "dev_random": "00" * 16,
-        "dev_salt": "11" * 16,
-        "dev_share": tp.Spake2pAuthContext.P256_N_COMP.hex(),
+        "dev_random": base64.b64encode(b"\x00" * 16).decode(),
+        "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
+        "dev_share": base64.b64encode(tp.Spake2pAuthContext.P256_N_COMP).decode(),
         "cipher_suites": 2,
         "iterations": 100,
         "encryption": "aes_128_ccm",
@@ -1162,7 +1161,7 @@ async def test_spake2p_helpers_and_process(monkeypatch):
     ctx2._order = ctx._order  # type: ignore[attr-defined]
     ctx2._M = ctx._M  # type: ignore[attr-defined]
     ctx2._N = ctx._N  # type: ignore[attr-defined]
-    ctx2.user_random = "00" * 16  # type: ignore[attr-defined]
+    ctx2.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx2.discover_suites = [0]  # type: ignore[attr-defined]
     ctx2.discover_mac = ""  # type: ignore[attr-defined]
     ctx2._hkdf_hash = "SHA256"
@@ -1226,7 +1225,6 @@ async def test_spake2p_helpers_and_process(monkeypatch):
 
 
 def test_build_credentials_sha_with_salt_invalid_b64_returns_passcode():
-    # Cover except Exception: return passcode
     out = tp.Spake2pAuthContext._build_credentials(  # type: ignore[misc]
         {
             "type": "password_sha_with_salt",
@@ -1280,9 +1278,11 @@ async def test_spake2p_start_covers_both_tls_modes(monkeypatch):
     async def fake_login(params, *, step_name):
         if step_name == "pake_register":
             return {
-                "dev_random": "00" * 16,
-                "dev_salt": "11" * 16,
-                "dev_share": tp.Spake2pAuthContext.P256_N_COMP.hex(),
+                "dev_random": base64.b64encode(b"\x00" * 16).decode(),
+                "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
+                "dev_share": base64.b64encode(
+                    tp.Spake2pAuthContext.P256_N_COMP
+                ).decode(),
                 "cipher_suites": 2,
                 "iterations": 100,
                 "encryption": "aes_128_ccm",
@@ -1311,9 +1311,11 @@ async def test_spake2p_start_covers_both_tls_modes(monkeypatch):
     async def fake_login2(params, *, step_name):
         if step_name == "pake_register":
             return {
-                "dev_random": "00" * 16,
-                "dev_salt": "11" * 16,
-                "dev_share": tp.Spake2pAuthContext.P256_N_COMP.hex(),
+                "dev_random": base64.b64encode(b"\x00" * 16).decode(),
+                "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
+                "dev_share": base64.b64encode(
+                    tp.Spake2pAuthContext.P256_N_COMP
+                ).decode(),
                 "cipher_suites": 2,
                 "iterations": 100,
                 "encryption": "aes_128_ccm",
@@ -1410,7 +1412,7 @@ def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
     Nx, Ny = tp.Spake2pAuthContext._sec1_to_xy(tp.Spake2pAuthContext.P256_N_COMP)
     ctx._M = tp.ellipticcurve.Point(ctx._curve.curve, Mx, My, ctx._order)  # type: ignore[attr-defined]
     ctx._N = tp.ellipticcurve.Point(ctx._curve.curve, Nx, Ny, ctx._order)  # type: ignore[attr-defined]
-    ctx.user_random = "00" * 16  # type: ignore[attr-defined]
+    ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx.discover_suites = [0]  # type: ignore[attr-defined]
     ctx.discover_mac = "AA:BB:CC:DD:EE:FF"  # type: ignore[attr-defined]
     ctx._hkdf_hash = "SHA256"
@@ -1419,9 +1421,9 @@ def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
     ctx._authenticator = type("A", (), {"_tpap_tls": 1, "_tpap_dac": False})()  # type: ignore[attr-defined]
 
     reg = {
-        "dev_random": "00" * 16,
-        "dev_salt": "11" * 16,
-        "dev_share": tp.Spake2pAuthContext.P256_N_COMP.hex(),
+        "dev_random": base64.b64encode(b"\x00" * 16).decode(),
+        "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
+        "dev_share": base64.b64encode(tp.Spake2pAuthContext.P256_N_COMP).decode(),
         "cipher_suites": 2,
         "iterations": 100,
         "encryption": "aes_128_ccm",
@@ -1433,7 +1435,6 @@ def test_spake2p_process_register_uses_mac_pass_when_suite0_with_mac():
 
 @pytest.mark.asyncio
 async def test_spake2p_cmac_branch_in_register():
-    # Cover the CMAC path user_confirm/expected_dev_confirm when suite is 8
     ctx = tp.Spake2pAuthContext.__new__(tp.Spake2pAuthContext)  # type: ignore[misc]
     ctx._curve = tp.NIST256p  # type: ignore[attr-defined]
     ctx._generator = ctx._curve.generator  # type: ignore[attr-defined]
@@ -1443,7 +1444,7 @@ async def test_spake2p_cmac_branch_in_register():
     Nx, Ny = tp.Spake2pAuthContext._sec1_to_xy(tp.Spake2pAuthContext.P256_N_COMP)
     ctx._M = tp.ellipticcurve.Point(ctx._curve.curve, Mx, My, ctx._order)  # type: ignore[attr-defined]
     ctx._N = tp.ellipticcurve.Point(ctx._curve.curve, Nx, Ny, ctx._order)  # type: ignore[attr-defined]
-    ctx.user_random = "00" * 16  # type: ignore[attr-defined]
+    ctx.user_random = base64.b64encode(b"\x00" * 16).decode()  # type: ignore[attr-defined]
     ctx.discover_suites = [8]  # type: ignore[attr-defined]
     ctx.discover_mac = ""  # type: ignore[attr-defined]
     ctx._hkdf_hash = "SHA256"
@@ -1452,9 +1453,9 @@ async def test_spake2p_cmac_branch_in_register():
     ctx._authenticator = type("A", (), {"_tpap_tls": 1, "_tpap_dac": False})()  # type: ignore[attr-defined]
 
     reg = {
-        "dev_random": "00" * 16,
-        "dev_salt": "11" * 16,
-        "dev_share": tp.Spake2pAuthContext.P256_N_COMP.hex(),
+        "dev_random": base64.b64encode(b"\x00" * 16).decode(),
+        "dev_salt": base64.b64encode(b"\x11" * 16).decode(),
+        "dev_share": base64.b64encode(tp.Spake2pAuthContext.P256_N_COMP).decode(),
         "cipher_suites": 8,  # triggers CMAC
         "iterations": 100,
         "encryption": "aes_128_ccm",

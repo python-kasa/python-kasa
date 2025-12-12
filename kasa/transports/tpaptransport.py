@@ -36,6 +36,7 @@ from cryptography.hazmat.primitives.cmac import CMAC
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from ecdsa import NIST256p, ellipticcurve
 from ecdsa.ellipticcurve import PointJacobi
+from passlib.hash import md5_crypt, sha256_crypt
 from urllib3.exceptions import InsecureRequestWarning
 from yarl import URL
 
@@ -452,6 +453,14 @@ class BaseAuthContext:
     def _md5_hex(s: str) -> str:
         return hashlib.md5(s.encode()).hexdigest()  # noqa: S324
 
+    @staticmethod
+    def _base64(b: bytes) -> str:
+        return base64.b64encode(b).decode()
+
+    @staticmethod
+    def _unbase64(s: str) -> bytes:
+        return base64.b64decode(s)
+
     async def _login(self, params: dict[str, Any], *, step_name: str) -> dict[str, Any]:
         """POST login step as JSON and return result payload."""
         body = {"method": "login", "params": params}
@@ -496,14 +505,6 @@ class NocAuthContext(BaseAuthContext):
         self._chosen_cipher: _CipherId = "aes_128_ccm"
         self._session_expired: int = 0
         self._hkdf_hash = "SHA256"
-
-    @staticmethod
-    def _base64(b: bytes) -> str:
-        return base64.b64encode(b).decode()
-
-    @staticmethod
-    def _unbase64(s: str) -> bytes:
-        return base64.b64decode(s)
 
     def _gen_ephemeral(self) -> bytes:
         if self._ephemeral_pub_bytes is None:
@@ -703,7 +704,7 @@ class Spake2pAuthContext(BaseAuthContext):
         self._suite_type: int = 2
         self._dac_nonce_hex: str | None = None
 
-        self.user_random = secrets.token_hex(16)
+        self.user_random = self._base64(os.urandom(32))
         self.extra_params: dict[str, Any] = {}
 
     @staticmethod
@@ -775,10 +776,6 @@ class Spake2pAuthContext(BaseAuthContext):
     def _sha1_hex(s: str) -> str:
         return hashlib.sha1(s.encode()).hexdigest()  # noqa: S324
 
-    @staticmethod
-    def _sha256crypt_simple(passcode: str, prefix: str) -> str:
-        return prefix + "$" + hashlib.sha256(passcode.encode()).hexdigest()
-
     @classmethod
     def _authkey_mask(cls, passcode: str, tmpkey: str, dictionary: str) -> str:
         out = []
@@ -801,6 +798,52 @@ class Spake2pAuthContext(BaseAuthContext):
         return cls._sha1_hex(cls._md5_hex(username) + "_" + mac)
 
     @classmethod
+    def _md5_crypt(cls, password: str, prefix: str) -> str | None:
+        if not prefix or not prefix.startswith("$1$"):
+            return None
+        if len(password) > 30000:
+            return None
+        spec = prefix[3:]
+        if "$" in spec:
+            spec = spec.split("$", 1)[0]
+        salt = spec[:8]
+        return md5_crypt.using(salt=salt).hash(password)
+
+    @classmethod
+    def _sha256_crypt(
+        cls, password: str, prefix: str, rounds_from_params: int | None = None
+    ) -> str | None:
+        if not prefix:
+            return None
+        DEFAULT_ROUNDS = 5000
+        MIN_ROUNDS = 1000
+        MAX_ROUNDS = 999_999_999
+        spec = prefix
+        rounds: int | None = None
+        salt = ""
+        if spec.startswith("$5$"):
+            spec = spec[3:]
+        if spec.startswith("rounds="):
+            parts = spec.split("$", 1)
+            try:
+                rounds_val = int(parts[0].split("=", 1)[1])
+            except Exception:
+                rounds_val = DEFAULT_ROUNDS
+            rounds_val = max(MIN_ROUNDS, min(MAX_ROUNDS, rounds_val))
+            rounds = rounds_val
+            salt = parts[1] if len(parts) > 1 else ""
+        else:
+            salt = spec.split("$", 1)[0] if "$" in spec else spec
+        if rounds_from_params is not None:
+            r = int(rounds_from_params)
+            r = max(MIN_ROUNDS, min(MAX_ROUNDS, r))
+            rounds = r
+        salt = (salt or "")[:16]
+        if rounds is not None:
+            return sha256_crypt.using(rounds=rounds, salt=salt).hash(password)
+        return sha256_crypt.using(salt=salt).hash(password)
+
+    @classmethod
     def _build_credentials(
         cls, extra_crypt: dict | None, username: str, passcode: str, mac_no_colon: str
     ) -> str:
@@ -812,13 +855,16 @@ class Spake2pAuthContext(BaseAuthContext):
             pid = int(p.get("passwd_id", 0))
             prefix = p.get("passwd_prefix", "") or ""
             if pid == 1:
-                return cls._md5_hex(passcode)
+                md = cls._md5_crypt(passcode, prefix)
+                return md if md is not None else passcode
             if pid == 2:
                 return cls._sha1_hex(passcode)
             if pid == 3:
                 return cls._sha1_username_mac_shadow(username, mac_no_colon, passcode)
             if pid == 5:
-                return cls._sha256crypt_simple(passcode, prefix)
+                rounds = p.get("passwd_rounds")
+                s5 = cls._sha256_crypt(passcode, prefix, rounds_from_params=rounds)
+                return s5 if s5 is not None else passcode
             return passcode
         if t == "password_authkey":
             tmp = p.get("authkey_tmpkey", "") or ""
@@ -910,7 +956,7 @@ class Spake2pAuthContext(BaseAuthContext):
             )
 
         cred = cred_str.encode()
-        a, b = self._derive_ab(cred, bytes.fromhex(dev_salt), iterations, 32)
+        a, b = self._derive_ab(cred, self._unbase64(dev_salt), iterations, 32)
         order = self._order
         w = a % order
         h_scalar = b % order
@@ -918,7 +964,7 @@ class Spake2pAuthContext(BaseAuthContext):
         x = secrets.randbelow(order - 1) + 1
         Lp = x * G + w * M
 
-        Rx, Ry = self._sec1_to_xy(bytes.fromhex(dev_share))
+        Rx, Ry = self._sec1_to_xy(self._unbase64(dev_share))
         R = ellipticcurve.Point(self._curve.curve, Rx, Ry, order)
         Rprime = R + (-(w * N))
         Zp = x * Rprime
@@ -934,8 +980,8 @@ class Spake2pAuthContext(BaseAuthContext):
         context_hash = self._hash(
             self._hkdf_hash,
             self.PAKE_CONTEXT_TAG
-            + bytes.fromhex(self.user_random)
-            + bytes.fromhex(dev_random),
+            + self._unbase64(self.user_random)
+            + self._unbase64(dev_random),
         )
         transcript = (
             self._len8le(context_hash)
