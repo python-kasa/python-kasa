@@ -236,7 +236,8 @@ def get_protocol(config: DeviceConfig, *, strict: bool = False) -> BaseProtocol 
         # H200 is device family SMART.TAPOHUB and uses SmartCamProtocol so use
         # https to distinguish from SmartProtocol devices
         "SMART.AES.HTTPS": (SmartCamProtocol, SslAesTransport),
-        # TPAP devices (SMART.* with encrypt_type TPAP and HTTPS).
+        # TPAP devices (SMART.* with encrypt_type TPAP and TPAP/HTTPS).
+        "SMART.TPAP": (SmartProtocol, TpapTransport),
         "SMART.TPAP.HTTPS": (SmartProtocol, TpapTransport),
     }
     if not (prot_tran_cls := supported_device_protocols.get(protocol_transport_key)):
